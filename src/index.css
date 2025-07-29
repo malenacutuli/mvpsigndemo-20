@@ -2,41 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Axessible Design System - Accessibility-First Design
+All colors MUST be HSL for maximum accessibility and contrast.
+Focused on high contrast, readable typography, and inclusive design.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core accessibility palette */
+    --background: 210 20% 98%;
+    --foreground: 210 15% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 15% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 15% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Deep accessible blue for trust and clarity */
+    --primary: 220 91% 25%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 220 91% 45%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Warm neutral for supporting elements */
+    --secondary: 210 30% 92%;
+    --secondary-foreground: 210 15% 8%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted: High contrast grays */
+    --muted: 210 20% 95%;
+    --muted-foreground: 210 15% 35%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent: Vibrant but accessible purple */
+    --accent: 270 70% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    /* CWI Character Colors - High contrast for accessibility */
+    --cwi-main-yellow: 48 95% 53%;
+    --cwi-main-blue: 200 95% 45%;
+    --cwi-main-red: 0 85% 55%;
+    --cwi-main-orange: 25 95% 55%;
+    --cwi-main-green: 120 70% 45%;
+    --cwi-main-purple: 280 70% 55%;
+
+    /* Supporting character colors */
+    --cwi-support-orange: 15 80% 50%;
+    --cwi-support-cyan: 180 70% 55%;
+    --cwi-support-pink: 330 75% 60%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 210 30% 88%;
+    --input: 210 30% 95%;
+    --ring: 220 91% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -91,7 +111,52 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Dark mode CWI colors - maintaining accessibility */
+    --cwi-main-yellow: 48 85% 60%;
+    --cwi-main-blue: 200 85% 55%;
+    --cwi-main-red: 0 75% 65%;
+    --cwi-main-orange: 25 85% 60%;
+    --cwi-main-green: 120 60% 55%;
+    --cwi-main-purple: 280 60% 65%;
   }
+
+  /* Gradients for beautiful accessibility-focused design */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+
+  .gradient-accessibility {
+    background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary)));
+  }
+
+  /* Accessibility animations */
+  .caption-pop {
+    animation: caption-pop 0.2s ease-out;
+  }
+
+  @keyframes caption-pop {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* CWI character color classes */
+  .cwi-main-yellow { color: hsl(var(--cwi-main-yellow)); }
+  .cwi-main-blue { color: hsl(var(--cwi-main-blue)); }
+  .cwi-main-red { color: hsl(var(--cwi-main-red)); }
+  .cwi-main-orange { color: hsl(var(--cwi-main-orange)); }
+  .cwi-main-green { color: hsl(var(--cwi-main-green)); }
+  .cwi-main-purple { color: hsl(var(--cwi-main-purple)); }
+  .cwi-support-orange { color: hsl(var(--cwi-support-orange)); }
+  .cwi-support-cyan { color: hsl(var(--cwi-support-cyan)); }
+  .cwi-support-pink { color: hsl(var(--cwi-support-pink)); }
 }
 
 @layer base {
@@ -101,5 +166,28 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Roboto Flex', system-ui, -apple-system, sans-serif;
+    font-optical-sizing: auto;
+  }
+
+  /* Accessibility improvements */
+  button:focus-visible,
+  [role="button"]:focus-visible {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --border: 210 50% 60%;
+      --ring: 220 100% 40%;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .caption-pop {
+      animation: none;
+    }
   }
 }

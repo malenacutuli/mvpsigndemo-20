@@ -18,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'roboto-flex': ['Roboto Flex', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -26,7 +29,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -61,6 +65,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				cwi: {
+					'main-yellow': 'hsl(var(--cwi-main-yellow))',
+					'main-blue': 'hsl(var(--cwi-main-blue))',
+					'main-red': 'hsl(var(--cwi-main-red))',
+					'main-orange': 'hsl(var(--cwi-main-orange))',
+					'main-green': 'hsl(var(--cwi-main-green))',
+					'main-purple': 'hsl(var(--cwi-main-purple))',
+					'support-orange': 'hsl(var(--cwi-support-orange))',
+					'support-cyan': 'hsl(var(--cwi-support-cyan))',
+					'support-pink': 'hsl(var(--cwi-support-pink))'
 				}
 			},
 			borderRadius: {
