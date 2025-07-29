@@ -13,16 +13,17 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Gordon Ramsay's Perfect Pasta Masterclass",
-      description: "Experience celebrity-style audio descriptions with dynamic CWI captions and professional ASL interpretation",
+      title: "Perfect Spaghetti Aglio e Olio Masterclass",
+      description: "Learn the classic Italian pasta technique with Gordon Ramsay-style passion, featuring live ASL interpretation and dynamic captioning",
       videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
       duration: "3:00",
       features: [
-        "Gordon Ramsay-inspired passionate narration",
-        "Professional chef character (Orange attribution)",
-        "Dynamic volume visualization for kitchen sounds",
-        "Culinary terminology emphasis",
-        "Adult-focused ASL interpretation"
+        "Gordon Ramsay-style passionate cooking instruction",
+        "Detailed pasta technique breakdowns", 
+        "Professional chef character (Orange CWI attribution)",
+        "Live kitchen sound visualization (sizzling, boiling)",
+        "Culinary terminology with emphasis markers",
+        "Adult-focused professional ASL chef avatar"
       ],
       voiceOptions: [
         { id: 'gordon-ramsay', name: 'Gordon Ramsay Style', description: 'Passionate, authoritative cooking voice' },

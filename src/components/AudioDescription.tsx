@@ -21,24 +21,48 @@ interface AudioDescription {
   voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
 }
 
-// Audio descriptions for recipe content
+// Realistic audio descriptions for pasta cooking masterclass
 const recipeDescriptions: AudioDescription[] = [
   {
-    text: "Gordon stands in his pristine kitchen, flames dancing beneath a large stainless steel pot. His eyes gleam with culinary passion.",
+    text: "Chef Gordon stands before a gleaming stainless steel stove, his intense gaze focused on a large pot of water beginning to bubble. The kitchen is immaculate, every tool in its place.",
     startTime: 0.5,
-    endTime: 4,
+    endTime: 5,
     voiceStyle: 'passionate'
   },
   {
-    text: "Steam erupts violently from the boiling water - this is what perfection looks like, people!",
-    startTime: 7,
+    text: "Violent bubbles break the surface as the water reaches a rolling boil. Steam rises dramatically, catching the overhead lights like culinary theater.",
+    startTime: 6,
     endTime: 11,
     voiceStyle: 'authoritative'
   },
   {
-    text: "Watch as the pasta slides into the bubbling cauldron. Every single strand must be treated with respect.",
-    startTime: 16,
-    endTime: 21,
+    text: "Gordon reaches for coarse sea salt, his movements precise and confident. He adds generous handfuls, the salt dissolving instantly in the churning water.",
+    startTime: 12,
+    endTime: 17,
+    voiceStyle: 'passionate'
+  },
+  {
+    text: "Long strands of bronze-cut spaghetti cascade into the pot like golden ribbons. The pasta immediately begins its dance in the boiling water.",
+    startTime: 18,
+    endTime: 23,
+    voiceStyle: 'passionate'
+  },
+  {
+    text: "On a wooden cutting board, eight cloves of garlic await transformation. Gordon's knife moves with surgical precision, creating paper-thin slices that glisten with oils.",
+    startTime: 29,
+    endTime: 35,
+    voiceStyle: 'authoritative'
+  },
+  {
+    text: "Extra virgin olive oil shimmers in a large pan, heated to the perfect temperature. The garlic slices hit the oil with an immediate, satisfying sizzle.",
+    startTime: 36,
+    endTime: 42,
+    voiceStyle: 'passionate'
+  },
+  {
+    text: "The garlic transforms from pale white to golden perfection, releasing an intoxicating aroma that fills the entire kitchen. This is the moment every Italian chef lives for.",
+    startTime: 43,
+    endTime: 49,
     voiceStyle: 'passionate'
   }
 ];

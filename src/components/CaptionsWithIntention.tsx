@@ -20,64 +20,138 @@ interface CaptionsWithIntentionProps {
   contentType?: 'recipe' | 'education';
 }
 
-// Demo captions for recipe content with Gordon Ramsay-style narration
+// Demo captions for realistic pasta recipe content with Gordon Ramsay-style passion
 const recipeCaptions: CaptionSegment[] = [
   {
-    text: "Right, let's get this pasta absolutely perfect!",
+    text: "Right! Today we're making the perfect spaghetti aglio e olio.",
     speaker: 'chef',
-    startTime: 2,
-    endTime: 6,
+    startTime: 1,
+    endTime: 5,
     words: [
-      { text: 'Right,', startTime: 2.0, endTime: 2.4, emphasis: 'loud', pitch: 'normal' },
-      { text: "let's", startTime: 2.5, endTime: 2.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'get', startTime: 2.9, endTime: 3.1, emphasis: 'normal', pitch: 'normal' },
-      { text: 'this', startTime: 3.2, endTime: 3.4, emphasis: 'normal', pitch: 'normal' },
-      { text: 'pasta', startTime: 3.5, endTime: 4.0, emphasis: 'loud', pitch: 'high' },
-      { text: 'absolutely', startTime: 4.1, endTime: 4.8, emphasis: 'loud', pitch: 'high' },
-      { text: 'perfect!', startTime: 4.9, endTime: 6.0, emphasis: 'loud', pitch: 'high' }
+      { text: 'Right!', startTime: 1.0, endTime: 1.6, emphasis: 'loud', pitch: 'high' },
+      { text: 'Today', startTime: 1.8, endTime: 2.2, emphasis: 'normal', pitch: 'normal' },
+      { text: "we're", startTime: 2.3, endTime: 2.6, emphasis: 'normal', pitch: 'normal' },
+      { text: 'making', startTime: 2.7, endTime: 3.1, emphasis: 'normal', pitch: 'normal' },
+      { text: 'the', startTime: 3.2, endTime: 3.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'perfect', startTime: 3.5, endTime: 4.1, emphasis: 'loud', pitch: 'high' },
+      { text: 'spaghetti', startTime: 4.2, endTime: 4.8, emphasis: 'normal', pitch: 'normal' },
+      { text: 'aglio', startTime: 4.9, endTime: 5.2, emphasis: 'normal', pitch: 'normal' },
+      { text: 'e', startTime: 5.3, endTime: 5.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'olio.', startTime: 5.5, endTime: 6.0, emphasis: 'normal', pitch: 'normal' }
     ]
   },
   {
-    text: 'The water needs to be boiling vigorously.',
+    text: "First, get that water boiling - and I mean BOILING!",
     speaker: 'chef',
-    startTime: 8,
-    endTime: 12,
+    startTime: 7,
+    endTime: 11,
     words: [
-      { text: 'The', startTime: 8.0, endTime: 8.2, emphasis: 'normal', pitch: 'normal' },
-      { text: 'water', startTime: 8.3, endTime: 8.7, emphasis: 'normal', pitch: 'normal' },
-      { text: 'needs', startTime: 8.8, endTime: 9.2, emphasis: 'normal', pitch: 'normal' },
-      { text: 'to', startTime: 9.3, endTime: 9.4, emphasis: 'normal', pitch: 'normal' },
-      { text: 'be', startTime: 9.5, endTime: 9.7, emphasis: 'normal', pitch: 'normal' },
-      { text: 'boiling', startTime: 9.8, endTime: 10.5, emphasis: 'loud', pitch: 'high' },
-      { text: 'vigorously.', startTime: 10.6, endTime: 12.0, emphasis: 'loud', pitch: 'normal' }
+      { text: 'First,', startTime: 7.0, endTime: 7.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'get', startTime: 7.5, endTime: 7.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'that', startTime: 7.8, endTime: 8.0, emphasis: 'normal', pitch: 'normal' },
+      { text: 'water', startTime: 8.1, endTime: 8.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'boiling', startTime: 8.5, endTime: 9.0, emphasis: 'loud', pitch: 'high' },
+      { text: '-', startTime: 9.1, endTime: 9.2, emphasis: 'normal', pitch: 'normal' },
+      { text: 'and', startTime: 9.3, endTime: 9.5, emphasis: 'normal', pitch: 'normal' },
+      { text: 'I', startTime: 9.6, endTime: 9.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'mean', startTime: 9.8, endTime: 10.1, emphasis: 'loud', pitch: 'normal' },
+      { text: 'BOILING!', startTime: 10.2, endTime: 11.0, emphasis: 'loud', pitch: 'high' }
     ]
   },
   {
-    text: 'Beautiful! Look at that steam rising.',
+    text: "Salt it like the ocean - don't be shy!",
     speaker: 'chef',
-    startTime: 15,
-    endTime: 18,
+    startTime: 13,
+    endTime: 16,
     words: [
-      { text: 'Beautiful!', startTime: 15.0, endTime: 15.8, emphasis: 'loud', pitch: 'high' },
-      { text: 'Look', startTime: 16.0, endTime: 16.3, emphasis: 'normal', pitch: 'normal' },
-      { text: 'at', startTime: 16.4, endTime: 16.5, emphasis: 'normal', pitch: 'normal' },
-      { text: 'that', startTime: 16.6, endTime: 16.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'steam', startTime: 16.9, endTime: 17.4, emphasis: 'normal', pitch: 'normal' },
-      { text: 'rising.', startTime: 17.5, endTime: 18.0, emphasis: 'quiet', pitch: 'low' }
+      { text: 'Salt', startTime: 13.0, endTime: 13.3, emphasis: 'normal', pitch: 'normal' },
+      { text: 'it', startTime: 13.4, endTime: 13.5, emphasis: 'normal', pitch: 'normal' },
+      { text: 'like', startTime: 13.6, endTime: 13.8, emphasis: 'normal', pitch: 'normal' },
+      { text: 'the', startTime: 13.9, endTime: 14.1, emphasis: 'normal', pitch: 'normal' },
+      { text: 'ocean', startTime: 14.2, endTime: 14.7, emphasis: 'loud', pitch: 'high' },
+      { text: '-', startTime: 14.8, endTime: 14.9, emphasis: 'normal', pitch: 'normal' },
+      { text: "don't", startTime: 15.0, endTime: 15.3, emphasis: 'loud', pitch: 'normal' },
+      { text: 'be', startTime: 15.4, endTime: 15.6, emphasis: 'loud', pitch: 'normal' },
+      { text: 'shy!', startTime: 15.7, endTime: 16.0, emphasis: 'loud', pitch: 'high' }
     ]
   },
   {
-    text: 'Season the water generously with salt.',
+    text: "Now add your spaghetti and give it a gentle stir.",
+    speaker: 'chef',
+    startTime: 18,
+    endTime: 22,
+    words: [
+      { text: 'Now', startTime: 18.0, endTime: 18.3, emphasis: 'normal', pitch: 'normal' },
+      { text: 'add', startTime: 18.4, endTime: 18.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'your', startTime: 18.8, endTime: 19.0, emphasis: 'normal', pitch: 'normal' },
+      { text: 'spaghetti', startTime: 19.1, endTime: 19.8, emphasis: 'normal', pitch: 'normal' },
+      { text: 'and', startTime: 19.9, endTime: 20.1, emphasis: 'normal', pitch: 'normal' },
+      { text: 'give', startTime: 20.2, endTime: 20.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'it', startTime: 20.5, endTime: 20.6, emphasis: 'normal', pitch: 'normal' },
+      { text: 'a', startTime: 20.7, endTime: 20.8, emphasis: 'normal', pitch: 'normal' },
+      { text: 'gentle', startTime: 20.9, endTime: 21.3, emphasis: 'quiet', pitch: 'low' },
+      { text: 'stir.', startTime: 21.4, endTime: 22.0, emphasis: 'quiet', pitch: 'low' }
+    ]
+  },
+  {
+    text: "While that's cooking, let's build our flavor foundation.",
+    speaker: 'chef',
+    startTime: 24,
+    endTime: 28,
+    words: [
+      { text: 'While', startTime: 24.0, endTime: 24.3, emphasis: 'normal', pitch: 'normal' },
+      { text: "that's", startTime: 24.4, endTime: 24.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'cooking,', startTime: 24.8, endTime: 25.3, emphasis: 'normal', pitch: 'normal' },
+      { text: "let's", startTime: 25.4, endTime: 25.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'build', startTime: 25.8, endTime: 26.1, emphasis: 'normal', pitch: 'normal' },
+      { text: 'our', startTime: 26.2, endTime: 26.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'flavor', startTime: 26.5, endTime: 27.0, emphasis: 'loud', pitch: 'high' },
+      { text: 'foundation.', startTime: 27.1, endTime: 28.0, emphasis: 'loud', pitch: 'high' }
+    ]
+  },
+  {
+    text: "Slice your garlic paper-thin - precision is everything!",
+    speaker: 'chef',
+    startTime: 30,
+    endTime: 34,
+    words: [
+      { text: 'Slice', startTime: 30.0, endTime: 30.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'your', startTime: 30.5, endTime: 30.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'garlic', startTime: 30.8, endTime: 31.2, emphasis: 'normal', pitch: 'normal' },
+      { text: 'paper-thin', startTime: 31.3, endTime: 32.0, emphasis: 'loud', pitch: 'high' },
+      { text: '-', startTime: 32.1, endTime: 32.2, emphasis: 'normal', pitch: 'normal' },
+      { text: 'precision', startTime: 32.3, endTime: 33.0, emphasis: 'loud', pitch: 'high' },
+      { text: 'is', startTime: 33.1, endTime: 33.3, emphasis: 'loud', pitch: 'high' },
+      { text: 'everything!', startTime: 33.4, endTime: 34.0, emphasis: 'loud', pitch: 'high' }
+    ]
+  },
+  {
+    text: "[sizzling sounds intensify]",
     speaker: 'narrator',
-    startTime: 22,
-    endTime: 25,
+    startTime: 36,
+    endTime: 38,
     words: [
-      { text: 'Season', startTime: 22.0, endTime: 22.5, emphasis: 'normal', pitch: 'normal' },
-      { text: 'the', startTime: 22.6, endTime: 22.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'water', startTime: 22.9, endTime: 23.3, emphasis: 'normal', pitch: 'normal' },
-      { text: 'generously', startTime: 23.4, endTime: 24.1, emphasis: 'normal', pitch: 'normal' },
-      { text: 'with', startTime: 24.2, endTime: 24.4, emphasis: 'normal', pitch: 'normal' },
-      { text: 'salt.', startTime: 24.5, endTime: 25.0, emphasis: 'normal', pitch: 'normal' }
+      { text: '[sizzling', startTime: 36.0, endTime: 36.8, emphasis: 'loud', pitch: 'normal' },
+      { text: 'sounds', startTime: 36.9, endTime: 37.3, emphasis: 'loud', pitch: 'normal' },
+      { text: 'intensify]', startTime: 37.4, endTime: 38.0, emphasis: 'loud', pitch: 'normal' }
+    ]
+  },
+  {
+    text: "Perfect! The garlic is turning golden - that's our moment!",
+    speaker: 'chef',
+    startTime: 40,
+    endTime: 44,
+    words: [
+      { text: 'Perfect!', startTime: 40.0, endTime: 40.6, emphasis: 'loud', pitch: 'high' },
+      { text: 'The', startTime: 40.7, endTime: 40.9, emphasis: 'normal', pitch: 'normal' },
+      { text: 'garlic', startTime: 41.0, endTime: 41.4, emphasis: 'normal', pitch: 'normal' },
+      { text: 'is', startTime: 41.5, endTime: 41.7, emphasis: 'normal', pitch: 'normal' },
+      { text: 'turning', startTime: 41.8, endTime: 42.2, emphasis: 'normal', pitch: 'normal' },
+      { text: 'golden', startTime: 42.3, endTime: 42.8, emphasis: 'loud', pitch: 'high' },
+      { text: '-', startTime: 42.9, endTime: 43.0, emphasis: 'normal', pitch: 'normal' },
+      { text: "that's", startTime: 43.1, endTime: 43.4, emphasis: 'loud', pitch: 'normal' },
+      { text: 'our', startTime: 43.5, endTime: 43.7, emphasis: 'loud', pitch: 'normal' },
+      { text: 'moment!', startTime: 43.8, endTime: 44.0, emphasis: 'loud', pitch: 'high' }
     ]
   }
 ];
