@@ -4,19 +4,38 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
+import { AudioDescription } from './AudioDescription';
+
+interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface ASLOption {
+  id: string;
+  name: string;
+  description: string;
+}
 
 interface AxessiblePlayerProps {
   videoSrc: string;
   posterSrc?: string;
   title: string;
   className?: string;
+  selectedVoice?: VoiceOption;
+  selectedASLAvatar?: ASLOption;
+  contentType?: 'recipe' | 'education';
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   videoSrc,
   posterSrc,
   title,
-  className = ""
+  className = "",
+  selectedVoice,
+  selectedASLAvatar,
+  contentType = 'recipe'
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -113,14 +132,63 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         aria-label={`Video: ${title}`}
       />
 
-      {/* ASL Avatar Overlay */}
+      {/* Enhanced ASL Avatar Overlay */}
       {showASL && (
-        <div className="absolute top-4 right-4 w-32 h-32 bg-black/30 rounded-lg border-2 border-primary/50 backdrop-blur-sm">
-          <div className="w-full h-full flex items-center justify-center text-primary-foreground text-xs">
-            <HandHelping className="w-8 h-8 animate-pulse" />
-          </div>
-          <div className="absolute bottom-1 left-1 right-1 text-center text-xs text-primary-foreground font-medium">
-            ASL Avatar
+        <div className="absolute top-4 right-4 w-40 h-40 bg-black/20 rounded-xl border-2 border-primary/30 backdrop-blur-sm overflow-hidden">
+          <div className="w-full h-full relative">
+            {/* Avatar Character Display */}
+            <div className="absolute inset-2 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex flex-col items-center justify-center">
+              {contentType === 'recipe' ? (
+                selectedASLAvatar?.id === 'chef-avatar' ? (
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-cwi-main-orange/20 rounded-full flex items-center justify-center mb-2">
+                      <span className="text-2xl">👨‍🍳</span>
+                    </div>
+                    <div className="text-xs text-white font-medium">Chef Avatar</div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-cwi-main-blue/20 rounded-full flex items-center justify-center mb-2">
+                      <span className="text-2xl">👩‍🏫</span>
+                    </div>
+                    <div className="text-xs text-white font-medium">Food Expert</div>
+                  </div>
+                )
+              ) : (
+                selectedASLAvatar?.id === 'superhero-captain' ? (
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-cwi-main-yellow/20 rounded-full flex items-center justify-center mb-2">
+                      <span className="text-2xl">🦸‍♂️</span>
+                    </div>
+                    <div className="text-xs text-white font-medium">Captain Wonder</div>
+                  </div>
+                ) : selectedASLAvatar?.id === 'superhero-star' ? (
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-cwi-main-purple/20 rounded-full flex items-center justify-center mb-2">
+                      <span className="text-2xl">🌟</span>
+                    </div>
+                    <div className="text-xs text-white font-medium">Star Guardian</div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-cwi-main-green/20 rounded-full flex items-center justify-center mb-2">
+                      <span className="text-2xl">👩‍🏫</span>
+                    </div>
+                    <div className="text-xs text-white font-medium">Teacher Maya</div>
+                  </div>
+                )
+              )}
+              
+              {/* Signing Animation Indicator */}
+              <div className="absolute bottom-1 right-1">
+                <HandHelping className="w-4 h-4 text-primary animate-pulse" />
+              </div>
+            </div>
+            
+            {/* Live indicator */}
+            <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              LIVE
+            </div>
           </div>
         </div>
       )}
@@ -130,6 +198,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         <CaptionsWithIntention 
           currentTime={currentTime}
           isPlaying={isPlaying}
+          contentType={contentType}
+        />
+      )}
+
+      {/* Audio Description */}
+      {showAudioDescription && (
+        <AudioDescription
+          currentTime={currentTime}
+          isPlaying={isPlaying}
+          contentType={contentType}
+          selectedVoice={selectedVoice}
         />
       )}
 
