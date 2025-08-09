@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.generate-ad]
 verify_jwt = false
+
+[functions.prompt-to-video]
+verify_jwt = false

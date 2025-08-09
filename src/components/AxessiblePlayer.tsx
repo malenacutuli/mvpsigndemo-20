@@ -29,6 +29,7 @@ interface AxessiblePlayerProps {
   selectedVoice?: VoiceOption;
   selectedASLAvatar?: ASLOption;
   contentType?: 'recipe' | 'education';
+  initialCaptions?: CaptionSegment[]; // Optional pre-generated captions
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -38,7 +39,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   className = "",
   selectedVoice,
   selectedASLAvatar,
-  contentType = 'recipe'
+  contentType = 'recipe',
+  initialCaptions,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -82,6 +84,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       video.removeEventListener('loadedmetadata', updateDuration);
     };
   }, []);
+
+  // If initial captions are provided, hydrate once
+  useEffect(() => {
+    if (initialCaptions && (!generatedCaptions || generatedCaptions.length === 0)) {
+      setGeneratedCaptions(initialCaptions);
+    }
+  }, [initialCaptions]);
 
   const togglePlay = () => {
     const video = videoRef.current;
