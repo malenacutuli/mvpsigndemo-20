@@ -45,7 +45,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [showASL, setShowASL] = useState(false);
-  const [showAudioDescription, setShowAudioDescription] = useState(false);
+  const [showAudioDescription, setShowAudioDescription] = useState(true);
   const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+// Using ElevenLabs via Supabase Edge Function proxy for secure TTS
 
 interface AudioDescriptionProps {
   currentTime: number;
@@ -89,6 +90,23 @@ const educationDescriptions: AudioDescription[] = [
   }
 ];
 
+// ElevenLabs voice mapping for demo profiles
+const elevenVoices: Record<string, string> = {
+  // Recipe voices
+  'gordon-ramsay': 'nPczCjzI2devNBz1zQrb', // Brian
+  'julia-child': '9BWtsMINqrJLrRacOk9x',   // Aria
+  'anthony-bourdain': 'JBFqnCBsd6RMkjVDRZzb', // George
+  // Education voices
+  'selena-gomez': 'EXAVITQu4vr4xnSDxMaL',  // Sarah
+  'emma-stone': 'FGY2WhTYpPnrIDTdsKH5',    // Laura
+  'zendaya': 'XB0fDUnXU5powFXDhCwa',       // Charlotte
+};
+
+const defaultVoiceByContent: Record<'recipe' | 'education', string> = {
+  recipe: 'nPczCjzI2devNBz1zQrb', // Brian
+  education: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+};
+
 export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   currentTime,
   isPlaying,
@@ -98,31 +116,74 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
   const [descriptionAudio, setDescriptionAudio] = useState<HTMLAudioElement | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
+  // Helper to resolve ElevenLabs voice id
+  const resolveVoiceId = () => {
+    if (selectedVoice?.id && elevenVoices[selectedVoice.id]) return elevenVoices[selectedVoice.id];
+    return defaultVoiceByContent[contentType];
+  };
+
+  // Track which segment is active for UI state
   useEffect(() => {
-    if (!isPlaying) return;
-
-    // Select appropriate descriptions
     const descriptions = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
-    
-    // Find current description
-    const description = descriptions.find(
-      desc => currentTime >= desc.startTime && currentTime <= desc.endTime
-    );
+    const description = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime) || null;
+    setCurrentDescription(description);
+  }, [currentTime, contentType]);
 
-    if (description && description !== currentDescription) {
-      setCurrentDescription(description);
-      setIsDescriptionPlaying(true);
-      
-      // Simulate audio description playback
-      setTimeout(() => {
-        setIsDescriptionPlaying(false);
-      }, (description.endTime - description.startTime) * 1000);
-    } else if (!description) {
-      setCurrentDescription(null);
+  // Generate and play TTS for the current segment
+  useEffect(() => {
+    if (!isPlaying) {
+      if (descriptionAudio && !descriptionAudio.paused) descriptionAudio.pause();
       setIsDescriptionPlaying(false);
+      return;
     }
-  }, [currentTime, isPlaying, contentType, currentDescription]);
+    if (!currentDescription) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setIsGenerating(true);
+        setGenError(null);
+        const voiceId = resolveVoiceId();
+        const res = await fetch('/functions/v1/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: currentDescription.text, voiceId, modelId: 'eleven_turbo_v2_5' })
+        });
+        if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+        const blob = await res.blob();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        if (descriptionAudio) {
+          try {
+            descriptionAudio.pause();
+            descriptionAudio.currentTime = 0;
+          } catch {}
+        }
+        const audio = new Audio(url);
+        audio.onended = () => {
+          setIsDescriptionPlaying(false);
+          URL.revokeObjectURL(url);
+        };
+        audio.volume = 0.85;
+        setDescriptionAudio(audio);
+        setIsDescriptionPlaying(true);
+        await audio.play().catch(() => {/* autoplay policies */});
+      } catch (e: any) {
+        setGenError(e.message || 'Failed to generate audio');
+        setIsDescriptionPlaying(false);
+      } finally {
+        setIsGenerating(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDescription, isPlaying, selectedVoice, contentType]);
 
   if (!currentDescription) return null;
 
@@ -150,10 +211,16 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
           <Badge variant="secondary" className="text-xs">
             Audio Description
           </Badge>
-          {isDescriptionPlaying && (
+          {isDescriptionPlaying && !isGenerating && (
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
               <span className="text-xs text-red-400">LIVE</span>
+            </div>
+          )}
+          {isGenerating && (
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-yellow-400">Generating…</span>
             </div>
           )}
         </div>
@@ -174,24 +241,24 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
         }`}>
           "{currentDescription.text}"
         </div>
+        {genError && (
+          <div className="text-xs text-destructive mt-2">{genError}</div>
+        )}
 
         {/* Timing Info */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
           <span className="text-xs text-muted-foreground">
             {currentDescription.startTime}s - {currentDescription.endTime}s
           </span>
-          {contentType === 'recipe' && (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-cwi-main-orange">🔥</span>
-              <span className="text-xs text-muted-foreground">Gordon Style</span>
-            </div>
-          )}
-          {contentType === 'education' && (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-cwi-main-yellow">⭐</span>
-              <span className="text-xs text-muted-foreground">Warm & Safe</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {contentType === 'recipe' && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-cwi-main-orange">🔥</span>
+                <span className="text-xs text-muted-foreground">Gordon Style</span>
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground">Voice: {selectedVoice ? selectedVoice.name : 'Default'}</span>
+          </div>
         </div>
       </div>
     </div>
