@@ -13,6 +13,8 @@ interface AudioDescriptionProps {
     name: string;
     description: string;
   };
+  // Optional: dynamically generated descriptions (e.g., from transcript)
+  dynamicDescriptions?: AudioDescription[];
 }
 
 interface AudioDescription {
@@ -111,7 +113,8 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   currentTime,
   isPlaying,
   contentType = 'recipe',
-  selectedVoice
+  selectedVoice,
+  dynamicDescriptions,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
@@ -125,12 +128,13 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-  // Track which segment is active for UI state
-  useEffect(() => {
-    const descriptions = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
-    const description = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime) || null;
-    setCurrentDescription(description);
-  }, [currentTime, contentType]);
+// Track which segment is active for UI state
+useEffect(() => {
+  const base = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
+  const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) ? dynamicDescriptions : base;
+  const description = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime) || null;
+  setCurrentDescription(description);
+}, [currentTime, contentType, dynamicDescriptions]);
 
   // Generate and play TTS for the current segment
   useEffect(() => {

@@ -52,6 +52,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generatedCaptions, setGeneratedCaptions] = useState<CaptionSegment[] | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
+  const [dynamicADEnabled, setDynamicADEnabled] = useState(false);
+  const [generatedAD, setGeneratedAD] = useState<Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> | null>(null);
+  const [isGeneratingAD, setIsGeneratingAD] = useState(false);
+  const [generateADError, setGenerateADError] = useState<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -158,6 +162,41 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       setTranscribeError(e.message || 'Failed to generate captions');
     } finally {
       setIsTranscribing(false);
+    }
+  };
+
+  // Toggle and generate Dynamic Audio Description from AI
+  const handleToggleDynamicAD = async () => {
+    if (contentType !== 'education') return;
+    const enable = !dynamicADEnabled;
+    setDynamicADEnabled(enable);
+
+    if (enable && !generatedAD) {
+      if (!generatedCaptions || generatedCaptions.length === 0) {
+        setGenerateADError('Generate AI captions first.');
+        return;
+      }
+      try {
+        setIsGeneratingAD(true);
+        setGenerateADError(null);
+        const payload = {
+          contentType,
+          segments: generatedCaptions.map(seg => ({
+            text: seg.text,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+          })),
+        };
+        const { data, error } = await supabase.functions.invoke('generate-ad', { body: payload });
+        if (error) throw new Error(error.message || 'AD generation failed');
+        const descs = (data as any)?.descriptions || [];
+        setGeneratedAD(descs);
+      } catch (e: any) {
+        setGenerateADError(e.message || 'Failed to generate AD');
+        setDynamicADEnabled(false);
+      } finally {
+        setIsGeneratingAD(false);
+      }
     }
   };
 
@@ -303,6 +342,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           isPlaying={isPlaying}
           contentType={contentType}
           selectedVoice={selectedVoice}
+          dynamicDescriptions={contentType === 'education' && dynamicADEnabled && generatedAD ? generatedAD : undefined}
         />
       )}
 
@@ -374,6 +414,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             >
               <Mic className="w-4 h-4 mr-1" />
               {isTranscribing ? 'Transcribing…' : 'AI CC'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleDynamicAD}
+              aria-label={dynamicADEnabled ? 'Disable Dynamic Audio Description' : 'Enable Dynamic Audio Description'}
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-primary/30 text-primary' : ''}`}
+              disabled={contentType !== 'education' || isGeneratingAD || !generatedCaptions}
+            >
+              <Volume2 className="w-4 h-4 mr-1" />
+              {isGeneratingAD ? 'AD…' : (dynamicADEnabled ? 'Dynamic AD On' : 'Dynamic AD')}
             </Button>
             <AccessibilityControls
               showCaptions={showCaptions}
