@@ -10,6 +10,16 @@ export const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       
       <div className="container mx-auto px-6 relative z-10">
+        {/* Brand Logo */}
+        <div className="flex justify-center mb-6">
+          <img
+            src="/lovable-uploads/5c62e582-44b7-4676-a8f0-7487960bc7a9.png"
+            alt="Axessible logo – multi-modal accessible video platform"
+            className="h-12 md:h-14 w-auto"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
         <div className="max-w-4xl mx-auto text-center">
           {/* Patent Badge */}
           <Badge variant="secondary" className="mb-6 text-sm font-medium px-4 py-2">
