@@ -131,7 +131,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       setIsTranscribing(true);
       setTranscribeError(null);
       const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { videoUrl: videoSrc }
+        body: { videoUrl: videoSrc, rangeBytes: 15000000 }
       });
       if (error) throw new Error(error.message || 'Transcription failed');
       const segments = (data && (data as any).segments) || [];

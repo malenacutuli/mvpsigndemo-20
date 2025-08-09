@@ -65,7 +65,21 @@ serve(async (req) => {
     let mtype = mimeType || "audio/webm";
 
     if (videoUrl) {
-      const res = await fetch(videoUrl);
+      const { rangeBytes } = await (async () => {
+        try {
+          const body = await req.clone().json();
+          return { rangeBytes: Number(body?.rangeBytes) || 0 };
+        } catch {
+          return { rangeBytes: 0 };
+        }
+      })();
+
+      const headers: Record<string, string> = {};
+      if (rangeBytes && rangeBytes > 0) {
+        headers["Range"] = `bytes=0-${rangeBytes - 1}`;
+      }
+
+      const res = await fetch(videoUrl, { headers });
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
         return new Response(JSON.stringify({ error: "Failed to fetch videoUrl", status: res.status, details: detail }), {
