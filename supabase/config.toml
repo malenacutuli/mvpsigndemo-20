@@ -1,1 +1,7 @@
 project_id = "edjufyzwjicniycrerde"
+
+[functions.tts]
+verify_jwt = false
+
+[functions.transcribe]
+verify_jwt = false

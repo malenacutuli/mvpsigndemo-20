@@ -5,6 +5,8 @@ import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
+import { supabase } from "@/integrations/supabase/client";
+import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface VoiceOption {
   id: string;
@@ -47,6 +49,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [showASL, setShowASL] = useState(false);
   const [showAudioDescription, setShowAudioDescription] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [generatedCaptions, setGeneratedCaptions] = useState<CaptionSegment[] | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcribeError, setTranscribeError] = useState<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -115,6 +120,46 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
+
+  const handleGenerateCaptions = async () => {
+    if (contentType !== 'education') return;
+    try {
+      setIsTranscribing(true);
+      setTranscribeError(null);
+      const { data, error } = await supabase.functions.invoke('transcribe', {
+        body: { videoUrl: videoSrc }
+      });
+      if (error) throw new Error(error.message || 'Transcription failed');
+      const segments = (data && (data as any).segments) || [];
+      const mapped: CaptionSegment[] = segments.map((seg: any) => {
+        const start = Number(seg.start ?? 0);
+        const end = Number(seg.end ?? (start + 2));
+        const txt: string = String(seg.text ?? '').trim();
+        const wordsRaw = txt.length ? txt.split(/\s+/) : [];
+        const dur = Math.max(end - start, 0.001);
+        const step = wordsRaw.length ? dur / wordsRaw.length : dur;
+        const words = wordsRaw.map((w: string, i: number) => ({
+          text: w,
+          startTime: start + i * step,
+          endTime: Math.min(end, start + (i + 1) * step),
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const,
+        }));
+        return {
+          text: txt,
+          speaker: 'teacher',
+          startTime: start,
+          endTime: end,
+          words,
+        } as CaptionSegment;
+      });
+      setGeneratedCaptions(mapped);
+    } catch (e: any) {
+      setTranscribeError(e.message || 'Failed to generate captions');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   return (
     <div 
@@ -247,6 +292,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           currentTime={currentTime}
           isPlaying={isPlaying}
           contentType={contentType}
+          captionsOverride={contentType === 'education' && generatedCaptions ? generatedCaptions : undefined}
         />
       )}
 
@@ -318,6 +364,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
           {/* Right Controls */}
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGenerateCaptions}
+              aria-label="Generate captions from audio"
+              className="text-primary-foreground hover:text-primary hover:bg-primary/20"
+              disabled={isTranscribing || contentType !== 'education'}
+            >
+              <Mic className="w-4 h-4 mr-1" />
+              {isTranscribing ? 'Transcribing…' : 'AI CC'}
+            </Button>
             <AccessibilityControls
               showCaptions={showCaptions}
               showASL={showASL}

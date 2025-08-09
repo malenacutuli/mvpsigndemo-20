@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-interface CaptionSegment {
+export interface CaptionSegment {
   text: string;
   speaker: 'chef' | 'narrator' | 'child' | 'teacher' | 'hero';
   startTime: number;
@@ -18,6 +18,7 @@ interface CaptionsWithIntentionProps {
   currentTime: number;
   isPlaying: boolean;
   contentType?: 'recipe' | 'education';
+  captionsOverride?: CaptionSegment[];
 }
 
 // Demo captions for realistic pasta recipe content with Gordon Ramsay-style passion
@@ -227,7 +228,8 @@ const educationCaptions: CaptionSegment[] = [
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   currentTime,
   isPlaying,
-  contentType = 'recipe'
+  contentType = 'recipe',
+  captionsOverride
 }) => {
   const [currentCaption, setCurrentCaption] = useState<CaptionSegment | null>(null);
   const [activeWordIndex, setActiveWordIndex] = useState(-1);
@@ -235,8 +237,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   useEffect(() => {
     if (!isPlaying) return;
 
-    // Select the appropriate captions based on content type
-    const captions = contentType === 'recipe' ? recipeCaptions : educationCaptions;
+    // Select captions: use override if provided
+    const captions = captionsOverride && captionsOverride.length > 0
+      ? captionsOverride
+      : (contentType === 'recipe' ? recipeCaptions : educationCaptions);
 
     // Find current caption
     const caption = captions.find(
@@ -255,7 +259,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       setCurrentCaption(null);
       setActiveWordIndex(-1);
     }
-  }, [currentTime, isPlaying, contentType]);
+  }, [currentTime, isPlaying, contentType, captionsOverride]);
 
   if (!currentCaption) return null;
 
