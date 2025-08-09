@@ -126,7 +126,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
   const handleGenerateCaptions = async () => {
-    if (contentType !== 'education') return;
     try {
       setIsTranscribing(true);
       setTranscribeError(null);
@@ -167,7 +166,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {
-    if (contentType !== 'education') return;
     const enable = !dynamicADEnabled;
     setDynamicADEnabled(enable);
 
@@ -331,7 +329,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           currentTime={currentTime}
           isPlaying={isPlaying}
           contentType={contentType}
-          captionsOverride={contentType === 'education' && generatedCaptions ? generatedCaptions : undefined}
+          captionsOverride={generatedCaptions ?? undefined}
         />
       )}
 
@@ -342,7 +340,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           isPlaying={isPlaying}
           contentType={contentType}
           selectedVoice={selectedVoice}
-          dynamicDescriptions={contentType === 'education' && dynamicADEnabled && generatedAD ? generatedAD : undefined}
+          dynamicDescriptions={dynamicADEnabled && generatedAD ? generatedAD : undefined}
         />
       )}
 
@@ -410,7 +408,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               onClick={handleGenerateCaptions}
               aria-label="Generate captions from audio"
               className="text-primary-foreground hover:text-primary hover:bg-primary/20"
-              disabled={isTranscribing || contentType !== 'education'}
+              disabled={isTranscribing}
             >
               <Mic className="w-4 h-4 mr-1" />
               {isTranscribing ? 'Transcribing…' : 'AI CC'}
@@ -421,7 +419,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               onClick={handleToggleDynamicAD}
               aria-label={dynamicADEnabled ? 'Disable Dynamic Audio Description' : 'Enable Dynamic Audio Description'}
               className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-primary/30 text-primary' : ''}`}
-              disabled={contentType !== 'education' || isGeneratingAD || !generatedCaptions}
+              disabled={isGeneratingAD || !generatedCaptions}
             >
               <Volume2 className="w-4 h-4 mr-1" />
               {isGeneratingAD ? 'AD…' : (dynamicADEnabled ? 'Dynamic AD On' : 'Dynamic AD')}

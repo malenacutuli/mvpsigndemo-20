@@ -127,14 +127,18 @@ const recipeCaptions: CaptionSegment[] = [
     ]
   },
   {
-    text: "[sizzling sounds intensify]",
+    text: 'Sizzling garlic slices dance in olive oil.',
     speaker: 'narrator',
     startTime: 36,
     endTime: 38,
     words: [
-      { text: '[sizzling', startTime: 36.0, endTime: 36.8, emphasis: 'loud', pitch: 'normal' },
-      { text: 'sounds', startTime: 36.9, endTime: 37.3, emphasis: 'loud', pitch: 'normal' },
-      { text: 'intensify]', startTime: 37.4, endTime: 38.0, emphasis: 'loud', pitch: 'normal' }
+      { text: 'Sizzling', startTime: 36.0, endTime: 36.8, emphasis: 'loud', pitch: 'normal' },
+      { text: 'garlic', startTime: 36.9, endTime: 37.2, emphasis: 'loud', pitch: 'normal' },
+      { text: 'slices', startTime: 37.2, endTime: 37.5, emphasis: 'loud', pitch: 'normal' },
+      { text: 'dance', startTime: 37.5, endTime: 37.8, emphasis: 'loud', pitch: 'normal' },
+      { text: 'in', startTime: 37.8, endTime: 37.9, emphasis: 'normal', pitch: 'normal' },
+      { text: 'olive', startTime: 37.9, endTime: 38.1, emphasis: 'normal', pitch: 'normal' },
+      { text: 'oil.', startTime: 38.1, endTime: 38.6, emphasis: 'normal', pitch: 'normal' }
     ]
   },
   {
