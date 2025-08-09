@@ -38,7 +38,7 @@ export const DemoSection: React.FC = () => {
     education: {
       title: "Superhero Science Adventures",
       description: "Warm, engaging voice descriptions with child-friendly ASL avatars for educational content",
-      videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      videoSrc: "https://spaceplace.nasa.gov/review/black-holes/what-is-a-black-hole_1920x1080.mp4",
       duration: "2:45",
       features: [
         "Selena Gomez-inspired warm narration",
