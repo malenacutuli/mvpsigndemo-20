@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
+import { ASLAvatar } from './ASLAvatar';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -56,6 +57,15 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generatedAD, setGeneratedAD] = useState<Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> | null>(null);
   const [isGeneratingAD, setIsGeneratingAD] = useState(false);
   const [generateADError, setGenerateADError] = useState<string | null>(null);
+
+  const activeCaption = useMemo(() => {
+    if (!generatedCaptions || generatedCaptions.length === 0) return null;
+    return (
+      generatedCaptions.find(
+        (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
+      ) || null
+    );
+  }, [generatedCaptions, currentTime]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -214,114 +224,15 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         aria-label={`Video: ${title}`}
       />
 
-      {/* Enhanced ASL Avatar Overlay */}
+      {/* ASL Avatar Overlay */}
       {showASL && (
-        <div className="absolute top-4 right-4 w-40 h-40 bg-black/20 rounded-xl border-2 border-primary/30 backdrop-blur-sm overflow-hidden">
-          <div className="w-full h-full relative">
-            {/* Avatar Character Display */}
-            <div className="absolute inset-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex flex-col items-center justify-center backdrop-blur-sm">
-              {/* Enhanced ASL Avatar with realistic animations */}
-              {contentType === 'recipe' ? (
-                selectedASLAvatar?.id === 'chef-avatar' ? (
-                  <div className="text-center relative">
-                    {/* Chef Avatar with cooking gestures */}
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-orange-500/30 to-red-500/30 rounded-full flex items-center justify-center mb-2 border-2 border-orange-400/50">
-                      <div className="absolute inset-0 bg-orange-400/20 rounded-full animate-pulse"></div>
-                      <span className="text-3xl relative z-10">👨‍🍳</span>
-                      {/* Cooking gesture indicators */}
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center animate-bounce">
-                        <span className="text-xs">🍳</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-orange-300 font-semibold">Chef Marcel</div>
-                    <div className="text-xs text-white/80">Culinary ASL Expert</div>
-                    
-                    {/* Live cooking signs indicator */}
-                    <div className="mt-2 flex items-center justify-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse"></div>
-                      <span className="text-xs text-orange-300">Signing: "PASTA"</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center relative">
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500/30 to-cyan-500/30 rounded-full flex items-center justify-center mb-2 border-2 border-blue-400/50">
-                      <div className="absolute inset-0 bg-blue-400/20 rounded-full animate-pulse"></div>
-                      <span className="text-3xl relative z-10">👩‍🏫</span>
-                    </div>
-                    <div className="text-xs text-blue-300 font-semibold">Chef Isabella</div>
-                    <div className="text-xs text-white/80">Food Expert ASL</div>
-                  </div>
-                )
-              ) : (
-                selectedASLAvatar?.id === 'superhero-captain' ? (
-                  <div className="text-center relative">
-                    {/* Captain Wonder with superhero powers */}
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-blue-600/40 to-cyan-500/40 rounded-full flex items-center justify-center mb-2 border-2 border-blue-400/60">
-                      <div className="absolute inset-0 bg-blue-400/30 rounded-full animate-pulse"></div>
-                      <span className="text-3xl relative z-10">🦸‍♂️</span>
-                      {/* Power indicator */}
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-spin">
-                        <span className="text-xs">⚡</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-blue-300 font-semibold">Captain Wonder</div>
-                    <div className="text-xs text-white/80">Science Hero ASL</div>
-                    
-                    {/* Live educational signs */}
-                    <div className="mt-2 flex items-center justify-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                      <span className="text-xs text-blue-300">Signing: "GRAVITY"</span>
-                    </div>
-                  </div>
-                ) : selectedASLAvatar?.id === 'superhero-star' ? (
-                  <div className="text-center relative">
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-yellow-500/40 to-orange-500/40 rounded-full flex items-center justify-center mb-2 border-2 border-yellow-400/60">
-                      <div className="absolute inset-0 bg-yellow-400/30 rounded-full animate-pulse"></div>
-                      <span className="text-3xl relative z-10">🌟</span>
-                      {/* Magic sparkles */}
-                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center animate-ping">
-                        <span className="text-xs">✨</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-yellow-300 font-semibold">Star Guardian</div>
-                    <div className="text-xs text-white/80">Magic Learning ASL</div>
-                  </div>
-                ) : (
-                  <div className="text-center relative">
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-green-500/40 to-emerald-500/40 rounded-full flex items-center justify-center mb-2 border-2 border-green-400/60">
-                      <div className="absolute inset-0 bg-green-400/30 rounded-full animate-pulse"></div>
-                      <span className="text-3xl relative z-10">👩‍🏫</span>
-                    </div>
-                    <div className="text-xs text-green-300 font-semibold">Teacher Maya</div>
-                    <div className="text-xs text-white/80">Educational ASL</div>
-                  </div>
-                )
-              )}
-              
-              {/* Enhanced Signing Animation with realistic movements */}
-              <div className="absolute bottom-1 right-1 flex items-center gap-1">
-                <HandHelping className="w-4 h-4 text-primary animate-bounce" />
-                <div className="flex space-x-1">
-                  <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
-                  <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                </div>
-              </div>
-              
-              {/* Live signing indicator */}
-              <div className="absolute top-1 left-1 bg-red-500/90 text-white text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
-                LIVE
-              </div>
-              
-              {/* Signing accuracy indicator */}
-              <div className="absolute top-1 right-1 bg-green-500/80 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                99.2%
-              </div>
-            </div>
-          </div>
-        </div>
+        <ASLAvatar
+          contentType={contentType}
+          selectedASLAvatar={selectedASLAvatar}
+          currentCaption={activeCaption}
+        />
       )}
+
 
       {/* Captions with Intention */}
       {showCaptions && (
