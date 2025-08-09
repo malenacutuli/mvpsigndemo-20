@@ -318,10 +318,6 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     <div className="absolute bottom-20 left-0 right-0 px-8">
       {/* CWI Captions Box - 90% black background */}
       <div className="bg-black/90 rounded-lg p-4 mx-auto max-w-4xl">
-        {/* Read-ahead text (90% opacity white) */}
-        <div className="text-white/90 text-2xl font-roboto-flex leading-relaxed mb-2">
-          {currentCaption.text}
-        </div>
         
         {/* Dynamic colored text with word-by-word sync */}
         <div className="font-roboto-flex leading-relaxed">

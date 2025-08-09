@@ -37,14 +37,18 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
         {/* Video avatar (falls back to helper panel if missing) */}
         {clip ? (
           <video
-            src={clip}
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
             muted
             loop
             playsInline
             aria-label="ASL Chef Avatar"
-          />
+          >
+            <source src={clip} type="video/mp4" />
+            <source src={clip.replace('.mp4', '.webm')} type="video/webm" />
+            <source src={clip.replace('.mp4', '.ogv')} type="video/ogg" />
+            Sorry, your browser doesn't support embedded videos.
+          </video>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center px-3">
