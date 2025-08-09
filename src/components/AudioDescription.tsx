@@ -152,9 +152,13 @@ useEffect(() => {
         setIsGenerating(true);
         setGenError(null);
         const voiceId = resolveVoiceId();
-        const res = await fetch('/functions/v1/tts', {
+        const res = await fetch('https://edjufyzwjicniycrerde.supabase.co/functions/v1/tts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkanVmeXp3amljbml5Y3JlcmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzYzMzEsImV4cCI6MjA2OTc1MjMzMX0.-M924wPgC6EWDQmf2EHNZsl_unKlnga1n6qfv9FyDIE',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkanVmeXp3amljbml5Y3JlcmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzYzMzEsImV4cCI6MjA2OTc1MjMzMX0.-M924wPgC6EWDQmf2EHNZsl_unKlnga1n6qfv9FyDIE'
+          },
           body: JSON.stringify({ text: currentDescription.text, voiceId, modelId: 'eleven_turbo_v2_5' })
         });
         if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
