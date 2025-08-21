@@ -70,24 +70,162 @@ const recipeDescriptions: AudioDescription[] = [
   }
 ];
 
-// Audio descriptions for educational content
+// Audio descriptions for educational content (Spanish Elmo)
 const educationDescriptions: AudioDescription[] = [
   {
-    text: "Our classroom transforms into a magical science laboratory, filled with wonder and discovery.",
-    startTime: 0.5,
-    endTime: 4,
+    text: "Una gallina cruza la pantalla.",
+    startTime: 29.10,
+    endTime: 30.60,
     voiceStyle: 'warm'
   },
   {
-    text: "Captain Wonder appears with a friendly smile, his cape gently flowing as he prepares to teach us about gravity.",
-    startTime: 6,
-    endTime: 11,
+    text: "Elmo sostiene su teléfono y llama a Smarty.",
+    startTime: 42.00,
+    endTime: 44.00,
     voiceStyle: 'encouraging'
   },
   {
-    text: "The children's eyes light up with understanding as they see gravity in action through Captain Wonder's demonstration.",
-    startTime: 18,
-    endTime: 24,
+    text: "Se abre la puerta del autobús.",
+    startTime: 56.80,
+    endTime: 57.40,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "El autobús arranca suavemente.",
+    startTime: 62.90,
+    endTime: 63.60,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Vemos la ciudad mientras el autobús avanza.",
+    startTime: 70.20,
+    endTime: 71.80,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Aparece un mapa sencillo de la ruta.",
+    startTime: 76.90,
+    endTime: 77.90,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "El autobús se detiene en la parada.",
+    startTime: 84.85,
+    endTime: 85.40,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Un pasajero pulsa el timbre de parada.",
+    startTime: 91.60,
+    endTime: 92.10,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "El autobús se aleja por la calle.",
+    startTime: 105.80,
+    endTime: 107.40,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Smarty se despide con un gesto.",
+    startTime: 119.60,
+    endTime: 120.10,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Elmo mira a cámara, pensativo.",
+    startTime: 126.00,
+    endTime: 127.20,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Se le ocurre una idea y sonríe.",
+    startTime: 129.80,
+    endTime: 130.60,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Aparece un semáforo grande en pantalla.",
+    startTime: 135.60,
+    endTime: 137.40,
+    voiceStyle: 'authoritative'
+  },
+  {
+    text: "La luz cambia a verde.",
+    startTime: 166.60,
+    endTime: 167.80,
+    voiceStyle: 'authoritative'
+  },
+  {
+    text: "La escuela aparece al fondo.",
+    startTime: 177.40,
+    endTime: 178.30,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Elmo celebra con entusiasmo.",
+    startTime: 182.50,
+    endTime: 183.10,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Entra el Sr. Noodle en escena.",
+    startTime: 200.20,
+    endTime: 200.80,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "El Sr. Noodle saluda con energía.",
+    startTime: 201.95,
+    endTime: 203.50,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Aparece la Srta. Noodle.",
+    startTime: 206.00,
+    endTime: 207.10,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "La Srta. Noodle sube al autobús.",
+    startTime: 212.40,
+    endTime: 214.20,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Busca los controles para conducir.",
+    startTime: 221.10,
+    endTime: 222.90,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Hace un gesto exagerado como si convocara un autobús.",
+    startTime: 225.60,
+    endTime: 227.80,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Se sienta como pasajera, no conductora.",
+    startTime: 232.40,
+    endTime: 233.90,
+    voiceStyle: 'authoritative'
+  },
+  {
+    text: "El autobús avanza entre edificios.",
+    startTime: 252.80,
+    endTime: 253.90,
+    voiceStyle: 'warm'
+  },
+  {
+    text: "Elmo baila contento.",
+    startTime: 260.00,
+    endTime: 262.50,
+    voiceStyle: 'encouraging'
+  },
+  {
+    text: "Elmo se despide con la mano.",
+    startTime: 274.40,
+    endTime: 276.10,
     voiceStyle: 'warm'
   }
 ];
@@ -128,12 +266,32 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-// Track which segment is active for UI state
+// Track which segment is active for UI state with overlap prevention
 useEffect(() => {
   const base = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
   const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) ? dynamicDescriptions : base;
-  const description = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime) || null;
-  setCurrentDescription(description);
+  
+  // Find potential AD that matches current time
+  const potentialDescription = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime);
+  
+  // Check for overlap with captions if we have Spanish Elmo data
+  if (potentialDescription && contentType === 'education') {
+    // Import captions data to check for conflicts
+    import('@/data/spanishElmoCaptions').then(({ spanishElmoCaptions }) => {
+      const hasOverlap = spanishElmoCaptions.some(caption => 
+        (currentTime >= caption.startTime && currentTime <= caption.endTime) ||
+        (potentialDescription.startTime < caption.endTime && potentialDescription.endTime > caption.startTime)
+      );
+      
+      // Only set description if no overlap with voice-over
+      setCurrentDescription(hasOverlap ? null : potentialDescription);
+    }).catch(() => {
+      // Fallback if captions can't be loaded
+      setCurrentDescription(potentialDescription);
+    });
+  } else {
+    setCurrentDescription(potentialDescription);
+  }
 }, [currentTime, contentType, dynamicDescriptions]);
 
   // Generate and play TTS for the current segment
