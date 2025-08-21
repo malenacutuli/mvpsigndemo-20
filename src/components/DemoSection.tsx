@@ -13,15 +13,15 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Cooking Demo Experience",
-      description: "Interactive cooking demonstration with accessibility features—ASL interpretation and dynamic captions",
-      videoSrc: "/videos/w3schools-sample.mp4",
-      duration: "0:30",
+      title: "Fried Chicken Recipe Tutorial",
+      description: "Learn how to make crispy fried chicken with step-by-step instructions—plus ASL and dynamic captions",
+      videoSrc: "/videos/fried-chicken-recipe.mp4",
+      duration: "1:03",
       features: [
         "Gordon Ramsay-style passionate cooking instruction",
-        "Detailed pasta technique breakdowns", 
+        "Detailed fried chicken technique breakdowns", 
         "Professional chef character (Orange CWI attribution)",
-        "Live kitchen sound visualization (sizzling, boiling)",
+        "Live kitchen sound visualization (sizzling, frying)",
         "Culinary terminology with emphasis markers",
         "Adult-focused professional ASL chef avatar"
       ],
