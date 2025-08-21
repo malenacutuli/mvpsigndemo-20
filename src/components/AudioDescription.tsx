@@ -338,8 +338,12 @@ useEffect(() => {
         audio.volume = 0.85;
         setDescriptionAudio(audio);
         setIsDescriptionPlaying(true);
-        await audio.play().catch(() => {/* autoplay policies */});
+        await audio.play().catch((error) => {
+          console.error('Audio playback failed:', error);
+          setGenError(`Audio playback failed: ${error.message}`);
+        });
       } catch (e: any) {
+        console.error('TTS generation failed:', e);
         setGenError(e.message || 'Failed to generate audio');
         setIsDescriptionPlaying(false);
       } finally {
