@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export interface CaptionSegment {
   text: string;
-  speaker: 'chef' | 'narrator' | 'child' | 'teacher' | 'hero';
+  speaker: 'chef' | 'narrator' | 'child' | 'teacher' | 'hero' | 'Elmo' | 'Smarty';
   startTime: number;
   endTime: number;
   words: Array<{
@@ -2100,70 +2100,104 @@ const recipeCaptions: CaptionSegment[] = [
   }
 ];
 
-// Demo captions for educational content with warm, engaging narration
+// Demo captions for educational content with warm, engaging narration (Spanish Elmo content)
 const educationCaptions: CaptionSegment[] = [
   {
-    text: "Today we're going on an amazing science adventure!",
-    speaker: 'teacher',
-    startTime: 1,
-    endTime: 5,
+    text: "Hola. Bienvenidos a El Mundo de Elmo.",
+    speaker: 'Elmo',
+    startTime: 5.04,
+    endTime: 8.4,
     words: [
-      { text: 'Today', startTime: 1.0, endTime: 1.4, emphasis: 'normal', pitch: 'normal' },
-      { text: "we're", startTime: 1.5, endTime: 1.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'going', startTime: 1.9, endTime: 2.2, emphasis: 'normal', pitch: 'normal' },
-      { text: 'on', startTime: 2.3, endTime: 2.5, emphasis: 'normal', pitch: 'normal' },
-      { text: 'an', startTime: 2.6, endTime: 2.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'amazing', startTime: 2.9, endTime: 3.6, emphasis: 'loud', pitch: 'high' },
-      { text: 'science', startTime: 3.7, endTime: 4.2, emphasis: 'loud', pitch: 'high' },
-      { text: 'adventure!', startTime: 4.3, endTime: 5.0, emphasis: 'loud', pitch: 'high' }
+      { text: "Hola.", startTime: 5.04, endTime: 5.44, emphasis: "normal", pitch: "normal" },
+      { text: "Bienvenidos", startTime: 5.84, endTime: 6.68, emphasis: "normal", pitch: "normal" },
+      { text: "a", startTime: 6.68, endTime: 6.84, emphasis: "normal", pitch: "normal" },
+      { text: "El", startTime: 6.84, endTime: 7.0, emphasis: "normal", pitch: "normal" },
+      { text: "Mundo", startTime: 7.0, endTime: 7.28, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 7.28, endTime: 7.64, emphasis: "normal", pitch: "normal" },
+      { text: "Elmo.", startTime: 7.64, endTime: 8.4, emphasis: "normal", pitch: "normal" }
     ]
   },
   {
-    text: 'Captain Wonder, can you help us learn about gravity?',
-    speaker: 'child',
-    startTime: 7,
-    endTime: 11,
+    text: "Adivinen lo que Elmo está pensando el día de hoy.",
+    speaker: 'Elmo',
+    startTime: 8.8,
+    endTime: 12.16,
     words: [
-      { text: 'Captain', startTime: 7.0, endTime: 7.4, emphasis: 'normal', pitch: 'high' },
-      { text: 'Wonder,', startTime: 7.5, endTime: 8.0, emphasis: 'normal', pitch: 'high' },
-      { text: 'can', startTime: 8.1, endTime: 8.3, emphasis: 'normal', pitch: 'high' },
-      { text: 'you', startTime: 8.4, endTime: 8.6, emphasis: 'normal', pitch: 'high' },
-      { text: 'help', startTime: 8.7, endTime: 9.0, emphasis: 'normal', pitch: 'high' },
-      { text: 'us', startTime: 9.1, endTime: 9.3, emphasis: 'normal', pitch: 'high' },
-      { text: 'learn', startTime: 9.4, endTime: 9.8, emphasis: 'normal', pitch: 'high' },
-      { text: 'about', startTime: 9.9, endTime: 10.3, emphasis: 'normal', pitch: 'high' },
-      { text: 'gravity?', startTime: 10.4, endTime: 11.0, emphasis: 'normal', pitch: 'high' }
+      { text: "Adivinen", startTime: 8.8, endTime: 9.64, emphasis: "normal", pitch: "normal" },
+      { text: "lo", startTime: 9.64, endTime: 9.68, emphasis: "normal", pitch: "normal" },
+      { text: "que", startTime: 9.68, endTime: 9.76, emphasis: "normal", pitch: "normal" },
+      { text: "Elmo", startTime: 9.76, endTime: 10.12, emphasis: "normal", pitch: "normal" },
+      { text: "está", startTime: 10.12, endTime: 10.36, emphasis: "normal", pitch: "normal" },
+      { text: "pensando", startTime: 10.36, endTime: 11.0, emphasis: "normal", pitch: "normal" },
+      { text: "el", startTime: 11.0, endTime: 11.24, emphasis: "normal", pitch: "normal" },
+      { text: "día", startTime: 11.24, endTime: 11.48, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 11.48, endTime: 11.72, emphasis: "normal", pitch: "normal" },
+      { text: "hoy.", startTime: 11.72, endTime: 12.16, emphasis: "normal", pitch: "normal" }
     ]
   },
   {
-    text: "Of course! Gravity is the force that pulls things down.",
-    speaker: 'hero',
-    startTime: 13,
-    endTime: 17,
+    text: "Disfruten el paseo. Gallina.",
+    speaker: 'Elmo',
+    startTime: 27.32,
+    endTime: 29.0,
     words: [
-      { text: 'Of', startTime: 13.0, endTime: 13.2, emphasis: 'normal', pitch: 'low' },
-      { text: 'course!', startTime: 13.3, endTime: 13.8, emphasis: 'loud', pitch: 'normal' },
-      { text: 'Gravity', startTime: 14.0, endTime: 14.6, emphasis: 'normal', pitch: 'normal' },
-      { text: 'is', startTime: 14.7, endTime: 14.9, emphasis: 'normal', pitch: 'normal' },
-      { text: 'the', startTime: 15.0, endTime: 15.2, emphasis: 'normal', pitch: 'normal' },
-      { text: 'force', startTime: 15.3, endTime: 15.7, emphasis: 'normal', pitch: 'normal' },
-      { text: 'that', startTime: 15.8, endTime: 16.0, emphasis: 'normal', pitch: 'normal' },
-      { text: 'pulls', startTime: 16.1, endTime: 16.4, emphasis: 'normal', pitch: 'normal' },
-      { text: 'things', startTime: 16.5, endTime: 16.8, emphasis: 'normal', pitch: 'normal' },
-      { text: 'down.', startTime: 16.9, endTime: 17.0, emphasis: 'normal', pitch: 'normal' }
+      { text: "Disfruten", startTime: 27.32, endTime: 28.16, emphasis: "normal", pitch: "normal" },
+      { text: "el", startTime: 28.16, endTime: 28.28, emphasis: "normal", pitch: "normal" },
+      { text: "paseo.", startTime: 28.28, endTime: 28.52, emphasis: "normal", pitch: "normal" },
+      { text: "Gallina.", startTime: 28.52, endTime: 29.0, emphasis: "normal", pitch: "normal" }
     ]
   },
   {
-    text: 'Wow! That makes perfect sense!',
-    speaker: 'child',
-    startTime: 20,
-    endTime: 23,
+    text: "Vaya. Elmo quiere saber todo sobre los choferes de autobús.",
+    speaker: 'Elmo',
+    startTime: 33.08,
+    endTime: 39.2,
     words: [
-      { text: 'Wow!', startTime: 20.0, endTime: 20.5, emphasis: 'loud', pitch: 'high' },
-      { text: 'That', startTime: 20.7, endTime: 21.0, emphasis: 'normal', pitch: 'high' },
-      { text: 'makes', startTime: 21.1, endTime: 21.4, emphasis: 'normal', pitch: 'high' },
-      { text: 'perfect', startTime: 21.5, endTime: 22.0, emphasis: 'loud', pitch: 'high' },
-      { text: 'sense!', startTime: 22.1, endTime: 23.0, emphasis: 'loud', pitch: 'high' }
+      { text: "Vaya.", startTime: 33.08, endTime: 33.56, emphasis: "normal", pitch: "normal" },
+      { text: "Elmo", startTime: 33.56, endTime: 34.12, emphasis: "normal", pitch: "normal" },
+      { text: "quiere", startTime: 34.12, endTime: 34.48, emphasis: "normal", pitch: "normal" },
+      { text: "saber", startTime: 34.48, endTime: 34.76, emphasis: "normal", pitch: "normal" },
+      { text: "todo", startTime: 34.76, endTime: 35.0, emphasis: "normal", pitch: "normal" },
+      { text: "sobre", startTime: 35.0, endTime: 35.2, emphasis: "normal", pitch: "normal" },
+      { text: "los", startTime: 35.2, endTime: 35.36, emphasis: "normal", pitch: "normal" },
+      { text: "choferes", startTime: 35.36, endTime: 35.96, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 35.96, endTime: 36.12, emphasis: "normal", pitch: "normal" },
+      { text: "autobús.", startTime: 36.12, endTime: 36.84, emphasis: "normal", pitch: "normal" },
+      { text: "Preguntémosle", startTime: 37.16, endTime: 38.2, emphasis: "normal", pitch: "normal" },
+      { text: "a", startTime: 38.2, endTime: 38.28, emphasis: "normal", pitch: "normal" },
+      { text: "la", startTime: 38.28, endTime: 38.36, emphasis: "normal", pitch: "normal" },
+      { text: "amiga", startTime: 38.36, endTime: 38.6, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 38.6, endTime: 38.72, emphasis: "normal", pitch: "normal" },
+      { text: "Elmo,", startTime: 38.72, endTime: 39.2, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Smarty. Llamémosla juntos.",
+    speaker: 'Elmo',
+    startTime: 39.2,
+    endTime: 41.8,
+    words: [
+      { text: "Smarty.", startTime: 39.2, endTime: 40.24, emphasis: "normal", pitch: "normal" },
+      { text: "Llamémosla", startTime: 40.24, endTime: 41.24, emphasis: "normal", pitch: "normal" },
+      { text: "juntos.", startTime: 41.24, endTime: 41.8, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Esta parada es Al Mundo de Elmo. Cuidado al bajar.",
+    speaker: 'Smarty',
+    startTime: 49.32,
+    endTime: 52.44,
+    words: [
+      { text: "Esta", startTime: 49.32, endTime: 49.64, emphasis: "normal", pitch: "normal" },
+      { text: "parada", startTime: 49.64, endTime: 50.08, emphasis: "normal", pitch: "normal" },
+      { text: "es", startTime: 50.08, endTime: 50.28, emphasis: "normal", pitch: "normal" },
+      { text: "Al", startTime: 50.28, endTime: 50.52, emphasis: "normal", pitch: "normal" },
+      { text: "Mundo", startTime: 50.52, endTime: 50.76, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 50.76, endTime: 50.96, emphasis: "normal", pitch: "normal" },
+      { text: "Elmo.", startTime: 50.96, endTime: 51.52, emphasis: "normal", pitch: "normal" },
+      { text: "Cuidado", startTime: 51.52, endTime: 51.96, emphasis: "normal", pitch: "normal" },
+      { text: "al", startTime: 51.96, endTime: 52.04, emphasis: "normal", pitch: "normal" },
+      { text: "bajar.", startTime: 52.04, endTime: 52.44, emphasis: "normal", pitch: "normal" }
     ]
   }
 ];
@@ -2218,6 +2252,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         return 'cwi-main-green';
       case 'hero':
         return 'cwi-main-purple';
+      case 'Elmo':
+        return 'cwi-main-red';
+      case 'Smarty':
+        return 'cwi-main-cyan';
       default:
         return 'cwi-main-blue';
     }
@@ -2289,6 +2327,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           {currentCaption.speaker === 'child' && '👶 Child'}
           {currentCaption.speaker === 'teacher' && '👩‍🏫 Teacher'}
           {currentCaption.speaker === 'hero' && '🦸‍♂️ Captain Wonder'}
+          {currentCaption.speaker === 'Elmo' && '🧸 Elmo'}
+          {currentCaption.speaker === 'Smarty' && '🚌 Smarty'}
         </div>
       </div>
     </div>
