@@ -74,26 +74,26 @@ const recipeDescriptions: AudioDescription[] = [
 const educationDescriptions: AudioDescription[] = [
   {
     text: "Un autobus amarillo llega y cuatro gallinas se suben a el. El autobus se va.",
-    startTime: 29.10,
-    endTime: 32.60,
+    startTime: 27.10,
+    endTime: 30.60,
     voiceStyle: 'warm'
   },
   {
     text: "Elmo abre sus brazos, mira al cielo y llama a Smarty.",
-    startTime: 42.00,
-    endTime: 46.00,
+    startTime: 40.00,
+    endTime: 44.00,
     voiceStyle: 'encouraging'
   },
   {
     text: "`Un autobus azul y blanco llega rapidamente con smarty al volante`.",
-    startTime: 56.80,
-    endTime: 59.40,
+    startTime: 52.80,
+    endTime: 56.40,
     voiceStyle: 'warm'
   },
   {
     text: "El autobús se convierte en un telefono movil amarillo.",
-    startTime: 62.90,
-    endTime: 64.60,
+    startTime: 60.90,
+    endTime: 63.60,
     voiceStyle: 'warm'
   },
   {
