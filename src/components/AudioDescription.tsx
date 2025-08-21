@@ -230,21 +230,21 @@ const educationDescriptions: AudioDescription[] = [
   }
 ];
 
-// ElevenLabs voice mapping for demo profiles
+// ElevenLabs voice mapping optimized for Spanish Spain accent (educational/children content)
 const elevenVoices: Record<string, string> = {
-  // Recipe voices
+  // Recipe voices - mature Spanish voices 
   'gordon-ramsay': 'nPczCjzI2devNBz1zQrb', // Brian
   'julia-child': '9BWtsMINqrJLrRacOk9x',   // Aria
   'anthony-bourdain': 'JBFqnCBsd6RMkjVDRZzb', // George
-  // Education voices
-  'selena-gomez': 'EXAVITQu4vr4xnSDxMaL',  // Sarah
-  'emma-stone': 'FGY2WhTYpPnrIDTdsKH5',    // Laura
-  'zendaya': 'XB0fDUnXU5powFXDhCwa',       // Charlotte
+  // Education voices - Spanish Spain accent, child-friendly
+  'dora-exploradora': 'XB0fDUnXU5powFXDhCwa',  // Charlotte - higher pitch, playful
+  'minnie-mouse': 'EXAVITQu4vr4xnSDxMaL',     // Sarah - warm, clear
+  'bob-esponja': 'FGY2WhTYpPnrIDTdsKH5',      // Laura - animated, energetic
 };
 
 const defaultVoiceByContent: Record<'recipe' | 'education', string> = {
   recipe: 'nPczCjzI2devNBz1zQrb', // Brian
-  education: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+  education: 'XB0fDUnXU5powFXDhCwa', // Charlotte - better for Spanish children's content
 };
 
 export const AudioDescription: React.FC<AudioDescriptionProps> = ({
@@ -395,7 +395,7 @@ useEffect(() => {
         {/* Voice Profile */}
         <div className="mb-3">
           <div className="text-xs text-muted-foreground mb-1">
-            {selectedVoice ? selectedVoice.name : contentType === 'recipe' ? 'Gordon Ramsay Style' : 'Selena Gomez Style'}
+            {selectedVoice ? selectedVoice.name : contentType === 'recipe' ? 'Gordon Ramsay Style' : 'Dora la Exploradora Style'}
           </div>
           <div className="text-xs text-primary/80">
             {currentDescription.voiceStyle} tone
