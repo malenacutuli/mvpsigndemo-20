@@ -8,13 +8,36 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Simple keyword → clip mapping (replace URLs with your own signer assets)
+// Enhanced ASL library with diverse signers including children
 const RECIPE_ASL_CLIPS: Record<string, string> = {
-  boil: '/videos/asl/chef-boil.mp4',
-  pasta: '/videos/asl/chef-pasta.mp4',
-  garlic: '/videos/asl/chef-garlic.mp4',
-  stir: '/videos/asl/chef-stir.mp4',
-  default: '/videos/asl/chef-asl-loop.mp4',
+  // Cooking actions
+  boil: '/videos/asl/chef-boil.webm',
+  pasta: '/videos/asl/chef-pasta.webm', 
+  garlic: '/videos/asl/chef-garlic.webm',
+  stir: '/videos/asl/chef-stir.webm',
+  cook: '/videos/asl/lifeprint-cook.mp4',
+  bake: '/videos/asl/chef-bake.webm',
+  
+  // Cooking tools & ingredients
+  water: '/videos/asl/kids-water-sign.mp4',
+  timer: '/videos/asl/kids-timer-sign.mp4', 
+  pan: '/videos/asl/kids-pan-sign.mp4',
+  'olive oil': '/videos/asl/kids-oil-sign.mp4',
+  'large pan': '/videos/asl/kids-large-pan.mp4',
+  'al dente': '/videos/asl/kids-al-dente.mp4',
+  'angel pasta': '/videos/asl/kids-angel-pasta.mp4',
+  
+  // Kitchen vocabulary from educational sources
+  kitchen: '/videos/asl/startasl-kitchen.mp4',
+  food: '/videos/asl/lifeprint-food-cooking.mp4',
+  
+  // Educational content
+  learn: '/videos/asl/gallaudet-children-dictionary.mp4',
+  study: '/videos/asl/kids-study-sign.mp4',
+  
+  // Default fallbacks with diverse signers
+  default: '/videos/asl/chef-asl-loop.webm',
+  children: '/videos/asl/kids-kitchen-signs.mp4',
 };
 
 export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', selectedASLAvatar, currentCaption }) => {
