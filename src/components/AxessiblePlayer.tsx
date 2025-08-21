@@ -2,12 +2,11 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { CaptionsWithIntention } from './CaptionsWithIntention';
+import CaptionsWithIntention, { CaptionSegment } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
 import { ASLAvatar } from './ASLAvatar';
 import { supabase } from "@/integrations/supabase/client";
-import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface VoiceOption {
   id: string;
