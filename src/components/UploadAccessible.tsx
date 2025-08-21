@@ -16,8 +16,9 @@ const voiceOptions = {
     { id: "julia-child", name: "Julia Child Style", description: "Warm, encouraging" },
   ],
   education: [
-    { id: "selena-gomez", name: "Selena Gomez Style", description: "Warm, encouraging" },
-    { id: "zendaya", name: "Zendaya Style", description: "Relatable narrator" },
+    { id: "dora-exploradora", name: "Dora la Exploradora Style", description: "Warm, encouraging Spanish style" },
+    { id: "minnie-mouse", name: "Minnie Mouse Style", description: "Sweet, friendly narrator" },
+    { id: "bob-esponja", name: "Bob Esponja Style", description: "Animated, playful narrator" },
   ],
 } as const;
 

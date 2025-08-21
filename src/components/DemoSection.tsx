@@ -42,16 +42,16 @@ export const DemoSection: React.FC = () => {
       videoSrc: "https://spaceplace.nasa.gov/review/black-holes/what-is-a-black-hole_1920x1080.mp4",
       duration: "2:45",
       features: [
-        "Selena Gomez-inspired warm narration",
+        "Dora la Exploradora-inspired warm narration",
         "Child character attribution (Yellow/Green)",
         "Educational vocabulary highlighting",
-        "Safe, encouraging learning environment",
-        "Superhero ASL avatar options"
+        "Spanish Spain accent optimization",
+        "Playful, animated delivery"
       ],
       voiceOptions: [
-        { id: 'selena-gomez', name: 'Selena Gomez Style', description: 'Warm, encouraging educational voice' },
-        { id: 'emma-stone', name: 'Emma Stone Style', description: 'Friendly, approachable learning guide' },
-        { id: 'zendaya', name: 'Zendaya Style', description: 'Young, relatable educational narrator' }
+        { id: 'dora-exploradora', name: 'Dora la Exploradora Style', description: 'Warm, encouraging educational voice' },
+        { id: 'minnie-mouse', name: 'Minnie Mouse Style', description: 'Friendly, sweet learning guide' },
+        { id: 'bob-esponja', name: 'Bob Esponja Style', description: 'Young, animated educational narrator' }
       ],
       aslOptions: [
         { id: 'superhero-captain', name: 'Captain Wonder', description: 'Superhero character for science lessons' },
@@ -102,7 +102,7 @@ export const DemoSection: React.FC = () => {
               variant={selectedDemo === 'education' ? 'default' : 'ghost'}
               onClick={() => {
                 setSelectedDemo('education');
-                setSelectedVoice('selena-gomez');
+                setSelectedVoice('dora-exploradora');
                 setSelectedASLAvatar('superhero-captain');
               }}
               className="flex items-center gap-2 ml-2"

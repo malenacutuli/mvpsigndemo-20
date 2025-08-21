@@ -11,7 +11,7 @@ import { Sparkles, Clock } from "lucide-react";
 
 const VOICES = [
   { id: "gordon-ramsay", name: "Gordon Ramsay Style", description: "Passionate, authoritative" },
-  { id: "selena-gomez", name: "Selena Gomez Style", description: "Warm, encouraging" },
+  { id: "dora-exploradora", name: "Dora la Exploradora Style", description: "Warm, encouraging Spanish style" },
 ];
 
 const ASL = [
