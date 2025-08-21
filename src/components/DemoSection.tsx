@@ -13,16 +13,16 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Fried Chicken Recipe Tutorial",
-      description: "Learn how to make crispy fried chicken with step-by-step instructions—plus ASL and dynamic captions",
-      videoSrc: "/videos/fried-chicken-recipe.mp4",
-      duration: "1:03",
+      title: "Apple Pie Baking Tutorial",
+      description: "Classic apple pie recipe with clear step-by-step instructions—plus ASL and dynamic captions",
+      videoSrc: "/videos/apple-pie-recipe.mp4",
+      duration: "1:15",
       features: [
         "Gordon Ramsay-style passionate cooking instruction",
-        "Detailed fried chicken technique breakdowns", 
+        "Detailed baking technique breakdowns", 
         "Professional chef character (Orange CWI attribution)",
-        "Live kitchen sound visualization (sizzling, frying)",
-        "Culinary terminology with emphasis markers",
+        "Clear narration without background music",
+        "Baking terminology with emphasis markers",
         "Adult-focused professional ASL chef avatar"
       ],
       voiceOptions: [
