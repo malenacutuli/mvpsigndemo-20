@@ -85,7 +85,7 @@ const educationDescriptions: AudioDescription[] = [
     voiceStyle: 'encouraging'
   },
   {
-    text: "`Un autobus azul y blanco llega rapidamente con smarty al volante`.",
+    text: "Un autobus azul y blanco llega rapidamente con smarty al volante.",
     startTime: 52.80,
     endTime: 56.40,
     voiceStyle: 'warm'
