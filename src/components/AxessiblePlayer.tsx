@@ -261,6 +261,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           contentType={contentType}
           selectedVoice={selectedVoice}
           dynamicDescriptions={dynamicADEnabled && generatedAD ? generatedAD : undefined}
+          enabled={dynamicADEnabled}
         />
       )}
 

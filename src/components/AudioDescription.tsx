@@ -15,6 +15,8 @@ interface AudioDescriptionProps {
   };
   // Optional: dynamically generated descriptions (e.g., from transcript)
   dynamicDescriptions?: AudioDescription[];
+  // Controls if audio descriptions should actually play audio
+  enabled?: boolean;
 }
 
 interface AudioDescription {
@@ -115,6 +117,7 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   contentType = 'recipe',
   selectedVoice,
   dynamicDescriptions,
+  enabled = true,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
@@ -138,9 +141,12 @@ useEffect(() => {
 
   // Generate and play TTS for the current segment
   useEffect(() => {
-    if (!isPlaying) {
-      if (descriptionAudio && !descriptionAudio.paused) descriptionAudio.pause();
-      setIsDescriptionPlaying(false);
+    // Stop audio if not enabled
+    if (!enabled || !isPlaying) {
+      if (descriptionAudio && !descriptionAudio.paused) {
+        descriptionAudio.pause();
+        setIsDescriptionPlaying(false);
+      }
       return;
     }
     if (!currentDescription) return;
@@ -191,7 +197,7 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [currentDescription, isPlaying, selectedVoice, contentType]);
+  }, [currentDescription, isPlaying, selectedVoice, contentType, enabled]);
 
   if (!currentDescription) return null;
 
