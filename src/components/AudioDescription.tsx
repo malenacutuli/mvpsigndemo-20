@@ -31,7 +31,7 @@ const recipeDescriptions: AudioDescription[] = [
   {
     text: "Chef Gordon stands before a gleaming stainless steel stove, his intense gaze focused on a large pot of water beginning to bubble. The kitchen is immaculate, every tool in its place.",
     startTime: 0.0,
-    endTime: 7
+    endTime: 7,
     voiceStyle: 'passionate'
   },
   {
