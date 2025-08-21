@@ -13,17 +13,17 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Pasta Recipe Step-by-Step Tutorial",
-      description: "Complete 4+ minute pasta cooking demonstration with programmatically added accessibility features",
+      title: "Extended Pasta Recipe Tutorial (Demo Preview)",
+      description: "Preview of longer cooking demonstration showing how accessibility features work over extended content",
       videoSrc: "/videos/pasta-recipe.mp4",
-      duration: "4:20",
+      duration: "0:15 (Full: 8:30)",
       features: [
-        "4+ minute comprehensive pasta cooking tutorial with visual step-by-step process",
-        "Programmatically generated Captions with Intention (CWI) system", 
-        "AI-generated audio descriptions added dynamically in post-processing",
-        "Multiple cooking stage identification using dynamic color coding",
-        "Synchronized ASL interpretation with pasta cooking terminology",
-        "Complete accessibility feature demonstration over extended content"
+        "Preview of extended pasta tutorial (full version: 8+ minutes of step-by-step cooking)",
+        "Programmatically generated Captions with Intention (CWI) system demonstration", 
+        "AI-generated audio descriptions that adapt to any video length",
+        "Dynamic color coding system for multiple cooking stages and speakers",
+        "Synchronized ASL interpretation technology for culinary terminology",
+        "Scalable accessibility features that work with any duration content"
       ],
       voiceOptions: [
         { id: 'gordon-ramsay', name: 'Gordon Ramsay Style', description: 'Passionate, authoritative cooking voice' },
