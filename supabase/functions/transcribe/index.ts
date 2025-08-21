@@ -61,7 +61,9 @@ serve(async (req) => {
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    console.log("OPENAI_API_KEY check:", OPENAI_API_KEY ? "✓ Present" : "✗ Missing");
     if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured in environment");
       return new Response(JSON.stringify({ error: "OPENAI_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,7 +128,8 @@ serve(async (req) => {
 
     if (!response.ok) {
       const err = await response.text();
-      return new Response(JSON.stringify({ error: "OpenAI API error", details: err }), {
+      console.error("OpenAI API error:", response.status, err);
+      return new Response(JSON.stringify({ error: "OpenAI API error", status: response.status, details: err }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -145,6 +148,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("Transcribe function error:", error);
     return new Response(JSON.stringify({ error: String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
