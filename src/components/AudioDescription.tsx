@@ -73,25 +73,25 @@ const recipeDescriptions: AudioDescription[] = [
 // Audio descriptions for educational content (Spanish Elmo)
 const educationDescriptions: AudioDescription[] = [
   {
-    text: "Una gallina cruza la pantalla.",
+    text: "Un autobus amarillo llega y cuatro gallinas se suben a el. El autobus se va.",
     startTime: 29.10,
     endTime: 30.60,
     voiceStyle: 'warm'
   },
   {
-    text: "Elmo sostiene su teléfono y llama a Smarty.",
+    text: "Elmo abre sus brazos, mira al cielo y llama a Smarty.",
     startTime: 42.00,
     endTime: 44.00,
     voiceStyle: 'encouraging'
   },
   {
-    text: "Se abre la puerta del autobús.",
+    text: "`Un autobus azul y blanco llega rapidamente con smarty al volante`.",
     startTime: 56.80,
     endTime: 57.40,
     voiceStyle: 'warm'
   },
   {
-    text: "El autobús arranca suavemente.",
+    text: "El autobús se convierte en un telefono movil amarillo.",
     startTime: 62.90,
     endTime: 63.60,
     voiceStyle: 'warm'
