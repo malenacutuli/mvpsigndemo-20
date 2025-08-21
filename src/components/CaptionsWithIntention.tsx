@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { spanishElmoCaptions } from '../data/spanishElmoCaptions';
 
 export interface CaptionSegment {
   text: string;
@@ -2101,106 +2102,7 @@ const recipeCaptions: CaptionSegment[] = [
 ];
 
 // Demo captions for educational content with warm, engaging narration (Spanish Elmo content)
-const educationCaptions: CaptionSegment[] = [
-  {
-    text: "Hola. Bienvenidos a El Mundo de Elmo.",
-    speaker: 'Elmo',
-    startTime: 5.04,
-    endTime: 8.4,
-    words: [
-      { text: "Hola.", startTime: 5.04, endTime: 5.44, emphasis: "normal", pitch: "normal" },
-      { text: "Bienvenidos", startTime: 5.84, endTime: 6.68, emphasis: "normal", pitch: "normal" },
-      { text: "a", startTime: 6.68, endTime: 6.84, emphasis: "normal", pitch: "normal" },
-      { text: "El", startTime: 6.84, endTime: 7.0, emphasis: "normal", pitch: "normal" },
-      { text: "Mundo", startTime: 7.0, endTime: 7.28, emphasis: "normal", pitch: "normal" },
-      { text: "de", startTime: 7.28, endTime: 7.64, emphasis: "normal", pitch: "normal" },
-      { text: "Elmo.", startTime: 7.64, endTime: 8.4, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Adivinen lo que Elmo está pensando el día de hoy.",
-    speaker: 'Elmo',
-    startTime: 8.8,
-    endTime: 12.16,
-    words: [
-      { text: "Adivinen", startTime: 8.8, endTime: 9.64, emphasis: "normal", pitch: "normal" },
-      { text: "lo", startTime: 9.64, endTime: 9.68, emphasis: "normal", pitch: "normal" },
-      { text: "que", startTime: 9.68, endTime: 9.76, emphasis: "normal", pitch: "normal" },
-      { text: "Elmo", startTime: 9.76, endTime: 10.12, emphasis: "normal", pitch: "normal" },
-      { text: "está", startTime: 10.12, endTime: 10.36, emphasis: "normal", pitch: "normal" },
-      { text: "pensando", startTime: 10.36, endTime: 11.0, emphasis: "normal", pitch: "normal" },
-      { text: "el", startTime: 11.0, endTime: 11.24, emphasis: "normal", pitch: "normal" },
-      { text: "día", startTime: 11.24, endTime: 11.48, emphasis: "normal", pitch: "normal" },
-      { text: "de", startTime: 11.48, endTime: 11.72, emphasis: "normal", pitch: "normal" },
-      { text: "hoy.", startTime: 11.72, endTime: 12.16, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Disfruten el paseo. Gallina.",
-    speaker: 'Elmo',
-    startTime: 27.32,
-    endTime: 29.0,
-    words: [
-      { text: "Disfruten", startTime: 27.32, endTime: 28.16, emphasis: "normal", pitch: "normal" },
-      { text: "el", startTime: 28.16, endTime: 28.28, emphasis: "normal", pitch: "normal" },
-      { text: "paseo.", startTime: 28.28, endTime: 28.52, emphasis: "normal", pitch: "normal" },
-      { text: "Gallina.", startTime: 28.52, endTime: 29.0, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Vaya. Elmo quiere saber todo sobre los choferes de autobús.",
-    speaker: 'Elmo',
-    startTime: 33.08,
-    endTime: 39.2,
-    words: [
-      { text: "Vaya.", startTime: 33.08, endTime: 33.56, emphasis: "normal", pitch: "normal" },
-      { text: "Elmo", startTime: 33.56, endTime: 34.12, emphasis: "normal", pitch: "normal" },
-      { text: "quiere", startTime: 34.12, endTime: 34.48, emphasis: "normal", pitch: "normal" },
-      { text: "saber", startTime: 34.48, endTime: 34.76, emphasis: "normal", pitch: "normal" },
-      { text: "todo", startTime: 34.76, endTime: 35.0, emphasis: "normal", pitch: "normal" },
-      { text: "sobre", startTime: 35.0, endTime: 35.2, emphasis: "normal", pitch: "normal" },
-      { text: "los", startTime: 35.2, endTime: 35.36, emphasis: "normal", pitch: "normal" },
-      { text: "choferes", startTime: 35.36, endTime: 35.96, emphasis: "normal", pitch: "normal" },
-      { text: "de", startTime: 35.96, endTime: 36.12, emphasis: "normal", pitch: "normal" },
-      { text: "autobús.", startTime: 36.12, endTime: 36.84, emphasis: "normal", pitch: "normal" },
-      { text: "Preguntémosle", startTime: 37.16, endTime: 38.2, emphasis: "normal", pitch: "normal" },
-      { text: "a", startTime: 38.2, endTime: 38.28, emphasis: "normal", pitch: "normal" },
-      { text: "la", startTime: 38.28, endTime: 38.36, emphasis: "normal", pitch: "normal" },
-      { text: "amiga", startTime: 38.36, endTime: 38.6, emphasis: "normal", pitch: "normal" },
-      { text: "de", startTime: 38.6, endTime: 38.72, emphasis: "normal", pitch: "normal" },
-      { text: "Elmo,", startTime: 38.72, endTime: 39.2, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Smarty. Llamémosla juntos.",
-    speaker: 'Elmo',
-    startTime: 39.2,
-    endTime: 41.8,
-    words: [
-      { text: "Smarty.", startTime: 39.2, endTime: 40.24, emphasis: "normal", pitch: "normal" },
-      { text: "Llamémosla", startTime: 40.24, endTime: 41.24, emphasis: "normal", pitch: "normal" },
-      { text: "juntos.", startTime: 41.24, endTime: 41.8, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Esta parada es Al Mundo de Elmo. Cuidado al bajar.",
-    speaker: 'Smarty',
-    startTime: 49.32,
-    endTime: 52.44,
-    words: [
-      { text: "Esta", startTime: 49.32, endTime: 49.64, emphasis: "normal", pitch: "normal" },
-      { text: "parada", startTime: 49.64, endTime: 50.08, emphasis: "normal", pitch: "normal" },
-      { text: "es", startTime: 50.08, endTime: 50.28, emphasis: "normal", pitch: "normal" },
-      { text: "Al", startTime: 50.28, endTime: 50.52, emphasis: "normal", pitch: "normal" },
-      { text: "Mundo", startTime: 50.52, endTime: 50.76, emphasis: "normal", pitch: "normal" },
-      { text: "de", startTime: 50.76, endTime: 50.96, emphasis: "normal", pitch: "normal" },
-      { text: "Elmo.", startTime: 50.96, endTime: 51.52, emphasis: "normal", pitch: "normal" },
-      { text: "Cuidado", startTime: 51.52, endTime: 51.96, emphasis: "normal", pitch: "normal" },
-      { text: "al", startTime: 51.96, endTime: 52.04, emphasis: "normal", pitch: "normal" },
-      { text: "bajar.", startTime: 52.04, endTime: 52.44, emphasis: "normal", pitch: "normal" }
-    ]
-  }
-];
+const educationCaptions: CaptionSegment[] = spanishElmoCaptions;
 
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   currentTime,
