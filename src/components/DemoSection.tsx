@@ -13,17 +13,17 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Step-by-Step Pasta Cooking",
-      description: "Complete pasta preparation from start to finish with clear voice instruction—no background music",
+      title: "Complete Pasta Recipe Masterclass",
+      description: "Full 8-minute step-by-step pasta cooking tutorial with clear narration—no background music interference",
       videoSrc: "/videos/pasta-recipe.mp4",
-      duration: "3:45",
+      duration: "8:15",
       features: [
-        "Step-by-step cooking instructions from start to finish",
-        "Clear voice narration without background music interference", 
-        "Professional chef character (Orange CWI attribution)",
-        "Perfect audio track for layering accessibility features",
-        "Detailed cooking technique explanations",
-        "Adult-focused professional ASL chef avatar"
+        "Complete 8+ minute cooking tutorial from ingredient prep to plating",
+        "Professional chef narration without music interference", 
+        "Multiple cooking techniques demonstrated step-by-step",
+        "Perfect audio foundation for accessibility feature layering",
+        "Comprehensive ingredient explanations and timing guidance",
+        "Adult-focused culinary education with ASL interpretation"
       ],
       voiceOptions: [
         { id: 'gordon-ramsay', name: 'Gordon Ramsay Style', description: 'Passionate, authoritative cooking voice' },
