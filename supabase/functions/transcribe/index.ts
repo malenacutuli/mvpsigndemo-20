@@ -43,7 +43,15 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Transcribe function called");
     const { audio, mimeType, filename, videoUrl } = await req.json();
+    console.log("Request payload parsed:", { 
+      hasAudio: !!audio, 
+      hasVideoUrl: !!videoUrl, 
+      mimeType, 
+      filename,
+      audioLength: audio ? audio.length : 0 
+    });
 
     if (!audio && !videoUrl) {
       return new Response(JSON.stringify({ error: "Provide 'audio' (base64) or 'videoUrl'" }), {
