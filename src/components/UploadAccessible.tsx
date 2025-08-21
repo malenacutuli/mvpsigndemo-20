@@ -149,13 +149,18 @@ export const UploadAccessible: React.FC = () => {
   };
 
   return (
-    <section className="py-16">
-      <div className="container mx-auto px-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Upload className="w-5 h-5"/> Upload → Accessible</CardTitle>
-            <CardDescription>Upload any video. We auto-generate Captions with Intention, audio description, and ASL-ready playback.</CardDescription>
-          </CardHeader>
+    <div className="container mx-auto px-6">
+      <Card className="border-2 border-primary/20 shadow-xl">
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-3 text-2xl">
+            <Upload className="w-6 h-6 text-primary"/> 
+            Upload & Test Complete Pipeline
+          </CardTitle>
+          <CardDescription className="text-base">
+            Upload any video to experience the full accessibility transformation: 
+            <strong>Speech Recognition → Captions with Intention → ElevenLabs Audio Descriptions → ASL Avatars</strong>
+          </CardDescription>
+        </CardHeader>
           <CardContent>
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="space-y-4">
@@ -204,6 +209,16 @@ export const UploadAccessible: React.FC = () => {
                   <p className="text-xs text-muted-foreground">Accepted: mp4, webm, mov. Private storage with signed playback URLs.</p>
                 </div>
 
+                <div className="mt-6 p-4 bg-secondary/30 rounded-lg">
+                  <h4 className="font-semibold mb-2 text-sm">🔥 Live Features</h4>
+                  <div className="text-xs space-y-1 text-muted-foreground">
+                    <div>✓ Supabase storage & transcription</div>
+                    <div>✓ ElevenLabs TTS integration</div>
+                    <div>✓ Real-time caption generation</div>
+                    <div>✓ Multi-modal accessibility</div>
+                  </div>
+                </div>
+                
                 <ComplianceReport available={{ cc: !!initialCaptions, ad: true, asl: true }} />
               </div>
 
@@ -219,12 +234,19 @@ export const UploadAccessible: React.FC = () => {
                     initialCaptions={initialCaptions}
                   />
                 ) : (
-                  <div className="border rounded-lg p-8 text-center text-sm text-muted-foreground">
-                    Upload a video to preview in the Axessible player.
-                    <div className="mt-4 grid gap-2 text-left max-w-md mx-auto">
-                      <div className="flex items-center gap-2"><Subtitles className="w-4 h-4"/> Captions with Intention</div>
-                      <div className="flex items-center gap-2"><HandHelping className="w-4 h-4"/> ASL avatar overlay</div>
-                      <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4"/> ADA / EAA readiness</div>
+                  <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center bg-gradient-accessibility">
+                    <div className="mb-6">
+                      <Upload className="w-16 h-16 text-primary/60 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">Ready for Your Video</h3>
+                      <p className="text-muted-foreground">Upload any video to see the complete accessibility pipeline in action</p>
+                    </div>
+                    
+                    <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-center">What You'll Experience:</h4>
+                      <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
+                      <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
+                      <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> ElevenLabs Audio Descriptions</div>
+                      <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
                     </div>
                   </div>
                 )}
@@ -233,6 +255,5 @@ export const UploadAccessible: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </section>
   );
 };
