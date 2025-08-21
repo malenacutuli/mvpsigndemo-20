@@ -13,16 +13,16 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Apple Pie Baking Tutorial",
-      description: "Classic apple pie recipe with clear step-by-step instructions—plus ASL and dynamic captions",
-      videoSrc: "/videos/apple-pie-recipe.mp4",
-      duration: "1:15",
+      title: "Pasta Cooking Fundamentals",
+      description: "Clear voice instruction on pasta preparation techniques—perfect for accessibility demonstration",
+      videoSrc: "/videos/pasta-recipe.mp4",
+      duration: "1:20",
       features: [
-        "Gordon Ramsay-style passionate cooking instruction",
-        "Detailed baking technique breakdowns", 
+        "Clear voice narration without background music",
+        "Detailed pasta cooking technique breakdowns", 
         "Professional chef character (Orange CWI attribution)",
-        "Clear narration without background music",
-        "Baking terminology with emphasis markers",
+        "Perfect for audio description layering",
+        "Culinary terminology with emphasis markers",
         "Adult-focused professional ASL chef avatar"
       ],
       voiceOptions: [
