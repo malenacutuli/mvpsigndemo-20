@@ -133,8 +133,7 @@ const recipeCaptions: CaptionSegment[] = [
 ];
 
 // Demo captions for educational content with warm, engaging narration
-const educationCaptions: CaptionSegment[] = [
- 
+const educationCaptions: CaptionSegment[] = [];
 
 const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({ 
   currentTime, 
