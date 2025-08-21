@@ -341,10 +341,10 @@ export const spanishElmoCaptions: CaptionSegment[] = [
     ]
   },
   {
-    text: "Y cuando termina el día, el chofer del autobús escolar está ahí para llevarte a casa.",
+    text: "Y cuando termina el día, el chofer del autobús escolar está ahí para llevarte a casa. Nos vemos mañana.",
     speaker: 'Smarty',
     startTime: 99.42,
-    endTime: 103.66,
+    endTime: 105.58,
     words: [
       { text: "Y", startTime: 99.42, endTime: 99.66, emphasis: "normal", pitch: "normal" },
       { text: "cuando", startTime: 99.66, endTime: 99.82, emphasis: "normal", pitch: "normal" },
@@ -360,15 +360,7 @@ export const spanishElmoCaptions: CaptionSegment[] = [
       { text: "ahí", startTime: 102.74, endTime: 102.94, emphasis: "normal", pitch: "normal" },
       { text: "para", startTime: 102.94, endTime: 103.06, emphasis: "normal", pitch: "normal" },
       { text: "llevarte", startTime: 103.06, endTime: 103.54, emphasis: "normal", pitch: "normal" },
-      { text: "a", startTime: 103.54, endTime: 103.66, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "casa. Nos vemos mañana.",
-    speaker: 'Smarty',
-    startTime: 103.66,
-    endTime: 105.58,
-    words: [
+      { text: "a", startTime: 103.54, endTime: 103.66, emphasis: "normal", pitch: "normal" },
       { text: "casa.", startTime: 103.66, endTime: 103.98, emphasis: "normal", pitch: "normal" },
       { text: "Nos", startTime: 104.54, endTime: 104.78, emphasis: "normal", pitch: "normal" },
       { text: "vemos", startTime: 104.78, endTime: 105.02, emphasis: "normal", pitch: "normal" },
@@ -395,10 +387,10 @@ export const spanishElmoCaptions: CaptionSegment[] = [
     ]
   },
   {
-    text: "Parece que es hora de cambiar de rumbo. Este autobús tiene un horario que cumplir.",
+    text: "Parece que es hora de cambiar de rumbo. Este autobús tiene un horario que cumplir. Nos vemos luego, Elmo.",
     speaker: 'Smarty',
     startTime: 113.62,
-    endTime: 117.86,
+    endTime: 119.46,
     words: [
       { text: "Parece", startTime: 113.62, endTime: 114.1, emphasis: "normal", pitch: "normal" },
       { text: "que", startTime: 114.1, endTime: 114.22, emphasis: "normal", pitch: "normal" },
@@ -414,15 +406,7 @@ export const spanishElmoCaptions: CaptionSegment[] = [
       { text: "un", startTime: 116.62, endTime: 116.78, emphasis: "normal", pitch: "normal" },
       { text: "horario", startTime: 116.78, endTime: 117.1, emphasis: "normal", pitch: "normal" },
       { text: "que", startTime: 117.1, endTime: 117.34, emphasis: "normal", pitch: "normal" },
-      { text: "cumplir.", startTime: 117.34, endTime: 117.86, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Nos vemos luego, Elmo.",
-    speaker: 'Smarty',
-    startTime: 117.94,
-    endTime: 119.46,
-    words: [
+      { text: "cumplir.", startTime: 117.34, endTime: 117.86, emphasis: "normal", pitch: "normal" },
       { text: "Nos", startTime: 117.94, endTime: 118.18, emphasis: "normal", pitch: "normal" },
       { text: "vemos", startTime: 118.18, endTime: 118.38, emphasis: "normal", pitch: "normal" },
       { text: "luego,", startTime: 118.38, endTime: 118.82, emphasis: "normal", pitch: "normal" },
@@ -447,10 +431,10 @@ export const spanishElmoCaptions: CaptionSegment[] = [
     ]
   },
   {
-    text: "A Elmo se le ocurrió una idea.",
+    text: "A Elmo se le ocurrió una idea. Vamos a jugar un juego juntos. Sí. Sigan a Elmo.",
     speaker: 'Elmo',
     startTime: 127.54,
-    endTime: 129.7,
+    endTime: 135.3,
     words: [
       { text: "A", startTime: 127.54, endTime: 127.82, emphasis: "normal", pitch: "normal" },
       { text: "Elmo", startTime: 127.82, endTime: 128.22, emphasis: "normal", pitch: "normal" },
@@ -458,15 +442,7 @@ export const spanishElmoCaptions: CaptionSegment[] = [
       { text: "le", startTime: 128.419, endTime: 128.5, emphasis: "normal", pitch: "normal" },
       { text: "ocurrió", startTime: 128.5, endTime: 129.06, emphasis: "normal", pitch: "normal" },
       { text: "una", startTime: 129.06, endTime: 129.3, emphasis: "normal", pitch: "normal" },
-      { text: "idea.", startTime: 129.3, endTime: 129.7, emphasis: "normal", pitch: "normal" }
-    ]
-  },
-  {
-    text: "Vamos a jugar un juego juntos. Sí. Sigan a Elmo.",
-    speaker: 'Elmo',
-    startTime: 130.82,
-    endTime: 135.3,
-    words: [
+      { text: "idea.", startTime: 129.3, endTime: 129.7, emphasis: "normal", pitch: "normal" },
       { text: "Vamos", startTime: 130.82, endTime: 131.18, emphasis: "normal", pitch: "normal" },
       { text: "a", startTime: 131.18, endTime: 131.34, emphasis: "normal", pitch: "normal" },
       { text: "jugar", startTime: 131.34, endTime: 131.7, emphasis: "normal", pitch: "normal" },
@@ -477,6 +453,138 @@ export const spanishElmoCaptions: CaptionSegment[] = [
       { text: "Sigan", startTime: 134.02, endTime: 134.54, emphasis: "normal", pitch: "normal" },
       { text: "a", startTime: 134.54, endTime: 134.74, emphasis: "normal", pitch: "normal" },
       { text: "Elmo.", startTime: 134.74, endTime: 135.3, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Elmo se preg. Si podemos conducir el autobús a la escuela. ¿Estás listo? A jugar.",
+    speaker: 'Elmo',
+    startTime: 143.22,
+    endTime: 149.6,
+    words: [
+      { text: "Elmo", startTime: 143.22, endTime: 143.7, emphasis: "normal", pitch: "normal" },
+      { text: "se", startTime: 143.7, endTime: 143.82, emphasis: "normal", pitch: "normal" },
+      { text: "preg.", startTime: 143.82, endTime: 144.09, emphasis: "normal", pitch: "normal" },
+      { text: "Si", startTime: 144.48, endTime: 144.6, emphasis: "normal", pitch: "normal" },
+      { text: "podemos", startTime: 144.6, endTime: 144.88, emphasis: "normal", pitch: "normal" },
+      { text: "conducir", startTime: 144.88, endTime: 145.4, emphasis: "normal", pitch: "normal" },
+      { text: "el", startTime: 145.4, endTime: 145.56, emphasis: "normal", pitch: "normal" },
+      { text: "autobús", startTime: 145.56, endTime: 146.04, emphasis: "normal", pitch: "normal" },
+      { text: "a", startTime: 146.04, endTime: 146.2, emphasis: "normal", pitch: "normal" },
+      { text: "la", startTime: 146.2, endTime: 146.32, emphasis: "normal", pitch: "normal" },
+      { text: "escuela.", startTime: 146.32, endTime: 146.64, emphasis: "normal", pitch: "normal" },
+      { text: "¿Estás", startTime: 146.96, endTime: 147.36, emphasis: "normal", pitch: "normal" },
+      { text: "listo?", startTime: 147.36, endTime: 147.84, emphasis: "normal", pitch: "normal" },
+      { text: "A", startTime: 148.24, endTime: 148.64, emphasis: "normal", pitch: "normal" },
+      { text: "jugar.", startTime: 148.88, endTime: 149.6, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Mira. Debemos conducir un autobús lleno de monstruos en la escuela de monstruos. Pero solo podemos vernos cuando el semáforo esté en verde. El semáforo está en rojo. Los verdes avanzamos.",
+    speaker: 'Elmo',
+    startTime: 150.08,
+    endTime: 162.8,
+    words: [
+      { text: "Mira.", startTime: 150.08, endTime: 150.48, emphasis: "normal", pitch: "normal" },
+      { text: "Debemos", startTime: 150.48, endTime: 151.12, emphasis: "normal", pitch: "normal" },
+      { text: "conducir", startTime: 151.12, endTime: 151.56, emphasis: "normal", pitch: "normal" },
+      { text: "un", startTime: 151.56, endTime: 151.72, emphasis: "normal", pitch: "normal" },
+      { text: "autobús", startTime: 151.72, endTime: 152.12, emphasis: "normal", pitch: "normal" },
+      { text: "lleno", startTime: 152.12, endTime: 152.56, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 152.56, endTime: 152.64, emphasis: "normal", pitch: "normal" },
+      { text: "monstruos", startTime: 152.64, endTime: 153.16, emphasis: "normal", pitch: "normal" },
+      { text: "en", startTime: 153.16, endTime: 153.36, emphasis: "normal", pitch: "normal" },
+      { text: "la", startTime: 153.36, endTime: 153.48, emphasis: "normal", pitch: "normal" },
+      { text: "escuela", startTime: 153.48, endTime: 153.8, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 153.8, endTime: 153.92, emphasis: "normal", pitch: "normal" },
+      { text: "monstruos.", startTime: 153.92, endTime: 154.56, emphasis: "normal", pitch: "normal" },
+      { text: "Pero", startTime: 154.56, endTime: 154.92, emphasis: "normal", pitch: "normal" },
+      { text: "solo", startTime: 154.92, endTime: 155.16, emphasis: "normal", pitch: "normal" },
+      { text: "podemos", startTime: 155.16, endTime: 155.52, emphasis: "normal", pitch: "normal" },
+      { text: "vernos", startTime: 155.68, endTime: 156.2, emphasis: "normal", pitch: "normal" },
+      { text: "cuando", startTime: 156.2, endTime: 156.48, emphasis: "normal", pitch: "normal" },
+      { text: "el", startTime: 156.48, endTime: 156.72, emphasis: "normal", pitch: "normal" },
+      { text: "semáforo", startTime: 156.72, endTime: 157.36, emphasis: "normal", pitch: "normal" },
+      { text: "esté", startTime: 157.36, endTime: 157.68, emphasis: "normal", pitch: "normal" },
+      { text: "en", startTime: 157.68, endTime: 157.84, emphasis: "normal", pitch: "normal" },
+      { text: "verde.", startTime: 157.84, endTime: 158.4, emphasis: "normal", pitch: "normal" },
+      { text: "El", startTime: 158.72, endTime: 159.0, emphasis: "normal", pitch: "normal" },
+      { text: "semáforo", startTime: 159.0, endTime: 159.72, emphasis: "normal", pitch: "normal" },
+      { text: "está", startTime: 159.72, endTime: 159.999, emphasis: "normal", pitch: "normal" },
+      { text: "en", startTime: 159.999, endTime: 160.24, emphasis: "normal", pitch: "normal" },
+      { text: "rojo.", startTime: 160.24, endTime: 160.72, emphasis: "normal", pitch: "normal" },
+      { text: "Los", startTime: 160.72, endTime: 161.0, emphasis: "normal", pitch: "normal" },
+      { text: "verdes", startTime: 161.0, endTime: 161.76, emphasis: "normal", pitch: "normal" },
+      { text: "avanzamos.", startTime: 161.76, endTime: 162.8, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Sí. Verde significa banda. Luz. Zoemos avanzar. No. El semáforo está en rojo. Tiene favor. Luz verde avanza.",
+    speaker: 'Elmo',
+    startTime: 163.44,
+    endTime: 177.34,
+    words: [
+      { text: "Sí.", startTime: 163.44, endTime: 163.88, emphasis: "normal", pitch: "normal" },
+      { text: "Verde", startTime: 163.88, endTime: 164.88, emphasis: "normal", pitch: "normal" },
+      { text: "significa", startTime: 164.88, endTime: 165.44, emphasis: "normal", pitch: "normal" },
+      { text: "banda.", startTime: 165.6, endTime: 166.48, emphasis: "normal", pitch: "normal" },
+      { text: "Luz.", startTime: 167.92, endTime: 168.4, emphasis: "normal", pitch: "normal" },
+      { text: "Zoemos", startTime: 168.4, endTime: 170.4, emphasis: "normal", pitch: "normal" },
+      { text: "avanzar.", startTime: 170.4, endTime: 171.32, emphasis: "normal", pitch: "normal" },
+      { text: "No.", startTime: 171.32, endTime: 171.68, emphasis: "normal", pitch: "normal" },
+      { text: "El", startTime: 171.92, endTime: 172.16, emphasis: "normal", pitch: "normal" },
+      { text: "semáforo", startTime: 172.16, endTime: 172.92, emphasis: "normal", pitch: "normal" },
+      { text: "está", startTime: 172.92, endTime: 173.12, emphasis: "normal", pitch: "normal" },
+      { text: "en", startTime: 173.12, endTime: 173.28, emphasis: "normal", pitch: "normal" },
+      { text: "rojo.", startTime: 173.28, endTime: 173.6, emphasis: "normal", pitch: "normal" },
+      { text: "Tiene", startTime: 173.92, endTime: 174.28, emphasis: "normal", pitch: "normal" },
+      { text: "favor.", startTime: 174.28, endTime: 174.96, emphasis: "normal", pitch: "normal" },
+      { text: "Luz", startTime: 175.12, endTime: 175.48, emphasis: "normal", pitch: "normal" },
+      { text: "verde", startTime: 175.48, endTime: 175.99, emphasis: "normal", pitch: "normal" },
+      { text: "avanza.", startTime: 176.46, endTime: 177.34, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Llegamos a la escuela. Muy j. Lo logramos. Sí. Qué buenos conductores son.",
+    speaker: 'Elmo',
+    startTime: 178.46,
+    endTime: 186.38,
+    words: [
+      { text: "Llegamos", startTime: 178.46, endTime: 179.1, emphasis: "normal", pitch: "normal" },
+      { text: "a", startTime: 179.1, endTime: 179.34, emphasis: "normal", pitch: "normal" },
+      { text: "la", startTime: 179.34, endTime: 179.46, emphasis: "normal", pitch: "normal" },
+      { text: "escuela.", startTime: 179.46, endTime: 179.9, emphasis: "normal", pitch: "normal" },
+      { text: "Muy", startTime: 180.06, endTime: 180.46, emphasis: "normal", pitch: "normal" },
+      { text: "j.", startTime: 180.46, endTime: 180.86, emphasis: "normal", pitch: "normal" },
+      { text: "Lo", startTime: 181.42, endTime: 181.7, emphasis: "normal", pitch: "normal" },
+      { text: "logramos.", startTime: 181.7, endTime: 182.38, emphasis: "normal", pitch: "normal" },
+      { text: "Sí.", startTime: 183.18, endTime: 183.74, emphasis: "normal", pitch: "normal" },
+      { text: "Qué", startTime: 184.3, endTime: 184.62, emphasis: "normal", pitch: "normal" },
+      { text: "buenos", startTime: 184.62, endTime: 185.14, emphasis: "normal", pitch: "normal" },
+      { text: "conductores", startTime: 185.14, endTime: 186.06, emphasis: "normal", pitch: "normal" },
+      { text: "son.", startTime: 186.06, endTime: 186.38, emphasis: "normal", pitch: "normal" }
+    ]
+  },
+  {
+    text: "Guau. Los choferes de autobús hacen que las ruedas del autobús giren y giren. Adiós.",
+    speaker: 'Elmo',
+    startTime: 186.86,
+    endTime: 193.1,
+    words: [
+      { text: "Guau.", startTime: 186.86, endTime: 187.42, emphasis: "normal", pitch: "normal" },
+      { text: "Los", startTime: 187.9, endTime: 188.14, emphasis: "normal", pitch: "normal" },
+      { text: "choferes", startTime: 188.14, endTime: 188.86, emphasis: "normal", pitch: "normal" },
+      { text: "de", startTime: 188.86, endTime: 188.94, emphasis: "normal", pitch: "normal" },
+      { text: "autobús", startTime: 188.94, endTime: 189.38, emphasis: "normal", pitch: "normal" },
+      { text: "hacen", startTime: 189.38, endTime: 189.58, emphasis: "normal", pitch: "normal" },
+      { text: "que", startTime: 189.58, endTime: 189.7, emphasis: "normal", pitch: "normal" },
+      { text: "las", startTime: 189.7, endTime: 189.86, emphasis: "normal", pitch: "normal" },
+      { text: "ruedas", startTime: 189.86, endTime: 190.38, emphasis: "normal", pitch: "normal" },
+      { text: "del", startTime: 190.38, endTime: 190.5, emphasis: "normal", pitch: "normal" },
+      { text: "autobús", startTime: 190.5, endTime: 191.02, emphasis: "normal", pitch: "normal" },
+      { text: "giren", startTime: 191.02, endTime: 191.34, emphasis: "normal", pitch: "normal" },
+      { text: "y", startTime: 191.34, endTime: 191.46, emphasis: "normal", pitch: "normal" },
+      { text: "giren.", startTime: 191.46, endTime: 192.14, emphasis: "normal", pitch: "normal" },
+      { text: "Adiós.", startTime: 192.14, endTime: 193.1, emphasis: "normal", pitch: "normal" }
     ]
   }
 ];
