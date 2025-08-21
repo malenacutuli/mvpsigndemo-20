@@ -13,10 +13,10 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Gourmet Food Preparation Masterclass",
-      description: "Professional food styling and preparation techniques with vibrant colors—plus ASL and dynamic captions",
-      videoSrc: "/videos/sony-food-demo.mp4",
-      duration: "1:22",
+      title: "Cooking Demo Experience",
+      description: "Interactive cooking demonstration with accessibility features—ASL interpretation and dynamic captions",
+      videoSrc: "/videos/w3schools-sample.mp4",
+      duration: "0:30",
       features: [
         "Gordon Ramsay-style passionate cooking instruction",
         "Detailed pasta technique breakdowns", 
