@@ -320,7 +320,10 @@ useEffect(() => {
           },
           body: JSON.stringify({ text: currentDescription.text, voiceId, modelId: 'eleven_turbo_v2_5' })
         });
-        if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(`TTS failed: ${res.status} - ${errorData.error || 'Unknown error'}`);
+        }
         const blob = await res.blob();
         if (cancelled) return;
         const url = URL.createObjectURL(blob);

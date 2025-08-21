@@ -1,7 +1,3 @@
-// Supabase Edge Function: ElevenLabs TTS proxy
-// Securely generates audio using ElevenLabs and returns audio/mpeg
-// Deployed via Supabase; add ELEVENLABS_API_KEY in Supabase secrets
-
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const corsHeaders = {
@@ -23,16 +19,27 @@ serve(async (req) => {
     const { text, voiceId, modelId } = await req.json();
 
     if (!text || typeof text !== "string") {
-      return new Response(JSON.stringify({ error: "Missing 'text'" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Missing 'text'" }), { 
+        status: 400, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
     }
 
+    // Get API key with debugging
     const XI_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-    console.log("ELEVENLABS_API_KEY check:", XI_API_KEY ? "✓ Present" : "✗ Missing");
-    console.log("Available env vars:", Object.keys(Deno.env.toObject()));
+    console.log("TTS Function - Environment check:");
+    console.log("- ELEVENLABS_API_KEY present:", !!XI_API_KEY);
+    console.log("- Request payload:", { text: text.substring(0, 50) + "...", voiceId, modelId });
     
     if (!XI_API_KEY) {
-      console.error("ELEVENLABS_API_KEY environment variable is not set");
-      return new Response(JSON.stringify({ error: "ELEVENLABS_API_KEY not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("ELEVENLABS_API_KEY not found in environment");
+      return new Response(JSON.stringify({ 
+        error: "ELEVENLABS_API_KEY not configured",
+        debug: "Environment variable not accessible to edge function"
+      }), { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
     }
 
     const resolvedVoiceId = voiceId || "EXAVITQu4vr4xnSDxMaL"; // Default to Sarah
@@ -53,6 +60,7 @@ serve(async (req) => {
       output_format: "mp3_44100_128",
     };
 
+    console.log("Making request to ElevenLabs API...");
     const elRes = await fetch(elevenUrl, {
       method: "POST",
       headers: {
@@ -65,12 +73,18 @@ serve(async (req) => {
 
     if (!elRes.ok) {
       const errText = await elRes.text();
-      return new Response(JSON.stringify({ error: "ElevenLabs error", details: errText }), {
+      console.error("ElevenLabs API error:", elRes.status, errText);
+      return new Response(JSON.stringify({ 
+        error: "ElevenLabs API error", 
+        status: elRes.status,
+        details: errText 
+      }), {
         status: elRes.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("TTS generation successful");
     const audioBuffer = await elRes.arrayBuffer();
     return new Response(audioBuffer, {
       headers: {
@@ -80,7 +94,11 @@ serve(async (req) => {
       },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Unexpected error", details: String(err) }), {
+    console.error("TTS function error:", err);
+    return new Response(JSON.stringify({ 
+      error: "Unexpected error", 
+      details: String(err) 
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

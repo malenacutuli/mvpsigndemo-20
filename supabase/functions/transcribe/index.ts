@@ -43,15 +43,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Transcribe function called - v2.0");
-    const { audio, mimeType, filename, videoUrl } = await req.json();
+    console.log("Transcribe function called - v3.0");
+    const { audio, mimeType, filename, videoUrl, rangeBytes } = await req.json();
     
-    console.log("Request payload parsed:", {
+    console.log("Request payload:", {
       hasAudio: !!audio,
       hasVideoUrl: !!videoUrl,
       mimeType,
       filename,
-      audioLength: audio?.length || 0
+      audioLength: audio?.length || 0,
+      rangeBytes
     });
 
     if (!audio && !videoUrl) {
@@ -61,12 +62,17 @@ serve(async (req) => {
       });
     }
 
+    // Check OpenAI API key with debugging
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    console.log("OPENAI_API_KEY check:", OPENAI_API_KEY ? "✓ Present" : "✗ Missing");
+    console.log("Transcribe Function - Environment check:");
+    console.log("- OPENAI_API_KEY present:", !!OPENAI_API_KEY);
     
     if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY environment variable is not set");
-      return new Response(JSON.stringify({ error: "OPENAI_API_KEY not configured" }), {
+      console.error("OPENAI_API_KEY not found in environment");
+      return new Response(JSON.stringify({ 
+        error: "OPENAI_API_KEY not configured",
+        debug: "Environment variable not accessible to edge function"
+      }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -77,50 +83,42 @@ serve(async (req) => {
     let mtype = mimeType || "audio/webm";
 
     if (videoUrl) {
-      const { rangeBytes } = await (async () => {
-        try {
-          const body = await req.clone().json();
-          return { rangeBytes: Number(body?.rangeBytes) || 0 };
-        } catch {
-          return { rangeBytes: 0 };
-        }
-      })();
-
-      const headers: Record<string, string> = {};
-      if (rangeBytes && rangeBytes > 0) {
-        headers["Range"] = `bytes=0-${rangeBytes - 1}`;
-      }
-
-      const res = await fetch(videoUrl, { headers });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        return new Response(JSON.stringify({ error: "Failed to fetch videoUrl", status: res.status, details: detail }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const ab = await res.arrayBuffer();
-      mtype = res.headers.get("content-type") || mtype;
-      const ext = mtype.includes("mp4") ? "mp4" : mtype.includes("webm") ? "webm" : "bin";
-      fname = `media.${ext}`;
-      fileBlob = new Blob([ab], { type: mtype });
-    } else if (audio) {
+      console.log("Processing video URL:", videoUrl);
+      const maxBytes = rangeBytes || 15000000; // 15MB default
+      
+      const response = await fetch(videoUrl);
+      if (!response.ok) throw new Error(`Failed to fetch video: ${response.status}`);
+      
+      const contentLength = response.headers.get("content-length");
+      const totalBytes = contentLength ? parseInt(contentLength) : maxBytes;
+      
+      console.log(`Video size: ${totalBytes} bytes, using range: 0-${Math.min(maxBytes, totalBytes)}`);
+      
+      const rangeResponse = await fetch(videoUrl, {
+        headers: { Range: `bytes=0-${Math.min(maxBytes, totalBytes)}` }
+      });
+      
+      if (!rangeResponse.ok) throw new Error(`Range request failed: ${rangeResponse.status}`);
+      
+      const buffer = await rangeResponse.arrayBuffer();
+      fileBlob = new Blob([buffer], { type: "video/mp4" });
+      fname = "video.mp4";
+      mtype = "video/mp4";
+    } else {
+      console.log("Processing base64 audio");
       const binaryAudio = processBase64Chunks(audio);
       fileBlob = new Blob([binaryAudio], { type: mtype });
-    } else {
-      return new Response(JSON.stringify({ error: "No input provided" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
+    console.log(`Sending ${fileBlob.size} bytes to OpenAI Whisper API`);
+    
     const formData = new FormData();
     formData.append("file", fileBlob, fname);
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
-    formData.append("temperature", "0");
+    formData.append("timestamp_granularities[]", "word");
 
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -128,28 +126,25 @@ serve(async (req) => {
       body: formData,
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return new Response(JSON.stringify({ error: "OpenAI API error", details: err }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error("OpenAI API error:", openaiResponse.status, errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
     }
 
-    const result = await response.json();
+    const transcriptionResult = await openaiResponse.json();
+    console.log("Transcription successful, words:", transcriptionResult.words?.length || 0);
 
-    const payload = {
-      text: result.text || "",
-      language: result.language || "en",
-      duration: result.duration ?? null,
-      segments: result.segments || [],
-    };
-
-    return new Response(JSON.stringify(payload), {
+    return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: String(error) }), {
+
+  } catch (err) {
+    console.error("Transcribe function error:", err);
+    return new Response(JSON.stringify({ 
+      error: "Transcription failed", 
+      details: String(err) 
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
