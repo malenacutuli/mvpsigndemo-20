@@ -15,7 +15,7 @@ export const DemoSection: React.FC = () => {
     recipe: {
       title: "Complete Recipe Tutorial with Full Accessibility",
       description: "Extended pasta demonstration with programmatically generated captions, audio descriptions, and ASL interpretation",
-      videoSrc: "/videos/pasta-recipe.mp4",
+      videoSrc: "/videos/aglio-olio-longer.mp4",
       duration: "12:30",
       features: [
         "12+ minute comprehensive cooking tutorial with visual step-by-step process",
