@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
+import { StepByStepRecipe } from './StepByStepRecipe';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,17 +14,17 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Extended Pasta Recipe Tutorial (Demo Preview)",
-      description: "Preview of longer cooking demonstration showing how accessibility features work over extended content",
-      videoSrc: "/videos/pasta-recipe.mp4",
-      duration: "0:15 (Full: 8:30)",
+      title: "Complete Pasta Recipe Step-by-Step Tutorial",
+      description: "Full 45+ second step-by-step cooking demonstration with programmatically added accessibility features",
+      videoSrc: "/videos/aglio-olio-longer.mp4",
+      duration: "0:45",
       features: [
-        "Preview of extended pasta tutorial (full version: 8+ minutes of step-by-step cooking)",
-        "Programmatically generated Captions with Intention (CWI) system demonstration", 
-        "AI-generated audio descriptions that adapt to any video length",
-        "Dynamic color coding system for multiple cooking stages and speakers",
-        "Synchronized ASL interpretation technology for culinary terminology",
-        "Scalable accessibility features that work with any duration content"
+        "Complete 7-step pasta tutorial with detailed cooking instructions",
+        "45+ seconds of comprehensive step-by-step cooking process", 
+        "Programmatically generated Captions with Intention (CWI) for each cooking stage",
+        "AI-generated audio descriptions for visual cooking techniques",
+        "Dynamic color coding for ingredient preparation, cooking, and plating phases",
+        "Synchronized ASL interpretation for culinary terminology and techniques"
       ],
       voiceOptions: [
         { id: 'gordon-ramsay', name: 'Gordon Ramsay Style', description: 'Passionate, authoritative cooking voice' },
@@ -178,14 +179,20 @@ export const DemoSection: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <AxessiblePlayer
-                  videoSrc={currentDemo.videoSrc}
-                  title={currentDemo.title}
-                  className="w-full h-full"
-                  selectedVoice={currentVoice}
-                  selectedASLAvatar={currentASL}
-                  contentType={selectedDemo}
-                />
+                {selectedDemo === 'recipe' ? (
+                  <div className="aspect-video">
+                    <StepByStepRecipe />
+                  </div>
+                ) : (
+                  <AxessiblePlayer
+                    videoSrc={currentDemo.videoSrc}
+                    title={currentDemo.title}
+                    className="w-full h-full"
+                    selectedVoice={currentVoice}
+                    selectedASLAvatar={currentASL}
+                    contentType={selectedDemo}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
