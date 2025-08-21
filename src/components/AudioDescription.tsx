@@ -294,7 +294,12 @@ useEffect(() => {
   
   // Check for overlap with captions if we have Spanish Elmo data
   if (potentialDescription && contentType === 'education') {
-    // Import captions data to check for conflicts
+    // For now, let's disable overlap checking to test if descriptions show
+    console.log('Setting description without overlap check:', potentialDescription.text.substring(0, 50));
+    setCurrentDescription(potentialDescription);
+    
+    // Commented out overlap detection for debugging
+    /*
     import('@/data/spanishElmoCaptions').then(({ spanishElmoCaptions }) => {
       // Check if current description overlaps with any spoken caption
       const hasOverlap = spanishElmoCaptions.some(caption => {
@@ -310,6 +315,7 @@ useEffect(() => {
       console.log('Caption data not available, setting description');
       setCurrentDescription(potentialDescription);
     });
+    */
   } else {
     setCurrentDescription(potentialDescription);
   }
