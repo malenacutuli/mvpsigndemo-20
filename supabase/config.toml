@@ -11,3 +11,18 @@ verify_jwt = false
 
 [functions.prompt-to-video]
 verify_jwt = false
+
+[functions.replicate-ai]
+verify_jwt = false
+
+[functions.stability-ai]
+verify_jwt = false
+
+[functions.google-gemini]
+verify_jwt = false
+
+[functions.huggingface-ai]
+verify_jwt = false
+
+[functions.mapbox-geocoding]
+verify_jwt = false
