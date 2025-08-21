@@ -48,7 +48,7 @@ export type CaptionSegment = {
   words: CaptionWord[];
 };
 
-function mapSegments(segments: any[], contentType: "recipe" | "education"): CaptionSegment[] {
+function mapSegments(segments: any[]): CaptionSegment[] {
   return segments.map((seg: any) => {
     const start = Number(seg.start ?? 0);
     const end = Number(seg.end ?? start + 2);
@@ -56,48 +56,16 @@ function mapSegments(segments: any[], contentType: "recipe" | "education"): Capt
     const wordsRaw = txt.length ? txt.split(/\s+/) : [];
     const dur = Math.max(end - start, 0.001);
     const step = wordsRaw.length ? dur / wordsRaw.length : dur;
-    const words = wordsRaw.map((w: string, i: number) => {
-      let emphasis: 'loud' | 'quiet' | 'normal' = 'normal';
-      let pitch: 'high' | 'low' | 'normal' = 'normal';
-      
-      // Add natural emphasis and pitch variation based on content type
-      if (contentType === 'recipe') {
-        // Recipe content: emphasize cooking verbs and ingredients
-        if (/\b(chop|dice|sauté|boil|fry|bake|mix|stir|season|taste|perfect|amazing|crucial|important)\b/i.test(w)) {
-          emphasis = 'loud';
-          pitch = Math.random() > 0.5 ? 'high' : 'normal';
-        }
-        // Quiet emphasis for prep words
-        if (/\b(gently|slowly|carefully|lightly)\b/i.test(w)) {
-          emphasis = 'quiet';
-        }
-      } else if (contentType === 'education') {
-        // Educational content: emphasize learning words and concepts
-        if (/\b(learn|discover|important|remember|understand|amazing|wonderful|great|excellent)\b/i.test(w)) {
-          emphasis = 'loud';
-          pitch = 'high';
-        }
-        // Question words get pitch variation
-        if (/\b(what|why|how|where|when|can|will)\b/i.test(w)) {
-          pitch = 'high';
-        }
-      }
-      
-      return {
-        text: w,
-        startTime: start + i * step,
-        endTime: Math.min(end, start + (i + 1) * step),
-        emphasis,
-        pitch,
-      };
-    });
-    
-    // Set speaker based on content type
-    const speaker = contentType === 'education' ? 'child' : 'chef';
-    
+    const words = wordsRaw.map((w: string, i: number) => ({
+      text: w,
+      startTime: start + i * step,
+      endTime: Math.min(end, start + (i + 1) * step),
+      emphasis: "normal" as const,
+      pitch: "normal" as const,
+    }));
     return {
       text: txt,
-      speaker,
+      speaker: "narrator",
       startTime: start,
       endTime: end,
       words,
@@ -170,7 +138,7 @@ export const UploadAccessible: React.FC = () => {
       });
       if (error) throw new Error(error.message || "Transcription failed");
       const segments = (data as any)?.segments || [];
-      setInitialCaptions(mapSegments(segments, contentType));
+      setInitialCaptions(mapSegments(segments));
       toast.success("Uploaded and auto-captioned");
     } catch (e: any) {
       console.error(e);
