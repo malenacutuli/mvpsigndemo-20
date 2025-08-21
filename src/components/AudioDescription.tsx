@@ -271,8 +271,26 @@ useEffect(() => {
   const base = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
   const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) ? dynamicDescriptions : base;
   
+  console.log('AudioDescription sync check:', {
+    currentTime,
+    contentType,
+    totalDescriptions: descriptions.length,
+    isPlaying
+  });
+  
   // Find potential AD that matches current time
-  const potentialDescription = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime);
+  const potentialDescription = descriptions.find(desc => {
+    const matches = currentTime >= desc.startTime && currentTime <= desc.endTime;
+    if (matches) {
+      console.log('Found matching description:', {
+        text: desc.text.substring(0, 50) + '...',
+        startTime: desc.startTime,
+        endTime: desc.endTime,
+        currentTime
+      });
+    }
+    return matches;
+  });
   
   // Check for overlap with captions if we have Spanish Elmo data
   if (potentialDescription && contentType === 'education') {
@@ -284,16 +302,18 @@ useEffect(() => {
         return !(potentialDescription.endTime <= caption.startTime || potentialDescription.startTime >= caption.endTime);
       });
       
+      console.log('Overlap check:', { hasOverlap, currentTime });
       // Only set description if no overlap with voice-over
       setCurrentDescription(hasOverlap ? null : potentialDescription);
     }).catch(() => {
       // Fallback if captions can't be loaded
+      console.log('Caption data not available, setting description');
       setCurrentDescription(potentialDescription);
     });
   } else {
     setCurrentDescription(potentialDescription);
   }
-}, [currentTime, contentType, dynamicDescriptions]);
+}, [currentTime, contentType, dynamicDescriptions, isPlaying]);
 
   // Generate and play TTS for the current segment
   useEffect(() => {
