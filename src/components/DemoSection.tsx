@@ -13,10 +13,10 @@ export const DemoSection: React.FC = () => {
 
   const demoContent = {
     recipe: {
-      title: "Spaghetti Aglio e Olio Masterclass",
-      description: "Learn the classic Italian pasta technique with garlic, olive oil, and chili—plus ASL and dynamic captions",
-      videoSrc: "/videos/aglio-olio-longer.mp4",
-      duration: "1:34",
+      title: "Gourmet Food Preparation Masterclass",
+      description: "Professional food styling and preparation techniques with vibrant colors—plus ASL and dynamic captions",
+      videoSrc: "/videos/sony-food-demo.mp4",
+      duration: "1:22",
       features: [
         "Gordon Ramsay-style passionate cooking instruction",
         "Detailed pasta technique breakdowns", 
