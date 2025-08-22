@@ -42,6 +42,49 @@ export const Hero: React.FC = () => {
             </h2>
 
             {/* Key Features */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
+                <Subtitles className="w-8 h-8 text-primary mb-3 mx-auto" />
+                <h3 className="font-semibold text-lg mb-2">Captions with Intention</h3>
+                <p className="text-muted-foreground text-sm">
+                  AI-powered emotional styling makes captions expressive and contextual
+                </p>
+              </div>
+              
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
+                <Mic className="w-8 h-8 text-accent mb-3 mx-auto" />
+                <h3 className="font-semibold text-lg mb-2">Audio Descriptions</h3>
+                <p className="text-muted-foreground text-sm">
+                  Automatic visual content descriptions for blind and low-vision users
+                </p>
+              </div>
+              
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
+                <HandHelping className="w-8 h-8 text-cwi-main-orange mb-3 mx-auto" />
+                <h3 className="font-semibold text-lg mb-2">Multi-Language Sign Avatars</h3>
+                <p className="text-muted-foreground text-sm">
+                  Professional AI interpreters in 15+ sign language variants with cultural authenticity
+                </p>
+              </div>
+              
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
+                <Users className="w-8 h-8 text-primary mb-3 mx-auto" />
+                <h3 className="font-semibold text-lg mb-2">Legal Compliance</h3>
+                <p className="text-muted-foreground text-sm">
+                  Automated WCAG, ADA, and EAA compliance checking and reporting
+                </p>
+              </div>
+            </div>
+
+            {/* Architecture Note */}
+            <p className="text-lg text-muted-foreground mb-6 max-w-4xl mx-auto leading-relaxed">
+              Axessible is built on a patent-backed architecture that integrates accessibility into the core of content creation—not as an afterthought.
+            </p>
+
+            {/* Final CTA */}
+            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
+              Make Video Truly Inclusive. With One Line of AI.
+            </h3>
           </div>
         </div>
       </div>
