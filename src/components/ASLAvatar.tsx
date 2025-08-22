@@ -8,7 +8,7 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Expanded ASL video library using working .webm videos
+// Comprehensive ASL video library with maximum keyword coverage
 const ASL_CLIPS: Record<string, string> = {
   // Basic common signs
   'hello': '/videos/asl/chef-asl-loop.webm',
@@ -22,6 +22,50 @@ const ASL_CLIPS: Record<string, string> = {
   'thank you': '/videos/asl/chef-garlic.webm',
   'gracias': '/videos/asl/chef-garlic.webm',
   'thanks': '/videos/asl/chef-garlic.webm',
+  'good': '/videos/asl/asl-good.webm',
+  'bueno': '/videos/asl/asl-good.webm',
+  'bad': '/videos/asl/asl-bad.webm',
+  'malo': '/videos/asl/asl-bad.webm',
+  'more': '/videos/asl/asl-more.webm',
+  'más': '/videos/asl/asl-more.webm',
+  'stop': '/videos/asl/asl-stop.webm',
+  'para': '/videos/asl/asl-stop.webm',
+  'help': '/videos/asl/asl-help.webm',
+  'ayuda': '/videos/asl/asl-help.webm',
+  'sorry': '/videos/asl/asl-sorry.webm',
+  'perdón': '/videos/asl/asl-sorry.webm',
+  'finish': '/videos/asl/asl-finish.webm',
+  'terminar': '/videos/asl/asl-finish.webm',
+
+  // Colors
+  'red': '/videos/asl/asl-red.webm',
+  'rojo': '/videos/asl/asl-red.webm',
+  'blue': '/videos/asl/asl-blue.webm',
+  'azul': '/videos/asl/asl-blue.webm',
+  'green': '/videos/asl/asl-green.webm',
+  'verde': '/videos/asl/asl-green.webm',
+  'color': '/videos/asl/asl-red.webm',
+  'colors': '/videos/asl/asl-blue.webm',
+
+  // Numbers and time
+  'one': '/videos/asl/asl-numbers.webm',
+  'uno': '/videos/asl/asl-numbers.webm',
+  'two': '/videos/asl/asl-numbers.webm',
+  'dos': '/videos/asl/asl-numbers.webm',
+  'three': '/videos/asl/asl-numbers.webm',
+  'tres': '/videos/asl/asl-numbers.webm',
+  'number': '/videos/asl/asl-numbers.webm',
+  'numbers': '/videos/asl/asl-numbers.webm',
+  'time': '/videos/asl/asl-time.webm',
+  'tiempo': '/videos/asl/asl-time.webm',
+  'today': '/videos/asl/asl-today.webm',
+  'hoy': '/videos/asl/asl-today.webm',
+
+  // Family and social
+  'family': '/videos/asl/asl-family.webm',
+  'familia': '/videos/asl/asl-family.webm',
+  'school': '/videos/asl/asl-school.webm',
+  'escuela': '/videos/asl/asl-school.webm',
 
   // Educational vocabulary - Spanish Elmo content
   'bienvenidos': '/videos/asl/chef-asl-loop.webm',
@@ -77,14 +121,14 @@ const ASL_CLIPS: Record<string, string> = {
   'chef-avatar': '/videos/asl/chef-asl-loop.webm',
   'food-expert': '/videos/asl/chef-asl-loop.webm',
   'home-cook': '/videos/asl/chef-pasta.webm',
-  'superhero-captain': '/videos/asl/chef-garlic.webm',
-  'superhero-star': '/videos/asl/chef-stir.webm',
-  'friendly-teacher': '/videos/asl/chef-boil.webm',
-  'student-peer': '/videos/asl/chef-pasta.webm',
+  'superhero-captain': '/videos/asl/asl-good.webm',
+  'superhero-star': '/videos/asl/asl-help.webm',
+  'friendly-teacher': '/videos/asl/asl-school.webm',
+  'student-peer': '/videos/asl/asl-family.webm',
 
   // Default fallbacks
   default: '/videos/asl/chef-asl-loop.webm',
-  children: '/videos/asl/chef-asl-loop.webm',
+  children: '/videos/asl/asl-school.webm',
   adults: '/videos/asl/chef-asl-loop.webm',
 };
 
