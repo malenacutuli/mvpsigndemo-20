@@ -152,7 +152,47 @@ export const UploadAccessible: React.FC = () => {
             <strong>Speech Recognition → Captions with Intention → Audio Descriptions → ASL Avatars</strong>
           </CardDescription>
         </CardHeader>
-          <CardContent>
+        <CardContent>
+            {/* Upload File Section */}
+            <div className="space-y-6 mb-8">
+              <div className="space-y-2">
+                <Label htmlFor="file">Upload Video File</Label>
+                <Input id="file" type="file" accept="video/*" onChange={(e) => onFileChange(e.target.files?.[0] || undefined)} />
+                <p className="text-xs text-muted-foreground">Accepted: mp4, webm, mov. Private storage with signed playback URLs.</p>
+              </div>
+            </div>
+
+            {/* Video Player Section */}
+            <div className="mb-8">
+              {videoUrl ? (
+                <AxessiblePlayer
+                  videoSrc={videoUrl}
+                  title="Your uploaded video"
+                  selectedVoice={selectedVoice}
+                  selectedASLAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
+                  contentType={contentType}
+                  initialCaptions={initialCaptions}
+                />
+              ) : (
+                <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center bg-gradient-accessibility">
+                  <div className="mb-6">
+                    <Upload className="w-16 h-16 text-primary/60 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Ready for Your Video</h3>
+                    <p className="text-muted-foreground">Upload any video to see the complete accessibility pipeline in action</p>
+                  </div>
+                  
+                  <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
+                    <h4 className="font-semibold text-center">What You'll Experience:</h4>
+                    <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
+                    <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
+                    <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
+                    <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Options Section */}
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -198,14 +238,10 @@ export const UploadAccessible: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="file">Video file</Label>
-                  <Input id="file" type="file" accept="video/*" onChange={(e) => onFileChange(e.target.files?.[0] || undefined)} />
-                  <p className="text-xs text-muted-foreground">Accepted: mp4, webm, mov. Private storage with signed playback URLs.</p>
-                </div>
-
-                <div className="mt-6 p-4 bg-secondary/30 rounded-lg">
+              <div className="space-y-4">
+                <div className="p-4 bg-secondary/30 rounded-lg">
                   <h4 className="font-semibold mb-2 text-sm">🔥 Live Features</h4>
                   <div className="text-xs space-y-1 text-muted-foreground">
                     <div>✓ Supabase storage & transcription</div>
@@ -214,37 +250,10 @@ export const UploadAccessible: React.FC = () => {
                     <div>✓ Multi-modal accessibility</div>
                   </div>
                 </div>
-                
-                <ComplianceReport available={{ cc: !!initialCaptions, ad: true, asl: true }} />
               </div>
 
-              <div className="lg:col-span-2">
-                {videoUrl ? (
-                  <AxessiblePlayer
-                    videoSrc={videoUrl}
-                    title="Your uploaded video"
-                    selectedVoice={selectedVoice}
-                    selectedASLAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
-                    contentType={contentType}
-                    initialCaptions={initialCaptions}
-                  />
-                ) : (
-                  <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center bg-gradient-accessibility">
-                    <div className="mb-6">
-                      <Upload className="w-16 h-16 text-primary/60 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">Ready for Your Video</h3>
-                      <p className="text-muted-foreground">Upload any video to see the complete accessibility pipeline in action</p>
-                    </div>
-                    
-                    <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
-                      <h4 className="font-semibold text-center">What You'll Experience:</h4>
-                      <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
-                      <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
-                      <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
-                      <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-4">
+                <ComplianceReport available={{ cc: !!initialCaptions, ad: true, asl: true }} />
               </div>
             </div>
           </CardContent>
