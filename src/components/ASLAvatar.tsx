@@ -8,65 +8,80 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Enhanced ASL library with diverse signers including children
+// Enhanced ASL library with diverse signers including real children
 const ASL_CLIPS: Record<string, string> = {
-  // Cooking actions
-  boil: '/videos/asl/chef-boil.webm',
-  boiling: '/videos/asl/chef-boil.webm',
-  pasta: '/videos/asl/chef-pasta.webm', 
-  garlic: '/videos/asl/chef-garlic.webm',
-  stir: '/videos/asl/chef-stir.webm',
-  stirring: '/videos/asl/chef-stir.webm',
-  cook: '/videos/asl/lifeprint-cook.mp4',
-  cooking: '/videos/asl/lifeprint-cook.mp4',
-  bake: '/videos/asl/chef-bake.webm',
-  baking: '/videos/asl/chef-bake.webm',
+  // Real children's cooking actions - NEW DOWNLOADS
+  boil: '/videos/asl/children-cooking-basics.mp4',
+  boiling: '/videos/asl/children-cooking-basics.mp4',
+  cook: '/videos/asl/children-cooking-basics.mp4',
+  cooking: '/videos/asl/children-cooking-basics.mp4',
+  kitchen: '/videos/asl/children-kitchen-words.mp4',
+  
+  // Food vocabulary with children signers
+  pasta: '/videos/asl/children-food-vocabulary.mp4', 
+  food: '/videos/asl/children-food-vocabulary.mp4',
   eat: '/videos/asl/sample-eat.mp4',
   eating: '/videos/asl/sample-eat.mp4',
   drink: '/videos/asl/sample-drink.mp4',
   drinking: '/videos/asl/sample-drink.mp4',
   
-  // Cooking tools & ingredients
-  water: '/videos/asl/kids-water-sign.mp4',
-  timer: '/videos/asl/kids-timer-sign.mp4', 
-  pan: '/videos/asl/kids-pan-sign.mp4',
-  'olive oil': '/videos/asl/kids-oil-sign.mp4',
-  oil: '/videos/asl/kids-oil-sign.mp4',
-  'large pan': '/videos/asl/kids-large-pan.mp4',
-  'al dente': '/videos/asl/kids-al-dente.mp4',
-  'angel pasta': '/videos/asl/kids-angel-pasta.mp4',
+  // Basic cooking terms with children
+  garlic: '/videos/asl/children-food-vocabulary.mp4',
+  stir: '/videos/asl/children-cooking-basics.mp4',
+  stirring: '/videos/asl/children-cooking-basics.mp4',
+  bake: '/videos/asl/children-cooking-basics.mp4',
+  baking: '/videos/asl/children-cooking-basics.mp4',
+  
+  // Kitchen tools & ingredients
+  water: '/videos/asl/children-food-vocabulary.mp4',
+  timer: '/videos/asl/children-kitchen-words.mp4', 
+  pan: '/videos/asl/children-kitchen-words.mp4',
+  'olive oil': '/videos/asl/children-food-vocabulary.mp4',
+  oil: '/videos/asl/children-food-vocabulary.mp4',
+  'large pan': '/videos/asl/children-kitchen-words.mp4',
   salt: '/videos/asl/sample-salt.mp4',
   pepper: '/videos/asl/sample-pepper.mp4',
   
-  // Kitchen vocabulary from educational sources
-  kitchen: '/videos/asl/startasl-kitchen.mp4',
-  food: '/videos/asl/lifeprint-food-cooking.mp4',
+  // Educational content with children signers
+  learn: '/videos/asl/children-learn-together.mp4',
+  learning: '/videos/asl/children-learn-together.mp4',
+  study: '/videos/asl/children-learn-together.mp4',
+  studying: '/videos/asl/children-learn-together.mp4',
+  teach: '/videos/asl/children-learn-together.mp4',
+  teaching: '/videos/asl/children-learn-together.mp4',
   
-  // Educational content
-  learn: '/videos/asl/gallaudet-children-dictionary.mp4',
-  learning: '/videos/asl/gallaudet-children-dictionary.mp4',
-  study: '/videos/asl/kids-study-sign.mp4',
-  studying: '/videos/asl/kids-study-sign.mp4',
-  teach: '/videos/asl/gallaudet-children-dictionary.mp4',
-  teaching: '/videos/asl/gallaudet-children-dictionary.mp4',
+  // Superhero educational signs for children
+  superhero: '/videos/asl/children-superhero-learning.mp4',
+  hero: '/videos/asl/children-superhero-learning.mp4',
+  adventure: '/videos/asl/children-superhero-learning.mp4',
+  science: '/videos/asl/children-learn-together.mp4',
   
-  // Avatar-specific clips based on character
-  'chef-avatar': '/videos/asl/chef-asl-loop.webm',
-  'food-expert': '/videos/asl/chef-pasta.webm',
-  'home-cook': '/videos/asl/startasl-kitchen.mp4',
-  'superhero-captain': '/videos/asl/kids-kitchen-signs.mp4',
-  'superhero-star': '/videos/asl/kids-kitchen-signs.mp4',
-  'friendly-teacher': '/videos/asl/gallaudet-children-dictionary.mp4',
-  'student-peer': '/videos/asl/kids-kitchen-signs.mp4',
+  // Avatar-specific clips based on character (children signers)
+  'chef-avatar': '/videos/asl/children-cooking-basics.mp4',
+  'food-expert': '/videos/asl/children-food-vocabulary.mp4',
+  'home-cook': '/videos/asl/children-kitchen-words.mp4',
+  'superhero-captain': '/videos/asl/children-superhero-learning.mp4',
+  'superhero-star': '/videos/asl/children-superhero-learning.mp4',
+  'friendly-teacher': '/videos/asl/children-learn-together.mp4',
+  'student-peer': '/videos/asl/children-learn-together.mp4',
   
-  // Default fallbacks with diverse signers
-  default: '/videos/asl/chef-asl-loop.webm',
-  children: '/videos/asl/kids-kitchen-signs.mp4',
+  // Educational alphabet and storytelling
+  alphabet: '/videos/asl/children-educational-alphabet.mp4',
+  story: '/videos/asl/children-storytelling-signs.mp4',
+  storytelling: '/videos/asl/children-storytelling-signs.mp4',
+  
+  // Default fallbacks with real children signers
+  default: '/videos/asl/children-cooking-basics.mp4',
+  children: '/videos/asl/children-learn-together.mp4',
+  
+  // Professional chef content (keep existing for cooking demos)
+  'professional-chef': '/videos/asl/chef-asl-loop.webm',
+  'chef-professional': '/videos/asl/chef-pasta.webm',
 };
 
-// Keyword expansion mapping for better matching
+// Keyword expansion mapping for better matching with children's content
 const KEYWORD_EXPANSIONS: Record<string, string[]> = {
-  // Cooking verbs
+  // Cooking verbs (now mapped to children's videos)
   'cook': ['cook', 'cooking', 'prepare', 'preparing', 'make', 'making'],
   'boil': ['boil', 'boiling', 'boiled', 'bubble', 'bubbling'],
   'stir': ['stir', 'stirring', 'mix', 'mixing', 'blend', 'blending'],
@@ -74,7 +89,7 @@ const KEYWORD_EXPANSIONS: Record<string, string[]> = {
   'eat': ['eat', 'eating', 'taste', 'tasting', 'consume'],
   'drink': ['drink', 'drinking', 'sip', 'sipping', 'beverage'],
   
-  // Ingredients
+  // Ingredients (children signers)
   'garlic': ['garlic', 'clove', 'cloves', 'minced garlic'],
   'pasta': ['pasta', 'noodles', 'spaghetti', 'angel hair'],
   'water': ['water', 'liquid', 'hot water', 'cold water'],
@@ -82,13 +97,17 @@ const KEYWORD_EXPANSIONS: Record<string, string[]> = {
   'salt': ['salt', 'seasoning', 'sodium'],
   'pepper': ['pepper', 'black pepper', 'spice'],
   
-  // Kitchen tools
+  // Kitchen tools (children demonstrating)
   'pan': ['pan', 'large pan', 'frying pan', 'skillet'],
   'timer': ['timer', 'time', 'minutes', 'seconds'],
+  'kitchen': ['kitchen', 'cooking area', 'cook space'],
   
-  // Educational terms
+  // Educational terms (children learning)
   'learn': ['learn', 'learning', 'education', 'study', 'studying'],
   'teach': ['teach', 'teaching', 'instruction', 'lesson'],
+  'superhero': ['superhero', 'hero', 'captain', 'adventure'],
+  'science': ['science', 'experiment', 'discovery'],
+  'story': ['story', 'storytelling', 'narrative', 'tale'],
 };
 
 // Smart keyword matching function
