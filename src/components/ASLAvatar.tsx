@@ -259,9 +259,9 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
           </div>
         )}
 
-        {/* Meta pill */}
+        {/* Meta pill - simplified without character description */}
         <div className="absolute bottom-1 left-1 bg-primary/30 text-white text-[10px] px-2 py-0.5 rounded-full">
-          {selectedASLAvatar?.name || (contentType === 'recipe' ? 'Chef' : 'Teacher')}
+          {contentType === 'recipe' ? 'Chef' : 'Teacher'}
         </div>
       </div>
     </div>
