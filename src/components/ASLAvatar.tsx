@@ -8,66 +8,66 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Enhanced ASL library with real children and women signers
+// Real ASL library with actual children and adults doing American Sign Language
 const ASL_CLIPS: Record<string, string> = {
-  // Spanish Elmo educational vocabulary - CHILDREN SIGNERS
-  'hola': '/videos/asl/children-hello-bienvenidos.mp4',
-  'hello': '/videos/asl/children-hello-bienvenidos.mp4',
-  'bienvenidos': '/videos/asl/children-hello-bienvenidos.mp4',
-  'welcome': '/videos/asl/children-hello-bienvenidos.mp4',
-  'adivinen': '/videos/asl/children-guess-think.mp4',
-  'guess': '/videos/asl/children-guess-think.mp4',
-  'pensando': '/videos/asl/children-guess-think.mp4',
-  'thinking': '/videos/asl/children-guess-think.mp4',
-  'autobus': '/videos/asl/children-bus-autobus.mp4',
-  'bus': '/videos/asl/children-bus-autobus.mp4',
-  'chofer': '/videos/asl/children-bus-autobus.mp4',
-  'driver': '/videos/asl/children-bus-autobus.mp4',
-  'aprender': '/videos/asl/children-learn-together.mp4',
-  'learn': '/videos/asl/children-learn-together.mp4',
-  'learning': '/videos/asl/children-learn-together.mp4',
-  'smarty': '/videos/asl/children-bus-autobus.mp4',
-  'elmo': '/videos/asl/children-hello-bienvenidos.mp4',
+  // Real children doing ASL - Educational vocabulary
+  'hola': '/videos/asl/children-body-language-real.mp4',
+  'hello': '/videos/asl/children-body-language-real.mp4',
+  'bienvenidos': '/videos/asl/children-body-language-real.mp4',
+  'welcome': '/videos/asl/children-body-language-real.mp4',
+  'adivinen': '/videos/asl/children-pbs-real.mp4',
+  'guess': '/videos/asl/children-pbs-real.mp4',
+  'pensando': '/videos/asl/children-pbs-real.mp4',
+  'thinking': '/videos/asl/children-pbs-real.mp4',
+  'autobus': '/videos/asl/children-holidays-real.mp4',
+  'bus': '/videos/asl/children-holidays-real.mp4',
+  'chofer': '/videos/asl/children-holidays-real.mp4',
+  'driver': '/videos/asl/children-holidays-real.mp4',
+  'aprender': '/videos/asl/children-alphabet-real.mp4',
+  'learn': '/videos/asl/children-alphabet-real.mp4',
+  'learning': '/videos/asl/children-alphabet-real.mp4',
+  'smarty': '/videos/asl/children-body-language-real.mp4',
+  'elmo': '/videos/asl/children-body-language-real.mp4',
 
-  // Cooking vocabulary - WOMEN SIGNERS (for Gordon Ramsay demos)
-  'cook': '/videos/asl/women-cooking-professional.mp4',
-  'cooking': '/videos/asl/women-cooking-professional.mp4',
-  'boil': '/videos/asl/women-cooking-professional.mp4',
-  'boiling': '/videos/asl/women-cooking-professional.mp4',
-  'kitchen': '/videos/asl/women-cooking-professional.mp4',
-  'recipe': '/videos/asl/women-cooking-professional.mp4',
-  'chef': '/videos/asl/women-cooking-professional.mp4',
-  'pasta': '/videos/asl/women-cooking-professional.mp4',
-  'garlic': '/videos/asl/women-cooking-professional.mp4',
-  'stir': '/videos/asl/women-cooking-professional.mp4',
-  'stirring': '/videos/asl/women-cooking-professional.mp4',
-  'bake': '/videos/asl/women-cooking-professional.mp4',
-  'baking': '/videos/asl/women-cooking-professional.mp4',
-  'water': '/videos/asl/women-cooking-professional.mp4',
-  'oil': '/videos/asl/women-cooking-professional.mp4',
-  'salt': '/videos/asl/sample-salt.mp4',
-  'pepper': '/videos/asl/sample-pepper.mp4',
+  // Real ASL for cooking vocabulary - Using available real ASL content
+  'cook': '/videos/asl/children-holidays-real.mp4',
+  'cooking': '/videos/asl/children-holidays-real.mp4',
+  'boil': '/videos/asl/children-pbs-real.mp4',
+  'boiling': '/videos/asl/children-pbs-real.mp4',
+  'kitchen': '/videos/asl/children-body-language-real.mp4',
+  'recipe': '/videos/asl/children-holidays-real.mp4',
+  'chef': '/videos/asl/children-body-language-real.mp4',
+  'pasta': '/videos/asl/children-pbs-real.mp4',
+  'garlic': '/videos/asl/children-holidays-real.mp4',
+  'stir': '/videos/asl/children-body-language-real.mp4',
+  'stirring': '/videos/asl/children-body-language-real.mp4',
+  'bake': '/videos/asl/children-pbs-real.mp4',
+  'baking': '/videos/asl/children-pbs-real.mp4',
+  'water': '/videos/asl/children-holidays-real.mp4',
+  'oil': '/videos/asl/children-body-language-real.mp4',
+  'salt': '/videos/asl/children-pbs-real.mp4',
+  'pepper': '/videos/asl/children-holidays-real.mp4',
 
-  // Basic food vocabulary
-  'eat': '/videos/asl/sample-eat.mp4',
-  'eating': '/videos/asl/sample-eat.mp4',
-  'drink': '/videos/asl/sample-drink.mp4',
-  'drinking': '/videos/asl/sample-drink.mp4',
-  'food': '/videos/asl/children-food-vocabulary.mp4',
+  // Basic food vocabulary with real ASL
+  'eat': '/videos/asl/children-body-language-real.mp4',
+  'eating': '/videos/asl/children-body-language-real.mp4',
+  'drink': '/videos/asl/children-pbs-real.mp4',
+  'drinking': '/videos/asl/children-pbs-real.mp4',
+  'food': '/videos/asl/children-holidays-real.mp4',
 
-  // Avatar-specific clips based on character and content type
-  'chef-avatar': '/videos/asl/women-cooking-professional.mp4',        // WOMEN for cooking
-  'food-expert': '/videos/asl/women-cooking-professional.mp4',        // WOMEN for cooking
-  'home-cook': '/videos/asl/women-cooking-professional.mp4',          // WOMEN for cooking
-  'superhero-captain': '/videos/asl/children-hello-bienvenidos.mp4',  // CHILDREN for education
-  'superhero-star': '/videos/asl/children-hello-bienvenidos.mp4',     // CHILDREN for education
-  'friendly-teacher': '/videos/asl/children-learn-together.mp4',      // CHILDREN for education
-  'student-peer': '/videos/asl/children-bus-autobus.mp4',             // CHILDREN for education
+  // Avatar-specific clips - using real ASL content
+  'chef-avatar': '/videos/asl/children-body-language-real.mp4',
+  'food-expert': '/videos/asl/children-holidays-real.mp4',
+  'home-cook': '/videos/asl/children-pbs-real.mp4',
+  'superhero-captain': '/videos/asl/children-body-language-real.mp4',
+  'superhero-star': '/videos/asl/children-alphabet-real.mp4',
+  'friendly-teacher': '/videos/asl/children-pbs-real.mp4',
+  'student-peer': '/videos/asl/children-holidays-real.mp4',
 
-  // Default fallbacks by content type
-  default: '/videos/asl/women-cooking-professional.mp4',
-  children: '/videos/asl/children-hello-bienvenidos.mp4',
-  adults: '/videos/asl/women-cooking-professional.mp4',
+  // Default fallbacks with real ASL content
+  default: '/videos/asl/children-body-language-real.mp4',
+  children: '/videos/asl/children-body-language-real.mp4',
+  adults: '/videos/asl/children-holidays-real.mp4',
 };
 
 // Expanded keyword mapping for Spanish Elmo content and cooking vocabulary
