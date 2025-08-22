@@ -16,210 +16,210 @@ interface ASLVideoSources {
 }
 
 const ASL_CLIPS: Record<string, ASLVideoSources> = {
-  // Educational vocabulary - Children signers
+  // Educational vocabulary - Children signers (PLACEHOLDER - In production these would be real ASL videos)
   'hola': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'hello': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'bienvenidos': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'welcome': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'adivinen': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'guess': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'pensando': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'thinking': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'autobus': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
   'bus': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
   'chofer': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
   'driver': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
   'aprender': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-alphabet-real.mp4'
   },
   'learn': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-alphabet-real.mp4'
   },
   'learning': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-alphabet-real.mp4'
   },
   'smarty': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'elmo': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
 
-  // Cooking vocabulary - Adult women signers
+  // Cooking vocabulary - Adult women signers (PLACEHOLDER - In production these would be real ASL videos)
   'cook': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'cooking': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'boil': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-boil.webm'
   },
   'boiling': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-boil.webm'
   },
   'kitchen': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/kids-kitchen-signs.mp4'
   },
   'recipe': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'chef': { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-asl-loop.webm'
   },
   'pasta': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-pasta.webm'
   },
   'garlic': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-garlic.webm'
   },
   'stir': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-stir.webm'
   },
   'stirring': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-stir.webm'
   },
   'bake': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'baking': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'water': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/kids-kitchen-signs.mp4'
   },
   'oil': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/kids-kitchen-signs.mp4'
   },
   'salt': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/startasl-kitchen.mp4'
   },
   'pepper': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/startasl-kitchen.mp4'
   },
 
-  // Basic food vocabulary - Mixed signers
+  // Basic food vocabulary
   'eat': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'eating': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'drink': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'drinking': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'food': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
 
-  // Avatar-specific clips - Content type appropriate
+  // Avatar-specific clips
   'chef-avatar': { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/chef-asl-loop.webm'
   },
   'food-expert': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/women-cooking-professional.mp4'
   },
   'home-cook': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
     webm: '/videos/asl/kids-kitchen-signs.mp4'
   },
   'superhero-captain': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   'superhero-star': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-alphabet-real.mp4'
   },
   'friendly-teacher': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-pbs-real.mp4'
   },
   'student-peer': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-holidays-real.mp4'
   },
 
-  // Default fallbacks - Content type appropriate
+  // Default fallbacks
   default: { 
-    mp4: '/videos/asl/chef-asl-loop.webm',
+    mp4: '/videos/asl/real-asl-cooking.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   children: { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
+    mp4: '/videos/asl/real-children-asl.mp4',
     webm: '/videos/asl/children-body-language-real.mp4'
   },
   adults: { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
-    webm: '/videos/asl/lifeprint-food-cooking.mp4'
+    mp4: '/videos/asl/real-women-cooking-asl.mp4',
+    webm: '/videos/asl/women-cooking-professional.mp4'
   },
 };
 
