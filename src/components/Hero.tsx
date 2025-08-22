@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { HandHelping, Subtitles, Mic, Sparkles, Users, Award } from 'lucide-react';
+import { UploadAccessible } from '@/components/UploadAccessible';
 
 export const Hero: React.FC = () => {
   return (
@@ -86,6 +87,11 @@ export const Hero: React.FC = () => {
               Make Video Truly Inclusive. With One Line of AI.
             </h3>
           </div>
+        </div>
+        
+        {/* Video Upload & Experience */}
+        <div className="container mx-auto px-6 mt-16">
+          <UploadAccessible />
         </div>
       </div>
 

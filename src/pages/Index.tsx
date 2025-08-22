@@ -9,11 +9,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Hero />
-      
-      {/* Video Upload & Experience */}
-      <section className="py-16 bg-gradient-accessibility">
-        <UploadAccessible />
-      </section>
 
       {/* Supporting Demos */}
       <DemoSection />
