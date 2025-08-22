@@ -10,11 +10,11 @@ export const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       
       {/* Logo positioned in top left corner */}
-      <div className="absolute top-6 left-6 z-20">
+      <div className="absolute top-4 left-4 z-20">
         <img
           src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
           alt="Axessible logo – multi-modal accessible video platform"
-          className="h-8 md:h-10 w-auto"
+          className="h-6 md:h-7 w-auto opacity-90"
           loading="lazy"
           decoding="async"
         />
