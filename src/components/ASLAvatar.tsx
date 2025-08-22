@@ -8,125 +8,117 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Enhanced ASL library with diverse signers including real children
+// Enhanced ASL library with real children and women signers
 const ASL_CLIPS: Record<string, string> = {
-  // Real children's cooking actions - NEW DOWNLOADS
-  boil: '/videos/asl/children-cooking-basics.mp4',
-  boiling: '/videos/asl/children-cooking-basics.mp4',
-  cook: '/videos/asl/children-cooking-basics.mp4',
-  cooking: '/videos/asl/children-cooking-basics.mp4',
-  kitchen: '/videos/asl/children-kitchen-words.mp4',
-  
-  // Food vocabulary with children signers
-  pasta: '/videos/asl/children-food-vocabulary.mp4', 
-  food: '/videos/asl/children-food-vocabulary.mp4',
-  eat: '/videos/asl/sample-eat.mp4',
-  eating: '/videos/asl/sample-eat.mp4',
-  drink: '/videos/asl/sample-drink.mp4',
-  drinking: '/videos/asl/sample-drink.mp4',
-  
-  // Basic cooking terms with children
-  garlic: '/videos/asl/children-food-vocabulary.mp4',
-  stir: '/videos/asl/children-cooking-basics.mp4',
-  stirring: '/videos/asl/children-cooking-basics.mp4',
-  bake: '/videos/asl/children-cooking-basics.mp4',
-  baking: '/videos/asl/children-cooking-basics.mp4',
-  
-  // Kitchen tools & ingredients
-  water: '/videos/asl/children-food-vocabulary.mp4',
-  timer: '/videos/asl/children-kitchen-words.mp4', 
-  pan: '/videos/asl/children-kitchen-words.mp4',
-  'olive oil': '/videos/asl/children-food-vocabulary.mp4',
-  oil: '/videos/asl/children-food-vocabulary.mp4',
-  'large pan': '/videos/asl/children-kitchen-words.mp4',
-  salt: '/videos/asl/sample-salt.mp4',
-  pepper: '/videos/asl/sample-pepper.mp4',
-  
-  // Educational content with children signers
-  learn: '/videos/asl/children-learn-together.mp4',
-  learning: '/videos/asl/children-learn-together.mp4',
-  study: '/videos/asl/children-learn-together.mp4',
-  studying: '/videos/asl/children-learn-together.mp4',
-  teach: '/videos/asl/children-learn-together.mp4',
-  teaching: '/videos/asl/children-learn-together.mp4',
-  
-  // Superhero educational signs for children
-  superhero: '/videos/asl/children-superhero-learning.mp4',
-  hero: '/videos/asl/children-superhero-learning.mp4',
-  adventure: '/videos/asl/children-superhero-learning.mp4',
-  science: '/videos/asl/children-learn-together.mp4',
-  
-  // Avatar-specific clips based on character (children signers)
-  'chef-avatar': '/videos/asl/children-cooking-basics.mp4',
-  'food-expert': '/videos/asl/children-food-vocabulary.mp4',
-  'home-cook': '/videos/asl/children-kitchen-words.mp4',
-  'superhero-captain': '/videos/asl/children-superhero-learning.mp4',
-  'superhero-star': '/videos/asl/children-superhero-learning.mp4',
-  'friendly-teacher': '/videos/asl/children-learn-together.mp4',
-  'student-peer': '/videos/asl/children-learn-together.mp4',
-  
-  // Educational alphabet and storytelling
-  alphabet: '/videos/asl/children-educational-alphabet.mp4',
-  story: '/videos/asl/children-storytelling-signs.mp4',
-  storytelling: '/videos/asl/children-storytelling-signs.mp4',
-  
-  // Default fallbacks with real children signers
-  default: '/videos/asl/children-cooking-basics.mp4',
-  children: '/videos/asl/children-learn-together.mp4',
-  
-  // Professional chef content (keep existing for cooking demos)
-  'professional-chef': '/videos/asl/chef-asl-loop.webm',
-  'chef-professional': '/videos/asl/chef-pasta.webm',
+  // Spanish Elmo educational vocabulary - CHILDREN SIGNERS
+  'hola': '/videos/asl/children-hello-bienvenidos.mp4',
+  'hello': '/videos/asl/children-hello-bienvenidos.mp4',
+  'bienvenidos': '/videos/asl/children-hello-bienvenidos.mp4',
+  'welcome': '/videos/asl/children-hello-bienvenidos.mp4',
+  'adivinen': '/videos/asl/children-guess-think.mp4',
+  'guess': '/videos/asl/children-guess-think.mp4',
+  'pensando': '/videos/asl/children-guess-think.mp4',
+  'thinking': '/videos/asl/children-guess-think.mp4',
+  'autobus': '/videos/asl/children-bus-autobus.mp4',
+  'bus': '/videos/asl/children-bus-autobus.mp4',
+  'chofer': '/videos/asl/children-bus-autobus.mp4',
+  'driver': '/videos/asl/children-bus-autobus.mp4',
+  'aprender': '/videos/asl/children-learn-together.mp4',
+  'learn': '/videos/asl/children-learn-together.mp4',
+  'learning': '/videos/asl/children-learn-together.mp4',
+  'smarty': '/videos/asl/children-bus-autobus.mp4',
+  'elmo': '/videos/asl/children-hello-bienvenidos.mp4',
+
+  // Cooking vocabulary - WOMEN SIGNERS (for Gordon Ramsay demos)
+  'cook': '/videos/asl/women-cooking-professional.mp4',
+  'cooking': '/videos/asl/women-cooking-professional.mp4',
+  'boil': '/videos/asl/women-cooking-professional.mp4',
+  'boiling': '/videos/asl/women-cooking-professional.mp4',
+  'kitchen': '/videos/asl/women-cooking-professional.mp4',
+  'recipe': '/videos/asl/women-cooking-professional.mp4',
+  'chef': '/videos/asl/women-cooking-professional.mp4',
+  'pasta': '/videos/asl/women-cooking-professional.mp4',
+  'garlic': '/videos/asl/women-cooking-professional.mp4',
+  'stir': '/videos/asl/women-cooking-professional.mp4',
+  'stirring': '/videos/asl/women-cooking-professional.mp4',
+  'bake': '/videos/asl/women-cooking-professional.mp4',
+  'baking': '/videos/asl/women-cooking-professional.mp4',
+  'water': '/videos/asl/women-cooking-professional.mp4',
+  'oil': '/videos/asl/women-cooking-professional.mp4',
+  'salt': '/videos/asl/sample-salt.mp4',
+  'pepper': '/videos/asl/sample-pepper.mp4',
+
+  // Basic food vocabulary
+  'eat': '/videos/asl/sample-eat.mp4',
+  'eating': '/videos/asl/sample-eat.mp4',
+  'drink': '/videos/asl/sample-drink.mp4',
+  'drinking': '/videos/asl/sample-drink.mp4',
+  'food': '/videos/asl/children-food-vocabulary.mp4',
+
+  // Avatar-specific clips based on character and content type
+  'chef-avatar': '/videos/asl/women-cooking-professional.mp4',        // WOMEN for cooking
+  'food-expert': '/videos/asl/women-cooking-professional.mp4',        // WOMEN for cooking
+  'home-cook': '/videos/asl/women-cooking-professional.mp4',          // WOMEN for cooking
+  'superhero-captain': '/videos/asl/children-hello-bienvenidos.mp4',  // CHILDREN for education
+  'superhero-star': '/videos/asl/children-hello-bienvenidos.mp4',     // CHILDREN for education
+  'friendly-teacher': '/videos/asl/children-learn-together.mp4',      // CHILDREN for education
+  'student-peer': '/videos/asl/children-bus-autobus.mp4',             // CHILDREN for education
+
+  // Default fallbacks by content type
+  default: '/videos/asl/women-cooking-professional.mp4',
+  children: '/videos/asl/children-hello-bienvenidos.mp4',
+  adults: '/videos/asl/women-cooking-professional.mp4',
 };
 
-// Keyword expansion mapping for better matching with children's content
+// Expanded keyword mapping for Spanish Elmo content and cooking vocabulary
 const KEYWORD_EXPANSIONS: Record<string, string[]> = {
-  // Cooking verbs (now mapped to children's videos)
-  'cook': ['cook', 'cooking', 'prepare', 'preparing', 'make', 'making'],
+  // Spanish educational vocabulary (children signers)
+  'hola': ['hola', 'hello', 'hi', 'greeting'],
+  'bienvenidos': ['bienvenidos', 'welcome', 'bienvenido'],
+  'adivinen': ['adivinen', 'guess', 'guessing', 'pensando', 'thinking'],
+  'autobus': ['autobus', 'autobús', 'bus', 'transportation'],
+  'chofer': ['chofer', 'driver', 'conductor'],
+  'aprender': ['aprender', 'learn', 'learning', 'estudiar'],
+  'smarty': ['smarty', 'teléfono', 'phone'],
+  'elmo': ['elmo', 'puppet', 'character'],
+
+  // Cooking verbs (women signers for recipe content)
+  'cook': ['cook', 'cooking', 'prepare', 'preparing', 'make', 'making', 'chef'],
   'boil': ['boil', 'boiling', 'boiled', 'bubble', 'bubbling'],
   'stir': ['stir', 'stirring', 'mix', 'mixing', 'blend', 'blending'],
   'bake': ['bake', 'baking', 'baked', 'oven', 'roast', 'roasting'],
-  'eat': ['eat', 'eating', 'taste', 'tasting', 'consume'],
-  'drink': ['drink', 'drinking', 'sip', 'sipping', 'beverage'],
+  'kitchen': ['kitchen', 'cooking area', 'cocina'],
   
-  // Ingredients (children signers)
-  'garlic': ['garlic', 'clove', 'cloves', 'minced garlic'],
+  // Ingredients and tools
+  'garlic': ['garlic', 'clove', 'cloves', 'ajo'],
   'pasta': ['pasta', 'noodles', 'spaghetti', 'angel hair'],
-  'water': ['water', 'liquid', 'hot water', 'cold water'],
-  'oil': ['oil', 'olive oil', 'cooking oil', 'vegetable oil'],
-  'salt': ['salt', 'seasoning', 'sodium'],
-  'pepper': ['pepper', 'black pepper', 'spice'],
+  'water': ['water', 'liquid', 'hot water', 'agua'],
+  'oil': ['oil', 'olive oil', 'cooking oil', 'aceite'],
+  'salt': ['salt', 'seasoning', 'sal'],
+  'pepper': ['pepper', 'black pepper', 'pimienta'],
   
-  // Kitchen tools (children demonstrating)
-  'pan': ['pan', 'large pan', 'frying pan', 'skillet'],
-  'timer': ['timer', 'time', 'minutes', 'seconds'],
-  'kitchen': ['kitchen', 'cooking area', 'cook space'],
-  
-  // Educational terms (children learning)
-  'learn': ['learn', 'learning', 'education', 'study', 'studying'],
-  'teach': ['teach', 'teaching', 'instruction', 'lesson'],
-  'superhero': ['superhero', 'hero', 'captain', 'adventure'],
-  'science': ['science', 'experiment', 'discovery'],
-  'story': ['story', 'storytelling', 'narrative', 'tale'],
+  // Basic actions
+  'eat': ['eat', 'eating', 'taste', 'tasting', 'comer'],
+  'drink': ['drink', 'drinking', 'sip', 'beber'],
 };
 
-// Smart keyword matching function
-const findBestMatch = (text: string, selectedAvatar?: { id: string }): string | null => {
+// Smart keyword matching with content type awareness
+const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentType?: 'recipe' | 'education'): string | null => {
   const lowerText = text.toLowerCase();
   
-  // First try avatar-specific clip if available
+  // Content type-aware avatar selection
   if (selectedAvatar?.id && ASL_CLIPS[selectedAvatar.id]) {
     return selectedAvatar.id;
   }
   
-  // Then try direct matches
+  // Direct word matches first
   for (const key of Object.keys(ASL_CLIPS)) {
     if (lowerText.includes(key)) {
       return key;
     }
   }
   
-  // Then try expanded keyword matches
+  // Expanded keyword matches
   for (const [baseWord, expansions] of Object.entries(KEYWORD_EXPANSIONS)) {
     for (const expansion of expansions) {
       if (lowerText.includes(expansion)) {
@@ -134,6 +126,10 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }): string | 
       }
     }
   }
+  
+  // Fallback based on content type
+  if (contentType === 'education') return 'children';
+  if (contentType === 'recipe') return 'adults';
   
   return null;
 };
@@ -146,13 +142,14 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
       if (selectedASLAvatar?.id && ASL_CLIPS[selectedASLAvatar.id]) {
         return ASL_CLIPS[selectedASLAvatar.id];
       }
-      return ASL_CLIPS.default;
+      // Fallback based on content type
+      return contentType === 'education' ? ASL_CLIPS.children : ASL_CLIPS.adults;
     }
     
-    // Use the smart matching function
-    const matchedKey = findBestMatch(text, selectedASLAvatar);
-    return ASL_CLIPS[matchedKey || 'default'];
-  }, [currentCaption, selectedASLAvatar]);
+    // Use the smart matching function with content type awareness
+    const matchedKey = findBestMatch(text, selectedASLAvatar, contentType);
+    return ASL_CLIPS[matchedKey || (contentType === 'education' ? 'children' : 'adults')];
+  }, [currentCaption, selectedASLAvatar, contentType]);
 
   // Get proper header text based on content type and avatar
   const getHeaderText = () => {
