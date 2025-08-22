@@ -74,8 +74,8 @@ const recipeDescriptions: AudioDescription[] = [
 const educationDescriptions: AudioDescription[] = [
   {
     text: "Un autobus amarillo llega y cuatro gallinas se suben a el. El autobus se va.",
-    startTime: 27.10,
-    endTime: 30.60,
+    startTime: 24.10,
+    endTime: 28.60,
     voiceStyle: 'warm'
   },
   {
