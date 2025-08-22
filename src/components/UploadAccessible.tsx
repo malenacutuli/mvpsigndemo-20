@@ -176,8 +176,24 @@ export const UploadAccessible: React.FC = () => {
             <div className="space-y-6 mb-8">
               <div className="space-y-2">
                 <Label htmlFor="file">Upload Video File</Label>
-                <Input id="file" type="file" accept="video/*" onChange={(e) => onFileChange(e.target.files?.[0] || undefined)} />
-                <p className="text-xs text-muted-foreground">Accepted: mp4, webm, mov. Private storage with signed playback URLs.</p>
+                <Input 
+                  id="file" 
+                  type="file" 
+                  accept="video/*" 
+                  onChange={(e) => {
+                    console.log("File input changed:", e.target.files);
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      console.log("Selected file:", file.name, file.size, file.type);
+                      onFileChange(file);
+                    }
+                  }} 
+                  disabled={uploading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Accepted: mp4, webm, mov. Private storage with signed playback URLs.
+                  {uploading && " Uploading..."}
+                </p>
               </div>
             </div>
 
