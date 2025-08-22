@@ -8,9 +8,21 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Real ASL video library - using only working videos with actual signers
+// Get custom ASL clips from local storage (uploaded by user)
+const getCustomASLClips = (): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem('custom-asl-clips') || '{}');
+  } catch {
+    return {};
+  }
+};
+
+// Real ASL video library - combining uploaded clips with defaults
 const ASL_CLIPS: Record<string, string> = {
-  // Core ASL vocabulary - using the working chef videos we know exist
+  // Custom uploaded clips take priority
+  ...getCustomASLClips(),
+  
+  // Default fallback videos - using only working videos with actual signers
   // These are the only confirmed working videos with actual signers
   
   // Educational content (Spanish Elmo context) - using chef videos as placeholders for real ASL
