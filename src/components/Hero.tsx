@@ -5,12 +5,12 @@ import { HandHelping, Subtitles, Mic, Sparkles, Users, Award } from 'lucide-reac
 
 export const Hero: React.FC = () => {
   return (
-    <section className="relative min-h-screen bg-gradient-accessibility flex items-center overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-accessibility flex flex-col overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       
-      {/* Logo positioned in top left corner */}
-      <div className="absolute top-4 left-4 z-20">
+      {/* Header */}
+      <header className="relative z-20 flex justify-between items-center p-6">
         <img
           src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
           alt="Axessible logo – multi-modal accessible video platform"
@@ -18,25 +18,30 @@ export const Hero: React.FC = () => {
           loading="lazy"
           decoding="async"
         />
-      </div>
+        <Badge variant="secondary" className="text-sm font-medium px-4 py-2">
+          <Award className="w-4 h-4 mr-2" />
+          Patent-Pending AI Technology
+        </Badge>
+      </header>
       
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Patent Badge */}
-          <Badge variant="secondary" className="mb-6 text-sm font-medium px-4 py-2">
-            <Award className="w-4 h-4 mr-2" />
-            Patent-Pending AI Technology
-          </Badge>
+      {/* Main Content */}
+      <div className="flex-1 flex items-center">
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Main Headline */}
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
+              The World's First End-to-End AI Platform for
+              <span className="gradient-primary bg-clip-text text-transparent block">
+                Fully Accessible Video
+              </span>
+            </h1>
+            
+            {/* Secondary Headline */}
+            <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-6">
+              Create Born-Accessible Video in Seconds.
+            </h2>
 
-          {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-            Revolutionary
-            <span className="gradient-primary bg-clip-text text-transparent block">
-              Video Accessibility
-            </span>
-          </h1>
-
-          {/* Subheadline */}
+            {/* Subheadline */}
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
             AI-powered platform transforming video content with 
             <strong className="text-primary"> Captions with Intention</strong>, 
@@ -105,7 +110,8 @@ export const Hero: React.FC = () => {
           <p className="text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
             Demonstrating core patent claims including automated multi-modal processing, 
             precise avatar timing synchronization, and integrated compliance validation.
-          </p>
+           </p>
+          </div>
         </div>
       </div>
 
