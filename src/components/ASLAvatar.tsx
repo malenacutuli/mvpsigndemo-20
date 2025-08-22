@@ -50,6 +50,15 @@ const ASL_CLIPS: Record<string, string> = {
   teach: '/videos/asl/gallaudet-children-dictionary.mp4',
   teaching: '/videos/asl/gallaudet-children-dictionary.mp4',
   
+  // Avatar-specific clips based on character
+  'chef-avatar': '/videos/asl/chef-asl-loop.webm',
+  'food-expert': '/videos/asl/chef-pasta.webm',
+  'home-cook': '/videos/asl/startasl-kitchen.mp4',
+  'superhero-captain': '/videos/asl/kids-kitchen-signs.mp4',
+  'superhero-star': '/videos/asl/kids-kitchen-signs.mp4',
+  'friendly-teacher': '/videos/asl/gallaudet-children-dictionary.mp4',
+  'student-peer': '/videos/asl/kids-kitchen-signs.mp4',
+  
   // Default fallbacks with diverse signers
   default: '/videos/asl/chef-asl-loop.webm',
   children: '/videos/asl/kids-kitchen-signs.mp4',
@@ -83,10 +92,15 @@ const KEYWORD_EXPANSIONS: Record<string, string[]> = {
 };
 
 // Smart keyword matching function
-const findBestMatch = (text: string): string | null => {
+const findBestMatch = (text: string, selectedAvatar?: { id: string }): string | null => {
   const lowerText = text.toLowerCase();
   
-  // First try direct matches
+  // First try avatar-specific clip if available
+  if (selectedAvatar?.id && ASL_CLIPS[selectedAvatar.id]) {
+    return selectedAvatar.id;
+  }
+  
+  // Then try direct matches
   for (const key of Object.keys(ASL_CLIPS)) {
     if (lowerText.includes(key)) {
       return key;
@@ -108,12 +122,18 @@ const findBestMatch = (text: string): string | null => {
 export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', selectedASLAvatar, currentCaption }) => {
   const clip = useMemo(() => {
     const text = currentCaption?.text || '';
-    if (!text) return ASL_CLIPS.default;
+    if (!text) {
+      // Use avatar-specific default clip if available
+      if (selectedASLAvatar?.id && ASL_CLIPS[selectedASLAvatar.id]) {
+        return ASL_CLIPS[selectedASLAvatar.id];
+      }
+      return ASL_CLIPS.default;
+    }
     
     // Use the smart matching function
-    const matchedKey = findBestMatch(text);
+    const matchedKey = findBestMatch(text, selectedASLAvatar);
     return ASL_CLIPS[matchedKey || 'default'];
-  }, [currentCaption]);
+  }, [currentCaption, selectedASLAvatar]);
 
   return (
     <div className="absolute bottom-20 right-4 w-32 h-32 rounded-lg border-2 border-primary/30 bg-black/30 backdrop-blur-sm overflow-hidden animate-fade-in">

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping } from 'lucide-react';
+import { ASLAvatarSelector } from './ASLAvatarSelector';
 
 export const DemoSection: React.FC = () => {
   const [selectedDemo, setSelectedDemo] = useState<'recipe' | 'education'>('recipe');
@@ -32,8 +33,21 @@ export const DemoSection: React.FC = () => {
         { id: 'anthony-bourdain', name: 'Anthony Bourdain Style', description: 'Sophisticated, worldly food narrator' }
       ],
       aslOptions: [
-        { id: 'chef-avatar', name: 'Professional Chef', description: 'Adult professional with culinary signs' },
-        { id: 'food-expert', name: 'Food Expert', description: 'Specialized in cooking terminology' }
+        { 
+          id: 'chef-avatar', 
+          name: 'Master Chef Rosa', 
+          description: 'Professional chef with culinary sign expertise'
+        },
+        { 
+          id: 'food-expert', 
+          name: 'Chef Marcus (Youth)', 
+          description: 'Young professional chef, great for millennial audience'
+        },
+        { 
+          id: 'home-cook', 
+          name: 'Nonna Isabella', 
+          description: 'Traditional home cook with warm, family-style signing'
+        }
       ]
     },
     education: {
@@ -54,9 +68,26 @@ export const DemoSection: React.FC = () => {
         { id: 'bob-esponja', name: 'Bob Esponja Style', description: 'Young, animated educational narrator' }
       ],
       aslOptions: [
-        { id: 'superhero-captain', name: 'Captain Wonder', description: 'Superhero character for science lessons' },
-        { id: 'superhero-star', name: 'Star Guardian', description: 'Magical hero for creative learning' },
-        { id: 'friendly-teacher', name: 'Teacher Maya', description: 'Professional educator avatar' }
+        { 
+          id: 'superhero-captain', 
+          name: 'Captain Science (Kid)', 
+          description: 'Young superhero perfect for children ages 6-12'
+        },
+        { 
+          id: 'superhero-star', 
+          name: 'Star Guardian Emma (Teen)', 
+          description: 'Teen hero ideal for middle school students'
+        },
+        { 
+          id: 'friendly-teacher', 
+          name: 'Teacher Maya', 
+          description: 'Professional educator with clear, patient signing'
+        },
+        { 
+          id: 'student-peer', 
+          name: 'Student Alex (Age 8)', 
+          description: 'Child signer for peer-to-peer learning experience'
+        }
       ]
     }
   };
@@ -155,27 +186,13 @@ export const DemoSection: React.FC = () => {
                     </Select>
                   </div>
                   
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      <HandHelping className="w-4 h-4 inline mr-1" />
-                      ASL Avatar Character
-                    </label>
-                    <Select value={selectedASLAvatar} onValueChange={setSelectedASLAvatar}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {currentDemo.aslOptions.map((asl) => (
-                          <SelectItem key={asl.id} value={asl.id}>
-                            <div>
-                              <div className="font-medium">{asl.name}</div>
-                              <div className="text-xs text-muted-foreground">{asl.description}</div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  
+                  <ASLAvatarSelector
+                    options={currentDemo.aslOptions}
+                    selectedValue={selectedASLAvatar}
+                    onValueChange={setSelectedASLAvatar}
+                    contentType={selectedDemo}
+                  />
                 </div>
               </CardHeader>
               <CardContent>
