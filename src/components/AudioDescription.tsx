@@ -27,7 +27,7 @@ interface AudioDescription {
 // Realistic audio descriptions for pasta cooking masterclass
 const recipeDescriptions: AudioDescription[] = [
   {
-    text: "Chef Gordon stands before a gleaming stainless steel stove, his intense gaze focused on a large pot of water beginning to bubble. The kitchen is immaculate, every tool in its place.",
+    text: "Chef Gordon stands before a gleaming stainless steel stove.",
     startTime: 0.5,
     endTime: 5,
     voiceStyle: 'passionate'
