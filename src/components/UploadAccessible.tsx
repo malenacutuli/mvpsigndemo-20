@@ -175,24 +175,29 @@ export const UploadAccessible: React.FC = () => {
             {/* Upload File Section */}
             <div className="space-y-6 mb-8">
               <div className="space-y-2">
-                <Label htmlFor="file">Upload Video File</Label>
-                <Input 
-                  id="file" 
-                  type="file" 
-                  accept="video/*" 
-                  onChange={(e) => {
-                    console.log("File input changed:", e.target.files);
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      console.log("Selected file:", file.name, file.size, file.type);
-                      onFileChange(file);
-                    }
-                  }} 
-                  disabled={uploading}
-                />
+                <Label htmlFor="video-file-input">Upload Video File</Label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="video-file-input"
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => {
+                      console.log("File input changed:", e.target.files);
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        console.log("Selected file:", file.name, file.size, file.type);
+                        onFileChange(file);
+                      }
+                    }}
+                    disabled={uploading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  {uploading && (
+                    <div className="text-sm text-muted-foreground">Uploading...</div>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Accepted: mp4, webm, mov. Private storage with signed playback URLs.
-                  {uploading && " Uploading..."}
                 </p>
               </div>
             </div>
