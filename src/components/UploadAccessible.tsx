@@ -174,11 +174,26 @@ export const UploadAccessible: React.FC = () => {
         <CardContent>
             {/* Upload File Section */}
             <div className="space-y-6 mb-8">
-              <div className="space-y-2">
-                <Label htmlFor="video-file-input">Upload Video File</Label>
-                <div className="flex items-center gap-4">
+              <div className="space-y-4">
+                <Label>Upload Video File</Label>
+                <div className="relative flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-primary/30 rounded-xl bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer">
+                  <Upload className="w-12 h-12 text-primary/60" />
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold mb-2">Choose Video File</h4>
+                    <p className="text-sm text-muted-foreground mb-4">Drag and drop or click to select</p>
+                    <Button 
+                      type="button"
+                      disabled={uploading}
+                      className="pointer-events-none"
+                    >
+                      {uploading ? "Uploading..." : "Select Video File"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Supported formats: MP4, WebM, MOV<br/>
+                    Maximum size: 100MB
+                  </p>
                   <input
-                    id="video-file-input"
                     type="file"
                     accept="video/*"
                     onChange={(e) => {
@@ -190,15 +205,10 @@ export const UploadAccessible: React.FC = () => {
                       }
                     }}
                     disabled={uploading}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    id="video-upload-input"
                   />
-                  {uploading && (
-                    <div className="text-sm text-muted-foreground">Uploading...</div>
-                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Accepted: mp4, webm, mov. Private storage with signed playback URLs.
-                </p>
               </div>
             </div>
 
