@@ -74,7 +74,6 @@ export const PatentClaims: React.FC = () => {
                     {claim.icon}
                   </div>
                   <div>
-                    <Badge variant="outline" className="mb-2">{claim.number}</Badge>
                     <CardTitle className="text-lg">{claim.title}</CardTitle>
                   </div>
                 </div>

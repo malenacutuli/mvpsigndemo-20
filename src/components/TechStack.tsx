@@ -9,31 +9,25 @@ export const TechStack: React.FC = () => {
       icon: <Cloud className="w-6 h-6" />,
       title: "Cloud Infrastructure",
       description: "Scalable, enterprise-grade cloud services",
-      technologies: ["AWS/GCP/Azure", "Serverless Functions", "CDN", "Auto-scaling"]
+      technologies: []
     },
     {
       icon: <Brain className="w-6 h-6" />,
       title: "AI & Machine Learning",
       description: "Advanced AI models for accessibility",
-      technologies: ["OpenAI Whisper", "Vision-Language Models", "Custom ASL Models", "LLM Integration"]
+      technologies: ["Vision-Language Models", "Custom ASL Models", "LLM Integration"]
     },
     {
       icon: <Mic className="w-6 h-6" />,
       title: "Voice & Audio",
-      description: "Celebrity-style voice synthesis",
-      technologies: ["ElevenLabs", "Resemble.ai", "Custom Voice Models", "Audio Analysis"]
+      description: "Adaptive voice synthesis",
+      technologies: ["Custom Voice Models", "Audio Analysis"]
     },
     {
       icon: <Eye className="w-6 h-6" />,
       title: "Computer Vision",
       description: "Scene analysis and visual understanding",
-      technologies: ["MediaPipe", "Blender Integration", "3D Animation", "Pose Estimation"]
-    },
-    {
-      icon: <Code className="w-6 h-6" />,
-      title: "Frontend Technology",
-      description: "Modern, accessible web technologies",
-      technologies: ["React", "TypeScript", "Tailwind CSS", "Roboto Flex"]
+      technologies: ["Blender Integration", "3D Animation", "Pose Estimation"]
     },
     {
       icon: <Shield className="w-6 h-6" />,
@@ -62,7 +56,7 @@ export const TechStack: React.FC = () => {
         </div>
 
         {/* Technology Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {techCategories.map((category, index) => (
             <Card key={index} className="bg-card/50 backdrop-blur-sm border-border/50 hover:bg-card/70 transition-all duration-300">
               <CardHeader>
@@ -76,15 +70,21 @@ export const TechStack: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {category.technologies.map((tech, techIndex) => (
-                    <Badge 
-                      key={techIndex} 
-                      variant="outline" 
-                      className="text-xs font-medium"
-                    >
-                      {tech}
-                    </Badge>
-                  ))}
+                  {category.technologies.length > 0 ? (
+                    category.technologies.map((tech, techIndex) => (
+                      <Badge 
+                        key={techIndex} 
+                        variant="outline" 
+                        className="text-xs font-medium"
+                      >
+                        {tech}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      {category.description}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

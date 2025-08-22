@@ -149,7 +149,7 @@ export const UploadAccessible: React.FC = () => {
           </CardTitle>
           <CardDescription className="text-base">
             Upload any video to experience the full accessibility transformation: 
-            <strong>Speech Recognition → Captions with Intention → ElevenLabs Audio Descriptions → ASL Avatars</strong>
+            <strong>Speech Recognition → Captions with Intention → Audio Descriptions → ASL Avatars</strong>
           </CardDescription>
         </CardHeader>
           <CardContent>
@@ -209,7 +209,7 @@ export const UploadAccessible: React.FC = () => {
                   <h4 className="font-semibold mb-2 text-sm">🔥 Live Features</h4>
                   <div className="text-xs space-y-1 text-muted-foreground">
                     <div>✓ Supabase storage & transcription</div>
-                    <div>✓ ElevenLabs TTS integration</div>
+                    <div>✓ Text to Speech integration</div>
                     <div>✓ Real-time caption generation</div>
                     <div>✓ Multi-modal accessibility</div>
                   </div>
@@ -240,7 +240,7 @@ export const UploadAccessible: React.FC = () => {
                       <h4 className="font-semibold text-center">What You'll Experience:</h4>
                       <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
                       <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
-                      <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> ElevenLabs Audio Descriptions</div>
+                      <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
                       <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
                     </div>
                   </div>

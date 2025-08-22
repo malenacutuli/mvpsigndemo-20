@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping } from 'lucide-react';
+import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping, Subtitles } from 'lucide-react';
 import { ASLAvatarSelector } from './ASLAvatarSelector';
 
 export const DemoSection: React.FC = () => {
@@ -106,7 +106,7 @@ export const DemoSection: React.FC = () => {
             Live Interactive Demo
           </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Experience Axessible in Action
+            Explore our AI-powered accessibility features
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Fully functional demonstrations of our AI-powered accessibility features 
@@ -167,7 +167,7 @@ export const DemoSection: React.FC = () => {
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       <Volume2 className="w-4 h-4 inline mr-1" />
-                      Audio Description Voice
+                      Audio Descriptions
                     </label>
                     <Select value={selectedVoice} onValueChange={setSelectedVoice}>
                       <SelectTrigger>
@@ -235,124 +235,19 @@ export const DemoSection: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Voice Profile</CardTitle>
-                <CardDescription>
-                  {currentVoice.name}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm mb-4">{currentVoice.description}</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span>Tone</span>
-                    <span className="font-medium">
-                      {selectedDemo === 'recipe' ? 'Passionate & Authoritative' : 'Warm & Encouraging'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Pace</span>
-                    <span className="font-medium">
-                      {selectedDemo === 'recipe' ? 'Dynamic' : 'Clear & Steady'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Audience</span>
-                    <span className="font-medium">
-                      {selectedDemo === 'recipe' ? 'Adult Learners' : 'Children 6-12'}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>CWI Character Colors</CardTitle>
-                <CardDescription>
-                  Dynamic speaker identification system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {selectedDemo === 'recipe' ? (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-main-orange rounded"></div>
-                        <span className="text-sm">Chef Gordon (Main)</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-main-blue rounded"></div>
-                        <span className="text-sm">Narrator</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-support-cyan rounded"></div>
-                        <span className="text-sm">Assistant Chef</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-main-yellow rounded"></div>
-                        <span className="text-sm">Child Hero (Main)</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-main-green rounded"></div>
-                        <span className="text-sm">Teacher/Mentor</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-cwi-main-purple rounded"></div>
-                        <span className="text-sm">Narrator</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>ASL Avatar: {currentASL.name}</CardTitle>
-                <CardDescription>
-                  AI-animated sign language interpretation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm mb-4">{currentASL.description}</p>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span>Animation Style</span>
-                    <span className="font-medium">
-                      {selectedDemo === 'recipe' ? 'Professional' : 'Superhero'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Sign Complexity</span>
-                    <span className="font-medium">
-                      {selectedDemo === 'recipe' ? 'Advanced Culinary' : 'Child-Friendly'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Sync Precision</span>
-                    <span className="font-medium text-primary">99.2%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Try the Controls</CardTitle>
                 <CardDescription>
-                  Interactive accessibility toggles
+                  Interactive accessibility features
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
-                  <p><strong>CC:</strong> Captions with Intention</p>
-                  <p><strong>👋:</strong> AI-Animated ASL Avatar</p>
-                  <p><strong>🎤:</strong> Celebrity-Style Audio Description</p>
+                  <p className="flex items-center gap-2"><Subtitles className="w-4 h-4 text-primary" /><strong>CC:</strong> Captions with Intention</p>
+                  <p className="flex items-center gap-2"><HandHelping className="w-4 h-4 text-primary" /><strong>ASL:</strong> AI-Animated ASL Avatar</p>
+                  <p className="flex items-center gap-2"><Volume2 className="w-4 h-4 text-primary" /><strong>Audio:</strong> Audio Descriptions</p>
                   <p className="text-xs text-muted-foreground mt-3">
                     All features work together seamlessly for complete accessibility coverage.
                   </p>
