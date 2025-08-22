@@ -2145,42 +2145,44 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const getSpeakerColor = (speaker: string) => {
     switch (speaker) {
       case 'chef':
-        return 'cwi-main-orange'; // Gordon Ramsay-style character
+        return 'text-orange-200'; // High contrast orange for chef
       case 'narrator':
-        return 'cwi-main-blue';
+        return 'text-blue-200'; // High contrast blue
       case 'child':
-        return 'cwi-main-yellow';
+        return 'text-yellow-200'; // High contrast yellow
       case 'teacher':
-        return 'cwi-main-green';
+        return 'text-green-200'; // High contrast green
       case 'hero':
-        return 'cwi-main-purple';
+        return 'text-purple-200'; // High contrast purple
       case 'Elmo':
-        return 'cwi-main-red';
+        return 'text-red-200'; // High contrast red
       case 'Smarty':
-        return 'cwi-main-cyan';
+        return 'text-cyan-200'; // High contrast cyan
       default:
-        return 'cwi-main-blue';
+        return 'text-blue-200';
     }
   };
 
   const getWordStyle = (word: any, isActive: boolean) => {
-    let fontSize = 'text-2xl'; // 5% of screen height equivalent
-    let fontWeight = 'font-normal';
+    let fontSize = 'text-2xl'; // Base size
+    let fontWeight = 'font-medium';
     let fontWidth = '';
 
-    // Volume-based size (3% to 12% of screen height)
+    // Dramatic emphasis-based sizing for better intonation representation
     if (word.emphasis === 'loud') {
-      fontSize = 'text-4xl'; // Larger for loud
+      fontSize = 'text-5xl'; // Much larger for loud emphasis
+      fontWeight = 'font-bold';
     } else if (word.emphasis === 'quiet') {
-      fontSize = 'text-lg'; // Smaller for quiet
+      fontSize = 'text-base'; // Smaller for quiet
+      fontWeight = 'font-light';
     }
 
-    // Pitch-based weight and width (using Roboto Flex capabilities)
+    // Pitch-based weight and width for additional expression
     if (word.pitch === 'high') {
-      fontWeight = 'font-light';
+      fontWeight = word.emphasis === 'loud' ? 'font-extrabold' : 'font-semibold';
       fontWidth = 'font-condensed';
     } else if (word.pitch === 'low') {
-      fontWeight = 'font-bold';
+      fontWeight = word.emphasis === 'quiet' ? 'font-extralight' : 'font-bold';
       fontWidth = 'font-expanded';
     }
 
@@ -2188,18 +2190,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       fontSize,
       fontWeight,
       fontWidth,
-      transform: isActive ? 'scale(1.15)' : 'scale(1)',
-      transition: 'all 0.1s ease-out'
+      transform: isActive ? 'scale(1.1)' : 'scale(1)',
+      transition: 'all 0.15s ease-out'
     };
   };
 
   return (
     <div className="absolute bottom-20 left-0 right-0 px-8 z-50">
-      {/* CWI Captions Box - transparent background */}
-      <div className="p-4 mx-auto max-w-4xl relative z-50">
+      {/* CWI Captions Box with subtle background for better contrast */}
+      <div className="p-6 mx-auto max-w-4xl relative z-50 bg-black/40 backdrop-blur-sm rounded-lg border border-white/10">
         
         {/* Dynamic colored text with word-by-word sync */}
-        <div className="font-roboto-flex leading-relaxed">
+        <div className="font-roboto-flex leading-relaxed text-center">
           {currentCaption.words.map((word, index) => {
             const isActive = index === activeWordIndex;
             const isSpoken = index <= activeWordIndex;
@@ -2208,12 +2210,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             return (
               <span
                 key={index}
-                className={`inline-block mr-2 transition-all duration-100 ${
-                  isSpoken ? getSpeakerColor(currentCaption.speaker) : 'text-transparent'
+                className={`inline-block mr-2 transition-all duration-150 drop-shadow-lg ${
+                  isSpoken ? getSpeakerColor(currentCaption.speaker) : 'text-white/20'
                 } ${style.fontSize} ${style.fontWeight}`}
                 style={{
                   transform: style.transform,
-                  transition: style.transition
+                  transition: style.transition,
+                  textShadow: isSpoken ? '0 2px 8px rgba(0,0,0,0.8)' : 'none'
                 }}
               >
                 {word.text}
@@ -2223,7 +2226,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
 
         {/* Enhanced Speaker indicator */}
-        <div className="text-xs text-white/60 mt-2 uppercase tracking-wider">
+        <div className="text-xs text-white/70 mt-3 text-center uppercase tracking-wider">
           {currentCaption.speaker === 'chef' && '🔥 Chef Gordon'}
           {currentCaption.speaker === 'narrator' && '🎙️ Narrator'}
           {currentCaption.speaker === 'child' && '👶 Child'}
