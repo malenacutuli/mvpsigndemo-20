@@ -230,21 +230,21 @@ const educationDescriptions: AudioDescription[] = [
   }
 ];
 
-// ElevenLabs voice mapping optimized for Spanish Spain accent (educational/children content)
+// ElevenLabs voice mapping with native Spanish voices for education
 const elevenVoices: Record<string, string> = {
-  // Recipe voices - mature Spanish voices 
+  // Recipe voices - English cooking personalities
   'gordon-ramsay': 'nPczCjzI2devNBz1zQrb', // Brian
   'julia-child': '9BWtsMINqrJLrRacOk9x',   // Aria
   'anthony-bourdain': 'JBFqnCBsd6RMkjVDRZzb', // George
-  // Education voices - Spanish Spain accent, child-friendly
-  'dora-exploradora': 'XB0fDUnXU5powFXDhCwa',  // Charlotte - higher pitch, playful
-  'minnie-mouse': 'EXAVITQu4vr4xnSDxMaL',     // Sarah - warm, clear
-  'bob-esponja': 'FGY2WhTYpPnrIDTdsKH5',      // Laura - animated, energetic
+  // Education voices - Native Spanish speakers for children's content
+  'dora-exploradora': 'pFZP5JQG7iQjIQuC4Bku',  // Lily - natural Spanish accent
+  'minnie-mouse': 'cgSgspJ2msm6clMCkdW9',      // Jessica - warm Spanish voice
+  'bob-esponja': 'XrExE9yKIg1WjnnlVkGX',       // Matilda - animated Spanish voice
 };
 
 const defaultVoiceByContent: Record<'recipe' | 'education', string> = {
   recipe: 'nPczCjzI2devNBz1zQrb', // Brian
-  education: 'XB0fDUnXU5powFXDhCwa', // Charlotte - better for Spanish children's content
+  education: 'pFZP5JQG7iQjIQuC4Bku', // Lily - native Spanish speaker
 };
 
 export const AudioDescription: React.FC<AudioDescriptionProps> = ({

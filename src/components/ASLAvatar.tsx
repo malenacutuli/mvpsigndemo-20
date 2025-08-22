@@ -135,12 +135,23 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
     return ASL_CLIPS[matchedKey || 'default'];
   }, [currentCaption, selectedASLAvatar]);
 
+  // Get proper header text based on content type and avatar
+  const getHeaderText = () => {
+    if (contentType === 'education') {
+      return selectedASLAvatar?.name?.includes('Teacher') ? 'ASL Teacher' : 'ASL Guide';
+    }
+    return 'ASL Chef';
+  };
+
   return (
     <div className="absolute bottom-20 right-4 w-32 h-32 rounded-lg border-2 border-primary/30 bg-black/30 backdrop-blur-sm overflow-hidden animate-fade-in">
       <div className="w-full h-full relative">
         {/* Header bar */}
         <div className="absolute top-1 left-1 right-1 flex items-center justify-between text-xs text-white/80">
-          <span className="inline-flex items-center gap-1"><ChefHat className="w-3 h-3 text-primary"/> ASL Chef</span>
+          <span className="inline-flex items-center gap-1">
+            {contentType === 'recipe' ? <ChefHat className="w-3 h-3 text-primary"/> : <HandHelping className="w-3 h-3 text-primary"/>}
+            {getHeaderText()}
+          </span>
           <span className="inline-flex items-center gap-1"><HandHelping className="w-3 h-3 text-primary"/> LIVE</span>
         </div>
 
@@ -152,18 +163,21 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
             muted
             loop
             playsInline
-            aria-label="ASL Chef Avatar"
+            aria-label={`${getHeaderText()} Avatar`}
+            onError={(e) => {
+              console.error('ASL video failed to load:', clip);
+            }}
           >
             <source src={clip} type="video/mp4" />
             <source src={clip.replace('.mp4', '.webm')} type="video/webm" />
-            <source src={clip.replace('.mp4', '.ogv')} type="video/ogg" />
+            <source src={clip.replace('.webm', '.mp4')} type="video/mp4" />
             Sorry, your browser doesn't support embedded videos.
           </video>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center px-3">
-              <div className="text-white/90 font-medium">ASL avatar not set</div>
-              <div className="text-white/60 text-xs mt-1">Upload signer clips to /videos/asl</div>
+              <div className="text-white/90 font-medium">ASL avatar loading...</div>
+              <div className="text-white/60 text-xs mt-1">Preparing sign language interpretation</div>
             </div>
           </div>
         )}
