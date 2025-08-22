@@ -49,7 +49,7 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
   }, [currentCaption]);
 
   return (
-    <div className="absolute top-4 right-4 w-44 h-44 rounded-xl border-2 border-primary/30 bg-black/30 backdrop-blur-sm overflow-hidden animate-fade-in">
+    <div className="absolute bottom-16 right-4 w-32 h-32 rounded-lg border-2 border-primary/30 bg-black/30 backdrop-blur-sm overflow-hidden animate-fade-in">
       <div className="w-full h-full relative">
         {/* Header bar */}
         <div className="absolute top-1 left-1 right-1 flex items-center justify-between text-xs text-white/80">
