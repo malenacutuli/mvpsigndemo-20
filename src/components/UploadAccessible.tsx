@@ -8,46 +8,36 @@ import { AxessiblePlayer } from "./AxessiblePlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, ShieldCheck, Languages, Subtitles, HandHelping } from "lucide-react";
+import type { CaptionSegment } from "./CaptionsWithIntention";
 
-// Minimal content-type and voice/avatar presets reused from Demo
+// Updated content-type and voice/avatar presets matching DemoSection
 const voiceOptions = {
   recipe: [
-    { id: "gordon-ramsay", name: "Gordon Ramsay Style", description: "Passionate, authoritative" },
-    { id: "julia-child", name: "Julia Child Style", description: "Warm, encouraging" },
+    { id: "gordon-ramsay", name: "Gordon Ramsay Style", description: "Passionate, authoritative cooking voice" },
+    { id: "julia-child", name: "Julia Child Style", description: "Warm, encouraging culinary guide" },
+    { id: "anthony-bourdain", name: "Anthony Bourdain Style", description: "Sophisticated, worldly food narrator" },
   ],
   education: [
-    { id: "dora-exploradora", name: "Dora la Exploradora Style", description: "Warm, encouraging Spanish style" },
-    { id: "minnie-mouse", name: "Minnie Mouse Style", description: "Sweet, friendly narrator" },
-    { id: "bob-esponja", name: "Bob Esponja Style", description: "Animated, playful narrator" },
+    { id: "dora-exploradora", name: "Dora la Exploradora Style", description: "Warm, encouraging educational voice" },
+    { id: "minnie-mouse", name: "Minnie Mouse Style", description: "Friendly, sweet learning guide" },
+    { id: "bob-esponja", name: "Bob Esponja Style", description: "Young, animated educational narrator" },
   ],
 } as const;
 
 const aslOptions = {
   recipe: [
-    { id: "chef-avatar", name: "Professional Chef", description: "Culinary signs" },
-    { id: "food-expert", name: "Food Expert", description: "Cooking terminology" },
+    { id: "chef-avatar", name: "Master Chef Rosa", description: "Professional chef with culinary sign expertise" },
+    { id: "food-expert", name: "Chef Marcus (Youth)", description: "Young professional chef, great for millennial audience" },
+    { id: "home-cook", name: "Nonna Isabella", description: "Traditional home cook with warm, family-style signing" },
   ],
   education: [
-    { id: "superhero-captain", name: "Captain Wonder", description: "Superhero avatar" },
-    { id: "friendly-teacher", name: "Teacher Maya", description: "Educator avatar" },
+    { id: "superhero-captain", name: "Captain Science (Kid)", description: "Young superhero perfect for children ages 6-12" },
+    { id: "superhero-star", name: "Star Guardian Emma (Teen)", description: "Teen hero ideal for middle school students" },
+    { id: "friendly-teacher", name: "Teacher Maya", description: "Professional educator with clear, patient signing" },
+    { id: "student-peer", name: "Student Alex (Age 8)", description: "Child signer for peer-to-peer learning experience" },
   ],
 } as const;
 
-export type CaptionWord = {
-  text: string;
-  startTime: number;
-  endTime: number;
-  emphasis: "normal";
-  pitch: "normal";
-};
-
-export type CaptionSegment = {
-  text: string;
-  speaker: string;
-  startTime: number;
-  endTime: number;
-  words: CaptionWord[];
-};
 
 function mapSegments(segments: any[]): CaptionSegment[] {
   return segments.map((seg: any) => {
@@ -66,7 +56,7 @@ function mapSegments(segments: any[]): CaptionSegment[] {
     }));
     return {
       text: txt,
-      speaker: "narrator",
+      speaker: "narrator" as const,
       startTime: start,
       endTime: end,
       words,
@@ -198,7 +188,12 @@ export const UploadAccessible: React.FC = () => {
                     <SelectTrigger id="asl"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {asls.map(a => (
-                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                        <SelectItem key={a.id} value={a.id}>
+                          <div>
+                            <div className="font-medium">{a.name}</div>
+                            <div className="text-xs text-muted-foreground">{a.description}</div>
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -231,7 +226,6 @@ export const UploadAccessible: React.FC = () => {
                     selectedVoice={selectedVoice}
                     selectedASLAvatar={selectedAsl}
                     contentType={contentType}
-                    // @ts-ignore - we'll extend the player to accept this prop
                     initialCaptions={initialCaptions}
                   />
                 ) : (
