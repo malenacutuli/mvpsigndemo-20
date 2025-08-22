@@ -145,7 +145,7 @@ export const UploadAccessible: React.FC = () => {
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-3 text-2xl">
             <Upload className="w-6 h-6 text-primary"/> 
-            Upload & Test Complete Pipeline
+            Experience the accessibility transformation
           </CardTitle>
           <CardDescription className="text-base">
             Upload any video to experience the full accessibility transformation: 
