@@ -8,11 +8,22 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Simple ASL video library using the working videos we had before
+// Expanded ASL video library using working .webm videos
 const ASL_CLIPS: Record<string, string> = {
-  // Use the chef ASL videos that were working before
-  'hola': '/videos/asl/chef-asl-loop.webm',
+  // Basic common signs
   'hello': '/videos/asl/chef-asl-loop.webm',
+  'hola': '/videos/asl/chef-asl-loop.webm',
+  'hi': '/videos/asl/chef-asl-loop.webm',
+  'yes': '/videos/asl/asl-yes.webm',
+  'sí': '/videos/asl/asl-yes.webm',
+  'no': '/videos/asl/asl-no.webm',
+  'please': '/videos/asl/chef-pasta.webm',
+  'por favor': '/videos/asl/chef-pasta.webm',
+  'thank you': '/videos/asl/chef-garlic.webm',
+  'gracias': '/videos/asl/chef-garlic.webm',
+  'thanks': '/videos/asl/chef-garlic.webm',
+
+  // Educational vocabulary - Spanish Elmo content
   'bienvenidos': '/videos/asl/chef-asl-loop.webm',
   'welcome': '/videos/asl/chef-asl-loop.webm',
   'adivinen': '/videos/asl/chef-boil.webm',
@@ -44,16 +55,23 @@ const ASL_CLIPS: Record<string, string> = {
   'bake': '/videos/asl/chef-asl-loop.webm',
   'baking': '/videos/asl/chef-asl-loop.webm',
   'water': '/videos/asl/chef-boil.webm',
+  'agua': '/videos/asl/chef-boil.webm',
   'oil': '/videos/asl/chef-garlic.webm',
+  'aceite': '/videos/asl/chef-garlic.webm',
   'salt': '/videos/asl/chef-pasta.webm',
+  'sal': '/videos/asl/chef-pasta.webm',
   'pepper': '/videos/asl/chef-stir.webm',
+  'pimienta': '/videos/asl/chef-stir.webm',
 
-  // Basic food vocabulary
+  // Food vocabulary
   'eat': '/videos/asl/chef-asl-loop.webm',
   'eating': '/videos/asl/chef-asl-loop.webm',
+  'comer': '/videos/asl/chef-asl-loop.webm',
   'drink': '/videos/asl/chef-boil.webm',
   'drinking': '/videos/asl/chef-boil.webm',
+  'beber': '/videos/asl/chef-boil.webm',
   'food': '/videos/asl/chef-pasta.webm',
+  'comida': '/videos/asl/chef-pasta.webm',
 
   // Avatar-specific clips
   'chef-avatar': '/videos/asl/chef-asl-loop.webm',
@@ -64,7 +82,7 @@ const ASL_CLIPS: Record<string, string> = {
   'friendly-teacher': '/videos/asl/chef-boil.webm',
   'student-peer': '/videos/asl/chef-pasta.webm',
 
-  // Default fallbacks - using the main chef video
+  // Default fallbacks
   default: '/videos/asl/chef-asl-loop.webm',
   children: '/videos/asl/chef-asl-loop.webm',
   adults: '/videos/asl/chef-asl-loop.webm',
