@@ -110,30 +110,49 @@ export const UploadAccessible: React.FC = () => {
     if (!file) return;
     try {
       setUploading(true);
-      toast("Uploading…");
+      toast("Uploading video...", { description: "Please wait while we upload and process your video" });
+      
       const path = `demo/${Date.now()}-${file.name}`;
+      console.log("Uploading file:", file.name, "Size:", file.size, "bytes");
+      
       const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, {
         cacheControl: "3600",
         upsert: false,
         contentType: file.type || "video/mp4",
       });
-      if (upErr) throw upErr;
+      
+      if (upErr) {
+        console.error("Upload error:", upErr);
+        throw upErr;
+      }
 
+      console.log("File uploaded successfully, creating signed URL...");
       const { data: signed } = await supabase.storage.from("uploads").createSignedUrl(path, 60 * 60 * 6); // 6h
       if (!signed?.signedUrl) throw new Error("Could not get signed URL");
+      
+      console.log("Signed URL created:", signed.signedUrl);
       setVideoUrl(signed.signedUrl);
 
+      console.log("Starting transcription...");
+      toast("Processing video...", { description: "Generating captions with AI" });
+      
       // Auto-transcribe first 15MB for MVP
       const { data, error } = await supabase.functions.invoke("transcribe", {
         body: { videoUrl: signed.signedUrl, rangeBytes: 15000000 },
       });
-      if (error) throw new Error(error.message || "Transcription failed");
+      
+      if (error) {
+        console.error("Transcription error:", error);
+        throw new Error(error.message || "Transcription failed");
+      }
+      
+      console.log("Transcription response:", data);
       const segments = (data as any)?.segments || [];
       setInitialCaptions(mapSegments(segments));
-      toast.success("Uploaded and auto-captioned");
+      toast.success("Video uploaded and processed successfully!", { description: "Ready to experience accessibility features" });
     } catch (e: any) {
-      console.error(e);
-      toast.error(e.message || "Upload failed");
+      console.error("Upload process error:", e);
+      toast.error("Upload failed", { description: e.message || "Please try again" });
     } finally {
       setUploading(false);
     }
