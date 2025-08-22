@@ -103,13 +103,13 @@ const educationDescriptions: AudioDescription[] = [
     voiceStyle: 'warm'
   },
   {
-    text: "Aparece un mapa sencillo de la ruta.",
-    startTime: 76.90,
-    endTime: 77.90,
+    text: "Aparece un autobus y el conductor abre la puerta y saluda.",
+    startTime: 74.90,
+    endTime: 76.90,
     voiceStyle: 'encouraging'
   },
   {
-    text: "El autobús se detiene en la parada.",
+    text: "El autobús continua el camino con los pasajeros.",
     startTime: 84.85,
     endTime: 85.40,
     voiceStyle: 'warm'
@@ -117,7 +117,7 @@ const educationDescriptions: AudioDescription[] = [
   {
     text: "Un pasajero pulsa el timbre de parada.",
     startTime: 91.60,
-    endTime: 92.10,
+    endTime: 93.10,
     voiceStyle: 'encouraging'
   },
   {
