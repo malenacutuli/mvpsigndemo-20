@@ -28,46 +28,11 @@ interface AudioDescription {
 const recipeDescriptions: AudioDescription[] = [
   {
     text: "Chef Gordon stands before a gleaming stainless steel stove.",
-    startTime: 0.5,
-    endTime: 5,
+    startTime: 0.1,
+    endTime: 4,
     voiceStyle: 'passionate'
   },
-  {
-    text: "Violent bubbles break the surface as the water reaches a rolling boil. Steam rises dramatically, catching the overhead lights like culinary theater.",
-    startTime: 6,
-    endTime: 11,
-    voiceStyle: 'authoritative'
-  },
-  {
-    text: "Gordon reaches for coarse sea salt, his movements precise and confident. He adds generous handfuls, the salt dissolving instantly in the churning water.",
-    startTime: 12,
-    endTime: 17,
-    voiceStyle: 'passionate'
-  },
-  {
-    text: "Long strands of bronze-cut spaghetti cascade into the pot like golden ribbons. The pasta immediately begins its dance in the boiling water.",
-    startTime: 18,
-    endTime: 23,
-    voiceStyle: 'passionate'
-  },
-  {
-    text: "On a wooden cutting board, eight cloves of garlic await transformation. Gordon's knife moves with surgical precision, creating paper-thin slices that glisten with oils.",
-    startTime: 29,
-    endTime: 35,
-    voiceStyle: 'authoritative'
-  },
-  {
-    text: "Extra virgin olive oil shimmers in a large pan, heated to the perfect temperature. The garlic slices hit the oil with an immediate, satisfying sizzle.",
-    startTime: 36,
-    endTime: 42,
-    voiceStyle: 'passionate'
-  },
-  {
-    text: "The garlic transforms from pale white to golden perfection, releasing an intoxicating aroma that fills the entire kitchen. This is the moment every Italian chef lives for.",
-    startTime: 43,
-    endTime: 49,
-    voiceStyle: 'passionate'
-  }
+  
 ];
 
 // Audio descriptions for educational content (Spanish Elmo) - Updated with improved timing
