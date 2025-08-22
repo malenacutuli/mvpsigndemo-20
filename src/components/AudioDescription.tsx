@@ -403,10 +403,10 @@ useEffect(() => {
   };
 
   return (
-    <div className="absolute top-4 left-4 max-w-md">
-      <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 border border-primary/30">
+    <div className="absolute top-4 left-4 max-w-sm">
+      <div className="bg-black/80 backdrop-blur-sm rounded-lg p-3 border border-primary/30">
         {/* Audio Description Header */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2">
           <Volume2 className="w-4 h-4 text-primary" />
           <Badge variant="secondary" className="text-xs">
             Audio Description
@@ -425,16 +425,6 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Voice Profile */}
-        <div className="mb-3">
-          <div className="text-xs text-muted-foreground mb-1">
-            {selectedVoice ? selectedVoice.name : contentType === 'recipe' ? 'Gordon Ramsay Style' : 'Dora la Exploradora Style'}
-          </div>
-          <div className="text-xs text-primary/80">
-            {currentDescription.voiceStyle} tone
-          </div>
-        </div>
-
         {/* Description Text */}
         <div className={`text-sm leading-relaxed ${getVoiceStyleColor(currentDescription.voiceStyle)} ${
           isDescriptionPlaying ? 'animate-pulse' : ''
@@ -444,22 +434,6 @@ useEffect(() => {
         {genError && (
           <div className="text-xs text-destructive mt-2">{genError}</div>
         )}
-
-        {/* Timing Info */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
-          <span className="text-xs text-muted-foreground">
-            {currentDescription.startTime}s - {currentDescription.endTime}s
-          </span>
-          <div className="flex items-center gap-2">
-            {contentType === 'recipe' && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-cwi-main-orange">🔥</span>
-                <span className="text-xs text-muted-foreground">Gordon Style</span>
-              </div>
-            )}
-            <span className="text-xs text-muted-foreground">Voice: {selectedVoice ? selectedVoice.name : 'Default'}</span>
-          </div>
-        </div>
       </div>
     </div>
   );
