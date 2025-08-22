@@ -84,15 +84,15 @@ export const Hero: React.FC = () => {
 
             {/* Final CTA */}
             <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
-              Make Video Truly Inclusive. With One Line of AI.
+              Make Video Truly Inclusive.
             </h3>
           </div>
         </div>
-        
-        {/* Video Upload & Experience */}
-        <div className="container mx-auto px-6 mt-16">
-          <UploadAccessible />
-        </div>
+      </div>
+
+      {/* Video Upload & Experience */}
+      <div className="container mx-auto px-6 py-16">
+        <UploadAccessible />
       </div>
 
       {/* Decorative Elements */}
