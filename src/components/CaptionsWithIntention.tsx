@@ -2196,9 +2196,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   };
 
   return (
-    <div className="absolute bottom-20 left-0 right-0 px-8 z-50">
-      {/* CWI Captions Box with subtle background for better contrast */}
-      <div className="p-6 mx-auto max-w-4xl relative z-50 bg-black/40 backdrop-blur-sm rounded-lg border border-white/10">
+    <div className="absolute bottom-20 left-0 right-40 px-8 z-50">
+      {/* CWI Captions Box with minimal background for better contrast */}
+      <div className="p-4 mx-auto max-w-3xl relative z-50 bg-black/20 backdrop-blur-sm rounded-lg border border-white/5">
         
         {/* Dynamic colored text with word-by-word sync */}
         <div className="font-roboto-flex leading-relaxed text-center">
