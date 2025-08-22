@@ -8,219 +8,66 @@ interface ASLAvatarProps {
   currentCaption?: CaptionSegment | null;
 }
 
-// Multi-format ASL video library with adults and children doing American Sign Language
-interface ASLVideoSources {
-  mp4?: string;
-  webm?: string;
-  ogg?: string;
-}
+// Working ASL video library - simplified for demo
+const ASL_CLIPS: Record<string, string> = {
+  // Educational vocabulary - Children signers
+  'hola': '/videos/asl/working-asl-demo.mp4',
+  'hello': '/videos/asl/working-asl-demo.mp4',
+  'bienvenidos': '/videos/asl/working-asl-demo.mp4',
+  'welcome': '/videos/asl/working-asl-demo.mp4',
+  'adivinen': '/videos/asl/asl-signer-demo.mp4',
+  'guess': '/videos/asl/asl-signer-demo.mp4',
+  'pensando': '/videos/asl/asl-signer-demo.mp4',
+  'thinking': '/videos/asl/asl-signer-demo.mp4',
+  'autobus': '/videos/asl/working-asl-demo.mp4',
+  'bus': '/videos/asl/working-asl-demo.mp4',
+  'chofer': '/videos/asl/working-asl-demo.mp4',
+  'driver': '/videos/asl/working-asl-demo.mp4',
+  'aprender': '/videos/asl/asl-signer-demo.mp4',
+  'learn': '/videos/asl/asl-signer-demo.mp4',
+  'learning': '/videos/asl/asl-signer-demo.mp4',
+  'smarty': '/videos/asl/working-asl-demo.mp4',
+  'elmo': '/videos/asl/working-asl-demo.mp4',
 
-const ASL_CLIPS: Record<string, ASLVideoSources> = {
-  // Educational vocabulary - Children signers 
-  'hola': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'hello': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'bienvenidos': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'welcome': { 
-    mp4: '/videos/asl/children-hello-bienvenidos.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'adivinen': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'guess': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'pensando': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'thinking': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'autobus': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
-  'bus': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
-  'chofer': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
-  'driver': { 
-    mp4: '/videos/asl/children-bus-autobus.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
-  'aprender': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-alphabet-real.mp4'
-  },
-  'learn': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-alphabet-real.mp4'
-  },
-  'learning': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-alphabet-real.mp4'
-  },
-  'smarty': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'elmo': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-
-  // Cooking vocabulary - Using downloaded WebM signers
-  'cook': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'cooking': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'boil': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
-    webm: '/videos/asl/chef-boil.webm'
-  },
-  'boiling': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
-    webm: '/videos/asl/chef-boil.webm'
-  },
-  'kitchen': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'recipe': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'chef': { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'pasta': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-pasta.webm'
-  },
-  'garlic': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
-    webm: '/videos/asl/chef-garlic.webm'
-  },
-  'stir': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
-    webm: '/videos/asl/chef-stir.webm'
-  },
-  'stirring': { 
-    mp4: '/videos/asl/lifeprint-cook.mp4',
-    webm: '/videos/asl/chef-stir.webm'
-  },
-  'bake': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'baking': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'water': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
-    webm: '/videos/asl/chef-boil.webm'
-  },
-  'oil': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
-    webm: '/videos/asl/chef-garlic.webm'
-  },
-  'salt': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/chef-pasta.webm'
-  },
-  'pepper': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/chef-stir.webm'
-  },
+  // Cooking vocabulary - Adult signers
+  'cook': '/videos/asl/asl-signer-demo.mp4',
+  'cooking': '/videos/asl/asl-signer-demo.mp4',
+  'boil': '/videos/asl/asl-signer-demo.mp4',
+  'boiling': '/videos/asl/asl-signer-demo.mp4',
+  'kitchen': '/videos/asl/working-asl-demo.mp4',
+  'recipe': '/videos/asl/asl-signer-demo.mp4',
+  'chef': '/videos/asl/asl-signer-demo.mp4',
+  'pasta': '/videos/asl/asl-signer-demo.mp4',
+  'garlic': '/videos/asl/working-asl-demo.mp4',
+  'stir': '/videos/asl/asl-signer-demo.mp4',
+  'stirring': '/videos/asl/asl-signer-demo.mp4',
+  'bake': '/videos/asl/working-asl-demo.mp4',
+  'baking': '/videos/asl/working-asl-demo.mp4',
+  'water': '/videos/asl/asl-signer-demo.mp4',
+  'oil': '/videos/asl/working-asl-demo.mp4',
+  'salt': '/videos/asl/asl-signer-demo.mp4',
+  'pepper': '/videos/asl/working-asl-demo.mp4',
 
   // Basic food vocabulary
-  'eat': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'eating': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'drink': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'drinking': { 
-    mp4: '/videos/asl/kids-kitchen-signs.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'food': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
+  'eat': '/videos/asl/working-asl-demo.mp4',
+  'eating': '/videos/asl/working-asl-demo.mp4',
+  'drink': '/videos/asl/asl-signer-demo.mp4',
+  'drinking': '/videos/asl/asl-signer-demo.mp4',
+  'food': '/videos/asl/working-asl-demo.mp4',
 
   // Avatar-specific clips
-  'chef-avatar': { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'food-expert': { 
-    mp4: '/videos/asl/lifeprint-food-cooking.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  'home-cook': { 
-    mp4: '/videos/asl/startasl-kitchen.mp4',
-    webm: '/videos/asl/chef-pasta.webm'
-  },
-  'superhero-captain': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  'superhero-star': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
-    webm: '/videos/asl/children-alphabet-real.mp4'
-  },
-  'friendly-teacher': { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-pbs-real.mp4'
-  },
-  'student-peer': { 
-    mp4: '/videos/asl/children-food-vocabulary.mp4',
-    webm: '/videos/asl/children-holidays-real.mp4'
-  },
+  'chef-avatar': '/videos/asl/asl-signer-demo.mp4',
+  'food-expert': '/videos/asl/asl-signer-demo.mp4',
+  'home-cook': '/videos/asl/working-asl-demo.mp4',
+  'superhero-captain': '/videos/asl/working-asl-demo.mp4',
+  'superhero-star': '/videos/asl/asl-signer-demo.mp4',
+  'friendly-teacher': '/videos/asl/working-asl-demo.mp4',
+  'student-peer': '/videos/asl/asl-signer-demo.mp4',
 
   // Default fallbacks
-  default: { 
-    mp4: '/videos/asl/chef-asl-loop.webm',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
-  children: { 
-    mp4: '/videos/asl/gallaudet-children-dictionary.mp4',
-    webm: '/videos/asl/children-body-language-real.mp4'
-  },
-  adults: { 
-    mp4: '/videos/asl/women-cooking-professional.mp4',
-    webm: '/videos/asl/chef-asl-loop.webm'
-  },
+  default: '/videos/asl/working-asl-demo.mp4',
+  children: '/videos/asl/working-asl-demo.mp4',
+  adults: '/videos/asl/asl-signer-demo.mp4',
 };
 
 // Expanded keyword mapping for Spanish Elmo content and cooking vocabulary
@@ -288,7 +135,7 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
 };
 
 export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', selectedASLAvatar, currentCaption }) => {
-  const videoSources = useMemo(() => {
+  const clip = useMemo(() => {
     const text = currentCaption?.text || '';
     if (!text) {
       // Use avatar-specific default clip if available
@@ -325,7 +172,7 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
         </div>
 
         {/* Video avatar (falls back to helper panel if missing) */}
-        {videoSources ? (
+        {clip ? (
           <video
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
@@ -334,12 +181,11 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
             playsInline
             aria-label={`${getHeaderText()} Avatar`}
             onError={(e) => {
-              console.error('ASL video failed to load:', videoSources);
+              console.error('ASL video failed to load:', clip);
             }}
           >
-            {videoSources.mp4 && <source src={videoSources.mp4} type="video/mp4" />}
-            {videoSources.webm && <source src={videoSources.webm} type="video/webm" />}
-            {videoSources.ogg && <source src={videoSources.ogg} type="video/ogg" />}
+            <source src={clip} type="video/mp4" />
+            <source src={clip.replace('.mp4', '.webm')} type="video/webm" />
             Sorry, your browser doesn't support embedded videos.
           </video>
         ) : (
