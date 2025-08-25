@@ -290,17 +290,6 @@ export const UploadAccessible: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="p-4 bg-secondary/30 rounded-lg">
-                  <h4 className="font-semibold mb-2 text-sm">🔥 Live Features</h4>
-                  <div className="text-xs space-y-1 text-muted-foreground">
-                    <div>✓ Supabase storage & transcription</div>
-                    <div>✓ Text to Speech integration</div>
-                    <div>✓ Real-time caption generation</div>
-                    <div>✓ Multi-modal accessibility</div>
-                  </div>
-                </div>
-              </div>
 
               <div className="space-y-4">
                 <ComplianceReport available={{ cc: !!initialCaptions, ad: true, asl: true }} />
