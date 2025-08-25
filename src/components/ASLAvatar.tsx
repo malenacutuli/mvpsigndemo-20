@@ -136,16 +136,46 @@ const KEYWORD_EXPANSIONS: Record<string, string[]> = {
   'drink': ['drink', 'drinking', 'sip', 'beber'],
 };
 
+// Recipe step matching for better synchronization
+const RECIPE_STEP_KEYWORDS: Record<string, string[]> = {
+  'prepare': ['prepare', 'ingredients', 'gather', 'ready', 'setup'],
+  'boil': ['boil', 'water', 'pot', 'heat', 'bubble', 'rolling'],
+  'pasta': ['pasta', 'spaghetti', 'noodles', 'add', 'lower', 'carefully'],
+  'garlic': ['garlic', 'sauté', 'oil', 'olive', 'golden', 'minced'],
+  'tomato': ['tomato', 'tomatoes', 'diced', 'fresh', 'add'],
+  'stir': ['combine', 'toss', 'transfer', 'mix', 'together'],
+  'serve': ['plate', 'serve', 'garnish', 'basil', 'parmesan', 'final']
+};
+
 // Smart keyword matching with content type awareness
 const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentType?: 'recipe' | 'education'): string | null => {
   const lowerText = text.toLowerCase();
+  
+  // Check for custom uploaded clips first
+  const customClips = getCustomASLClips();
+  for (const key of Object.keys(customClips)) {
+    if (lowerText.includes(key.toLowerCase())) {
+      return key;
+    }
+  }
   
   // Content type-aware avatar selection
   if (selectedAvatar?.id && ASL_CLIPS[selectedAvatar.id]) {
     return selectedAvatar.id;
   }
   
-  // Direct word matches first
+  // Recipe-specific step matching
+  if (contentType === 'recipe') {
+    for (const [action, keywords] of Object.entries(RECIPE_STEP_KEYWORDS)) {
+      for (const keyword of keywords) {
+        if (lowerText.includes(keyword)) {
+          return action;
+        }
+      }
+    }
+  }
+  
+  // Direct word matches
   for (const key of Object.keys(ASL_CLIPS)) {
     if (lowerText.includes(key)) {
       return key;
@@ -163,7 +193,7 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
   
   // Fallback based on content type
   if (contentType === 'education') return 'children';
-  if (contentType === 'recipe') return 'adults';
+  if (contentType === 'recipe') return 'cook';
   
   return null;
 };
@@ -213,15 +243,18 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
             muted
             loop
             playsInline
+            key={clip} // Force re-render when clip changes
             aria-label={`${getHeaderText()} Avatar demonstrating sign language`}
             onError={(e) => {
-              console.error('ASL video failed to load:', clip);
-              // Fallback to main chef video if specific video fails
-              e.currentTarget.src = '/videos/asl/chef-asl-loop.webm';
+              console.warn('ASL video failed to load:', clip);
+              // Try to load as webm if mp4 fails
+              if (!clip.includes('.webm')) {
+                e.currentTarget.src = clip.replace('.mp4', '.webm');
+              }
             }}
           >
+            <source src={clip} type="video/webm" />
             <source src={clip} type="video/mp4" />
-            <source src={clip.replace('.mp4', '.webm')} type="video/webm" />
             Sorry, your browser doesn't support embedded videos.
           </video>
         ) : (

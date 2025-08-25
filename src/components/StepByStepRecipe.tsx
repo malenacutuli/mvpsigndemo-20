@@ -6,6 +6,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step1-ingredients.jpg',
     title: 'Prepare Ingredients',
     description: 'Gather fresh pasta, tomatoes, garlic, basil, olive oil, and parmesan cheese',
+    aslKeywords: ['prepare', 'ingredients', 'gather', 'pasta', 'tomato', 'garlic'],
     duration: 8000
   },
   {
@@ -13,6 +14,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step2-boiling-water.jpg',
     title: 'Boil Water',
     description: 'Bring a large pot of salted water to a rolling boil',
+    aslKeywords: ['boil', 'water', 'pot', 'heat'],
     duration: 6000
   },
   {
@@ -20,6 +22,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step3-adding-pasta.jpg',
     title: 'Add Pasta',
     description: 'Carefully lower the spaghetti into the boiling water',
+    aslKeywords: ['pasta', 'add', 'spaghetti', 'water'],
     duration: 5000
   },
   {
@@ -27,6 +30,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step4-garlic-saute.jpg',
     title: 'Sauté Garlic',
     description: 'Heat olive oil and sauté minced garlic until golden',
+    aslKeywords: ['garlic', 'sauté', 'oil', 'cook'],
     duration: 7000
   },
   {
@@ -34,6 +38,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step5-tomato-sauce.jpg',
     title: 'Add Tomatoes',
     description: 'Add fresh diced tomatoes to the sautéed garlic',
+    aslKeywords: ['tomato', 'add', 'sauce'],
     duration: 6000
   },
   {
@@ -41,6 +46,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step6-combining-pasta.jpg',
     title: 'Combine Pasta',
     description: 'Transfer cooked pasta to the sauce and toss together',
+    aslKeywords: ['stir', 'combine', 'pasta', 'sauce'],
     duration: 5000
   },
   {
@@ -48,6 +54,7 @@ const recipeSteps = [
     image: '/videos/recipe-steps/step7-final-dish.jpg',
     title: 'Plate and Serve',
     description: 'Plate the pasta and garnish with fresh basil and parmesan',
+    aslKeywords: ['serve', 'plate', 'garnish', 'finish'],
     duration: 8000
   }
 ];
