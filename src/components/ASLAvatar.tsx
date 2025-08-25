@@ -18,90 +18,94 @@ const getCustomASLClips = (): Record<string, string> => {
 };
 
 // Real ASL video library - combining uploaded clips with defaults
-const ASL_CLIPS: Record<string, string> = {
-  // Custom uploaded clips take priority
-  ...getCustomASLClips(),
-  
-  // Default fallback videos - using only working videos with actual signers
-  // These are the only confirmed working videos with actual signers
-  
-  // Educational content (Spanish Elmo context) - using chef videos as placeholders for real ASL
-  'hola': '/videos/asl/chef-asl-loop.webm',           // Main chef signing
-  'hello': '/videos/asl/chef-asl-loop.webm',          // Main chef signing  
-  'bienvenidos': '/videos/asl/chef-asl-loop.webm',    // Main chef signing
-  'welcome': '/videos/asl/chef-asl-loop.webm',        // Main chef signing
-  'adivinen': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
-  'guess': '/videos/asl/chef-boil.webm',              // Chef demonstrating boiling action
-  'pensando': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
-  'thinking': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
-  'autobus': '/videos/asl/chef-pasta.webm',           // Chef with pasta action
-  'bus': '/videos/asl/chef-pasta.webm',               // Chef with pasta action
-  'chofer': '/videos/asl/chef-pasta.webm',            // Chef with pasta action
-  'driver': '/videos/asl/chef-pasta.webm',            // Chef with pasta action
-  'aprender': '/videos/asl/chef-garlic.webm',         // Chef with garlic preparation
-  'learn': '/videos/asl/chef-garlic.webm',            // Chef with garlic preparation
-  'learning': '/videos/asl/chef-garlic.webm',         // Chef with garlic preparation
-  'smarty': '/videos/asl/chef-stir.webm',             // Chef stirring action
-  'elmo': '/videos/asl/chef-stir.webm',               // Chef stirring action
+const getASLClips = (): Record<string, string> => {
+  const customClips = getCustomASLClips();
+  return {
+    // Custom uploaded clips take priority
+    ...customClips,
+    
+    // Default fallback videos - using only working videos with actual signers
+    // Educational content (Spanish Elmo context) - using chef videos as placeholders for real ASL
+    'hola': '/videos/asl/chef-asl-loop.webm',           // Main chef signing
+    'hello': '/videos/asl/chef-asl-loop.webm',          // Main chef signing  
+    'bienvenidos': '/videos/asl/chef-asl-loop.webm',    // Main chef signing
+    'welcome': '/videos/asl/chef-asl-loop.webm',        // Main chef signing
+    'adivinen': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
+    'guess': '/videos/asl/chef-boil.webm',              // Chef demonstrating boiling action
+    'pensando': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
+    'thinking': '/videos/asl/chef-boil.webm',           // Chef demonstrating boiling action
+    'autobus': '/videos/asl/chef-pasta.webm',           // Chef with pasta action
+    'bus': '/videos/asl/chef-pasta.webm',               // Chef with pasta action
+    'chofer': '/videos/asl/chef-pasta.webm',            // Chef with pasta action
+    'driver': '/videos/asl/chef-pasta.webm',            // Chef with pasta action
+    'aprender': '/videos/asl/chef-garlic.webm',         // Chef with garlic preparation
+    'learn': '/videos/asl/chef-garlic.webm',            // Chef with garlic preparation
+    'learning': '/videos/asl/chef-garlic.webm',         // Chef with garlic preparation
+    'smarty': '/videos/asl/chef-stir.webm',             // Chef stirring action
+    'elmo': '/videos/asl/chef-stir.webm',               // Chef stirring action
 
-  // Cooking vocabulary - these videos show actual cooking actions that can represent ASL
-  'cook': '/videos/asl/chef-asl-loop.webm',           // Main chef cooking demonstration
-  'cooking': '/videos/asl/chef-asl-loop.webm',        // Main chef cooking demonstration
-  'boil': '/videos/asl/chef-boil.webm',               // Chef demonstrating boiling
-  'boiling': '/videos/asl/chef-boil.webm',            // Chef demonstrating boiling
-  'kitchen': '/videos/asl/chef-asl-loop.webm',        // Main chef in kitchen
-  'recipe': '/videos/asl/chef-asl-loop.webm',         // Main chef explaining recipe
-  'chef': '/videos/asl/chef-asl-loop.webm',           // Main chef demonstration
-  'pasta': '/videos/asl/chef-pasta.webm',             // Chef handling pasta
-  'garlic': '/videos/asl/chef-garlic.webm',           // Chef preparing garlic
-  'stir': '/videos/asl/chef-stir.webm',               // Chef stirring
-  'stirring': '/videos/asl/chef-stir.webm',           // Chef stirring
-  'bake': '/videos/asl/chef-asl-loop.webm',           // Main chef baking
-  'baking': '/videos/asl/chef-asl-loop.webm',         // Main chef baking
-  'water': '/videos/asl/chef-boil.webm',              // Chef with water/boiling
-  'agua': '/videos/asl/chef-boil.webm',               // Chef with water/boiling
-  'oil': '/videos/asl/chef-garlic.webm',              // Chef with oil/garlic prep
-  'aceite': '/videos/asl/chef-garlic.webm',           // Chef with oil/garlic prep
-  'salt': '/videos/asl/chef-pasta.webm',              // Chef seasoning pasta
-  'sal': '/videos/asl/chef-pasta.webm',               // Chef seasoning pasta
-  'pepper': '/videos/asl/chef-stir.webm',             // Chef adding pepper while stirring
-  'pimienta': '/videos/asl/chef-stir.webm',           // Chef adding pepper while stirring
+    // Cooking vocabulary - these videos show actual cooking actions that can represent ASL
+    'cook': '/videos/asl/chef-asl-loop.webm',           // Main chef cooking demonstration
+    'cooking': '/videos/asl/chef-asl-loop.webm',        // Main chef cooking demonstration
+    'boil': '/videos/asl/chef-boil.webm',               // Chef demonstrating boiling
+    'boiling': '/videos/asl/chef-boil.webm',            // Chef demonstrating boiling
+    'kitchen': '/videos/asl/chef-asl-loop.webm',        // Main chef in kitchen
+    'recipe': '/videos/asl/chef-asl-loop.webm',         // Main chef explaining recipe
+    'chef': '/videos/asl/chef-asl-loop.webm',           // Main chef demonstration
+    'pasta': '/videos/asl/chef-pasta.webm',             // Chef handling pasta
+    'garlic': '/videos/asl/chef-garlic.webm',           // Chef preparing garlic
+    'stir': '/videos/asl/chef-stir.webm',               // Chef stirring
+    'stirring': '/videos/asl/chef-stir.webm',           // Chef stirring
+    'bake': '/videos/asl/chef-asl-loop.webm',           // Main chef baking
+    'baking': '/videos/asl/chef-asl-loop.webm',         // Main chef baking
+    'water': '/videos/asl/chef-boil.webm',              // Chef with water/boiling
+    'agua': '/videos/asl/chef-boil.webm',               // Chef with water/boiling
+    'oil': '/videos/asl/chef-garlic.webm',              // Chef with oil/garlic prep
+    'aceite': '/videos/asl/chef-garlic.webm',           // Chef with oil/garlic prep
+    'salt': '/videos/asl/chef-pasta.webm',              // Chef seasoning pasta
+    'sal': '/videos/asl/chef-pasta.webm',               // Chef seasoning pasta
+    'pepper': '/videos/asl/chef-stir.webm',             // Chef adding pepper while stirring
+    'pimienta': '/videos/asl/chef-stir.webm',           // Chef adding pepper while stirring
 
-  // Basic interactions
-  'eat': '/videos/asl/chef-asl-loop.webm',            // Main chef eating/tasting
-  'eating': '/videos/asl/chef-asl-loop.webm',         // Main chef eating/tasting
-  'comer': '/videos/asl/chef-asl-loop.webm',          // Main chef eating/tasting
-  'drink': '/videos/asl/chef-boil.webm',              // Chef with liquids
-  'drinking': '/videos/asl/chef-boil.webm',           // Chef with liquids
-  'beber': '/videos/asl/chef-boil.webm',              // Chef with liquids
-  'food': '/videos/asl/chef-pasta.webm',              // Chef with food
-  'comida': '/videos/asl/chef-pasta.webm',            // Chef with food
+    // Basic interactions
+    'eat': '/videos/asl/chef-asl-loop.webm',            // Main chef eating/tasting
+    'eating': '/videos/asl/chef-asl-loop.webm',         // Main chef eating/tasting
+    'comer': '/videos/asl/chef-asl-loop.webm',          // Main chef eating/tasting
+    'drink': '/videos/asl/chef-boil.webm',              // Chef with liquids
+    'drinking': '/videos/asl/chef-boil.webm',           // Chef with liquids
+    'beber': '/videos/asl/chef-boil.webm',              // Chef with liquids
+    'food': '/videos/asl/chef-pasta.webm',              // Chef with food
+    'comida': '/videos/asl/chef-pasta.webm',            // Chef with food
 
-  // Common signs - using the most expressive chef videos
-  'yes': '/videos/asl/chef-asl-loop.webm',            // Main chef nodding/affirming
-  'sí': '/videos/asl/chef-asl-loop.webm',             // Main chef nodding/affirming
-  'no': '/videos/asl/chef-stir.webm',                 // Chef showing negative gesture
-  'please': '/videos/asl/chef-pasta.webm',            // Chef making polite gesture
-  'por favor': '/videos/asl/chef-pasta.webm',         // Chef making polite gesture
-  'thank you': '/videos/asl/chef-garlic.webm',        // Chef showing appreciation
-  'gracias': '/videos/asl/chef-garlic.webm',          // Chef showing appreciation
-  'thanks': '/videos/asl/chef-garlic.webm',           // Chef showing appreciation
-  'good': '/videos/asl/chef-asl-loop.webm',           // Main chef showing approval
-  'bueno': '/videos/asl/chef-asl-loop.webm',          // Main chef showing approval
+    // Common signs - using the most expressive chef videos
+    'yes': '/videos/asl/chef-asl-loop.webm',            // Main chef nodding/affirming
+    'sí': '/videos/asl/chef-asl-loop.webm',             // Main chef nodding/affirming
+    'no': '/videos/asl/chef-stir.webm',                 // Chef showing negative gesture
+    'please': '/videos/asl/chef-pasta.webm',            // Chef making polite gesture
+    'por favor': '/videos/asl/chef-pasta.webm',         // Chef making polite gesture
+    'thank you': '/videos/asl/chef-garlic.webm',        // Chef showing appreciation
+    'gracias': '/videos/asl/chef-garlic.webm',          // Chef showing appreciation
+    'thanks': '/videos/asl/chef-garlic.webm',           // Chef showing appreciation
+    'good': '/videos/asl/chef-asl-loop.webm',           // Main chef showing approval
+    'bueno': '/videos/asl/chef-asl-loop.webm',          // Main chef showing approval
 
-  // Avatar-specific assignments
-  'chef-avatar': '/videos/asl/chef-asl-loop.webm',
-  'food-expert': '/videos/asl/chef-asl-loop.webm',
-  'home-cook': '/videos/asl/chef-pasta.webm',
-  'superhero-captain': '/videos/asl/chef-garlic.webm',
-  'superhero-star': '/videos/asl/chef-stir.webm',
-  'friendly-teacher': '/videos/asl/chef-boil.webm',
-  'student-peer': '/videos/asl/chef-pasta.webm',
+    // Avatar-specific assignments
+    'chef-avatar': '/videos/asl/chef-asl-loop.webm',
+    'food-expert': '/videos/asl/chef-asl-loop.webm',
+    'home-cook': '/videos/asl/chef-pasta.webm',
+    'superhero-captain': '/videos/asl/chef-garlic.webm',
+    'superhero-star': '/videos/asl/chef-stir.webm',
+    'friendly-teacher': '/videos/asl/chef-boil.webm',
+    'student-peer': '/videos/asl/chef-pasta.webm',
 
-  // Reliable fallbacks
-  default: '/videos/asl/chef-asl-loop.webm',          // Always use the main chef video
-  children: '/videos/asl/chef-asl-loop.webm',         // Use chef for educational content
-  adults: '/videos/asl/chef-asl-loop.webm',           // Use chef for recipe content
+    // Reliable fallbacks
+    'default': '/videos/asl/chef-asl-loop.webm',          // Always use the main chef video
+    'children': '/videos/asl/chef-asl-loop.webm',         // Use chef for educational content
+    'adults': '/videos/asl/chef-asl-loop.webm',           // Use chef for recipe content
+    'prepare': '/videos/asl/chef-asl-loop.webm',          // Recipe steps
+    'tomato': '/videos/asl/chef-garlic.webm',
+    'serve': '/videos/asl/chef-pasta.webm',
+  };
 };
 
 // Expanded keyword mapping for Spanish Elmo content and cooking vocabulary
@@ -151,16 +155,25 @@ const RECIPE_STEP_KEYWORDS: Record<string, string[]> = {
 const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentType?: 'recipe' | 'education'): string | null => {
   const lowerText = text.toLowerCase();
   
+  console.log('🎭 ASL Avatar - Finding match for text:', lowerText);
+  
   // Check for custom uploaded clips first
   const customClips = getCustomASLClips();
+  console.log('📹 Custom ASL clips available:', Object.keys(customClips));
+  
   for (const key of Object.keys(customClips)) {
     if (lowerText.includes(key.toLowerCase())) {
+      console.log('✅ Found custom ASL clip match:', key, 'for text:', lowerText);
       return key;
     }
   }
   
+  // Get all available clips (including custom ones)
+  const aslClips = getASLClips();
+  
   // Content type-aware avatar selection
-  if (selectedAvatar?.id && ASL_CLIPS[selectedAvatar.id]) {
+  if (selectedAvatar?.id && aslClips[selectedAvatar.id]) {
+    console.log('👤 Using selected avatar:', selectedAvatar.id);
     return selectedAvatar.id;
   }
   
@@ -169,6 +182,7 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
     for (const [action, keywords] of Object.entries(RECIPE_STEP_KEYWORDS)) {
       for (const keyword of keywords) {
         if (lowerText.includes(keyword)) {
+          console.log('🍳 Found recipe step match:', action, 'for keyword:', keyword);
           return action;
         }
       }
@@ -176,8 +190,9 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
   }
   
   // Direct word matches
-  for (const key of Object.keys(ASL_CLIPS)) {
+  for (const key of Object.keys(aslClips)) {
     if (lowerText.includes(key)) {
+      console.log('🎯 Found direct ASL clip match:', key);
       return key;
     }
   }
@@ -186,11 +201,13 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
   for (const [baseWord, expansions] of Object.entries(KEYWORD_EXPANSIONS)) {
     for (const expansion of expansions) {
       if (lowerText.includes(expansion)) {
+        console.log('🔍 Found expanded keyword match:', baseWord, 'via:', expansion);
         return baseWord;
       }
     }
   }
   
+  console.log('❌ No ASL match found, using fallback for content type:', contentType);
   // Fallback based on content type
   if (contentType === 'education') return 'children';
   if (contentType === 'recipe') return 'cook';
@@ -201,18 +218,25 @@ const findBestMatch = (text: string, selectedAvatar?: { id: string }, contentTyp
 export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', selectedASLAvatar, currentCaption }) => {
   const clip = useMemo(() => {
     const text = currentCaption?.text || '';
+    const aslClips = getASLClips(); // Get dynamic clips each time
+    
+    console.log('🎬 ASL Avatar rendering with:', { text, contentType, selectedAvatar: selectedASLAvatar?.id });
+    
     if (!text) {
       // Use avatar-specific default clip if available
-      if (selectedASLAvatar?.id && ASL_CLIPS[selectedASLAvatar.id]) {
-        return ASL_CLIPS[selectedASLAvatar.id];
+      if (selectedASLAvatar?.id && aslClips[selectedASLAvatar.id]) {
+        return aslClips[selectedASLAvatar.id];
       }
       // Fallback based on content type
-      return contentType === 'education' ? ASL_CLIPS.children : ASL_CLIPS.adults;
+      return contentType === 'education' ? aslClips.children : aslClips.adults;
     }
     
     // Use the smart matching function with content type awareness
     const matchedKey = findBestMatch(text, selectedASLAvatar, contentType);
-    return ASL_CLIPS[matchedKey || (contentType === 'education' ? 'children' : 'adults')];
+    const selectedClip = aslClips[matchedKey || (contentType === 'education' ? 'children' : 'adults')];
+    
+    console.log('🎯 Selected ASL clip:', matchedKey, '→', selectedClip);
+    return selectedClip;
   }, [currentCaption, selectedASLAvatar, contentType]);
 
   // Get proper header text based on content type and avatar
