@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, Video, DollarSign, Home } from 'lucide-react';
+import { AuthButton } from '@/components/AuthButton';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
@@ -67,16 +68,19 @@ export const Navigation: React.FC = () => {
                 Upload Video
               </Link>
             </Button>
+            
+            <AuthButton />
           </div>
           
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
             <Button asChild size="sm">
               <Link to="/upload">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload
               </Link>
             </Button>
+            <AuthButton />
           </div>
         </div>
       </div>

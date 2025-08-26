@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceSelector } from '@/components/VoiceSelector';
 import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -35,6 +36,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [selectedVoice, setSelectedVoice] = useState('aria-engaging'); // Default to education voice
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Voice options for audio descriptions
   const voiceOptions = {
@@ -103,6 +105,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       return;
     }
 
+    // Use authenticated user ID or demo UUID if not authenticated
+    const userId = user?.id || crypto.randomUUID();
+
     try {
       setUploading(true);
       setUploadProgress(0);
@@ -114,7 +119,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         language,
         content_type: contentType,
         status: 'uploading' as const,
-        user_id: crypto.randomUUID() // Generate a UUID for demo purposes
+        user_id: userId
       };
       
       console.log('Creating video record...', insertData);
