@@ -11,14 +11,7 @@ export const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       
       {/* Header */}
-      <header className="relative z-20 flex justify-between items-center p-6">
-        <img
-          src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
-          alt="Axessible logo – multi-modal accessible video platform"
-          className="h-6 md:h-7 w-auto opacity-90"
-          loading="lazy"
-          decoding="async"
-        />
+      <header className="relative z-20 flex justify-end items-center p-6">
         <Badge variant="secondary" className="text-sm font-medium px-4 py-2">
           <Award className="w-4 h-4 mr-2" />
           Patent-Pending AI Technology
