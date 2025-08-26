@@ -32,8 +32,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en');
   const [contentType, setContentType] = useState<'recipe' | 'education'>('education');
-  const [selectedVoice, setSelectedVoice] = useState('sarah-warm');
-  const [selectedASL, setSelectedASL] = useState('chef-friendly');
+  const [selectedVoice, setSelectedVoice] = useState('aria-engaging'); // Default to education voice
+  const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
   const { toast } = useToast();
 
   // Voice options for audio descriptions
@@ -107,7 +107,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       setUploading(true);
       setUploadProgress(0);
 
-      // Create video record first with explicit typing
+      // Create video record first with explicit typing and better error handling
       const insertData = {
         title: title.trim(),
         description: description.trim() || null,
@@ -116,6 +116,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         status: 'uploading' as const,
         user_id: crypto.randomUUID() // Generate a UUID for demo purposes
       };
+      
+      console.log('Creating video record...', insertData);
 
       const { data: video, error: videoError } = await supabase
         .from('videos')
@@ -124,13 +126,17 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         .maybeSingle() as { data: VideoData | null, error: any };
 
       if (videoError || !video) {
+        console.error('Database error:', videoError);
         throw videoError || new Error('Failed to create video record');
       }
+
+      console.log('Video record created:', video);
 
       // Upload video file to storage
       const fileExt = videoFile.name.split('.').pop();
       const fileName = `${video.id}.${fileExt}`;
       
+      console.log('Uploading file to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('videos')
         .upload(`originals/${fileName}`, videoFile, {
@@ -138,7 +144,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('File uploaded successfully:', uploadData);
 
       // Update video record with storage path
       const { error: updateError } = await supabase
