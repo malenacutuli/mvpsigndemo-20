@@ -21,8 +21,6 @@ const Index = () => {
       <Implementation />
       <EarlyAccess />
 
-      {/* Supporting Demos */}
-      <DemoSection />
       
       {/* ASL Clip Upload Section */}
       <section className="py-20 bg-muted/30">
