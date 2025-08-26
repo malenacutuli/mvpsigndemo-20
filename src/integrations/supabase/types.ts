@@ -14,7 +14,266 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      emotion_spans: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          emotion: string
+          end_time: number
+          id: string
+          intensity: number | null
+          intent: string | null
+          start_time: number
+          video_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          emotion: string
+          end_time: number
+          id?: string
+          intensity?: number | null
+          intent?: string | null
+          start_time: number
+          video_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          emotion?: string
+          end_time?: number
+          id?: string
+          intensity?: number | null
+          intent?: string | null
+          start_time?: number
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotion_spans_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json | null
+          result: Json | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          type: Database["public"]["Enums"]["job_type"]
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          type: Database["public"]["Enums"]["job_type"]
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          type?: Database["public"]["Enums"]["job_type"]
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracks: {
+        Row: {
+          created_at: string
+          format: string | null
+          id: string
+          is_default: boolean | null
+          kind: Database["public"]["Enums"]["track_kind"]
+          label: string | null
+          language: string | null
+          metadata: Json | null
+          url: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          is_default?: boolean | null
+          kind: Database["public"]["Enums"]["track_kind"]
+          label?: string | null
+          language?: string | null
+          metadata?: Json | null
+          url: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          is_default?: boolean | null
+          kind?: Database["public"]["Enums"]["track_kind"]
+          label?: string | null
+          language?: string | null
+          metadata?: Json | null
+          url?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracks_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcript_segments: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          end_time: number
+          id: string
+          speaker: string | null
+          start_time: number
+          text: string
+          video_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          end_time: number
+          id?: string
+          speaker?: string | null
+          start_time: number
+          text: string
+          video_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          end_time?: number
+          id?: string
+          speaker?: string | null
+          start_time?: number
+          text?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_segments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          language: string
+          metadata: Json | null
+          status: Database["public"]["Enums"]["video_status"]
+          storage_path: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          language?: string
+          metadata?: Json | null
+          status?: Database["public"]["Enums"]["video_status"]
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          language?: string
+          metadata?: Json | null
+          status?: Database["public"]["Enums"]["video_status"]
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +282,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      job_status: "pending" | "running" | "completed" | "failed"
+      job_type:
+        | "transcription"
+        | "emotion_analysis"
+        | "ad_generation"
+        | "caption_generation"
+        | "asl_generation"
+      track_kind: "captions" | "subtitles" | "audio_description" | "asl_video"
+      video_status: "uploading" | "uploaded" | "processing" | "ready" | "error"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +417,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      job_status: ["pending", "running", "completed", "failed"],
+      job_type: [
+        "transcription",
+        "emotion_analysis",
+        "ad_generation",
+        "caption_generation",
+        "asl_generation",
+      ],
+      track_kind: ["captions", "subtitles", "audio_description", "asl_video"],
+      video_status: ["uploading", "uploaded", "processing", "ready", "error"],
+    },
   },
 } as const

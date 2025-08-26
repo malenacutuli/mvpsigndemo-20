@@ -13,6 +13,15 @@ interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
 }
 
+interface VideoData {
+  id: string;
+  title: string;
+  description: string | null;
+  language: string;
+  content_type: string;
+  status: string;
+}
+
 export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -70,20 +79,25 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       setUploading(true);
       setUploadProgress(0);
 
-      // Create video record first
+      // Create video record first with explicit typing
+      const insertData = {
+        title: title.trim(),
+        description: description.trim() || null,
+        language,
+        content_type: contentType,
+        status: 'uploading' as const,
+        user_id: 'demo-user-id' // TODO: Replace with actual auth user ID
+      };
+
       const { data: video, error: videoError } = await supabase
         .from('videos')
-        .insert({
-          title: title.trim(),
-          description: description.trim() || null,
-          language,
-          content_type: contentType,
-          status: 'uploading'
-        })
+        .insert(insertData)
         .select()
-        .single();
+        .maybeSingle() as { data: VideoData | null, error: any };
 
-      if (videoError) throw videoError;
+      if (videoError || !video) {
+        throw videoError || new Error('Failed to create video record');
+      }
 
       // Upload video file to storage
       const fileExt = videoFile.name.split('.').pop();
@@ -103,7 +117,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         .from('videos')
         .update({
           storage_path: uploadData.path,
-          status: 'uploaded'
+          status: 'uploaded' as const
         })
         .eq('id', video.id);
 

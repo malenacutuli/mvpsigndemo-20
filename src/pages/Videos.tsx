@@ -37,12 +37,13 @@ export default function Videos() {
       const { data, error } = await supabase
         .from('videos')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: Video[] | null, error: any };
 
       if (error) throw error;
       setVideos(data || []);
     } catch (error) {
       console.error('Error fetching videos:', error);
+      setVideos([]);
     } finally {
       setLoading(false);
     }
