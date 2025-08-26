@@ -10,58 +10,11 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      jobs: {
-        Row: {
-          ad_audio_url: string | null
-          captions_url: string | null
-          created_at: string
-          features: Json
-          id: string
-          language: string
-          output_video_url: string | null
-          report_url: string | null
-          sign_video_url: string | null
-          status: string
-          storage_path: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          ad_audio_url?: string | null
-          captions_url?: string | null
-          created_at?: string
-          features?: Json
-          id?: string
-          language?: string
-          output_video_url?: string | null
-          report_url?: string | null
-          sign_video_url?: string | null
-          status?: string
-          storage_path: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          ad_audio_url?: string | null
-          captions_url?: string | null
-          created_at?: string
-          features?: Json
-          id?: string
-          language?: string
-          output_video_url?: string | null
-          report_url?: string | null
-          sign_video_url?: string | null
-          status?: string
-          storage_path?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
