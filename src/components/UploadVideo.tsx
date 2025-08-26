@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { VoiceSelector } from '@/components/VoiceSelector';
+import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -30,7 +32,33 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en');
   const [contentType, setContentType] = useState<'recipe' | 'education'>('education');
+  const [selectedVoice, setSelectedVoice] = useState('sarah-warm');
+  const [selectedASL, setSelectedASL] = useState('chef-friendly');
   const { toast } = useToast();
+
+  // Voice options for audio descriptions
+  const voiceOptions = {
+    recipe: [
+      { id: 'sarah-warm', name: 'Sarah', description: 'Warm and friendly for cooking shows', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
+      { id: 'brian-clear', name: 'Brian', description: 'Clear and precise instructions', elevenLabsId: 'nPczCjzI2devNBz1zQrb' },
+    ],
+    education: [
+      { id: 'aria-engaging', name: 'Aria', description: 'Engaging and educational', elevenLabsId: '9BWtsMINqrJLrRacOk9x' },
+      { id: 'charlotte-gentle', name: 'Charlotte', description: 'Gentle and nurturing for children', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
+    ]
+  };
+
+  // ASL avatar options
+  const aslOptions = {
+    recipe: [
+      { id: 'chef-friendly', name: 'Chef Maya', description: 'Professional chef with clear signing' },
+      { id: 'cook-casual', name: 'Home Cook Sam', description: 'Casual and approachable cooking style' },
+    ],
+    education: [
+      { id: 'teacher-professional', name: 'Teacher Alex', description: 'Professional educator with clear signing' },
+      { id: 'student-friendly', name: 'Learning Buddy', description: 'Student-friendly and engaging' },
+    ]
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -86,7 +114,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         language,
         content_type: contentType,
         status: 'uploading' as const,
-        user_id: 'demo-user-id' // TODO: Replace with actual auth user ID
+        user_id: crypto.randomUUID() // Generate a UUID for demo purposes
       };
 
       const { data: video, error: videoError } = await supabase
@@ -236,7 +264,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
             <div className="space-y-2">
               <Label htmlFor="content-type">Content Type</Label>
-              <Select value={contentType} onValueChange={(value: 'recipe' | 'education') => setContentType(value)} disabled={uploading}>
+              <Select value={contentType} onValueChange={(value: 'recipe' | 'education') => {
+                setContentType(value);
+                // Reset voice and ASL selections when content type changes
+                setSelectedVoice(voiceOptions[value][0].id);
+                setSelectedASL(aslOptions[value][0].id);
+              }} disabled={uploading}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -246,6 +279,23 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Voice and ASL Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <VoiceSelector
+              options={voiceOptions[contentType]}
+              selectedValue={selectedVoice}
+              onValueChange={setSelectedVoice}
+              contentType={contentType}
+            />
+            
+            <ASLAvatarSelector
+              options={aslOptions[contentType]}
+              selectedValue={selectedASL}
+              onValueChange={setSelectedASL}
+              contentType={contentType}
+            />
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadVideo } from '@/components/UploadVideo';
+import { Navigation } from '@/components/Navigation';
 
 export default function Upload() {
   const navigate = useNavigate();
@@ -10,7 +11,9 @@ export default function Upload() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
@@ -55,6 +58,7 @@ export default function Upload() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
