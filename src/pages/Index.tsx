@@ -9,10 +9,38 @@ import { PromptToVideo } from '@/components/PromptToVideo';
 import { TechStack } from '@/components/TechStack';
 import { PatentClaims } from '@/components/PatentClaims';
 import { ASLClipUploader } from '@/components/ASLClipUploader';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Upload, Video, DollarSign } from 'lucide-react';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl font-bold text-primary">Axessible</span>
+            </div>
+            <div className="hidden md:flex items-center space-x-6">
+              <Link to="/videos" className="text-muted-foreground hover:text-foreground transition-colors">
+                My Videos
+              </Link>
+              <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+                Pricing
+              </Link>
+              <Button asChild>
+                <Link to="/upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Video
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <Hero />
 
       {/* Industry First Content */}
@@ -21,6 +49,57 @@ const Index = () => {
       <Implementation />
       <EarlyAccess />
 
+      {/* Quick Access Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Get Started with Axessible Video
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+              Transform your video content with automatic accessibility features
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <Link to="/upload" className="group">
+              <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                  <Upload className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-center">Upload Video</h3>
+                <p className="text-muted-foreground text-center text-sm">
+                  Upload your video and let AI generate captions, audio descriptions, and ASL support
+                </p>
+              </div>
+            </Link>
+            
+            <Link to="/videos" className="group">
+              <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                  <Video className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-center">Manage Videos</h3>
+                <p className="text-muted-foreground text-center text-sm">
+                  View, organize, and manage your accessible video library
+                </p>
+              </div>
+            </Link>
+            
+            <Link to="/pricing" className="group">
+              <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                  <DollarSign className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-center">View Pricing</h3>
+                <p className="text-muted-foreground text-center text-sm">
+                  Choose the perfect plan for your accessibility needs
+                </p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
       
       {/* ASL Clip Upload Section */}
       <section className="py-20 bg-muted/30">
