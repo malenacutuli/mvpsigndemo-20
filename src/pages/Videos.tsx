@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Calendar, Clock, Languages, Eye } from 'lucide-react';
+import { Play, Calendar, Clock, Languages, Eye, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigation } from '@/components/Navigation';
 
@@ -18,6 +20,7 @@ interface Video {
   status: string;
   duration_seconds: number | null;
   thumbnail_url: string | null;
+  storage_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +31,8 @@ export default function Videos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [languageFilter, setLanguageFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deletingVideo, setDeletingVideo] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchVideos();
@@ -84,6 +89,66 @@ export default function Videos() {
       'de': 'German'
     };
     return languages[lang] || lang;
+  };
+
+  const deleteVideo = async (videoId: string) => {
+    setDeletingVideo(videoId);
+    try {
+      // First, delete associated storage files
+      const video = videos.find(v => v.id === videoId);
+      if (video) {
+        // Delete video file from storage
+        if (video.storage_path) {
+          try {
+            await supabase.storage
+              .from('videos')
+              .remove([video.storage_path]);
+          } catch (storageError) {
+            console.warn('Error deleting video file from storage:', storageError);
+          }
+        }
+
+        // Delete thumbnail from storage
+        if (video.thumbnail_url) {
+          try {
+            // Extract the path from the thumbnail URL
+            const thumbnailPath = video.thumbnail_url.split('/').pop();
+            if (thumbnailPath) {
+              await supabase.storage
+                .from('thumbnails')
+                .remove([thumbnailPath]);
+            }
+          } catch (storageError) {
+            console.warn('Error deleting thumbnail from storage:', storageError);
+          }
+        }
+      }
+
+      // Delete the video record from database
+      const { error } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      // Update local state
+      setVideos(videos.filter(v => v.id !== videoId));
+      
+      toast({
+        title: "Video deleted",
+        description: "The video has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast({
+        title: "Error deleting video",
+        description: "There was an error deleting the video. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingVideo(null);
+    }
   };
 
   if (loading) {
@@ -224,6 +289,35 @@ export default function Videos() {
                         View
                       </Link>
                     </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          disabled={deletingVideo === video.id}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Video</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{video.title}"? This action cannot be undone and will permanently remove the video and all associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => deleteVideo(video.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete Video
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
