@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-lipsync]
 verify_jwt = false
+
+[functions.voice-cloning]
+verify_jwt = false

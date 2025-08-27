@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +11,8 @@ import { AccessibilityGrader } from './AccessibilityGrader';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
-import { SynchronizedDubbingControls } from './SynchronizedDubbingControls';
+import { LanguageSelector } from './LanguageSelector';
+import { VoiceCloningControls } from './VoiceCloningControls';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -69,6 +70,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [translatedContent, setTranslatedContent] = useState<any>(null);
+  const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -246,6 +250,39 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   };
 
+  const handleLanguageChange = (language: string, content?: any) => {
+    setCurrentLanguage(language);
+    if (content) {
+      setTranslatedContent(content);
+      if (content.captions) {
+        setGeneratedCaptions(content.captions);
+      }
+      if (content.audioDescription) {
+        setGeneratedAD(content.audioDescription);
+      }
+    } else if (language === 'en') {
+      // Reset to original content
+      if (initialCaptions) {
+        setGeneratedCaptions(initialCaptions);
+      }
+      setTranslatedContent(null);
+    }
+  };
+
+  const handleTranslatedContentUpdate = (content: any) => {
+    setTranslatedContent(content);
+    if (content.captions) {
+      setGeneratedCaptions(content.captions);
+    }
+    if (content.audioDescription) {
+      setGeneratedAD(content.audioDescription);
+    }
+  };
+
+  const handleVoiceCloned = (voiceId: string, voiceName: string) => {
+    setClonedVoiceId(voiceId);
+  };
+
   const handleTranscriptUpdate = (segments: any[]) => {
     // Convert segments to caption format if needed
     const captionSegments: CaptionSegment[] = segments.map(segment => {
@@ -400,10 +437,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <Volume2 className="w-4 h-4 mr-1" />
               {isGeneratingAD ? 'AD…' : (dynamicADEnabled ? 'Dynamic AD On' : 'Dynamic AD')}
             </Button>
-            <SynchronizedDubbingControls
-              transcriptText={generatedCaptions?.map(c => c.text).join(' ') || ''}
-              currentTime={currentTime}
-              isPlaying={isPlaying}
+            <LanguageSelector
+              currentLanguage={currentLanguage}
+              originalCaptions={initialCaptions}
+              originalAudioDescription={generatedAD || undefined}
+              onLanguageChange={handleLanguageChange}
+              onTranslatedContentUpdate={handleTranslatedContentUpdate}
             />
             
             <AccessibilityControls
@@ -454,12 +493,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </div>
             
             <Tabs defaultValue="grader" className="w-full">
-              <TabsList className="grid w-full grid-cols-5 bg-muted/20">
+              <TabsList className="grid w-full grid-cols-6 bg-muted/20">
                 <TabsTrigger value="grader">Grader</TabsTrigger>
+                <TabsTrigger value="language">Language</TabsTrigger>
                 <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
                 <TabsTrigger value="dubbing">Dubbing</TabsTrigger>
+                <TabsTrigger value="voice">Voice</TabsTrigger>
                 <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
               
               <TabsContent value="grader" className="mt-4">
@@ -473,6 +513,27 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   language={contentType === 'education' ? 'es' : 'en'}
                   onFixIssue={handleFixAccessibilityIssue}
                 />
+              </TabsContent>
+              
+              <TabsContent value="language" className="mt-4">
+                <div className="space-y-4 text-white">
+                  <h3 className="text-lg font-medium">Multi-Language Settings</h3>
+                  <LanguageSelector
+                    currentLanguage={currentLanguage}
+                    originalCaptions={initialCaptions}
+                    originalAudioDescription={generatedAD || undefined}
+                    onLanguageChange={handleLanguageChange}
+                    onTranslatedContentUpdate={handleTranslatedContentUpdate}
+                  />
+                  <div className="p-4 border border-muted/20 rounded-lg">
+                    <h4 className="font-medium mb-2">Language Features</h4>
+                    <div className="text-sm space-y-1 text-muted-foreground">
+                      <div>Current: {currentLanguage === 'en' ? 'English (Original)' : `Translated to ${currentLanguage.toUpperCase()}`}</div>
+                      <div>Translated Captions: {translatedContent?.captions?.length ? 'Available' : 'Not Available'}</div>
+                      <div>Translated Audio Description: {translatedContent?.audioDescription?.length ? 'Available' : 'Not Available'}</div>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
               
               <TabsContent value="transcripts" className="mt-4">
@@ -490,6 +551,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   videoUrl={videoSrc}
                   originalLanguage={contentType === 'education' ? 'es' : 'en'}
                   transcriptText={generatedCaptions?.map(c => c.text).join(' ') || ''}
+                />
+              </TabsContent>
+              
+              <TabsContent value="voice" className="mt-4">
+                <VoiceCloningControls
+                  onVoiceCloned={handleVoiceCloned}
+                  currentLanguage={currentLanguage}
                 />
               </TabsContent>
               
