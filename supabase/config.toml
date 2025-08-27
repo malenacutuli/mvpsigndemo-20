@@ -2,3 +2,6 @@ project_id = "faeyekynudyzeotbjfsj"
 
 [functions.generate-dubbing]
 verify_jwt = false
+
+[functions.generate-lipsync]
+verify_jwt = false

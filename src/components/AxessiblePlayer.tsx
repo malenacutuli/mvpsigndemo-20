@@ -11,6 +11,7 @@ import { AccessibilityGrader } from './AccessibilityGrader';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
+import { SynchronizedDubbingControls } from './SynchronizedDubbingControls';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -399,6 +400,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <Volume2 className="w-4 h-4 mr-1" />
               {isGeneratingAD ? 'AD…' : (dynamicADEnabled ? 'Dynamic AD On' : 'Dynamic AD')}
             </Button>
+            <SynchronizedDubbingControls
+              transcriptText={generatedCaptions?.map(c => c.text).join(' ') || ''}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+            />
+            
             <AccessibilityControls
               showCaptions={showCaptions}
               showASL={showASL}
@@ -482,6 +489,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   videoId={videoId}
                   videoUrl={videoSrc}
                   originalLanguage={contentType === 'education' ? 'es' : 'en'}
+                  transcriptText={generatedCaptions?.map(c => c.text).join(' ') || ''}
                 />
               </TabsContent>
               
