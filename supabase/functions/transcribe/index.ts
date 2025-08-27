@@ -84,7 +84,8 @@ serve(async (req) => {
 
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
-      const maxBytes = rangeBytes || 50000000; // 50MB default - increased for better transcription
+      const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
+      const maxBytes = rangeBytes || 50000000; // 50MB default
       
       try {
         // First, try to get the video size
@@ -92,10 +93,13 @@ serve(async (req) => {
         const contentLength = headResponse.headers.get("content-length");
         const totalBytes = contentLength ? parseInt(contentLength) : maxBytes;
         
-        console.log(`Video size: ${totalBytes} bytes, fetching up to ${Math.min(maxBytes, totalBytes)} bytes`);
+        console.log(`Video size: ${totalBytes} bytes, OpenAI limit: ${OPENAI_MAX_SIZE} bytes`);
         
         let response;
-        const bytesToFetch = Math.min(maxBytes, totalBytes);
+        // Use OpenAI limit to ensure we don't exceed their file size limit
+        const bytesToFetch = Math.min(OPENAI_MAX_SIZE, totalBytes);
+        
+        console.log(`Fetching first ${bytesToFetch} bytes for transcription`);
         
         // Try range request first, fallback to regular fetch
         try {
@@ -107,7 +111,7 @@ serve(async (req) => {
           
           // If range request doesn't work (status 416 or other), try regular fetch
           if (!response.ok && response.status !== 206) {
-            console.log("Range request failed, trying regular fetch");
+            console.log("Range request failed, trying regular fetch with limit");
             response = await fetch(videoUrl);
           }
         } catch (rangeError) {
@@ -122,16 +126,16 @@ serve(async (req) => {
         console.log("Successfully fetched video, reading content...");
         const buffer = await response.arrayBuffer();
         
-        // Limit the buffer size if it's too large
-        const limitedBuffer = buffer.byteLength > maxBytes 
-          ? buffer.slice(0, maxBytes) 
+        // Ensure we don't exceed OpenAI's limit
+        const limitedBuffer = buffer.byteLength > OPENAI_MAX_SIZE 
+          ? buffer.slice(0, OPENAI_MAX_SIZE) 
           : buffer;
           
         fileBlob = new Blob([limitedBuffer], { type: "video/mp4" });
         fname = "video.mp4";
         mtype = "video/mp4";
         
-        console.log(`Created blob with ${fileBlob.size} bytes`);
+        console.log(`Created blob with ${fileBlob.size} bytes for OpenAI (limit: ${OPENAI_MAX_SIZE})`);
         
       } catch (fetchError) {
         console.error("Error fetching video:", fetchError);

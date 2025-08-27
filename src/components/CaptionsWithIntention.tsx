@@ -2116,10 +2116,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   useEffect(() => {
     if (!isPlaying) return;
 
-    // Select captions: use override if provided
+    // Select captions: only use override if provided, don't fallback to demo content
     const captions = captionsOverride && captionsOverride.length > 0
       ? captionsOverride
-      : (contentType === 'recipe' ? recipeCaptions : educationCaptions);
+      : []; // Don't show demo captions for real videos
 
     // Find current caption
     const caption = captions.find(

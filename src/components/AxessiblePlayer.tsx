@@ -49,7 +49,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   className = "",
   selectedVoice,
   selectedASLAvatar,
-  contentType = 'recipe',
+  contentType = 'education',
   initialCaptions,
   videoId,
 }) => {
