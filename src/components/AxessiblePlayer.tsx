@@ -39,6 +39,7 @@ interface AxessiblePlayerProps {
   selectedASLAvatar?: ASLOption;
   contentType?: 'recipe' | 'education';
   initialCaptions?: CaptionSegment[];
+  dynamicDescriptions?: any[];
   videoId?: string; // Add video ID for database operations
 }
 
@@ -51,6 +52,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   selectedASLAvatar,
   contentType = 'education',
   initialCaptions,
+  dynamicDescriptions,
   videoId,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -461,16 +463,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         />
       )}
 
-      {/* Audio Description */}
-      {showAudioDescription && (
-        <AudioDescription
-          currentTime={currentTime}
-          isPlaying={isPlaying}
-          contentType={contentType}
-          selectedVoice={selectedVoice}
-          dynamicDescriptions={dynamicADEnabled && generatedAD ? generatedAD : undefined}
-        />
-      )}
+        {/* Audio Description */}
+        {showAudioDescription && (
+          <AudioDescription
+            currentTime={currentTime}
+            isPlaying={isPlaying}
+            contentType={contentType}
+            selectedVoice={selectedVoice}
+            dynamicDescriptions={dynamicDescriptions || (dynamicADEnabled && generatedAD ? generatedAD : undefined)}
+          />
+        )}
 
       {/* Control Overlay */}
       <div 

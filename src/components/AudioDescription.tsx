@@ -233,10 +233,10 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
 
 // Track which segment is active for UI state with overlap prevention  
 useEffect(() => {
-  // Prioritize dynamic descriptions if available, otherwise use fallback
+  // Prioritize dynamic descriptions if available, otherwise use fallback (but only show fallback for demo content)
   const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) 
     ? dynamicDescriptions 
-    : (contentType === 'recipe' ? recipeDescriptions : educationDescriptions);
+    : [];
   
   console.log('AudioDescription sync check:', {
     currentTime,

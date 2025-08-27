@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
+import { AudioDescriptionEditor } from './AudioDescriptionEditor';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface EnhancedVideoPlayerProps {
@@ -34,11 +36,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 }) => {
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
+  const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [transcriptText, setTranscriptText] = useState<string>('');
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
     console.log('Transcript updated:', segments);
+    
+    // Store original transcript segments for audio description generation
+    setTranscriptSegments(segments);
     
     // Convert transcript segments to caption format with enhanced timing and styling
     const captionSegments: CaptionSegment[] = segments.map(segment => {
@@ -73,6 +79,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     console.log('Updated transcript text for dubbing:', fullTranscript);
   };
 
+  const handleDescriptionsUpdate = (descriptions: any[]) => {
+    console.log('Audio descriptions updated:', descriptions);
+    setAudioDescriptions(descriptions);
+  };
+
   const handleContentGenerated = (content: {
     captions: any[];
     audioDescription: any[];
@@ -100,18 +111,38 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           selectedASLAvatar={selectedASLAvatar}
           contentType={contentType}
           initialCaptions={captions}
+          dynamicDescriptions={audioDescriptions}
           className="w-full aspect-video"
         />
       </div>
       
-      {/* Enhanced Transcript Editor - Takes up 1/3 of the width on large screens */}
+      {/* Enhanced Content Editors - Takes up 1/3 of the width on large screens */}
       <div className="lg:col-span-1">
-        <TranscriptEditor
-          videoUrl={videoSrc}
-          videoId={videoId}
-          onTranscriptUpdate={handleTranscriptUpdate}
-          onContentGenerated={handleContentGenerated}
-        />
+        <Tabs defaultValue="transcript" className="h-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="transcript">Transcript & Captions</TabsTrigger>
+            <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="transcript" className="mt-4 h-full">
+            <TranscriptEditor
+              videoUrl={videoSrc}
+              videoId={videoId}
+              onTranscriptUpdate={handleTranscriptUpdate}
+              onContentGenerated={handleContentGenerated}
+            />
+          </TabsContent>
+          
+          <TabsContent value="audio-description" className="mt-4 h-full">
+            <AudioDescriptionEditor
+              videoUrl={videoSrc}
+              videoId={videoId}
+              contentType={contentType}
+              transcriptSegments={transcriptSegments}
+              onDescriptionsUpdate={handleDescriptionsUpdate}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
