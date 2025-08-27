@@ -126,7 +126,7 @@ export const UploadAccessible: React.FC = () => {
       const path = `demo/${Date.now()}-${file.name}`;
       console.log("Uploading file:", file.name, "Size:", file.size, "bytes");
       
-      const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, {
+      const { error: upErr } = await supabase.storage.from("videos").upload(path, file, {
         cacheControl: "3600",
         upsert: false,
         contentType: file.type || "video/mp4",
@@ -138,7 +138,7 @@ export const UploadAccessible: React.FC = () => {
       }
 
       console.log("File uploaded successfully, creating signed URL...");
-      const { data: signed } = await supabase.storage.from("uploads").createSignedUrl(path, 60 * 60 * 6); // 6h
+      const { data: signed } = await supabase.storage.from("videos").createSignedUrl(path, 60 * 60 * 6); // 6h
       if (!signed?.signedUrl) throw new Error("Could not get signed URL");
       
       console.log("Signed URL created:", signed.signedUrl);
