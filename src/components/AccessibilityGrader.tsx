@@ -4,21 +4,27 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2 } from 'lucide-react';
 
 interface AccessibilityGraderProps {
+  videoId?: string;
+  videoUrl?: string;
   hasTranscript: boolean;
   hasAudioDescription: boolean;
   hasCaptions: boolean;
   hasASL: boolean;
   hasKeyboardNav: boolean;
   language: string;
+  contrastRatio?: number;
   onFixIssue: (issue: string) => void;
 }
 
 export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
+  videoId,
+  videoUrl,
   hasTranscript,
   hasAudioDescription,
   hasCaptions,
   hasASL,
-  hasKeyboardNav
+  hasKeyboardNav,
+  contrastRatio
 }) => {
   const score = Math.round(
     ((hasTranscript ? 20 : 0) + 

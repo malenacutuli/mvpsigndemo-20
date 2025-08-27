@@ -5,13 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Globe, Wand2 } from 'lucide-react';
 
 interface VideoDubbingManagerProps {
+  videoId?: string;
   videoUrl?: string;
   originalLanguage?: string;
+  transcriptText?: string;
 }
 
 export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
+  videoId,
   videoUrl,
-  originalLanguage
+  originalLanguage,
+  transcriptText
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);

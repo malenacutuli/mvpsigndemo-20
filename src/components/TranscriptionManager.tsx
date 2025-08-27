@@ -4,14 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Mic, Download } from 'lucide-react';
 
 interface TranscriptionManagerProps {
+  videoId?: string;
   videoUrl?: string;
   onTranscriptUpdate?: (segments: any[]) => void;
+  onTranscriptionComplete?: (segments: any, language: any) => void;
   contentType?: 'recipe' | 'education';
 }
 
 export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
+  videoId,
   videoUrl,
   onTranscriptUpdate,
+  onTranscriptionComplete,
   contentType
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -24,6 +28,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         { text: 'Sample transcript segment', start_time: 0, end_time: 2, speaker: 'narrator' }
       ];
       onTranscriptUpdate?.(mockSegments);
+      onTranscriptionComplete?.(mockSegments, 'en');
       setIsGenerating(false);
     }, 2000);
   };

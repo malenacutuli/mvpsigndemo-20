@@ -273,6 +273,11 @@ export const UploadAccessible: React.FC = () => {
                     hasTranscript={!!initialCaptions}
                     hasKeyboardNav={true}
                     contrastRatio={4.8}
+                    language="en"
+                    onFixIssue={(issue) => {
+                      console.log('Fix accessibility issue:', issue);
+                      // Handle fix actions here
+                    }}
                   />
                 </TabsContent>
                 
