@@ -456,10 +456,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {/* Captions with Intention */}
       {showCaptions && (
         <CaptionsWithIntention 
+          captions={(translatedContent?.captions || generatedCaptions) ?? []}
           currentTime={currentTime}
-          isPlaying={isPlaying}
-          contentType={contentType}
-          captionsOverride={(translatedContent?.captions || generatedCaptions) ?? undefined}
+          isVisible={showCaptions}
+          screenHeight={window?.innerHeight || 1080}
         />
       )}
 

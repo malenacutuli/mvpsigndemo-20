@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2 } from 'lucide-react';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
+import { CharacterManager } from './CharacterManager';
 
 interface TranscriptSegment {
   id: string;
@@ -435,17 +436,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Transcript & Content Generation</CardTitle>
-          <Badge variant="outline">
-            {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Transcript & Content Generation</CardTitle>
+            <Badge variant="outline">
+              {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
         {/* Generation Controls */}
         <div className="flex gap-2 flex-wrap">
           <Button
@@ -712,5 +714,40 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         )}
       </CardContent>
     </Card>
+
+    {/* Character Management */}
+    {editingTranscript.length > 0 && (
+      <CharacterManager 
+        videoId={videoId}
+        onCharactersUpdate={(characters) => {
+          // Update transcript segments with character assignments
+          const updatedSegments = editingTranscript.map(segment => {
+            const matchedCharacter = characters.find(c => 
+              c.name.toLowerCase() === (segment.speaker || 'narrator').toLowerCase()
+            );
+            return {
+              ...segment,
+              speaker: matchedCharacter?.name || segment.speaker || 'narrator',
+              speakerColor: matchedCharacter?.color || segment.speakerColor || '#3B82F6'
+            };
+          });
+          
+          setEditingTranscript(updatedSegments);
+          saveTranscriptData(updatedSegments, selectedLanguage);
+          onTranscriptUpdate?.(updatedSegments, selectedLanguage);
+        }}
+        existingCharacters={
+          // Extract unique characters from transcript
+          Array.from(new Set(editingTranscript.map(s => s.speaker || 'narrator')))
+            .map(speaker => ({
+              id: `char-${speaker}`,
+              name: speaker,
+              type: 'main' as const,
+              color: editingTranscript.find(s => s.speaker === speaker)?.speakerColor || '#3B82F6'
+            }))
+        }
+      />
+    )}
+  </div>
   );
 };
