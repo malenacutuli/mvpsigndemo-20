@@ -58,39 +58,61 @@ const VideoDetail = () => {
   });
 
   useEffect(() => {
+    console.log('🚀 VideoDetail component mounted with ID:', id);
     if (id) {
+      console.log('✅ ID found, fetching video...');
       fetchVideo();
+    } else {
+      console.error('❌ No video ID found in URL');
     }
   }, [id]);
 
   const fetchVideo = async () => {
+    console.log('🎬 Starting to fetch video with ID:', id);
     try {
+      console.log('🔍 Making database query for video...');
       const { data, error } = await supabase
         .from('videos')
         .select('*')
         .eq('id', id)
         .single();
       
-      if (error) throw error;
+      console.log('📊 Database response - Data:', data, 'Error:', error);
       
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Video data loaded successfully:', data);
       setVideo(data);
       
       // Get signed URL for video if storage path exists
       if (data.storage_path) {
-        const { data: signedUrl } = await supabase.storage
+        console.log('🔗 Creating signed URL for:', data.storage_path);
+        const { data: signedUrl, error: storageError } = await supabase.storage
           .from('videos')
           .createSignedUrl(data.storage_path, 3600); // 1 hour
         
+        console.log('🔗 Signed URL response:', signedUrl, 'Error:', storageError);
+        
         if (signedUrl?.signedUrl) {
+          console.log('✅ Video URL set:', signedUrl.signedUrl);
           setVideoUrl(signedUrl.signedUrl);
+        } else {
+          console.warn('⚠️ No signed URL generated');
         }
+      } else {
+        console.warn('⚠️ No storage path found for video');
       }
       
       // Load existing captions/transcripts for this video
+      console.log('📝 Loading transcripts...');
       await loadVideoTranscripts(data.id);
     } catch (error) {
-      console.error('Error fetching video:', error);
+      console.error('❌ Error fetching video:', error);
     } finally {
+      console.log('🏁 Fetch video completed, setting loading to false');
       setLoading(false);
     }
   };
