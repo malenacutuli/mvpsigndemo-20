@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Upload from "./pages/Upload";
 import Videos from "./pages/Videos";
+import VideoDetail from "./pages/VideoDetail";
 import Pricing from "./pages/Pricing";
 import { Auth } from "./pages/Auth";
 
@@ -32,6 +33,11 @@ const App = () => (
             <Route path="/videos" element={
               <ProtectedRoute>
                 <Videos />
+              </ProtectedRoute>
+            } />
+            <Route path="/videos/:id" element={
+              <ProtectedRoute>
+                <VideoDetail />
               </ProtectedRoute>
             } />
             <Route path="/pricing" element={<Pricing />} />
