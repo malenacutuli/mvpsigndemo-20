@@ -43,11 +43,12 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Transcribe function called - v3.0");
-    const { audio, mimeType, filename, videoUrl, rangeBytes } = await req.json();
+    console.log("Transcribe function called - v4.0");
+    const { audio, mimeType, filename, videoUrl, rangeBytes, language } = await req.json();
     
     console.log("Request payload:", {
       hasAudio: !!audio,
+      language: language || 'auto',
       hasVideoUrl: !!videoUrl,
       mimeType,
       filename,
@@ -154,6 +155,11 @@ serve(async (req) => {
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
     formData.append("timestamp_granularities[]", "word");
+    
+    // Add language parameter - 'auto' means automatic detection
+    if (language && language !== 'auto') {
+      formData.append("language", language);
+    }
 
     const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
@@ -170,7 +176,7 @@ serve(async (req) => {
     }
 
     const transcriptionResult = await openaiResponse.json();
-    console.log("Transcription successful, words:", transcriptionResult.words?.length || 0);
+    console.log("Transcription successful, detected language:", transcriptionResult.language, "words:", transcriptionResult.words?.length || 0);
 
     return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

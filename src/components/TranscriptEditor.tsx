@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 
 interface TranscriptSegment {
   id: string;
@@ -54,6 +55,37 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
   const { toast } = useToast();
 
+  // Load saved transcript on component mount
+  useEffect(() => {
+    const savedTranscript = loadTranscript(videoId, selectedLanguage);
+    if (savedTranscript) {
+      setEditingTranscript(savedTranscript.segments);
+      setOriginalTranscript(savedTranscript.segments);
+      onTranscriptUpdate?.(savedTranscript.segments, selectedLanguage);
+    }
+  }, [videoId]);
+
+  // Load saved transcript when language changes
+  useEffect(() => {
+    const savedTranscript = loadTranscript(videoId, selectedLanguage);
+    if (savedTranscript) {
+      setEditingTranscript(savedTranscript.segments);
+      onTranscriptUpdate?.(savedTranscript.segments, selectedLanguage);
+    }
+  }, [selectedLanguage]);
+
+  // Save transcript when it changes
+  const saveTranscriptData = (segments: TranscriptSegment[], language: string) => {
+    const transcriptData: VideoTranscript = {
+      videoId,
+      language,
+      segments,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    saveTranscript(transcriptData);
+  };
+
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Spanish' },
@@ -67,15 +99,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   ];
 
   const generateOriginalTranscript = async () => {
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { 
-          videoUrl: videoUrl,
-          rangeBytes: 50000000, // Increased to 50MB for full transcript
-          language: 'en' // Original language
-        }
-      });
+      setIsGenerating(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('transcribe', {
+          body: { 
+            videoUrl: videoUrl,
+            rangeBytes: 50000000, // Increased to 50MB for full transcript
+            language: 'auto' // Auto-detect language
+          }
+        });
 
       if (error) throw new Error(error.message || 'Transcription failed');
 
@@ -143,11 +175,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       setOriginalTranscript(segments);
       setEditingTranscript([...segments]);
-      onTranscriptUpdate?.(segments, 'en');
+      
+      // Detect language from response and update state
+      const detectedLanguage = data?.language || 'en';
+      setSelectedLanguage(detectedLanguage);
+      saveTranscriptData(segments, detectedLanguage); // Save to storage
+      onTranscriptUpdate?.(segments, detectedLanguage);
 
       toast({
         title: "Transcript Generated",
-        description: "Original transcript extracted from video audio"
+        description: `Original transcript extracted in ${languages.find(l => l.code === detectedLanguage)?.name || detectedLanguage}`
       });
 
     } catch (error) {
@@ -237,6 +274,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       setEditingTranscript(translatedSegments);
       setSelectedLanguage(targetLanguage);
+      saveTranscriptData(translatedSegments, targetLanguage); // Save to storage
       
       onTranscriptUpdate?.(translatedSegments, targetLanguage);
       onContentGenerated?.({
@@ -292,6 +330,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(updated);
     setEditingTranscript(sortedSegments);
+    saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
     onTranscriptUpdate?.(sortedSegments, selectedLanguage);
     resetEditState();
   };
@@ -359,6 +398,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const deleteSegment = (index: number) => {
     const updated = editingTranscript.filter((_, i) => i !== index);
     setEditingTranscript(updated);
+    saveTranscriptData(updated, selectedLanguage); // Save to storage
     onTranscriptUpdate?.(updated, selectedLanguage);
   };
 

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Edit, Save, X, Plus, Trash2, Volume2, Clock, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { getNativeVoices, saveAudioDescription, loadAudioDescription, type VideoAudioDescription } from '@/lib/videoStorage';
 
 interface AudioDescriptionSegment {
   id: string;
@@ -21,6 +22,7 @@ interface AudioDescriptionSegment {
 interface AudioDescriptionEditorProps {
   videoUrl: string;
   videoId: string;
+  currentLanguage?: string;
   contentType?: 'recipe' | 'education';
   transcriptSegments?: any[];
   onDescriptionsUpdate?: (segments: AudioDescriptionSegment[]) => void;
@@ -29,6 +31,7 @@ interface AudioDescriptionEditorProps {
 export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   videoUrl,
   videoId,
+  currentLanguage = 'en',
   contentType = 'education',
   transcriptSegments = [],
   onDescriptionsUpdate
@@ -42,6 +45,30 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editVoiceStyle, setEditVoiceStyle] = useState<'passionate' | 'warm' | 'authoritative' | 'encouraging'>('warm');
   const { toast } = useToast();
 
+  // Load saved audio descriptions on component mount or language change
+  useEffect(() => {
+    const savedAD = loadAudioDescription(videoId, currentLanguage);
+    if (savedAD) {
+      setDescriptions(savedAD.segments);
+      onDescriptionsUpdate?.(savedAD.segments);
+    }
+  }, [videoId, currentLanguage]);
+
+  // Save audio descriptions when they change
+  const saveDescriptions = (segments: AudioDescriptionSegment[]) => {
+    const audioDescData: VideoAudioDescription = {
+      videoId,
+      language: currentLanguage,
+      segments,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    saveAudioDescription(audioDescData);
+  };
+
+  // Get native voices for current language
+  const nativeVoices = getNativeVoices(currentLanguage);
+  
   const voiceStyles = [
     { value: 'passionate', label: 'Passionate', color: 'text-orange-400' },
     { value: 'warm', label: 'Warm', color: 'text-yellow-400' },
@@ -64,7 +91,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       const { data, error } = await supabase.functions.invoke('generate-ad', {
         body: { 
           segments: transcriptSegments,
-          contentType: contentType
+          contentType: contentType,
+          language: currentLanguage,
+          voiceOptions: nativeVoices // Include native voice options
         }
       });
 
@@ -80,6 +109,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         }));
 
         setDescriptions(aiDescriptions);
+        saveDescriptions(aiDescriptions); // Save to storage
         onDescriptionsUpdate?.(aiDescriptions);
         
         toast({
@@ -123,6 +153,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     // Sort segments by time after editing timing
     const sortedDescriptions = sortSegmentsByTime(updatedDescriptions);
     setDescriptions(sortedDescriptions);
+    saveDescriptions(sortedDescriptions); // Save to storage
     onDescriptionsUpdate?.(sortedDescriptions);
     resetEditState();
     
@@ -189,6 +220,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const deleteSegment = (index: number) => {
     const updatedDescriptions = descriptions.filter((_, i) => i !== index);
     setDescriptions(updatedDescriptions);
+    saveDescriptions(updatedDescriptions); // Save to storage
     onDescriptionsUpdate?.(updatedDescriptions);
     
     toast({
@@ -212,19 +244,28 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   };
 
   const exportDescriptions = () => {
-    const content = descriptions.map(desc => 
+    const voiceSection = nativeVoices.map(voice => 
+      `${voice.name} (${voice.id}): ${voice.description}`
+    ).join('\n');
+    
+    const content = `Audio Descriptions for Video: ${videoId}\nLanguage: ${currentLanguage}\nGenerated: ${new Date().toLocaleDateString()}\n\nNative Voices Available:\n${voiceSection}\n\nDescriptions:\n\n${descriptions.map(desc => 
       `[${formatTime(desc.startTime)} - ${formatTime(desc.endTime)}] (${desc.voiceStyle}): ${desc.text}`
-    ).join('\n\n');
+    ).join('\n\n')}`;
     
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `audio-descriptions-${videoId}.txt`;
+    a.download = `audio-descriptions-${currentLanguage}-${videoId}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: `Audio descriptions exported for ${currentLanguage}`
+    });
   };
 
   const getVoiceStyleColor = (style: string) => {
@@ -263,10 +304,29 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               className="flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Export
+              Export ({currentLanguage.toUpperCase()})
             </Button>
           )}
         </div>
+        
+        {/* Voice Information */}
+        {nativeVoices.length > 0 && (
+          <div className="text-xs bg-accent/10 rounded-lg p-3">
+            <p className="font-medium mb-1">Native Voices Available ({currentLanguage.toUpperCase()}):</p>
+            <div className="flex gap-2 flex-wrap">
+              {nativeVoices.slice(0, 3).map(voice => (
+                <Badge key={voice.id} variant="secondary" className="text-xs">
+                  {voice.name}
+                </Badge>
+              ))}
+              {nativeVoices.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{nativeVoices.length - 3} more
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent>
@@ -394,7 +454,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         {transcriptSegments.length === 0 && (
           <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>Note:</strong> Generate a transcript first to enable AI-powered audio description generation.
+              <strong>Note:</strong> Generate a transcript first to enable AI-powered audio description generation with native {currentLanguage.toUpperCase()} voices.
             </p>
           </div>
         )}

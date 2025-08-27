@@ -136,10 +136,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           <TabsContent value="audio-description" className="mt-4 h-full">
             <AudioDescriptionEditor
               videoUrl={videoSrc}
-              videoId={videoId}
-              contentType={contentType}
-              transcriptSegments={transcriptSegments}
-              onDescriptionsUpdate={handleDescriptionsUpdate}
+        videoId={videoId}
+        currentLanguage={currentLanguage}
+        contentType={contentType}
+        transcriptSegments={transcriptSegments}
+        onDescriptionsUpdate={handleDescriptionsUpdate}
             />
           </TabsContent>
         </Tabs>
