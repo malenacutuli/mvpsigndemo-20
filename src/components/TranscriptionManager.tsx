@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mic, Download } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TranscriptionManagerProps {
   videoId?: string;
@@ -19,18 +20,72 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
   contentType
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [transcripts, setTranscripts] = useState<any[]>([]);
 
   const generateTranscript = async () => {
+    if (!videoUrl) {
+      console.error('No video URL provided');
+      return;
+    }
+
     setIsGenerating(true);
-    // Simulate transcript generation
-    setTimeout(() => {
-      const mockSegments = [
-        { text: 'Sample transcript segment', start_time: 0, end_time: 2, speaker: 'narrator' }
-      ];
-      onTranscriptUpdate?.(mockSegments);
-      onTranscriptionComplete?.(mockSegments, 'en');
+    
+    try {
+      console.log('Starting transcription for video:', videoUrl);
+      
+      // Call Supabase transcribe function
+      const { data, error } = await supabase.functions.invoke('transcribe', {
+        body: { 
+          videoUrl: videoUrl,
+          rangeBytes: 15000000 // First 15MB for transcription
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Transcription failed');
+      }
+
+      console.log('Transcription result:', data);
+
+      if (data?.text) {
+        const segments = [
+          { 
+            text: data.text, 
+            start_time: 0, 
+            end_time: 10, 
+            speaker: 'narrator' 
+          }
+        ];
+        
+        setTranscripts(segments);
+        onTranscriptUpdate?.(segments);
+        onTranscriptionComplete?.(segments, data.language || 'en');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
+  };
+
+  const exportTranscript = () => {
+    if (transcripts.length === 0) {
+      console.log('No transcripts available to export');
+      return;
+    }
+
+    const text = transcripts.map(segment => segment.text).join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transcript-${videoId || 'video'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -41,10 +96,25 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           <Mic className="w-4 h-4 mr-2" />
           {isGenerating ? 'Generating...' : 'Generate Transcript'}
         </Button>
-        <Button variant="outline" disabled>
+        <Button 
+          variant="outline" 
+          onClick={exportTranscript} 
+          disabled={transcripts.length === 0}
+        >
           <Download className="w-4 h-4 mr-2" />
           Export Transcript
         </Button>
+        
+        {transcripts.length > 0 && (
+          <div className="mt-4 p-3 bg-muted rounded-md">
+            <h4 className="font-medium mb-2">Generated Transcript:</h4>
+            <div className="text-sm text-muted-foreground max-h-32 overflow-y-auto">
+              {transcripts.map((segment, index) => (
+                <p key={index}>{segment.text}</p>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
