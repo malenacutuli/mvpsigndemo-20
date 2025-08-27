@@ -58,6 +58,20 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }
   }, [videoId, currentLanguage]);
 
+  // Auto-save audio descriptions when they change
+  useEffect(() => {
+    if (descriptions.length > 0) {
+      const audioDescData: VideoAudioDescription = {
+        videoId,
+        language: currentLanguage,
+        segments: descriptions,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      saveAudioDescription(audioDescData);
+    }
+  }, [descriptions, videoId, currentLanguage]);
+
   // Save audio descriptions when they change
   const saveDescriptions = (segments: AudioDescriptionSegment[]) => {
     const audioDescData: VideoAudioDescription = {

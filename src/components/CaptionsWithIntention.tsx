@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { spanishElmoCaptions } from '../data/spanishElmoCaptions';
 
 export interface CaptionSegment {
   text: string;
-  speaker: 'chef' | 'narrator' | 'child' | 'teacher' | 'hero' | 'Elmo' | 'Smarty';
+  speaker: 'chef' | 'narrator' | 'child' | 'teacher' | 'hero' | 'villain' | 'supporting1' | 'supporting2' | 'supporting3' | 'minor1' | 'minor2' | 'offcamera' | 'soundeffect' | 'music' | 'Elmo' | 'Smarty';
   startTime: number;
   endTime: number;
   words: Array<{
@@ -12,7 +12,15 @@ export interface CaptionSegment {
     endTime: number;
     emphasis?: 'loud' | 'quiet' | 'normal';
     pitch?: 'high' | 'low' | 'normal';
+    syllables?: Array<{
+      text: string;
+      startTime: number;
+      endTime: number;
+    }>;
   }>;
+  type?: 'dialogue' | 'soundeffect' | 'music';
+  volume?: number; // 0-100, determines font size scaling
+  isOffCamera?: boolean;
 }
 
 interface CaptionsWithIntentionProps {
@@ -22,6 +30,102 @@ interface CaptionsWithIntentionProps {
   captionsOverride?: CaptionSegment[];
 }
 
+// Captions with Intention color system
+const CI_COLORS = {
+  // Main Character Colors (6 primary colors)
+  main: {
+    hero: '#E5E517',      // CI Main Yellow
+    villain: '#E517E5',    // CI Main Pink (opposite of hero)
+    character2: '#17E5E5', // CI Main Blue
+    character3: '#E51717', // CI Main Red
+    character4: '#E58017', // CI Main Orange
+    character5: '#17E517', // CI Main Green
+  },
+  // Supporting Character Colors (positioned between main colors)
+  supporting: {
+    supporting1: '#E85C2E', // CI Support Orange
+    supporting2: '#47C2EB', // CI Support Blue I
+    supporting3: '#EBC247', // CI Support Yellow
+    supporting4: '#5E82ED', // CI Support Blue II
+    supporting5: '#C2EB47', // CI Support Green I
+    supporting6: '#8C6BED', // CI Support Purple I
+    supporting7: '#82ED5E', // CI Support Green II
+    supporting8: '#CC6BED', // CI Support Purple II
+    supporting9: '#47EB70', // CI Support Green III
+    supporting10: '#EB47C2', // CI Support Pink I
+    supporting11: '#5EEDC9', // CI Support Cyan
+    supporting12: '#ED5E82', // CI Support Pink II
+  },
+  // Minor Character Colors (pastel tones, 30% saturation, 90% brightness)
+  minor: {
+    minor1: 'hsl(0, 30%, 90%)',     // Soft red
+    minor2: 'hsl(240, 30%, 90%)',   // Soft blue
+    minor3: 'hsl(120, 30%, 90%)',   // Soft green
+    minor4: 'hsl(60, 30%, 90%)',    // Soft yellow
+    minor5: 'hsl(300, 30%, 90%)',   // Soft magenta
+    minor6: 'hsl(180, 30%, 90%)',   // Soft cyan
+  },
+  // System colors
+  soundeffect: '#FFFFFF',  // White for sound effects
+  music: '#FFFFFF',        // White for music descriptions
+  readahead: 'rgba(255, 255, 255, 0.9)', // 90% opacity white for read-ahead
+};
+
+// Map speaker types to colors
+const getSpeakerColor = (speaker: CaptionSegment['speaker']): string => {
+  if (speaker in CI_COLORS.main) return CI_COLORS.main[speaker as keyof typeof CI_COLORS.main];
+  if (speaker in CI_COLORS.supporting) return CI_COLORS.supporting[speaker as keyof typeof CI_COLORS.supporting];
+  if (speaker in CI_COLORS.minor) return CI_COLORS.minor[speaker as keyof typeof CI_COLORS.minor];
+  
+  // Default assignments
+  switch (speaker) {
+    case 'chef': return CI_COLORS.main.hero;
+    case 'narrator': return CI_COLORS.main.character2;
+    case 'child': return CI_COLORS.supporting.supporting1;
+    case 'teacher': return CI_COLORS.main.character3;
+    case 'Elmo': return CI_COLORS.main.character4;
+    case 'Smarty': return CI_COLORS.supporting.supporting2;
+    case 'soundeffect': return CI_COLORS.soundeffect;
+    case 'music': return CI_COLORS.music;
+    default: return CI_COLORS.minor.minor1;
+  }
+};
+
+// Calculate font size based on volume (3% to 12% of screen height)
+const getVolumeBasedFontSize = (volume: number = 50, screenHeight: number): number => {
+  const minSize = screenHeight * 0.03; // 3% for whispers
+  const maxSize = screenHeight * 0.12; // 12% for shouting
+  const baseSize = screenHeight * 0.05; // 5% for normal volume
+  
+  if (volume <= 30) return minSize;
+  if (volume >= 80) return maxSize;
+  
+  // Linear interpolation between min and max
+  const normalizedVolume = (volume - 30) / 50; // Normalize to 0-1
+  return baseSize + (normalizedVolume * (maxSize - baseSize) * 0.5);
+};
+
+// Calculate font weight and width based on pitch
+const getPitchBasedStyle = (pitch: 'high' | 'low' | 'normal' = 'normal') => {
+  switch (pitch) {
+    case 'low':
+      return {
+        fontWeight: '700', // Heavier weight for low pitch
+        fontStretch: 'expanded', // Wider for fuller sound
+      };
+    case 'high':
+      return {
+        fontWeight: '300', // Lighter weight for high pitch
+        fontStretch: 'condensed', // Narrower for thinner sound
+      };
+    default:
+      return {
+        fontWeight: '400', // Regular weight for normal pitch
+        fontStretch: 'normal',
+      };
+  }
+};
+
 // Demo captions for realistic pasta recipe content with Gordon Ramsay-style passion
 const recipeCaptions: CaptionSegment[] = [
   {
@@ -29,6 +133,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 0.08,
     endTime: 2.36,
+    volume: 50,
     words: [
       {
         text: "It",
@@ -86,6 +191,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 2.36,
     endTime: 3.68,
+    volume: 50,
     words: [
       {
         text: "Here's",
@@ -136,6 +242,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 3.92,
     endTime: 6.36,
+    volume: 50,
     words: [
       {
         text: "First,",
@@ -193,6 +300,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 6.36,
     endTime: 8.32,
+    volume: 50,
     words: [
       {
         text: "to",
@@ -257,6 +365,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 8.32,
     endTime: 9.36,
+    volume: 50,
     words: [
       {
         text: "to",
@@ -286,6 +395,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 9.6,
     endTime: 11.84,
+    volume: 80,
     words: [
       {
         text: "Nicely",
@@ -322,6 +432,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 12.16,
     endTime: 14.8,
+    volume: 50,
     words: [
       {
         text: "Olive",
@@ -379,6 +490,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 14.8,
     endTime: 15.68,
+    volume: 50,
     words: [
       {
         text: "from",
@@ -408,6 +520,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 16.079,
     endTime: 17.12,
+    volume: 50,
     words: [
       {
         text: "Bring",
@@ -458,6 +571,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 18.32,
     endTime: 19.44,
+    volume: 80,
     words: [
       {
         text: "That's",
@@ -494,6 +608,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 19.44,
     endTime: 20.4,
+    volume: 50,
     words: [
       {
         text: "The",
@@ -523,6 +638,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 20.72,
     endTime: 22.36,
+    volume: 50,
     words: [
       {
         text: "It",
@@ -580,6 +696,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 22.36,
     endTime: 23.68,
+    volume: 40,
     words: [
       {
         text: "And",
@@ -630,6 +747,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 24.08,
     endTime: 25.76,
+    volume: 50,
     words: [
       {
         text: "Now,",
@@ -673,6 +791,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 25.76,
     endTime: 27.56,
+    volume: 50,
     words: [
       {
         text: "Nice,",
@@ -702,6 +821,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 27.56,
     endTime: 28.2,
+    volume: 50,
     words: [
       {
         text: "Takes",
@@ -745,6 +865,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 28.2,
     endTime: 28.88,
+    volume: 50,
     words: [
       {
         text: "to",
@@ -774,6 +895,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 29.2,
     endTime: 31.52,
+    volume: 50,
     words: [
       {
         text: "So",
@@ -838,6 +960,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 32.06,
     endTime: 34.06,
+    volume: 50,
     words: [
       {
         text: "It",
@@ -902,6 +1025,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 34.38,
     endTime: 36.46,
+    volume: 50,
     words: [
       {
         text: "Tongs.",
@@ -952,6 +1076,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 36.62,
     endTime: 39.02,
+    volume: 40,
     words: [
       {
         text: "gently",
@@ -1002,6 +1127,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 39.18,
     endTime: 40.62,
+    volume: 50,
     words: [
       {
         text: "Bring",
@@ -1059,6 +1185,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 40.86,
     endTime: 42.18,
+    volume: 50,
     words: [
       {
         text: "If",
@@ -1102,6 +1229,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 42.18,
     endTime: 43.5,
+    volume: 50,
     words: [
       {
         text: "then",
@@ -1138,6 +1266,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 44.38,
     endTime: 46.3,
+    volume: 80,
     words: [
       {
         text: "Beautiful.",
@@ -1174,6 +1303,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 46.7,
     endTime: 47.74,
+    volume: 40,
     words: [
       {
         text: "Lift",
@@ -1210,6 +1340,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 48.46,
     endTime: 49.78,
+    volume: 50,
     words: [
       {
         text: "You",
@@ -1274,6 +1405,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 49.78,
     endTime: 50.78,
+    volume: 50,
     words: [
       {
         text: "It's",
@@ -1317,6 +1449,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 52.54,
     endTime: 54.14,
+    volume: 80,
     words: [
       {
         text: "al",
@@ -1360,6 +1493,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 54.14,
     endTime: 55.02,
+    volume: 50,
     words: [
       {
         text: "not",
@@ -1396,6 +1530,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 55.02,
     endTime: 56.86,
+    volume: 50,
     words: [
       {
         text: "but",
@@ -1453,6 +1588,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 57.18,
     endTime: 58.3,
+    volume: 80,
     words: [
       {
         text: "Definitely",
@@ -1482,6 +1618,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 58.54,
     endTime: 60.62,
+    volume: 50,
     words: [
       {
         text: "And",
@@ -1525,6 +1662,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 60.78,
     endTime: 64.48,
+    volume: 50,
     words: [
       {
         text: "drain",
@@ -1568,6 +1706,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 64.48,
     endTime: 67.64,
+    volume: 40,
     words: [
       {
         text: "light",
@@ -1611,6 +1750,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 68.76,
     endTime: 71.48,
+    volume: 50,
     words: [
       {
         text: "a",
@@ -1654,6 +1794,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 72.28,
     endTime: 73.16,
+    volume: 50,
     words: [
       {
         text: "Mix",
@@ -1683,6 +1824,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 74.12,
     endTime: 75.48,
+    volume: 50,
     words: [
       {
         text: "That",
@@ -1733,6 +1875,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 76.04,
     endTime: 77.72,
+    volume: 50,
     words: [
       {
         text: "And",
@@ -1776,6 +1919,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 77.72,
     endTime: 79.32,
+    volume: 80,
     words: [
       {
         text: "Beautiful.",
@@ -1812,6 +1956,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 80.68,
     endTime: 83.56,
+    volume: 50,
     words: [
       {
         text: "Cooked",
@@ -1883,6 +2028,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 83.56,
     endTime: 84.76,
+    volume: 80,
     words: [
       {
         text: "and",
@@ -1926,6 +2072,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 84.76,
     endTime: 86.12,
+    volume: 50,
     words: [
       {
         text: "You",
@@ -1983,6 +2130,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 86.92,
     endTime: 88.84,
+    volume: 50,
     words: [
       {
         text: "And",
@@ -2026,6 +2174,7 @@ const recipeCaptions: CaptionSegment[] = [
     speaker: "chef",
     startTime: 89.56,
     endTime: 91.72,
+    volume: 50,
     words: [
       {
         text: "That",
@@ -2107,135 +2256,165 @@ const educationCaptions: CaptionSegment[] = spanishElmoCaptions;
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   currentTime,
   isPlaying,
-  contentType = 'recipe',
+  contentType = 'education',
   captionsOverride
 }) => {
-  const [currentCaption, setCurrentCaption] = useState<CaptionSegment | null>(null);
-  const [activeWordIndex, setActiveWordIndex] = useState(-1);
-
+  const [screenHeight, setScreenHeight] = useState(window.innerHeight);
+  
   useEffect(() => {
-    if (!isPlaying) return;
+    const handleResize = () => setScreenHeight(window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    // Select captions: only use override if provided, don't fallback to demo content
-    const captions = captionsOverride && captionsOverride.length > 0
-      ? captionsOverride
-      : []; // Don't show demo captions for real videos
-
-    // Find current caption
-    const caption = captions.find(
-      cap => currentTime >= cap.startTime && currentTime <= cap.endTime
+  // Get current active caption
+  const activeCaption = useMemo(() => {
+    const captions = captionsOverride || (contentType === 'education' ? spanishElmoCaptions : recipeCaptions);
+    return captions.find(caption => 
+      currentTime >= caption.startTime && currentTime <= caption.endTime
     );
+  }, [currentTime, captionsOverride, contentType]);
 
-    if (caption) {
-      setCurrentCaption(caption);
-      
-      // Find active word
-      const wordIndex = caption.words.findIndex(
-        word => currentTime >= word.startTime && currentTime <= word.endTime
-      );
-      setActiveWordIndex(wordIndex);
-    } else {
-      setCurrentCaption(null);
-      setActiveWordIndex(-1);
-    }
-  }, [currentTime, isPlaying, contentType, captionsOverride]);
+  // Get current active word within the caption
+  const activeWord = useMemo(() => {
+    if (!activeCaption) return null;
+    return activeCaption.words.find(word => 
+      currentTime >= word.startTime && currentTime <= word.endTime
+    );
+  }, [currentTime, activeCaption]);
 
-  if (!currentCaption) return null;
+  if (!activeCaption) return null;
 
-  const getSpeakerColor = (speaker: string) => {
-    switch (speaker) {
-      case 'chef':
-        return 'text-orange-200'; // High contrast orange for chef
-      case 'narrator':
-        return 'text-blue-200'; // High contrast blue
-      case 'child':
-        return 'text-yellow-200'; // High contrast yellow
-      case 'teacher':
-        return 'text-green-200'; // High contrast green
-      case 'hero':
-        return 'text-purple-200'; // High contrast purple
-      case 'Elmo':
-        return 'text-red-200'; // High contrast red
-      case 'Smarty':
-        return 'text-cyan-200'; // High contrast cyan
-      default:
-        return 'text-blue-200';
-    }
-  };
-
-  const getWordStyle = (word: any, isActive: boolean) => {
-    let fontSize = 'text-2xl'; // Base size
-    let fontWeight = 'font-medium';
-    let fontWidth = '';
-
-    // Dramatic emphasis-based sizing for better intonation representation
-    if (word.emphasis === 'loud') {
-      fontSize = 'text-5xl'; // Much larger for loud emphasis
-      fontWeight = 'font-bold';
-    } else if (word.emphasis === 'quiet') {
-      fontSize = 'text-base'; // Smaller for quiet
-      fontWeight = 'font-light';
-    }
-
-    // Pitch-based weight and width for additional expression
-    if (word.pitch === 'high') {
-      fontWeight = word.emphasis === 'loud' ? 'font-extrabold' : 'font-semibold';
-      fontWidth = 'font-condensed';
-    } else if (word.pitch === 'low') {
-      fontWeight = word.emphasis === 'quiet' ? 'font-extralight' : 'font-bold';
-      fontWidth = 'font-expanded';
-    }
-
-    return {
-      fontSize,
-      fontWeight,
-      fontWidth,
-      transform: isActive ? 'scale(1.1)' : 'scale(1)',
-      transition: 'all 0.15s ease-out'
-    };
-  };
+  const speakerColor = getSpeakerColor(activeCaption.speaker);
+  const fontSize = getVolumeBasedFontSize(activeCaption.volume || 50, screenHeight);
+  const pitchStyle = getPitchBasedStyle(activeWord?.pitch);
+  
+  const isLoudBurst = (activeCaption.volume || 50) >= 85;
+  const isSoundEffect = activeCaption.type === 'soundeffect';
+  const isMusic = activeCaption.type === 'music';
 
   return (
-    <div className="absolute bottom-20 left-0 right-40 px-8 z-50">
-      {/* CWI Captions Box with minimal background for better contrast */}
-      <div className="p-4 mx-auto max-w-3xl relative z-50 bg-black/20 backdrop-blur-sm rounded-lg border border-white/5">
-        
-        {/* Dynamic colored text with word-by-word sync */}
-        <div className="font-roboto-flex leading-relaxed text-center">
-          {currentCaption.words.map((word, index) => {
-            const isActive = index === activeWordIndex;
-            const isSpoken = index <= activeWordIndex;
-            const style = getWordStyle(word, isActive);
-            
-            return (
-              <span
-                key={index}
-                className={`inline-block mr-2 transition-all duration-150 drop-shadow-lg ${
-                  isSpoken ? getSpeakerColor(currentCaption.speaker) : 'text-white/20'
-                } ${style.fontSize} ${style.fontWeight}`}
-                style={{
-                  transform: style.transform,
-                  transition: style.transition,
-                  textShadow: isSpoken ? '0 2px 8px rgba(0,0,0,0.8)' : 'none'
-                }}
-              >
-                {word.text}
-              </span>
-            );
-          })}
+    <div 
+      className="absolute bottom-0 left-0 right-0 h-1/5 flex items-end justify-center p-4 pointer-events-none"
+      style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
+    >
+      {/* Captions Container Box */}
+      <div 
+        className={`
+          relative max-w-4xl w-full
+          ${isLoudBurst ? '' : 'bg-black/90'} 
+          ${isLoudBurst ? '' : 'rounded-lg'} 
+          ${isLoudBurst ? '' : 'px-6 py-4'}
+          ${isLoudBurst ? '' : 'mx-4'}
+        `}
+        style={{
+          // For loud bursts, captions break out of the box
+          ...(isLoudBurst && {
+            background: 'none',
+            padding: 0,
+            margin: 0,
+          })
+        }}
+      >
+        {/* Read-ahead text (full sentence in white at 90% opacity) */}
+        <div
+          className="relative text-center leading-relaxed mb-2"
+          style={{
+            fontSize: `${fontSize}px`,
+            color: CI_COLORS.readahead,
+            ...pitchStyle,
+          }}
+        >
+          {/* Sound effects and music formatting */}
+          {isSoundEffect ? (
+            <span className="text-white">
+              [{activeCaption.text}]
+            </span>
+          ) : isMusic ? (
+            <span className="text-white">
+              ♪ {activeCaption.text} ♪
+            </span>
+          ) : (
+            // Off-camera character (italic)
+            <span 
+              className={activeCaption.isOffCamera ? 'italic' : ''}
+              style={{ fontStyle: activeCaption.isOffCamera ? 'italic' : 'normal' }}
+            >
+              {activeCaption.text}
+            </span>
+          )}
         </div>
 
-        {/* Enhanced Speaker indicator */}
-        <div className="text-xs text-white/70 mt-3 text-center uppercase tracking-wider">
-          {currentCaption.speaker === 'chef' && '🔥 Chef Gordon'}
-          {currentCaption.speaker === 'narrator' && '🎙️ Narrator'}
-          {currentCaption.speaker === 'child' && '👶 Child'}
-          {currentCaption.speaker === 'teacher' && '👩‍🏫 Teacher'}
-          {currentCaption.speaker === 'hero' && '🦸‍♂️ Captain Wonder'}
-          {currentCaption.speaker === 'Elmo' && '🧸 Elmo'}
-          {currentCaption.speaker === 'Smarty' && '🚌 Smarty'}
+        {/* Color-synced text (word by word with character colors and motion) */}
+        <div
+          className="absolute top-0 left-0 right-0 text-center leading-relaxed"
+          style={{
+            fontSize: `${fontSize}px`,
+            ...pitchStyle,
+          }}
+        >
+          {isSoundEffect ? (
+            <span className="text-white animate-pulse">
+              [{activeCaption.text}]
+            </span>
+          ) : isMusic ? (
+            <span className="text-white">
+              ♪ {activeCaption.text} ♪
+            </span>
+          ) : (
+            <span 
+              className={activeCaption.isOffCamera ? 'italic' : ''}
+              style={{ fontStyle: activeCaption.isOffCamera ? 'italic' : 'normal' }}
+            >
+              {activeCaption.words.map((word, index) => {
+                const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
+                const hasBeenSpoken = currentTime >= word.endTime;
+                const wordPitchStyle = getPitchBasedStyle(word.pitch);
+                
+                return (
+                  <span
+                    key={index}
+                    className={`
+                      inline-block transition-all duration-150 ease-out mr-1
+                      ${isCurrentWord ? 'animate-pulse' : ''}
+                    `}
+                    style={{
+                      color: hasBeenSpoken || isCurrentWord ? speakerColor : 'transparent',
+                      transform: isCurrentWord ? 'scale(1.15)' : 'scale(1)', // 15% pop effect
+                      transformOrigin: 'center',
+                      ...wordPitchStyle,
+                      // Syllable emphasis for multi-syllable words
+                      ...(word.syllables && isCurrentWord && {
+                        animation: 'syllable-emphasis 0.3s ease-in-out',
+                      })
+                    }}
+                  >
+                    {word.text}
+                  </span>
+                );
+              })}
+            </span>
+          )}
         </div>
       </div>
+
+      {/* Custom CSS for syllable animation */}
+      <style>{`
+        @keyframes syllable-emphasis {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+        
+        @supports (font-variation-settings: normal) {
+          .caption-text {
+            font-family: 'Roboto Flex', system-ui, sans-serif;
+            font-variation-settings: 
+              'wght' var(--font-weight, 400),
+              'wdth' var(--font-width, 100);
+          }
+        }
+      `}</style>
     </div>
   );
 };
