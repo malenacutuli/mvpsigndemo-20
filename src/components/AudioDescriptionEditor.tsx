@@ -51,6 +51,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     if (savedAD) {
       setDescriptions(savedAD.segments);
       onDescriptionsUpdate?.(savedAD.segments);
+    } else {
+      // Clear descriptions when switching to a language without saved data
+      setDescriptions([]);
+      onDescriptionsUpdate?.([]);
     }
   }, [videoId, currentLanguage]);
 

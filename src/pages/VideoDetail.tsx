@@ -272,6 +272,7 @@ const VideoDetail = () => {
                   posterSrc={video.thumbnail_url || undefined}
                   title={video.title}
                   videoId={video.id}
+                  language={video.language}
                   selectedVoice={selectedVoice}
                   selectedASLAvatar={selectedASLAvatar}
                   contentType={video.content_type === 'education' ? 'education' : 'recipe'}

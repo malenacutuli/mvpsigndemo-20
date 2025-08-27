@@ -8,6 +8,7 @@ interface VideoPlayerWithTranscriptProps {
   posterSrc?: string;
   title: string;
   videoId: string;
+  language?: string;
   selectedVoice?: {
     id: string;
     name: string;
@@ -27,6 +28,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
   posterSrc,
   title,
   videoId,
+  language,
   selectedVoice,
   selectedASLAvatar,
   contentType = 'education',
@@ -84,6 +86,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
       posterSrc={posterSrc}
       title={title}
       videoId={videoId}
+      language={language}
       selectedVoice={selectedVoice}
       selectedASLAvatar={selectedASLAvatar}
       contentType={contentType}

@@ -10,6 +10,7 @@ interface EnhancedVideoPlayerProps {
   posterSrc?: string;
   title: string;
   videoId: string;
+  language?: string;
   selectedVoice?: {
     id: string;
     name: string;
@@ -29,6 +30,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   posterSrc,
   title,
   videoId,
+  language,
   selectedVoice,
   selectedASLAvatar,
   contentType = 'education',
@@ -37,7 +39,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
@@ -128,6 +130,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             <TranscriptEditor
               videoUrl={videoSrc}
               videoId={videoId}
+              initialLanguage={currentLanguage}
               onTranscriptUpdate={handleTranscriptUpdate}
               onContentGenerated={handleContentGenerated}
             />

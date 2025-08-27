@@ -26,6 +26,7 @@ interface TranscriptSegment {
 interface TranscriptEditorProps {
   videoUrl: string;
   videoId: string;
+  initialLanguage?: string;
   onTranscriptUpdate?: (segments: TranscriptSegment[], language: string) => void;
   onContentGenerated?: (content: {
     captions: any[];
@@ -37,6 +38,7 @@ interface TranscriptEditorProps {
 export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   videoUrl,
   videoId,
+  initialLanguage = 'en',
   onTranscriptUpdate,
   onContentGenerated
 }) => {
@@ -44,7 +46,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editingTranscript, setEditingTranscript] = useState<TranscriptSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editStartTime, setEditStartTime] = useState('');
