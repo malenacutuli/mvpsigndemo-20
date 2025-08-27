@@ -4,10 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AxessiblePlayer } from "./AxessiblePlayer";
+import { AccessibilityGrader } from "./AccessibilityGrader";
+import { TranscriptionManager } from "./TranscriptionManager";
+import { KeyboardAccessibilityManager } from "./KeyboardAccessibilityManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, ShieldCheck, Languages, Subtitles, HandHelping } from "lucide-react";
+import { Upload, ShieldCheck, Languages, Subtitles, HandHelping, Settings } from "lucide-react";
 import type { CaptionSegment } from "./CaptionsWithIntention";
 
 // Updated content-type and voice/avatar presets matching DemoSection
@@ -102,6 +106,10 @@ export const UploadAccessible: React.FC = () => {
   const asls = aslOptions[contentType];
   const [voice, setVoice] = useState(voices[0].id);
   const [asl, setAsl] = useState(asls[0].id);
+  const [activeTab, setActiveTab] = useState("player");
+  const [showCaptions, setShowCaptions] = useState(true);
+  const [showASL, setShowASL] = useState(false);
+  const [showAudioDescription, setShowAudioDescription] = useState(true);
 
   const selectedVoice = useMemo(() => voices.find(v => v.id === voice) || voices[0], [voices, voice]);
   const selectedAsl = useMemo(() => asls.find(a => a.id === asl) || asls[0], [asls, asl]);
@@ -212,34 +220,75 @@ export const UploadAccessible: React.FC = () => {
               </div>
             </div>
 
-            {/* Video Player Section */}
+            {/* Enhanced Experience with Tabs */}
             <div className="mb-8">
-              {videoUrl ? (
-                <AxessiblePlayer
-                  videoSrc={videoUrl}
-                  title="Your uploaded video"
-                  selectedVoice={selectedVoice}
-                  selectedASLAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
-                  contentType={contentType}
-                  initialCaptions={initialCaptions}
-                />
-              ) : (
-                <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center bg-gradient-accessibility">
-                  <div className="mb-6">
-                    <Upload className="w-16 h-16 text-primary/60 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Ready for Your Video</h3>
-                    <p className="text-muted-foreground">Upload any video to see the complete accessibility pipeline in action</p>
-                  </div>
-                  
-                  <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
-                    <h4 className="font-semibold text-center">What You'll Experience:</h4>
-                    <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
-                    <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
-                    <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
-                    <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
-                  </div>
-                </div>
-              )}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="player">Player</TabsTrigger>
+                  <TabsTrigger value="accessibility">Accessibility</TabsTrigger>
+                  <TabsTrigger value="transcription">Transcription</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="player" className="mt-6">
+                  {videoUrl ? (
+                    <AxessiblePlayer
+                      videoSrc={videoUrl}
+                      title="Your uploaded video"
+                      selectedVoice={selectedVoice}
+                      selectedASLAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
+                      contentType={contentType}
+                      initialCaptions={initialCaptions}
+                    />
+                  ) : (
+                    <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center bg-gradient-accessibility">
+                      <div className="mb-6">
+                        <Upload className="w-16 h-16 text-primary/60 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold mb-2">Ready for Your Video</h3>
+                        <p className="text-muted-foreground">Upload any video to see the complete accessibility pipeline in action</p>
+                      </div>
+                      
+                      <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
+                        <h4 className="font-semibold text-center">What You'll Experience:</h4>
+                        <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
+                        <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
+                        <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
+                        <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="accessibility" className="mt-6">
+                  <AccessibilityGrader
+                    videoUrl={videoUrl || undefined}
+                    hasCaptions={!!initialCaptions}
+                    hasAudioDescription={showAudioDescription}
+                    hasASL={showASL}
+                    hasTranscript={!!initialCaptions}
+                    hasKeyboardNav={true}
+                    contrastRatio={4.8}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="transcription" className="mt-6">
+                  <TranscriptionManager
+                    videoUrl={videoUrl || ""}
+                    onTranscriptionComplete={(segments, language) => {
+                      setInitialCaptions(segments);
+                      toast.success(`Transcription completed for ${language}`);
+                    }}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="settings" className="mt-6">
+                  <KeyboardAccessibilityManager
+                    onToggleCaptions={() => setShowCaptions(!showCaptions)}
+                    onToggleASL={() => setShowASL(!showASL)}
+                    onToggleAD={() => setShowAudioDescription(!showAudioDescription)}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* Options Section */}
