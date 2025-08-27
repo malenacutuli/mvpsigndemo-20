@@ -75,6 +75,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
+  const [isDubbing, setIsDubbing] = useState(false);
+  const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -144,11 +146,25 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     if (!video) return;
 
     if (isMuted) {
-      video.volume = volume;
+      // Only restore volume if not in dubbing mode or user wants original audio
+      const targetVolume = (isDubbing && originalAudioMuted) ? 0 : volume;
+      video.volume = targetVolume;
       setIsMuted(false);
     } else {
       video.volume = 0;
       setIsMuted(true);
+    }
+  };
+
+  const toggleOriginalAudio = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const newMutedState = !originalAudioMuted;
+    setOriginalAudioMuted(newMutedState);
+    
+    if (isDubbing) {
+      video.volume = newMutedState ? 0 : (isMuted ? 0 : volume);
     }
   };
 
@@ -271,15 +287,65 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   };
 
-  const handleLanguageChange = (language: string, content?: any) => {
+  const handleLanguageChange = async (language: string, content?: any) => {
     setCurrentLanguage(language);
+    const isDubbingActive = language !== 'en';
+    setIsDubbing(isDubbingActive);
+    
     if (content) {
       setTranslatedContent(content);
-      if (content.captions) {
-        setGeneratedCaptions(content.captions);
+      
+      // Translate captions with intention when dubbing is active
+      if (content.captions || isDubbingActive) {
+        const captionsToTranslate = content.captions || generatedCaptions;
+        if (captionsToTranslate && isDubbingActive) {
+          try {
+            // Generate translated captions with intention
+            const captionText = captionsToTranslate.map((c: any) => c.text).join(' ');
+            const { data: translatedCaptions } = await supabase.functions.invoke('generate-dubbing', {
+              body: { text: captionText, targetLanguage: language }
+            });
+            
+            if (translatedCaptions?.translatedText) {
+              const translatedCaptionSegments = captionsToTranslate.map((caption: any, index: number) => ({
+                ...caption,
+                text: translatedCaptions.translatedText.split('. ')[index] || caption.text
+              }));
+              setGeneratedCaptions(translatedCaptionSegments);
+            }
+          } catch (error) {
+            console.error('Caption translation error:', error);
+            if (content.captions) setGeneratedCaptions(content.captions);
+          }
+        } else if (content.captions) {
+          setGeneratedCaptions(content.captions);
+        }
       }
-      if (content.audioDescription) {
-        setGeneratedAD(content.audioDescription);
+      
+      // Translate audio descriptions when dubbing is active
+      if (content.audioDescription || isDubbingActive) {
+        const audioDescToTranslate = content.audioDescription || generatedAD;
+        if (audioDescToTranslate && isDubbingActive) {
+          try {
+            const adText = audioDescToTranslate.map((ad: any) => ad.text).join(' ');
+            const { data: translatedAD } = await supabase.functions.invoke('generate-dubbing', {
+              body: { text: adText, targetLanguage: language }
+            });
+            
+            if (translatedAD?.translatedText) {
+              const translatedADSegments = audioDescToTranslate.map((ad: any, index: number) => ({
+                ...ad,
+                text: translatedAD.translatedText.split('. ')[index] || ad.text
+              }));
+              setGeneratedAD(translatedADSegments);
+            }
+          } catch (error) {
+            console.error('Audio description translation error:', error);
+            if (content.audioDescription) setGeneratedAD(content.audioDescription);
+          }
+        } else if (content.audioDescription) {
+          setGeneratedAD(content.audioDescription);
+        }
       }
     } else if (language === 'en') {
       // Reset to original content
@@ -287,6 +353,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         setGeneratedCaptions(initialCaptions);
       }
       setTranslatedContent(null);
+      setOriginalAudioMuted(false);
+      
+      // Restore original video audio
+      const video = videoRef.current;
+      if (video) {
+        video.volume = isMuted ? 0 : volume;
+      }
+    }
+    
+    // When switching to dubbing mode, give option to mute original audio
+    if (isDubbingActive && !originalAudioMuted) {
+      setOriginalAudioMuted(true);
+      const video = videoRef.current;
+      if (video) {
+        video.volume = 0; // Mute original video audio when dubbing is active
+      }
     }
   };
 
@@ -436,13 +518,28 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
           {/* Right - Required Features Only */}
           <div className="flex items-center gap-2">
-            {/* Language */}
-            <SynchronizedDubbingPlayer
-              transcriptText={generatedCaptions?.map(c => c.text).join(' ')}
-              currentTime={currentTime}
-              isPlaying={isPlaying}
-              onLanguageChange={handleLanguageChange}
-            />
+            {/* Language & Dubbing */}
+            <div className="flex items-center gap-1">
+              <SynchronizedDubbingPlayer
+                transcriptText={generatedCaptions?.map(c => c.text).join(' ')}
+                currentTime={currentTime}
+                isPlaying={isPlaying}
+                onLanguageChange={handleLanguageChange}
+              />
+              
+              {/* Original Audio Toggle (only show when dubbing is active) */}
+              {isDubbing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleOriginalAudio}
+                  title={originalAudioMuted ? "Enable original audio" : "Mute original audio"}
+                  className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${originalAudioMuted ? '' : 'bg-accent/20 text-accent-foreground'}`}
+                >
+                  <Mic className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
             
             {/* Captions with Intention */}
             <Button

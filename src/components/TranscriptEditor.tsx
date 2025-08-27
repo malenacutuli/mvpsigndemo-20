@@ -68,12 +68,48 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       if (error) throw new Error(error.message || 'Transcription failed');
 
-      // Convert to segments format
+      // Convert to segments format using actual timing from Whisper API
       const segments: TranscriptSegment[] = [];
-      if (data?.text) {
-        // Split text into sentences and create time segments
+      if (data?.words && Array.isArray(data.words)) {
+        // Group words into sentences for better readability
+        let currentSegment = '';
+        let segmentStart = 0;
+        let segmentIndex = 0;
+        
+        data.words.forEach((word: any, index: number) => {
+          if (index === 0) {
+            segmentStart = word.start || 0;
+          }
+          
+          currentSegment += (currentSegment ? ' ' : '') + word.word;
+          
+          // End segment on sentence boundaries or every 10-15 words
+          const isEndOfSentence = /[.!?]$/.test(word.word);
+          const isLongSegment = currentSegment.split(' ').length >= 12;
+          const isLastWord = index === data.words.length - 1;
+          
+          if (isEndOfSentence || isLongSegment || isLastWord) {
+            segments.push({
+              id: `segment-${segmentIndex}`,
+              text: currentSegment.trim(),
+              startTime: segmentStart,
+              endTime: word.end || (segmentStart + 3),
+              speaker: 'narrator'
+            });
+            
+            currentSegment = '';
+            segmentIndex++;
+            // Next segment starts after current word
+            if (index < data.words.length - 1) {
+              segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
+            }
+          }
+        });
+      } else if (data?.text) {
+        // Fallback to basic segmentation if word-level timing isn't available
         const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
-        const segmentDuration = 120 / sentences.length; // Assume 2-minute video for now
+        const totalDuration = data.duration || 120; // Use actual duration or fallback
+        const segmentDuration = totalDuration / sentences.length;
         
         sentences.forEach((sentence, index) => {
           if (sentence.trim()) {
@@ -133,11 +169,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       if (translationError) throw new Error(translationError.message || 'Translation failed');
 
-      // Create translated segments
-      const translatedSegments = originalTranscript.map((segment, index) => ({
-        ...segment,
-        text: translationData.translatedText || segment.text // Fallback to original if translation fails
-      }));
+      // Create translated segments by splitting the translated text
+      let translatedSegments = originalTranscript;
+      if (translationData.translatedText) {
+        // Split translated text proportionally to original segments
+        const translatedSentences = translationData.translatedText.split(/[.!?]+/).filter(s => s.trim());
+        const segmentRatio = translatedSentences.length / originalTranscript.length;
+        
+        translatedSegments = originalTranscript.map((segment, index) => {
+          const translatedIndex = Math.floor(index * segmentRatio);
+          const translatedText = translatedSentences[translatedIndex] || segment.text;
+          return {
+            ...segment,
+            text: translatedText.trim()
+          };
+        });
+      }
 
       // Generate captions from translated segments
       const captions = translatedSegments.map(segment => ({
