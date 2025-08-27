@@ -400,31 +400,46 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     setClonedVoiceId(voiceId);
   };
 
-  const handleTranscriptUpdate = (segments: any[]) => {
-    // Convert segments to caption format if needed
+  const handleTranscriptUpdate = (segments: any[], language: string) => {
+    // Convert segments to caption format with proper timing
     const captionSegments: CaptionSegment[] = segments.map(segment => {
+      // Handle both formats: segments with start_time/end_time or startTime/endTime
+      const startTime = segment.startTime ?? segment.start_time ?? 0;
+      const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
+      const duration = Math.max(endTime - startTime, 0.1);
+      
       const words = segment.text.split(' ').map((word: string, index: number, arr: string[]) => {
-        const duration = segment.end_time - segment.start_time;
         const wordDuration = duration / arr.length;
         return {
           text: word,
-          startTime: segment.start_time + (index * wordDuration),
-          endTime: segment.start_time + ((index + 1) * wordDuration),
-          emphasis: 'normal' as const,
-          pitch: 'normal' as const,
+          startTime: startTime + (index * wordDuration),
+          endTime: startTime + ((index + 1) * wordDuration),
+          emphasis: segment.emphasis || 'normal' as const,
+          pitch: segment.pitch || 'normal' as const,
         };
       });
       
       return {
         text: segment.text,
-        speaker: segment.speaker || 'narrator' as any,
-        startTime: segment.start_time,
-        endTime: segment.end_time,
+        speaker: segment.speaker || 'narrator',
+        startTime,
+        endTime,
         words,
-      };
+        // Add CI properties
+        volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
+        pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+        type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
+        isOffCamera: segment.isOffCamera || false,
+        speakerColor: segment.speakerColor
+      } as CaptionSegment;
     });
     
     setGeneratedCaptions(captionSegments);
+    
+    // Update current language if provided
+    if (language && language !== currentLanguage) {
+      setCurrentLanguage(language);
+    }
   };
 
   return (
@@ -713,7 +728,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 <TranscriptionManager
                   videoId={videoId}
                   videoUrl={videoSrc}
-                  onTranscriptUpdate={handleTranscriptUpdate}
+                  onTranscriptUpdate={(segments) => handleTranscriptUpdate(segments, currentLanguage)}
                   contentType={contentType}
                 />
               </TabsContent>

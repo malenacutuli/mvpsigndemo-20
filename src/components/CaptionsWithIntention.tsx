@@ -207,17 +207,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-0 left-0 right-0 h-1/5 flex items-end justify-center p-4 pointer-events-none"
+      className="absolute bottom-0 left-0 right-0 h-[8%] flex items-end justify-center p-2 pointer-events-none"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box */}
       <div 
         className={`
-          relative max-w-4xl w-full
-          ${isLoudBurst ? '' : 'bg-black/90'} 
-          ${isLoudBurst ? '' : 'rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-6 py-4'}
-          ${isLoudBurst ? '' : 'mx-4'}
+          relative max-w-2xl w-full
+          ${isLoudBurst ? '' : 'bg-black/80'} 
+          ${isLoudBurst ? '' : 'rounded-md'} 
+          ${isLoudBurst ? '' : 'px-3 py-2'}
+          ${isLoudBurst ? '' : 'mx-2'}
         `}
         style={{
           // For loud bursts, captions break out of the box

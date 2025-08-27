@@ -748,6 +748,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         }
       />
     )}
-  </div>
+    </div>
   );
 };
