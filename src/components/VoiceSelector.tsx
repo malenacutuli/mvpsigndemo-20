@@ -11,10 +11,10 @@ interface VoiceOption {
 }
 
 interface VoiceSelectorProps {
-  options: VoiceOption[];
+  options: Array<{ id: string; name: string; description: string; elevenLabsId: string; isCloned?: boolean }>;
   selectedValue: string;
   onValueChange: (value: string) => void;
-  contentType: 'recipe' | 'education';
+  contentType: string;
 }
 
 export const VoiceSelector: React.FC<VoiceSelectorProps> = ({

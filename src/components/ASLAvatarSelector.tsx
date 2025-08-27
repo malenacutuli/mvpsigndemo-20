@@ -10,10 +10,10 @@ interface ASLOption {
 }
 
 interface ASLAvatarSelectorProps {
-  options: ASLOption[];
+  options: Array<{ id: string; name: string; description: string }>;
   selectedValue: string;
   onValueChange: (value: string) => void;
-  contentType: 'recipe' | 'education';
+  contentType: string;
 }
 
 export const ASLAvatarSelector: React.FC<ASLAvatarSelectorProps> = ({
