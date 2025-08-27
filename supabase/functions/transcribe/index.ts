@@ -86,24 +86,57 @@ serve(async (req) => {
       console.log("Processing video URL:", videoUrl);
       const maxBytes = rangeBytes || 15000000; // 15MB default
       
-      const response = await fetch(videoUrl);
-      if (!response.ok) throw new Error(`Failed to fetch video: ${response.status}`);
-      
-      const contentLength = response.headers.get("content-length");
-      const totalBytes = contentLength ? parseInt(contentLength) : maxBytes;
-      
-      console.log(`Video size: ${totalBytes} bytes, using range: 0-${Math.min(maxBytes, totalBytes)}`);
-      
-      const rangeResponse = await fetch(videoUrl, {
-        headers: { Range: `bytes=0-${Math.min(maxBytes, totalBytes)}` }
-      });
-      
-      if (!rangeResponse.ok) throw new Error(`Range request failed: ${rangeResponse.status}`);
-      
-      const buffer = await rangeResponse.arrayBuffer();
-      fileBlob = new Blob([buffer], { type: "video/mp4" });
-      fname = "video.mp4";
-      mtype = "video/mp4";
+      try {
+        // First, try to get the video size
+        const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+        const contentLength = headResponse.headers.get("content-length");
+        const totalBytes = contentLength ? parseInt(contentLength) : maxBytes;
+        
+        console.log(`Video size: ${totalBytes} bytes, fetching up to ${Math.min(maxBytes, totalBytes)} bytes`);
+        
+        let response;
+        const bytesToFetch = Math.min(maxBytes, totalBytes);
+        
+        // Try range request first, fallback to regular fetch
+        try {
+          response = await fetch(videoUrl, {
+            headers: { 
+              'Range': `bytes=0-${bytesToFetch - 1}` // Range is inclusive, so subtract 1
+            }
+          });
+          
+          // If range request doesn't work (status 416 or other), try regular fetch
+          if (!response.ok && response.status !== 206) {
+            console.log("Range request failed, trying regular fetch");
+            response = await fetch(videoUrl);
+          }
+        } catch (rangeError) {
+          console.log("Range request error, falling back to regular fetch:", rangeError);
+          response = await fetch(videoUrl);
+        }
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log("Successfully fetched video, reading content...");
+        const buffer = await response.arrayBuffer();
+        
+        // Limit the buffer size if it's too large
+        const limitedBuffer = buffer.byteLength > maxBytes 
+          ? buffer.slice(0, maxBytes) 
+          : buffer;
+          
+        fileBlob = new Blob([limitedBuffer], { type: "video/mp4" });
+        fname = "video.mp4";
+        mtype = "video/mp4";
+        
+        console.log(`Created blob with ${fileBlob.size} bytes`);
+        
+      } catch (fetchError) {
+        console.error("Error fetching video:", fetchError);
+        throw new Error(`Failed to fetch video: ${fetchError.message}`);
+      }
     } else {
       console.log("Processing base64 audio");
       const binaryAudio = processBase64Chunks(audio);

@@ -25,7 +25,8 @@ const Index = () => {
       <IndustryFirst />
       <MarketUrgency />
       <Implementation />
-      <EarlyAccess />
+      <DemoSection />
+      <UploadAccessible />
 
       {/* Quick Access Section */}
       <section className="py-20 bg-background">
