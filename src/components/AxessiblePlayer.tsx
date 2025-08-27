@@ -13,6 +13,7 @@ import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
 import { LanguageSelector } from './LanguageSelector';
 import { VoiceCloningControls } from './VoiceCloningControls';
+import { SynchronizedDubbingPlayer } from './SynchronizedDubbingPlayer';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -342,7 +343,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           currentTime={currentTime}
           isPlaying={isPlaying}
           contentType={contentType}
-          captionsOverride={generatedCaptions ?? undefined}
+          captionsOverride={(translatedContent?.captions || generatedCaptions) ?? undefined}
         />
       )}
 
@@ -379,10 +380,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           </div>
         </div>
 
-        {/* Controls Row */}
-        <div className="flex items-center justify-between">
-          {/* Left Controls */}
-          <div className="flex items-center gap-2">
+        {/* Primary Controls Row */}
+        <div className="flex items-center justify-between mb-2">
+          {/* Left - Playback Controls */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -413,38 +414,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </div>
           </div>
 
-          {/* Right Controls */}
+          {/* Right - System Controls */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleGenerateCaptions}
-              aria-label="Generate captions from audio"
-              className="text-primary-foreground hover:text-primary hover:bg-primary/20"
-              disabled={isTranscribing}
-            >
-              <Mic className="w-4 h-4 mr-1" />
-              {isTranscribing ? 'Transcribing…' : 'AI CC'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleDynamicAD}
-              aria-label={dynamicADEnabled ? 'Disable Dynamic Audio Description' : 'Enable Dynamic Audio Description'}
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-primary/30 text-primary' : ''}`}
-              disabled={isGeneratingAD || !generatedCaptions}
-            >
-              <Volume2 className="w-4 h-4 mr-1" />
-              {isGeneratingAD ? 'AD…' : (dynamicADEnabled ? 'Dynamic AD On' : 'Dynamic AD')}
-            </Button>
-            <LanguageSelector
-              currentLanguage={currentLanguage}
-              originalCaptions={initialCaptions}
-              originalAudioDescription={generatedAD || undefined}
-              onLanguageChange={handleLanguageChange}
-              onTranslatedContentUpdate={handleTranslatedContentUpdate}
-            />
-            
             <AccessibilityControls
               showCaptions={showCaptions}
               showASL={showASL}
@@ -472,6 +443,54 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             >
               <Maximize className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
+
+        {/* Secondary Controls Row - AI Features & Language */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Left - AI Features */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGenerateCaptions}
+              aria-label="Generate captions from audio"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${generatedCaptions?.length ? 'bg-primary/20' : ''}`}
+              disabled={isTranscribing}
+            >
+              <Mic className="w-4 h-4 mr-1" />
+              {isTranscribing ? 'AI CC...' : (generatedCaptions?.length ? 'AI CC ✓' : 'AI CC')}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleDynamicAD}
+              aria-label={dynamicADEnabled ? 'Disable Dynamic Audio Description' : 'Enable Dynamic Audio Description'}
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-primary/30 text-primary' : ''}`}
+              disabled={isGeneratingAD || !generatedCaptions}
+            >
+              <Volume2 className="w-4 h-4 mr-1" />
+              {isGeneratingAD ? 'AD...' : (dynamicADEnabled ? 'AD ✓' : 'Dynamic AD')}
+            </Button>
+          </div>
+
+          {/* Right - Language & Dubbing */}
+          <div className="flex items-center gap-2">
+            <SynchronizedDubbingPlayer
+              transcriptText={generatedCaptions?.map(c => c.text).join(' ')}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+              onLanguageChange={handleLanguageChange}
+            />
+            
+            <LanguageSelector
+              currentLanguage={currentLanguage}
+              originalCaptions={initialCaptions}
+              originalAudioDescription={generatedAD || undefined}
+              onLanguageChange={handleLanguageChange}
+              onTranslatedContentUpdate={handleTranslatedContentUpdate}
+            />
           </div>
         </div>
       </div>
@@ -511,6 +530,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   hasASL={showASL}
                   hasKeyboardNav={keyboardNavEnabled}
                   language={contentType === 'education' ? 'es' : 'en'}
+                  hasScreenReaderSupport={true}
+                  hasHighContrast={true}
+                  hasThumbnailAltText={!!posterSrc}
+                  hasVisiblePlayButton={true}
                   onFixIssue={handleFixAccessibilityIssue}
                 />
               </TabsContent>
