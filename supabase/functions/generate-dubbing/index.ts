@@ -81,9 +81,19 @@ serve(async (req) => {
       throw new Error(`TTS failed: ${error}`);
     }
 
-    // Convert audio to base64
+    // Convert audio to base64 (handle large files in chunks)
     const audioBuffer = await ttsResponse.arrayBuffer();
-    const audioBase64 = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    const uint8Array = new Uint8Array(audioBuffer);
+    
+    // Process in chunks to avoid stack overflow
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode(...chunk);
+    }
+    
+    const audioBase64 = btoa(binaryString);
 
     console.log('Dubbing generated successfully');
 
