@@ -120,8 +120,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       voiceStyle: editVoiceStyle,
     };
     
-    setDescriptions(updatedDescriptions);
-    onDescriptionsUpdate?.(updatedDescriptions);
+    // Sort segments by time after editing timing
+    const sortedDescriptions = sortSegmentsByTime(updatedDescriptions);
+    setDescriptions(sortedDescriptions);
+    onDescriptionsUpdate?.(sortedDescriptions);
     resetEditState();
     
     toast({
@@ -142,24 +144,46 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     setEditVoiceStyle('warm');
   };
 
+  const findInsertPosition = (segments: AudioDescriptionSegment[], newStartTime: number): number => {
+    for (let i = 0; i < segments.length; i++) {
+      if (segments[i].startTime > newStartTime) {
+        return i;
+      }
+    }
+    return segments.length;
+  };
+
+  const sortSegmentsByTime = (segments: AudioDescriptionSegment[]): AudioDescriptionSegment[] => {
+    return [...segments].sort((a, b) => a.startTime - b.startTime);
+  };
+
   const addNewSegment = (insertAfterIndex?: number) => {
+    let newStartTime: number;
+    
+    if (insertAfterIndex !== undefined && descriptions[insertAfterIndex]) {
+      newStartTime = descriptions[insertAfterIndex].endTime + 0.5;
+    } else {
+      const lastSegment = descriptions[descriptions.length - 1];
+      newStartTime = lastSegment ? lastSegment.endTime + 0.5 : 0;
+    }
+    
     const newSegment: AudioDescriptionSegment = {
       id: `ad-${Date.now()}`,
       text: 'New audio description...',
-      startTime: insertAfterIndex !== undefined ? descriptions[insertAfterIndex].endTime + 0.5 : 0,
-      endTime: insertAfterIndex !== undefined ? descriptions[insertAfterIndex].endTime + 3.5 : 3,
+      startTime: newStartTime,
+      endTime: newStartTime + 3,
       voiceStyle: 'warm'
     };
     
+    const insertPosition = findInsertPosition(descriptions, newStartTime);
     const updatedDescriptions = [...descriptions];
-    const insertIndex = insertAfterIndex !== undefined ? insertAfterIndex + 1 : descriptions.length;
-    updatedDescriptions.splice(insertIndex, 0, newSegment);
+    updatedDescriptions.splice(insertPosition, 0, newSegment);
     
     setDescriptions(updatedDescriptions);
     onDescriptionsUpdate?.(updatedDescriptions);
     
     // Start editing the new segment
-    setTimeout(() => startEditing(insertIndex), 0);
+    setTimeout(() => startEditing(insertPosition), 0);
   };
 
   const deleteSegment = (index: number) => {

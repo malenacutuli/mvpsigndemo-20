@@ -275,23 +275,25 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   const saveEdit = () => {
-    if (editingIndex !== null) {
-      const updated = [...editingTranscript];
-      updated[editingIndex] = { 
-        ...updated[editingIndex], 
-        text: editText,
-        startTime: parseFloat(editStartTime) || updated[editingIndex].startTime,
-        endTime: parseFloat(editEndTime) || updated[editingIndex].endTime,
-        speaker: editSpeaker,
-        speakerColor: editSpeakerColor,
-        emphasis: editEmphasis,
-        pitch: editPitch
-      };
-      setEditingTranscript(updated);
-      resetEditState();
-      
-      onTranscriptUpdate?.(updated, selectedLanguage);
-    }
+    if (editingIndex === null) return;
+    
+    const updated = [...editingTranscript];
+    updated[editingIndex] = {
+      ...updated[editingIndex],
+      text: editText,
+      startTime: parseTimeInput(editStartTime),
+      endTime: parseTimeInput(editEndTime),
+      speaker: editSpeaker,
+      speakerColor: editSpeakerColor,
+      emphasis: editEmphasis,
+      pitch: editPitch,
+    };
+    
+    // Sort segments by time after editing timing
+    const sortedSegments = sortSegmentsByTime(updated);
+    setEditingTranscript(sortedSegments);
+    onTranscriptUpdate?.(sortedSegments, selectedLanguage);
+    resetEditState();
   };
 
   const cancelEdit = () => {
@@ -309,9 +311,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditPitch('normal');
   };
 
-  const addNewSegment = () => {
-    const lastSegment = editingTranscript[editingTranscript.length - 1];
-    const newStartTime = lastSegment ? lastSegment.endTime : 0;
+  const findInsertPosition = (segments: TranscriptSegment[], newStartTime: number): number => {
+    for (let i = 0; i < segments.length; i++) {
+      if (segments[i].startTime > newStartTime) {
+        return i;
+      }
+    }
+    return segments.length;
+  };
+
+  const sortSegmentsByTime = (segments: TranscriptSegment[]): TranscriptSegment[] => {
+    return [...segments].sort((a, b) => a.startTime - b.startTime);
+  };
+
+  const addNewSegment = (insertAfterIndex?: number) => {
+    let newStartTime: number;
+    
+    if (insertAfterIndex !== undefined && editingTranscript[insertAfterIndex]) {
+      newStartTime = editingTranscript[insertAfterIndex].endTime + 0.5;
+    } else {
+      const lastSegment = editingTranscript[editingTranscript.length - 1];
+      newStartTime = lastSegment ? lastSegment.endTime : 0;
+    }
+    
     const newSegment: TranscriptSegment = {
       id: `segment-${Date.now()}`,
       text: 'New segment text...',
@@ -323,12 +345,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       pitch: 'normal'
     };
     
-    const updated = [...editingTranscript, newSegment];
+    const insertPosition = findInsertPosition(editingTranscript, newStartTime);
+    const updated = [...editingTranscript];
+    updated.splice(insertPosition, 0, newSegment);
+    
     setEditingTranscript(updated);
     onTranscriptUpdate?.(updated, selectedLanguage);
     
     // Start editing the new segment
-    startEditing(updated.length - 1);
+    startEditing(insertPosition);
   };
 
   const deleteSegment = (index: number) => {
@@ -420,7 +445,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           </Select>
 
           <Button
-            onClick={addNewSegment}
+            onClick={() => addNewSegment()}
             disabled={editingTranscript.length === 0}
             size="sm"
             variant="outline"
@@ -476,26 +501,35 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     )}
                   </div>
                   {editingIndex !== index && (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing(index)}
-                        className="h-6 w-6 p-0"
-                        title="Edit segment"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteSegment(index)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        title="Delete segment"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
+                   <div className="flex gap-1">
+                     <Button
+                       size="sm"
+                       variant="ghost"
+                       onClick={() => startEditing(index)}
+                       className="h-6 w-6 p-0"
+                       title="Edit segment"
+                     >
+                       <Edit className="w-3 h-3" />
+                     </Button>
+                     <Button
+                       size="sm"
+                       variant="ghost"
+                       onClick={() => addNewSegment(index)}
+                       className="h-6 w-6 p-0"
+                       title="Insert segment after this one"
+                     >
+                       <Plus className="w-3 h-3" />
+                     </Button>
+                     <Button
+                       size="sm"
+                       variant="ghost"
+                       onClick={() => deleteSegment(index)}
+                       className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                       title="Delete segment"
+                     >
+                       <X className="w-3 h-3" />
+                     </Button>
+                   </div>
                   )}
                 </div>
                 
