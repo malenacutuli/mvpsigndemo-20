@@ -84,7 +84,7 @@ serve(async (req) => {
 
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
-      const maxBytes = rangeBytes || 15000000; // 15MB default
+      const maxBytes = rangeBytes || 50000000; // 50MB default - increased for better transcription
       
       try {
         // First, try to get the video size

@@ -231,10 +231,12 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-// Track which segment is active for UI state with overlap prevention
+// Track which segment is active for UI state with overlap prevention  
 useEffect(() => {
-  const base = contentType === 'recipe' ? recipeDescriptions : educationDescriptions;
-  const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) ? dynamicDescriptions : base;
+  // Prioritize dynamic descriptions if available, otherwise use fallback
+  const descriptions = (dynamicDescriptions && dynamicDescriptions.length > 0) 
+    ? dynamicDescriptions 
+    : (contentType === 'recipe' ? recipeDescriptions : educationDescriptions);
   
   console.log('AudioDescription sync check:', {
     currentTime,

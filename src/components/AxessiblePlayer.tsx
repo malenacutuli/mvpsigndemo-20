@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -180,8 +180,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     try {
       setIsTranscribing(true);
       setTranscribeError(null);
-      const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { videoUrl: videoSrc, rangeBytes: 15000000 }
+        const { data, error } = await supabase.functions.invoke('transcribe', {
+        body: { videoUrl: videoSrc, rangeBytes: 50000000 }  // Increased to 50MB to capture full video
       });
       if (error) throw new Error(error.message || 'Transcription failed');
       const segments = (data && (data as any).segments) || [];
@@ -221,8 +221,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     setDynamicADEnabled(enable);
 
     if (enable && !generatedAD) {
+      // Auto-generate captions if they don't exist
       if (!generatedCaptions || generatedCaptions.length === 0) {
-        setGenerateADError('Generate AI captions first.');
+        console.log('Auto-generating captions for audio description...');
+        await handleGenerateCaptions();
+        // Wait a moment for captions to be generated
+        setTimeout(() => handleToggleDynamicAD(), 2000);
         return;
       }
       try {
@@ -553,15 +557,32 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </Button>
             
             {/* Audio Description */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAudioDescription(!showAudioDescription)}
-              title="Toggle audio descriptions"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showAudioDescription ? 'bg-accent/20 text-accent-foreground' : ''}`}
-            >
-              <Volume2 className="w-4 h-4" />
-            </Button>
+            {/* Audio Description Toggle + Generate Button */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAudioDescription(!showAudioDescription)}
+                title="Toggle audio descriptions"
+                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showAudioDescription ? 'bg-accent/20 text-accent-foreground' : ''}`}
+              >
+                <Volume2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleDynamicAD}
+                title={dynamicADEnabled ? "Disable dynamic AD" : "Generate AI audio descriptions"}
+                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-green-500/20' : ''}`}
+                disabled={isGeneratingAD}
+              >
+                {isGeneratingAD ? (
+                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
             
             {/* Sign Language Avatar */}
             <Button
