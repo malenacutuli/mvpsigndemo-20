@@ -2,10 +2,15 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
 import { ASLAvatar } from './ASLAvatar';
+import { AccessibilityGrader } from './AccessibilityGrader';
+import { TranscriptionManager } from './TranscriptionManager';
+import { VideoDubbingManager } from './VideoDubbingManager';
+import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -29,7 +34,8 @@ interface AxessiblePlayerProps {
   selectedVoice?: VoiceOption;
   selectedASLAvatar?: ASLOption;
   contentType?: 'recipe' | 'education';
-  initialCaptions?: CaptionSegment[]; // Optional pre-generated captions
+  initialCaptions?: CaptionSegment[];
+  videoId?: string; // Add video ID for database operations
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -41,6 +47,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   selectedASLAvatar,
   contentType = 'recipe',
   initialCaptions,
+  videoId,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -59,6 +66,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generatedAD, setGeneratedAD] = useState<Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> | null>(null);
   const [isGeneratingAD, setIsGeneratingAD] = useState(false);
   const [generateADError, setGenerateADError] = useState<string | null>(null);
+  const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
+  const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -217,6 +226,52 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   };
 
+  const handleFixAccessibilityIssue = (issue: string) => {
+    switch (issue) {
+      case 'generateCaptions':
+        handleGenerateCaptions();
+        break;
+      case 'generateAudioDescription':
+        handleToggleDynamicAD();
+        break;
+      case 'enableASL':
+        setShowASL(true);
+        break;
+      case 'enableKeyboard':
+        setKeyboardNavEnabled(true);
+        break;
+      default:
+        console.log('Fix issue:', issue);
+    }
+  };
+
+  const handleTranscriptUpdate = (segments: any[]) => {
+    // Convert segments to caption format if needed
+    const captionSegments: CaptionSegment[] = segments.map(segment => {
+      const words = segment.text.split(' ').map((word: string, index: number, arr: string[]) => {
+        const duration = segment.end_time - segment.start_time;
+        const wordDuration = duration / arr.length;
+        return {
+          text: word,
+          startTime: segment.start_time + (index * wordDuration),
+          endTime: segment.start_time + ((index + 1) * wordDuration),
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const,
+        };
+      });
+      
+      return {
+        text: segment.text,
+        speaker: segment.speaker || 'narrator' as any,
+        startTime: segment.start_time,
+        endTime: segment.end_time,
+        words,
+      };
+    });
+    
+    setGeneratedCaptions(captionSegments);
+  };
+
   return (
     <div 
       className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${className}`}
@@ -356,6 +411,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowAccessibilityPanel(!showAccessibilityPanel)}
+              aria-label="Accessibility Panel"
+              className="text-primary-foreground hover:text-primary hover:bg-primary/20"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
               aria-label="Full screen"
               className="text-primary-foreground hover:text-primary hover:bg-primary/20"
             >
@@ -364,6 +429,97 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Accessibility Panel */}
+      {showAccessibilityPanel && (
+        <div className="absolute top-0 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm z-50 overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Accessibility Panel</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAccessibilityPanel(false)}
+                className="text-white hover:bg-white/20"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <Tabs defaultValue="grader" className="w-full">
+              <TabsList className="grid w-full grid-cols-5 bg-muted/20">
+                <TabsTrigger value="grader">Grader</TabsTrigger>
+                <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
+                <TabsTrigger value="dubbing">Dubbing</TabsTrigger>
+                <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="grader" className="mt-4">
+                <AccessibilityGrader
+                  videoId={videoId}
+                  hasTranscript={!!generatedCaptions?.length}
+                  hasAudioDescription={showAudioDescription}
+                  hasCaptions={showCaptions}
+                  hasASL={showASL}
+                  hasKeyboardNav={keyboardNavEnabled}
+                  language={contentType === 'education' ? 'es' : 'en'}
+                  onFixIssue={handleFixAccessibilityIssue}
+                />
+              </TabsContent>
+              
+              <TabsContent value="transcripts" className="mt-4">
+                <TranscriptionManager
+                  videoId={videoId}
+                  videoUrl={videoSrc}
+                  onTranscriptUpdate={handleTranscriptUpdate}
+                  contentType={contentType}
+                />
+              </TabsContent>
+              
+              <TabsContent value="dubbing" className="mt-4">
+                <VideoDubbingManager
+                  videoId={videoId}
+                  videoUrl={videoSrc}
+                  originalLanguage={contentType === 'education' ? 'es' : 'en'}
+                />
+              </TabsContent>
+              
+              <TabsContent value="keyboard" className="mt-4">
+                <KeyboardAccessibilityManager
+                  onKeyboardModeChange={setKeyboardNavEnabled}
+                />
+              </TabsContent>
+              
+              <TabsContent value="settings" className="mt-4">
+                <div className="space-y-4 text-white">
+                  <h3 className="text-lg font-medium">Player Settings</h3>
+                  <div className="grid gap-4">
+                    <div className="p-4 border border-muted rounded-lg">
+                      <h4 className="font-medium mb-2">Video Information</h4>
+                      <div className="text-sm space-y-1 text-muted-foreground">
+                        <div>Title: {title}</div>
+                        <div>Type: {contentType}</div>
+                        <div>Duration: {formatTime(duration)}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border border-muted rounded-lg">
+                      <h4 className="font-medium mb-2">Accessibility Features</h4>
+                      <div className="text-sm space-y-1 text-muted-foreground">
+                        <div>Captions: {showCaptions ? 'Enabled' : 'Disabled'}</div>
+                        <div>Audio Description: {showAudioDescription ? 'Enabled' : 'Disabled'}</div>
+                        <div>ASL Avatar: {showASL ? 'Enabled' : 'Disabled'}</div>
+                        <div>Keyboard Navigation: {keyboardNavEnabled ? 'Enabled' : 'Disabled'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

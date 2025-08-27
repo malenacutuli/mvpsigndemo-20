@@ -254,6 +254,7 @@ const VideoDetail = () => {
                     selectedASLAvatar={selectedASLAvatar}
                     contentType={video.content_type === 'education' ? 'education' : 'recipe'}
                     initialCaptions={captions || undefined}
+                    videoId={video.id}
                     className="w-full h-full"
                   />
                 </div>
