@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AxessiblePlayer } from "@/components/AxessiblePlayer";
+import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
   id: string;
@@ -22,12 +24,38 @@ interface Video {
   updated_at: string;
 }
 
+interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface ASLOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [captions, setCaptions] = useState<CaptionSegment[] | null>(null);
+  
+  // Voice and ASL Avatar options for accessibility
+  const [selectedVoice] = useState<VoiceOption>({
+    id: 'gordon-ramsay',
+    name: 'Gordon Ramsay Style',
+    description: 'Passionate cooking voice'
+  });
+  
+  const [selectedASLAvatar] = useState<ASLOption>({
+    id: 'chef-avatar',
+    name: 'ASL Chef',
+    description: 'Professional cooking instructor'
+  });
 
   useEffect(() => {
     if (id) {
@@ -57,10 +85,58 @@ const VideoDetail = () => {
           setVideoUrl(signedUrl.signedUrl);
         }
       }
+      
+      // Load existing captions/transcripts for this video
+      await loadVideoTranscripts(data.id);
     } catch (error) {
       console.error('Error fetching video:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVideoTranscripts = async (videoId: string) => {
+    try {
+      const { data: segments, error } = await supabase
+        .from('transcript_segments')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('start_time', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading transcripts:', error);
+        return;
+      }
+      
+      if (segments && segments.length > 0) {
+        // Convert database segments to CaptionSegment format
+        const captionSegments: CaptionSegment[] = segments.map(segment => {
+          const words = segment.text.split(' ').map((word, index, arr) => {
+            const duration = segment.end_time - segment.start_time;
+            const wordDuration = duration / arr.length;
+            return {
+              text: word,
+              startTime: segment.start_time + (index * wordDuration),
+              endTime: segment.start_time + ((index + 1) * wordDuration),
+              emphasis: 'normal' as const,
+              pitch: 'normal' as const,
+            };
+          });
+          
+          return {
+            text: segment.text,
+            speaker: segment.speaker || 'narrator' as any,
+            startTime: segment.start_time,
+            endTime: segment.end_time,
+            words,
+          };
+        });
+        
+        setCaptions(captionSegments);
+        console.log('Loaded captions for video:', captionSegments.length, 'segments');
+      }
+    } catch (error) {
+      console.error('Error loading video transcripts:', error);
     }
   };
 
@@ -169,15 +245,17 @@ const VideoDetail = () => {
             </CardHeader>
             <CardContent>
               {videoUrl ? (
-                <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-                  <video 
-                    controls 
+                <div className="aspect-video w-full">
+                  <AxessiblePlayer
+                    videoSrc={videoUrl}
+                    posterSrc={video.thumbnail_url || undefined}
+                    title={video.title}
+                    selectedVoice={selectedVoice}
+                    selectedASLAvatar={selectedASLAvatar}
+                    contentType={video.content_type === 'education' ? 'education' : 'recipe'}
+                    initialCaptions={captions || undefined}
                     className="w-full h-full"
-                    poster={video.thumbnail_url || undefined}
-                  >
-                    <source src={videoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+                  />
                 </div>
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
@@ -187,6 +265,31 @@ const VideoDetail = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Accessibility Information */}
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Play className="w-4 h-4" />
+                  Accessibility Features
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Captions</Badge>
+                    <span className="text-muted-foreground">AI-powered with emotional context</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Audio Description</Badge>
+                    <span className="text-muted-foreground">Celebrity-style narration</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">ASL Avatar</Badge>
+                    <span className="text-muted-foreground">AI-animated sign language</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Use the accessibility controls in the video player to toggle these features on or off based on your preferences.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
