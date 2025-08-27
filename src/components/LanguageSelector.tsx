@@ -161,7 +161,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </div>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-background border-border z-50">
           {LANGUAGES.map((lang) => (
             <SelectItem key={lang.code} value={lang.code}>
               <div className="flex items-center gap-2">

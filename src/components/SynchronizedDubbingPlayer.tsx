@@ -39,7 +39,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   onLanguageChange,
   className = ''
 }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('original');
   const [dubbedAudios, setDubbedAudios] = useState<DubbedAudio[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
@@ -125,7 +125,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     setSelectedLanguage(language);
     onLanguageChange?.(language);
     
-    if (language === 'en' || language === '') {
+    if (language === 'en' || language === 'original') {
       // Original language or no selection
       setCurrentAudio(null);
       setIsEnabled(false);
@@ -151,7 +151,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
 
   // Load generated audio after creation
   useEffect(() => {
-    if (selectedLanguage && selectedLanguage !== 'en') {
+    if (selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original') {
       const newAudio = dubbedAudios.find(audio => audio.language === selectedLanguage);
       if (newAudio && !currentAudio) {
         const audio = new Audio(newAudio.audioUrl);
@@ -192,8 +192,8 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         <SelectTrigger className="w-24 h-8 text-xs bg-black/50 border-white/20 text-primary-foreground">
           <SelectValue placeholder="Lang" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">Original</SelectItem>
+        <SelectContent className="bg-background border-border z-50">
+          <SelectItem value="original">Original</SelectItem>
           {LANGUAGES.map((lang) => (
             <SelectItem key={lang.code} value={lang.code}>
               {lang.name}
@@ -206,7 +206,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" />
       )}
 
-      {selectedLanguage && selectedLanguage !== 'en' && (
+      {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && (
         <div className="flex items-center gap-1">
           {isEnabled && (
             <Badge variant="secondary" className="text-xs px-2 py-0">
@@ -227,7 +227,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         </div>
       )}
 
-      {selectedLanguage && selectedLanguage !== 'en' && !dubbedAudios.find(a => a.language === selectedLanguage) && !isGenerating && (
+      {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && !dubbedAudios.find(a => a.language === selectedLanguage) && !isGenerating && (
         <Button
           variant="ghost"
           size="sm"
