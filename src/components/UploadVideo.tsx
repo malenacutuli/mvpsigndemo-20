@@ -38,15 +38,17 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Voice options for audio descriptions
+  // Celebrity-style voices for audio descriptions
   const voiceOptions = {
     recipe: [
-      { id: 'sarah-warm', name: 'Sarah', description: 'Warm and friendly for cooking shows', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
-      { id: 'brian-clear', name: 'Brian', description: 'Clear and precise instructions', elevenLabsId: 'nPczCjzI2devNBz1zQrb' },
+      { id: 'gordon-ramsay-style', name: 'Gordon Ramsay Style', description: 'Passionate and intense cooking narration', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
+      { id: 'julia-child-style', name: 'Julia Child Style', description: 'Warm and encouraging cooking guidance', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
+      { id: 'anthony-bourdain-style', name: 'Anthony Bourdain Style', description: 'Sophisticated and worldly food commentary', elevenLabsId: 'onwK4e9ZLuTAKqWW03F9' },
     ],
     education: [
-      { id: 'aria-engaging', name: 'Aria', description: 'Engaging and educational', elevenLabsId: '9BWtsMINqrJLrRacOk9x' },
-      { id: 'charlotte-gentle', name: 'Charlotte', description: 'Gentle and nurturing for children', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
+      { id: 'david-attenborough-style', name: 'David Attenborough Style', description: 'Natural history documentary narrator', elevenLabsId: '9BWtsMINqrJLrRacOk9x' },
+      { id: 'neil-degrasse-tyson-style', name: 'Neil deGrasse Tyson Style', description: 'Science communicator and astrophysicist', elevenLabsId: 'nPczCjzI2devNBz1zQrb' },
+      { id: 'morgan-freeman-style', name: 'Morgan Freeman Style', description: 'Wise and authoritative narration', elevenLabsId: 'onwK4e9ZLuTAKqWW03F9' },
     ]
   };
 

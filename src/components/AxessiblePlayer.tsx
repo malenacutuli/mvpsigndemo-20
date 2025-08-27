@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -400,7 +400,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           </div>
         </div>
 
-        {/* Simplified Controls Row */}
+        {/* Single Controls Row - Specified Requirements Only */}
         <div className="flex items-center justify-between">
           {/* Left - Essential Playback */}
           <div className="flex items-center gap-3">
@@ -434,34 +434,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </div>
           </div>
 
-          {/* Right - Features & Settings */}
+          {/* Right - Required Features Only */}
           <div className="flex items-center gap-2">
-            {/* AI Features */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleGenerateCaptions}
-              title="Generate captions from video audio using AI"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${generatedCaptions?.length ? 'bg-green-600/20 text-green-400' : ''}`}
-              disabled={isTranscribing}
-            >
-              <Mic className="w-4 h-4" />
-              {isTranscribing ? '...' : 'CC'}
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleDynamicAD}
-              title="Generate audio descriptions for visually impaired users"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-blue-600/20 text-blue-400' : ''}`}
-              disabled={isGeneratingAD || !generatedCaptions}
-            >
-              <Volume2 className="w-4 h-4" />
-              {isGeneratingAD ? '...' : 'AD'}
-            </Button>
-
-            {/* Language & Dubbing */}
+            {/* Language */}
             <SynchronizedDubbingPlayer
               transcriptText={generatedCaptions?.map(c => c.text).join(' ')}
               currentTime={currentTime}
@@ -469,28 +444,52 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               onLanguageChange={handleLanguageChange}
             />
             
-            {/* Toggle Controls */}
-            <AccessibilityControls
-              showCaptions={showCaptions}
-              showASL={showASL}
-              showAudioDescription={showAudioDescription}
-              onToggleCaptions={setShowCaptions}
-              onToggleASL={setShowASL}
-              onToggleAudioDescription={setShowAudioDescription}
-            />
+            {/* Captions with Intention */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCaptions(!showCaptions)}
+              title="Toggle captions with emotion and intent"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showCaptions ? 'bg-accent/20 text-accent-foreground' : ''}`}
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
             
-            {/* Settings Panel */}
+            {/* Audio Description */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAudioDescription(!showAudioDescription)}
+              title="Toggle audio descriptions"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showAudioDescription ? 'bg-accent/20 text-accent-foreground' : ''}`}
+            >
+              <Volume2 className="w-4 h-4" />
+            </Button>
+            
+            {/* Sign Language Avatar */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowASL(!showASL)}
+              title="Toggle ASL avatar"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showASL ? 'bg-accent/20 text-accent-foreground' : ''}`}
+            >
+              <HandHelping className="w-4 h-4" />
+            </Button>
+            
+            {/* Dubbing - Part of Language Selector */}
+            {/* Settings */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowAccessibilityPanel(!showAccessibilityPanel)}
-              title="Open accessibility settings and tools"
+              title="Accessibility settings"
               className="text-primary-foreground hover:text-primary hover:bg-primary/20"
             >
               <Settings className="w-4 h-4" />
             </Button>
             
-            {/* Fullscreen */}
+            {/* Expand Screen */}
             <Button
               variant="ghost"
               size="sm"

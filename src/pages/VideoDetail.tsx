@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AxessiblePlayer } from "@/components/AxessiblePlayer";
+import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
@@ -245,19 +245,16 @@ const VideoDetail = () => {
             </CardHeader>
             <CardContent>
               {videoUrl ? (
-                <div className="aspect-video w-full">
-                  <AxessiblePlayer
-                    videoSrc={videoUrl}
-                    posterSrc={video.thumbnail_url || undefined}
-                    title={video.title}
-                    selectedVoice={selectedVoice}
-                    selectedASLAvatar={selectedASLAvatar}
-                    contentType={video.content_type === 'education' ? 'education' : 'recipe'}
-                    initialCaptions={captions || undefined}
-                    videoId={video.id}
-                    className="w-full h-full"
-                  />
-                </div>
+                <VideoPlayerWithTranscript
+                  videoSrc={videoUrl}
+                  posterSrc={video.thumbnail_url || undefined}
+                  title={video.title}
+                  videoId={video.id}
+                  selectedVoice={selectedVoice}
+                  selectedASLAvatar={selectedASLAvatar}
+                  contentType={video.content_type === 'education' ? 'education' : 'recipe'}
+                  className="w-full"
+                />
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center">
