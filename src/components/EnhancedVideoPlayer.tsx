@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { EnhancedVideoPlayer } from './EnhancedVideoPlayer';
+import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
-interface VideoPlayerWithTranscriptProps {
+interface EnhancedVideoPlayerProps {
   videoSrc: string;
   posterSrc?: string;
   title: string;
@@ -22,7 +22,7 @@ interface VideoPlayerWithTranscriptProps {
   className?: string;
 }
 
-export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps> = ({
+export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   videoSrc,
   posterSrc,
   title,
@@ -35,8 +35,11 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [transcriptText, setTranscriptText] = useState<string>('');
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
+    console.log('Transcript updated:', segments);
+    
     // Convert transcript segments to caption format with enhanced timing and styling
     const captionSegments: CaptionSegment[] = segments.map(segment => {
       const words = segment.text.split(' ').map((word: string, index: number, arr: string[]) => {
@@ -60,9 +63,14 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
       };
     });
     
+    // Create transcript text for dubbing
+    const fullTranscript = segments.map(s => s.text).join(' ');
+    setTranscriptText(fullTranscript);
+    
     setCaptions(captionSegments);
     setCurrentLanguage(language);
     console.log('Updated captions with enhanced timing:', captionSegments);
+    console.log('Updated transcript text for dubbing:', fullTranscript);
   };
 
   const handleContentGenerated = (content: {
@@ -70,6 +78,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
     audioDescription: any[];
     dubbing: any;
   }) => {
+    console.log('Content generated:', content);
     if (content.captions) {
       setCaptions(content.captions);
     }
@@ -79,15 +88,31 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
   };
 
   return (
-    <EnhancedVideoPlayer
-      videoSrc={videoSrc}
-      posterSrc={posterSrc}
-      title={title}
-      videoId={videoId}
-      selectedVoice={selectedVoice}
-      selectedASLAvatar={selectedASLAvatar}
-      contentType={contentType}
-      className={className}
-    />
+    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${className}`}>
+      {/* Video Player - Takes up 2/3 of the width on large screens */}
+      <div className="lg:col-span-2">
+        <AxessiblePlayer
+          videoSrc={videoSrc}
+          posterSrc={posterSrc}
+          title={title}
+          videoId={videoId}
+          selectedVoice={selectedVoice}
+          selectedASLAvatar={selectedASLAvatar}
+          contentType={contentType}
+          initialCaptions={captions}
+          className="w-full aspect-video"
+        />
+      </div>
+      
+      {/* Enhanced Transcript Editor - Takes up 1/3 of the width on large screens */}
+      <div className="lg:col-span-1">
+        <TranscriptEditor
+          videoUrl={videoSrc}
+          videoId={videoId}
+          onTranscriptUpdate={handleTranscriptUpdate}
+          onContentGenerated={handleContentGenerated}
+        />
+      </div>
+    </div>
   );
 };

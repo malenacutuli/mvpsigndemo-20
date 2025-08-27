@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mic, Globe, Download, Edit, Save, X } from 'lucide-react';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -15,6 +17,9 @@ interface TranscriptSegment {
   startTime: number;
   endTime: number;
   speaker?: string;
+  speakerColor?: string;
+  emphasis?: 'loud' | 'quiet' | 'normal';
+  pitch?: 'high' | 'low' | 'normal';
 }
 
 interface TranscriptEditorProps {
@@ -41,6 +46,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editSpeaker, setEditSpeaker] = useState('');
+  const [editSpeakerColor, setEditSpeakerColor] = useState('');
+  const [editEmphasis, setEditEmphasis] = useState<'loud' | 'quiet' | 'normal'>('normal');
+  const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
   const { toast } = useToast();
 
   const languages = [
@@ -61,7 +72,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl: videoUrl,
-          rangeBytes: 15000000,
+          rangeBytes: 50000000, // Increased to 50MB for full transcript
           language: 'en' // Original language
         }
       });
@@ -94,7 +105,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: currentSegment.trim(),
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
-              speaker: 'narrator'
+              speaker: 'narrator',
+              speakerColor: '#3B82F6',
+              emphasis: 'normal',
+              pitch: 'normal'
             });
             
             currentSegment = '';
@@ -118,7 +132,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: 'narrator'
+              speaker: 'narrator',
+              speakerColor: '#3B82F6',
+              emphasis: 'normal',
+              pitch: 'normal'
             });
           }
         });
@@ -198,8 +215,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             text: word,
             startTime: segment.startTime + (wordIndex * wordDuration),
             endTime: segment.startTime + ((wordIndex + 1) * wordDuration),
-            emphasis: 'normal' as const,
-            pitch: 'normal' as const,
+            emphasis: segment.emphasis || 'normal' as const,
+            pitch: segment.pitch || 'normal' as const,
           };
         })
       }));
@@ -246,25 +263,92 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   const startEditing = (index: number) => {
+    const segment = editingTranscript[index];
     setEditingIndex(index);
-    setEditText(editingTranscript[index].text);
+    setEditText(segment.text);
+    setEditStartTime(segment.startTime.toString());
+    setEditEndTime(segment.endTime.toString());
+    setEditSpeaker(segment.speaker || 'narrator');
+    setEditSpeakerColor(segment.speakerColor || '#3B82F6');
+    setEditEmphasis(segment.emphasis || 'normal');
+    setEditPitch(segment.pitch || 'normal');
   };
 
   const saveEdit = () => {
     if (editingIndex !== null) {
       const updated = [...editingTranscript];
-      updated[editingIndex] = { ...updated[editingIndex], text: editText };
+      updated[editingIndex] = { 
+        ...updated[editingIndex], 
+        text: editText,
+        startTime: parseFloat(editStartTime) || updated[editingIndex].startTime,
+        endTime: parseFloat(editEndTime) || updated[editingIndex].endTime,
+        speaker: editSpeaker,
+        speakerColor: editSpeakerColor,
+        emphasis: editEmphasis,
+        pitch: editPitch
+      };
       setEditingTranscript(updated);
-      setEditingIndex(null);
-      setEditText('');
+      resetEditState();
       
       onTranscriptUpdate?.(updated, selectedLanguage);
     }
   };
 
   const cancelEdit = () => {
+    resetEditState();
+  };
+
+  const resetEditState = () => {
     setEditingIndex(null);
     setEditText('');
+    setEditStartTime('');
+    setEditEndTime('');
+    setEditSpeaker('');
+    setEditSpeakerColor('');
+    setEditEmphasis('normal');
+    setEditPitch('normal');
+  };
+
+  const addNewSegment = () => {
+    const lastSegment = editingTranscript[editingTranscript.length - 1];
+    const newStartTime = lastSegment ? lastSegment.endTime : 0;
+    const newSegment: TranscriptSegment = {
+      id: `segment-${Date.now()}`,
+      text: 'New segment text...',
+      startTime: newStartTime,
+      endTime: newStartTime + 3,
+      speaker: 'narrator',
+      speakerColor: '#3B82F6',
+      emphasis: 'normal',
+      pitch: 'normal'
+    };
+    
+    const updated = [...editingTranscript, newSegment];
+    setEditingTranscript(updated);
+    onTranscriptUpdate?.(updated, selectedLanguage);
+    
+    // Start editing the new segment
+    startEditing(updated.length - 1);
+  };
+
+  const deleteSegment = (index: number) => {
+    const updated = editingTranscript.filter((_, i) => i !== index);
+    setEditingTranscript(updated);
+    onTranscriptUpdate?.(updated, selectedLanguage);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(1);
+    return `${mins}:${secs.padStart(4, '0')}`;
+  };
+
+  const parseTimeInput = (timeStr: string): number => {
+    if (timeStr.includes(':')) {
+      const [mins, secs] = timeStr.split(':');
+      return parseInt(mins) * 60 + parseFloat(secs);
+    }
+    return parseFloat(timeStr) || 0;
   };
 
   const exportTranscript = () => {
@@ -336,6 +420,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           </Select>
 
           <Button
+            onClick={addNewSegment}
+            disabled={editingTranscript.length === 0}
+            size="sm"
+            variant="outline"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Segment
+          </Button>
+
+          <Button
             onClick={exportTranscript}
             disabled={editingTranscript.length === 0}
             size="sm"
@@ -357,29 +451,156 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             editingTranscript.map((segment, index) => (
               <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
                 <div className="flex items-start justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">
-                    {Math.floor(segment.startTime / 60)}:{(segment.startTime % 60).toFixed(0).padStart(2, '0')} - {Math.floor(segment.endTime / 60)}:{(segment.endTime % 60).toFixed(0).padStart(2, '0')}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                    </span>
+                    {segment.speaker && (
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs px-2 py-0"
+                        style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                      >
+                        {segment.speaker}
+                      </Badge>
+                    )}
+                    {segment.emphasis !== 'normal' && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                        {segment.emphasis}
+                      </Badge>
+                    )}
+                    {segment.pitch !== 'normal' && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                        {segment.pitch}
+                      </Badge>
+                    )}
+                  </div>
                   {editingIndex !== index && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing(index)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing(index)}
+                        className="h-6 w-6 p-0"
+                        title="Edit segment"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSegment(index)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        title="Delete segment"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
                 
                 {editingIndex === index ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="min-h-[60px]"
-                      autoFocus
-                    />
+                  <div className="space-y-4">
+                    {/* Text Editor */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Text</Label>
+                      <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="min-h-[60px]"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {/* Timing Controls */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Start Time
+                        </Label>
+                        <Input
+                          value={editStartTime}
+                          onChange={(e) => setEditStartTime(e.target.value)}
+                          placeholder="0:00.0"
+                          className="text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          End Time
+                        </Label>
+                        <Input
+                          value={editEndTime}
+                          onChange={(e) => setEditEndTime(e.target.value)}
+                          placeholder="0:03.0"
+                          className="text-xs"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Speaker & Styling */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          Speaker
+                        </Label>
+                        <Input
+                          value={editSpeaker}
+                          onChange={(e) => setEditSpeaker(e.target.value)}
+                          placeholder="narrator"
+                          className="text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Palette className="w-3 h-3" />
+                          Color
+                        </Label>
+                        <Input
+                          type="color"
+                          value={editSpeakerColor}
+                          onChange={(e) => setEditSpeakerColor(e.target.value)}
+                          className="h-8 p-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Emphasis & Pitch */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Volume2 className="w-3 h-3" />
+                          Emphasis
+                        </Label>
+                        <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal')}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal">Normal</SelectItem>
+                            <SelectItem value="loud">Loud</SelectItem>
+                            <SelectItem value="quiet">Quiet</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Pitch</Label>
+                        <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal">Normal</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button size="sm" onClick={saveEdit}>
                         <Save className="w-3 h-3 mr-1" />
@@ -392,7 +613,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm">{segment.text}</p>
+                  <p 
+                    className="text-sm" 
+                    style={{ color: segment.speakerColor }}
+                  >
+                    {segment.text}
+                  </p>
                 )}
               </div>
             ))

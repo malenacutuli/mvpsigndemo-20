@@ -65,6 +65,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [generatedCaptions, setGeneratedCaptions] = useState<CaptionSegment[] | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [generatedTranscript, setGeneratedTranscript] = useState<string>('');
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
   const [dynamicADEnabled, setDynamicADEnabled] = useState(false);
   const [generatedAD, setGeneratedAD] = useState<Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> | null>(null);
@@ -184,7 +185,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         body: { videoUrl: videoSrc, rangeBytes: 50000000 }  // Increased to 50MB to capture full video
       });
       if (error) throw new Error(error.message || 'Transcription failed');
+      
       const segments = (data && (data as any).segments) || [];
+      if (segments.length > 0) {
+        const transcriptText = segments.map((s: any) => s.text).join(' ');
+        setGeneratedTranscript(transcriptText);
+        console.log('Generated transcript for dubbing:', transcriptText);
+      }
+      
       const mapped: CaptionSegment[] = segments.map((seg: any) => {
         const start = Number(seg.start ?? 0);
         const end = Number(seg.end ?? (start + 2));
@@ -525,7 +533,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             {/* Language & Dubbing */}
             <div className="flex items-center gap-1">
               <SynchronizedDubbingPlayer
-                transcriptText={generatedCaptions?.map(c => c.text).join(' ')}
+                transcriptText={generatedTranscript}
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onLanguageChange={handleLanguageChange}
