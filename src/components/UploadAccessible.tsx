@@ -9,9 +9,12 @@ import { AxessiblePlayer } from "./AxessiblePlayer";
 import { AccessibilityGrader } from "./AccessibilityGrader";
 import { TranscriptionManager } from "./TranscriptionManager";
 import { KeyboardAccessibilityManager } from "./KeyboardAccessibilityManager";
+import { VideoDubbingManager } from "./VideoDubbingManager";
+import { WebinarHost } from "./WebinarHost";
+import { RealtimeChat } from "./RealtimeChat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, ShieldCheck, Languages, Subtitles, HandHelping, Settings } from "lucide-react";
+import { Upload, ShieldCheck, Languages, Subtitles, HandHelping, Settings, Video, MessageSquare } from "lucide-react";
 import type { CaptionSegment } from "./CaptionsWithIntention";
 
 // Updated content-type and voice/avatar presets matching DemoSection
@@ -223,10 +226,12 @@ export const UploadAccessible: React.FC = () => {
             {/* Enhanced Experience with Tabs */}
             <div className="mb-8">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-6">
                   <TabsTrigger value="player">Player</TabsTrigger>
-                  <TabsTrigger value="accessibility">Accessibility</TabsTrigger>
-                  <TabsTrigger value="transcription">Transcription</TabsTrigger>
+                  <TabsTrigger value="accessibility">Grader</TabsTrigger>
+                  <TabsTrigger value="transcription">Transcripts</TabsTrigger>
+                  <TabsTrigger value="dubbing">Dubbing</TabsTrigger>
+                  <TabsTrigger value="webinar">Webinar</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
                 
@@ -281,12 +286,35 @@ export const UploadAccessible: React.FC = () => {
                   />
                 </TabsContent>
                 
-                <TabsContent value="settings" className="mt-6">
-                  <KeyboardAccessibilityManager
-                    onToggleCaptions={() => setShowCaptions(!showCaptions)}
-                    onToggleASL={() => setShowASL(!showASL)}
-                    onToggleAD={() => setShowAudioDescription(!showAudioDescription)}
+                <TabsContent value="dubbing" className="mt-6">
+                  <VideoDubbingManager
+                    videoUrl={videoUrl || ""}
+                    originalLanguage="en"
+                    transcriptText={initialCaptions?.map(c => c.text).join(' ') || ""}
                   />
+                </TabsContent>
+                
+                <TabsContent value="webinar" className="mt-6">
+                  <WebinarHost />
+                </TabsContent>
+                
+                <TabsContent value="settings" className="mt-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <KeyboardAccessibilityManager
+                      onToggleCaptions={() => setShowCaptions(!showCaptions)}
+                      onToggleASL={() => setShowASL(!showASL)}
+                      onToggleAD={() => setShowAudioDescription(!showAudioDescription)}
+                    />
+                    <RealtimeChat
+                      onTranscript={(text) => {
+                        console.log('Real-time transcript:', text);
+                      }}
+                      onFunctionCall={(name, args) => {
+                        console.log('AI function call:', name, args);
+                        toast.info(`AI Assistant: ${name} activated`);
+                      }}
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>
