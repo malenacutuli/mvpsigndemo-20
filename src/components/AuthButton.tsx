@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { Link } from 'react-router-dom';
 import { LogIn, LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,13 +34,11 @@ export const AuthButton: React.FC = () => {
 
   if (!user) {
     return (
-      <Button 
-        onClick={handleGoogleSignIn} 
-        disabled={signingIn}
-        size="sm"
-      >
-        <LogIn className="w-4 h-4 mr-2" />
-        {signingIn ? 'Signing in...' : 'Sign in with Google'}
+      <Button asChild size="sm">
+        <Link to="/auth">
+          <LogIn className="w-4 h-4 mr-2" />
+          Sign In
+        </Link>
       </Button>
     );
   }
