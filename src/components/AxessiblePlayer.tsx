@@ -408,10 +408,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
       const duration = Math.max(endTime - startTime, 0.1);
       
-      const words = segment.text.split(' ').map((word: string, index: number, arr: string[]) => {
+      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, index: number, arr: string[]) => {
         const wordDuration = duration / arr.length;
         return {
-          text: word,
+          text: word + ' ', // Add space after each word
           startTime: startTime + (index * wordDuration),
           endTime: startTime + ((index + 1) * wordDuration),
           emphasis: segment.emphasis || 'normal' as const,
@@ -425,7 +425,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         startTime,
         endTime,
         words,
-        // Add CI properties
+        // Add CI properties from transcript edits
         volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
         pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
         type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
@@ -434,12 +434,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       } as CaptionSegment;
     });
     
+    // Force update captions immediately
     setGeneratedCaptions(captionSegments);
     
     // Update current language if provided
     if (language && language !== currentLanguage) {
       setCurrentLanguage(language);
     }
+    
+    // Force re-render by updating a state
+    setShowCaptions(true);
   };
 
   return (

@@ -207,17 +207,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-0 left-0 right-0 h-[8%] flex items-end justify-center p-2 pointer-events-none"
+      className="absolute bottom-12 left-0 right-0 h-[5%] flex items-center justify-center pointer-events-none"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box */}
       <div 
         className={`
-          relative max-w-2xl w-full
-          ${isLoudBurst ? '' : 'bg-black/80'} 
-          ${isLoudBurst ? '' : 'rounded-md'} 
-          ${isLoudBurst ? '' : 'px-3 py-2'}
-          ${isLoudBurst ? '' : 'mx-2'}
+          relative max-w-xl w-full
+          ${isLoudBurst ? '' : 'bg-black/75'} 
+          ${isLoudBurst ? '' : 'rounded-sm'} 
+          ${isLoudBurst ? '' : 'px-2 py-1'}
+          ${isLoudBurst ? '' : 'mx-1'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -238,7 +238,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         >
           {/* Sound effects and music formatting */}
           {isSoundEffect ? (
-            <span className="text-white animate-pulse">
+            <span className="text-white opacity-90">
               [{activeCaption.text}]
             </span>
           ) : isMusic ? (
@@ -257,12 +257,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                   const wordPitchStyle = getPitchBasedStyle(word.pitch);
                   
                   return (
-                    <span
-                      key={index}
-                      className={`
-                        inline-block transition-all duration-150 ease-out mr-1
-                        ${isCurrentWord ? 'animate-pulse' : ''}
-                      `}
+                     <span
+                       key={index}
+                       className="inline transition-all duration-200 ease-out mr-0.5"
                       style={{
                         // Read-ahead: show all words in white at 90% opacity
                         // Color sync: change to speaker color as words are spoken
