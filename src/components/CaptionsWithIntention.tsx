@@ -2286,12 +2286,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   if (!activeCaption) return null;
 
   const speakerColor = getSpeakerColor(activeCaption.speaker);
-  const fontSize = getVolumeBasedFontSize(activeCaption.volume || 50, screenHeight);
+  const volume = (activeCaption as any)?.volume || 50;
+  const fontSize = getVolumeBasedFontSize(volume, screenHeight);
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch);
   
-  const isLoudBurst = (activeCaption.volume || 50) >= 85;
-  const isSoundEffect = activeCaption.type === 'soundeffect';
-  const isMusic = activeCaption.type === 'music';
+  const isLoudBurst = volume >= 85;
+  const isSoundEffect = (activeCaption as any)?.type === 'soundeffect';
+  const isMusic = (activeCaption as any)?.type === 'music';
 
   return (
     <div 
@@ -2337,8 +2338,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           ) : (
             // Off-camera character (italic)
             <span 
-              className={activeCaption.isOffCamera ? 'italic' : ''}
-              style={{ fontStyle: activeCaption.isOffCamera ? 'italic' : 'normal' }}
+              className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
+              style={{ fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal' }}
             >
               {activeCaption.text}
             </span>
@@ -2363,8 +2364,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             </span>
           ) : (
             <span 
-              className={activeCaption.isOffCamera ? 'italic' : ''}
-              style={{ fontStyle: activeCaption.isOffCamera ? 'italic' : 'normal' }}
+              className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
+              style={{ fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal' }}
             >
               {activeCaption.words.map((word, index) => {
                 const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
