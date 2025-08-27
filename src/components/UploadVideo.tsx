@@ -197,7 +197,24 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      console.log('Selected file:', {
+        name: file.name,
+        size: file.size,
+        sizeInMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        type: file.type
+      });
+      
       if (file.type.startsWith('video/')) {
+        // Check file size (2GB = 2147483648 bytes)
+        if (file.size > 2147483648) {
+          toast({
+            title: "File too large",
+            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 2048 MB.`,
+            variant: "destructive"
+          });
+          return;
+        }
+        
         setVideoFile(file);
         if (!title) {
           setTitle(file.name.replace(/\.[^/.]+$/, ''));
@@ -215,13 +232,32 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith('video/')) {
-      setVideoFile(file);
-      if (!title) {
-        setTitle(file.name.replace(/\.[^/.]+$/, ''));
+    if (file) {
+      console.log('Dropped file:', {
+        name: file.name,
+        size: file.size,
+        sizeInMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        type: file.type
+      });
+      
+      if (file.type.startsWith('video/')) {
+        // Check file size (2GB = 2147483648 bytes)
+        if (file.size > 2147483648) {
+          toast({
+            title: "File too large",
+            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 2048 MB.`,
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setVideoFile(file);
+        if (!title) {
+          setTitle(file.name.replace(/\.[^/.]+$/, ''));
+        }
       }
     }
-  }, [title]);
+  }, [title, toast]);
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -363,7 +399,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div>
               <p className="text-sm font-medium">Drop your video file here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Supports MP4, MOV, AVI (max 500MB)
+                Supports MP4, MOV, AVI (max 2048MB)
               </p>
             </div>
           )}
