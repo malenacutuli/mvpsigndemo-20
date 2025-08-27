@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Wand2 } from 'lucide-react';
+import { Globe, Wand2, Download, Play } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface VideoDubbingManagerProps {
   videoId?: string;
@@ -19,11 +21,78 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [dubbingResult, setDubbingResult] = useState<any>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const generateDubbing = async () => {
-    if (!selectedLanguage) return;
+    if (!selectedLanguage || !transcriptText) {
+      toast.error('Please select a language and ensure transcript is available');
+      return;
+    }
+
     setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 3000);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-dubbing', {
+        body: {
+          text: transcriptText,
+          targetLanguage: selectedLanguage,
+          voiceId: getVoiceForLanguage(selectedLanguage)
+        }
+      });
+
+      if (error) throw error;
+
+      setDubbingResult(data);
+      
+      // Create audio URL from base64
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
+        { type: 'audio/mpeg' }
+      );
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+
+      toast.success(`Dubbing generated in ${getLanguageDisplay(selectedLanguage)}!`);
+    } catch (error: any) {
+      console.error('Dubbing error:', error);
+      toast.error(error.message || 'Failed to generate dubbing');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const getVoiceForLanguage = (lang: string) => {
+    const voices: Record<string, string> = {
+      'es': 'EXAVITQu4vr4xnSDxMaL', // Sarah
+      'fr': 'FGY2WhTYpPnrIDTdsKH5', // Laura  
+      'de': 'CwhRBWXzGAHq8TQ4Fs17', // Roger
+    };
+    return voices[lang] || 'EXAVITQu4vr4xnSDxMaL';
+  };
+
+  const getLanguageDisplay = (lang: string) => {
+    const display: Record<string, string> = {
+      'es': 'Spanish',
+      'fr': 'French', 
+      'de': 'German'
+    };
+    return display[lang] || lang;
+  };
+
+  const playDubbing = () => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+  };
+
+  const downloadDubbing = () => {
+    if (audioUrl) {
+      const a = document.createElement('a');
+      a.href = audioUrl;
+      a.download = `dubbing-${selectedLanguage}.mp3`;
+      a.click();
+    }
   };
 
   return (
@@ -43,10 +112,35 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
             <SelectItem value="de">🇩🇪 German</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage}>
+        <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage || !transcriptText}>
           <Wand2 className="w-4 h-4 mr-2" />
           {isGenerating ? 'Generating...' : 'Generate Dubbing'}
         </Button>
+
+        {dubbingResult && (
+          <div className="space-y-3 mt-4 p-3 bg-muted rounded-lg">
+            <div>
+              <h4 className="font-medium text-sm">Translated Text:</h4>
+              <p className="text-sm text-muted-foreground mt-1">{dubbingResult.translatedText}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={playDubbing} variant="outline" size="sm">
+                <Play className="w-3 h-3 mr-1" />
+                Play
+              </Button>
+              <Button onClick={downloadDubbing} variant="outline" size="sm">
+                <Download className="w-3 h-3 mr-1" />
+                Download
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!transcriptText && (
+          <p className="text-sm text-muted-foreground">
+            Generate a transcript first to enable dubbing
+          </p>
+        )}
       </div>
     </Card>
   );

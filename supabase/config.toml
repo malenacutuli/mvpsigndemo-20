@@ -1,1 +1,4 @@
 project_id = "faeyekynudyzeotbjfsj"
+
+[functions.generate-dubbing]
+verify_jwt = false
