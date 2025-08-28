@@ -23,7 +23,7 @@ export const Hero: React.FC = () => {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Main Headline */}
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight tracking-tight">
               The World's First End-to-End AI Platform for
               <span className="gradient-primary bg-clip-text text-transparent block">
                 Fully Accessible Video
@@ -31,7 +31,7 @@ export const Hero: React.FC = () => {
             </h1>
             
             {/* Secondary Headline */}
-            <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 tracking-tight">
               Create Born-Accessible Video in Seconds.
             </h2>
 
@@ -76,7 +76,7 @@ export const Hero: React.FC = () => {
             </p>
 
             {/* Final CTA */}
-            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
+            <h3 className="text-2xl md:text-3xl font-black text-foreground mb-8 tracking-tight">
               Make Video Truly Inclusive.
             </h3>
           </div>

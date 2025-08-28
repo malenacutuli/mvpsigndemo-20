@@ -3,7 +3,6 @@ import { IndustryFirst } from '@/components/IndustryFirst';
 import { MarketUrgency } from '@/components/MarketUrgency';
 import { Implementation } from '@/components/Implementation';
 import { EarlyAccess } from '@/components/EarlyAccess';
-import { DemoSection } from '@/components/DemoSection';
 import { UploadAccessible } from '@/components/UploadAccessible';
 import { PromptToVideo } from '@/components/PromptToVideo';
 import { TechStack } from '@/components/TechStack';
@@ -25,14 +24,12 @@ const Index = () => {
       <IndustryFirst />
       <MarketUrgency />
       <Implementation />
-      <DemoSection />
-      <UploadAccessible />
 
       {/* Quick Access Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
               Get Started with Axessible Video
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
@@ -81,10 +78,10 @@ const Index = () => {
       </section>
       
       {/* ASL Clip Upload Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
               Upload Your Custom ASL Clips
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
