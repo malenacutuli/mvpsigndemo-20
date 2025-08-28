@@ -335,6 +335,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(updated);
     setEditingTranscript(sortedSegments);
+    saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
+    onTranscriptUpdate?.(sortedSegments, selectedLanguage); // Immediately apply to video player
     resetEditState();
   };
 
