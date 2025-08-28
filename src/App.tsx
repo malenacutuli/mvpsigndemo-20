@@ -13,6 +13,7 @@ import VideoDetail from "./pages/VideoDetail";
 import VideoDetailWorkflow from "./pages/VideoDetailWorkflow"; 
 import Embed from "./pages/Embed";
 import Pricing from "./pages/Pricing";
+import Dashboard from "./pages/Dashboard";
 import { Auth } from "./pages/Auth";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
             <Route path="/upload" element={
               <ProtectedRoute>
                 <Upload />

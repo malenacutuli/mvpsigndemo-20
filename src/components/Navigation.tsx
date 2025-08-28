@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
+import { Upload, LayoutDashboard } from 'lucide-react';
 import { AuthButton } from '@/components/AuthButton';
+import { useAuth } from '@/hooks/useAuth';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
   
   const isActivePath = (path: string) => location.pathname === path;
   
@@ -37,16 +39,31 @@ export const Navigation: React.FC = () => {
               Home
             </Link>
             
-            <Link 
-              to="/videos" 
-              className={`text-sm transition-colors ${
-                isActivePath('/videos') 
-                  ? 'text-primary font-medium' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              My Videos
-            </Link>
+            {user && (
+              <Link 
+                to="/dashboard" 
+                className={`text-sm transition-colors ${
+                  isActivePath('/dashboard') 
+                    ? 'text-primary font-medium' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Dashboard
+              </Link>
+            )}
+            
+            {user && (
+              <Link 
+                to="/videos" 
+                className={`text-sm transition-colors ${
+                  isActivePath('/videos') 
+                    ? 'text-primary font-medium' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                My Videos
+              </Link>
+            )}
             
             <Link 
               to="/pricing" 
@@ -59,24 +76,40 @@ export const Navigation: React.FC = () => {
               Pricing
             </Link>
             
-            <Button asChild size="sm">
-              <Link to="/upload">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Video
-              </Link>
-            </Button>
+            {user ? (
+              <Button asChild size="sm">
+                <Link to="/upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Video
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm">
+                <Link to="/auth">
+                  Get Started
+                </Link>
+              </Button>
+            )}
             
             <AuthButton />
           </div>
           
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
-            <Button asChild size="sm">
-              <Link to="/upload">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload
-              </Link>
-            </Button>
+            {user ? (
+              <Button asChild size="sm">
+                <Link to="/upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm">
+                <Link to="/auth">
+                  Get Started
+                </Link>
+              </Button>
+            )}
             <AuthButton />
           </div>
         </div>

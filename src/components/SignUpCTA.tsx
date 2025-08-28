@@ -192,7 +192,7 @@ export const SignUpCTA: React.FC = () => {
               </DialogContent>
             </Dialog>
 
-            <Link to="/pricing">
+            <Link to="/dashboard">
               <Button 
                 size="lg" 
                 className="min-w-[200px] h-12 text-base font-semibold"

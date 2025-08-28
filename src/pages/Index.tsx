@@ -3,11 +3,8 @@ import { IndustryFirst } from '@/components/IndustryFirst';
 import { MarketUrgency } from '@/components/MarketUrgency';
 import { Implementation } from '@/components/Implementation';
 import { EarlyAccess } from '@/components/EarlyAccess';
-import { UploadAccessible } from '@/components/UploadAccessible';
-import { PromptToVideo } from '@/components/PromptToVideo';
 import { TechStack } from '@/components/TechStack';
 import { PatentClaims } from '@/components/PatentClaims';
-import { ASLClipUploader } from '@/components/ASLClipUploader';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, Video, DollarSign } from 'lucide-react';
@@ -77,22 +74,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* ASL Clip Upload Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
-              Upload Your Custom ASL Clips
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Integrate your own sign language videos into the recipe demo for personalized accessibility
-            </p>
-          </div>
-          <ASLClipUploader />
-        </div>
-      </section>
-      
-      <PromptToVideo />
       <TechStack />
       <PatentClaims />
     </div>
