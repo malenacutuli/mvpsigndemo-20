@@ -10,6 +10,8 @@ import NotFound from "./pages/NotFound";
 import Upload from "./pages/Upload";
 import Videos from "./pages/Videos";
 import VideoDetail from "./pages/VideoDetail";
+import VideoDetailWorkflow from "./pages/VideoDetailWorkflow"; 
+import Embed from "./pages/Embed";
 import Pricing from "./pages/Pricing";
 import { Auth } from "./pages/Auth";
 
@@ -40,6 +42,12 @@ const App = () => (
                 <VideoDetail />
               </ProtectedRoute>
             } />
+            <Route path="/video/:id/workflow" element={
+              <ProtectedRoute>
+                <VideoDetailWorkflow />
+              </ProtectedRoute>
+            } />
+            <Route path="/embed/:id" element={<Embed />} />
             <Route path="/pricing" element={<Pricing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

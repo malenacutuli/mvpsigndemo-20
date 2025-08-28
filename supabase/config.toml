@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.voice-cloning]
 verify_jwt = false
+
+[functions.embed-analytics]
+verify_jwt = false

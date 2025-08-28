@@ -5,9 +5,11 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, Share } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
+import { EmbedSettings } from "@/components/EmbedSettings";
+import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
@@ -43,6 +45,7 @@ const VideoDetail = () => {
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [captions, setCaptions] = useState<CaptionSegment[] | null>(null);
+  const [showEmbedSettings, setShowEmbedSettings] = useState(false);
   
   // Voice and ASL Avatar options for accessibility
   const [selectedVoice] = useState<VoiceOption>({
@@ -257,11 +260,18 @@ const VideoDetail = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
+          <div className="space-y-6">
+          <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={() => navigate('/videos')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Videos
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmbedSettings(!showEmbedSettings)}
+            >
+              <Share className="w-4 h-4 mr-2" />
+              Embed Settings
             </Button>
           </div>
 
@@ -348,6 +358,20 @@ const VideoDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Embed Settings and Analytics */}
+          {showEmbedSettings && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <EmbedSettings 
+                videoId={video.id} 
+                onSettingsChange={() => {
+                  // Optionally refresh video data
+                  fetchVideo();
+                }}
+              />
+              <EmbedAnalytics videoId={video.id} />
+            </div>
+          )}
         </div>
       </main>
     </div>
