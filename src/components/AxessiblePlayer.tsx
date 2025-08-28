@@ -158,19 +158,39 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         video.pause();
         setIsPlaying(false);
       } else {
-        // Check if video is ready to play
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+        // For large files, try to play even with minimal buffering
+        if (video.readyState >= 1) { // HAVE_METADATA or higher
+          console.log(`Attempting to play with readyState: ${video.readyState}`);
           await video.play();
           setIsPlaying(true);
           setVideoError(null);
         } else {
-          console.log('Video not ready to play, waiting for data...');
-          setVideoError('Video is still loading...');
+          console.log('Video metadata not loaded yet, loading first...');
+          video.load();
+          setVideoError('Loading video metadata...');
+          
+          // Wait for metadata then try to play
+          video.addEventListener('loadedmetadata', async () => {
+            try {
+              await video.play();
+              setIsPlaying(true);
+              setVideoError(null);
+            } catch (e) {
+              console.error('Play after metadata load failed:', e);
+              setVideoError('Unable to start playback. Large file may need more buffering time.');
+            }
+          }, { once: true });
         }
       }
     } catch (error) {
       console.error('Play error:', error);
-      setVideoError('Unable to play video. Please check the video source.');
+      if (error.name === 'NotAllowedError') {
+        setVideoError('Playback blocked by browser. Click the video to enable playback.');
+      } else if (error.name === 'NotSupportedError') {
+        setVideoError('Video format not supported by your browser.');
+      } else {
+        setVideoError('Large video file detected. Try pausing briefly to allow more buffering.');
+      }
       setIsPlaying(false);
     }
   };
@@ -604,8 +624,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           setIsPlaying(false);
         }}
         onStalled={() => {
-          console.warn('Video playback stalled');
-          setVideoError('Video playback stalled. The video might be too large or the connection is slow.');
+          console.warn('Video playback stalled - attempting recovery');
+          // Don't immediately show error, try to recover first
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.readyState < 2) {
+              console.log('Attempting stall recovery...');
+              const currentTime = videoRef.current.currentTime;
+              videoRef.current.load();
+              videoRef.current.currentTime = currentTime;
+            }
+          }, 2000);
+          
+          // Only show error after giving recovery time
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.readyState < 2) {
+              setVideoError('Large video file detected. Loading may take time with slower connections. Try pausing and waiting for buffering.');
+            }
+          }, 5000);
         }}
         onSuspend={() => {
           console.log('Video loading suspended - this is normal for large files');
@@ -636,48 +671,71 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {/* Video Error/Loading Overlay */}
       {(videoError || videoLoading) && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-          <div className="text-center text-white p-4">
+          <div className="text-center text-white p-4 max-w-md">
             {videoError ? (
               <>
-                <div className="text-red-400 mb-2">⚠️ Video Error</div>
-                <div className="text-sm mb-2">{videoError}</div>
-                <div className="text-xs opacity-70 mb-4">Video Source: {videoSrc}</div>
+                <div className="text-amber-400 mb-2">⚠️ Large Video File</div>
+                <div className="text-sm mb-4">{videoError}</div>
+                <div className="text-xs opacity-70 mb-4">
+                  File size: 36MB | This may take time to buffer on slower connections
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <Button 
+                    onClick={() => {
+                      setVideoError(null);
+                      setVideoLoading(true);
+                      if (videoRef.current) {
+                        console.log('Force reload video');
+                        videoRef.current.load();
+                      }
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="text-white border-white hover:bg-white hover:text-black"
+                  >
+                    Retry
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setVideoError(null);
+                      if (videoRef.current) {
+                        console.log('Continue with current buffer');
+                        videoRef.current.play().catch(() => {
+                          console.log('Play failed, but continuing...');
+                        });
+                      }
+                    }}
+                    size="sm"
+                    variant="default"
+                    className="bg-primary text-primary-foreground"
+                  >
+                    Continue Anyway
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                <div className="text-sm mb-2">Loading large video file...</div>
+                <div className="text-xs opacity-70 mb-2">
+                  {videoRef.current?.readyState ? `Buffer state: ${videoRef.current.readyState}/4` : 'Initializing...'}
+                </div>
+                <div className="text-xs opacity-50 mb-4">
+                  File: 36MB | This may take a moment on slower connections
+                </div>
                 <Button 
                   onClick={() => {
-                    setVideoError(null);
-                    setVideoLoading(true);
-                    if (videoRef.current) {
-                      videoRef.current.load();
+                    console.log('Skip loading wait');
+                    setVideoLoading(false);
+                    if (videoRef.current && videoRef.current.readyState >= 1) {
+                      console.log('Video has some data, proceeding...');
                     }
                   }}
                   size="sm"
                   variant="outline"
                   className="text-white border-white hover:bg-white hover:text-black"
                 >
-                  Retry Loading
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-                <div className="text-sm mb-2">Loading video...</div>
-                <div className="text-xs opacity-70">
-                  {videoRef.current?.readyState ? `Ready state: ${videoRef.current.readyState}/4` : 'Initializing...'}
-                </div>
-                <Button 
-                  onClick={() => {
-                    console.log('Force retry video loading');
-                    setVideoLoading(false);
-                    setVideoError('Manual retry - if video still doesn\'t work, the file may be corrupted or incompatible.');
-                    if (videoRef.current) {
-                      videoRef.current.load();
-                    }
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="text-white border-white hover:bg-white hover:text-black mt-4"
-                >
-                  Skip Loading
+                  Continue with Partial Buffer
                 </Button>
               </>
             )}
