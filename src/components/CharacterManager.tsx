@@ -291,7 +291,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{character.name}</span>
+                            <Input
+                              value={character.name}
+                              onChange={(e) => updateCharacterProperty(character.id, 'name', e.target.value)}
+                              className="h-8 min-w-[120px] font-medium"
+                              placeholder="Character name"
+                            />
                             {character.isOffCamera && (
                               <Badge variant="secondary" className="text-xs">Off-camera</Badge>
                             )}

@@ -86,7 +86,7 @@ serve(async (req) => {
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
       const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
-      const maxBytes = rangeBytes || 50000000; // 50MB default
+      const maxBytes = rangeBytes || 200000000; // Increased to 200MB default for full video processing
       
       try {
         // First, try to get the video size
@@ -97,7 +97,7 @@ serve(async (req) => {
         console.log(`Video size: ${totalBytes} bytes, OpenAI limit: ${OPENAI_MAX_SIZE} bytes`);
         
         let response;
-        // Use OpenAI limit to ensure we don't exceed their file size limit
+        // For videos larger than OpenAI limit, we'll process the first portion that fits
         const bytesToFetch = Math.min(OPENAI_MAX_SIZE, totalBytes);
         
         console.log(`Fetching first ${bytesToFetch} bytes for transcription`);

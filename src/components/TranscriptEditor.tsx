@@ -748,39 +748,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       </CardContent>
     </Card>
 
-    {/* Character Management */}
-    {editingTranscript.length > 0 && (
-      <CharacterManager 
-        videoId={videoId}
-        onCharactersUpdate={(characters) => {
-          // Update transcript segments with character assignments
-          const updatedSegments = editingTranscript.map(segment => {
-            const matchedCharacter = characters.find(c => 
-              c.name.toLowerCase() === (segment.speaker || 'narrator').toLowerCase()
-            );
-            return {
-              ...segment,
-              speaker: matchedCharacter?.name || segment.speaker || 'narrator',
-              speakerColor: matchedCharacter?.color || segment.speakerColor || '#3B82F6'
-            };
-          });
-          
-          setEditingTranscript(updatedSegments);
-          saveTranscriptData(updatedSegments, selectedLanguage);
-          onTranscriptUpdate?.(updatedSegments, selectedLanguage);
-        }}
-        existingCharacters={
-          // Extract unique characters from transcript
-          Array.from(new Set(editingTranscript.map(s => s.speaker || 'narrator')))
-            .map(speaker => ({
-              id: `char-${speaker}`,
-              name: speaker,
-              type: 'main' as const,
-              color: editingTranscript.find(s => s.speaker === speaker)?.speakerColor || '#3B82F6'
-            }))
-        }
-      />
-    )}
     </div>
   );
 };

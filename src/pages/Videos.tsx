@@ -40,9 +40,19 @@ export default function Videos() {
 
   const fetchVideos = async () => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        setVideos([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('videos')
         .select('*')
+        .eq('user_id', user.id) // Only fetch videos belonging to the current user
         .order('created_at', { ascending: false }) as { data: Video[] | null, error: any };
 
       if (error) throw error;
