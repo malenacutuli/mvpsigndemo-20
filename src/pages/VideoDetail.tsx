@@ -87,20 +87,33 @@ const VideoDetail = () => {
       console.log('✅ Video data loaded successfully:', data);
       setVideo(data);
       
-      // Get signed URL for video if storage path exists
+      // Get public URL for video if storage path exists
       if (data.storage_path) {
-        console.log('🔗 Creating signed URL for:', data.storage_path);
-        const { data: signedUrl, error: storageError } = await supabase.storage
+        console.log('🔗 Getting public URL for video:', data.storage_path);
+        
+        // Since the videos bucket is now public, use direct public URL
+        const { data: publicUrl } = supabase.storage
           .from('videos')
-          .createSignedUrl(data.storage_path, 3600); // 1 hour
+          .getPublicUrl(data.storage_path);
         
-        console.log('🔗 Signed URL response:', signedUrl, 'Error:', storageError);
-        
-        if (signedUrl?.signedUrl) {
-          console.log('✅ Video URL set:', signedUrl.signedUrl);
-          setVideoUrl(signedUrl.signedUrl);
+        if (publicUrl?.publicUrl) {
+          console.log('✅ Public video URL set:', publicUrl.publicUrl);
+          setVideoUrl(publicUrl.publicUrl);
         } else {
-          console.warn('⚠️ No signed URL generated');
+          // Fallback to signed URL if public URL fails
+          console.log('⚠️ Public URL failed, trying signed URL...');
+          const { data: signedUrl, error: storageError } = await supabase.storage
+            .from('videos')
+            .createSignedUrl(data.storage_path, 3600); // 1 hour
+          
+          console.log('🔗 Signed URL response:', signedUrl, 'Error:', storageError);
+          
+          if (signedUrl?.signedUrl) {
+            console.log('✅ Fallback signed URL set:', signedUrl.signedUrl);
+            setVideoUrl(signedUrl.signedUrl);
+          } else {
+            console.warn('⚠️ No URL could be generated for video');
+          }
         }
       } else {
         console.warn('⚠️ No storage path found for video');
