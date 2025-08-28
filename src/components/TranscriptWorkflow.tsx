@@ -494,19 +494,32 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                       <Download className="w-4 h-4 mr-2" />
                       Export
                     </Button>
-                    <Button onClick={saveTranscript} disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Save & Continue
-                        </>
-                      )}
-                    </Button>
+                    {segments.length > 0 ? (
+                      <Button onClick={saveTranscript} disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save & Continue
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => {
+                          setCurrentStep('complete');
+                          onWorkflowComplete();
+                        }}
+                        variant="outline"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Complete Workflow
+                      </Button>
+                    )}
                   </div>
                 </div>
                 
