@@ -82,6 +82,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -147,16 +149,30 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   }, [videoId, currentLanguage]); // Remove dependencies that cause loops
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play();
+    try {
+      if (isPlaying) {
+        video.pause();
+        setIsPlaying(false);
+      } else {
+        // Check if video is ready to play
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          await video.play();
+          setIsPlaying(true);
+          setVideoError(null);
+        } else {
+          console.log('Video not ready to play, waiting for data...');
+          setVideoError('Video is still loading...');
+        }
+      }
+    } catch (error) {
+      console.error('Play error:', error);
+      setVideoError('Unable to play video. Please check the video source.');
+      setIsPlaying(false);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (value: number[]) => {
@@ -543,10 +559,60 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         onError={(e) => {
           console.error('Video loading error:', e);
           console.log('Video src:', videoSrc);
+          console.log('Video error details:', {
+            error: e.currentTarget.error,
+            networkState: e.currentTarget.networkState,
+            readyState: e.currentTarget.readyState
+          });
+          setVideoError('Failed to load video. Please check the video source.');
+          setVideoLoading(false);
         }}
-        onLoadStart={() => console.log('Video loading started for:', videoSrc)}
-        onLoadedData={() => console.log('Video data loaded')}
+        onLoadStart={() => {
+          console.log('Video loading started for:', videoSrc);
+          setVideoLoading(true);
+          setVideoError(null);
+        }}
+        onLoadedData={() => {
+          console.log('Video data loaded successfully');
+          setVideoLoading(false);
+          setVideoError(null);
+        }}
+        onCanPlay={() => {
+          console.log('Video can start playing');
+          setVideoLoading(false);
+        }}
+        onWaiting={() => {
+          console.log('Video is waiting for data');
+          setVideoLoading(true);
+        }}
+        onPlaying={() => {
+          setIsPlaying(true);
+          setVideoLoading(false);
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+        }}
       />
+
+      {/* Video Error/Loading Overlay */}
+      {(videoError || videoLoading) && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+          <div className="text-center text-white p-4">
+            {videoError ? (
+              <>
+                <div className="text-red-400 mb-2">⚠️ Video Error</div>
+                <div className="text-sm">{videoError}</div>
+                <div className="text-xs mt-2 opacity-70">Video Source: {videoSrc}</div>
+              </>
+            ) : (
+              <>
+                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                <div className="text-sm">Loading video...</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ASL Avatar Overlay */}
       {showASL && (
