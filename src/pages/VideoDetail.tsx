@@ -266,13 +266,21 @@ const VideoDetail = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Videos
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowEmbedSettings(!showEmbedSettings)}
-            >
-              <Share className="w-4 h-4 mr-2" />
-              Embed Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => navigate(`/video/${id}/workflow`)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Edit Transcript & Captions
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEmbedSettings(!showEmbedSettings)}
+              >
+                <Share className="w-4 h-4 mr-2" />
+                Embed Settings
+              </Button>
+            </div>
           </div>
 
           <Card>
