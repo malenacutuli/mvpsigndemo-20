@@ -48,6 +48,8 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   // Video loading states
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
+  const [isStalled, setIsStalled] = useState(false);
+  const stalledTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -140,34 +142,68 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
-        preload="auto"
+        preload="metadata"
         onError={(e) => {
           console.error('Video loading error:', e);
           setVideoError(`Failed to load video. Please check the file.`);
           setVideoLoading(false);
+          setIsStalled(false);
         }}
         onLoadStart={() => {
           setVideoLoading(true);
           setVideoError(null);
+          setIsStalled(false);
         }}
         onCanPlay={() => {
           setVideoLoading(false);
+          setIsStalled(false);
+          // Clear any stalled timeout when video can play
+          if (stalledTimeoutRef.current) {
+            clearTimeout(stalledTimeoutRef.current);
+            stalledTimeoutRef.current = null;
+          }
         }}
         onPlaying={() => {
           setIsPlaying(true);
           setVideoLoading(false);
+          setIsStalled(false);
+          setVideoError(null);
+          // Clear stalled timeout when playing
+          if (stalledTimeoutRef.current) {
+            clearTimeout(stalledTimeoutRef.current);
+            stalledTimeoutRef.current = null;
+          }
         }}
         onPause={() => {
           setIsPlaying(false);
         }}
         onStalled={() => {
           console.warn('Video playback stalled');
-          setVideoError('Video loading stalled. Please wait or try refreshing.');
+          setIsStalled(true);
+          
+          // Only show error after 5 seconds of stalling
+          stalledTimeoutRef.current = setTimeout(() => {
+            setVideoError('Video loading stalled. Please wait or try refreshing.');
+            setVideoLoading(false);
+          }, 5000);
+        }}
+        onWaiting={() => {
+          // Show buffering indicator but don't error immediately
+          setIsStalled(true);
+        }}
+        onCanPlayThrough={() => {
+          // Video has enough data to play through
+          setIsStalled(false);
+          setVideoLoading(false);
+          if (stalledTimeoutRef.current) {
+            clearTimeout(stalledTimeoutRef.current);
+            stalledTimeoutRef.current = null;
+          }
         }}
       />
 
       {/* Video Error/Loading Overlay */}
-      {(videoError || videoLoading) && (
+      {(videoError || videoLoading || isStalled) && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
           <div className="text-center text-white p-4 max-w-md">
             {videoError ? (
@@ -178,6 +214,11 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
                   onClick={() => {
                     setVideoError(null);
                     setVideoLoading(true);
+                    setIsStalled(false);
+                    if (stalledTimeoutRef.current) {
+                      clearTimeout(stalledTimeoutRef.current);
+                      stalledTimeoutRef.current = null;
+                    }
                     if (videoRef.current) {
                       videoRef.current.load();
                     }
@@ -188,6 +229,11 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
                 >
                   Retry
                 </Button>
+              </>
+            ) : isStalled ? (
+              <>
+                <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                <div className="text-sm">Buffering video...</div>
               </>
             ) : (
               <>
