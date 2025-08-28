@@ -73,7 +73,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       }
     }
     
-    // Convert transcript segments to caption format with character colors applied
+    // Convert transcript segments to caption format - PRIORITIZE transcript edits over character colors
     const captionSegments: CaptionSegment[] = segments.map((segment, index) => {
       const startTime = segment.startTime ?? segment.start_time ?? 0;
       const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
@@ -85,6 +85,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           text: word.trim(),
           startTime: startTime + (wordIndex * wordDuration),
           endTime: startTime + ((wordIndex + 1) * wordDuration),
+          // PRIORITY: Use segment-level emphasis/pitch from transcript edits
           emphasis: segment.emphasis || 'normal' as const,
           pitch: segment.pitch || 'normal' as const,
         };
@@ -98,12 +99,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         startTime,
         endTime,
         words,
-        // Apply ALL properties from transcript edits
+        // PRIORITY: Apply transcript edit properties first, then fallbacks
         volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
         pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
         type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
         isOffCamera: segment.isOffCamera || false,
-        speakerColor: segment.speakerColor || characterColors[speaker] || '#3B82F6', // Use transcript color first
+        // PRIORITY: Use transcript segment color first, then character colors, then default
+        speakerColor: segment.speakerColor || characterColors[speaker] || '#3B82F6',
         // Add unique key to force re-render
         _updateKey: `${Date.now()}-${index}`
       } as CaptionSegment;
