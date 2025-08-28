@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { FeatureBoxes } from '@/components/FeatureBoxes';
 import { IndustryFirst } from '@/components/IndustryFirst';
 import { MarketUrgency } from '@/components/MarketUrgency';
 import { Implementation } from '@/components/Implementation';
@@ -16,6 +17,7 @@ const Index = () => {
       <Navigation />
 
       <Hero />
+      <FeatureBoxes />
 
       {/* Industry First Content */}
       <IndustryFirst />

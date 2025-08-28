@@ -19,10 +19,10 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover: 0 0% 100%;
     --popover-foreground: 210 15% 8%;
 
-    /* Primary: Deep accessible blue for trust and clarity */
-    --primary: 220 91% 25%;
+    /* Primary: Axessible brand blue */
+    --primary: 220 91% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 220 91% 45%;
+    --primary-glow: 220 91% 60%;
 
     /* Secondary: Warm neutral for supporting elements */
     --secondary: 210 30% 92%;

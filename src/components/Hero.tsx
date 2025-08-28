@@ -1,101 +1,41 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { HandHelping, Subtitles, Mic, Sparkles, Users, Award } from 'lucide-react';
-import { SignUpCTA } from '@/components/SignUpCTA';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Hero: React.FC = () => {
   return (
-    <section className="relative min-h-screen bg-gradient-accessibility flex flex-col overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      
-      {/* Header */}
-      <header className="relative z-20 flex justify-end items-center p-6">
-        <Badge variant="secondary" className="text-sm font-medium px-4 py-2">
-          <Award className="w-4 h-4 mr-2" />
-          Patent-Pending AI Technology
-        </Badge>
-      </header>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex items-center">
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Main Headline */}
-            <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight tracking-tight">
-              The World's First End-to-End AI Platform for
-              <span className="gradient-primary bg-clip-text text-transparent block">
-                Fully Accessible Video
-              </span>
-            </h1>
-            
-            {/* Secondary Headline */}
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 tracking-tight">
-              Create Born-Accessible Video in Seconds.
-            </h2>
-            
-            {/* Subtitle */}
-            <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">
-              Experience the accessibility transformation
-            </p>
-
-            {/* Key Features */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-                <Subtitles className="w-8 h-8 text-primary mb-3 mx-auto" />
-                <h3 className="font-semibold text-lg mb-2">Captions with Intention</h3>
-                <p className="text-muted-foreground text-sm">
-                  AI-powered emotional styling makes captions expressive and contextual
-                </p>
-              </div>
-              
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-                <Mic className="w-8 h-8 text-accent mb-3 mx-auto" />
-                <h3 className="font-semibold text-lg mb-2">Audio Descriptions</h3>
-                <p className="text-muted-foreground text-sm">
-                  Automatic visual content descriptions for blind and low-vision users
-                </p>
-              </div>
-              
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-                <HandHelping className="w-8 h-8 text-cwi-main-orange mb-3 mx-auto" />
-                <h3 className="font-semibold text-lg mb-2">Multi-Language Sign Avatars</h3>
-                <p className="text-muted-foreground text-sm">
-                  Professional AI interpreters in different sign language variants with cultural authenticity
-                </p>
-              </div>
-              
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-                <Users className="w-8 h-8 text-primary mb-3 mx-auto" />
-                <h3 className="font-semibold text-lg mb-2">Legal Compliance</h3>
-                <p className="text-muted-foreground text-sm">
-                  Automated WCAG, ADA, and EAA compliance checking and reporting
-                </p>
-              </div>
-            </div>
-
-            {/* Architecture Note */}
-            <p className="text-lg text-muted-foreground mb-6 max-w-4xl mx-auto leading-relaxed">
-              Axessible is built on a patent-backed architecture that integrates accessibility into the core of content creation—not as an afterthought.
-            </p>
-
-            {/* Final CTA */}
-            <h3 className="text-2xl md:text-3xl font-black text-foreground mb-8 tracking-tight">
-              Make Video Truly Inclusive.
-            </h3>
-          </div>
+    <section className="relative bg-white py-20 lg:py-32 overflow-hidden">
+      <div className="container mx-auto px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          {/* Subtitle */}
+          <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-medium">
+            VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS
+          </p>
+          
+          {/* Main Headline */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-none mb-8">
+            Build something better.
+            <span className="block">For everyone.</span>
+          </h1>
+          
+          {/* Description */}
+          <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12">
+            Create inclusive experiences that meet WCAG and EAA standards, thanks to the leading platform in digital accessibility and the support of expert services.
+          </p>
+          
+          {/* CTA Button */}
+          <Link to="/upload">
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold rounded-full inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Start Your Upload
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </Link>
         </div>
       </div>
-
-      {/* Sign Up CTA */}
-      <div className="container mx-auto px-6 py-16">
-        <SignUpCTA />
-      </div>
-
-      {/* Decorative Elements */}
-      <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-10 w-32 h-32 bg-accent/10 rounded-full blur-xl animate-pulse delay-1000"></div>
     </section>
   );
 };
