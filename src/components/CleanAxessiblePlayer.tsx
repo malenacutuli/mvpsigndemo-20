@@ -5,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AudioDescription } from './AudioDescription';
 import { ASLAvatar } from './ASLAvatar';
+import { AccessibilityGrader } from './AccessibilityGrader';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface CleanAxessiblePlayerProps {
@@ -332,59 +333,137 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
         </div>
       </div>
 
-      {/* Simple Settings Panel */}
+      {/* Full Accessibility Panel */}
       {showSettings && (
-        <div className="absolute top-0 right-0 w-64 h-full bg-black/95 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Settings</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSettings(false)}
-              className="text-white hover:bg-white/20"
-            >
-              ✕
-            </Button>
-          </div>
-          
-          <div className="space-y-4 text-white">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={showCaptions}
-                  onChange={(e) => setShowCaptions(e.target.checked)}
-                  className="rounded"
-                />
-                <span>Captions with Intention</span>
-              </label>
-              
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={showAudioDescription}
-                  onChange={(e) => setShowAudioDescription(e.target.checked)}
-                  className="rounded"
-                />
-                <span>Audio Description</span>
-              </label>
-              
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={showASL}
-                  onChange={(e) => setShowASL(e.target.checked)}
-                  className="rounded"
-                />
-                <span>Sign Language Avatar</span>
-              </label>
+        <div className="absolute top-0 right-0 w-80 h-full bg-black/95 backdrop-blur-sm overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Accessibility Panel</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(false)}
+                className="text-white hover:bg-white/20"
+              >
+                ✕
+              </Button>
             </div>
+            
+            <div className="space-y-6 text-white">
+              {/* Quick Toggles */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Quick Controls</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-between">
+                    <span>Captions with Intention</span>
+                    <input
+                      type="checkbox"
+                      checked={showCaptions}
+                      onChange={(e) => setShowCaptions(e.target.checked)}
+                      className="rounded"
+                    />
+                  </label>
+                  
+                  <label className="flex items-center justify-between">
+                    <span>Audio Description</span>
+                    <input
+                      type="checkbox"
+                      checked={showAudioDescription}
+                      onChange={(e) => setShowAudioDescription(e.target.checked)}
+                      className="rounded"
+                    />
+                  </label>
+                  
+                  <label className="flex items-center justify-between">
+                    <span>Sign Language Avatar</span>
+                    <input
+                      type="checkbox"
+                      checked={showASL}
+                      onChange={(e) => setShowASL(e.target.checked)}
+                      className="rounded"
+                    />
+                  </label>
+                </div>
+              </div>
 
-            <div className="pt-4 border-t border-white/20">
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div>Captions: {captions.length} segments</div>
-                <div>Duration: {formatTime(duration)}</div>
-                <div>Status: {captions.length ? 'Ready' : 'No captions'}</div>
+              {/* Accessibility Grader */}
+              <div className="border-t border-white/20 pt-4">
+                <AccessibilityGrader
+                  videoId={videoId}
+                  hasTranscript={captions.length > 0}
+                  hasAudioDescription={audioDescriptions.length > 0}
+                  hasCaptions={captions.length > 0}
+                  hasASL={true}
+                  hasKeyboardNav={true}
+                  language="en"
+                  onFixIssue={(issue) => {
+                    switch (issue) {
+                      case 'generateCaptions':
+                        setShowCaptions(true);
+                        break;
+                      case 'generateAudioDescription':
+                        setShowAudioDescription(true);
+                        break;
+                      case 'enableScreenReader':
+                        // Enable screen reader features
+                        break;
+                      case 'enableKeyboard':
+                        // Enable keyboard navigation
+                        break;
+                      default:
+                        console.log('Fix issue:', issue);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Audio Description Generator */}
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="font-medium text-sm mb-2">Dynamic Audio Description</h4>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAudioDescription(true);
+                    // Generate dynamic audio descriptions
+                    console.log('🎧 Generating dynamic audio descriptions...');
+                  }}
+                  className="w-full text-white border-white/30 hover:bg-white/10"
+                >
+                  Generate AI Descriptions
+                </Button>
+              </div>
+
+              {/* Character Management */}
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="font-medium text-sm mb-2">Character Colors</h4>
+                <div className="space-y-2">
+                  {characters.length > 0 ? (
+                    characters.map((char, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <span>{char.name}</span>
+                        <div 
+                          className="w-4 h-4 rounded border border-white/30"
+                          style={{ backgroundColor: char.color }}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-gray-400">
+                      No characters defined - using default colors
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Video Information */}
+              <div className="border-t border-white/20 pt-4">
+                <div className="text-sm space-y-1">
+                  <div>Captions: {captions.length} segments</div>
+                  <div>Audio Descriptions: {audioDescriptions.length}</div>
+                  <div>Duration: {formatTime(duration)}</div>
+                  <div>Status: {captions.length ? 'Accessible' : 'Needs captions'}</div>
+                </div>
               </div>
             </div>
           </div>
