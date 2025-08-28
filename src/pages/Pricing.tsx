@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const plans = [
   {
@@ -146,6 +148,31 @@ const comparisonFeatures = [
 ];
 
 export default function Pricing() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handlePlanAction = (planName: string) => {
+    if (planName === 'Starter') {
+      // For starter plan, redirect to signup if not authenticated, otherwise to dashboard
+      if (user) {
+        navigate('/dashboard');
+      } else {
+        navigate('/auth?plan=starter');
+      }
+    } else if (planName === 'Enterprise') {
+      // Contact sales for enterprise
+      window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
+    } else {
+      // For other paid plans, redirect to auth with plan info
+      if (user) {
+        // Show upgrade modal or redirect to billing
+        alert(`Upgrade to ${planName} plan - Billing integration coming soon!`);
+      } else {
+        navigate(`/auth?plan=${planName.toLowerCase()}`);
+      }
+    }
+  };
+
   const renderFeatureValue = (value: boolean | string) => {
     if (typeof value === 'boolean') {
       return value ? <Check className="w-4 h-4 text-green-600" /> : <span className="text-muted-foreground">—</span>;
@@ -212,6 +239,7 @@ export default function Pricing() {
                 <Button 
                   className="w-full" 
                   variant={plan.highlight ? "default" : "outline"}
+                  onClick={() => handlePlanAction(plan.name)}
                 >
                   {plan.cta}
                 </Button>
@@ -265,7 +293,12 @@ export default function Pricing() {
           <p className="text-muted-foreground mb-6">
             Our team is here to help you choose the right plan for your needs.
           </p>
-          <Button variant="outline">Contact Sales</Button>
+          <Button 
+            variant="outline"
+            onClick={() => window.open('mailto:sales@axessible.com?subject=Pricing Questions', '_blank')}
+          >
+            Contact Sales
+          </Button>
         </div>
       </div>
     </div>

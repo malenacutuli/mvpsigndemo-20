@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, LogIn } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff, Mail, Lock, User, LogIn, Gift } from 'lucide-react';
 
 export const Auth = () => {
   const [email, setEmail] = useState('');
@@ -22,6 +23,8 @@ export const Auth = () => {
   const { user, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const selectedPlan = searchParams.get('plan');
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -167,6 +170,29 @@ export const Auth = () => {
           <CardDescription className="text-center">
             Sign in to your account or create a new one to get started
           </CardDescription>
+          {selectedPlan === 'starter' && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+              <div className="flex items-center gap-2 text-green-800">
+                <Gift className="w-4 h-4" />
+                <span className="text-sm font-medium">Free Starter Plan</span>
+              </div>
+              <p className="text-xs text-green-700 mt-1">
+                Sign up now and get 100GB of storage absolutely free!
+              </p>
+            </div>
+          )}
+          {selectedPlan && selectedPlan !== 'starter' && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 mt-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize">
+                  {selectedPlan} Plan
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create your account to proceed with the {selectedPlan} plan
+              </p>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
