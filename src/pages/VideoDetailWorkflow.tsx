@@ -126,6 +126,7 @@ export default function VideoDetailWorkflow() {
 
   const handleTranscriptReady = (segments: CaptionSegment[]) => {
     setCaptions(segments);
+    console.log('✅ Transcript updated:', segments.length, 'segments');
     toast({
       title: "Transcript ready!",
       description: "Your video is now ready with full accessibility features"
@@ -135,6 +136,29 @@ export default function VideoDetailWorkflow() {
   const handleCharactersUpdate = (updatedCharacters: any[]) => {
     setCharacters(updatedCharacters);
     console.log('✅ Characters updated:', updatedCharacters.length, 'characters');
+    
+    // Apply character updates to existing captions and refresh player
+    if (captions.length > 0) {
+      const refreshedCaptions = captions.map(caption => {
+        const character = updatedCharacters.find(char => char.name === caption.speaker);
+        if (character) {
+          return {
+            ...caption,
+            speakerColor: character.color,
+            volume: character.emphasis === 'loud' ? 80 : character.emphasis === 'quiet' ? 30 : 50,
+            pitch: character.pitch === 'high' ? 200 : character.pitch === 'low' ? 120 : 160,
+            words: caption.words?.map(word => ({
+              ...word,
+              emphasis: character.emphasis || word.emphasis,
+              pitch: character.pitch || word.pitch,
+            })) || []
+          };
+        }
+        return caption;
+      });
+      setCaptions(refreshedCaptions);
+      console.log('🔄 Captions refreshed with character updates');
+    }
   };
 
   const handleAudioDescriptionsUpdate = (updatedDescriptions: any[]) => {
@@ -330,10 +354,14 @@ export default function VideoDetailWorkflow() {
                         </div>
                       </div>
                     </div>
-                    <Button 
+                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => setShowWorkflow(true)}
+                      onClick={() => {
+                        setShowWorkflow(true);
+                        // Refresh data when re-entering workflow
+                        loadExistingCaptions(video.id);
+                      }}
                       className="w-full"
                     >
                       Edit Transcript

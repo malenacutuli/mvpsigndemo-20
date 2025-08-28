@@ -310,12 +310,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     if (JSON.stringify(updatedSegments) !== JSON.stringify(segments)) {
       setSegments(updatedSegments);
+      console.log('🔄 Segments refreshed with character updates');
     }
   };
 
   const handleAudioDescriptionsUpdate = (descriptions: any[]) => {
     setAudioDescriptions(descriptions);
     onAudioDescriptionsUpdate?.(descriptions);
+    console.log('🔄 Audio descriptions updated and passed to parent');
   };
 
   const saveTranscript = async () => {
