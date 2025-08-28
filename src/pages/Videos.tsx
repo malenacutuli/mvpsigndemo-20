@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigation } from '@/components/Navigation';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 interface Video {
   id: string;
@@ -44,23 +45,13 @@ export default function Videos() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        console.log('No authenticated user found - checking for demo mode');
-        // Try fetching all videos for demo mode
-        const { data, error } = await supabase
-          .from('videos')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Error fetching videos:', error);
-          setVideos([]);
-        } else {
-          setVideos(data || []);
-        }
+        console.log('No authenticated user found');
+        setVideos([]);
+        setLoading(false);
         return;
       }
 
-      // Fetch user's videos
+      // Fetch only the authenticated user's videos
       const { data, error } = await supabase
         .from('videos')
         .select('*')
@@ -186,9 +177,10 @@ export default function Videos() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
@@ -347,7 +339,8 @@ export default function Videos() {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
