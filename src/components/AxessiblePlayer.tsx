@@ -562,9 +562,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           console.log('Video error details:', {
             error: e.currentTarget.error,
             networkState: e.currentTarget.networkState,
-            readyState: e.currentTarget.readyState
+            readyState: e.currentTarget.readyState,
+            errorCode: e.currentTarget.error?.code,
+            errorMessage: e.currentTarget.error?.message
           });
-          setVideoError('Failed to load video. Please check the video source.');
+          setVideoError(`Failed to load video. Error code: ${e.currentTarget.error?.code || 'unknown'}`);
           setVideoLoading(false);
         }}
         onLoadStart={() => {
@@ -581,9 +583,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           console.log('Video can start playing');
           setVideoLoading(false);
         }}
+        onCanPlayThrough={() => {
+          console.log('Video can play through without buffering');
+          setVideoLoading(false);
+        }}
         onWaiting={() => {
           console.log('Video is waiting for data');
-          setVideoLoading(true);
+          // Don't set loading to true immediately to avoid flicker
+          setTimeout(() => {
+            if (videoRef.current?.readyState < 3) {
+              setVideoLoading(true);
+            }
+          }, 1000);
         }}
         onPlaying={() => {
           setIsPlaying(true);
@@ -591,6 +602,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         }}
         onPause={() => {
           setIsPlaying(false);
+        }}
+        onStalled={() => {
+          console.warn('Video playback stalled');
+          setVideoError('Video playback stalled. The video might be too large or the connection is slow.');
+        }}
+        onSuspend={() => {
+          console.log('Video loading suspended');
+        }}
+        onAbort={() => {
+          console.warn('Video loading aborted');
+          setVideoError('Video loading was aborted.');
         }}
       />
 
@@ -601,13 +623,45 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             {videoError ? (
               <>
                 <div className="text-red-400 mb-2">⚠️ Video Error</div>
-                <div className="text-sm">{videoError}</div>
-                <div className="text-xs mt-2 opacity-70">Video Source: {videoSrc}</div>
+                <div className="text-sm mb-2">{videoError}</div>
+                <div className="text-xs opacity-70 mb-4">Video Source: {videoSrc}</div>
+                <Button 
+                  onClick={() => {
+                    setVideoError(null);
+                    setVideoLoading(true);
+                    if (videoRef.current) {
+                      videoRef.current.load();
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="text-white border-white hover:bg-white hover:text-black"
+                >
+                  Retry Loading
+                </Button>
               </>
             ) : (
               <>
                 <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-                <div className="text-sm">Loading video...</div>
+                <div className="text-sm mb-2">Loading video...</div>
+                <div className="text-xs opacity-70">
+                  {videoRef.current?.readyState ? `Ready state: ${videoRef.current.readyState}/4` : 'Initializing...'}
+                </div>
+                <Button 
+                  onClick={() => {
+                    console.log('Force retry video loading');
+                    setVideoLoading(false);
+                    setVideoError('Manual retry - if video still doesn\'t work, the file may be corrupted or incompatible.');
+                    if (videoRef.current) {
+                      videoRef.current.load();
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="text-white border-white hover:bg-white hover:text-black mt-4"
+                >
+                  Skip Loading
+                </Button>
               </>
             )}
           </div>
