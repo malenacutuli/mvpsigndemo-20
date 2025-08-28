@@ -247,13 +247,30 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
 
       setSegments(transcriptSegments);
-      setCurrentStep('edit');
       setExtractionComplete(true);
       
       toast({
         title: "Transcript extracted",
-        description: `${transcriptSegments.length} segments extracted successfully`
+        description: `${transcriptSegments.length} segments extracted successfully. Saving...`
       });
+
+      // Immediately trigger auto-save
+      try {
+        await saveTranscript();
+        setCurrentStep('edit');
+        toast({
+          title: "Transcript saved",
+          description: `Successfully saved ${transcriptSegments.length} segments to database`
+        });
+      } catch (saveError) {
+        console.error('❌ Auto-save failed:', saveError);
+        setCurrentStep('edit'); // Still allow editing even if save failed
+        toast({
+          title: "Save failed",
+          description: "Transcript extracted but failed to save. You can try saving manually.",
+          variant: "destructive"
+        });
+      }
 
     } catch (error: any) {
       console.error('❌ Extraction error:', error);
@@ -302,6 +319,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   const saveTranscript = async () => {
+    if (segments.length === 0) {
+      console.warn("⚠️ Attempted to save, but segments are empty.");
+      return;
+    }
+    
     setIsSaving(true);
     try {
       console.log('💾 Saving transcript to database...', segments.length, 'segments');
