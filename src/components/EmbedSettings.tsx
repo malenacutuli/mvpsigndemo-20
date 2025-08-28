@@ -190,12 +190,17 @@ export const EmbedSettings: React.FC<EmbedSettingsProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Enable Embedding */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
           <div>
-            <Label htmlFor="embed-enabled">Enable Embedding</Label>
+            <Label htmlFor="embed-enabled" className="text-base font-semibold">Enable Embedding</Label>
             <p className="text-sm text-muted-foreground">
               Allow this video to be embedded on other websites
             </p>
+            {!embedEnabled && (
+              <p className="text-sm text-amber-600 font-medium mt-1">
+                ⚠️ Embedding is currently disabled - toggle to enable
+              </p>
+            )}
           </div>
           <Switch
             id="embed-enabled"
@@ -342,10 +347,35 @@ export const EmbedSettings: React.FC<EmbedSettingsProps> = ({
             </div>
 
             {/* Save Button */}
-            <Button onClick={saveEmbedSettings} className="w-full">
+            <Button 
+              onClick={saveEmbedSettings} 
+              className="w-full"
+              size="lg"
+            >
               Save Embed Settings
             </Button>
           </>
+        )}
+        
+        {/* Show save button even when embedding is disabled */}
+        {!embedEnabled && (
+          <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
+            <p className="text-sm text-amber-800 mb-3">
+              <strong>Next Steps:</strong>
+            </p>
+            <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside mb-4">
+              <li>Toggle "Enable Embedding" above</li>
+              <li>Click "Save Embed Settings" below</li>
+              <li>Copy and use the embed code that will appear</li>
+            </ol>
+            <Button 
+              onClick={saveEmbedSettings} 
+              className="w-full"
+              variant="outline"
+            >
+              Save Settings
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>
