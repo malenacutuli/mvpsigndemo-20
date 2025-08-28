@@ -249,121 +249,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
-  const handleGenerateCaptions = async () => {
-    try {
-      setIsTranscribing(true);
-      setTranscribeError(null);
-      
-      console.log('🎤 Starting transcription for video:', videoSrc);
-      
-      const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { 
-          videoUrl: videoSrc, 
-          rangeBytes: 200000000, // Increased to 200MB for complete transcript
-          fullTranscript: true,
-          wordTimestamps: true
+  // Load existing captions from database or localStorage
+  useEffect(() => {
+    if (initialCaptions && initialCaptions.length > 0) {
+      setGeneratedCaptions(initialCaptions);
+    } else if (videoId) {
+      // Load from localStorage as fallback
+      const savedData = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setGeneratedCaptions(parsed.captions || []);
+        } catch (e) {
+          console.warn('Failed to parse saved transcript data');
         }
-      });
-      
-      if (error) {
-        console.error('❌ Transcription error:', error);
-        throw new Error(error.message || 'Transcription failed');
       }
-      
-      console.log('✅ Transcription response:', data);
-      
-      const segments = (data && (data as any).segments) || [];
-      console.log('📝 Raw transcript segments:', segments.length, segments);
-      
-      if (segments.length === 0) {
-        throw new Error('No transcript segments found in video');
-      }
-      
-      if (segments.length > 0) {
-        const transcriptText = segments.map((s: any) => s.text).join(' ');
-        setGeneratedTranscript(transcriptText);
-        console.log('📝 Generated transcript for dubbing:', transcriptText);
-      }
-      
-      // Convert transcription segments to caption segments with proper CWI properties
-      const mapped: CaptionSegment[] = segments.map((seg: any, index: number) => {
-        const start = Number(seg.start ?? 0);
-        const end = Number(seg.end ?? (start + 2));
-        const txt: string = String(seg.text ?? '').trim();
-        
-        console.log(`🎬 Processing segment ${index}: "${txt}" (${start}s - ${end}s)`);
-        
-        // Split text into words with timing
-        const wordsRaw = txt.length ? txt.split(/\s+/) : [];
-        const dur = Math.max(end - start, 0.001);
-        const step = wordsRaw.length ? dur / wordsRaw.length : dur;
-        
-        const words = wordsRaw.map((w: string, i: number) => ({
-          text: w,
-          startTime: start + i * step,
-          endTime: Math.min(end, start + (i + 1) * step),
-          emphasis: 'normal' as const,
-          pitch: 'normal' as const,
-        }));
-        
-        // Assign speaker and color based on segment
-        const speakerName = seg.speaker || `Speaker ${(index % 3) + 1}`;
-        const speakerColors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
-        const speakerColor = speakerColors[index % speakerColors.length];
-        
-        const captionSegment = {
-          text: txt,
-          speaker: speakerName,
-          startTime: start,
-          endTime: end,
-          words,
-          // Add CWI properties
-          volume: 50 + Math.random() * 30, // Random volume 50-80 dB for now
-          pitch: 160 + Math.random() * 80, // Random pitch 160-240 Hz
-          type: 'dialogue' as const,
-          isOffCamera: false,
-          speakerColor: speakerColor,
-        } as CaptionSegment;
-        
-        console.log(`✅ Created caption segment ${index}:`, {
-          text: captionSegment.text.substring(0, 30) + '...',
-          speaker: captionSegment.speaker,
-          startTime: captionSegment.startTime,
-          endTime: captionSegment.endTime,
-          wordsCount: captionSegment.words.length,
-          speakerColor: captionSegment.speakerColor
-        });
-        
-        return captionSegment;
-      });
-      
-      console.log('🎬 Generated caption segments with CWI properties:', mapped.length);
-      console.log('🎭 Sample caption:', mapped[0]);
-      
-      setGeneratedCaptions(mapped);
-      
-      // Save to localStorage for persistence
-      if (videoId) {
-        const transcriptData = {
-          videoId,
-          language: currentLanguage,
-          segments: segments,
-          captions: mapped,
-          updatedAt: new Date().toISOString()
-        };
-        localStorage.setItem(`transcript_${videoId}_${currentLanguage}`, JSON.stringify(transcriptData));
-        console.log('💾 Saved captions to localStorage');
-      }
-      
-      console.log('🎯 Caption generation completed successfully!');
-      
-    } catch (e: any) {
-      console.error('❌ Transcription error:', e);
-      setTranscribeError(e.message || 'Failed to generate captions');
-    } finally {
-      setIsTranscribing(false);
     }
-  };
+  }, [videoId, initialCaptions, currentLanguage]);
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {
@@ -371,12 +273,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     setDynamicADEnabled(enable);
 
     if (enable && !generatedAD) {
-      // Auto-generate captions if they don't exist
+      // Auto-generate captions if they don't exist - redirect to transcript workflow
       if (!generatedCaptions || generatedCaptions.length === 0) {
-        console.log('Auto-generating captions for audio description...');
-        await handleGenerateCaptions();
-        // Wait a moment for captions to be generated
-        setTimeout(() => handleToggleDynamicAD(), 2000);
+        console.log('No captions available - use transcript workflow to generate');
+        setGenerateADError('Please generate transcripts first using the transcript workflow');
+        setDynamicADEnabled(false);
         return;
       }
       try {
@@ -406,7 +307,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const handleFixAccessibilityIssue = async (issue: string) => {
     switch (issue) {
       case 'generateCaptions':
-        await handleGenerateCaptions();
+        console.log('Use transcript workflow to generate captions');
         break;
       case 'generateAudioDescription':
         await handleToggleDynamicAD();
@@ -931,21 +832,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <FileText className="w-4 h-4" />
             </Button>
             
-            {/* Generate Captions Button - for testing */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleGenerateCaptions}
-              title="Generate captions with intention"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${isTranscribing ? 'bg-green-500/20' : ''}`}
-              disabled={isTranscribing}
-            >
-              {isTranscribing ? (
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              ) : (
-                <Sparkles className="w-4 h-4" />
-              )}
-            </Button>
             
             {/* Audio Description */}
             {/* Audio Description Toggle + Generate Button */}
@@ -1091,12 +977,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </TabsContent>
               
               <TabsContent value="transcripts" className="mt-4">
-                <TranscriptionManager
-                  videoId={videoId}
-                  videoUrl={videoSrc}
-                  onTranscriptUpdate={(segments) => handleTranscriptUpdate(segments, currentLanguage)}
-                  contentType={contentType}
-                />
+                <div className="text-white space-y-4">
+                  <h3 className="text-lg font-medium">Transcript Management</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use the dedicated transcript workflow on the video detail page to extract, edit, and save transcripts with full accessibility features.
+                  </p>
+                  <div className="p-4 border border-muted/20 rounded-lg">
+                    <div className="text-sm space-y-1">
+                      <div>Current Captions: {generatedCaptions?.length || 0} segments</div>
+                      <div>Status: {generatedCaptions?.length ? 'Ready' : 'No captions generated'}</div>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
               
               <TabsContent value="dubbing" className="mt-4">

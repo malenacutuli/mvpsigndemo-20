@@ -40,23 +40,36 @@ export default function Videos() {
 
   const fetchVideos = async () => {
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Check authentication state first
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!user) {
-        console.log('No authenticated user found');
-        setVideos([]);
+      if (!session?.user) {
+        console.log('No authenticated user found - checking for demo mode');
+        // Try fetching all videos for demo mode
+        const { data, error } = await supabase
+          .from('videos')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Error fetching videos:', error);
+          setVideos([]);
+        } else {
+          setVideos(data || []);
+        }
         return;
       }
 
+      // Fetch user's videos
       const { data, error } = await supabase
         .from('videos')
         .select('*')
-        .eq('user_id', user.id) // Only fetch videos belonging to the current user
-        .order('created_at', { ascending: false }) as { data: Video[] | null, error: any };
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setVideos(data || []);
+      
     } catch (error) {
       console.error('Error fetching videos:', error);
       setVideos([]);
