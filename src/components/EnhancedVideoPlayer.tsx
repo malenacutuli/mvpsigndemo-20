@@ -122,9 +122,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setCaptions([...captionSegments]); // Force new array reference
     setCurrentLanguage(language);
     
-    // Trigger re-render by updating a dummy state
-    setTranscriptSegments(prev => [...segments, { _forceUpdate: timestamp }]);
-    
     // Create full transcript text for audio description generation
     const fullTranscript = segments
       .sort((a, b) => (a.startTime || 0) - (b.startTime || 0))

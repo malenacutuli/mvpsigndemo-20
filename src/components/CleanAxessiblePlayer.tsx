@@ -256,13 +256,25 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
       )}
 
       {/* Captions with Intention */}
-      {showCaptions && (
-        <CaptionsWithIntention 
-          captions={captions}
-          currentTime={currentTime}
-          isVisible={showCaptions}
-          screenHeight={window?.innerHeight || 1080}
-        />
+      {showCaptions && captions && captions.length > 0 && (
+        <>
+          {/* Debug logging (development only) */}
+          {(() => {
+            console.log('🎬 CLEAN AXESSIBLE PLAYER - Rendering captions:', captions.length, 'segments');
+            console.log('🎭 CLEAN AXESSIBLE PLAYER - Caption data:', captions.slice(0, 2).map(c => ({
+              speaker: c.speaker,
+              color: c.speakerColor,
+              text: c.text?.substring(0, 30)
+            })));
+            return null;
+          })()}
+          <CaptionsWithIntention 
+            captions={captions}
+            currentTime={currentTime}
+            isVisible={showCaptions}
+            screenHeight={window?.innerHeight || 1080}
+          />
+        </>
       )}
 
       {/* Audio Description */}
