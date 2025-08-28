@@ -98,24 +98,52 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>)
 };
 
 /**
- * Calculate font size based on volume level (3% to 12% of screen height)
+ * Calculate font size based on volume level or emphasis (3% to 12% of screen height)
  */
-const getVolumeBasedFontSize = (volume: number, screenHeight: number): number => {
-  // Volume range: 0-100 dB, Font size range: 3%-12% of screen height
-  const minSize = screenHeight * 0.03; // 3% - whisper
-  const maxSize = screenHeight * 0.12; // 12% - yelling
-  const normalSize = screenHeight * 0.05; // 5% - baseline (normal speaking)
+const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?: 'loud' | 'quiet' | 'normal'): number => {
+  const minSize = screenHeight * 0.025; // 2.5% - whisper
+  const maxSize = screenHeight * 0.08;  // 8% - yelling  
+  const normalSize = screenHeight * 0.045; // 4.5% - baseline (normal speaking)
   
-  // Map volume to font size
+  // Priority: Use emphasis from transcript editing if available
+  if (emphasis) {
+    switch (emphasis) {
+      case 'quiet':
+        return minSize;
+      case 'loud':
+        return maxSize;
+      case 'normal':
+      default:
+        return normalSize;
+    }
+  }
+  
+  // Fallback: Map volume to font size
   if (volume <= 30) {
-    // Quiet range (0-30 dB) → 3%-5%
+    // Quiet range (0-30 dB) → whisper size
     return minSize + ((volume / 30) * (normalSize - minSize));
   } else if (volume >= 85) {
-    // Loud range (85+ dB) → 12%
+    // Loud range (85+ dB) → yelling size
     return maxSize;
   } else {
-    // Normal range (30-85 dB) → 5%-12%
+    // Normal range (30-85 dB) → normal to loud
     return normalSize + (((volume - 30) / 55) * (maxSize - normalSize));
+  }
+};
+
+/**
+ * Get word-specific font size based on emphasis
+ */
+const getWordFontSize = (baseSize: number, emphasis?: 'loud' | 'quiet' | 'normal'): number => {
+  if (!emphasis || emphasis === 'normal') return baseSize;
+  
+  switch (emphasis) {
+    case 'loud':
+      return baseSize * 1.4; // 40% larger for shouting
+    case 'quiet':
+      return baseSize * 0.7; // 30% smaller for whispering
+    default:
+      return baseSize;
   }
 };
 
@@ -210,7 +238,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors);
   const volume = (activeCaption as any)?.volume || 50;
-  const fontSize = getVolumeBasedFontSize(volume, screenHeight);
+  const baseFontSize = getVolumeBasedFontSize(volume, screenHeight, activeCaption.words?.[0]?.emphasis);
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
   
   const isLoudBurst = volume >= 85;
@@ -246,7 +274,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             className="text-xs font-medium mb-1 text-center"
             style={{ 
               color: activeCaption.speakerColor || speakerColor,
-              fontSize: `${Math.max(10, fontSize * 0.4)}px` // Smaller - 40% of main text
+              fontSize: `${Math.max(10, baseFontSize * 0.4)}px` // Smaller - 40% of main text
             }}
           >
             {activeCaption.speaker.toUpperCase()}
@@ -257,7 +285,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(fontSize, screenHeight * 0.035)}px`, // Cap at 3.5% of screen height
+            fontSize: `${Math.min(baseFontSize, screenHeight * 0.06)}px`, // Increased cap for loud words
             ...pitchStyle,
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
@@ -284,22 +312,24 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                   const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
                   const hasBeenSpoken = currentTime >= word.endTime;
                   const wordPitchStyle = getPitchBasedStyle(word.pitch);
+                  const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
                   
                   return (
                      <span
                        key={index}
-                       className="inline-block transition-colors duration-200 ease-out"
+                       className="inline-block transition-all duration-200 ease-out"
                        style={{
                         // Read-ahead: show all words in white at 90% opacity
                         // Color sync: change to speaker color as words are spoken
                         color: hasBeenSpoken || isCurrentWord ? (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead,
                         marginRight: '0.25em', // Consistent spacing
+                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`, // Individual word sizing based on emphasis
                         ...wordPitchStyle,
                       }}
-                    >
-                      {word.text}
-                    </span>
-                  );
+                     >
+                       {word.text}
+                     </span>
+                   );
                 })
               ) : (
                 // Fallback: show full text if no word-level timing
