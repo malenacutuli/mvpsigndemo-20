@@ -38,6 +38,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   contentType = 'education',
   className = ""
 }) => {
+  console.log('🚨 ENHANCED VIDEO PLAYER LOADED - videoId:', videoId, 'language:', language);
+  
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
@@ -46,20 +48,59 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
 
+  // Add immediate debugging
+  useEffect(() => {
+    console.log('🚨 EnhancedVideoPlayer component mounted/updated');
+    console.log('📹 Current videoId:', videoId);
+    console.log('🌐 Current language:', currentLanguage);
+    console.log('💾 loadTranscriptSegments available:', typeof loadTranscriptSegments);
+  }, [videoId, currentLanguage, loadTranscriptSegments]);
+
   const handleTranscriptUpdate = (segments: any[], language: string) => {
     console.log('🔄 Transcript updated in EnhancedVideoPlayer:', segments?.length, 'segments');
-    console.log('📊 Received segments data:', segments.map(s => ({
+    console.log('🔍 DEBUGGING: Segments source and data:', segments.map(s => ({
+      id: s.id,
       speaker: s.speaker,
       text: s.text?.substring(0, 30) + '...',
       startTime: s.startTime,
       endTime: s.endTime,
       color: s.speakerColor,
       emphasis: s.emphasis,
-      pitch: s.pitch
+      pitch: s.pitch,
+      source: s.id ? 'database' : 'generated'
     })));
     
     if (!segments || segments.length === 0) {
       console.warn('⚠️ No segments received in handleTranscriptUpdate');
+      // Try to force load from database if no segments provided
+      const forceLoadDatabase = async () => {
+        console.log('🚀 FORCE LOADING from database...');
+        try {
+          const dbSegments = await loadTranscriptSegments(language);
+          console.log('📖 Force loaded from database:', dbSegments.length, 'segments');
+          if (dbSegments.length > 0) {
+            const convertedSegments = dbSegments.map(seg => ({
+              ...seg,
+              id: seg.id || `db-${Date.now()}-${Math.random()}`,
+              speakerColor: seg.speakerColor || '#3B82F6',
+              emphasis: seg.emphasis || 'normal',
+              pitch: seg.pitch || 'normal'
+            }));
+            console.log('🎯 Force converted segments:', convertedSegments.map(s => ({
+              speaker: s.speaker,
+              emphasis: s.emphasis,
+              pitch: s.pitch,
+              color: s.speakerColor
+            })));
+            // Re-call this function with database segments
+            handleTranscriptUpdate(convertedSegments, language);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ Force load failed:', error);
+        }
+      };
+      forceLoadDatabase();
       return;
     }
     
