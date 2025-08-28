@@ -83,15 +83,31 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   const loadExistingTranscript = async () => {
     try {
+      console.log('🔍 Loading existing transcript from database for video:', videoId);
+      
       const { data, error } = await supabase
         .from('transcript_segments')
         .select('*')
         .eq('video_id', videoId)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      console.log('📊 Database query result:', { 
+        error, 
+        segmentCount: data?.length || 0,
+        firstSegment: data?.[0] ? {
+          text: data[0].text?.substring(0, 50) + '...',
+          startTime: data[0].start_time,
+          speaker: data[0].speaker
+        } : null
+      });
+
+      if (error) {
+        console.error('❌ Database query error:', error);
+        throw error;
+      }
 
       if (data && data.length > 0) {
+        console.log('✅ Found existing transcript with', data.length, 'segments');
         const loadedSegments = data.map((seg, index) => ({
           id: seg.id,
           text: seg.text,
@@ -106,9 +122,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setCurrentStep('edit');
         setExtractionComplete(true);
         console.log('✅ Loaded existing transcript:', loadedSegments.length, 'segments');
+      } else {
+        console.log('ℹ️ No existing transcript found in database for video:', videoId);
       }
     } catch (error) {
-      console.error('Error loading existing transcript:', error);
+      console.error('❌ Failed to load existing transcript:', error);
     }
   };
 
@@ -144,6 +162,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
 
       console.log('✅ Extraction complete:', data);
+
+      // Debug: Log the structure of the received data
+      console.log('🔍 Data structure analysis:', {
+        hasSegments: !!data.segments,
+        segmentsLength: data.segments?.length || 0,
+        hasWords: !!data.words,
+        wordsLength: data.words?.length || 0,
+        hasText: !!data.text,
+        textLength: data.text?.length || 0,
+        allKeys: Object.keys(data || {})
+      });
 
       // Process the response to create segments
       let transcriptSegments: TranscriptSegment[] = [];
@@ -298,7 +327,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         confidence: 0.95 // Default confidence
       }));
 
-      console.log('💾 Inserting segments:', segmentsToInsert);
+      console.log('📦 Segments to insert:', JSON.stringify(segmentsToInsert, null, 2));
+      console.log('🔍 Video ID for insert:', videoId);
 
       const { data, error } = await supabase
         .from('transcript_segments')
@@ -306,7 +336,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         .select();
 
       if (error) {
-        console.error('❌ Insert error:', error);
+        console.error('❌ Insert error:', error.message, error.details, 'Segments attempted:', segmentsToInsert);
+        console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
         throw error;
       }
 
