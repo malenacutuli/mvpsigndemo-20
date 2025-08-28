@@ -146,20 +146,39 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setCharacters(updatedCharacters);
     console.log('🎨 Characters updated:', updatedCharacters);
     
-    // Immediately apply character colors to existing captions
-    if (captions.length > 0) {
+    // Immediately apply character colors to existing captions AND transcript segments
+    if (captions.length > 0 || transcriptSegments.length > 0) {
       const characterColorMap: Record<string, string> = {};
       updatedCharacters.forEach(char => {
         characterColorMap[char.name] = char.color;
       });
       
-      const updatedCaptions = captions.map(caption => ({
-        ...caption,
-        speakerColor: characterColorMap[caption.speaker] || caption.speakerColor
-      }));
+      // Update captions with new colors
+      if (captions.length > 0) {
+        const updatedCaptions = captions.map(caption => ({
+          ...caption,
+          speakerColor: characterColorMap[caption.speaker] || caption.speakerColor
+        }));
+        setCaptions([...updatedCaptions]);
+      }
       
-      setCaptions([...updatedCaptions]); // Force re-render with new colors
+      // Update transcript segments with new colors and re-trigger caption generation
+      if (transcriptSegments.length > 0) {
+        const updatedTranscriptSegments = transcriptSegments.map(segment => ({
+          ...segment,
+          speakerColor: characterColorMap[segment.speaker] || segment.speakerColor
+        }));
+        setTranscriptSegments([...updatedTranscriptSegments]);
+        
+        // Re-trigger transcript update to regenerate captions with new colors
+        handleTranscriptUpdate(updatedTranscriptSegments, currentLanguage);
+      }
     }
+  };
+
+  const handleAudioDescriptionsUpdate = (descriptions: any[]) => {
+    console.log('📢 Audio descriptions updated in EnhancedVideoPlayer:', descriptions.length);
+    setAudioDescriptions([...descriptions]);
   };
 
   // Load saved data on component mount
@@ -250,6 +269,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               currentLanguage={currentLanguage}
               contentType={contentType}
               transcriptSegments={transcriptSegments}
+              onDescriptionsUpdate={handleAudioDescriptionsUpdate}
             />
           </div>
         </TabsContent>
