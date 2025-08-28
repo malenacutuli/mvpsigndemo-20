@@ -207,17 +207,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-12 left-0 right-0 h-[5%] flex items-center justify-center pointer-events-none"
+      className="absolute bottom-16 left-0 right-0 flex items-center justify-center pointer-events-none px-4"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box */}
       <div 
         className={`
-          relative max-w-xl w-full
-          ${isLoudBurst ? '' : 'bg-black/75'} 
-          ${isLoudBurst ? '' : 'rounded-sm'} 
-          ${isLoudBurst ? '' : 'px-2 py-1'}
-          ${isLoudBurst ? '' : 'mx-1'}
+          relative max-w-4xl w-full
+          ${isLoudBurst ? '' : 'bg-black/80'} 
+          ${isLoudBurst ? '' : 'rounded-md'} 
+          ${isLoudBurst ? '' : 'px-3 py-1.5'}
+          ${isLoudBurst ? '' : 'mx-2'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -230,10 +230,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       >
         {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-relaxed"
+          className="relative text-center leading-tight break-words"
           style={{
-            fontSize: `${fontSize}px`,
+            fontSize: `${Math.min(fontSize, screenHeight * 0.04)}px`, // Cap font size to 4% of screen height
             ...pitchStyle,
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word',
+            hyphens: 'auto',
           }}
         >
           {/* Sound effects and music formatting */}
@@ -259,18 +262,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                   return (
                      <span
                        key={index}
-                       className="inline transition-all duration-200 ease-out mr-0.5"
-                      style={{
+                       className="inline-block transition-colors duration-200 ease-out"
+                       style={{
                         // Read-ahead: show all words in white at 90% opacity
                         // Color sync: change to speaker color as words are spoken
                         color: hasBeenSpoken || isCurrentWord ? speakerColor : CI_COLORS.readahead,
-                        transform: isCurrentWord ? 'scale(1.15)' : 'scale(1)', // 15% pop effect
-                        transformOrigin: 'center',
+                        marginRight: '0.25em', // Consistent spacing
                         ...wordPitchStyle,
-                        // Syllable emphasis for multi-syllable words
-                        ...(word.syllables && isCurrentWord && {
-                          animation: 'syllable-emphasis 0.3s ease-in-out',
-                        })
                       }}
                     >
                       {word.text}

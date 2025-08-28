@@ -401,7 +401,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
-    // Convert segments to caption format with proper timing
+    console.log('🔄 Updating captions from transcript edits:', segments?.length, 'segments');
+    
+    // Convert segments to caption format with proper timing and character properties
     const captionSegments: CaptionSegment[] = segments.map(segment => {
       // Handle both formats: segments with start_time/end_time or startTime/endTime
       const startTime = segment.startTime ?? segment.start_time ?? 0;
@@ -411,7 +413,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, index: number, arr: string[]) => {
         const wordDuration = duration / arr.length;
         return {
-          text: word + ' ', // Add space after each word
+          text: word.trim(), // Don't add extra space here
           startTime: startTime + (index * wordDuration),
           endTime: startTime + ((index + 1) * wordDuration),
           emphasis: segment.emphasis || 'normal' as const,
@@ -425,25 +427,28 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         startTime,
         endTime,
         words,
-        // Add CI properties from transcript edits
+        // Add CI properties from transcript edits - preserve all custom properties
         volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
         pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
         type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
         isOffCamera: segment.isOffCamera || false,
-        speakerColor: segment.speakerColor
+        speakerColor: segment.speakerColor // Preserve character colors from edits
       } as CaptionSegment;
     });
     
-    // Force update captions immediately
-    setGeneratedCaptions(captionSegments);
+    console.log('✅ Generated caption segments:', captionSegments?.length);
+    
+    // Force update captions immediately with new data
+    setGeneratedCaptions([...captionSegments]); // Create new array reference
     
     // Update current language if provided
     if (language && language !== currentLanguage) {
       setCurrentLanguage(language);
     }
     
-    // Force re-render by updating a state
-    setShowCaptions(true);
+    // Force component re-render by toggling state
+    setShowCaptions(false);
+    setTimeout(() => setShowCaptions(true), 10);
   };
 
   return (
