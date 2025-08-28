@@ -3,6 +3,7 @@ import { Check, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Navigation } from '@/components/Navigation';
 
 const plans = [
   {
@@ -154,6 +155,8 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
+      
       {/* Header */}
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
