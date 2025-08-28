@@ -57,6 +57,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   videoId,
   onTranscriptUpdate,
 }) => {
+  // Update captions when initialCaptions changes (from database)
+  useEffect(() => {
+    if (initialCaptions && initialCaptions.length > 0) {
+      console.log('📥 AxessiblePlayer received initialCaptions from database:', initialCaptions.length, 'segments');
+      console.log('🔍 First database caption details:', initialCaptions[0] ? {
+        speaker: initialCaptions[0].speaker,
+        color: initialCaptions[0].speakerColor,
+        emphasis: initialCaptions[0].words?.[0]?.emphasis,
+        pitch: initialCaptions[0].words?.[0]?.pitch,
+        text: initialCaptions[0].text?.substring(0, 50) + '...'
+      } : 'No captions');
+    } else {
+      console.log('⚠️ AxessiblePlayer received empty or no initialCaptions');
+    }
+  }, [initialCaptions]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);

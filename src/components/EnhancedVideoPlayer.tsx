@@ -44,6 +44,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
+  const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
     console.log('🔄 Transcript updated in EnhancedVideoPlayer:', segments?.length, 'segments');
@@ -198,19 +199,42 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setAudioDescriptions([...descriptions]);
   };
 
-  const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
-
-  // Load saved data on component mount
+  // Load saved data on component mount and language changes
   useEffect(() => {
     const loadSavedData = async () => {
+      console.log('🔄 Loading database content for video:', videoId, 'language:', currentLanguage);
+      
       // Load saved transcript from database
       const segments = await loadTranscriptSegments(currentLanguage);
+      console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
+      
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
           ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`,
+          // Ensure all caption properties are present
+          text: seg.text,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          speaker: seg.speaker || 'Speaker',
+          speakerColor: seg.speakerColor || '#3B82F6',
+          emphasis: seg.emphasis || 'normal',
+          pitch: seg.pitch || 'normal'
         }));
+        
+        console.log('🎯 Converting database segments to captions:', convertedSegments.map(s => ({
+          speaker: s.speaker,
+          color: s.speakerColor,
+          emphasis: s.emphasis,
+          pitch: s.pitch,
+          text: s.text.substring(0, 30) + '...'
+        })));
+        
         handleTranscriptUpdate(convertedSegments, currentLanguage);
+      } else {
+        console.log('⚠️ No saved transcript found for language:', currentLanguage);
+        // Clear captions if no saved transcript for this language
+        setCaptions([]);
       }
       
       // Load saved audio descriptions from database
@@ -224,6 +248,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           voiceStyle: 'warm' as const
         }));
         setAudioDescriptions(convertedDescriptions);
+      } else {
+        setAudioDescriptions([]);
       }
       
       // Load saved characters (still using localStorage for now)
@@ -239,7 +265,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     };
     
     loadSavedData();
-  }, [videoId]);
+  }, [videoId, currentLanguage]); // Added currentLanguage dependency
 
   return (
     <div className="space-y-6">
