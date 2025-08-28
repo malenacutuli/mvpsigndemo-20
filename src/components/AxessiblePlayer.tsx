@@ -215,6 +215,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   useEffect(() => {
     if (initialCaptions && initialCaptions.length > 0) {
       setGeneratedCaptions(initialCaptions);
+      
+      // Generate transcript text for dubbing from initial captions
+      const transcriptText = initialCaptions
+        .sort((a, b) => a.startTime - b.startTime)
+        .map(segment => segment.text)
+        .join(' ');
+      setGeneratedTranscript(transcriptText);
     }
   }, [initialCaptions]);
 
@@ -470,7 +477,15 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       };
       localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(transcriptData));
       
-      console.log('🎯 AXESSIBLE PLAYER - Captions updated and saved successfully');
+    console.log('🎯 AXESSIBLE PLAYER - Captions updated and saved successfully');
+    
+    // Generate transcript text for dubbing
+    const transcriptText = captionSegments
+      .sort((a, b) => a.startTime - b.startTime)
+      .map(segment => segment.text)
+      .join(' ');
+    setGeneratedTranscript(transcriptText);
+    
     }, 100);
     
     // Don't call parent onTranscriptUpdate to avoid loops
