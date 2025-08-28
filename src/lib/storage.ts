@@ -10,6 +10,16 @@ export async function putObject(bucket: string, key: string, file: File | Buffer
 
   if (error) throw error;
 
+  // Use consistent public URL generation
+  return getPublicUrl(bucket, key);
+}
+
+export function getPublicUrl(bucket: string, key: string): string {
+  // For videos bucket, construct the URL directly since it's public
+  if (bucket === 'videos') {
+    return `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/${bucket}/${key}`;
+  }
+
   const { data: urlData } = supabase.storage
     .from(bucket)
     .getPublicUrl(key);

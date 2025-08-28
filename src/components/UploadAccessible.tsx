@@ -137,19 +137,26 @@ export const UploadAccessible: React.FC = () => {
         throw upErr;
       }
 
-      console.log("File uploaded successfully, creating signed URL...");
-      const { data: signed } = await supabase.storage.from("videos").createSignedUrl(path, 60 * 60 * 6); // 6h
-      if (!signed?.signedUrl) throw new Error("Could not get signed URL");
-      
-      console.log("Signed URL created:", signed.signedUrl);
-      setVideoUrl(signed.signedUrl);
+      console.log("File uploaded successfully, getting public URL...");
+      // Use public URL since videos bucket is now public
+      const { data: publicUrl } = supabase.storage.from("videos").getPublicUrl(path);
+      if (!publicUrl?.publicUrl) {
+        // Fallback to manual construction
+        const manualUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${path}`;
+        console.log("Using manual public URL:", manualUrl);
+        setVideoUrl(manualUrl);
+      } else {
+        console.log("Public URL created:", publicUrl.publicUrl);
+        setVideoUrl(publicUrl.publicUrl);
+      }
 
       console.log("Starting transcription...");
       toast("Processing video...", { description: "Generating captions with AI" });
       
       // Auto-transcribe first 15MB for MVP
+      const videoUrlForTranscription = publicUrl?.publicUrl || `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${path}`;
       const { data, error } = await supabase.functions.invoke("transcribe", {
-        body: { videoUrl: signed.signedUrl, rangeBytes: 15000000 },
+        body: { videoUrl: videoUrlForTranscription, rangeBytes: 15000000 },
       });
       
       if (error) {
