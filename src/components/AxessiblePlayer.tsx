@@ -555,7 +555,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
-        preload="metadata"
+        preload="auto"
         onError={(e) => {
           console.error('Video loading error:', e);
           console.log('Video src:', videoSrc);
@@ -608,11 +608,28 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           setVideoError('Video playback stalled. The video might be too large or the connection is slow.');
         }}
         onSuspend={() => {
-          console.log('Video loading suspended');
+          console.log('Video loading suspended - this is normal for large files');
+          // Don't treat suspend as an error, just continue loading
+          setVideoLoading(false);
+          setVideoError(null);
+          
+          // Try to resume loading after a short delay
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.readyState < 2) {
+              console.log('Attempting to resume video loading...');
+              videoRef.current.load();
+            }
+          }, 500);
         }}
         onAbort={() => {
           console.warn('Video loading aborted');
           setVideoError('Video loading was aborted.');
+        }}
+        onProgress={() => {
+          console.log('Video loading progress:', {
+            buffered: videoRef.current?.buffered.length,
+            readyState: videoRef.current?.readyState
+          });
         }}
       />
 
