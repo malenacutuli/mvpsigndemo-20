@@ -240,6 +240,19 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           })
         }}
       >
+        {/* Speaker name label - only show for dialogue, not sound effects or music */}
+        {!isSoundEffect && !isMusic && activeCaption.speaker && (
+          <div 
+            className="text-sm font-medium mb-1 text-center"
+            style={{ 
+              color: activeCaption.speakerColor || speakerColor,
+              fontSize: `${Math.max(12, fontSize * 0.6)}px` // Smaller than main text
+            }}
+          >
+            {activeCaption.speaker.toUpperCase()}
+          </div>
+        )}
+        
         {/* Single caption display with proper color synchronization */}
         <div
           className="relative text-center leading-tight break-words px-1"
@@ -279,7 +292,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                        style={{
                         // Read-ahead: show all words in white at 90% opacity
                         // Color sync: change to speaker color as words are spoken
-                        color: hasBeenSpoken || isCurrentWord ? speakerColor : CI_COLORS.readahead,
+                        color: hasBeenSpoken || isCurrentWord ? (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead,
                         marginRight: '0.25em', // Consistent spacing
                         ...wordPitchStyle,
                       }}
@@ -290,7 +303,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 })
               ) : (
                 // Fallback: show full text if no word-level timing
-                <span style={{ color: speakerColor }}>
+                <span style={{ color: activeCaption.speakerColor || speakerColor }}>
                   {activeCaption.text}
                 </span>
               )}
