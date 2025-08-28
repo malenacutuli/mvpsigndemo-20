@@ -314,6 +314,7 @@ export default function VideoDetailWorkflow() {
                 <TranscriptWorkflow
                   videoId={video.id}
                   videoUrl={videoUrl}
+                  videoLanguage={video.language} // Pass video language
                   onTranscriptReady={handleTranscriptReady}
                   onWorkflowComplete={handleWorkflowComplete}
                   onCharactersUpdate={handleCharactersUpdate}

@@ -27,6 +27,7 @@ interface TranscriptSegment {
 interface TranscriptWorkflowProps {
   videoId: string;
   videoUrl: string;
+  videoLanguage?: string; // Add video language prop
   onTranscriptReady: (segments: CaptionSegment[]) => void;
   onWorkflowComplete: () => void;
   onCharactersUpdate?: (characters: any[]) => void;
@@ -36,6 +37,7 @@ interface TranscriptWorkflowProps {
 export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   videoId,
   videoUrl,
+  videoLanguage,
   onTranscriptReady,
   onWorkflowComplete,
   onCharactersUpdate,
@@ -49,6 +51,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [extractionComplete, setExtractionComplete] = useState(false);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
+  const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
   const { toast } = useToast();
 
   useEffect(() => {
@@ -163,6 +166,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       console.log('✅ Extraction complete:', data);
 
+      // Detect and store language
+      const language = data.language || 'en';
+      setDetectedLanguage(language);
+      console.log('🌐 Detected language:', language);
+
       // Debug: Log the structure of the received data
       console.log('🔍 Data structure analysis:', {
         hasSegments: !!data.segments,
@@ -171,6 +179,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         wordsLength: data.words?.length || 0,
         hasText: !!data.text,
         textLength: data.text?.length || 0,
+        language: language,
         allKeys: Object.keys(data || {})
       });
 
@@ -621,7 +630,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
               <AudioDescriptionEditor
                 videoUrl={videoUrl}
                 videoId={videoId}
-                currentLanguage="en"
+                currentLanguage={detectedLanguage} // Use detected language instead of hardcoded 'en'
                 contentType="education"
                 transcriptSegments={segments}
                 onDescriptionsUpdate={handleAudioDescriptionsUpdate}
