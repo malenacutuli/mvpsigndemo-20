@@ -36,6 +36,8 @@ export default function VideoDetailWorkflow() {
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [showWorkflow, setShowWorkflow] = useState(true);
 
   useEffect(() => {
@@ -130,6 +132,16 @@ export default function VideoDetailWorkflow() {
     });
   };
 
+  const handleCharactersUpdate = (updatedCharacters: any[]) => {
+    setCharacters(updatedCharacters);
+    console.log('✅ Characters updated:', updatedCharacters.length, 'characters');
+  };
+
+  const handleAudioDescriptionsUpdate = (updatedDescriptions: any[]) => {
+    setAudioDescriptions(updatedDescriptions);
+    console.log('✅ Audio descriptions updated:', updatedDescriptions.length, 'descriptions');
+  };
+
   const handleWorkflowComplete = () => {
     setShowWorkflow(false);
   };
@@ -199,159 +211,164 @@ export default function VideoDetailWorkflow() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/videos')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Videos
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{video.title}</h1>
-            <div className="flex items-center gap-4 mt-2">
-              <Badge className={getStatusColor(video.status)}>
-                {video.status}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {getLanguageDisplay(video.language)}
-              </span>
-              {video.duration_seconds && (
+        {/* Update VideoDetailWorkflow to pass callbacks */}
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/videos')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Videos
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{video.title}</h1>
+              <div className="flex items-center gap-4 mt-2">
+                <Badge className={getStatusColor(video.status)}>
+                  {video.status}
+                </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {formatDuration(video.duration_seconds)}
+                  {getLanguageDisplay(video.language)}
                 </span>
+                {video.duration_seconds && (
+                  <span className="text-sm text-muted-foreground">
+                    {formatDuration(video.duration_seconds)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Video Player */}
+            <div className="lg:col-span-2 space-y-6">
+              {videoUrl && (
+                <div className="aspect-video">
+                  {showWorkflow ? (
+                    <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          Complete the transcript workflow to enable video playback
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <CleanAxessiblePlayer
+                      videoSrc={videoUrl}
+                      posterSrc={video.thumbnail_url || undefined}
+                      title={video.title}
+                      videoId={video.id}
+                      contentType={video.content_type as 'recipe' | 'education'}
+                      captions={captions}
+                      audioDescriptions={audioDescriptions}
+                      characters={characters}
+                      className="w-full h-full"
+                    />
+                  )}
+                </div>
               )}
+
+              {/* Video Description */}
+              {video.description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Description</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{video.description}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Workflow Panel */}
+            <div className="space-y-6">
+              {showWorkflow ? (
+                <TranscriptWorkflow
+                  videoId={video.id}
+                  videoUrl={videoUrl}
+                  onTranscriptReady={handleTranscriptReady}
+                  onWorkflowComplete={handleWorkflowComplete}
+                  onCharactersUpdate={handleCharactersUpdate}
+                  onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
+                />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Video Ready</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                        ✓
+                      </div>
+                      <h3 className="font-semibold text-green-700 mb-2">
+                        Accessibility Complete
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Your video now includes captions with intention, timing, and speaker identification
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 bg-muted rounded">
+                          <div className="font-medium">Captions</div>
+                          <div className="text-green-600">✓ Ready</div>
+                        </div>
+                        <div className="p-2 bg-muted rounded">
+                          <div className="font-medium">Segments</div>
+                          <div className="text-green-600">{captions.length}</div>
+                        </div>
+                        <div className="p-2 bg-muted rounded">
+                          <div className="font-medium">Characters</div>
+                          <div className="text-green-600">{characters.length || 'Default'}</div>
+                        </div>
+                        <div className="p-2 bg-muted rounded">
+                          <div className="font-medium">Audio Desc</div>
+                          <div className="text-green-600">{audioDescriptions.length || 'None'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowWorkflow(true)}
+                      className="w-full"
+                    >
+                      Edit Transcript
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Video Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Video Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Language:</span>
+                    <span>{getLanguageDisplay(video.language)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Content Type:</span>
+                    <span className="capitalize">{video.content_type}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Created:</span>
+                    <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span>{formatDuration(video.duration_seconds)}</span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Video Player */}
-          <div className="lg:col-span-2 space-y-6">
-            {videoUrl && (
-              <div className="aspect-video">
-                {showWorkflow ? (
-                  <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        Complete the transcript workflow to enable video playback
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <CleanAxessiblePlayer
-                    videoSrc={videoUrl}
-                    posterSrc={video.thumbnail_url || undefined}
-                    title={video.title}
-                    videoId={video.id}
-                    contentType={video.content_type as 'recipe' | 'education'}
-                    captions={captions}
-                    className="w-full h-full"
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Video Description */}
-            {video.description && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Description</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{video.description}</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Workflow Panel */}
-          <div className="space-y-6">
-            {showWorkflow ? (
-              <TranscriptWorkflow
-                videoId={video.id}
-                videoUrl={videoUrl}
-                onTranscriptReady={handleTranscriptReady}
-                onWorkflowComplete={handleWorkflowComplete}
-              />
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Video Ready</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                      ✓
-                    </div>
-                    <h3 className="font-semibold text-green-700 mb-2">
-                      Accessibility Complete
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Your video now includes captions with intention, timing, and speaker identification
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 bg-muted rounded">
-                        <div className="font-medium">Captions</div>
-                        <div className="text-green-600">✓ Ready</div>
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <div className="font-medium">Segments</div>
-                        <div className="text-green-600">{captions.length}</div>
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <div className="font-medium">Speakers</div>
-                        <div className="text-green-600">Identified</div>
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <div className="font-medium">Database</div>
-                        <div className="text-green-600">✓ Saved</div>
-                      </div>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowWorkflow(true)}
-                    className="w-full"
-                  >
-                    Edit Transcript
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Video Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Video Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Language:</span>
-                  <span>{getLanguageDisplay(video.language)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Content Type:</span>
-                  <span className="capitalize">{video.content_type}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span>{new Date(video.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span>{formatDuration(video.duration_seconds)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

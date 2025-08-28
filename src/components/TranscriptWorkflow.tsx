@@ -5,10 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, Save, Edit, Play, Download, CheckCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mic, Save, Edit, Play, Download, CheckCircle, Users, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from './CaptionsWithIntention';
+import { CharacterManager } from './CharacterManager';
+import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 
 interface TranscriptSegment {
   id: string;
@@ -26,13 +29,17 @@ interface TranscriptWorkflowProps {
   videoUrl: string;
   onTranscriptReady: (segments: CaptionSegment[]) => void;
   onWorkflowComplete: () => void;
+  onCharactersUpdate?: (characters: any[]) => void;
+  onAudioDescriptionsUpdate?: (descriptions: any[]) => void;
 }
 
 export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   videoId,
   videoUrl,
   onTranscriptReady,
-  onWorkflowComplete
+  onWorkflowComplete,
+  onCharactersUpdate,
+  onAudioDescriptionsUpdate
 }) => {
   const [currentStep, setCurrentStep] = useState<'extract' | 'edit' | 'save' | 'complete'>('extract');
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
@@ -40,6 +47,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [extractionComplete, setExtractionComplete] = useState(false);
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -225,6 +234,34 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     ));
   };
 
+  const handleCharactersUpdate = (updatedCharacters: any[]) => {
+    setCharacters(updatedCharacters);
+    onCharactersUpdate?.(updatedCharacters);
+    
+    // Apply character properties to transcript segments
+    const updatedSegments = segments.map(seg => {
+      const character = updatedCharacters.find(char => char.name === seg.speaker);
+      if (character) {
+        return {
+          ...seg,
+          speakerColor: character.color,
+          emphasis: character.emphasis || seg.emphasis,
+          pitch: character.pitch || seg.pitch,
+        };
+      }
+      return seg;
+    });
+    
+    if (JSON.stringify(updatedSegments) !== JSON.stringify(segments)) {
+      setSegments(updatedSegments);
+    }
+  };
+
+  const handleAudioDescriptionsUpdate = (descriptions: any[]) => {
+    setAudioDescriptions(descriptions);
+    onAudioDescriptionsUpdate?.(descriptions);
+  };
+
   const saveTranscript = async () => {
     setIsSaving(true);
     try {
@@ -354,112 +391,150 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         )}
 
         {currentStep === 'edit' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Edit Transcript Details</h3>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportTranscript}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-                <Button onClick={saveTranscript} disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save & Continue
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="max-h-96 overflow-y-auto space-y-3">
-              {segments.map((segment) => (
-                <Card key={segment.id} className="p-4">
-                  <div className="grid gap-3">
-                    <div className="flex items-center gap-2">
-                      <Badge style={{ backgroundColor: segment.speakerColor, color: '#000' }}>
-                        {segment.speaker}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {segment.startTime.toFixed(1)}s - {segment.endTime.toFixed(1)}s
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingId(editingId === segment.id ? null : segment.id)}
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    
-                    {editingId === segment.id ? (
-                      <div className="grid gap-2">
-                        <Textarea
-                          value={segment.text}
-                          onChange={(e) => updateSegment(segment.id, 'text', e.target.value)}
-                          rows={2}
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground">Speaker</label>
-                            <Input
-                              value={segment.speaker}
-                              onChange={(e) => updateSegment(segment.id, 'speaker', e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Color</label>
-                            <input
-                              type="color"
-                              value={segment.speakerColor}
-                              onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
-                              className="w-full h-8 rounded border"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground">Emphasis</label>
-                            <Select value={segment.emphasis} onValueChange={(value) => updateSegment(segment.id, 'emphasis', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="quiet">Quiet</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="loud">Loud</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Pitch</label>
-                            <Select value={segment.pitch} onValueChange={(value) => updateSegment(segment.id, 'pitch', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm">{segment.text}</p>
-                    )}
+          <Tabs defaultValue="transcript" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="transcript" className="flex items-center gap-2">
+                <Mic className="w-4 h-4" />
+                Transcript
+              </TabsTrigger>
+              <TabsTrigger value="characters" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Characters
+              </TabsTrigger>
+              <TabsTrigger value="audio-desc" className="flex items-center gap-2">
+                <Volume2 className="w-4 h-4" />
+                Audio Descriptions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="transcript" className="mt-4">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">Edit Transcript Details</h3>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={exportTranscript}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                    <Button onClick={saveTranscript} disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save & Continue
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </Card>
-              ))}
-            </div>
-          </div>
+                </div>
+                
+                <div className="max-h-96 overflow-y-auto space-y-3">
+                  {segments.map((segment) => (
+                    <Card key={segment.id} className="p-4">
+                      <div className="grid gap-3">
+                        <div className="flex items-center gap-2">
+                          <Badge style={{ backgroundColor: segment.speakerColor, color: '#000' }}>
+                            {segment.speaker}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {segment.startTime.toFixed(1)}s - {segment.endTime.toFixed(1)}s
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingId(editingId === segment.id ? null : segment.id)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        
+                        {editingId === segment.id ? (
+                          <div className="grid gap-2">
+                            <Textarea
+                              value={segment.text}
+                              onChange={(e) => updateSegment(segment.id, 'text', e.target.value)}
+                              rows={2}
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground">Speaker</label>
+                                <Input
+                                  value={segment.speaker}
+                                  onChange={(e) => updateSegment(segment.id, 'speaker', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">Color</label>
+                                <input
+                                  type="color"
+                                  value={segment.speakerColor}
+                                  onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
+                                  className="w-full h-8 rounded border"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground">Emphasis</label>
+                                <Select value={segment.emphasis} onValueChange={(value) => updateSegment(segment.id, 'emphasis', value)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="quiet">Quiet</SelectItem>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="loud">Loud</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">Pitch</label>
+                                <Select value={segment.pitch} onValueChange={(value) => updateSegment(segment.id, 'pitch', value)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm">{segment.text}</p>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="characters" className="mt-4">
+              <CharacterManager
+                videoId={videoId}
+                onCharactersUpdate={handleCharactersUpdate}
+                existingCharacters={characters}
+              />
+            </TabsContent>
+
+            <TabsContent value="audio-desc" className="mt-4">
+              <AudioDescriptionEditor
+                videoUrl={videoUrl}
+                videoId={videoId}
+                currentLanguage="en"
+                contentType="education"
+                transcriptSegments={segments}
+                onDescriptionsUpdate={handleAudioDescriptionsUpdate}
+              />
+            </TabsContent>
+          </Tabs>
         )}
 
         {currentStep === 'complete' && (

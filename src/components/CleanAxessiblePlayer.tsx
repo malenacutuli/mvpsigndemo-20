@@ -15,6 +15,8 @@ interface CleanAxessiblePlayerProps {
   contentType?: 'recipe' | 'education';
   captions?: CaptionSegment[];
   videoId?: string;
+  audioDescriptions?: any[];
+  characters?: any[];
 }
 
 export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
@@ -25,6 +27,8 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   contentType = 'education',
   captions = [],
   videoId,
+  audioDescriptions = [],
+  characters = [],
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -220,6 +224,8 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
           currentTime={currentTime}
           isPlaying={isPlaying}
           contentType={contentType}
+          selectedVoice={{ id: 'Laura', name: 'Laura', description: 'Default voice' }}
+          dynamicDescriptions={audioDescriptions}
         />
       )}
 
