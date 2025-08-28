@@ -207,16 +207,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-16 left-0 right-0 flex items-center justify-center pointer-events-none px-4"
+      className="absolute bottom-20 left-0 right-0 flex items-center justify-center pointer-events-none px-4 z-40"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box */}
       <div 
         className={`
-          relative max-w-4xl w-full
+          relative max-w-3xl w-full text-center
           ${isLoudBurst ? '' : 'bg-black/80'} 
           ${isLoudBurst ? '' : 'rounded-md'} 
-          ${isLoudBurst ? '' : 'px-3 py-1.5'}
+          ${isLoudBurst ? '' : 'px-2 py-1'}
           ${isLoudBurst ? '' : 'mx-2'}
         `}
         style={{
@@ -230,13 +230,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       >
         {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-tight break-words"
+          className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(fontSize, screenHeight * 0.04)}px`, // Cap font size to 4% of screen height
+            fontSize: `${Math.min(fontSize, screenHeight * 0.035)}px`, // Cap at 3.5% of screen height
             ...pitchStyle,
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
             hyphens: 'auto',
+            maxWidth: '100%',
           }}
         >
           {/* Sound effects and music formatting */}
