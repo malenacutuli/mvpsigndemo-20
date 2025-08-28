@@ -127,11 +127,21 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           videoUrl,
           rangeBytes: 200000000,
           fullTranscript: true,
-          wordTimestamps: true
+          wordTimestamps: true,
+          language: 'auto'
         }
       });
 
-      if (error) throw new Error(error.message || 'Transcription failed');
+      console.log('🔍 Transcribe response:', { data, error });
+
+      if (error) {
+        console.error('❌ Transcribe error:', error);
+        throw new Error(error.message || 'Transcription failed');
+      }
+
+      if (!data) {
+        throw new Error('No transcription data received');
+      }
 
       console.log('✅ Extraction complete:', data);
 
@@ -265,27 +275,42 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const saveTranscript = async () => {
     setIsSaving(true);
     try {
-      console.log('💾 Saving transcript to database...');
+      console.log('💾 Saving transcript to database...', segments.length, 'segments');
 
       // First, delete existing segments for this video
-      await supabase
+      const { error: deleteError } = await supabase
         .from('transcript_segments')
         .delete()
         .eq('video_id', videoId);
 
-      // Insert new segments
-      const { error } = await supabase
-        .from('transcript_segments')
-        .insert(segments.map(seg => ({
-          video_id: videoId,
-          start_time: seg.startTime,
-          end_time: seg.endTime,
-          text: seg.text,
-          speaker: seg.speaker,
-          confidence: 0.95 // Default confidence
-        })));
+      if (deleteError) {
+        console.error('❌ Delete error:', deleteError);
+        throw deleteError;
+      }
 
-      if (error) throw error;
+      // Insert new segments
+      const segmentsToInsert = segments.map(seg => ({
+        video_id: videoId,
+        start_time: seg.startTime,
+        end_time: seg.endTime,
+        text: seg.text,
+        speaker: seg.speaker,
+        confidence: 0.95 // Default confidence
+      }));
+
+      console.log('💾 Inserting segments:', segmentsToInsert);
+
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .insert(segmentsToInsert)
+        .select();
+
+      if (error) {
+        console.error('❌ Insert error:', error);
+        throw error;
+      }
+
+      console.log('✅ Successfully saved', data?.length || 0, 'segments to database');
 
       // Convert to CaptionSegment format for the player
       const captionSegments: CaptionSegment[] = segments.map(seg => ({
