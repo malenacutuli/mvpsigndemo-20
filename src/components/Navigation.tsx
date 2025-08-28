@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Video, Home } from 'lucide-react';
+import { Upload, Home } from 'lucide-react';
 import { AuthButton } from '@/components/AuthButton';
 
 export const Navigation: React.FC = () => {
@@ -40,13 +40,12 @@ export const Navigation: React.FC = () => {
             
             <Link 
               to="/videos" 
-              className={`text-sm transition-colors flex items-center gap-2 ${
+              className={`text-sm transition-colors ${
                 isActivePath('/videos') 
                   ? 'text-primary font-medium' 
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Video className="w-4 h-4" />
               My Videos
             </Link>
             
