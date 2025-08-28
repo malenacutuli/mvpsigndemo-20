@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      embed_analytics: {
+        Row: {
+          created_at: string
+          duration_watched: number | null
+          embed_token: string | null
+          id: string
+          ip_address: unknown | null
+          last_viewed_at: string
+          referrer_domain: string | null
+          user_agent: string | null
+          video_id: string
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_watched?: number | null
+          embed_token?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_viewed_at?: string
+          referrer_domain?: string | null
+          user_agent?: string | null
+          video_id: string
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_watched?: number | null
+          embed_token?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_viewed_at?: string
+          referrer_domain?: string | null
+          user_agent?: string | null
+          video_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       emotion_spans: {
         Row: {
           confidence: number | null
@@ -232,6 +271,10 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
+          embed_domains: string[] | null
+          embed_enabled: boolean
+          embed_settings: Json | null
+          embed_token: string | null
           id: string
           language: string
           metadata: Json | null
@@ -247,6 +290,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          embed_domains?: string[] | null
+          embed_enabled?: boolean
+          embed_settings?: Json | null
+          embed_token?: string | null
           id?: string
           language?: string
           metadata?: Json | null
@@ -262,6 +309,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          embed_domains?: string[] | null
+          embed_enabled?: boolean
+          embed_settings?: Json | null
+          embed_token?: string | null
           id?: string
           language?: string
           metadata?: Json | null
@@ -279,7 +330,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_embed_token: {
+        Args: { video_uuid: string }
+        Returns: string
+      }
+      validate_embed_access: {
+        Args: { referrer_domain?: string; token?: string; video_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       job_status: "pending" | "running" | "completed" | "failed"
