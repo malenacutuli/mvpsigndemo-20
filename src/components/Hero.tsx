@@ -31,9 +31,14 @@ export const Hero: React.FC = () => {
             </h1>
             
             {/* Secondary Headline */}
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 tracking-tight">
               Create Born-Accessible Video in Seconds.
             </h2>
+            
+            {/* Subtitle */}
+            <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">
+              Experience the accessibility transformation
+            </p>
 
             {/* Key Features */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
@@ -57,7 +62,7 @@ export const Hero: React.FC = () => {
                 <HandHelping className="w-8 h-8 text-cwi-main-orange mb-3 mx-auto" />
                 <h3 className="font-semibold text-lg mb-2">Multi-Language Sign Avatars</h3>
                 <p className="text-muted-foreground text-sm">
-                  Professional AI interpreters in 15+ sign language variants with cultural authenticity
+                  Professional AI interpreters in different sign language variants with cultural authenticity
                 </p>
               </div>
               

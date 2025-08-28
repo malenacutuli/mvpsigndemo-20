@@ -80,7 +80,7 @@ export const SignUpCTA: React.FC = () => {
 
         <CardContent className="space-y-8">
           {/* Feature Preview Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
               <Subtitles className="w-8 h-8 text-primary mb-3 mx-auto" />
               <h3 className="font-semibold text-lg mb-2 text-center">Captions with Intention</h3>
@@ -109,7 +109,15 @@ export const SignUpCTA: React.FC = () => {
               <Languages className="w-8 h-8 text-destructive mb-3 mx-auto" />
               <h3 className="font-semibold text-lg mb-2 text-center">Multi-Language Support</h3>
               <p className="text-muted-foreground text-sm text-center">
-                Spanish Sign Language avatars and multi-language transcription
+                Storytelling Audio Description, Captions with intention, Dubbing in 15+ Languages. Become Global in minutes.
+              </p>
+            </div>
+            
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
+              <Languages className="w-8 h-8 text-primary mb-3 mx-auto" />
+              <h3 className="font-semibold text-lg mb-2 text-center">Legal Compliance</h3>
+              <p className="text-muted-foreground text-sm text-center">
+                Automated WCAG, ADA, and EAA compliance checking and reporting
               </p>
             </div>
           </div>
