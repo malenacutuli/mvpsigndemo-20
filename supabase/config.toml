@@ -1,13 +1,13 @@
 project_id = "faeyekynudyzeotbjfsj"
 
 [functions.generate-dubbing]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-lipsync]
 verify_jwt = false
 
 [functions.voice-cloning]
-verify_jwt = false
+verify_jwt = true
 
 [functions.embed-analytics]
 verify_jwt = false

@@ -78,6 +78,47 @@ serve(async (req) => {
       }
     }
 
+    // 🔒 SECURITY: Validate embed access using hardened function
+    const embedValidationResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/validate_embed_access`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        video_uuid: video_id,
+        token: embed_token,
+        referrer_domain: extracted_domain
+      })
+    });
+
+    if (!embedValidationResponse.ok) {
+      console.error('❌ Embed validation request failed:', embedValidationResponse.status);
+      return new Response(
+        JSON.stringify({ error: 'Embed validation failed' }),
+        { 
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const isValidEmbed = await embedValidationResponse.json();
+    
+    if (!isValidEmbed) {
+      console.error('❌ Unauthorized embed access for video:', video_id);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized embed access' }),
+        { 
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('✅ Embed access validated for video:', video_id);
+
     // Create Supabase client for service role operations
     const response = await fetch(`${SUPABASE_URL}/rest/v1/embed_analytics`, {
       method: 'POST',
