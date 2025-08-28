@@ -107,8 +107,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         const { data, error } = await supabase.functions.invoke('transcribe', {
           body: { 
             videoUrl: videoUrl,
-            rangeBytes: 50000000, // Increased to 50MB for full transcript
-            language: 'auto' // Auto-detect language
+            rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
+            language: 'auto', // Auto-detect language
+            fullTranscript: true, // Request complete transcript
+            wordTimestamps: true // Request word-level timing
           }
         });
 
@@ -333,15 +335,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(updated);
     setEditingTranscript(sortedSegments);
-    saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
+    resetEditState();
+  };
+
+  const saveAllChanges = () => {
+    saveTranscriptData(editingTranscript, selectedLanguage);
     
     // Immediately update the video player with changes
-    console.log('💾 Saving transcript edit and updating video player');
-    onTranscriptUpdate?.(sortedSegments, selectedLanguage);
-    resetEditState();
+    console.log('💾 Saving all transcript changes and updating video player');
+    onTranscriptUpdate?.(editingTranscript, selectedLanguage);
     
     toast({
-      title: "Changes Applied",
+      title: "All Changes Saved",
       description: "Transcript edits have been saved and applied to the video player."
     });
   };
@@ -457,7 +462,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         
         <CardContent className="space-y-4">
         {/* Generation Controls */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <Button
             onClick={generateOriginalTranscript}
             disabled={isGenerating}
@@ -465,7 +470,17 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             variant="outline"
           >
             <Mic className="w-4 h-4 mr-2" />
-            {isGenerating ? 'Generating...' : 'Extract Original'}
+            {isGenerating ? 'Extracting Full Transcript...' : 'Extract Complete Transcript'}
+          </Button>
+          
+          <Button
+            onClick={saveAllChanges}
+            disabled={editingTranscript.length === 0}
+            size="sm"
+            variant="default"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Changes to Video
           </Button>
           
           <Select

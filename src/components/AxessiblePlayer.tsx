@@ -211,7 +211,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       setIsTranscribing(true);
       setTranscribeError(null);
         const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { videoUrl: videoSrc, rangeBytes: 50000000 }  // Increased to 50MB to capture full video
+        body: { 
+          videoUrl: videoSrc, 
+          rangeBytes: 200000000, // Increased to 200MB for complete transcript
+          fullTranscript: true,
+          wordTimestamps: true
+        }
       });
       if (error) throw new Error(error.message || 'Transcription failed');
       

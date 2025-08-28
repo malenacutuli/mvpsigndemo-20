@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { VoiceSelector } from './VoiceSelector';
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -70,6 +71,11 @@ interface Character {
   type: 'hero' | 'villain' | 'main' | 'supporting' | 'minor';
   color: string;
   isOffCamera?: boolean;
+  voiceId?: string;
+  voiceName?: string;
+  voiceType?: 'elevenlabs' | 'native';
+  emphasis?: 'loud' | 'quiet' | 'normal';
+  pitch?: 'high' | 'low' | 'normal';
 }
 
 interface CharacterManagerProps {
@@ -140,58 +146,47 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       name: newCharacterName.trim(),
       type: newCharacterType,
       color: availableColors[0].color,
-      isOffCamera: false
+      isOffCamera: false,
+      emphasis: 'normal',
+      pitch: 'normal'
     };
 
     const updatedCharacters = [...characters, newCharacter];
     setCharacters(updatedCharacters);
     setNewCharacterName('');
-    onCharactersUpdate?.(updatedCharacters);
-
-    // Save to localStorage
-    localStorage.setItem(`characters-${videoId}`, JSON.stringify(updatedCharacters));
 
     toast({
       title: "Character Added",
-      description: `${newCharacter.name} assigned color ${availableColors[0].name}`
+      description: `${newCharacter.name} assigned color ${availableColors[0].name}. Don't forget to save changes.`
+    });
+  };
+
+  const saveAllCharacters = () => {
+    localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
+    onCharactersUpdate?.(characters);
+    
+    toast({
+      title: "Characters Saved",
+      description: "All character settings have been saved and applied to the video."
     });
   };
 
   const removeCharacter = (characterId: string) => {
     const updatedCharacters = characters.filter(c => c.id !== characterId);
     setCharacters(updatedCharacters);
-    onCharactersUpdate?.(updatedCharacters);
-    
-    // Save to localStorage
-    localStorage.setItem(`characters-${videoId}`, JSON.stringify(updatedCharacters));
   };
 
-  const updateCharacterColor = (characterId: string, newColor: string) => {
+  const updateCharacterProperty = (characterId: string, property: keyof Character, value: any) => {
     const updatedCharacters = characters.map(c =>
-      c.id === characterId ? { ...c, color: newColor } : c
+      c.id === characterId ? { ...c, [property]: value } : c
     );
     setCharacters(updatedCharacters);
-    
-    // Immediately notify parent to update video player
-    console.log('🎨 Character color updated, applying to video player');
-    onCharactersUpdate?.(updatedCharacters);
-    
-    // Save to localStorage
-    localStorage.setItem(`characters-${videoId}`, JSON.stringify(updatedCharacters));
   };
 
-  const toggleOffCamera = (characterId: string) => {
-    const updatedCharacters = characters.map(c =>
-      c.id === characterId ? { ...c, isOffCamera: !c.isOffCamera } : c
-    );
-    setCharacters(updatedCharacters);
-    
-    // Immediately notify parent to update video player
-    console.log('📷 Character off-camera status updated, applying to video player');
-    onCharactersUpdate?.(updatedCharacters);
-    
-    // Save to localStorage
-    localStorage.setItem(`characters-${videoId}`, JSON.stringify(updatedCharacters));
+  const updateCharacterVoice = (characterId: string, voiceId: string, voiceName: string, voiceType: 'elevenlabs' | 'native') => {
+    updateCharacterProperty(characterId, 'voiceId', voiceId);
+    updateCharacterProperty(characterId, 'voiceName', voiceName);
+    updateCharacterProperty(characterId, 'voiceType', voiceType);
   };
 
   const getCharacterTypeIcon = (type: Character['type']) => {
@@ -219,6 +214,18 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Save Changes Button */}
+        <div className="flex justify-between items-center p-4 bg-accent/10 rounded-lg">
+          <div>
+            <h4 className="font-medium">Character Management</h4>
+            <p className="text-xs text-muted-foreground">Configure character colors, voices, and speech patterns</p>
+          </div>
+          <Button onClick={saveAllCharacters} size="sm" variant="default">
+            <Save className="w-4 h-4 mr-2" />
+            Save All Changes
+          </Button>
+        </div>
+
         {/* Add New Character */}
         <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
           <h4 className="font-medium flex items-center gap-2">
@@ -271,56 +278,31 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 {getCharacterTypeIcon(type as Character['type'])}
                 {type} Characters
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {typeCharacters.map(character => {
                   const availableColors = getAvailableColors(character.type);
                   return (
-                    <div key={character.id} className="flex items-center gap-3 p-3 bg-accent/5 rounded border">
-                      <div 
-                        className="w-8 h-8 rounded border-2 border-gray-300 flex-shrink-0"
-                        style={{ backgroundColor: character.color }}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{character.name}</span>
-                          {character.isOffCamera && (
-                            <Badge variant="secondary" className="text-xs">Off-camera</Badge>
-                          )}
+                    <div key={character.id} className="p-4 bg-accent/5 rounded border space-y-4">
+                      {/* Character Header */}
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-8 h-8 rounded border-2 border-gray-300 flex-shrink-0"
+                          style={{ backgroundColor: character.color }}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{character.name}</span>
+                            {character.isOffCamera && (
+                              <Badge variant="secondary" className="text-xs">Off-camera</Badge>
+                            )}
+                            {character.voiceName && (
+                              <Badge variant="outline" className="text-xs">
+                                <Volume2 className="w-3 h-3 mr-1" />
+                                {character.voiceName}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Color: {character.color}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={character.color}
-                          onValueChange={(color) => updateCharacterColor(character.id, color)}
-                        >
-                          <SelectTrigger className="h-8 w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableColors.concat([{ name: 'current', color: character.color }]).map(({ name, color }) => (
-                              <SelectItem key={color} value={color}>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-4 h-4 rounded border"
-                                    style={{ backgroundColor: color }}
-                                  />
-                                  {name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          size="sm"
-                          variant={character.isOffCamera ? "default" : "ghost"}
-                          onClick={() => toggleOffCamera(character.id)}
-                          className="h-8 px-2"
-                        >
-                          Off-cam
-                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -329,6 +311,95 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
+                      </div>
+
+                      {/* Character Properties Grid */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Color Selection */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Color</Label>
+                          <Select
+                            value={character.color}
+                            onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableColors.concat([{ name: 'current', color: character.color }]).map(({ name, color }) => (
+                                <SelectItem key={color} value={color}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-4 h-4 rounded border"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                    {name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Emphasis */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Emphasis</Label>
+                          <Select
+                            value={character.emphasis || 'normal'}
+                            onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="quiet">Quiet</SelectItem>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="loud">Loud</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Pitch */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Pitch</Label>
+                          <Select
+                            value={character.pitch || 'normal'}
+                            onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Off-Camera Toggle */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Camera Status</Label>
+                          <Button
+                            size="sm"
+                            variant={character.isOffCamera ? "default" : "outline"}
+                            onClick={() => updateCharacterProperty(character.id, 'isOffCamera', !character.isOffCamera)}
+                            className="h-8 w-full"
+                          >
+                            {character.isOffCamera ? 'Off-Camera' : 'On-Camera'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Voice Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Voice Assignment</Label>
+                        <VoiceSelector
+                          selectedVoiceId={character.voiceId}
+                          onVoiceSelect={(voiceId, voiceName, voiceType) => 
+                            updateCharacterVoice(character.id, voiceId, voiceName, voiceType)
+                          }
+                        />
                       </div>
                     </div>
                   );

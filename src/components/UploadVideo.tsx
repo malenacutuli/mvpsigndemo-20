@@ -482,12 +482,22 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           {/* Voice and ASL Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
-              <VoiceSelector
-                options={voiceOptions[contentType] || []}
-                selectedValue={selectedVoice}
-                onValueChange={setSelectedVoice}
-                contentType={contentType}
-              />
+              {/* Simple Voice Selection - keeping existing functionality */}
+              <div>
+                <Label>Voice Selection</Label>
+                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(voiceOptions[contentType] || []).map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
               {/* Voice Cloning Option */}
               {selectedVoice === 'custom-cloned-voice' && (
