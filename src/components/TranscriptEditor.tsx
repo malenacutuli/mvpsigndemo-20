@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 import { CharacterManager } from './CharacterManager';
+import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 
 interface TranscriptSegment {
   id: string;
@@ -57,36 +58,57 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editEmphasis, setEditEmphasis] = useState<'loud' | 'quiet' | 'normal'>('normal');
   const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
   const { toast } = useToast();
+  const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
 
   // Load saved transcript on component mount
   useEffect(() => {
-    const savedTranscript = loadTranscript(videoId, selectedLanguage);
-    if (savedTranscript) {
-      setEditingTranscript(savedTranscript.segments);
-      setOriginalTranscript(savedTranscript.segments);
-      onTranscriptUpdate?.(savedTranscript.segments, selectedLanguage);
-    }
+    const loadTranscriptData = async () => {
+      const segments = await loadTranscriptSegments(selectedLanguage);
+      if (segments.length > 0) {
+        const convertedSegments = segments.map(seg => ({
+          ...seg,
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+        }));
+        setEditingTranscript(convertedSegments);
+        setOriginalTranscript(convertedSegments);
+        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+      }
+    };
+    loadTranscriptData();
   }, [videoId]);
 
   // Load saved transcript when language changes
   useEffect(() => {
-    const savedTranscript = loadTranscript(videoId, selectedLanguage);
-    if (savedTranscript) {
-      setEditingTranscript(savedTranscript.segments);
-      onTranscriptUpdate?.(savedTranscript.segments, selectedLanguage);
-    }
+    const loadTranscriptData = async () => {
+      const segments = await loadTranscriptSegments(selectedLanguage);
+      if (segments.length > 0) {
+        const convertedSegments = segments.map(seg => ({
+          ...seg,
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+        }));
+        setEditingTranscript(convertedSegments);
+        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+      }
+    };
+    loadTranscriptData();
   }, [selectedLanguage]);
 
   // Save transcript when it changes
-  const saveTranscriptData = (segments: TranscriptSegment[], language: string) => {
-    const transcriptData: VideoTranscript = {
-      videoId,
-      language,
-      segments,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    saveTranscript(transcriptData);
+  const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
+    const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
+      text: segment.text,
+      startTime: segment.startTime,
+      endTime: segment.endTime,
+      speaker: segment.speaker,
+      speakerColor: segment.speakerColor,
+      emphasis: segment.emphasis,
+      pitch: segment.pitch,
+      isOffCamera: false,
+      segmentType: 'dialogue' as const,
+      confidence: 0.9
+    }));
+    
+    await saveTranscriptSegments(storageSegments, language);
   };
 
   const languages = [

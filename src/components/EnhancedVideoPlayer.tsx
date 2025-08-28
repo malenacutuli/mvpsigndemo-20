@@ -5,6 +5,7 @@ import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
 
 interface EnhancedVideoPlayerProps {
   videoSrc: string;
@@ -197,40 +198,47 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setAudioDescriptions([...descriptions]);
   };
 
+  const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
+
   // Load saved data on component mount
   useEffect(() => {
-    // Load saved transcript
-    const savedTranscript = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
-    if (savedTranscript) {
-      try {
-        const transcriptData = JSON.parse(savedTranscript);
-        handleTranscriptUpdate(transcriptData.segments, currentLanguage);
-      } catch (error) {
-        console.error('Failed to load saved transcript:', error);
+    const loadSavedData = async () => {
+      // Load saved transcript from database
+      const segments = await loadTranscriptSegments(currentLanguage);
+      if (segments.length > 0) {
+        const convertedSegments = segments.map(seg => ({
+          ...seg,
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+        }));
+        handleTranscriptUpdate(convertedSegments, currentLanguage);
       }
-    }
+      
+      // Load saved audio descriptions from database
+      const descriptions = await loadAudioDescriptions(currentLanguage);
+      if (descriptions.length > 0) {
+        const convertedDescriptions = descriptions.map(desc => ({
+          id: desc.id || `ad-${Date.now()}-${Math.random()}`,
+          text: desc.description,
+          startTime: desc.startTime,
+          endTime: desc.endTime,
+          voiceStyle: 'warm' as const
+        }));
+        setAudioDescriptions(convertedDescriptions);
+      }
+      
+      // Load saved characters (still using localStorage for now)
+      const savedCharacters = localStorage.getItem(`characters-${videoId}`);
+      if (savedCharacters) {
+        try {
+          const charactersData = JSON.parse(savedCharacters);
+          setCharacters(charactersData);
+        } catch (error) {
+          console.error('Failed to load saved characters:', error);
+        }
+      }
+    };
     
-    // Load saved characters
-    const savedCharacters = localStorage.getItem(`characters-${videoId}`);
-    if (savedCharacters) {
-      try {
-        const charactersData = JSON.parse(savedCharacters);
-        setCharacters(charactersData);
-      } catch (error) {
-        console.error('Failed to load saved characters:', error);
-      }
-    }
-    
-    // Load saved audio descriptions
-    const savedAD = localStorage.getItem(`audioDescription_${videoId}_${currentLanguage}`);
-    if (savedAD) {
-      try {
-        const adData = JSON.parse(savedAD);
-        setAudioDescriptions(adData.segments);
-      } catch (error) {
-        console.error('Failed to load saved audio descriptions:', error);
-      }
-    }
+    loadSavedData();
   }, [videoId]);
 
   return (

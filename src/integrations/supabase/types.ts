@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      audio_descriptions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          description: string
+          description_type: string | null
+          end_time: number
+          id: string
+          language: string
+          start_time: number
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          description: string
+          description_type?: string | null
+          end_time: number
+          id?: string
+          language?: string
+          start_time: number
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          description?: string
+          description_type?: string | null
+          end_time?: number
+          id?: string
+          language?: string
+          start_time?: number
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
+      content_generation_cache: {
+        Row: {
+          content_type: string
+          created_at: string
+          generation_params: Json | null
+          id: string
+          language: string
+          result_data: Json
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          generation_params?: Json | null
+          id?: string
+          language?: string
+          result_data: Json
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          generation_params?: Json | null
+          id?: string
+          language?: string
+          result_data?: Json
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       embed_analytics: {
         Row: {
           created_at: string
@@ -228,9 +300,15 @@ export type Database = {
         Row: {
           confidence: number | null
           created_at: string
+          emphasis: string | null
           end_time: number
           id: string
+          is_off_camera: boolean | null
+          language: string
+          pitch: string | null
+          segment_type: string | null
           speaker: string | null
+          speaker_color: string | null
           start_time: number
           text: string
           video_id: string
@@ -238,9 +316,15 @@ export type Database = {
         Insert: {
           confidence?: number | null
           created_at?: string
+          emphasis?: string | null
           end_time: number
           id?: string
+          is_off_camera?: boolean | null
+          language?: string
+          pitch?: string | null
+          segment_type?: string | null
           speaker?: string | null
+          speaker_color?: string | null
           start_time: number
           text: string
           video_id: string
@@ -248,9 +332,15 @@ export type Database = {
         Update: {
           confidence?: number | null
           created_at?: string
+          emphasis?: string | null
           end_time?: number
           id?: string
+          is_off_camera?: boolean | null
+          language?: string
+          pitch?: string | null
+          segment_type?: string | null
           speaker?: string | null
+          speaker_color?: string | null
           start_time?: number
           text?: string
           video_id?: string

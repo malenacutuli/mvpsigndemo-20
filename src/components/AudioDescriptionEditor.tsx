@@ -10,6 +10,7 @@ import { Sparkles, Edit, Save, X, Plus, Trash2, Volume2, Clock, Download } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { getNativeVoices, saveAudioDescription, loadAudioDescription, type VideoAudioDescription } from '@/lib/videoStorage';
+import { useVideoStorage, type AudioDescription as StorageAudioDescription } from '@/hooks/useVideoStorage';
 
 interface AudioDescriptionSegment {
   id: string;
@@ -44,44 +45,41 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editEndTime, setEditEndTime] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<'passionate' | 'warm' | 'authoritative' | 'encouraging'>('warm');
   const { toast } = useToast();
+  const { saveAudioDescriptions, loadAudioDescriptions } = useVideoStorage(videoId);
 
   // Load saved audio descriptions on component mount or language change
   useEffect(() => {
-    const savedAD = loadAudioDescription(videoId, currentLanguage);
-    if (savedAD) {
-      setDescriptions(savedAD.segments);
-      onDescriptionsUpdate?.(savedAD.segments);
-    } else {
-      // Clear descriptions when switching to a language without saved data
-      setDescriptions([]);
-      onDescriptionsUpdate?.([]);
-    }
+    const loadDescriptionsData = async () => {
+      const loadedDescriptions = await loadAudioDescriptions(currentLanguage);
+      if (loadedDescriptions.length > 0) {
+        const convertedDescriptions = loadedDescriptions.map(desc => ({
+          id: desc.id || `ad-${Date.now()}-${Math.random()}`,
+          text: desc.description,
+          startTime: desc.startTime,
+          endTime: desc.endTime,
+          voiceStyle: (desc.descriptionType === 'emotion' ? 'passionate' : 'warm') as any
+        }));
+        setDescriptions(convertedDescriptions);
+        onDescriptionsUpdate?.(convertedDescriptions);
+      } else {
+        setDescriptions([]);
+        onDescriptionsUpdate?.([]);
+      }
+    };
+    loadDescriptionsData();
   }, [videoId, currentLanguage]);
 
-  // Auto-save audio descriptions when they change
-  useEffect(() => {
-    if (descriptions.length > 0) {
-      const audioDescData: VideoAudioDescription = {
-        videoId,
-        language: currentLanguage,
-        segments: descriptions,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveAudioDescription(audioDescData);
-    }
-  }, [descriptions, videoId, currentLanguage]);
-
   // Save audio descriptions when they change
-  const saveDescriptions = (segments: AudioDescriptionSegment[]) => {
-    const audioDescData: VideoAudioDescription = {
-      videoId,
-      language: currentLanguage,
-      segments,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    saveAudioDescription(audioDescData);
+  const saveDescriptions = async (segments: AudioDescriptionSegment[]) => {
+    const storageDescriptions: StorageAudioDescription[] = segments.map(segment => ({
+      startTime: segment.startTime,
+      endTime: segment.endTime,
+      description: segment.text,
+      descriptionType: segment.voiceStyle === 'passionate' ? 'emotion' : 'visual' as const,
+      confidence: 0.9
+    }));
+    
+    await saveAudioDescriptions(storageDescriptions, currentLanguage);
   };
 
   // Get native voices for current language

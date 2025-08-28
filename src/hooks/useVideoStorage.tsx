@@ -1,0 +1,372 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
+
+export interface TranscriptSegment {
+  id?: string;
+  text: string;
+  startTime: number;
+  endTime: number;
+  speaker?: string;
+  speakerColor?: string;
+  emphasis?: 'normal' | 'loud' | 'quiet';
+  pitch?: 'normal' | 'high' | 'low';
+  isOffCamera?: boolean;
+  segmentType?: 'dialogue' | 'soundeffect' | 'music';
+  confidence?: number;
+}
+
+export interface AudioDescription {
+  id?: string;
+  startTime: number;
+  endTime: number;
+  description: string;
+  descriptionType?: 'visual' | 'action' | 'emotion' | 'setting';
+  confidence?: number;
+}
+
+export interface ContentCache {
+  id?: string;
+  contentType: 'transcript' | 'captions' | 'audio_description' | 'dubbing' | 'translation';
+  generationParams?: any;
+  resultData: any;
+}
+
+export const useVideoStorage = (videoId: string) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Save transcript segments to database
+  const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
+    if (!user) {
+      console.warn('User not authenticated, falling back to localStorage');
+      const fallbackData = { segments, language, timestamp: Date.now() };
+      localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Delete existing segments for this video and language
+      const { error: deleteError } = await supabase
+        .from('transcript_segments')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', language);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new segments
+      const dbSegments = segments.map(segment => ({
+        video_id: videoId,
+        text: segment.text,
+        start_time: segment.startTime,
+        end_time: segment.endTime,
+        speaker: segment.speaker,
+        speaker_color: segment.speakerColor,
+        emphasis: segment.emphasis,
+        pitch: segment.pitch,
+        is_off_camera: segment.isOffCamera,
+        segment_type: segment.segmentType,
+        language: language,
+        confidence: segment.confidence
+      }));
+
+      const { error: insertError } = await supabase
+        .from('transcript_segments')
+        .insert(dbSegments);
+
+      if (insertError) throw insertError;
+
+      console.log('✅ Transcript segments saved to database:', segments.length, 'segments');
+    } catch (err) {
+      console.error('Failed to save transcript segments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save transcript');
+      
+      // Fallback to localStorage
+      const fallbackData = { segments, language, timestamp: Date.now() };
+      localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load transcript segments from database
+  const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
+    if (!user) {
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.segments || [];
+        } catch (error) {
+          console.error('Failed to parse localStorage transcript:', error);
+        }
+      }
+      return [];
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .order('start_time');
+
+      if (error) throw error;
+
+      const segments: TranscriptSegment[] = (data || []).map(row => ({
+        id: row.id,
+        text: row.text,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        speaker: row.speaker,
+        speakerColor: row.speaker_color,
+        emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet') || 'normal',
+        pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
+        isOffCamera: row.is_off_camera,
+        segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
+        confidence: row.confidence
+      }));
+
+      console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
+      return segments;
+    } catch (err) {
+      console.error('Failed to load transcript segments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load transcript');
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.segments || [];
+        } catch (error) {
+          console.error('Failed to parse localStorage transcript:', error);
+        }
+      }
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save audio descriptions to database
+  const saveAudioDescriptions = async (descriptions: AudioDescription[], language: string = 'en') => {
+    if (!user) {
+      // Fallback to localStorage
+      const fallbackData = { segments: descriptions, language, timestamp: Date.now() };
+      localStorage.setItem(`audioDescription_${videoId}_${language}`, JSON.stringify(fallbackData));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Delete existing descriptions for this video and language
+      const { error: deleteError } = await supabase
+        .from('audio_descriptions')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', language);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new descriptions
+      const dbDescriptions = descriptions.map(desc => ({
+        video_id: videoId,
+        start_time: desc.startTime,
+        end_time: desc.endTime,
+        description: desc.description,
+        description_type: desc.descriptionType,
+        language: language,
+        confidence: desc.confidence
+      }));
+
+      const { error: insertError } = await supabase
+        .from('audio_descriptions')
+        .insert(dbDescriptions);
+
+      if (insertError) throw insertError;
+
+      console.log('✅ Audio descriptions saved to database:', descriptions.length, 'descriptions');
+    } catch (err) {
+      console.error('Failed to save audio descriptions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save audio descriptions');
+      
+      // Fallback to localStorage
+      const fallbackData = { segments: descriptions, language, timestamp: Date.now() };
+      localStorage.setItem(`audioDescription_${videoId}_${language}`, JSON.stringify(fallbackData));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load audio descriptions from database
+  const loadAudioDescriptions = async (language: string = 'en'): Promise<AudioDescription[]> => {
+    if (!user) {
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`audioDescription_${videoId}_${language}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.segments || [];
+        } catch (error) {
+          console.error('Failed to parse localStorage audio descriptions:', error);
+        }
+      }
+      return [];
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .order('start_time');
+
+      if (error) throw error;
+
+      const descriptions: AudioDescription[] = (data || []).map(row => ({
+        id: row.id,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        description: row.description,
+        descriptionType: (row.description_type as 'visual' | 'action' | 'emotion' | 'setting') || 'visual',
+        confidence: row.confidence
+      }));
+
+      console.log('📢 Loaded audio descriptions from database:', descriptions.length, 'descriptions');
+      return descriptions;
+    } catch (err) {
+      console.error('Failed to load audio descriptions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load audio descriptions');
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`audioDescription_${videoId}_${language}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.segments || [];
+        } catch (error) {
+          console.error('Failed to parse localStorage audio descriptions:', error);
+        }
+      }
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save content to cache
+  const saveToCache = async (contentType: ContentCache['contentType'], resultData: any, generationParams?: any, language: string = 'en') => {
+    if (!user) {
+      // Fallback to localStorage
+      const cacheKey = `cache_${videoId}_${contentType}_${language}`;
+      const cacheData = { resultData, generationParams, timestamp: Date.now() };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      return;
+    }
+
+    try {
+      // Upsert cache entry
+      const { error } = await supabase
+        .from('content_generation_cache')
+        .upsert({
+          video_id: videoId,
+          language,
+          content_type: contentType,
+          generation_params: generationParams,
+          result_data: resultData
+        }, {
+          onConflict: 'video_id,content_type,language'
+        });
+
+      if (error) throw error;
+
+      console.log('💾 Content cached to database:', contentType);
+    } catch (err) {
+      console.error('Failed to cache content:', err);
+      
+      // Fallback to localStorage
+      const cacheKey = `cache_${videoId}_${contentType}_${language}`;
+      const cacheData = { resultData, generationParams, timestamp: Date.now() };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    }
+  };
+
+  // Load content from cache
+  const loadFromCache = async (contentType: ContentCache['contentType'], language: string = 'en'): Promise<any | null> => {
+    if (!user) {
+      // Fallback to localStorage
+      const cacheKey = `cache_${videoId}_${contentType}_${language}`;
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.resultData;
+        } catch (error) {
+          console.error('Failed to parse localStorage cache:', error);
+        }
+      }
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('content_generation_cache')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('content_type', contentType)
+        .eq('language', language)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        console.log('💿 Loaded from cache:', contentType);
+        return data.result_data;
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to load from cache:', err);
+      
+      // Fallback to localStorage
+      const cacheKey = `cache_${videoId}_${contentType}_${language}`;
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          return data.resultData;
+        } catch (error) {
+          console.error('Failed to parse localStorage cache:', error);
+        }
+      }
+      return null;
+    }
+  };
+
+  return {
+    loading,
+    error,
+    saveTranscriptSegments,
+    loadTranscriptSegments,
+    saveAudioDescriptions,
+    loadAudioDescriptions,
+    saveToCache,
+    loadFromCache
+  };
+};
