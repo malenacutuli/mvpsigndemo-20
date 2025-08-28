@@ -182,7 +182,19 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, []);
 
-  if (!isVisible || captions.length === 0) return null;
+  // Debug caption rendering
+  useEffect(() => {
+    if (captions && captions.length > 0) {
+      console.log('🎬 CaptionsWithIntention - Rendering captions:', captions.length, 'segments');
+      console.log('⏰ Current time:', currentTime);
+      console.log('🎭 Active captions:', captions.filter(c => currentTime >= c.startTime && currentTime <= c.endTime));
+    }
+  }, [captions, currentTime]);
+
+  if (!isVisible || !captions || captions.length === 0) {
+    console.log('❌ CaptionsWithIntention - Not rendering:', { isVisible, captionsLength: captions?.length });
+    return null;
+  }
 
   // Find active caption based on current time
   const activeCaption = captions.find(caption => 
