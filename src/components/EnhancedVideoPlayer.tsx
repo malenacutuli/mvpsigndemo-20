@@ -46,9 +46,18 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
     console.log('🔄 Transcript updated in EnhancedVideoPlayer:', segments?.length, 'segments');
+    console.log('📊 Received segments data:', segments.map(s => ({
+      speaker: s.speaker,
+      text: s.text?.substring(0, 30) + '...',
+      startTime: s.startTime,
+      endTime: s.endTime,
+      color: s.speakerColor,
+      emphasis: s.emphasis,
+      pitch: s.pitch
+    })));
     
     // Store original transcript segments
-    setTranscriptSegments(segments);
+    setTranscriptSegments([...segments]); // Force new array reference
     
     // Load character colors from localStorage for this video
     const savedCharacters = localStorage.getItem(`characters-${videoId}`);
@@ -65,17 +74,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
     
     // Convert transcript segments to caption format with character colors applied
-    const captionSegments: CaptionSegment[] = segments.map(segment => {
+    const captionSegments: CaptionSegment[] = segments.map((segment, index) => {
       const startTime = segment.startTime ?? segment.start_time ?? 0;
       const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
       const duration = Math.max(endTime - startTime, 0.1);
       
-      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, index: number, arr: string[]) => {
+      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, wordIndex: number, arr: string[]) => {
         const wordDuration = duration / arr.length;
         return {
           text: word.trim(),
-          startTime: startTime + (index * wordDuration),
-          endTime: startTime + ((index + 1) * wordDuration),
+          startTime: startTime + (wordIndex * wordDuration),
+          endTime: startTime + ((wordIndex + 1) * wordDuration),
           emphasis: segment.emphasis || 'normal' as const,
           pitch: segment.pitch || 'normal' as const,
         };
@@ -89,18 +98,32 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         startTime,
         endTime,
         words,
-        // Apply character colors and CI properties from edits
+        // Apply ALL properties from transcript edits
         volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
         pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
         type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
         isOffCamera: segment.isOffCamera || false,
-        speakerColor: characterColors[speaker] || segment.speakerColor // Apply saved character color
+        speakerColor: segment.speakerColor || characterColors[speaker] || '#3B82F6', // Use transcript color first
+        // Add unique key to force re-render
+        _updateKey: `${Date.now()}-${index}`
       } as CaptionSegment;
     });
     
-    console.log('✅ Generated caption segments with character colors:', captionSegments?.length);
-    setCaptions(captionSegments);
+    console.log('✅ Generated caption segments for video player:', captionSegments.length);
+    console.log('🎨 Caption colors applied:', captionSegments.map(c => ({ 
+      speaker: c.speaker, 
+      color: c.speakerColor,
+      emphasis: c.words[0]?.emphasis,
+      pitch: c.words[0]?.pitch 
+    })));
+    
+    // Force state update with timestamp to trigger re-render
+    const timestamp = Date.now();
+    setCaptions([...captionSegments]); // Force new array reference
     setCurrentLanguage(language);
+    
+    // Trigger re-render by updating a dummy state
+    setTranscriptSegments(prev => [...segments, { _forceUpdate: timestamp }]);
     
     // Create full transcript text for audio description generation
     const fullTranscript = segments

@@ -342,8 +342,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     saveTranscriptData(editingTranscript, selectedLanguage);
     
     // Immediately update the video player with changes
-    console.log('💾 Saving all transcript changes and updating video player');
-    onTranscriptUpdate?.(editingTranscript, selectedLanguage);
+    console.log('💾 Saving all transcript changes and updating video player:', editingTranscript.length, 'segments');
+    console.log('📝 Transcript segments being saved:', editingTranscript.map(s => ({
+      speaker: s.speaker,
+      text: s.text.substring(0, 50) + '...',
+      startTime: s.startTime,
+      endTime: s.endTime,
+      color: s.speakerColor
+    })));
+    
+    // Force update by creating new array
+    const updatedSegments = [...editingTranscript];
+    onTranscriptUpdate?.(updatedSegments, selectedLanguage);
     
     toast({
       title: "All Changes Saved",

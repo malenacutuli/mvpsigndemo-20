@@ -433,21 +433,30 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
-    console.log('🔄 Updating captions from transcript edits:', segments?.length, 'segments');
+    console.log('🔄 AXESSIBLE PLAYER - Updating captions from transcript edits:', segments?.length, 'segments');
+    console.log('📝 AXESSIBLE PLAYER - Received segments:', segments.map(s => ({
+      speaker: s.speaker,
+      text: s.text?.substring(0, 30),
+      color: s.speakerColor,
+      emphasis: s.emphasis,
+      pitch: s.pitch
+    })));
     
     // Convert segments to caption format with proper timing and character properties
-    const captionSegments: CaptionSegment[] = segments.map(segment => {
+    const captionSegments: CaptionSegment[] = segments
+      .filter(segment => segment && segment.text && !segment._forceUpdate) // Filter out force update markers
+      .map((segment, index) => {
       // Handle both formats: segments with start_time/end_time or startTime/endTime
       const startTime = segment.startTime ?? segment.start_time ?? 0;
       const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
       const duration = Math.max(endTime - startTime, 0.1);
       
-      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, index: number, arr: string[]) => {
+      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, wordIndex: number, arr: string[]) => {
         const wordDuration = duration / arr.length;
         return {
-          text: word.trim(), // Don't add extra space here
-          startTime: startTime + (index * wordDuration),
-          endTime: startTime + ((index + 1) * wordDuration),
+          text: word.trim(),
+          startTime: startTime + (wordIndex * wordDuration),
+          endTime: startTime + ((wordIndex + 1) * wordDuration),
           emphasis: segment.emphasis || 'normal' as const,
           pitch: segment.pitch || 'normal' as const,
         };
@@ -455,32 +464,48 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       return {
         text: segment.text,
-        speaker: segment.speaker || 'narrator',
+        speaker: segment.speaker || 'Speaker',
         startTime,
         endTime,
         words,
-        // Add CI properties from transcript edits - preserve all custom properties
+        // Apply ALL properties from transcript edits
         volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
         pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
         type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
         isOffCamera: segment.isOffCamera || false,
-        speakerColor: segment.speakerColor // Preserve character colors from edits
+        speakerColor: segment.speakerColor || '#3B82F6', // Use transcript color
+        // Force unique key for React re-render
+        _renderKey: `${Date.now()}-${index}`
       } as CaptionSegment;
     });
     
-    console.log('✅ Generated caption segments:', captionSegments?.length);
+    console.log('✅ AXESSIBLE PLAYER - Generated caption segments:', captionSegments?.length);
+    console.log('🎨 AXESSIBLE PLAYER - Applied colors and properties:', captionSegments.map(c => ({
+      speaker: c.speaker,
+      color: c.speakerColor,
+      emphasis: c.words[0]?.emphasis,
+      pitch: c.words[0]?.pitch,
+      volume: c.volume
+    })));
     
-    // Force update captions immediately with new data
-    setGeneratedCaptions([...captionSegments]); // Create new array reference
+    // Force immediate update with completely new array
+    const timestamp = Date.now();
+    setGeneratedCaptions([...captionSegments]);
     
     // Update current language if provided
     if (language && language !== currentLanguage) {
       setCurrentLanguage(language);
     }
     
-    // Force component re-render by toggling state
+    // Force component re-render by toggling captions visibility
     setShowCaptions(false);
-    setTimeout(() => setShowCaptions(true), 10);
+    setTimeout(() => {
+      setShowCaptions(true);
+      console.log('🔄 AXESSIBLE PLAYER - Captions visibility restored, should show updated captions now');
+    }, 50); // Longer delay to ensure state update
+    
+    // Notify parent component if needed
+    onTranscriptUpdate?.(segments, language);
   };
 
   return (
