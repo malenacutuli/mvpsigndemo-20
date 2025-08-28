@@ -20,7 +20,7 @@ export const IndustryFirst: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
             <CardContent className="p-8 text-center">
               <Zap className="w-12 h-12 text-primary mb-4 mx-auto" />
@@ -37,16 +37,6 @@ export const IndustryFirst: React.FC = () => {
               <h3 className="text-xl font-semibold mb-3">Emotional Intelligence Captions</h3>
               <p className="text-muted-foreground">
                 Context-aware captions with tone detection and visual styling for enhanced comprehension.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
-            <CardContent className="p-8 text-center">
-              <Users className="w-12 h-12 text-cwi-main-orange mb-4 mx-auto" />
-              <h3 className="text-xl font-semibold mb-3">Multi-Language Sign Avatars</h3>
-              <p className="text-muted-foreground">
-                Professional AI-powered sign language interpreters supporting 15+ regional variants including ASL, BSL, FSL, and more.
               </p>
             </CardContent>
           </Card>
