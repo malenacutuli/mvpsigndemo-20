@@ -85,21 +85,47 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
     if (!voice) return;
 
     if (selectedType === 'native') {
-      // Use browser's speech synthesis
+      // Use browser's speech synthesis with better voice matching
       const utterance = new SpeechSynthesisUtterance(
-        `Hello, this is ${voice.name}. Testing voice for character.`
+        `Hello, this is ${voice.name}. Testing voice for character assignment.`
       );
       
-      // Try to match voice by name
+      // Better voice matching logic
       const voices = speechSynthesis.getVoices();
-      const matchedVoice = voices.find(v => 
-        v.name.toLowerCase().includes(voice.accent.toLowerCase()) && 
-        (voice.gender === 'Male' ? v.name.toLowerCase().includes('male') : v.name.toLowerCase().includes('female'))
-      );
+      console.log('Available browser voices:', voices.map(v => v.name));
+      
+      let matchedVoice = null;
+      
+      // Try different matching strategies
+      if (voice.accent === 'American') {
+        matchedVoice = voices.find(v => 
+          (v.lang.includes('en-US') || v.lang.includes('en_US')) &&
+          (voice.gender === 'Male' ? v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('alex') : 
+           v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('samantha') || v.name.toLowerCase().includes('allison'))
+        );
+      } else if (voice.accent === 'British') {
+        matchedVoice = voices.find(v => 
+          (v.lang.includes('en-GB') || v.lang.includes('en_GB')) &&
+          (voice.gender === 'Male' ? v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('daniel') : 
+           v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('kate'))
+        );
+      } else {
+        // Generic fallback
+        matchedVoice = voices.find(v => 
+          v.lang.startsWith('en') &&
+          (voice.gender === 'Male' ? !v.name.toLowerCase().includes('female') : v.name.toLowerCase().includes('female'))
+        );
+      }
       
       if (matchedVoice) {
         utterance.voice = matchedVoice;
+        console.log('Using voice:', matchedVoice.name);
+      } else {
+        console.log('No matching voice found, using default');
       }
+      
+      utterance.rate = 0.9;
+      utterance.pitch = voice.gender === 'Male' ? 0.8 : 1.1;
       
       speechSynthesis.speak(utterance);
     } else {

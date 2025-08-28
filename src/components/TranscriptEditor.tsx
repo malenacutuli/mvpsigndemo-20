@@ -142,7 +142,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: currentSegment.trim(),
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
-              speaker: 'narrator',
+              speaker: 'Speaker', // Use editable default name instead of 'narrator'
               speakerColor: '#3B82F6',
               emphasis: 'normal',
               pitch: 'normal'
@@ -169,7 +169,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: 'narrator',
+              speaker: 'Speaker', // Use editable default name instead of 'narrator'
               speakerColor: '#3B82F6',
               emphasis: 'normal',
               pitch: 'normal'
@@ -311,7 +311,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditText(segment.text);
     setEditStartTime(segment.startTime.toString());
     setEditEndTime(segment.endTime.toString());
-    setEditSpeaker(segment.speaker || 'narrator');
+    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
     setEditSpeakerColor(segment.speakerColor || '#3B82F6');
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
@@ -394,7 +394,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
-      speaker: 'narrator',
+      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
       speakerColor: '#3B82F6',
       emphasis: 'normal',
       pitch: 'normal'
@@ -651,7 +651,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         <Input
                           value={editSpeaker}
                           onChange={(e) => setEditSpeaker(e.target.value)}
-                          placeholder="narrator"
+                          placeholder="Speaker name (e.g., Teacher, Chef, Host)"
                           className="text-xs"
                         />
                       </div>

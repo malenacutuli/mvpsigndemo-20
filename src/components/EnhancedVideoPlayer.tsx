@@ -81,7 +81,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         };
       });
       
-      const speaker = segment.speaker || 'narrator';
+      const speaker = segment.speaker || 'Speaker';
       
       return {
         text: segment.text,

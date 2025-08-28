@@ -497,6 +497,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         className="w-full h-full object-cover"
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
+        crossOrigin="anonymous"
+        preload="metadata"
+        onError={(e) => {
+          console.error('Video loading error:', e);
+          console.log('Video src:', videoSrc);
+        }}
+        onLoadStart={() => console.log('Video loading started for:', videoSrc)}
+        onLoadedData={() => console.log('Video data loaded')}
       />
 
       {/* ASL Avatar Overlay */}
