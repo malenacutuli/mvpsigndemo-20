@@ -19,7 +19,6 @@ const Index = () => {
 
       {/* Industry First Content */}
       <IndustryFirst />
-      <MarketUrgency />
       <Implementation />
 
       {/* Quick Access Section */}
@@ -76,6 +75,7 @@ const Index = () => {
       
       <TechStack />
       <PatentClaims />
+      <MarketUrgency />
     </div>
   );
 };
