@@ -312,13 +312,6 @@ const VideoDetail = () => {
                     className="w-full"
                   />
                   
-                  {/* Debug Info - Remove in production */}
-                  <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
-                    <p><strong>Video URL:</strong> {videoUrl}</p>
-                    <p><strong>Status:</strong> {video.status}</p>
-                    <p><strong>Storage Path:</strong> {video.storage_path}</p>
-                    <p><strong>Video ID:</strong> {video.id}</p>
-                  </div>
                 </div>
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
