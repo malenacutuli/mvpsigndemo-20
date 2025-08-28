@@ -334,8 +334,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     const sortedSegments = sortSegmentsByTime(updated);
     setEditingTranscript(sortedSegments);
     saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
+    
+    // Immediately update the video player with changes
+    console.log('💾 Saving transcript edit and updating video player');
     onTranscriptUpdate?.(sortedSegments, selectedLanguage);
     resetEditState();
+    
+    toast({
+      title: "Changes Applied",
+      description: "Transcript edits have been saved and applied to the video player."
+    });
   };
 
   const cancelEdit = () => {

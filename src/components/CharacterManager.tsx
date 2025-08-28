@@ -171,6 +171,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       c.id === characterId ? { ...c, color: newColor } : c
     );
     setCharacters(updatedCharacters);
+    
+    // Immediately notify parent to update video player
+    console.log('🎨 Character color updated, applying to video player');
     onCharactersUpdate?.(updatedCharacters);
     
     // Save to localStorage
@@ -182,6 +185,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       c.id === characterId ? { ...c, isOffCamera: !c.isOffCamera } : c
     );
     setCharacters(updatedCharacters);
+    
+    // Immediately notify parent to update video player
+    console.log('📷 Character off-camera status updated, applying to video player');
     onCharactersUpdate?.(updatedCharacters);
     
     // Save to localStorage

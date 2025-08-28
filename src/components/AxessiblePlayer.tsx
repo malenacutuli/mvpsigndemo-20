@@ -41,6 +41,7 @@ interface AxessiblePlayerProps {
   initialCaptions?: CaptionSegment[];
   dynamicDescriptions?: any[];
   videoId?: string; // Add video ID for database operations
+  onTranscriptUpdate?: (segments: any[], language: string) => void;
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -54,6 +55,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   initialCaptions,
   dynamicDescriptions,
   videoId,
+  onTranscriptUpdate,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,12 +108,37 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, []);
 
-  // If initial captions are provided, hydrate once
+  // Load saved data and initial captions
   useEffect(() => {
+    if (videoId) {
+      // Load saved transcript data
+      const savedTranscript = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
+      if (savedTranscript) {
+        try {
+          const transcriptData = JSON.parse(savedTranscript);
+          handleTranscriptUpdate(transcriptData.segments, currentLanguage);
+        } catch (error) {
+          console.error('Failed to load saved transcript:', error);
+        }
+      }
+      
+      // Load saved audio descriptions
+      const savedAD = localStorage.getItem(`audioDescription_${videoId}_${currentLanguage}`);
+      if (savedAD) {
+        try {
+          const adData = JSON.parse(savedAD);
+          setGeneratedAD(adData.segments);
+        } catch (error) {
+          console.error('Failed to load saved audio descriptions:', error);
+        }
+      }
+    }
+    
+    // If initial captions are provided and no saved data, use them
     if (initialCaptions && (!generatedCaptions || generatedCaptions.length === 0)) {
       setGeneratedCaptions(initialCaptions);
     }
-  }, [initialCaptions]);
+  }, [initialCaptions, videoId, currentLanguage]);
 
   const togglePlay = () => {
     const video = videoRef.current;

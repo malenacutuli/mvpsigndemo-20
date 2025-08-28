@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
@@ -45,40 +45,66 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
 
   const handleTranscriptUpdate = (segments: any[], language: string) => {
-    console.log('Transcript updated in EnhancedVideoPlayer:', segments);
+    console.log('🔄 Transcript updated in EnhancedVideoPlayer:', segments?.length, 'segments');
     
     // Store original transcript segments
     setTranscriptSegments(segments);
     
-    // Convert transcript segments to caption format
+    // Load character colors from localStorage for this video
+    const savedCharacters = localStorage.getItem(`characters-${videoId}`);
+    let characterColors: Record<string, string> = {};
+    if (savedCharacters) {
+      try {
+        const charactersData = JSON.parse(savedCharacters);
+        charactersData.forEach((char: any) => {
+          characterColors[char.name] = char.color;
+        });
+      } catch (error) {
+        console.error('Failed to parse character colors:', error);
+      }
+    }
+    
+    // Convert transcript segments to caption format with character colors applied
     const captionSegments: CaptionSegment[] = segments.map(segment => {
-      const words = segment.text.split(' ').map((word: string, index: number, arr: string[]) => {
-        const duration = segment.endTime - segment.startTime;
+      const startTime = segment.startTime ?? segment.start_time ?? 0;
+      const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
+      const duration = Math.max(endTime - startTime, 0.1);
+      
+      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, index: number, arr: string[]) => {
         const wordDuration = duration / arr.length;
         return {
-          text: word,
-          startTime: segment.startTime + (index * wordDuration),
-          endTime: segment.startTime + ((index + 1) * wordDuration),
+          text: word.trim(),
+          startTime: startTime + (index * wordDuration),
+          endTime: startTime + ((index + 1) * wordDuration),
           emphasis: segment.emphasis || 'normal' as const,
           pitch: segment.pitch || 'normal' as const,
         };
       });
       
+      const speaker = segment.speaker || 'narrator';
+      
       return {
         text: segment.text,
-        speaker: segment.speaker || 'narrator' as any,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
+        speaker: speaker as any,
+        startTime,
+        endTime,
         words,
-      };
+        // Apply character colors and CI properties from edits
+        volume: segment.emphasis === 'loud' ? 85 : segment.emphasis === 'quiet' ? 30 : 60,
+        pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+        type: segment.speaker === 'soundeffect' ? 'soundeffect' : segment.speaker === 'music' ? 'music' : 'dialogue',
+        isOffCamera: segment.isOffCamera || false,
+        speakerColor: characterColors[speaker] || segment.speakerColor // Apply saved character color
+      } as CaptionSegment;
     });
     
+    console.log('✅ Generated caption segments with character colors:', captionSegments?.length);
     setCaptions(captionSegments);
     setCurrentLanguage(language);
     
     // Create full transcript text for audio description generation
     const fullTranscript = segments
-      .sort((a, b) => a.startTime - b.startTime)
+      .sort((a, b) => (a.startTime || 0) - (b.startTime || 0))
       .map(s => s.text)
       .join(' ');
     setTranscriptText(fullTranscript);
@@ -98,8 +124,59 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   const handleCharactersUpdate = (updatedCharacters: any[]) => {
     setCharacters(updatedCharacters);
-    console.log('Characters updated:', updatedCharacters);
+    console.log('🎨 Characters updated:', updatedCharacters);
+    
+    // Immediately apply character colors to existing captions
+    if (captions.length > 0) {
+      const characterColorMap: Record<string, string> = {};
+      updatedCharacters.forEach(char => {
+        characterColorMap[char.name] = char.color;
+      });
+      
+      const updatedCaptions = captions.map(caption => ({
+        ...caption,
+        speakerColor: characterColorMap[caption.speaker] || caption.speakerColor
+      }));
+      
+      setCaptions([...updatedCaptions]); // Force re-render with new colors
+    }
   };
+
+  // Load saved data on component mount
+  useEffect(() => {
+    // Load saved transcript
+    const savedTranscript = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
+    if (savedTranscript) {
+      try {
+        const transcriptData = JSON.parse(savedTranscript);
+        handleTranscriptUpdate(transcriptData.segments, currentLanguage);
+      } catch (error) {
+        console.error('Failed to load saved transcript:', error);
+      }
+    }
+    
+    // Load saved characters
+    const savedCharacters = localStorage.getItem(`characters-${videoId}`);
+    if (savedCharacters) {
+      try {
+        const charactersData = JSON.parse(savedCharacters);
+        setCharacters(charactersData);
+      } catch (error) {
+        console.error('Failed to load saved characters:', error);
+      }
+    }
+    
+    // Load saved audio descriptions
+    const savedAD = localStorage.getItem(`audioDescription_${videoId}_${currentLanguage}`);
+    if (savedAD) {
+      try {
+        const adData = JSON.parse(savedAD);
+        setAudioDescriptions(adData.segments);
+      } catch (error) {
+        console.error('Failed to load saved audio descriptions:', error);
+      }
+    }
+  }, [videoId]);
 
   return (
     <div className="space-y-6">
@@ -112,6 +189,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         selectedASLAvatar={selectedASLAvatar}
         contentType={contentType}
         className={className}
+        initialCaptions={captions}
+        dynamicDescriptions={audioDescriptions}
+        onTranscriptUpdate={handleTranscriptUpdate}
       />
       
       {/* Content Generation and Management Controls */}
