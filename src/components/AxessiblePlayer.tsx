@@ -227,10 +227,28 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
-  // Use initial captions when provided
+  // Use initial captions when provided - but DON'T override database captions
   useEffect(() => {
     if (initialCaptions && initialCaptions.length > 0) {
-      setGeneratedCaptions(initialCaptions);
+      console.log('🔄 AxessiblePlayer received new initialCaptions:', initialCaptions.length, 'segments');
+      console.log('🎨 First initial caption details:', initialCaptions[0] ? {
+        speaker: initialCaptions[0].speaker,
+        color: initialCaptions[0].speakerColor,
+        emphasis: initialCaptions[0].words?.[0]?.emphasis,
+        pitch: initialCaptions[0].words?.[0]?.pitch,
+        hasUpdateKey: !!(initialCaptions[0] as any)._updateKey,
+        source: 'database'
+      } : 'No caption');
+      
+      // Only update generatedCaptions if we don't have database captions already
+      // This prevents overriding database captions with generated ones
+      if (!generatedCaptions || generatedCaptions.length === 0 || 
+          (initialCaptions[0] as any)._updateKey) {
+        console.log('✅ Setting generatedCaptions from database initialCaptions');
+        setGeneratedCaptions(initialCaptions);
+      } else {
+        console.log('🚫 Keeping existing generatedCaptions, not overriding with initialCaptions');
+      }
       
       // Generate transcript text for dubbing from initial captions
       const transcriptText = initialCaptions
@@ -636,15 +654,33 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {showCaptions && (
         <CaptionsWithIntention 
           captions={(() => {
-            const finalCaptions = initialCaptions && initialCaptions.length > 0 ? initialCaptions : ((translatedContent?.captions || generatedCaptions) ?? []);
+            // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
+            let finalCaptions = [];
+            
+            if (initialCaptions && initialCaptions.length > 0) {
+              finalCaptions = initialCaptions;
+              console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
+            } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
+              finalCaptions = translatedContent.captions;
+              console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
+            } else if (generatedCaptions && generatedCaptions.length > 0) {
+              finalCaptions = generatedCaptions;
+              console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
+            } else {
+              finalCaptions = [];
+              console.log('⚠️ No captions available from any source');
+            }
+            
             console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
             console.log('🎯 First caption being passed:', finalCaptions[0] ? {
               speaker: finalCaptions[0].speaker,
               color: finalCaptions[0].speakerColor,
               emphasis: finalCaptions[0].words?.[0]?.emphasis,
               pitch: finalCaptions[0].words?.[0]?.pitch,
-              text: finalCaptions[0].text?.substring(0, 50) + '...'
+              text: finalCaptions[0].text?.substring(0, 50) + '...',
+              source: 'database-priority'
             } : 'No captions');
+            
             return finalCaptions;
           })()}
           currentTime={currentTime}
