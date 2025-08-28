@@ -243,10 +243,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         {/* Speaker name label - only show for dialogue, not sound effects or music */}
         {!isSoundEffect && !isMusic && activeCaption.speaker && (
           <div 
-            className="text-sm font-medium mb-1 text-center"
+            className="text-xs font-medium mb-1 text-center"
             style={{ 
               color: activeCaption.speakerColor || speakerColor,
-              fontSize: `${Math.max(12, fontSize * 0.6)}px` // Smaller than main text
+              fontSize: `${Math.max(10, fontSize * 0.4)}px` // Smaller - 40% of main text
             }}
           >
             {activeCaption.speaker.toUpperCase()}
