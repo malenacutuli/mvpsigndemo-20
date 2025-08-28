@@ -253,7 +253,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     try {
       setIsTranscribing(true);
       setTranscribeError(null);
-        const { data, error } = await supabase.functions.invoke('transcribe', {
+      
+      console.log('🎤 Starting transcription for video:', videoSrc);
+      
+      const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl: videoSrc, 
           rangeBytes: 200000000, // Increased to 200MB for complete transcript
@@ -261,22 +264,40 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           wordTimestamps: true
         }
       });
-      if (error) throw new Error(error.message || 'Transcription failed');
+      
+      if (error) {
+        console.error('❌ Transcription error:', error);
+        throw new Error(error.message || 'Transcription failed');
+      }
+      
+      console.log('✅ Transcription response:', data);
       
       const segments = (data && (data as any).segments) || [];
+      console.log('📝 Raw transcript segments:', segments.length, segments);
+      
+      if (segments.length === 0) {
+        throw new Error('No transcript segments found in video');
+      }
+      
       if (segments.length > 0) {
         const transcriptText = segments.map((s: any) => s.text).join(' ');
         setGeneratedTranscript(transcriptText);
-        console.log('Generated transcript for dubbing:', transcriptText);
+        console.log('📝 Generated transcript for dubbing:', transcriptText);
       }
       
-      const mapped: CaptionSegment[] = segments.map((seg: any) => {
+      // Convert transcription segments to caption segments with proper CWI properties
+      const mapped: CaptionSegment[] = segments.map((seg: any, index: number) => {
         const start = Number(seg.start ?? 0);
         const end = Number(seg.end ?? (start + 2));
         const txt: string = String(seg.text ?? '').trim();
+        
+        console.log(`🎬 Processing segment ${index}: "${txt}" (${start}s - ${end}s)`);
+        
+        // Split text into words with timing
         const wordsRaw = txt.length ? txt.split(/\s+/) : [];
         const dur = Math.max(end - start, 0.001);
         const step = wordsRaw.length ? dur / wordsRaw.length : dur;
+        
         const words = wordsRaw.map((w: string, i: number) => ({
           text: w,
           startTime: start + i * step,
@@ -284,16 +305,60 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           emphasis: 'normal' as const,
           pitch: 'normal' as const,
         }));
-        return {
+        
+        // Assign speaker and color based on segment
+        const speakerName = seg.speaker || `Speaker ${(index % 3) + 1}`;
+        const speakerColors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
+        const speakerColor = speakerColors[index % speakerColors.length];
+        
+        const captionSegment = {
           text: txt,
-          speaker: 'teacher',
+          speaker: speakerName,
           startTime: start,
           endTime: end,
           words,
+          // Add CWI properties
+          volume: 50 + Math.random() * 30, // Random volume 50-80 dB for now
+          pitch: 160 + Math.random() * 80, // Random pitch 160-240 Hz
+          type: 'dialogue' as const,
+          isOffCamera: false,
+          speakerColor: speakerColor,
         } as CaptionSegment;
+        
+        console.log(`✅ Created caption segment ${index}:`, {
+          text: captionSegment.text.substring(0, 30) + '...',
+          speaker: captionSegment.speaker,
+          startTime: captionSegment.startTime,
+          endTime: captionSegment.endTime,
+          wordsCount: captionSegment.words.length,
+          speakerColor: captionSegment.speakerColor
+        });
+        
+        return captionSegment;
       });
+      
+      console.log('🎬 Generated caption segments with CWI properties:', mapped.length);
+      console.log('🎭 Sample caption:', mapped[0]);
+      
       setGeneratedCaptions(mapped);
+      
+      // Save to localStorage for persistence
+      if (videoId) {
+        const transcriptData = {
+          videoId,
+          language: currentLanguage,
+          segments: segments,
+          captions: mapped,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`transcript_${videoId}_${currentLanguage}`, JSON.stringify(transcriptData));
+        console.log('💾 Saved captions to localStorage');
+      }
+      
+      console.log('🎯 Caption generation completed successfully!');
+      
     } catch (e: any) {
+      console.error('❌ Transcription error:', e);
       setTranscribeError(e.message || 'Failed to generate captions');
     } finally {
       setIsTranscribing(false);
@@ -864,6 +929,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showCaptions ? 'bg-accent/20 text-accent-foreground' : ''}`}
             >
               <FileText className="w-4 h-4" />
+            </Button>
+            
+            {/* Generate Captions Button - for testing */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGenerateCaptions}
+              title="Generate captions with intention"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${isTranscribing ? 'bg-green-500/20' : ''}`}
+              disabled={isTranscribing}
+            >
+              {isTranscribing ? (
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
             </Button>
             
             {/* Audio Description */}
