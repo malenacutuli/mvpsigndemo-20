@@ -237,7 +237,7 @@ export default function Pricing() {
               </thead>
               <tbody>
                 {comparisonFeatures.map((category) => (
-                  <React.Fragment key={category.category}>
+                  <tbody key={category.category}>
                     <tr>
                       <td colSpan={5} className="p-3 font-medium text-primary bg-muted/50">
                         {category.category}
@@ -252,7 +252,7 @@ export default function Pricing() {
                         <td className="p-3 text-center">{renderFeatureValue(feature.enterprise)}</td>
                       </tr>
                     ))}
-                  </React.Fragment>
+                  </tbody>
                 ))}
               </tbody>
             </table>

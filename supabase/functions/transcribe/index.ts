@@ -127,6 +127,11 @@ serve(async (req) => {
         console.log("Successfully fetched video, reading content...");
         const buffer = await response.arrayBuffer();
         
+        // Validate minimum file size
+        if (buffer.byteLength < 1000) {
+          throw new Error(`Video file appears to be corrupted or invalid. File size: ${buffer.byteLength} bytes (minimum expected: 1000 bytes)`);
+        }
+        
         // Ensure we don't exceed OpenAI's limit
         const limitedBuffer = buffer.byteLength > OPENAI_MAX_SIZE 
           ? buffer.slice(0, OPENAI_MAX_SIZE) 
