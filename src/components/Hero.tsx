@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { HandHelping, Subtitles, Mic, Sparkles, Users, Award } from 'lucide-react';
-import { UploadAccessible } from '@/components/UploadAccessible';
+import { SignUpCTA } from '@/components/SignUpCTA';
 
 export const Hero: React.FC = () => {
   return (
@@ -83,9 +83,9 @@ export const Hero: React.FC = () => {
         </div>
       </div>
 
-      {/* Video Upload & Experience */}
+      {/* Sign Up CTA */}
       <div className="container mx-auto px-6 py-16">
-        <UploadAccessible />
+        <SignUpCTA />
       </div>
 
       {/* Decorative Elements */}
