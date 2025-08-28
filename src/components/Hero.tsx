@@ -34,6 +34,16 @@ export const Hero: React.FC = () => {
               <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
+          
+          {/* Inclusivity Message */}
+          <div className="mt-16 max-w-3xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Inclusivity comes standard
+            </h2>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Everything from customizable captions to high-contrast colors are baked into every video you host with Axessible, so accessibility isn't something you have to think about. It's just the way your videos are.
+            </p>
+          </div>
         </div>
       </div>
     </section>
