@@ -47,6 +47,31 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     loadExistingTranscript();
   }, [videoId]);
 
+  useEffect(() => {
+    // Auto-convert segments to captions when they're loaded/updated
+    if (segments.length > 0) {
+      const captionSegments: CaptionSegment[] = segments.map(seg => ({
+        text: seg.text,
+        speaker: seg.speaker,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        words: seg.text.split(' ').map((word, i) => ({
+          text: word,
+          startTime: seg.startTime + (i * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
+          endTime: seg.startTime + ((i + 1) * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
+          emphasis: seg.emphasis,
+          pitch: seg.pitch,
+        })),
+        volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'quiet' ? 30 : 50,
+        pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
+        type: 'dialogue',
+        isOffCamera: false,
+        speakerColor: seg.speakerColor,
+      }));
+      onTranscriptReady(captionSegments);
+    }
+  }, [segments, onTranscriptReady]);
+
   const loadExistingTranscript = async () => {
     try {
       const { data, error } = await supabase
@@ -61,8 +86,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         const loadedSegments = data.map((seg, index) => ({
           id: seg.id,
           text: seg.text,
-          startTime: seg.start_time,
-          endTime: seg.end_time,
+          startTime: Number(seg.start_time),
+          endTime: Number(seg.end_time),
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
           speakerColor: getSpeakerColor(index),
           emphasis: 'normal' as const,
@@ -71,6 +96,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setSegments(loadedSegments);
         setCurrentStep('edit');
         setExtractionComplete(true);
+        console.log('✅ Loaded existing transcript:', loadedSegments.length, 'segments');
       }
     } catch (error) {
       console.error('Error loading existing transcript:', error);
@@ -101,49 +127,75 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.log('✅ Extraction complete:', data);
 
       // Process the response to create segments
-      const words = data.words || [];
-      const transcriptSegments: TranscriptSegment[] = [];
+      let transcriptSegments: TranscriptSegment[] = [];
       
-      // Group words into meaningful segments (sentences/phrases)
-      let currentSegment = { words: [] as any[], startTime: 0, endTime: 0 };
-      
-      words.forEach((word: any) => {
-        if (currentSegment.words.length === 0) {
-          currentSegment.startTime = word.start;
-        }
+      if (data.segments && Array.isArray(data.segments)) {
+        // Use segments if available (better structure)
+        transcriptSegments = data.segments.map((seg: any, index: number) => ({
+          id: `segment-${index}`,
+          text: seg.text || '',
+          startTime: Number(seg.start) || 0,
+          endTime: Number(seg.end) || 0,
+          speaker: `Speaker ${(index % 3) + 1}`,
+          speakerColor: getSpeakerColor(index),
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const,
+        }));
+      } else if (data.words && Array.isArray(data.words)) {
+        // Fallback to words processing
+        const words = data.words;
+        let currentSegment = { words: [] as any[], startTime: 0, endTime: 0 };
         
-        currentSegment.words.push(word);
-        currentSegment.endTime = word.end;
-        
-        // End segment on punctuation or after 8-10 words
-        const isEndOfSentence = word.word.match(/[.!?]/) || currentSegment.words.length >= 10;
-        if (isEndOfSentence) {
+        words.forEach((word: any) => {
+          if (currentSegment.words.length === 0) {
+            currentSegment.startTime = Number(word.start) || 0;
+          }
+          
+          currentSegment.words.push(word);
+          currentSegment.endTime = Number(word.end) || 0;
+          
+          // End segment on punctuation or after 8-10 words
+          const isEndOfSentence = word.word?.match(/[.!?]/) || currentSegment.words.length >= 10;
+          if (isEndOfSentence) {
+            transcriptSegments.push({
+              id: `segment-${transcriptSegments.length}`,
+              text: currentSegment.words.map(w => w.word || '').join(' '),
+              startTime: currentSegment.startTime,
+              endTime: currentSegment.endTime,
+              speaker: `Speaker ${(transcriptSegments.length % 3) + 1}`,
+              speakerColor: getSpeakerColor(transcriptSegments.length),
+              emphasis: 'normal' as const,
+              pitch: 'normal' as const,
+            });
+            currentSegment = { words: [], startTime: 0, endTime: 0 };
+          }
+        });
+
+        // Handle remaining words
+        if (currentSegment.words.length > 0) {
           transcriptSegments.push({
             id: `segment-${transcriptSegments.length}`,
-            text: currentSegment.words.map(w => w.word).join(' '),
+            text: currentSegment.words.map(w => w.word || '').join(' '),
             startTime: currentSegment.startTime,
             endTime: currentSegment.endTime,
             speaker: `Speaker ${(transcriptSegments.length % 3) + 1}`,
             speakerColor: getSpeakerColor(transcriptSegments.length),
-            emphasis: 'normal',
-            pitch: 'normal',
+            emphasis: 'normal' as const,
+            pitch: 'normal' as const,
           });
-          currentSegment = { words: [], startTime: 0, endTime: 0 };
         }
-      });
-
-      // Handle remaining words
-      if (currentSegment.words.length > 0) {
-        transcriptSegments.push({
-          id: `segment-${transcriptSegments.length}`,
-          text: currentSegment.words.map(w => w.word).join(' '),
-          startTime: currentSegment.startTime,
-          endTime: currentSegment.endTime,
-          speaker: `Speaker ${(transcriptSegments.length % 3) + 1}`,
-          speakerColor: getSpeakerColor(transcriptSegments.length),
-          emphasis: 'normal',
-          pitch: 'normal',
-        });
+      } else if (data.text) {
+        // Fallback to simple text
+        transcriptSegments = [{
+          id: 'segment-0',
+          text: data.text,
+          startTime: 0,
+          endTime: 30, // Default duration
+          speaker: 'Speaker 1',
+          speakerColor: getSpeakerColor(0),
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const,
+        }];
       }
 
       setSegments(transcriptSegments);

@@ -41,8 +41,52 @@ export default function VideoDetailWorkflow() {
   useEffect(() => {
     if (id) {
       fetchVideo(id);
+      loadExistingCaptions(id);
     }
   }, [id]);
+
+  const loadExistingCaptions = async (videoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const captionSegments: CaptionSegment[] = data.map((seg, index) => ({
+          text: seg.text,
+          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          startTime: Number(seg.start_time),
+          endTime: Number(seg.end_time),
+          words: seg.text.split(' ').map((word, i) => ({
+            text: word,
+            startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+            endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+            emphasis: 'normal',
+            pitch: 'normal',
+          })),
+          volume: 50,
+          pitch: 160,
+          type: 'dialogue',
+          isOffCamera: false,
+          speakerColor: getSpeakerColor(index),
+        }));
+        setCaptions(captionSegments);
+        setShowWorkflow(false); // Auto-proceed to player if captions exist
+        console.log('✅ Loaded existing captions for video player:', captionSegments.length, 'segments');
+      }
+    } catch (error) {
+      console.error('Error loading existing captions:', error);
+    }
+  };
+
+  const getSpeakerColor = (index: number) => {
+    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
+    return colors[index % colors.length];
+  };
 
   const fetchVideo = async (videoId: string) => {
     try {
