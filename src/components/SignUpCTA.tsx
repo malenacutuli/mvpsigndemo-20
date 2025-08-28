@@ -79,49 +79,6 @@ export const SignUpCTA: React.FC = () => {
         </CardHeader>
 
         <CardContent className="space-y-8">
-          {/* Feature Preview Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-              <Subtitles className="w-8 h-8 text-primary mb-3 mx-auto" />
-              <h3 className="font-semibold text-lg mb-2 text-center">Captions with Intention</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                AI-powered emotional styling makes captions expressive and contextual
-              </p>
-            </div>
-            
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-              <Mic className="w-8 h-8 text-accent mb-3 mx-auto" />
-              <h3 className="font-semibold text-lg mb-2 text-center">Audio Descriptions</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                Automatic visual content descriptions for blind and low-vision users
-              </p>
-            </div>
-            
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-              <HandHelping className="w-8 h-8 text-cwi-main-orange mb-3 mx-auto" />
-              <h3 className="font-semibold text-lg mb-2 text-center">ASL Avatars</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                Professional AI interpreters in American Sign Language with cultural authenticity
-              </p>
-            </div>
-            
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-              <Languages className="w-8 h-8 text-destructive mb-3 mx-auto" />
-              <h3 className="font-semibold text-lg mb-2 text-center">Multi-Language Support</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                Storytelling Audio Description, Captions with intention, Dubbing in 15+ Languages. Become Global in minutes.
-              </p>
-            </div>
-            
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 border border-border/50">
-              <Languages className="w-8 h-8 text-primary mb-3 mx-auto" />
-              <h3 className="font-semibold text-lg mb-2 text-center">Legal Compliance</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                Automated WCAG, ADA, and EAA compliance checking and reporting
-              </p>
-            </div>
-          </div>
-
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
