@@ -110,44 +110,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, []);
 
-  // Load saved data and initial captions (only on mount, not when captions are updated)
-  useEffect(() => {
-    if (videoId && !generatedCaptions) {
-      // Load saved transcript data only if no captions exist
-      const savedTranscript = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
-      if (savedTranscript) {
-        try {
-          const transcriptData = JSON.parse(savedTranscript);
-          if (transcriptData.captions && transcriptData.captions.length > 0) {
-            console.log('📁 Loading saved captions from localStorage:', transcriptData.captions.length);
-            setGeneratedCaptions(transcriptData.captions);
-          } else if (transcriptData.segments && transcriptData.segments.length > 0) {
-            console.log('📁 Loading saved transcript segments:', transcriptData.segments.length);
-            handleTranscriptUpdate(transcriptData.segments, currentLanguage);
-          }
-        } catch (error) {
-          console.error('Failed to load saved transcript:', error);
-        }
-      }
-      
-      // Load saved audio descriptions
-      const savedAD = localStorage.getItem(`audioDescription_${videoId}_${currentLanguage}`);
-      if (savedAD) {
-        try {
-          const adData = JSON.parse(savedAD);
-          setGeneratedAD(adData.segments);
-        } catch (error) {
-          console.error('Failed to load saved audio descriptions:', error);
-        }
-      }
-    }
-    
-    // If initial captions are provided and no saved/generated data, use them
-    if (initialCaptions && initialCaptions.length > 0 && (!generatedCaptions || generatedCaptions.length === 0)) {
-      console.log('📥 Using initial captions:', initialCaptions.length);
-      setGeneratedCaptions(initialCaptions);
-    }
-  }, [videoId, currentLanguage]); // Remove dependencies that cause loops
 
   const togglePlay = async () => {
     const video = videoRef.current;
@@ -249,23 +211,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
-  // Load existing captions from database or localStorage
+  // Use initial captions when provided
   useEffect(() => {
     if (initialCaptions && initialCaptions.length > 0) {
       setGeneratedCaptions(initialCaptions);
-    } else if (videoId) {
-      // Load from localStorage as fallback
-      const savedData = localStorage.getItem(`transcript_${videoId}_${currentLanguage}`);
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          setGeneratedCaptions(parsed.captions || []);
-        } catch (e) {
-          console.warn('Failed to parse saved transcript data');
-        }
-      }
     }
-  }, [videoId, initialCaptions, currentLanguage]);
+  }, [initialCaptions]);
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {

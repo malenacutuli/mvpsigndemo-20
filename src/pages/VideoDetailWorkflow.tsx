@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
 import { TranscriptWorkflow } from '@/components/TranscriptWorkflow';
-import { AxessiblePlayer } from '@/components/AxessiblePlayer';
+import { CleanAxessiblePlayer } from '@/components/CleanAxessiblePlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -50,9 +50,14 @@ export default function VideoDetailWorkflow() {
         .from('videos')
         .select('*')
         .eq('id', videoId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        console.log('Video not found');
+        return;
+      }
       
       setVideo(data);
       
@@ -194,13 +199,13 @@ export default function VideoDetailWorkflow() {
                     </div>
                   </div>
                 ) : (
-                  <AxessiblePlayer
+                  <CleanAxessiblePlayer
                     videoSrc={videoUrl}
                     posterSrc={video.thumbnail_url || undefined}
                     title={video.title}
                     videoId={video.id}
                     contentType={video.content_type as 'recipe' | 'education'}
-                    initialCaptions={captions}
+                    captions={captions}
                     className="w-full h-full"
                   />
                 )}
