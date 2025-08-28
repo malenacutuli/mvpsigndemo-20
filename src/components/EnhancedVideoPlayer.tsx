@@ -127,17 +127,38 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const endTime = segment.endTime ?? segment.end_time ?? (startTime + 3);
       const duration = Math.max(endTime - startTime, 0.1);
       
-      const words = segment.text.split(' ').filter(word => word.trim()).map((word: string, wordIndex: number, arr: string[]) => {
-        const wordDuration = duration / arr.length;
-        return {
-          text: word.trim(),
-          startTime: startTime + (wordIndex * wordDuration),
-          endTime: startTime + ((wordIndex + 1) * wordDuration),
-          // PRIORITY: Use segment-level emphasis/pitch from transcript edits
-          emphasis: segment.emphasis || 'normal' as const,
-          pitch: segment.pitch || 'normal' as const,
-        };
-      });
+      // Use word-level data if available, otherwise split text into words
+      let words: any[] = [];
+      
+      if ((segment as any).words && Array.isArray((segment as any).words)) {
+        // Use existing word-level data with timing and emphasis
+        const wordData = (segment as any).words;
+        words = wordData.map((wordItem: any, wordIndex: number) => {
+          const wordDuration = duration / wordData.length;
+          return {
+            text: wordItem.text || wordItem,
+            startTime: startTime + (wordIndex * wordDuration),
+            endTime: startTime + ((wordIndex + 1) * wordDuration),
+            // Use word-level emphasis/pitch if available
+            emphasis: wordItem.emphasis || segment.emphasis || 'normal' as const,
+            pitch: wordItem.pitch || segment.pitch || 'normal' as const,
+          };
+        });
+      } else {
+        // Fallback: Split text into words with even timing
+        const wordTexts = segment.text.split(' ').filter(word => word.trim());
+        words = wordTexts.map((word: string, wordIndex: number, arr: string[]) => {
+          const wordDuration = duration / arr.length;
+          return {
+            text: word.trim(),
+            startTime: startTime + (wordIndex * wordDuration),
+            endTime: startTime + ((wordIndex + 1) * wordDuration),
+            // Use segment-level emphasis/pitch as fallback
+            emphasis: segment.emphasis || 'normal' as const,
+            pitch: segment.pitch || 'normal' as const,
+          };
+        });
+      }
       
       const speaker = segment.speaker || 'Speaker';
       

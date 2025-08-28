@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users } from 'lucide-react';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 import { CharacterManager } from './CharacterManager';
+import { WordLevelEditor, type WordData } from './WordLevelEditor';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 
 interface TranscriptSegment {
@@ -23,6 +24,7 @@ interface TranscriptSegment {
   speakerColor?: string;
   emphasis?: 'loud' | 'quiet' | 'normal';
   pitch?: 'high' | 'low' | 'normal';
+  words?: WordData[]; // Add word-level data support
 }
 
 interface TranscriptEditorProps {
@@ -57,6 +59,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editSpeakerColor, setEditSpeakerColor] = useState('');
   const [editEmphasis, setEditEmphasis] = useState<'loud' | 'quiet' | 'normal'>('normal');
   const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
+  const [editWords, setEditWords] = useState<WordData[]>([]);
+  const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
 
@@ -337,6 +341,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditSpeakerColor(segment.speakerColor || '#3B82F6');
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
+    setEditWords(segment.words || []);
+    setUseWordLevelEditing(false); // Reset to segment-level editing by default
   };
 
   const saveEdit = () => {
@@ -350,8 +356,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       endTime: parseTimeInput(editEndTime),
       speaker: editSpeaker,
       speakerColor: editSpeakerColor,
-      emphasis: editEmphasis,
-      pitch: editPitch,
+      emphasis: useWordLevelEditing ? 'normal' : editEmphasis, // Use word-level if enabled
+      pitch: useWordLevelEditing ? 'normal' : editPitch,
+      words: useWordLevelEditing ? editWords : undefined, // Save word-level data if enabled
     };
     
     // Sort segments by time after editing timing
@@ -403,6 +410,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditSpeakerColor('');
     setEditEmphasis('normal');
     setEditPitch('normal');
+    setEditWords([]);
+    setUseWordLevelEditing(false);
   };
 
   const findInsertPosition = (segments: TranscriptSegment[], newStartTime: number): number => {
@@ -641,15 +650,35 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                 
                 {editingIndex === index ? (
                   <div className="space-y-4">
-                    {/* Text Editor */}
+                    {/* Text Editor - Switch between basic and word-level */}
                     <div className="space-y-2">
-                      <Label className="text-xs">Text</Label>
-                      <Textarea
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        className="min-h-[60px]"
-                        autoFocus
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Text</Label>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
+                          className="h-6 text-xs"
+                        >
+                          <Type className="w-3 h-3 mr-1" />
+                          {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
+                        </Button>
+                      </div>
+                      
+                      {useWordLevelEditing ? (
+                        <WordLevelEditor
+                          initialText={editText}
+                          onWordsChange={setEditWords}
+                          className="border rounded-md"
+                        />
+                      ) : (
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="min-h-[60px]"
+                          autoFocus
+                        />
+                      )}
                     </div>
                     
                     {/* Timing Controls */}
@@ -708,38 +737,40 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                       </div>
                     </div>
                     
-                    {/* Emphasis & Pitch */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Volume2 className="w-3 h-3" />
-                          Emphasis
-                        </Label>
-                        <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal')}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="loud">Loud</SelectItem>
-                            <SelectItem value="quiet">Quiet</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    {/* Emphasis & Pitch - Only show if not using word-level editing */}
+                    {!useWordLevelEditing && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1">
+                            <Volume2 className="w-3 h-3" />
+                            Emphasis
+                          </Label>
+                          <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal')}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="loud">Loud</SelectItem>
+                              <SelectItem value="quiet">Quiet</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Pitch</Label>
+                          <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="low">Low</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Pitch</Label>
-                        <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="low">Low</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    )}
                     
                     <div className="flex gap-2">
                       <Button size="sm" onClick={saveEdit}>
