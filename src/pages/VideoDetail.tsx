@@ -98,7 +98,25 @@ const VideoDetail = () => {
         
         if (publicUrl?.publicUrl) {
           console.log('✅ Public video URL set:', publicUrl.publicUrl);
-          setVideoUrl(publicUrl.publicUrl);
+          
+          // Test if the video URL is accessible
+          try {
+            const response = await fetch(publicUrl.publicUrl, { method: 'HEAD' });
+            if (response.ok) {
+              console.log('✅ Video URL is accessible');
+              setVideoUrl(publicUrl.publicUrl);
+            } else {
+              console.error('❌ Video URL not accessible, status:', response.status);
+              // Try manual fallback URL
+              const manualPublicUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${data.storage_path}`;
+              console.log('🔧 Trying manual fallback URL:', manualPublicUrl);
+              setVideoUrl(manualPublicUrl);
+            }
+          } catch (fetchError) {
+            console.error('❌ Error testing video URL:', fetchError);
+            // Use the URL anyway as fallback
+            setVideoUrl(publicUrl.publicUrl);
+          }
         } else {
           console.error('❌ Failed to generate public URL for video');
           // Construct public URL manually as fallback
@@ -271,22 +289,35 @@ const VideoDetail = () => {
             </CardHeader>
             <CardContent>
               {videoUrl ? (
-                <VideoPlayerWithTranscript
-                  videoSrc={videoUrl}
-                  posterSrc={video.thumbnail_url || undefined}
-                  title={video.title}
-                  videoId={video.id}
-                  language={video.language}
-                  selectedVoice={selectedVoice}
-                  selectedASLAvatar={selectedASLAvatar}
-                  contentType={video.content_type === 'education' ? 'education' : 'recipe'}
-                  className="w-full"
-                />
+                <div className="space-y-4">
+                  <VideoPlayerWithTranscript
+                    videoSrc={videoUrl}
+                    posterSrc={video.thumbnail_url || undefined}
+                    title={video.title}
+                    videoId={video.id}
+                    language={video.language}
+                    selectedVoice={selectedVoice}
+                    selectedASLAvatar={selectedASLAvatar}
+                    contentType={video.content_type === 'education' ? 'education' : 'recipe'}
+                    className="w-full"
+                  />
+                  
+                  {/* Debug Info - Remove in production */}
+                  <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
+                    <p><strong>Video URL:</strong> {videoUrl}</p>
+                    <p><strong>Status:</strong> {video.status}</p>
+                    <p><strong>Storage Path:</strong> {video.storage_path}</p>
+                    <p><strong>Video ID:</strong> {video.id}</p>
+                  </div>
+                </div>
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Play className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-muted-foreground">Video not available</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {video.storage_path ? 'Generating video URL...' : 'No video file found'}
+                    </p>
                   </div>
                 </div>
               )}
