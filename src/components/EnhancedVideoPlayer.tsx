@@ -56,6 +56,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       pitch: s.pitch
     })));
     
+    if (!segments || segments.length === 0) {
+      console.warn('⚠️ No segments received in handleTranscriptUpdate');
+      return;
+    }
+    
     // Store original transcript segments
     setTranscriptSegments([...segments]); // Force new array reference
     
@@ -122,6 +127,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     // Force state update with timestamp to trigger re-render
     const timestamp = Date.now();
     setCaptions([...captionSegments]); // Force new array reference
+    
+    console.log('🔄 Updated captions state in EnhancedVideoPlayer:', captionSegments.length, 'segments');
+    console.log('🎯 First caption segment details:', captionSegments[0] ? {
+      speaker: captionSegments[0].speaker,
+      color: captionSegments[0].speakerColor,
+      emphasis: captionSegments[0].words[0]?.emphasis,
+      pitch: captionSegments[0].words[0]?.pitch,
+      text: captionSegments[0].text.substring(0, 50) + '...'
+    } : 'No captions');
     setCurrentLanguage(language);
     
     // Create full transcript text for audio description generation

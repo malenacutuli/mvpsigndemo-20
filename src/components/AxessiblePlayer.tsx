@@ -619,7 +619,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {/* Captions with Intention */}
       {showCaptions && (
         <CaptionsWithIntention 
-          captions={initialCaptions && initialCaptions.length > 0 ? initialCaptions : ((translatedContent?.captions || generatedCaptions) ?? [])}
+          captions={(() => {
+            const finalCaptions = initialCaptions && initialCaptions.length > 0 ? initialCaptions : ((translatedContent?.captions || generatedCaptions) ?? []);
+            console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
+            console.log('🎯 First caption being passed:', finalCaptions[0] ? {
+              speaker: finalCaptions[0].speaker,
+              color: finalCaptions[0].speakerColor,
+              emphasis: finalCaptions[0].words?.[0]?.emphasis,
+              pitch: finalCaptions[0].words?.[0]?.pitch,
+              text: finalCaptions[0].text?.substring(0, 50) + '...'
+            } : 'No captions');
+            return finalCaptions;
+          })()}
           currentTime={currentTime}
           isVisible={showCaptions}
           screenHeight={window?.innerHeight || 1080}
