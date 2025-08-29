@@ -324,6 +324,11 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('File uploaded successfully:', uploadData);
 
+      // Get video URL for thumbnail generation
+      const { data: { publicUrl: videoUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(uploadData.path);
+
       // Update video record with storage path
       const { error: updateError } = await supabase
         .from('videos')
@@ -334,6 +339,27 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         .eq('id', video.id);
 
       if (updateError) throw updateError;
+
+      // Generate thumbnail for the uploaded video
+      console.log('🎬 Generating thumbnail for video...');
+      try {
+        const { error: thumbnailError } = await supabase.functions.invoke('generate-thumbnail', {
+          body: {
+            videoId: video.id,
+            videoUrl: videoUrl
+          }
+        });
+
+        if (thumbnailError) {
+          console.warn('⚠️ Thumbnail generation failed:', thumbnailError);
+          // Don't fail the entire upload if thumbnail generation fails
+        } else {
+          console.log('✅ Thumbnail generated successfully');
+        }
+      } catch (thumbnailError) {
+        console.warn('⚠️ Thumbnail generation error:', thumbnailError);
+        // Don't fail the entire upload if thumbnail generation fails
+      }
 
       toast({
         title: "Upload successful",

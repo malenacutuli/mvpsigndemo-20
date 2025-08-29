@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ThumbnailGenerator } from '@/components/ThumbnailGenerator';
 
 interface Video {
   id: string;
@@ -230,6 +231,16 @@ export default function Videos() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Thumbnail Generator */}
+        {videos.length > 0 && (
+          <div className="mb-8">
+            <ThumbnailGenerator 
+              videos={videos} 
+              onThumbnailsGenerated={fetchVideos}
+            />
+          </div>
+        )}
 
         {/* Videos Grid */}
         {filteredVideos.length === 0 ? (
