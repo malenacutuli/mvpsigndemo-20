@@ -56,7 +56,7 @@ const Dashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground text-center text-sm">
-                          View, organize, and manage your accessible video library
+                          Access your saved transcripts, audio descriptions, and character data
                         </p>
                       </CardContent>
                     </Card>

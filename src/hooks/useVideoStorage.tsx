@@ -359,6 +359,106 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // Save characters to database
+  const saveCharacters = async (characters: any[]): Promise<void> => {
+    if (!user) {
+      // Fallback to localStorage for unauthenticated users
+      localStorage.setItem(`characters_${videoId}`, JSON.stringify(characters));
+      return;
+    }
+
+    try {
+      // Delete existing characters for this video
+      await supabase
+        .from('characters')
+        .delete()
+        .eq('video_id', videoId);
+
+      // Insert new characters
+      if (characters.length > 0) {
+        const { error } = await supabase
+          .from('characters')
+          .insert(
+            characters.map(char => ({
+              video_id: videoId,
+              name: char.name,
+              type: char.type,
+              color: char.color,
+              is_off_camera: char.isOffCamera || false,
+              voice_id: char.voiceId,
+              voice_name: char.voiceName,
+              voice_type: char.voiceType,
+              emphasis: char.emphasis || 'normal',
+              pitch: char.pitch || 'normal'
+            }))
+          );
+
+        if (error) throw error;
+      }
+
+      console.log('💾 Characters saved to database');
+    } catch (err) {
+      console.error('Failed to save characters:', err);
+      // Fallback to localStorage
+      localStorage.setItem(`characters_${videoId}`, JSON.stringify(characters));
+    }
+  };
+
+  // Load characters from database
+  const loadCharacters = async (): Promise<any[]> => {
+    if (!user) {
+      // Fallback to localStorage for unauthenticated users
+      const saved = localStorage.getItem(`characters_${videoId}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (error) {
+          console.error('Failed to parse localStorage characters:', error);
+        }
+      }
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('created_at');
+
+      if (error) throw error;
+
+      const characters = data?.map(char => ({
+        id: char.id,
+        name: char.name,
+        type: char.type,
+        color: char.color,
+        isOffCamera: char.is_off_camera,
+        voiceId: char.voice_id,
+        voiceName: char.voice_name,
+        voiceType: char.voice_type,
+        emphasis: char.emphasis,
+        pitch: char.pitch
+      })) || [];
+
+      console.log('💿 Characters loaded from database:', characters.length);
+      return characters;
+    } catch (err) {
+      console.error('Failed to load characters:', err);
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`characters_${videoId}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (error) {
+          console.error('Failed to parse localStorage characters:', error);
+        }
+      }
+      return [];
+    }
+  };
+
   return {
     loading,
     error,
@@ -366,6 +466,8 @@ export const useVideoStorage = (videoId: string) => {
     loadTranscriptSegments,
     saveAudioDescriptions,
     loadAudioDescriptions,
+    saveCharacters,
+    loadCharacters,
     saveToCache,
     loadFromCache
   };

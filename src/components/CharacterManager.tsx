@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -84,14 +85,34 @@ interface CharacterManagerProps {
   existingCharacters?: Character[];
 }
 
-export const CharacterManager: React.FC<CharacterManagerProps> = ({
-  videoId,
-  onCharactersUpdate,
-  existingCharacters = []
+export const CharacterManager: React.FC<CharacterManagerProps> = ({ 
+  videoId, 
+  onCharactersUpdate, 
+  existingCharacters = [] 
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
+  const { saveCharacters, loadCharacters } = useVideoStorage(videoId);
+
+  // Load existing characters on mount
+  useEffect(() => {
+    const loadExistingCharacters = async () => {
+      if (existingCharacters.length === 0) {
+        try {
+          const savedCharacters = await loadCharacters();
+          if (savedCharacters.length > 0) {
+            setCharacters(savedCharacters);
+            onCharactersUpdate(savedCharacters);
+          }
+        } catch (error) {
+          console.error('Failed to load characters:', error);
+        }
+      }
+    };
+
+    loadExistingCharacters();
+  }, [videoId]);
   const { toast } = useToast();
 
   // Get available colors based on character type
@@ -161,14 +182,22 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     });
   };
 
-  const saveAllCharacters = () => {
-    localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
-    onCharactersUpdate?.(characters);
-    
-    toast({
-      title: "Characters Saved",
-      description: "All character settings have been saved and applied to the video."
-    });
+  const saveAllCharacters = async () => {
+    try {
+      await saveCharacters(characters);
+      onCharactersUpdate?.(characters);
+      toast({
+        title: "Characters Saved",
+        description: "All character settings have been saved and applied to the video."
+      });
+    } catch (error) {
+      console.error('Failed to save characters:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save characters. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const removeCharacter = (characterId: string) => {

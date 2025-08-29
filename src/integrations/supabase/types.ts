@@ -53,6 +53,54 @@ export type Database = {
         }
         Relationships: []
       }
+      characters: {
+        Row: {
+          color: string
+          created_at: string
+          emphasis: string | null
+          id: string
+          is_off_camera: boolean | null
+          name: string
+          pitch: string | null
+          type: string
+          updated_at: string
+          video_id: string
+          voice_id: string | null
+          voice_name: string | null
+          voice_type: string | null
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          emphasis?: string | null
+          id?: string
+          is_off_camera?: boolean | null
+          name: string
+          pitch?: string | null
+          type: string
+          updated_at?: string
+          video_id: string
+          voice_id?: string | null
+          voice_name?: string | null
+          voice_type?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          emphasis?: string | null
+          id?: string
+          is_off_camera?: boolean | null
+          name?: string
+          pitch?: string | null
+          type?: string
+          updated_at?: string
+          video_id?: string
+          voice_id?: string | null
+          voice_name?: string | null
+          voice_type?: string | null
+        }
+        Relationships: []
+      }
       content_generation_cache: {
         Row: {
           content_type: string

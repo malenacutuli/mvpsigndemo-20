@@ -55,7 +55,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load existing transcript if available
+    // Load existing transcript, audio descriptions, and characters if available
+    console.log('🔄 Loading existing video data for:', videoId);
     loadExistingTranscript();
   }, [videoId]);
 
