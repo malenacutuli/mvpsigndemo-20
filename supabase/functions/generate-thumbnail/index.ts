@@ -26,52 +26,35 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // For now, we'll use a simple approach to generate thumbnails
-    // In production, you might want to use FFmpeg or similar video processing tools
-    // This is a mock implementation that would work with actual video processing
+    // Generate a simple SVG thumbnail as placeholder
+    // In production, you would use FFmpeg or similar to extract actual video frames
+    const svgThumbnail = `
+      <svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="1280" height="720" fill="url(#bg)"/>
+        <circle cx="640" cy="360" r="60" fill="rgba(255,255,255,0.9)"/>
+        <polygon points="620,340 620,380 660,360" fill="#1e3a8a"/>
+        <text x="640" y="450" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">Video Thumbnail</text>
+      </svg>
+    `;
 
-    // Create a canvas-based thumbnail generation
-    const canvas = new OffscreenCanvas(1280, 720);
-    const ctx = canvas.getContext('2d');
-    
-    // Create a simple gradient background as placeholder
-    // In production, this would extract actual frame from video
-    const gradient = ctx.createLinearGradient(0, 0, 1280, 720);
-    gradient.addColorStop(0, '#1e3a8a');
-    gradient.addColorStop(1, '#3b82f6');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1280, 720);
-    
-    // Add play button icon
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.beginPath();
-    ctx.arc(640, 360, 60, 0, 2 * Math.PI);
-    ctx.fill();
-    
-    // Draw play triangle
-    ctx.fillStyle = '#1e3a8a';
-    ctx.beginPath();
-    ctx.moveTo(620, 340);
-    ctx.lineTo(620, 380);
-    ctx.lineTo(660, 360);
-    ctx.closePath();
-    ctx.fill();
-
-    // Convert canvas to blob
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 });
-    const arrayBuffer = await blob.arrayBuffer();
-    const thumbnailData = new Uint8Array(arrayBuffer);
+    // Convert SVG to bytes
+    const thumbnailData = new TextEncoder().encode(svgThumbnail);
 
     // Upload thumbnail to Supabase Storage
-    const thumbnailFileName = `${videoId}-thumbnail.jpg`;
+    const thumbnailFileName = `${videoId}-thumbnail.svg`;
     
     console.log(`📸 Uploading thumbnail: ${thumbnailFileName}`);
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('thumbnails')
       .upload(thumbnailFileName, thumbnailData, {
-        contentType: 'image/jpeg',
+        contentType: 'image/svg+xml',
         upsert: true
       });
 

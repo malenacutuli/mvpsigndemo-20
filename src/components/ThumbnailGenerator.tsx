@@ -30,7 +30,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
 
   // Get videos without thumbnails
   const videosWithoutThumbnails = videos.filter(video => 
-    !video.thumbnail_url && video.storage_path && video.status === 'ready'
+    !video.thumbnail_url && video.storage_path && (video.status === 'ready' || video.status === 'uploaded')
   );
 
   const generateThumbnail = async (video: Video) => {
@@ -47,7 +47,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
 
       console.log(`🎬 Generating thumbnail for: ${video.title}`);
 
-      const { error } = await supabase.functions.invoke('generate-thumbnail', {
+      const { data: thumbnailResult, error } = await supabase.functions.invoke('generate-thumbnail', {
         body: {
           videoId: video.id,
           videoUrl: videoUrl
@@ -57,6 +57,8 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
       if (error) {
         throw error;
       }
+
+      console.log('✅ Thumbnail generation result:', thumbnailResult);
 
       setCompleted(prev => [...prev, video.id]);
       toast({

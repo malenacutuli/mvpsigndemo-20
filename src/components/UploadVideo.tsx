@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceSelector } from '@/components/VoiceSelector';
 import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
@@ -343,7 +343,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       // Generate thumbnail for the uploaded video
       console.log('🎬 Generating thumbnail for video...');
       try {
-        const { error: thumbnailError } = await supabase.functions.invoke('generate-thumbnail', {
+        const { data: thumbnailData, error: thumbnailError } = await supabase.functions.invoke('generate-thumbnail', {
           body: {
             videoId: video.id,
             videoUrl: videoUrl
@@ -354,7 +354,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           console.warn('⚠️ Thumbnail generation failed:', thumbnailError);
           // Don't fail the entire upload if thumbnail generation fails
         } else {
-          console.log('✅ Thumbnail generated successfully');
+          console.log('✅ Thumbnail generated successfully:', thumbnailData);
         }
       } catch (thumbnailError) {
         console.warn('⚠️ Thumbnail generation error:', thumbnailError);
