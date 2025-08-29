@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ASLClipUploader } from '@/components/ASLClipUploader';
-import { PromptToVideo } from '@/components/PromptToVideo';
 import { StorageIndicator } from '@/components/StorageIndicator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Video, Wand2 } from 'lucide-react';
@@ -73,7 +72,7 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground text-center text-sm">
-                        Create content with AI: Custom ASL clips and prompt-to-video generation
+                        Create custom ASL clips for personalized accessibility
                       </p>
                     </CardContent>
                   </Card>
@@ -90,11 +89,6 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <ASLClipUploader />
-                </section>
-
-                {/* Prompt to Video Section */}
-                <section>
-                  <PromptToVideo />
                 </section>
               </div>
 
