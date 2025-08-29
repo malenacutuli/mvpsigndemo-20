@@ -67,14 +67,14 @@ export default function VideoDetailWorkflow() {
             text: word,
             startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
             endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            emphasis: 'normal',
-            pitch: 'normal',
+            emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal', // Load saved emphasis with proper typing
+            pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal', // Load saved pitch with proper typing
           })),
-          volume: 50,
-          pitch: 160,
+          volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'quiet' ? 30 : 50,
+          pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
           type: 'dialogue',
-          isOffCamera: false,
-          speakerColor: getSpeakerColor(index),
+          isOffCamera: seg.is_off_camera || false,
+          speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
         }));
         setCaptions(captionSegments);
         setShowWorkflow(false); // Auto-proceed to player if captions exist
@@ -360,8 +360,7 @@ export default function VideoDetailWorkflow() {
                       size="sm" 
                       onClick={() => {
                         setShowWorkflow(true);
-                        // Refresh data when re-entering workflow
-                        loadExistingCaptions(video.id);
+                        // Refresh data when re-entering workflow - no need for loadExistingCaptions since TranscriptWorkflow will load its own data
                       }}
                       className="w-full"
                     >

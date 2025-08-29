@@ -117,14 +117,20 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           startTime: Number(seg.start_time),
           endTime: Number(seg.end_time),
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          speakerColor: getSpeakerColor(index),
-          emphasis: 'normal' as const,
-          pitch: 'normal' as const,
+          speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
+          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal', // Load saved emphasis
+          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal', // Load saved pitch
         }));
         setSegments(loadedSegments);
         setCurrentStep('edit');
         setExtractionComplete(true);
-        console.log('✅ Loaded existing transcript:', loadedSegments.length, 'segments');
+        
+        // Set detected language from first segment
+        if (data[0]?.language) {
+          setDetectedLanguage(data[0].language);
+        }
+        
+        console.log('✅ Loaded existing transcript with all edits preserved:', loadedSegments.length, 'segments');
       } else {
         console.log('ℹ️ No existing transcript found in database for video:', videoId);
       }
@@ -357,6 +363,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         end_time: seg.endTime,
         text: seg.text,
         speaker: seg.speaker,
+        speaker_color: seg.speakerColor, // Save speaker color
+        emphasis: seg.emphasis, // Save emphasis
+        pitch: seg.pitch, // Save pitch
+        language: detectedLanguage,
         confidence: 0.95 // Default confidence
       }));
 
