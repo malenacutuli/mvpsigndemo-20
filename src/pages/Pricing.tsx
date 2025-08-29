@@ -18,7 +18,7 @@ const plans = [
       "Customizable Axessible Player",
       "Password privacy & unlisted links",
       "Review & collaboration tools",
-      "Transfer video files",
+      "Embed video links",
       "Engagement analytics",
       "CWI Captions with emotion tagging",
       "Basic Audio Descriptions"
@@ -36,11 +36,8 @@ const plans = [
       "Everything in Starter",
       "Branding in the player",
       "Third-party player support",
-      "Custom watermark",
-      "Branded video galleries",
-      "Lead capture, CTAs & cards",
-      "Advanced AD Prompt Studio",
-      "ElevenLabs TTS integration"
+      "Advanced Audio Description Prompt Studio",
+      "Custom Text to Transcript Integration"
     ],
     cta: "Try Standard",
     highlight: false
@@ -53,14 +50,12 @@ const plans = [
     storage: "7TB storage",
     features: [
       "Everything in Standard",
-      "Hosted livestreamed events",
-      "Events Q&A, polls, chat",
-      "Stream to multiple destinations",
-      "DVR streaming & simulive",
-      "Live event-level analytics",
+      "Dubbing in 15+ Languages",
       "Marketing automation integrations",
-      "Custom ASL avatars",
-      "WCAG/ADA compliance reporting"
+      "WCAG/ADA compliance reporting",
+      "Expert-led accessibility audit for your videos",
+      "Specialized team support to convert up to 15 videos",
+      "Creative storytelling for Audio Description with manual timing-synchronization"
     ],
     cta: "Go Advanced",
     highlight: true
@@ -73,12 +68,14 @@ const plans = [
     storage: "Custom",
     features: [
       "SSO & governance",
-      "SLAs & priority support",
+      "Priority Support",
       "Custom AI budgets",
-      "On-prem / VPC options",
       "Security reviews",
       "Custom integrations",
-      "Dedicated account manager"
+      "Dedicated account manager",
+      "Custom ASL avatars",
+      "Custom training and support for your teams",
+      "Multi-Language dubbing, including lip-sync"
     ],
     cta: "Contact sales",
     highlight: false
@@ -114,7 +111,7 @@ const comparisonFeatures = [
         name: "ASL Avatar Support",
         starter: false,
         standard: false,
-        advanced: true,
+        advanced: false,
         enterprise: "Custom"
       }
     ]
