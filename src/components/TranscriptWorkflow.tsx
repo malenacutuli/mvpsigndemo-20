@@ -149,21 +149,39 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     try {
       console.log('🎤 Starting transcript extraction for:', videoUrl);
       
+      // Add detailed logging for debugging
+      console.log('📋 Request details:', {
+        videoId,
+        videoUrl: videoUrl.substring(0, 100) + '...',
+        language: detectedLanguage,
+        rangeBytes: 200000000
+      });
+      
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl,
           rangeBytes: 200000000,
           fullTranscript: true,
-          wordTimestamps: true,
-          language: 'auto'
+          language: detectedLanguage === 'auto' ? undefined : detectedLanguage
         }
       });
 
-      console.log('🔍 Transcribe response:', { data, error });
+      console.log('🔍 Transcribe response:', {
+        success: !error,
+        error: error?.message,
+        dataKeys: data ? Object.keys(data) : [],
+        hasSegments: !!data?.segments,
+        hasWords: !!data?.words,
+        language: data?.language
+      });
 
       if (error) {
-        console.error('❌ Transcribe error:', error);
-        throw new Error(error.message || 'Transcription failed');
+        console.error('❌ Transcription API error:', {
+          message: error.message,
+          code: error.code,
+          details: error.details || error
+        });
+        throw new Error(`Transcription failed: ${error.message || 'Unknown error'}`);
       }
 
       if (!data) {
