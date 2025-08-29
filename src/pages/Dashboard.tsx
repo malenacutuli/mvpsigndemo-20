@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { ASLClipUploader } from '@/components/ASLClipUploader';
 import { StorageIndicator } from '@/components/StorageIndicator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Video, Wand2 } from 'lucide-react';
@@ -77,19 +76,6 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                 </div>
-
-                {/* ASL Clip Upload Section */}
-                <section>
-                  <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
-                      Upload Your Custom ASL Clips
-                    </h2>
-                    <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                      Integrate your own sign language videos into the recipe demo for personalized accessibility
-                    </p>
-                  </div>
-                  <ASLClipUploader />
-                </section>
               </div>
 
               {/* Sidebar */}
