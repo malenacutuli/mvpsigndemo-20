@@ -468,6 +468,32 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                   <SelectItem value="es">Spanish</SelectItem>
                   <SelectItem value="fr">French</SelectItem>
                   <SelectItem value="de">German</SelectItem>
+                  <SelectItem value="it">Italian</SelectItem>
+                  <SelectItem value="pt">Portuguese</SelectItem>
+                  <SelectItem value="nl">Dutch</SelectItem>
+                  <SelectItem value="ru">Russian</SelectItem>
+                  <SelectItem value="ja">Japanese</SelectItem>
+                  <SelectItem value="ko">Korean</SelectItem>
+                  <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
+                  <SelectItem value="ar">Arabic</SelectItem>
+                  <SelectItem value="hi">Hindi</SelectItem>
+                  <SelectItem value="tr">Turkish</SelectItem>
+                  <SelectItem value="pl">Polish</SelectItem>
+                  <SelectItem value="sv">Swedish</SelectItem>
+                  <SelectItem value="no">Norwegian</SelectItem>
+                  <SelectItem value="da">Danish</SelectItem>
+                  <SelectItem value="fi">Finnish</SelectItem>
+                  <SelectItem value="cs">Czech</SelectItem>
+                  <SelectItem value="hu">Hungarian</SelectItem>
+                  <SelectItem value="ro">Romanian</SelectItem>
+                  <SelectItem value="uk">Ukrainian</SelectItem>
+                  <SelectItem value="bg">Bulgarian</SelectItem>
+                  <SelectItem value="hr">Croatian</SelectItem>
+                  <SelectItem value="sk">Slovak</SelectItem>
+                  <SelectItem value="sl">Slovenian</SelectItem>
+                  <SelectItem value="et">Estonian</SelectItem>
+                  <SelectItem value="lv">Latvian</SelectItem>
+                  <SelectItem value="lt">Lithuanian</SelectItem>
                 </SelectContent>
               </Select>
             </div>
