@@ -90,17 +90,38 @@ function createSVGThumbnail(): string {
   return `<svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+        <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+        <stop offset="25%" style="stop-color:#34495e;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#3c4043;stop-opacity:1" />
+        <stop offset="75%" style="stop-color:#2d3436;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
       </linearGradient>
+      <filter id="noise">
+        <feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" stitchTiles="stitch"/>
+        <feColorMatrix in="noise" type="saturate" values="0"/>
+        <feBlend in="SourceGraphic" in2="noise" mode="overlay" result="blend"/>
+      </filter>
     </defs>
-    <rect width="100%" height="100%" fill="url(#bg)"/>
-    <rect x="10" y="10" width="1260" height="700" fill="none" stroke="#374151" stroke-width="4"/>
-    <circle cx="640" cy="360" r="50" fill="rgba(255,255,255,0.9)"/>
-    <polygon points="625,340 625,380 665,360" fill="#1f2937"/>
-    <rect x="0" y="620" width="1280" height="100" fill="rgba(0,0,0,0.7)"/>
-    <text x="640" y="670" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">Video Content</text>
-    <rect x="1150" y="20" width="110" height="30" fill="rgba(0,0,0,0.8)"/>
-    <text x="1205" y="40" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">00:00</text>
+    <rect width="100%" height="100%" fill="url(#bg)" filter="url(#noise)"/>
+    <!-- Simulate video content patterns -->
+    <rect x="100" y="150" width="300" height="200" fill="rgba(52, 73, 94, 0.3)" rx="8"/>
+    <rect x="450" y="200" width="400" height="150" fill="rgba(44, 62, 80, 0.4)" rx="8"/>
+    <rect x="900" y="100" width="250" height="300" fill="rgba(58, 64, 67, 0.3)" rx="8"/>
+    <!-- Simulate text overlay areas -->
+    <rect x="50" y="500" width="600" height="50" fill="rgba(0,0,0,0.6)" rx="4"/>
+    <rect x="700" y="520" width="400" height="30" fill="rgba(0,0,0,0.5)" rx="4"/>
+    <!-- Video player UI elements -->
+    <rect x="0" y="680" width="1280" height="40" fill="rgba(0,0,0,0.8)"/>
+    <circle cx="640" cy="700" r="12" fill="#ffffff"/>
+    <polygon points="636,694 636,706 646,700" fill="#000000"/>
+    <!-- Progress bar -->
+    <rect x="50" y="695" width="1180" height="10" fill="rgba(255,255,255,0.2)" rx="5"/>
+    <rect x="50" y="695" width="118" height="10" fill="#ff6b6b" rx="5"/>
+    <!-- Time stamps -->
+    <text x="20" y="705" font-family="Arial, sans-serif" font-size="12" fill="white">00:12</text>
+    <text x="1250" y="705" font-family="Arial, sans-serif" font-size="12" fill="white">02:05</text>
+    <!-- Video quality indicator -->
+    <rect x="1200" y="20" width="60" height="25" fill="rgba(0,0,0,0.8)" rx="4"/>
+    <text x="1230" y="37" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">1080p</text>
   </svg>`;
 }
