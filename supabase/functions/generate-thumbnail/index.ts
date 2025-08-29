@@ -26,10 +26,32 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Use the video URL as thumbnail source (first frame)
-    const thumbnailUrl = `${videoUrl}#t=1`;
+    // Create a simple SVG thumbnail
+    const svgThumbnail = createSVGThumbnail();
+    
+    // Upload SVG thumbnail to Supabase Storage
+    const thumbnailFileName = `${videoId}-thumbnail.svg`;
+    
+    console.log(`📸 Uploading SVG thumbnail: ${thumbnailFileName}`);
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('thumbnails')
+      .upload(thumbnailFileName, svgThumbnail, {
+        contentType: 'image/svg+xml',
+        upsert: true
+      });
 
-    console.log(`📸 Using video first frame as thumbnail: ${thumbnailUrl}`);
+    if (uploadError) {
+      console.error('❌ Thumbnail upload error:', uploadError);
+      throw uploadError;
+    }
+
+    // Get public URL
+    const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+      .from('thumbnails')
+      .getPublicUrl(thumbnailFileName);
+
+    console.log(`✅ Thumbnail uploaded: ${thumbnailUrl}`);
 
     // Update video record with thumbnail URL
     const { error: updateError } = await supabase
@@ -63,3 +85,22 @@ serve(async (req) => {
     });
   }
 });
+
+function createSVGThumbnail(): string {
+  return `<svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#bg)"/>
+    <rect x="10" y="10" width="1260" height="700" fill="none" stroke="#374151" stroke-width="4"/>
+    <circle cx="640" cy="360" r="50" fill="rgba(255,255,255,0.9)"/>
+    <polygon points="625,340 625,380 665,360" fill="#1f2937"/>
+    <rect x="0" y="620" width="1280" height="100" fill="rgba(0,0,0,0.7)"/>
+    <text x="640" y="670" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">Video Content</text>
+    <rect x="1150" y="20" width="110" height="30" fill="rgba(0,0,0,0.8)"/>
+    <text x="1205" y="40" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">00:00</text>
+  </svg>`;
+}
