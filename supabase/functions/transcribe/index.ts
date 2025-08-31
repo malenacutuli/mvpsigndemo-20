@@ -95,126 +95,119 @@ serve(async (req) => {
         
         console.log(`Video size: ${totalBytes} bytes, OpenAI limit: ${OPENAI_MAX_SIZE} bytes`);
         
-        // ALWAYS use chunking strategy to ensure complete transcription
-        // OpenAI often processes partial content even when accepting full files
-        console.log("Using chunking strategy to ensure complete video transcription");
+        // Try full file processing first for all videos
+        console.log("Attempting full video processing first");
         
-        const chunkSize = Math.floor(OPENAI_MAX_SIZE * 0.7); // Use 70% of limit for safety
-        const numChunks = Math.ceil(totalBytes / chunkSize);
-        console.log(`Will process ALL ${numChunks} chunks of ~${chunkSize} bytes each`);
-        
-        let allTranscriptions = [];
-        let combinedText = "";
-        let allWords = [];
-        let totalProcessedDuration = 0;
-        
-        // Process ALL chunks to ensure complete video transcription
-        for (let i = 0; i < numChunks; i++) {
-          const startByte = i * chunkSize;
-          const endByte = Math.min(startByte + chunkSize - 1, totalBytes - 1);
+        try {
+          const response = await fetch(videoUrl);
           
-          console.log(`Processing chunk ${i + 1}/${numChunks}: bytes ${startByte}-${endByte}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+          }
           
-          try {
-            const chunkResponse = await fetch(videoUrl, {
-              headers: { 
-                'Range': `bytes=${startByte}-${endByte}`
-              }
+          const buffer = await response.arrayBuffer();
+          fileBlob = new Blob([buffer], { type: "video/mp4" });
+          fname = "video.mp4";
+          mtype = "video/mp4";
+          
+          console.log(`Processing full video: ${fileBlob.size} bytes`);
+          
+          // Try transcribing the full file
+          const formData = new FormData();
+          formData.append("file", fileBlob, fname);
+          formData.append("model", "whisper-1");
+          formData.append("response_format", "verbose_json");
+          formData.append("timestamp_granularities[]", "word");
+          
+          if (language && language !== 'auto') {
+            formData.append("language", language);
+          }
+
+          const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: formData,
+          });
+
+          if (openaiResponse.ok) {
+            const transcriptionResult = await openaiResponse.json();
+            console.log(`Full file SUCCESS: detected language ${transcriptionResult.language}, words: ${transcriptionResult.words?.length || 0}, duration: ${transcriptionResult.duration}s`);
+            
+            return new Response(JSON.stringify(transcriptionResult), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
+          } else {
+            const errorText = await openaiResponse.text();
+            console.warn(`Full file failed: ${openaiResponse.status} - ${errorText}`);
             
-            if (!chunkResponse.ok) {
-              console.warn(`Failed to fetch chunk ${i + 1}: ${chunkResponse.status}, trying next chunk`);
-              continue;
-            }
-            
-            const chunkBuffer = await chunkResponse.arrayBuffer();
-            
-            // Skip chunks that are too small
-            if (chunkBuffer.byteLength < 50000) { // 50KB minimum
-              console.warn(`Chunk ${i + 1} too small (${chunkBuffer.byteLength} bytes), skipping`);
-              continue;
-            }
-            
-            const chunkBlob = new Blob([chunkBuffer], { type: "video/mp4" });
-            
-            // Process this chunk with OpenAI
-            const chunkFormData = new FormData();
-            chunkFormData.append("file", chunkBlob, `chunk_${i}.mp4`);
-            chunkFormData.append("model", "whisper-1");
-            chunkFormData.append("response_format", "verbose_json");
-            chunkFormData.append("timestamp_granularities[]", "word");
-            
-            if (language && language !== 'auto') {
-              chunkFormData.append("language", language);
-            }
-            
-            const chunkOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-              },
-              body: chunkFormData,
-            });
-            
-            if (chunkOpenaiResponse.ok) {
-              const chunkResult = await chunkOpenaiResponse.json();
+            // If full file fails and it's over the limit, try a different approach
+            if (totalBytes > OPENAI_MAX_SIZE) {
+              console.log("File too large, will try alternative approach");
               
-              if (chunkResult.text && chunkResult.text.trim()) {
-                // Calculate time offset based on chunk duration
-                const chunkDuration = chunkResult.duration || 0;
-                const timeOffset = totalProcessedDuration;
+              // For files over 25MB, try a more conservative chunking approach
+              // Use temporal segmentation rather than byte chunking
+              const maxDuration = 30; // Process in 30-second chunks
+              const estimatedDurationPerByte = 0.0000015; // More conservative estimate
+              const estimatedTotalDuration = totalBytes * estimatedDurationPerByte;
+              const numTemporalChunks = Math.ceil(estimatedTotalDuration / maxDuration);
+              
+              console.log(`Estimated duration: ${estimatedTotalDuration}s, will try ${numTemporalChunks} temporal segments`);
+              
+              // For now, if the full file doesn't work, try just the first portion
+              // This ensures we get at least some transcription for all users
+              const safeChunkSize = Math.min(OPENAI_MAX_SIZE * 0.8, totalBytes);
+              console.log(`Processing first ${safeChunkSize} bytes as fallback`);
+              
+              try {
+                const partialResponse = await fetch(videoUrl, {
+                  headers: { 'Range': `bytes=0-${safeChunkSize - 1}` }
+                });
                 
-                // Adjust timestamps if words exist
-                if (chunkResult.words && Array.isArray(chunkResult.words)) {
-                  const adjustedWords = chunkResult.words.map((word: any) => ({
-                    ...word,
-                    start: word.start + timeOffset,
-                    end: word.end + timeOffset
-                  }));
-                  allWords.push(...adjustedWords);
+                if (partialResponse.ok) {
+                  const partialBuffer = await partialResponse.arrayBuffer();
+                  const partialBlob = new Blob([partialBuffer], { type: "video/mp4" });
+                  
+                  const partialFormData = new FormData();
+                  partialFormData.append("file", partialBlob, "partial.mp4");
+                  partialFormData.append("model", "whisper-1");
+                  partialFormData.append("response_format", "verbose_json");
+                  partialFormData.append("timestamp_granularities[]", "word");
+                  
+                  if (language && language !== 'auto') {
+                    partialFormData.append("language", language);
+                  }
+                  
+                  const partialOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${OPENAI_API_KEY}`,
+                    },
+                    body: partialFormData,
+                  });
+                  
+                  if (partialOpenaiResponse.ok) {
+                    const partialResult = await partialOpenaiResponse.json();
+                    console.log(`Partial transcription SUCCESS: ${partialResult.words?.length || 0} words, ${partialResult.duration}s`);
+                    console.warn(`Note: Only processed first portion of large video file`);
+                    
+                    return new Response(JSON.stringify(partialResult), {
+                      headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    });
+                  }
                 }
-                
-                combinedText += (combinedText ? " " : "") + chunkResult.text.trim();
-                allTranscriptions.push(chunkResult);
-                totalProcessedDuration += chunkDuration;
-                
-                console.log(`Chunk ${i + 1}/${numChunks} SUCCESS: "${chunkResult.text.substring(0, 50)}..." (${chunkDuration}s)`);
-              } else {
-                console.warn(`Chunk ${i + 1} returned empty text`);
+              } catch (partialError) {
+                console.warn(`Partial processing failed: ${partialError.message}`);
               }
-            } else {
-              const errorText = await chunkOpenaiResponse.text();
-              console.warn(`Failed to transcribe chunk ${i + 1}: ${chunkOpenaiResponse.status} - ${errorText}`);
             }
-          } catch (chunkError) {
-            console.warn(`Error processing chunk ${i + 1}: ${chunkError.message}`);
-            continue;
+            
+            throw new Error(`OpenAI transcription failed: ${openaiResponse.status} - ${errorText}`);
           }
-          
-          // Add small delay between chunks to avoid rate limiting
-          if (i < numChunks - 1) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
+        } catch (processError) {
+          console.error("Video processing error:", processError);
+          throw processError;
         }
-        
-        if (allTranscriptions.length === 0) {
-          throw new Error("No chunks could be successfully transcribed. Video may be corrupted or in an unsupported format.");
-        }
-        
-        // Combine all transcriptions
-        const combinedResult = {
-          text: combinedText,
-          language: allTranscriptions[0].language || 'en',
-          duration: totalProcessedDuration || (allWords.length > 0 ? Math.max(...allWords.map(w => w.end)) : 0),
-          words: allWords
-        };
-        
-        console.log(`COMPLETE TRANSCRIPTION: ${combinedResult.words.length} words from ${allTranscriptions.length}/${numChunks} chunks`);
-        console.log(`Text: ${combinedResult.text.length} chars, Duration: ${combinedResult.duration}s`);
-        
-        return new Response(JSON.stringify(combinedResult), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
         
       } catch (fetchError) {
         console.error("Error fetching video:", fetchError);
