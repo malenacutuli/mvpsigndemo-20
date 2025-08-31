@@ -161,6 +161,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl,
+          videoId, // Pass videoId for database saving
           rangeBytes: 200000000,
           fullTranscript: true,
           language: detectedLanguage === 'auto' ? undefined : detectedLanguage

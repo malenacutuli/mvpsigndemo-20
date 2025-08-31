@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,71 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
     offset += c.length;
   }
   return result;
+}
+
+// Save transcript segments to database
+async function saveTranscriptToDatabase(transcriptResult: any, videoId: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing Supabase credentials for database save');
+    return false;
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  try {
+    // First, delete existing transcript segments for this video
+    console.log(`Clearing existing transcript segments for video ${videoId}`);
+    const { error: deleteError } = await supabase
+      .from('transcript_segments')
+      .delete()
+      .eq('video_id', videoId);
+
+    if (deleteError) {
+      console.error('Error deleting existing segments:', deleteError);
+      return false;
+    }
+
+    // Save new transcript segments
+    if (transcriptResult.segments && transcriptResult.segments.length > 0) {
+      const segmentsToInsert = transcriptResult.segments.map((segment: any) => ({
+        video_id: videoId,
+        text: segment.text || '',
+        start_time: segment.start || 0,
+        end_time: segment.end || 0,
+        confidence: segment.confidence || null,
+        language: transcriptResult.language || 'en',
+        segment_type: 'dialogue',
+        speaker: segment.speaker || null,
+        speaker_color: '#3B82F6',
+        emphasis: 'normal',
+        pitch: 'normal',
+        is_off_camera: false
+      }));
+
+      console.log(`Saving ${segmentsToInsert.length} transcript segments to database`);
+      
+      const { error: insertError } = await supabase
+        .from('transcript_segments')
+        .insert(segmentsToInsert);
+
+      if (insertError) {
+        console.error('Error inserting transcript segments:', insertError);
+        return false;
+      }
+
+      console.log('Successfully saved transcript segments to database');
+      return true;
+    } else {
+      console.warn('No segments to save');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error saving transcript to database:', error);
+    return false;
+  }
 }
 
 // Process large video by extracting segments at different time intervals
@@ -179,12 +245,13 @@ serve(async (req) => {
 
   try {
     console.log("Transcribe function called - v5.0 (Enhanced for all users)");
-    const { audio, mimeType, filename, videoUrl, rangeBytes, language } = await req.json();
+    const { audio, mimeType, filename, videoUrl, rangeBytes, language, videoId } = await req.json();
     
     console.log("Request payload:", {
       hasAudio: !!audio,
       language: language || 'auto',
       hasVideoUrl: !!videoUrl,
+      videoId,
       mimeType,
       filename,
       audioLength: audio?.length || 0,
@@ -280,6 +347,12 @@ serve(async (req) => {
               const result = await segmentationPromise;
               console.log(`Time-based segmentation completed: ${result.segments.length} segments, ${result.words.length} words`);
               
+              // Save to database if videoId is provided
+              if (videoId) {
+                const saveSuccess = await saveTranscriptToDatabase(result, videoId);
+                console.log(`Database save ${saveSuccess ? 'successful' : 'failed'} for video ${videoId}`);
+              }
+              
               return new Response(JSON.stringify(result), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
               });
@@ -336,6 +409,12 @@ serve(async (req) => {
 
     const transcriptionResult = await openaiResponse.json();
     console.log("Transcription successful, detected language:", transcriptionResult.language, "words:", transcriptionResult.words?.length || 0);
+
+    // Save to database if videoId is provided
+    if (videoId) {
+      const saveSuccess = await saveTranscriptToDatabase(transcriptionResult, videoId);
+      console.log(`Database save ${saveSuccess ? 'successful' : 'failed'} for video ${videoId}`);
+    }
 
     return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

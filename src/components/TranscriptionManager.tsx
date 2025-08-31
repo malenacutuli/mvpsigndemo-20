@@ -37,6 +37,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl: videoUrl,
+          videoId: videoId, // Pass videoId for database saving
           rangeBytes: 15000000 // First 15MB for transcription
         }
       });
