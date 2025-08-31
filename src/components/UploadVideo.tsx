@@ -12,6 +12,7 @@ import { VoiceSelector } from '@/components/VoiceSelector';
 import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
 import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
+import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -324,46 +325,70 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('File uploaded successfully:', uploadData);
 
-      // Get video URL for thumbnail generation
+      // Extract video frame for thumbnail
+      setUploadProgress(75);
+      console.log('🎬 Extracting video frame for thumbnail...');
+      let thumbnailUrl: string | null = null;
+      
+      try {
+        // Extract frame from the middle of the video for better quality
+        const extractedFrame = await extractVideoFrame(videoFile, {
+          // Use middle of video for clearer frame (no timeInSeconds = auto middle)
+          quality: 0.9,
+          maxWidth: 1280,
+          maxHeight: 720
+        });
+
+        // Upload thumbnail to Supabase Storage
+        const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+        const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+          .from('thumbnails')
+          .upload(thumbnailFileName, extractedFrame.blob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (thumbnailUploadError) {
+          console.warn('⚠️ Thumbnail upload failed:', thumbnailUploadError);
+        } else {
+          // Get public URL for the thumbnail
+          const { data: { publicUrl: thumbUrl } } = supabase.storage
+            .from('thumbnails')
+            .getPublicUrl(thumbnailFileName);
+          
+          thumbnailUrl = thumbUrl;
+          console.log('✅ Thumbnail extracted and uploaded:', thumbnailUrl);
+        }
+      } catch (frameError) {
+        console.warn('⚠️ Frame extraction failed:', frameError);
+      }
+
+      setUploadProgress(90);
+
+      // Get video URL for fallback thumbnail generation
       const { data: { publicUrl: videoUrl } } = supabase.storage
         .from('videos')
         .getPublicUrl(uploadData.path);
 
-      // Update video record with storage path
+      // Update video record with storage path and thumbnail URL
       const { error: updateError } = await supabase
         .from('videos')
         .update({
           storage_path: uploadData.path,
-          status: 'uploaded' as const
+          status: 'uploaded' as const,
+          ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }) // Add thumbnail URL if extracted
         })
         .eq('id', video.id);
 
       if (updateError) throw updateError;
 
-      // Generate thumbnail for the uploaded video
-      console.log('🎬 Generating thumbnail for video...');
-      try {
-        const { data: thumbnailData, error: thumbnailError } = await supabase.functions.invoke('generate-thumbnail', {
-          body: {
-            videoId: video.id,
-            videoUrl: videoUrl
-          }
-        });
-
-        if (thumbnailError) {
-          console.warn('⚠️ Thumbnail generation failed:', thumbnailError);
-          // Don't fail the entire upload if thumbnail generation fails
-        } else {
-          console.log('✅ Thumbnail generated successfully:', thumbnailData);
-        }
-      } catch (thumbnailError) {
-        console.warn('⚠️ Thumbnail generation error:', thumbnailError);
-        // Don't fail the entire upload if thumbnail generation fails
-      }
+      setUploadProgress(100);
 
       toast({
         title: "Upload successful",
-        description: "Your video has been uploaded and is being processed"
+        description: thumbnailUrl ? 
+          "Your video and thumbnail have been uploaded successfully" :
+          "Your video has been uploaded successfully"
       });
 
       // Reset form
