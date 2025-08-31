@@ -86,7 +86,6 @@ serve(async (req) => {
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
       const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
-      const CHUNK_SIZE = 20000000; // 20MB chunks to stay safely under limit
       
       try {
         // Get video size first
@@ -107,91 +106,17 @@ serve(async (req) => {
           fname = "video.mp4";
           mtype = "video/mp4";
         } else {
-          // Large video - process in chunks and combine transcripts
-          console.log(`Video too large (${contentLength} bytes), processing in chunks`);
+          // Large video - OpenAI can't process files over 25MB
+          // We need to reject this and provide helpful feedback
+          console.log(`Video too large (${contentLength} bytes), cannot process with OpenAI Whisper`);
           
-          const numChunks = Math.ceil(contentLength / CHUNK_SIZE);
-          const allSegments: any[] = [];
-          let totalDuration = 0;
-          
-          for (let i = 0; i < numChunks; i++) {
-            const start = i * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE - 1, contentLength - 1);
-            
-            console.log(`Processing chunk ${i + 1}/${numChunks}: bytes ${start}-${end}`);
-            
-            // Fetch chunk with range header
-            const chunkResponse = await fetch(videoUrl, {
-              headers: { 'Range': `bytes=${start}-${end}` }
-            });
-            
-            if (!chunkResponse.ok) {
-              console.warn(`Failed to fetch chunk ${i + 1}, skipping`);
-              continue;
-            }
-            
-            const chunkBuffer = await chunkResponse.arrayBuffer();
-            const chunkBlob = new Blob([chunkBuffer], { type: "video/mp4" });
-            
-            // Process chunk with OpenAI
-            const chunkFormData = new FormData();
-            chunkFormData.append("file", chunkBlob, `chunk_${i}.mp4`);
-            chunkFormData.append("model", "whisper-1");
-            chunkFormData.append("response_format", "verbose_json");
-            chunkFormData.append("timestamp_granularities[]", "word");
-            
-            if (language && language !== 'auto') {
-              chunkFormData.append("language", language);
-            }
-            
-            const chunkOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-              body: chunkFormData,
-            });
-            
-            if (chunkOpenaiResponse.ok) {
-              const chunkResult = await chunkOpenaiResponse.json();
-              
-              // Adjust timestamps for this chunk
-              const chunkDuration = chunkResult.duration || 30; // Estimate if not provided
-              const timeOffset = totalDuration;
-              
-              if (chunkResult.segments) {
-                chunkResult.segments.forEach((segment: any) => {
-                  segment.start += timeOffset;
-                  segment.end += timeOffset;
-                  
-                  if (segment.words) {
-                    segment.words.forEach((word: any) => {
-                      word.start += timeOffset;
-                      word.end += timeOffset;
-                    });
-                  }
-                });
-                
-                allSegments.push(...chunkResult.segments);
-              }
-              
-              totalDuration += chunkDuration;
-              console.log(`Chunk ${i + 1} processed successfully, duration: ${chunkDuration}s`);
-            } else {
-              console.warn(`Failed to transcribe chunk ${i + 1}`);
-            }
-          }
-          
-          // Return combined result
-          const combinedResult = {
-            text: allSegments.map(s => s.text).join(' '),
-            language: allSegments[0]?.language || 'en',
-            duration: totalDuration,
-            segments: allSegments,
-            words: allSegments.flatMap(s => s.words || [])
-          };
-          
-          console.log(`Combined transcript: ${allSegments.length} segments, ${combinedResult.words.length} words`);
-          
-          return new Response(JSON.stringify(combinedResult), {
+          return new Response(JSON.stringify({ 
+            error: "Video file too large for transcription",
+            details: `Video size: ${Math.round(contentLength / 1024 / 1024)}MB. Maximum supported size: 25MB. Please compress or shorten your video before uploading.`,
+            sizeMB: Math.round(contentLength / 1024 / 1024),
+            maxSizeMB: 25
+          }), {
+            status: 413,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
