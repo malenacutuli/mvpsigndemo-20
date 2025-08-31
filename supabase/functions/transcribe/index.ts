@@ -11,15 +11,12 @@ const corsHeaders = {
 serve(async (req) => {
   console.log("=== TRANSCRIBE FUNCTION CALLED ===");
   console.log("Method:", req.method);
-  console.log("URL:", req.url);
 
   if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS request");
     return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
-    console.log("Invalid method:", req.method);
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -27,17 +24,12 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Processing POST request...");
-    
     const body = await req.text();
-    console.log("Raw body length:", body.length);
-    
     let parsedBody;
+    
     try {
       parsedBody = JSON.parse(body);
-      console.log("Parsed body keys:", Object.keys(parsedBody));
     } catch (parseError) {
-      console.error("JSON parse error:", parseError);
       return new Response(JSON.stringify({ 
         error: "Invalid JSON in request body",
         details: String(parseError)
@@ -47,30 +39,23 @@ serve(async (req) => {
       });
     }
 
-    const { audio, videoUrl, videoId, language, forceReExtract } = parsedBody;
+    const { videoUrl, videoId, language, forceReExtract } = parsedBody;
     
     console.log("Request details:", {
-      hasAudio: !!audio,
       hasVideoUrl: !!videoUrl,
       videoId: videoId || 'none',
       language: language || 'auto',
-      forceReExtract: !!forceReExtract,
-      audioLength: audio?.length || 0
+      forceReExtract: !!forceReExtract
     });
 
-    // Check required parameters
-    if (!audio && !videoUrl) {
-      console.error("Missing both audio and videoUrl");
-      return new Response(JSON.stringify({ error: "Provide 'audio' (base64) or 'videoUrl'" }), {
+    if (!videoUrl) {
+      return new Response(JSON.stringify({ error: "videoUrl is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check OpenAI API key
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    console.log("OpenAI API key available:", !!OPENAI_API_KEY);
-    
     if (!OPENAI_API_KEY) {
       return new Response(JSON.stringify({ 
         error: "OPENAI_API_KEY not configured" 
@@ -80,146 +65,85 @@ serve(async (req) => {
       });
     }
 
-    // Handle video URL with chunked processing for large files
-    if (videoUrl) {
-      console.log("Processing video from URL:", videoUrl.substring(0, 100) + "...");
-      
+    console.log("Processing complete video from URL:", videoUrl.substring(0, 100) + "...");
+    
+    // Download and process the complete video
+    const processVideo = async () => {
       try {
-        // Get video info
+        // Get video size info
         const headResponse = await fetch(videoUrl, { method: 'HEAD' });
-        if (!headResponse.ok) {
-          throw new Error(`Failed to access video: ${headResponse.status}`);
-        }
-        
         const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
         const sizeMB = Math.round(contentLength / 1024 / 1024);
-        console.log(`Video size: ${sizeMB}MB`);
+        console.log(`Video size: ${sizeMB}MB - processing complete video...`);
         
-        // Download video
-        console.log("Downloading video...");
+        // Download the complete video
         const videoResponse = await fetch(videoUrl);
         if (!videoResponse.ok) {
           throw new Error(`Failed to download video: ${videoResponse.status}`);
         }
         
         const videoBuffer = await videoResponse.arrayBuffer();
-        console.log("Video downloaded successfully:", videoBuffer.byteLength, "bytes");
+        console.log(`Downloaded ${sizeMB}MB video, starting transcription...`);
         
-        // For large files, we'll process in chunks
-        const MAX_CHUNK_SIZE = 20000000; // 20MB chunks to be safe
-        const needsChunking = videoBuffer.byteLength > MAX_CHUNK_SIZE;
-        
+        // Process the complete video regardless of size
         let transcriptionResult;
-        
-        if (!needsChunking) {
-          // Process normally for small files
-          console.log("Processing file in single request...");
-          transcriptionResult = await transcribeChunk(videoBuffer, OPENAI_API_KEY, language);
-        } else {
-          // Process in chunks for large files
-          console.log(`File is large (${sizeMB}MB), processing in chunks...`);
-          transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
-        }
-        console.log("Transcription successful!");
-        console.log("- Language:", transcriptionResult.language);
-        console.log("- Duration:", transcriptionResult.duration);
-        console.log("- Segments:", transcriptionResult.segments?.length || 0);
-        
-        // Save to database if videoId provided
-        if (videoId && transcriptionResult.segments) {
-          console.log(`Saving transcript to database for video ${videoId}...`);
+        try {
+          transcriptionResult = await transcribeComplete(videoBuffer, OPENAI_API_KEY, language);
+          console.log("✅ Complete video transcribed successfully!");
+        } catch (error) {
+          console.log("⚠️ Single request failed, trying chunked approach:", error.message);
           
-          try {
-            const supabaseUrl = Deno.env.get('SUPABASE_URL');
-            const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-            
-            if (supabaseUrl && supabaseServiceKey) {
-              const supabase = createClient(supabaseUrl, supabaseServiceKey);
-              
-              // Clear existing segments
-              if (forceReExtract) {
-                await supabase
-                  .from('transcript_segments')
-                  .delete()
-                  .eq('video_id', videoId);
-              }
-              
-              // Prepare segments for database
-              const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
-                video_id: videoId,
-                text: segment.text || '',
-                start_time: Number(segment.start) || (index * 5),
-                end_time: Number(segment.end) || ((index + 1) * 5),
-                confidence: segment.confidence || null,
-                language: transcriptionResult.language || 'en',
-                segment_type: 'dialogue',
-                speaker: `Speaker ${(index % 3) + 1}`,
-                speaker_color: '#3B82F6',
-                emphasis: 'normal',
-                pitch: 'normal',
-                is_off_camera: false
-              }));
-              
-              // Save to database
-              const { error: saveError } = await supabase
-                .from('transcript_segments')
-                .upsert(segmentsToSave, { 
-                  onConflict: 'video_id,language,start_time',
-                  ignoreDuplicates: false
-                });
-                
-              if (saveError) {
-                console.error("Database save error:", saveError);
-              } else {
-                console.log(`Successfully saved ${segmentsToSave.length} segments to database`);
-              }
-            }
-          } catch (dbError) {
-            console.error("Database operation failed:", dbError);
-          }
+          // Fallback to intelligent chunking based on time segments
+          transcriptionResult = await transcribeWithIntelligentChunking(videoBuffer, OPENAI_API_KEY, language);
         }
-
-        return new Response(JSON.stringify(transcriptionResult), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
         
-      } catch (videoError) {
-        console.error("Video processing error:", videoError);
-        return new Response(JSON.stringify({ 
-          error: "Failed to process video",
-          details: String(videoError)
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // Save to database
+        if (videoId && transcriptionResult.segments) {
+          await saveTranscriptToDatabase(videoId, transcriptionResult, forceReExtract);
+        }
+        
+        return transcriptionResult;
+        
+      } catch (error) {
+        console.error("Video processing error:", error);
+        throw error;
       }
-    }
-
-    // Handle base64 audio (fallback)
-    if (audio) {
-      console.log("Processing base64 audio...");
-      return new Response(JSON.stringify({ 
-        error: "Base64 audio processing not implemented in this version" 
+    };
+    
+    // For very large files (>100MB), use background processing
+    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+    const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
+    const sizeMB = Math.round(contentLength / 1024 / 1024);
+    
+    if (sizeMB > 100) {
+      console.log(`Large file detected (${sizeMB}MB), using background processing...`);
+      
+      // Start background task for very large files
+      EdgeRuntime.waitUntil(processVideo().catch(console.error));
+      
+      return new Response(JSON.stringify({
+        message: "Large video processing started in background",
+        sizeMB,
+        status: "processing",
+        estimatedTime: `${Math.ceil(sizeMB / 25)} minutes`
       }), {
-        status: 501,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } else {
+      // Process immediately for smaller files
+      const result = await processVideo();
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ error: "No valid input provided" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
   } catch (error) {
     console.error("=== FUNCTION ERROR ===");
     console.error("Error:", error);
-    console.error("Stack:", error.stack);
     
     return new Response(JSON.stringify({ 
       error: "Internal server error",
-      details: String(error),
-      stack: error.stack || 'No stack available'
+      details: String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -227,8 +151,8 @@ serve(async (req) => {
   }
 });
 
-// Helper function to transcribe a single chunk
-async function transcribeChunk(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+// Helper function to transcribe complete video in one request
+async function transcribeComplete(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
   const blob = new Blob([buffer], { type: "video/mp4" });
   
   const formData = new FormData();
@@ -241,6 +165,7 @@ async function transcribeChunk(buffer: ArrayBuffer, apiKey: string, language?: s
     formData.append("language", language);
   }
 
+  console.log("Sending complete video to OpenAI Whisper...");
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
     headers: {
@@ -254,68 +179,93 @@ async function transcribeChunk(buffer: ArrayBuffer, apiKey: string, language?: s
     throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log(`Transcription complete: ${result.segments?.length || 0} segments, ${Math.round(result.duration || 0)}s duration`);
+  return result;
 }
 
-// Helper function to process large files in chunks
-async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  const CHUNK_SIZE = 20000000; // 20MB chunks
-  const chunks = [];
+// Intelligent chunking for very large files - splits based on time rather than file size
+async function transcribeWithIntelligentChunking(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  console.log("Using intelligent time-based chunking...");
   
-  // Split buffer into chunks
-  for (let i = 0; i < buffer.byteLength; i += CHUNK_SIZE) {
-    const end = Math.min(i + CHUNK_SIZE, buffer.byteLength);
-    chunks.push(buffer.slice(i, end));
+  // For very large videos, we'll process in multiple passes with overlapping segments
+  const SEGMENT_DURATION = 300; // 5 minute segments with overlap
+  const OVERLAP_DURATION = 30;  // 30 second overlap
+  
+  // First, get total duration by processing a small sample
+  const sampleSize = Math.min(buffer.byteLength, 5000000); // 5MB sample
+  const sampleBuffer = buffer.slice(0, sampleSize);
+  
+  let totalDuration = 0;
+  try {
+    const sampleResult = await transcribeComplete(sampleBuffer, apiKey, language);
+    // Estimate total duration based on sample
+    totalDuration = (sampleResult.duration || 60) * (buffer.byteLength / sampleSize);
+    console.log(`Estimated total duration: ${Math.round(totalDuration)}s`);
+  } catch (error) {
+    console.log("Could not estimate duration, using fixed chunks");
+    totalDuration = 1800; // Default to 30 minutes
   }
   
-  console.log(`Processing ${chunks.length} chunks...`);
+  // Calculate number of segments needed
+  const numSegments = Math.ceil(totalDuration / SEGMENT_DURATION);
+  console.log(`Processing ${numSegments} time-based segments...`);
   
-  // Process chunks sequentially to avoid rate limits
   const results = [];
-  let totalDuration = 0;
+  let currentTime = 0;
   
-  for (let i = 0; i < chunks.length; i++) {
-    console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
-    
+  for (let i = 0; i < numSegments; i++) {
     try {
-      const chunkResult = await transcribeChunk(chunks[i], apiKey, language);
+      const startTime = Math.max(0, currentTime - (i > 0 ? OVERLAP_DURATION : 0));
+      const endTime = Math.min(totalDuration, currentTime + SEGMENT_DURATION);
       
-      // Adjust timestamps to account for chunk position
-      const timeOffset = totalDuration;
-      if (chunkResult.segments) {
-        chunkResult.segments.forEach((segment: any) => {
-          segment.start += timeOffset;
-          segment.end += timeOffset;
-          
-          // Adjust word timestamps too
-          if (segment.words) {
-            segment.words.forEach((word: any) => {
-              word.start += timeOffset;
-              word.end += timeOffset;
-            });
-          }
-        });
+      console.log(`Processing segment ${i + 1}/${numSegments} (${Math.round(startTime)}s - ${Math.round(endTime)}s)...`);
+      
+      // Calculate buffer segment based on time proportion
+      const startByte = Math.floor((startTime / totalDuration) * buffer.byteLength);
+      const endByte = Math.floor((endTime / totalDuration) * buffer.byteLength);
+      const segmentBuffer = buffer.slice(startByte, endByte);
+      
+      // Only process if segment is substantial
+      if (segmentBuffer.byteLength > 1000000) { // At least 1MB
+        const segmentResult = await transcribeComplete(segmentBuffer, apiKey, language);
+        
+        // Adjust timestamps for this segment
+        if (segmentResult.segments) {
+          segmentResult.segments.forEach((segment: any) => {
+            segment.start += currentTime;
+            segment.end += currentTime;
+            
+            if (segment.words) {
+              segment.words.forEach((word: any) => {
+                word.start += currentTime;
+                word.end += currentTime;
+              });
+            }
+          });
+        }
+        
+        results.push(segmentResult);
+        
+        // Rate limiting
+        if (i < numSegments - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
       
-      results.push(chunkResult);
-      totalDuration += chunkResult.duration || 0;
-      
-      // Small delay to be respectful to API
-      if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      currentTime += SEGMENT_DURATION;
       
     } catch (error) {
-      console.error(`Failed to process chunk ${i + 1}:`, error);
-      // Continue with other chunks even if one fails
+      console.error(`Failed to process segment ${i + 1}:`, error);
+      // Continue with next segment
     }
   }
   
   if (results.length === 0) {
-    throw new Error("Failed to process any chunks");
+    throw new Error("Failed to process any segments");
   }
   
-  // Combine all results
+  // Combine all results with deduplication
   const combinedResult = {
     text: results.map(r => r.text || '').join(' '),
     language: results.find(r => r.language)?.language || 'en',
@@ -324,17 +274,93 @@ async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?
     words: []
   };
   
-  // Combine segments and words
+  // Merge segments with overlap handling
   results.forEach(result => {
     if (result.segments) {
-      combinedResult.segments.push(...result.segments);
+      result.segments.forEach((segment: any) => {
+        // Check for overlap with existing segments
+        const hasOverlap = combinedResult.segments.some((existing: any) => 
+          Math.abs(existing.start - segment.start) < 5 && 
+          existing.text.substring(0, 50) === segment.text.substring(0, 50)
+        );
+        
+        if (!hasOverlap) {
+          combinedResult.segments.push(segment);
+        }
+      });
     }
+    
     if (result.words) {
       combinedResult.words.push(...result.words);
     }
   });
   
-  console.log(`Combined transcription complete: ${combinedResult.segments.length} segments, ${Math.round(totalDuration)}s total`);
+  // Sort segments by time
+  combinedResult.segments.sort((a: any, b: any) => a.start - b.start);
+  combinedResult.words.sort((a: any, b: any) => a.start - b.start);
+  
+  console.log(`✅ Intelligent chunking complete: ${combinedResult.segments.length} segments, ${Math.round(totalDuration)}s total`);
   
   return combinedResult;
+}
+
+// Save transcript to database
+async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
+  console.log(`Saving transcript to database for video ${videoId}...`);
+  
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (supabaseUrl && supabaseServiceKey) {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Clear existing segments if force re-extract
+      if (forceReExtract) {
+        await supabase
+          .from('transcript_segments')
+          .delete()
+          .eq('video_id', videoId);
+      }
+      
+      // Prepare segments for database
+      const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
+        video_id: videoId,
+        text: segment.text || '',
+        start_time: Number(segment.start) || (index * 5),
+        end_time: Number(segment.end) || ((index + 1) * 5),
+        confidence: segment.confidence || null,
+        language: transcriptionResult.language || 'en',
+        segment_type: 'dialogue',
+        speaker: `Speaker ${(index % 3) + 1}`,
+        speaker_color: '#3B82F6',
+        emphasis: 'normal',
+        pitch: 'normal',
+        is_off_camera: false
+      }));
+      
+      // Save to database in batches to handle large transcripts
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
+        const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
+        
+        const { error: saveError } = await supabase
+          .from('transcript_segments')
+          .upsert(batch, { 
+            onConflict: 'video_id,language,start_time',
+            ignoreDuplicates: false
+          });
+          
+        if (saveError) {
+          console.error(`Database save error for batch ${Math.floor(i/BATCH_SIZE) + 1}:`, saveError);
+        } else {
+          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
+        }
+      }
+      
+      console.log(`✅ Successfully saved ${segmentsToSave.length} segments to database`);
+    }
+  } catch (dbError) {
+    console.error("Database operation failed:", dbError);
+  }
 }
