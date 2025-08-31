@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ThumbnailGenerator } from '@/components/ThumbnailGenerator';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
@@ -229,6 +230,14 @@ export default function Videos() {
               <SelectItem value="error">Error</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Thumbnail Generator */}
+        <div className="mb-8">
+          <ThumbnailGenerator 
+            videos={videos}
+            onThumbnailsGenerated={fetchVideos}
+          />
         </div>
 
         {/* Videos Grid */}

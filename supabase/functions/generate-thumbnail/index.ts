@@ -26,18 +26,33 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Create a simple SVG thumbnail
-    const svgThumbnail = createSVGThumbnail();
+    // Try to extract video frame, fallback to placeholder if needed
+    let thumbnailData: Uint8Array;
+    let contentType: string;
+    let thumbnailFileName: string;
+
+    try {
+      // Attempt to extract video frame
+      const frameData = await extractVideoFrame(videoUrl);
+      thumbnailData = frameData;
+      contentType = 'image/jpeg';
+      thumbnailFileName = `${videoId}-thumbnail.jpg`;
+      console.log(`📸 Successfully extracted video frame for ${videoId}`);
+    } catch (frameError) {
+      console.warn(`⚠️ Frame extraction failed for ${videoId}, using placeholder:`, frameError.message);
+      // Fallback to high-quality placeholder
+      const placeholderSvg = createVideoPlaceholder();
+      thumbnailData = new TextEncoder().encode(placeholderSvg);
+      contentType = 'image/svg+xml';
+      thumbnailFileName = `${videoId}-thumbnail.svg`;
+    }
     
-    // Upload SVG thumbnail to Supabase Storage
-    const thumbnailFileName = `${videoId}-thumbnail.svg`;
-    
-    console.log(`📸 Uploading SVG thumbnail: ${thumbnailFileName}`);
+    console.log(`📸 Uploading thumbnail: ${thumbnailFileName}`);
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('thumbnails')
-      .upload(thumbnailFileName, svgThumbnail, {
-        contentType: 'image/svg+xml',
+      .upload(thumbnailFileName, thumbnailData, {
+        contentType: contentType,
         upsert: true
       });
 
@@ -86,42 +101,69 @@ serve(async (req) => {
   }
 });
 
-function createSVGThumbnail(): string {
-  return `<svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
+// Function to extract first frame from video
+async function extractVideoFrame(videoUrl: string): Promise<Uint8Array> {
+  console.log(`🎞️ Attempting to extract frame from: ${videoUrl}`);
+  
+  // Fetch the video file
+  const videoResponse = await fetch(videoUrl);
+  if (!videoResponse.ok) {
+    throw new Error(`Failed to fetch video: ${videoResponse.statusText}`);
+  }
+  
+  const videoBlob = await videoResponse.blob();
+  const videoArrayBuffer = await videoBlob.arrayBuffer();
+  
+  // For now, we'll use a simple approach - try to extract metadata or use a service
+  // In a real implementation, you'd want to use FFmpeg.wasm or similar
+  // This is a placeholder that will trigger the fallback for now
+  throw new Error('Frame extraction not yet implemented - using fallback placeholder');
+}
+
+// Create a clean video placeholder thumbnail
+function createVideoPlaceholder(): string {
+  return `<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
-        <stop offset="25%" style="stop-color:#34495e;stop-opacity:1" />
-        <stop offset="50%" style="stop-color:#3c4043;stop-opacity:1" />
-        <stop offset="75%" style="stop-color:#2d3436;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <linearGradient id="videoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#334155;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
       </linearGradient>
-      <filter id="noise">
-        <feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" stitchTiles="stitch"/>
-        <feColorMatrix in="noise" type="saturate" values="0"/>
-        <feBlend in="SourceGraphic" in2="noise" mode="overlay" result="blend"/>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
       </filter>
     </defs>
-    <rect width="100%" height="100%" fill="url(#bg)" filter="url(#noise)"/>
-    <!-- Simulate video content patterns -->
-    <rect x="100" y="150" width="300" height="200" fill="rgba(52, 73, 94, 0.3)" rx="8"/>
-    <rect x="450" y="200" width="400" height="150" fill="rgba(44, 62, 80, 0.4)" rx="8"/>
-    <rect x="900" y="100" width="250" height="300" fill="rgba(58, 64, 67, 0.3)" rx="8"/>
-    <!-- Simulate text overlay areas -->
-    <rect x="50" y="500" width="600" height="50" fill="rgba(0,0,0,0.6)" rx="4"/>
-    <rect x="700" y="520" width="400" height="30" fill="rgba(0,0,0,0.5)" rx="4"/>
-    <!-- Video player UI elements -->
+    
+    <!-- Background -->
+    <rect width="100%" height="100%" fill="url(#videoGradient)"/>
+    
+    <!-- Main play button -->
+    <g transform="translate(640,360)">
+      <circle cx="0" cy="0" r="60" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+      <circle cx="0" cy="0" r="45" fill="rgba(255,255,255,0.9)" filter="url(#glow)"/>
+      <polygon points="-15,-20 -15,20 25,0" fill="#1e293b"/>
+    </g>
+    
+    <!-- Video frame border -->
+    <rect x="20" y="20" width="1240" height="680" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="8"/>
+    
+    <!-- Bottom control bar -->
     <rect x="0" y="680" width="1280" height="40" fill="rgba(0,0,0,0.8)"/>
-    <circle cx="640" cy="700" r="12" fill="#ffffff"/>
-    <polygon points="636,694 636,706 646,700" fill="#000000"/>
+    
     <!-- Progress bar -->
-    <rect x="50" y="695" width="1180" height="10" fill="rgba(255,255,255,0.2)" rx="5"/>
-    <rect x="50" y="695" width="118" height="10" fill="#ff6b6b" rx="5"/>
-    <!-- Time stamps -->
-    <text x="20" y="705" font-family="Arial, sans-serif" font-size="12" fill="white">00:12</text>
-    <text x="1250" y="705" font-family="Arial, sans-serif" font-size="12" fill="white">02:05</text>
-    <!-- Video quality indicator -->
-    <rect x="1200" y="20" width="60" height="25" fill="rgba(0,0,0,0.8)" rx="4"/>
-    <text x="1230" y="37" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">1080p</text>
+    <rect x="60" y="695" width="1100" height="4" fill="rgba(255,255,255,0.2)" rx="2"/>
+    <rect x="60" y="695" width="200" height="4" fill="#3b82f6" rx="2"/>
+    
+    <!-- Time display -->
+    <text x="20" y="705" font-family="Arial, sans-serif" font-size="12" fill="rgba(255,255,255,0.8)">0:00</text>
+    <text x="1180" y="705" font-family="Arial, sans-serif" font-size="12" fill="rgba(255,255,255,0.8)">0:00</text>
+    
+    <!-- Quality badge -->
+    <rect x="1190" y="30" width="70" height="24" fill="rgba(0,0,0,0.8)" rx="4"/>
+    <text x="1225" y="46" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">VIDEO</text>
   </svg>`;
 }
