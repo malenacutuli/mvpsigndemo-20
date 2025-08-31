@@ -130,7 +130,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const generateOriginalTranscript = async () => {
       setIsGenerating(true);
       try {
-        const { data, error } = await supabase.functions.invoke('transcribe', {
+        const response = await supabase.functions.invoke('transcribe', {
           body: { 
             videoUrl: videoUrl,
             rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
@@ -140,37 +140,41 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           }
         });
 
-      if (error) {
-        // For edge function errors, try to parse the error message from different sources
+      // Check for errors - the response might have error info in data even if no error object
+      if (response.error || response.data?.error) {
         let errorMessage = 'Transcription failed';
         let errorDetails = '';
         
-        // Check if error has a message with JSON details
-        if (error.message) {
+        // If there's response data with error info, use that
+        if (response.data?.error) {
+          errorMessage = response.data.error;
+          errorDetails = response.data.details || '';
+          
+          // Add size info if available
+          if (response.data.sizeMB && response.data.maxSizeMB) {
+            errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
+          }
+        }
+        // Otherwise use the error object
+        else if (response.error?.message) {
           try {
-            // Edge function errors might come as stringified JSON in the error message
-            const parsed = JSON.parse(error.message);
-            errorMessage = parsed.error || error.message;
+            // Try parsing as JSON first
+            const parsed = JSON.parse(response.error.message);
+            errorMessage = parsed.error || response.error.message;
             errorDetails = parsed.details || '';
           } catch {
-            // If not JSON, check for common error patterns
-            if (error.message.includes('413') || error.message.includes('too large')) {
-              errorMessage = 'Video file too large';
+            // If not JSON, use the message directly
+            errorMessage = response.error.message;
+            if (response.error.message.includes('413') || response.error.message.includes('too large')) {
               errorDetails = 'Maximum supported size is 25MB. Please compress your video.';
-            } else {
-              errorMessage = error.message;
             }
           }
         }
         
-        // Also check the data object for detailed error info
-        if (data?.error) {
-          errorMessage = data.error;
-          errorDetails = data.details || errorDetails;
-        }
-        
         throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
       }
+
+      const { data, error } = response;
 
       // Convert to segments format using actual timing from Whisper API
       const segments: TranscriptSegment[] = [];
