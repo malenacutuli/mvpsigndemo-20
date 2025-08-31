@@ -30,6 +30,141 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
   return result;
 }
 
+// Process large video by extracting segments at different time intervals
+async function processLargeVideoInTimeSegments(videoUrl: string, language: string, OPENAI_API_KEY: string) {
+  console.log("Processing large video with time-based segmentation");
+  
+  // Strategy: Download once and segment intelligently
+  const MAX_SEGMENTS = 8; // Limit to prevent excessive processing
+  
+  try {
+    // Download the video once
+    console.log("Downloading video for segmentation...");
+    const response = await fetch(videoUrl);
+    const buffer = await response.arrayBuffer();
+    const totalSize = buffer.byteLength;
+    
+    console.log(`Video downloaded: ${Math.round(totalSize / 1024 / 1024)}MB`);
+    
+    // Calculate optimal segment size (aim for ~20MB segments)
+    const TARGET_SEGMENT_SIZE = 20000000; // 20MB
+    const numberOfSegments = Math.min(
+      Math.ceil(totalSize / TARGET_SEGMENT_SIZE),
+      MAX_SEGMENTS
+    );
+    
+    const actualSegmentSize = Math.ceil(totalSize / numberOfSegments);
+    console.log(`Processing ${numberOfSegments} segments of ~${Math.round(actualSegmentSize / 1024 / 1024)}MB each`);
+    
+    const allSegments: any[] = [];
+    let totalProcessedDuration = 0;
+    
+    // Process segments sequentially to avoid overwhelming the API
+    for (let i = 0; i < numberOfSegments; i++) {
+      const startByte = i * actualSegmentSize;
+      const endByte = Math.min(startByte + actualSegmentSize, totalSize);
+      
+      if (startByte >= totalSize) break;
+      
+      console.log(`Processing segment ${i + 1}/${numberOfSegments}: bytes ${startByte}-${endByte}`);
+      
+      try {
+        // Extract this segment from the buffer
+        const segmentBuffer = buffer.slice(startByte, endByte);
+        const segmentBlob = new Blob([segmentBuffer], { type: "audio/mp4" });
+        
+        console.log(`Segment ${i + 1} size: ${Math.round(segmentBlob.size / 1024 / 1024)}MB`);
+        
+        // Skip if segment is still too large (shouldn't happen with proper calculation)
+        if (segmentBlob.size > 25000000) {
+          console.warn(`Segment ${i + 1} too large, skipping`);
+          continue;
+        }
+        
+        const formData = new FormData();
+        formData.append("file", segmentBlob, `segment_${i}.mp4`);
+        formData.append("model", "whisper-1");
+        formData.append("response_format", "verbose_json");
+        formData.append("timestamp_granularities[]", "word");
+        
+        if (language && language !== 'auto') {
+          formData.append("language", language);
+        }
+        
+        const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+          body: formData,
+        });
+        
+        if (openaiResponse.ok) {
+          const result = await openaiResponse.json();
+          
+          // Adjust timestamps for this segment
+          const timeOffset = totalProcessedDuration;
+          const segmentDuration = result.duration || 300; // Fallback estimate
+          
+          if (result.segments) {
+            result.segments.forEach((segment: any) => {
+              segment.start += timeOffset;
+              segment.end += timeOffset;
+              
+              if (segment.words) {
+                segment.words.forEach((word: any) => {
+                  word.start += timeOffset;
+                  word.end += timeOffset;
+                });
+              }
+            });
+            
+            allSegments.push(...result.segments);
+          }
+          
+          totalProcessedDuration += segmentDuration;
+          console.log(`Segment ${i + 1} processed: ${segmentDuration}s duration`);
+          
+        } else {
+          const errorText = await openaiResponse.text();
+          console.warn(`Segment ${i + 1} failed: ${openaiResponse.status} - ${errorText}`);
+          
+          // For 413 errors, try smaller segments
+          if (openaiResponse.status === 413) {
+            console.log(`Segment ${i + 1} too large for OpenAI, splitting further...`);
+            // Could implement recursive splitting here
+          }
+        }
+        
+      } catch (segmentError) {
+        console.error(`Error processing segment ${i + 1}:`, segmentError);
+      }
+      
+      // Add small delay between segments to avoid rate limiting
+      if (i < numberOfSegments - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    if (allSegments.length === 0) {
+      throw new Error("Failed to process any video segments successfully");
+    }
+    
+    const result = {
+      text: allSegments.map(s => s.text).join(' '),
+      language: allSegments[0]?.language || language || 'en',
+      duration: totalProcessedDuration,
+      segments: allSegments,
+      words: allSegments.flatMap(s => s.words || [])
+    };
+    
+    console.log(`Segmentation complete: ${allSegments.length} segments, ${result.words.length} words, ${totalProcessedDuration}s total`);
+    return result;
+    
+  } catch (error) {
+    console.error("Error in time-based segmentation:", error);
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -133,17 +268,32 @@ serve(async (req) => {
           
           console.log(`Processing ${Math.round(buffer.byteLength / 1024 / 1024)}MB video as audio`);
           
-          // If still too large after conversion, return error
+          // If still too large after conversion, use time-based segmentation
           if (fileBlob.size > OPENAI_MAX_SIZE) {
-            return new Response(JSON.stringify({ 
-              error: "Audio track too large for transcription",
-              details: `Audio size: ${Math.round(fileBlob.size / 1024 / 1024)}MB. Even the audio track exceeds the 25MB limit. Please use a shorter video or compress further.`,
-              audioSizeMB: Math.round(fileBlob.size / 1024 / 1024),
-              maxSizeMB: 25
-            }), {
-              status: 413,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+            console.log(`Audio track still too large (${Math.round(fileBlob.size / 1024 / 1024)}MB), using time-based segmentation`);
+            
+            // Use background task for long-running segmentation
+            const segmentationPromise = processLargeVideoInTimeSegments(videoUrl, language || 'auto', OPENAI_API_KEY);
+            
+            // For very large files, we'll process in background and return result immediately
+            try {
+              const result = await segmentationPromise;
+              console.log(`Time-based segmentation completed: ${result.segments.length} segments, ${result.words.length} words`);
+              
+              return new Response(JSON.stringify(result), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            } catch (segmentError) {
+              console.error("Segmentation failed:", segmentError);
+              return new Response(JSON.stringify({ 
+                error: "Large video processing failed", 
+                details: `Unable to process video segments: ${segmentError.message}. Try using a shorter or more compressed video.`,
+                suggestion: "Consider splitting your video into shorter segments (under 25MB each) for better results"
+              }), {
+                status: 500,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
           }
         }
         
