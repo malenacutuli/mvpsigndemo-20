@@ -16,7 +16,7 @@ export const useStorageManagement = () => {
   const { toast } = useToast();
   const [storageUsage, setStorageUsage] = useState<StorageUsage>({
     totalUsed: 0,
-    totalLimit: 107374182400, // 100GB in bytes for starter plan
+    totalLimit: 5368709120, // 5GB in bytes for improved upload capacity 
     usagePercentage: 0,
     isNearLimit: false,
     isOverLimit: false
@@ -70,13 +70,13 @@ export const useStorageManagement = () => {
       if (isOverLimit) {
         toast({
           title: "Storage Limit Exceeded",
-          description: "Upgrade to Standard plan for 2TB storage to continue uploading videos.",
+          description: "Upgrade your Supabase plan for larger storage capacity to continue uploading videos.",
           variant: "destructive",
         });
       } else if (isNearLimit) {
         toast({
           title: "Storage Nearly Full", 
-          description: `You've used ${formatBytes(totalUsed)} of your 100GB limit. Consider upgrading soon.`,
+          description: `You've used ${formatBytes(totalUsed)} of your 5GB limit. Consider upgrading for more storage.`,
         });
       }
 
@@ -93,7 +93,7 @@ export const useStorageManagement = () => {
     if (wouldExceedLimit) {
       toast({
         title: "Upload Failed - Storage Limit",
-        description: `This file would exceed your 100GB storage limit. Upgrade to Standard for 2TB storage.`,
+        description: `This file would exceed your 5GB storage limit. Upgrade your Supabase plan for more storage.`,
         variant: "destructive",
       });
       return false;

@@ -206,11 +206,11 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       });
       
       if (file.type.startsWith('video/')) {
-        // Check file size (2GB = 2147483648 bytes)
-        if (file.size > 2147483648) {
+        // Check file size (5GB = 5368709120 bytes)
+        if (file.size > 5368709120) {
           toast({
             title: "File too large",
-            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 2048 MB.`,
+            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 5120 MB (5GB). Consider upgrading your Supabase plan for larger files.`,
             variant: "destructive"
           });
           return;
@@ -242,11 +242,11 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       });
       
       if (file.type.startsWith('video/')) {
-        // Check file size (2GB = 2147483648 bytes)
-        if (file.size > 2147483648) {
+        // Check file size (5GB = 5368709120 bytes)
+        if (file.size > 5368709120) {
           toast({
             title: "File too large",
-            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 2048 MB.`,
+            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum allowed is 5120 MB (5GB). Consider upgrading your Supabase plan for larger files.`,
             variant: "destructive"
           });
           return;
