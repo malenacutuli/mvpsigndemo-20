@@ -91,10 +91,16 @@ serve(async (req) => {
           transcriptionResult = await transcribeComplete(videoBuffer, OPENAI_API_KEY, language);
           console.log("✅ Complete video transcribed successfully!");
         } catch (error) {
-          console.log("⚠️ Single request failed, trying chunked approach:", error.message);
+          console.log("⚠️ Complete video processing failed:", error.message);
           
-          // Fallback to intelligent chunking based on time segments
-          transcriptionResult = await transcribeWithIntelligentChunking(videoBuffer, OPENAI_API_KEY, language);
+          // If single video fails, return a more specific error
+          if (error.message.includes('413') || error.message.includes('too large')) {
+            throw new Error(`Video too large for processing. Size: ${sizeMB}MB. Try compressing the video or splitting it into smaller segments.`);
+          } else if (error.message.includes('timeout')) {
+            throw new Error(`Video processing timed out. Try a shorter video or compress the current one.`);
+          } else {
+            throw new Error(`Transcription failed: ${error.message}`);
+          }
         }
         
         // Save to database
@@ -115,27 +121,13 @@ serve(async (req) => {
     const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
     const sizeMB = Math.round(contentLength / 1024 / 1024);
     
-    if (sizeMB > 100) {
-      console.log(`Large file detected (${sizeMB}MB), using background processing...`);
-      
-      // Start background task for very large files
-      EdgeRuntime.waitUntil(processVideo().catch(console.error));
-      
-      return new Response(JSON.stringify({
-        message: "Large video processing started in background",
-        sizeMB,
-        status: "processing",
-        estimatedTime: `${Math.ceil(sizeMB / 25)} minutes`
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } else {
-      // Process immediately for smaller files
-      const result = await processVideo();
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log(`Processing ${sizeMB}MB video...`);
+    
+    // Process the video immediately regardless of size
+    const result = await processVideo();
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
     console.error("=== FUNCTION ERROR ===");
@@ -182,126 +174,6 @@ async function transcribeComplete(buffer: ArrayBuffer, apiKey: string, language?
   const result = await response.json();
   console.log(`Transcription complete: ${result.segments?.length || 0} segments, ${Math.round(result.duration || 0)}s duration`);
   return result;
-}
-
-// Intelligent chunking for very large files - splits based on time rather than file size
-async function transcribeWithIntelligentChunking(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  console.log("Using intelligent time-based chunking...");
-  
-  // For very large videos, we'll process in multiple passes with overlapping segments
-  const SEGMENT_DURATION = 300; // 5 minute segments with overlap
-  const OVERLAP_DURATION = 30;  // 30 second overlap
-  
-  // First, get total duration by processing a small sample
-  const sampleSize = Math.min(buffer.byteLength, 5000000); // 5MB sample
-  const sampleBuffer = buffer.slice(0, sampleSize);
-  
-  let totalDuration = 0;
-  try {
-    const sampleResult = await transcribeComplete(sampleBuffer, apiKey, language);
-    // Estimate total duration based on sample
-    totalDuration = (sampleResult.duration || 60) * (buffer.byteLength / sampleSize);
-    console.log(`Estimated total duration: ${Math.round(totalDuration)}s`);
-  } catch (error) {
-    console.log("Could not estimate duration, using fixed chunks");
-    totalDuration = 1800; // Default to 30 minutes
-  }
-  
-  // Calculate number of segments needed
-  const numSegments = Math.ceil(totalDuration / SEGMENT_DURATION);
-  console.log(`Processing ${numSegments} time-based segments...`);
-  
-  const results = [];
-  let currentTime = 0;
-  
-  for (let i = 0; i < numSegments; i++) {
-    try {
-      const startTime = Math.max(0, currentTime - (i > 0 ? OVERLAP_DURATION : 0));
-      const endTime = Math.min(totalDuration, currentTime + SEGMENT_DURATION);
-      
-      console.log(`Processing segment ${i + 1}/${numSegments} (${Math.round(startTime)}s - ${Math.round(endTime)}s)...`);
-      
-      // Calculate buffer segment based on time proportion
-      const startByte = Math.floor((startTime / totalDuration) * buffer.byteLength);
-      const endByte = Math.floor((endTime / totalDuration) * buffer.byteLength);
-      const segmentBuffer = buffer.slice(startByte, endByte);
-      
-      // Only process if segment is substantial
-      if (segmentBuffer.byteLength > 1000000) { // At least 1MB
-        const segmentResult = await transcribeComplete(segmentBuffer, apiKey, language);
-        
-        // Adjust timestamps for this segment
-        if (segmentResult.segments) {
-          segmentResult.segments.forEach((segment: any) => {
-            segment.start += currentTime;
-            segment.end += currentTime;
-            
-            if (segment.words) {
-              segment.words.forEach((word: any) => {
-                word.start += currentTime;
-                word.end += currentTime;
-              });
-            }
-          });
-        }
-        
-        results.push(segmentResult);
-        
-        // Rate limiting
-        if (i < numSegments - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-      
-      currentTime += SEGMENT_DURATION;
-      
-    } catch (error) {
-      console.error(`Failed to process segment ${i + 1}:`, error);
-      // Continue with next segment
-    }
-  }
-  
-  if (results.length === 0) {
-    throw new Error("Failed to process any segments");
-  }
-  
-  // Combine all results with deduplication
-  const combinedResult = {
-    text: results.map(r => r.text || '').join(' '),
-    language: results.find(r => r.language)?.language || 'en',
-    duration: totalDuration,
-    segments: [],
-    words: []
-  };
-  
-  // Merge segments with overlap handling
-  results.forEach(result => {
-    if (result.segments) {
-      result.segments.forEach((segment: any) => {
-        // Check for overlap with existing segments
-        const hasOverlap = combinedResult.segments.some((existing: any) => 
-          Math.abs(existing.start - segment.start) < 5 && 
-          existing.text.substring(0, 50) === segment.text.substring(0, 50)
-        );
-        
-        if (!hasOverlap) {
-          combinedResult.segments.push(segment);
-        }
-      });
-    }
-    
-    if (result.words) {
-      combinedResult.words.push(...result.words);
-    }
-  });
-  
-  // Sort segments by time
-  combinedResult.segments.sort((a: any, b: any) => a.start - b.start);
-  combinedResult.words.sort((a: any, b: any) => a.start - b.start);
-  
-  console.log(`✅ Intelligent chunking complete: ${combinedResult.segments.length} segments, ${Math.round(totalDuration)}s total`);
-  
-  return combinedResult;
 }
 
 // Save transcript to database
