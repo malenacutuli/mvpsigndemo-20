@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ImageIcon, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 
 interface Video {
   id: string;
@@ -46,24 +47,68 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
         .getPublicUrl(video.storage_path);
 
       console.log(`🎬 Generating thumbnail for: ${video.title}`);
+      console.log(`📹 Video URL: ${videoUrl}`);
 
-      const { data: thumbnailResult, error } = await supabase.functions.invoke('generate-thumbnail', {
-        body: {
-          videoId: video.id,
-          videoUrl: videoUrl
-        }
+      // Download the video file
+      console.log('⬇️ Downloading video file...');
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to download video: ${videoResponse.statusText}`);
+      }
+      
+      const videoBlob = await videoResponse.blob();
+      const videoFile = new File([videoBlob], `${video.id}.mp4`, { type: 'video/mp4' });
+      
+      console.log(`📁 Video downloaded: ${(videoBlob.size / 1024 / 1024).toFixed(2)} MB`);
+
+      // Extract frame from the middle of the video
+      console.log('🖼️ Extracting video frame...');
+      const extractedFrame = await extractVideoFrame(videoFile, {
+        quality: 0.9,
+        maxWidth: 1280,
+        maxHeight: 720
       });
 
-      if (error) {
-        throw error;
+      console.log(`✅ Frame extracted: ${extractedFrame.width}x${extractedFrame.height}`);
+
+      // Upload thumbnail to Supabase Storage
+      const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+      console.log(`☁️ Uploading thumbnail: ${thumbnailFileName}`);
+      
+      const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+        .from('thumbnails')
+        .upload(thumbnailFileName, extractedFrame.blob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (thumbnailUploadError) {
+        throw thumbnailUploadError;
       }
 
-      console.log('✅ Thumbnail generation result:', thumbnailResult);
+      // Get public URL for the thumbnail
+      const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+        .from('thumbnails')
+        .getPublicUrl(thumbnailFileName);
+
+      console.log(`🔗 Thumbnail URL: ${thumbnailUrl}`);
+
+      // Update video record with thumbnail URL
+      const { error: updateError } = await supabase
+        .from('videos')
+        .update({ thumbnail_url: thumbnailUrl })
+        .eq('id', video.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      console.log('✅ Thumbnail generation completed successfully!');
 
       setCompleted(prev => [...prev, video.id]);
       toast({
         title: "Thumbnail generated",
-        description: `Thumbnail created for "${video.title}"`
+        description: `High-quality thumbnail created for "${video.title}"`
       });
 
     } catch (error) {
@@ -71,7 +116,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
       setFailed(prev => [...prev, video.id]);
       toast({
         title: "Thumbnail generation failed",
-        description: `Failed to create thumbnail for "${video.title}"`,
+        description: `Failed to create thumbnail for "${video.title}": ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
