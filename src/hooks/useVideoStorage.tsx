@@ -50,6 +50,17 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
+      // First verify the user owns this video or has access to it
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('user_id, title')
+        .eq('id', videoId)
+        .single();
+
+      if (videoError || !videoData) {
+        throw new Error('Video not found or access denied');
+      }
+
       // Delete existing segments for this video and language
       const { error: deleteError } = await supabase
         .from('transcript_segments')
@@ -59,29 +70,33 @@ export const useVideoStorage = (videoId: string) => {
 
       if (deleteError) throw deleteError;
 
-      // Insert new segments
-      const dbSegments = segments.map(segment => ({
-        video_id: videoId,
-        text: segment.text,
-        start_time: segment.startTime,
-        end_time: segment.endTime,
-        speaker: segment.speaker,
-        speaker_color: segment.speakerColor,
-        emphasis: segment.emphasis,
-        pitch: segment.pitch,
-        is_off_camera: segment.isOffCamera,
-        segment_type: segment.segmentType,
-        language: language,
-        confidence: segment.confidence
-      }));
+      // Insert new segments in batches to avoid timeout
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < segments.length; i += BATCH_SIZE) {
+        const batch = segments.slice(i, i + BATCH_SIZE);
+        const dbSegments = batch.map(segment => ({
+          video_id: videoId,
+          text: segment.text,
+          start_time: segment.startTime,
+          end_time: segment.endTime,
+          speaker: segment.speaker,
+          speaker_color: segment.speakerColor,
+          emphasis: segment.emphasis,
+          pitch: segment.pitch,
+          is_off_camera: segment.isOffCamera,
+          segment_type: segment.segmentType,
+          language: language,
+          confidence: segment.confidence
+        }));
 
-      const { error: insertError } = await supabase
-        .from('transcript_segments')
-        .insert(dbSegments);
+        const { error: insertError } = await supabase
+          .from('transcript_segments')
+          .insert(dbSegments);
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
-      console.log('✅ Transcript segments saved to database:', segments.length, 'segments');
+      console.log('✅ Transcript segments saved to database:', segments.length, 'segments for video:', videoData.title);
     } catch (err) {
       console.error('Failed to save transcript segments:', err);
       setError(err instanceof Error ? err.message : 'Failed to save transcript');
@@ -89,6 +104,7 @@ export const useVideoStorage = (videoId: string) => {
       // Fallback to localStorage
       const fallbackData = { segments, language, timestamp: Date.now() };
       localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
+      console.log('📁 Transcript segments saved to localStorage as fallback');
     } finally {
       setLoading(false);
     }
@@ -172,6 +188,17 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
+      // First verify the user owns this video or has access to it
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('user_id, title')
+        .eq('id', videoId)
+        .single();
+
+      if (videoError || !videoData) {
+        throw new Error('Video not found or access denied');
+      }
+
       // Delete existing descriptions for this video and language
       const { error: deleteError } = await supabase
         .from('audio_descriptions')
@@ -181,24 +208,28 @@ export const useVideoStorage = (videoId: string) => {
 
       if (deleteError) throw deleteError;
 
-      // Insert new descriptions
-      const dbDescriptions = descriptions.map(desc => ({
-        video_id: videoId,
-        start_time: desc.startTime,
-        end_time: desc.endTime,
-        description: desc.description,
-        description_type: desc.descriptionType,
-        language: language,
-        confidence: desc.confidence
-      }));
+      // Insert new descriptions in batches
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < descriptions.length; i += BATCH_SIZE) {
+        const batch = descriptions.slice(i, i + BATCH_SIZE);
+        const dbDescriptions = batch.map(desc => ({
+          video_id: videoId,
+          start_time: desc.startTime,
+          end_time: desc.endTime,
+          description: desc.description,
+          description_type: desc.descriptionType,
+          language: language,
+          confidence: desc.confidence
+        }));
 
-      const { error: insertError } = await supabase
-        .from('audio_descriptions')
-        .insert(dbDescriptions);
+        const { error: insertError } = await supabase
+          .from('audio_descriptions')
+          .insert(dbDescriptions);
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
-      console.log('✅ Audio descriptions saved to database:', descriptions.length, 'descriptions');
+      console.log('✅ Audio descriptions saved to database:', descriptions.length, 'descriptions for video:', videoData.title);
     } catch (err) {
       console.error('Failed to save audio descriptions:', err);
       setError(err instanceof Error ? err.message : 'Failed to save audio descriptions');
@@ -206,6 +237,7 @@ export const useVideoStorage = (videoId: string) => {
       // Fallback to localStorage
       const fallbackData = { segments: descriptions, language, timestamp: Date.now() };
       localStorage.setItem(`audioDescription_${videoId}_${language}`, JSON.stringify(fallbackData));
+      console.log('📁 Audio descriptions saved to localStorage as fallback');
     } finally {
       setLoading(false);
     }

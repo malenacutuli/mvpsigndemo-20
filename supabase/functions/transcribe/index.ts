@@ -43,7 +43,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Transcribe function called - v4.0");
+    console.log("Transcribe function called - v5.0 (Enhanced for all users)");
     const { audio, mimeType, filename, videoUrl, rangeBytes, language } = await req.json();
     
     console.log("Request payload:", {
