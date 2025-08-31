@@ -86,36 +86,114 @@ serve(async (req) => {
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
       const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
+      const CHUNK_SIZE = 20000000; // 20MB chunks to stay safely under limit
       
       try {
-        // Always try to process the full video first, regardless of size
-        console.log("Attempting to process full video");
-        const response = await fetch(videoUrl);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+        // Get video size first
+        const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+        if (!headResponse.ok) {
+          throw new Error(`Failed to get video info: ${headResponse.status}`);
         }
         
-        const buffer = await response.arrayBuffer();
-        console.log(`Video downloaded: ${buffer.byteLength} bytes`);
+        const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
+        console.log(`Video size: ${contentLength} bytes`);
         
-        // If video is within OpenAI's limit, process it directly
-        if (buffer.byteLength <= OPENAI_MAX_SIZE) {
+        if (contentLength <= OPENAI_MAX_SIZE) {
+          // Small video - process directly
           console.log("Video within size limit, processing directly");
+          const response = await fetch(videoUrl);
+          const buffer = await response.arrayBuffer();
           fileBlob = new Blob([buffer], { type: "video/mp4" });
           fname = "video.mp4";
           mtype = "video/mp4";
         } else {
-          // For large videos, extract audio and compress it
-          console.log("Video too large for OpenAI, attempting audio extraction workaround");
+          // Large video - process in chunks and combine transcripts
+          console.log(`Video too large (${contentLength} bytes), processing in chunks`);
           
-          // Create a more compressed version by adjusting the blob type to audio
-          // This is a workaround - the video container might still contain audio OpenAI can process
-          fileBlob = new Blob([buffer], { type: "audio/mp4" });
-          fname = "audio.mp4";
-          mtype = "audio/mp4";
+          const numChunks = Math.ceil(contentLength / CHUNK_SIZE);
+          const allSegments: any[] = [];
+          let totalDuration = 0;
           
-          console.log("Attempting to process large video as audio format");
+          for (let i = 0; i < numChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE - 1, contentLength - 1);
+            
+            console.log(`Processing chunk ${i + 1}/${numChunks}: bytes ${start}-${end}`);
+            
+            // Fetch chunk with range header
+            const chunkResponse = await fetch(videoUrl, {
+              headers: { 'Range': `bytes=${start}-${end}` }
+            });
+            
+            if (!chunkResponse.ok) {
+              console.warn(`Failed to fetch chunk ${i + 1}, skipping`);
+              continue;
+            }
+            
+            const chunkBuffer = await chunkResponse.arrayBuffer();
+            const chunkBlob = new Blob([chunkBuffer], { type: "video/mp4" });
+            
+            // Process chunk with OpenAI
+            const chunkFormData = new FormData();
+            chunkFormData.append("file", chunkBlob, `chunk_${i}.mp4`);
+            chunkFormData.append("model", "whisper-1");
+            chunkFormData.append("response_format", "verbose_json");
+            chunkFormData.append("timestamp_granularities[]", "word");
+            
+            if (language && language !== 'auto') {
+              chunkFormData.append("language", language);
+            }
+            
+            const chunkOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+              body: chunkFormData,
+            });
+            
+            if (chunkOpenaiResponse.ok) {
+              const chunkResult = await chunkOpenaiResponse.json();
+              
+              // Adjust timestamps for this chunk
+              const chunkDuration = chunkResult.duration || 30; // Estimate if not provided
+              const timeOffset = totalDuration;
+              
+              if (chunkResult.segments) {
+                chunkResult.segments.forEach((segment: any) => {
+                  segment.start += timeOffset;
+                  segment.end += timeOffset;
+                  
+                  if (segment.words) {
+                    segment.words.forEach((word: any) => {
+                      word.start += timeOffset;
+                      word.end += timeOffset;
+                    });
+                  }
+                });
+                
+                allSegments.push(...chunkResult.segments);
+              }
+              
+              totalDuration += chunkDuration;
+              console.log(`Chunk ${i + 1} processed successfully, duration: ${chunkDuration}s`);
+            } else {
+              console.warn(`Failed to transcribe chunk ${i + 1}`);
+            }
+          }
+          
+          // Return combined result
+          const combinedResult = {
+            text: allSegments.map(s => s.text).join(' '),
+            language: allSegments[0]?.language || 'en',
+            duration: totalDuration,
+            segments: allSegments,
+            words: allSegments.flatMap(s => s.words || [])
+          };
+          
+          console.log(`Combined transcript: ${allSegments.length} segments, ${combinedResult.words.length} words`);
+          
+          return new Response(JSON.stringify(combinedResult), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
         
       } catch (fetchError) {
