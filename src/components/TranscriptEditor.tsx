@@ -141,9 +141,34 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         });
 
       if (error) {
-        // Check if this is a detailed error response from the edge function
-        const errorMessage = data?.error || error.message || 'Transcription failed';
-        const errorDetails = data?.details || '';
+        // For edge function errors, try to parse the error message from different sources
+        let errorMessage = 'Transcription failed';
+        let errorDetails = '';
+        
+        // Check if error has a message with JSON details
+        if (error.message) {
+          try {
+            // Edge function errors might come as stringified JSON in the error message
+            const parsed = JSON.parse(error.message);
+            errorMessage = parsed.error || error.message;
+            errorDetails = parsed.details || '';
+          } catch {
+            // If not JSON, check for common error patterns
+            if (error.message.includes('413') || error.message.includes('too large')) {
+              errorMessage = 'Video file too large';
+              errorDetails = 'Maximum supported size is 25MB. Please compress your video.';
+            } else {
+              errorMessage = error.message;
+            }
+          }
+        }
+        
+        // Also check the data object for detailed error info
+        if (data?.error) {
+          errorMessage = data.error;
+          errorDetails = data.details || errorDetails;
+        }
+        
         throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
       }
 
