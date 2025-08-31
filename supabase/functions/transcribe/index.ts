@@ -86,62 +86,126 @@ serve(async (req) => {
     if (videoUrl) {
       console.log("Processing video URL:", videoUrl);
       const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
-      const maxBytes = rangeBytes || 200000000; // Increased to 200MB default for full video processing
       
       try {
         // First, try to get the video size
         const headResponse = await fetch(videoUrl, { method: 'HEAD' });
         const contentLength = headResponse.headers.get("content-length");
-        const totalBytes = contentLength ? parseInt(contentLength) : maxBytes;
+        const totalBytes = contentLength ? parseInt(contentLength) : OPENAI_MAX_SIZE;
         
         console.log(`Video size: ${totalBytes} bytes, OpenAI limit: ${OPENAI_MAX_SIZE} bytes`);
         
-        let response;
-        // For videos larger than OpenAI limit, we'll process the first portion that fits
-        const bytesToFetch = Math.min(OPENAI_MAX_SIZE, totalBytes);
-        
-        console.log(`Fetching first ${bytesToFetch} bytes for transcription`);
-        
-        // Try range request first, fallback to regular fetch
-        try {
-          response = await fetch(videoUrl, {
-            headers: { 
-              'Range': `bytes=0-${bytesToFetch - 1}` // Range is inclusive, so subtract 1
-            }
-          });
+        // If video is small enough, process it all at once
+        if (totalBytes <= OPENAI_MAX_SIZE) {
+          console.log("Video fits within limit, processing entire file");
+          const response = await fetch(videoUrl);
           
-          // If range request doesn't work (status 416 or other), try regular fetch
-          if (!response.ok && response.status !== 206) {
-            console.log("Range request failed, trying regular fetch with limit");
-            response = await fetch(videoUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
           }
-        } catch (rangeError) {
-          console.log("Range request error, falling back to regular fetch:", rangeError);
-          response = await fetch(videoUrl);
-        }
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
-        }
-        
-        console.log("Successfully fetched video, reading content...");
-        const buffer = await response.arrayBuffer();
-        
-        // Validate minimum file size
-        if (buffer.byteLength < 1000) {
-          throw new Error(`Video file appears to be corrupted or invalid. File size: ${buffer.byteLength} bytes (minimum expected: 1000 bytes)`);
-        }
-        
-        // Ensure we don't exceed OpenAI's limit
-        const limitedBuffer = buffer.byteLength > OPENAI_MAX_SIZE 
-          ? buffer.slice(0, OPENAI_MAX_SIZE) 
-          : buffer;
           
-        fileBlob = new Blob([limitedBuffer], { type: "video/mp4" });
-        fname = "video.mp4";
-        mtype = "video/mp4";
-        
-        console.log(`Created blob with ${fileBlob.size} bytes for OpenAI (limit: ${OPENAI_MAX_SIZE})`);
+          const buffer = await response.arrayBuffer();
+          fileBlob = new Blob([buffer], { type: "video/mp4" });
+          fname = "video.mp4";
+          mtype = "video/mp4";
+          
+          console.log(`Created blob with ${fileBlob.size} bytes for OpenAI`);
+        } else {
+          // For larger videos, implement chunking strategy
+          console.log("Video is too large, implementing chunking strategy");
+          
+          const chunkSize = Math.floor(OPENAI_MAX_SIZE * 0.8); // Use 80% of limit for safety
+          const numChunks = Math.ceil(totalBytes / chunkSize);
+          console.log(`Will process ${numChunks} chunks of ~${chunkSize} bytes each`);
+          
+          let allTranscriptions = [];
+          let totalDurationOffset = 0;
+          
+          for (let i = 0; i < Math.min(numChunks, 3); i++) { // Limit to 3 chunks to avoid timeout
+            const startByte = i * chunkSize;
+            const endByte = Math.min(startByte + chunkSize - 1, totalBytes - 1);
+            
+            console.log(`Processing chunk ${i + 1}/${Math.min(numChunks, 3)}: bytes ${startByte}-${endByte}`);
+            
+            const chunkResponse = await fetch(videoUrl, {
+              headers: { 
+                'Range': `bytes=${startByte}-${endByte}`
+              }
+            });
+            
+            if (!chunkResponse.ok) {
+              console.warn(`Failed to fetch chunk ${i + 1}, skipping`);
+              continue;
+            }
+            
+            const chunkBuffer = await chunkResponse.arrayBuffer();
+            const chunkBlob = new Blob([chunkBuffer], { type: "video/mp4" });
+            
+            // Process this chunk with OpenAI
+            const chunkFormData = new FormData();
+            chunkFormData.append("file", chunkBlob, `chunk_${i}.mp4`);
+            chunkFormData.append("model", "whisper-1");
+            chunkFormData.append("response_format", "verbose_json");
+            chunkFormData.append("timestamp_granularities[]", "word");
+            
+            if (language && language !== 'auto') {
+              chunkFormData.append("language", language);
+            }
+            
+            const chunkOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+              },
+              body: chunkFormData,
+            });
+            
+            if (chunkOpenaiResponse.ok) {
+              const chunkResult = await chunkOpenaiResponse.json();
+              
+              // Adjust timestamps based on chunk position
+              if (chunkResult.words) {
+                chunkResult.words = chunkResult.words.map((word: any) => ({
+                  ...word,
+                  start: word.start + totalDurationOffset,
+                  end: word.end + totalDurationOffset
+                }));
+              }
+              
+              allTranscriptions.push(chunkResult);
+              console.log(`Chunk ${i + 1} processed: ${chunkResult.words?.length || 0} words`);
+              
+              // Estimate duration offset for next chunk (rough approximation)
+              if (chunkResult.words && chunkResult.words.length > 0) {
+                const lastWord = chunkResult.words[chunkResult.words.length - 1];
+                totalDurationOffset = lastWord.end;
+              } else {
+                // Fallback: estimate based on chunk size and video bitrate
+                totalDurationOffset += 30; // Rough estimate of 30 seconds per chunk
+              }
+            } else {
+              console.warn(`Failed to transcribe chunk ${i + 1}`);
+            }
+          }
+          
+          if (allTranscriptions.length === 0) {
+            throw new Error("No chunks could be successfully transcribed");
+          }
+          
+          // Combine all transcriptions
+          const combinedResult = {
+            text: allTranscriptions.map(t => t.text).join(' '),
+            language: allTranscriptions[0].language,
+            duration: totalDurationOffset,
+            words: allTranscriptions.flatMap(t => t.words || [])
+          };
+          
+          console.log(`Combined transcription: ${combinedResult.words.length} total words from ${allTranscriptions.length} chunks`);
+          
+          return new Response(JSON.stringify(combinedResult), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         
       } catch (fetchError) {
         console.error("Error fetching video:", fetchError);
