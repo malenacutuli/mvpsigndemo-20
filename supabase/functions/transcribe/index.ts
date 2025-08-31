@@ -106,114 +106,42 @@ serve(async (req) => {
           fname = "video.mp4";
           mtype = "video/mp4";
         } else {
-          // Large video - try processing as audio first, then fallback to segment approach
-          console.log(`Video too large (${contentLength} bytes), trying audio extraction first`);
+          // Large video - use different strategies based on size
+          console.log(`Video too large (${contentLength} bytes), attempting optimized processing`);
           
+          if (contentLength > 100000000) { // Over 100MB
+            return new Response(JSON.stringify({ 
+              error: "Video file too large for processing",
+              details: `Video size: ${Math.round(contentLength / 1024 / 1024)}MB. Videos over 100MB cannot be processed. Please compress your video to under 100MB.`,
+              sizeMB: Math.round(contentLength / 1024 / 1024),
+              maxSizeMB: 100
+            }), {
+              status: 413,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          
+          // For videos between 25MB-100MB, try processing as audio only
+          console.log("Downloading and processing as audio track");
           const response = await fetch(videoUrl);
           const buffer = await response.arrayBuffer();
           
-          // First attempt: Process as audio to extract audio track
+          // Process as audio - this can sometimes work for audio extraction
           fileBlob = new Blob([buffer], { type: "audio/mp4" });
-          fname = "audio_extracted.mp4";
+          fname = "audio_from_video.mp4";
           mtype = "audio/mp4";
           
-          console.log("Attempting to process large video as audio track");
+          console.log(`Processing ${Math.round(buffer.byteLength / 1024 / 1024)}MB video as audio`);
           
-          // Check if the audio blob is still too large
+          // If still too large after conversion, return error
           if (fileBlob.size > OPENAI_MAX_SIZE) {
-            console.log(`Audio track still too large (${fileBlob.size} bytes), implementing segmentation`);
-            
-            // Implement segmentation approach for very large videos
-            const SEGMENT_SIZE = 20000000; // 20MB segments
-            const totalSegments = Math.ceil(buffer.byteLength / SEGMENT_SIZE);
-            const allTranscripts: any[] = [];
-            let totalDuration = 0;
-            
-            console.log(`Processing ${totalSegments} segments`);
-            
-            for (let i = 0; i < totalSegments; i++) {
-              const start = i * SEGMENT_SIZE;
-              const end = Math.min(start + SEGMENT_SIZE, buffer.byteLength);
-              const segmentBuffer = buffer.slice(start, end);
-              
-              console.log(`Processing segment ${i + 1}/${totalSegments}: ${segmentBuffer.byteLength} bytes`);
-              
-              // Create segment blob as audio
-              const segmentBlob = new Blob([segmentBuffer], { type: "audio/mp4" });
-              
-              // Skip if segment is still too large (shouldn't happen with 20MB segments)
-              if (segmentBlob.size > OPENAI_MAX_SIZE) {
-                console.warn(`Segment ${i + 1} still too large, skipping`);
-                continue;
-              }
-              
-              try {
-                const segmentFormData = new FormData();
-                segmentFormData.append("file", segmentBlob, `segment_${i}.mp4`);
-                segmentFormData.append("model", "whisper-1");
-                segmentFormData.append("response_format", "verbose_json");
-                segmentFormData.append("timestamp_granularities[]", "word");
-                
-                if (language && language !== 'auto') {
-                  segmentFormData.append("language", language);
-                }
-                
-                const segmentResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-                  method: "POST",
-                  headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-                  body: segmentFormData,
-                });
-                
-                if (segmentResponse.ok) {
-                  const segmentResult = await segmentResponse.json();
-                  
-                  // Estimate time offset for this segment (rough approximation)
-                  const estimatedSegmentDuration = segmentResult.duration || 30;
-                  const timeOffset = totalDuration;
-                  
-                  // Adjust timestamps
-                  if (segmentResult.segments) {
-                    segmentResult.segments.forEach((segment: any) => {
-                      segment.start += timeOffset;
-                      segment.end += timeOffset;
-                      
-                      if (segment.words) {
-                        segment.words.forEach((word: any) => {
-                          word.start += timeOffset;
-                          word.end += timeOffset;
-                        });
-                      }
-                    });
-                    
-                    allTranscripts.push(...segmentResult.segments);
-                  }
-                  
-                  totalDuration += estimatedSegmentDuration;
-                  console.log(`Segment ${i + 1} processed: ${estimatedSegmentDuration}s`);
-                } else {
-                  console.warn(`Failed to process segment ${i + 1}: ${segmentResponse.status}`);
-                }
-              } catch (segmentError) {
-                console.warn(`Error processing segment ${i + 1}:`, segmentError);
-              }
-            }
-            
-            if (allTranscripts.length === 0) {
-              throw new Error("Failed to process any video segments");
-            }
-            
-            // Return combined transcript
-            const combinedResult = {
-              text: allTranscripts.map(s => s.text).join(' '),
-              language: allTranscripts[0]?.language || 'en',
-              duration: totalDuration,
-              segments: allTranscripts,
-              words: allTranscripts.flatMap(s => s.words || [])
-            };
-            
-            console.log(`Combined ${allTranscripts.length} segments into full transcript`);
-            
-            return new Response(JSON.stringify(combinedResult), {
+            return new Response(JSON.stringify({ 
+              error: "Audio track too large for transcription",
+              details: `Audio size: ${Math.round(fileBlob.size / 1024 / 1024)}MB. Even the audio track exceeds the 25MB limit. Please use a shorter video or compress further.`,
+              audioSizeMB: Math.round(fileBlob.size / 1024 / 1024),
+              maxSizeMB: 25
+            }), {
+              status: 413,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
