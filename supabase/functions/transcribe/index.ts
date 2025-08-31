@@ -32,7 +32,7 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
 }
 
 // Save transcript segments to database
-async function saveTranscriptToDatabase(transcriptResult: any, videoId: string) {
+async function saveTranscriptToDatabase(transcriptResult: any, videoId: string, forceOverwrite = false) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   
@@ -57,13 +57,13 @@ async function saveTranscriptToDatabase(transcriptResult: any, videoId: string) 
       return false;
     }
 
-    // If segments already exist, don't overwrite them (preserve user edits)
-    if (existingSegments && existingSegments.length > 0) {
+    // If segments already exist and we're not forcing overwrite, skip save
+    if (existingSegments && existingSegments.length > 0 && !forceOverwrite) {
       console.log('Transcript segments already exist for this video, skipping save to prevent overwriting user edits');
       return true; // Return true since transcripts exist
     }
 
-    // Save new transcript segments only if none exist
+    // Save new transcript segments (or overwrite existing ones)
     if (transcriptResult.segments && transcriptResult.segments.length > 0) {
       const segmentsToInsert = transcriptResult.segments.map((segment: any, index: number) => ({
         video_id: videoId,
@@ -80,14 +80,14 @@ async function saveTranscriptToDatabase(transcriptResult: any, videoId: string) 
         is_off_camera: false
       }));
 
-      console.log(`Saving ${segmentsToInsert.length} new transcript segments to database`);
+      console.log(`${forceOverwrite ? 'Overwriting with' : 'Saving'} ${segmentsToInsert.length} transcript segments to database`);
       
       // Use upsert to handle potential conflicts
       const { error: insertError } = await supabase
         .from('transcript_segments')
         .upsert(segmentsToInsert, { 
           onConflict: 'video_id,language,start_time',
-          ignoreDuplicates: true 
+          ignoreDuplicates: false // Always update if forcing overwrite
         });
 
       if (insertError) {
@@ -256,13 +256,14 @@ serve(async (req) => {
 
   try {
     console.log("Transcribe function called - v5.0 (Enhanced for all users)");
-    const { audio, mimeType, filename, videoUrl, rangeBytes, language, videoId } = await req.json();
+    const { audio, mimeType, filename, videoUrl, rangeBytes, language, videoId, forceReExtract } = await req.json();
     
     console.log("Request payload:", {
       hasAudio: !!audio,
       language: language || 'auto',
       hasVideoUrl: !!videoUrl,
       videoId,
+      forceReExtract: !!forceReExtract,
       mimeType,
       filename,
       audioLength: audio?.length || 0,
@@ -277,7 +278,7 @@ serve(async (req) => {
     }
 
     // If videoId provided, check for existing transcripts first to avoid duplicate processing
-    if (videoId && videoUrl) {
+    if (videoId && videoUrl && !forceReExtract) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
@@ -316,6 +317,32 @@ serve(async (req) => {
           }
         } catch (cacheError) {
           console.warn('Error checking cache, proceeding with transcription:', cacheError);
+        }
+      }
+    }
+
+    // If forceReExtract is true, clear existing transcripts before proceeding
+    if (forceReExtract && videoId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          console.log(`Force re-extract requested, clearing existing transcripts for video ${videoId}`);
+          
+          const { error: deleteError } = await supabase
+            .from('transcript_segments')
+            .delete()
+            .eq('video_id', videoId);
+            
+          if (deleteError) {
+            console.warn('Error clearing existing transcripts:', deleteError);
+          } else {
+            console.log('Successfully cleared existing transcripts for re-extraction');
+          }
+        } catch (clearError) {
+          console.warn('Error clearing cache, proceeding with transcription:', clearError);
         }
       }
     }
@@ -402,11 +429,11 @@ serve(async (req) => {
               const result = await segmentationPromise;
               console.log(`Time-based segmentation completed: ${result.segments.length} segments, ${result.words.length} words`);
               
-              // Save to database if videoId is provided
-              if (videoId) {
-                const saveSuccess = await saveTranscriptToDatabase(result, videoId);
-                console.log(`Database save ${saveSuccess ? 'successful' : 'failed'} for video ${videoId}`);
-              }
+               // Save to database if videoId is provided
+               if (videoId) {
+                 const saveSuccess = await saveTranscriptToDatabase(result, videoId, forceReExtract);
+                 console.log(`Database save ${saveSuccess ? 'successful' : 'failed'} for video ${videoId}`);
+               }
               
               return new Response(JSON.stringify(result), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -467,7 +494,7 @@ serve(async (req) => {
 
     // Save to database if videoId is provided
     if (videoId) {
-      const saveSuccess = await saveTranscriptToDatabase(transcriptionResult, videoId);
+      const saveSuccess = await saveTranscriptToDatabase(transcriptionResult, videoId, forceReExtract);
       console.log(`Database save ${saveSuccess ? 'successful' : 'failed'} for video ${videoId}`);
     }
 

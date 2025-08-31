@@ -175,6 +175,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           videoId, // Pass videoId for database saving
           rangeBytes: 200000000,
           fullTranscript: true,
+          forceReExtract: true, // Always force re-extract when user clicks the button
           language: detectedLanguage === 'auto' ? undefined : detectedLanguage
         }
       });
