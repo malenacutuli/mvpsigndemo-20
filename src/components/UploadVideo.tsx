@@ -311,12 +311,38 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       const fileName = `${video.id}.${fileExt}`;
       
       console.log('Uploading file to storage...');
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('videos')
-        .upload(`originals/${fileName}`, videoFile, {
-          contentType: videoFile.type,
-          upsert: false
-        });
+      
+      // For files larger than 6MB, use resumable upload
+      let uploadData, uploadError;
+      
+      if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
+        console.log('Using resumable upload for large file...');
+        
+        // Use resumable upload for large files
+        const { data, error } = await supabase.storage
+          .from('videos')
+          .upload(`originals/${fileName}`, videoFile, {
+            contentType: videoFile.type,
+            upsert: false,
+            duplex: 'half' // Enable resumable uploads
+          });
+          
+        uploadData = data;
+        uploadError = error;
+      } else {
+        console.log('Using standard upload for small file...');
+        
+        // Use standard upload for small files
+        const { data, error } = await supabase.storage
+          .from('videos')
+          .upload(`originals/${fileName}`, videoFile, {
+            contentType: videoFile.type,
+            upsert: false
+          });
+          
+        uploadData = data;
+        uploadError = error;
+      }
 
       if (uploadError) {
         console.error('Storage upload error:', uploadError);
