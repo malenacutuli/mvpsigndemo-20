@@ -156,26 +156,26 @@ serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
               });
             } else {
-              // If full file fails, fall back to chunking with better error handling
-              console.log("Full file failed, implementing improved chunking strategy");
+              // If full file fails, fall back to improved chunking strategy for complete transcription
+              console.log("Full file failed, implementing unlimited chunking strategy for full video");
               
-              const chunkSize = Math.floor(OPENAI_MAX_SIZE * 0.9); // Use 90% of limit
+              const chunkSize = Math.floor(OPENAI_MAX_SIZE * 0.8); // Use 80% of limit for safety
               const numChunks = Math.ceil(totalBytes / chunkSize);
-              console.log(`Will process up to ${Math.min(numChunks, 5)} chunks of ~${chunkSize} bytes each`);
+              console.log(`Will process ALL ${numChunks} chunks of ~${chunkSize} bytes each to transcribe complete video`);
               
               let allTranscriptions = [];
               let combinedText = "";
               let allWords = [];
-              let estimatedDurationPerByte = 0.000001; // Very rough estimate: 1 microsecond per byte
+              let totalProcessedDuration = 0;
               
-              for (let i = 0; i < Math.min(numChunks, 5); i++) { // Limit to 5 chunks
+              // Process ALL chunks, not just first 5
+              for (let i = 0; i < numChunks; i++) {
                 const startByte = i * chunkSize;
                 const endByte = Math.min(startByte + chunkSize - 1, totalBytes - 1);
                 
-                console.log(`Processing chunk ${i + 1}/${Math.min(numChunks, 5)}: bytes ${startByte}-${endByte}`);
+                console.log(`Processing chunk ${i + 1}/${numChunks}: bytes ${startByte}-${endByte}`);
                 
                 try {
-                  // Use a more conservative approach - just send first part of video for now
                   const chunkResponse = await fetch(videoUrl, {
                     headers: { 
                       'Range': `bytes=${startByte}-${endByte}`
@@ -190,7 +190,7 @@ serve(async (req) => {
                   const chunkBuffer = await chunkResponse.arrayBuffer();
                   
                   // Skip chunks that are too small (likely incomplete)
-                  if (chunkBuffer.byteLength < 100000) { // 100KB minimum
+                  if (chunkBuffer.byteLength < 50000) { // 50KB minimum
                     console.warn(`Chunk ${i + 1} too small (${chunkBuffer.byteLength} bytes), skipping`);
                     continue;
                   }
@@ -220,8 +220,9 @@ serve(async (req) => {
                     const chunkResult = await chunkOpenaiResponse.json();
                     
                     if (chunkResult.text && chunkResult.text.trim()) {
-                      // Calculate time offset based on chunk position
-                      const timeOffset = startByte * estimatedDurationPerByte;
+                      // Calculate time offset based on chunk duration
+                      const chunkDuration = chunkResult.duration || 0;
+                      const timeOffset = totalProcessedDuration;
                       
                       // Adjust timestamps if words exist
                       if (chunkResult.words && Array.isArray(chunkResult.words)) {
@@ -235,17 +236,27 @@ serve(async (req) => {
                       
                       combinedText += (combinedText ? " " : "") + chunkResult.text.trim();
                       allTranscriptions.push(chunkResult);
-                      console.log(`Chunk ${i + 1} processed successfully: "${chunkResult.text.substring(0, 50)}..."`);
+                      totalProcessedDuration += chunkDuration;
+                      
+                      console.log(`Chunk ${i + 1}/${numChunks} processed successfully: "${chunkResult.text.substring(0, 50)}..." (duration: ${chunkDuration}s)`);
                     } else {
                       console.warn(`Chunk ${i + 1} returned empty text`);
                     }
                   } else {
                     const errorText = await chunkOpenaiResponse.text();
                     console.warn(`Failed to transcribe chunk ${i + 1}: ${chunkOpenaiResponse.status} - ${errorText}`);
+                    
+                    // Don't give up on failed chunks, continue with next
+                    continue;
                   }
                 } catch (chunkError) {
                   console.warn(`Error processing chunk ${i + 1}: ${chunkError.message}`);
                   continue;
+                }
+                
+                // Add small delay between chunks to avoid rate limiting
+                if (i < numChunks - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
                 }
               }
               
@@ -257,12 +268,12 @@ serve(async (req) => {
               const combinedResult = {
                 text: combinedText,
                 language: allTranscriptions[0].language || 'en',
-                duration: allWords.length > 0 ? Math.max(...allWords.map(w => w.end)) : 0,
+                duration: totalProcessedDuration || (allWords.length > 0 ? Math.max(...allWords.map(w => w.end)) : 0),
                 words: allWords
               };
               
-              console.log(`Combined transcription: ${combinedResult.words.length} total words from ${allTranscriptions.length} chunks`);
-              console.log(`Total text length: ${combinedResult.text.length} characters`);
+              console.log(`COMPLETE VIDEO TRANSCRIPTION: ${combinedResult.words.length} total words from ${allTranscriptions.length}/${numChunks} chunks`);
+              console.log(`Total text length: ${combinedResult.text.length} characters, total duration: ${combinedResult.duration}s`);
               
               return new Response(JSON.stringify(combinedResult), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
