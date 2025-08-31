@@ -80,7 +80,7 @@ serve(async (req) => {
       });
     }
 
-    // Handle video URL
+    // Handle video URL with chunked processing for large files
     if (videoUrl) {
       console.log("Processing video from URL:", videoUrl.substring(0, 100) + "...");
       
@@ -95,20 +95,6 @@ serve(async (req) => {
         const sizeMB = Math.round(contentLength / 1024 / 1024);
         console.log(`Video size: ${sizeMB}MB`);
         
-        // Check if video is too large
-        if (contentLength > 25000000) { // 25MB limit
-          console.log("Video too large for OpenAI, returning error");
-          return new Response(JSON.stringify({ 
-            error: "Video file too large",
-            details: `Video size: ${sizeMB}MB. Maximum supported: 25MB. Please compress your video.`,
-            sizeMB,
-            maxSizeMB: 25
-          }), {
-            status: 413,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        
         // Download video
         console.log("Downloading video...");
         const videoResponse = await fetch(videoUrl);
@@ -119,44 +105,21 @@ serve(async (req) => {
         const videoBuffer = await videoResponse.arrayBuffer();
         console.log("Video downloaded successfully:", videoBuffer.byteLength, "bytes");
         
-        // Create blob for OpenAI
-        const videoBlob = new Blob([videoBuffer], { type: "video/mp4" });
+        // For large files, we'll process in chunks
+        const MAX_CHUNK_SIZE = 20000000; // 20MB chunks to be safe
+        const needsChunking = videoBuffer.byteLength > MAX_CHUNK_SIZE;
         
-        // Send to OpenAI
-        console.log("Sending to OpenAI Whisper...");
-        const formData = new FormData();
-        formData.append("file", videoBlob, "video.mp4");
-        formData.append("model", "whisper-1");
-        formData.append("response_format", "verbose_json");
-        formData.append("timestamp_granularities[]", "word");
+        let transcriptionResult;
         
-        if (language && language !== 'auto') {
-          formData.append("language", language);
+        if (!needsChunking) {
+          // Process normally for small files
+          console.log("Processing file in single request...");
+          transcriptionResult = await transcribeChunk(videoBuffer, OPENAI_API_KEY, language);
+        } else {
+          // Process in chunks for large files
+          console.log(`File is large (${sizeMB}MB), processing in chunks...`);
+          transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
         }
-
-        const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-          body: formData,
-        });
-
-        console.log("OpenAI response status:", openaiResponse.status);
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text();
-          console.error("OpenAI error:", errorText);
-          return new Response(JSON.stringify({ 
-            error: `OpenAI API error: ${openaiResponse.status}`,
-            details: errorText
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const transcriptionResult = await openaiResponse.json();
         console.log("Transcription successful!");
         console.log("- Language:", transcriptionResult.language);
         console.log("- Duration:", transcriptionResult.duration);
@@ -263,3 +226,115 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to transcribe a single chunk
+async function transcribeChunk(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  const blob = new Blob([buffer], { type: "video/mp4" });
+  
+  const formData = new FormData();
+  formData.append("file", blob, "video.mp4");
+  formData.append("model", "whisper-1");
+  formData.append("response_format", "verbose_json");
+  formData.append("timestamp_granularities[]", "word");
+  
+  if (language && language !== 'auto') {
+    formData.append("language", language);
+  }
+
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+// Helper function to process large files in chunks
+async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  const CHUNK_SIZE = 20000000; // 20MB chunks
+  const chunks = [];
+  
+  // Split buffer into chunks
+  for (let i = 0; i < buffer.byteLength; i += CHUNK_SIZE) {
+    const end = Math.min(i + CHUNK_SIZE, buffer.byteLength);
+    chunks.push(buffer.slice(i, end));
+  }
+  
+  console.log(`Processing ${chunks.length} chunks...`);
+  
+  // Process chunks sequentially to avoid rate limits
+  const results = [];
+  let totalDuration = 0;
+  
+  for (let i = 0; i < chunks.length; i++) {
+    console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
+    
+    try {
+      const chunkResult = await transcribeChunk(chunks[i], apiKey, language);
+      
+      // Adjust timestamps to account for chunk position
+      const timeOffset = totalDuration;
+      if (chunkResult.segments) {
+        chunkResult.segments.forEach((segment: any) => {
+          segment.start += timeOffset;
+          segment.end += timeOffset;
+          
+          // Adjust word timestamps too
+          if (segment.words) {
+            segment.words.forEach((word: any) => {
+              word.start += timeOffset;
+              word.end += timeOffset;
+            });
+          }
+        });
+      }
+      
+      results.push(chunkResult);
+      totalDuration += chunkResult.duration || 0;
+      
+      // Small delay to be respectful to API
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+    } catch (error) {
+      console.error(`Failed to process chunk ${i + 1}:`, error);
+      // Continue with other chunks even if one fails
+    }
+  }
+  
+  if (results.length === 0) {
+    throw new Error("Failed to process any chunks");
+  }
+  
+  // Combine all results
+  const combinedResult = {
+    text: results.map(r => r.text || '').join(' '),
+    language: results.find(r => r.language)?.language || 'en',
+    duration: totalDuration,
+    segments: [],
+    words: []
+  };
+  
+  // Combine segments and words
+  results.forEach(result => {
+    if (result.segments) {
+      combinedResult.segments.push(...result.segments);
+    }
+    if (result.words) {
+      combinedResult.words.push(...result.words);
+    }
+  });
+  
+  console.log(`Combined transcription complete: ${combinedResult.segments.length} segments, ${Math.round(totalDuration)}s total`);
+  
+  return combinedResult;
+}
