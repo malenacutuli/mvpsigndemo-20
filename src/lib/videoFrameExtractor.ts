@@ -46,6 +46,8 @@ export async function extractVideoFrame(
     maxHeight = 720
   } = options;
 
+  console.log(`🎬 Starting frame extraction from video: ${videoFile.name} (${(videoFile.size / 1024 / 1024).toFixed(2)}MB)`);
+
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     const canvas = document.createElement('canvas');
@@ -58,8 +60,11 @@ export async function extractVideoFrame(
 
     video.crossOrigin = 'anonymous';
     video.preload = 'metadata';
+    video.muted = true; // Ensure autoplay works
 
     video.addEventListener('loadedmetadata', () => {
+      console.log(`📹 Video metadata loaded: ${video.videoWidth}x${video.videoHeight}, duration: ${video.duration}s`);
+      
       // Calculate aspect ratio and resize canvas
       const videoAspectRatio = video.videoWidth / video.videoHeight;
       let canvasWidth = Math.min(video.videoWidth, maxWidth);
@@ -74,19 +79,47 @@ export async function extractVideoFrame(
 
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
+      console.log(`🎨 Canvas size: ${canvasWidth}x${canvasHeight}`);
 
-      // Set time to extract frame from
+      // Set time to extract frame from - use 25% instead of middle for better content
       const extractTime = timeInSeconds !== undefined 
         ? Math.min(timeInSeconds, video.duration) 
-        : video.duration / 2; // Use middle of video by default
+        : Math.max(1, video.duration * 0.25); // Use 25% for better content than first frame
 
+      console.log(`⏱️ Extracting frame at ${extractTime.toFixed(2)}s (${((extractTime / video.duration) * 100).toFixed(1)}% of video)`);
       video.currentTime = extractTime;
     });
 
     video.addEventListener('seeked', () => {
       try {
+        console.log(`🖼️ Video seeked to ${video.currentTime}s, drawing to canvas...`);
+        
+        // Fill canvas with white background first
+        ctx!.fillStyle = 'white';
+        ctx!.fillRect(0, 0, canvas.width, canvas.height);
+        
         // Draw the video frame to canvas
         ctx!.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Check if the canvas has any content (not just black)
+        const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let hasContent = false;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] > 10 || data[i + 1] > 10 || data[i + 2] > 10) {
+            hasContent = true;
+            break;
+          }
+        }
+        
+        if (!hasContent) {
+          console.warn('⚠️ Extracted frame appears to be black/empty, trying different time...');
+          // Try middle of video instead
+          video.currentTime = video.duration / 2;
+          return;
+        }
+        
+        console.log('✅ Frame extracted successfully with content');
         
         // Convert canvas to blob
         canvas.toBlob(
@@ -97,6 +130,8 @@ export async function extractVideoFrame(
             }
 
             const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            console.log(`💾 Blob created: ${(blob.size / 1024).toFixed(2)}KB`);
             
             resolve({
               blob,
@@ -112,15 +147,18 @@ export async function extractVideoFrame(
           quality
         );
       } catch (error) {
+        console.error('❌ Frame extraction error:', error);
         reject(new Error(`Failed to extract frame: ${error}`));
       }
     });
 
     video.addEventListener('error', (e) => {
+      console.error('❌ Video loading error:', video.error);
       reject(new Error(`Video loading error: ${video.error?.message || 'Unknown error'}`));
     });
 
     // Start loading the video
+    console.log('🎞️ Loading video file...');
     video.src = URL.createObjectURL(videoFile);
   });
 }

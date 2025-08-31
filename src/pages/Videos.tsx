@@ -267,8 +267,20 @@ export default function Videos() {
                         src={video.thumbnail_url} 
                         alt={video.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('❌ Thumbnail failed to load:', video.thumbnail_url);
+                          console.error('Error details:', e);
+                          // Hide the broken image and show the play icon instead
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('✅ Thumbnail loaded successfully:', video.thumbnail_url);
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    
+                    {/* Always show play icon as fallback */}
+                    {!video.thumbnail_url && (
                       <Play className="w-12 h-12 text-muted-foreground" />
                     )}
                     
