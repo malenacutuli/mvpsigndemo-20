@@ -101,21 +101,51 @@ export async function extractVideoFrame(
         // Draw the video frame to canvas
         ctx!.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Check if the canvas has any content (not just black)
+        // Check if the canvas has meaningful content (not just black or white)
         const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        let hasContent = false;
+        let blackPixels = 0;
+        let whitePixels = 0;
+        let colorfulPixels = 0;
+        const totalPixels = data.length / 4;
+        
         for (let i = 0; i < data.length; i += 4) {
-          if (data[i] > 10 || data[i + 1] > 10 || data[i + 2] > 10) {
-            hasContent = true;
-            break;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Check if pixel is predominantly black
+          if (r < 30 && g < 30 && b < 30) {
+            blackPixels++;
+          }
+          // Check if pixel is predominantly white
+          else if (r > 225 && g > 225 && b > 225) {
+            whitePixels++;
+          }
+          // Pixel has some color/content
+          else {
+            colorfulPixels++;
           }
         }
         
-        if (!hasContent) {
-          console.warn('⚠️ Extracted frame appears to be black/empty, trying different time...');
-          // Try middle of video instead
-          video.currentTime = video.duration / 2;
+        const blackPercent = (blackPixels / totalPixels) * 100;
+        const whitePercent = (whitePixels / totalPixels) * 100;
+        const colorfulPercent = (colorfulPixels / totalPixels) * 100;
+        
+        console.log(`🎨 Frame analysis: ${blackPercent.toFixed(1)}% black, ${whitePercent.toFixed(1)}% white, ${colorfulPercent.toFixed(1)}% colorful`);
+        
+        // If frame is mostly black or white (>80%), try different times
+        if (blackPercent > 80) {
+          console.warn('⚠️ Frame is mostly black, trying different time...');
+          video.currentTime = video.duration * 0.5; // Try middle
+          return;
+        } else if (whitePercent > 80) {
+          console.warn('⚠️ Frame is mostly white, trying different time...');
+          video.currentTime = video.duration * 0.75; // Try 75%
+          return;
+        } else if (colorfulPercent < 10) {
+          console.warn('⚠️ Frame lacks content, trying different time...');
+          video.currentTime = video.duration * 0.4; // Try 40%
           return;
         }
         
