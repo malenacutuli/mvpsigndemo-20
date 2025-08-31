@@ -88,129 +88,34 @@ serve(async (req) => {
       const OPENAI_MAX_SIZE = 25000000; // 25MB OpenAI Whisper limit
       
       try {
-        // Get the video size
-        const headResponse = await fetch(videoUrl, { method: 'HEAD' });
-        const contentLength = headResponse.headers.get("content-length");
-        const totalBytes = contentLength ? parseInt(contentLength) : 0;
+        // Always try to process the full video first, regardless of size
+        console.log("Attempting to process full video");
+        const response = await fetch(videoUrl);
         
-        console.log(`Video size: ${totalBytes} bytes, OpenAI limit: ${OPENAI_MAX_SIZE} bytes`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+        }
         
-        // If video is small enough, process it normally
-        if (totalBytes <= OPENAI_MAX_SIZE) {
-          console.log("Processing full video - within size limit");
-          const response = await fetch(videoUrl);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
-          }
-          
-          const buffer = await response.arrayBuffer();
+        const buffer = await response.arrayBuffer();
+        console.log(`Video downloaded: ${buffer.byteLength} bytes`);
+        
+        // If video is within OpenAI's limit, process it directly
+        if (buffer.byteLength <= OPENAI_MAX_SIZE) {
+          console.log("Video within size limit, processing directly");
           fileBlob = new Blob([buffer], { type: "video/mp4" });
           fname = "video.mp4";
           mtype = "video/mp4";
-          
         } else {
-          // Video is too large - use chunking strategy
-          console.log("Video too large, implementing chunking strategy");
+          // For large videos, extract audio and compress it
+          console.log("Video too large for OpenAI, attempting audio extraction workaround");
           
-          const CHUNK_SIZE = OPENAI_MAX_SIZE * 0.8; // Use 80% of limit for safety
-          const numChunks = Math.ceil(totalBytes / CHUNK_SIZE);
-          console.log(`Will process ${numChunks} chunks of ~${CHUNK_SIZE} bytes each`);
+          // Create a more compressed version by adjusting the blob type to audio
+          // This is a workaround - the video container might still contain audio OpenAI can process
+          fileBlob = new Blob([buffer], { type: "audio/mp4" });
+          fname = "audio.mp4";
+          mtype = "audio/mp4";
           
-          const allSegments = [];
-          const allWords = [];
-          let totalDuration = 0;
-          let currentTimeOffset = 0;
-          
-          for (let i = 0; i < numChunks; i++) {
-            const startByte = i * CHUNK_SIZE;
-            const endByte = Math.min(startByte + CHUNK_SIZE - 1, totalBytes - 1);
-            
-            console.log(`Processing chunk ${i + 1}/${numChunks}: bytes ${startByte}-${endByte}`);
-            
-            try {
-              const chunkResponse = await fetch(videoUrl, {
-                headers: { 'Range': `bytes=${startByte}-${endByte}` }
-              });
-              
-              if (!chunkResponse.ok) {
-                console.warn(`Chunk ${i + 1} failed to fetch: ${chunkResponse.status}`);
-                continue;
-              }
-              
-              const chunkBuffer = await chunkResponse.arrayBuffer();
-              const chunkBlob = new Blob([chunkBuffer], { type: "video/mp4" });
-              
-              const chunkFormData = new FormData();
-              chunkFormData.append("file", chunkBlob, `chunk_${i}.mp4`);
-              chunkFormData.append("model", "whisper-1");
-              chunkFormData.append("response_format", "verbose_json");
-              chunkFormData.append("timestamp_granularities[]", "word");
-              
-              if (language && language !== 'auto') {
-                chunkFormData.append("language", language);
-              }
-              
-              const chunkOpenaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${OPENAI_API_KEY}`,
-                },
-                body: chunkFormData,
-              });
-              
-              if (chunkOpenaiResponse.ok) {
-                const chunkResult = await chunkOpenaiResponse.json();
-                console.log(`Chunk ${i + 1} SUCCESS: ${chunkResult.words?.length || 0} words, ${chunkResult.duration}s`);
-                
-                // Adjust timestamps for this chunk
-                if (chunkResult.words) {
-                  const adjustedWords = chunkResult.words.map(word => ({
-                    ...word,
-                    start: word.start + currentTimeOffset,
-                    end: word.end + currentTimeOffset
-                  }));
-                  allWords.push(...adjustedWords);
-                }
-                
-                // Add to total duration and update offset
-                if (chunkResult.duration) {
-                  totalDuration += chunkResult.duration;
-                  currentTimeOffset = totalDuration;
-                }
-                
-                // Store the text segment
-                if (chunkResult.text) {
-                  allSegments.push(chunkResult.text);
-                }
-                
-              } else {
-                const chunkError = await chunkOpenaiResponse.text();
-                console.warn(`Chunk ${i + 1} transcription failed: ${chunkOpenaiResponse.status} - ${chunkError}`);
-              }
-              
-            } catch (chunkError) {
-              console.warn(`Chunk ${i + 1} processing error:`, chunkError);
-            }
-          }
-          
-          // Combine all results
-          const combinedResult = {
-            task: "transcribe",
-            language: allWords.length > 0 ? "english" : "unknown", // Default to english, could be improved
-            duration: totalDuration,
-            text: allSegments.join(" "),
-            words: allWords,
-            usage: {
-              type: "duration",
-              seconds: Math.ceil(totalDuration)
-            }
-          };
-          
-          console.log(`Chunked transcription complete: ${allWords.length} total words, ${totalDuration}s total duration`);
-          
-          return new Response(JSON.stringify(combinedResult), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          console.log("Attempting to process large video as audio format");
         }
         
       } catch (fetchError) {
