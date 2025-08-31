@@ -140,7 +140,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           }
         });
 
-      if (error) throw new Error(error.message || 'Transcription failed');
+      if (error) {
+        // Check if this is a detailed error response from the edge function
+        const errorMessage = data?.error || error.message || 'Transcription failed';
+        const errorDetails = data?.details || '';
+        throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+      }
 
       // Convert to segments format using actual timing from Whisper API
       const segments: TranscriptSegment[] = [];
