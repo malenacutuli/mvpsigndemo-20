@@ -314,14 +314,24 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             Add Description
           </Button>
           {descriptions.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={exportDescriptions}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export ({currentLanguage.toUpperCase()})
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => saveDescriptions(descriptions)}
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Save All
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exportDescriptions}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export ({currentLanguage.toUpperCase()})
+              </Button>
+            </>
           )}
         </div>
         
