@@ -44,40 +44,51 @@ async function saveTranscriptToDatabase(transcriptResult: any, videoId: string) 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    // First, delete existing transcript segments for this video
-    console.log(`Clearing existing transcript segments for video ${videoId}`);
-    const { error: deleteError } = await supabase
+    // Check if transcript segments already exist for this video
+    console.log(`Checking for existing transcript segments for video ${videoId}`);
+    const { data: existingSegments, error: checkError } = await supabase
       .from('transcript_segments')
-      .delete()
-      .eq('video_id', videoId);
+      .select('id')
+      .eq('video_id', videoId)
+      .limit(1);
 
-    if (deleteError) {
-      console.error('Error deleting existing segments:', deleteError);
+    if (checkError) {
+      console.error('Error checking existing segments:', checkError);
       return false;
     }
 
-    // Save new transcript segments
+    // If segments already exist, don't overwrite them (preserve user edits)
+    if (existingSegments && existingSegments.length > 0) {
+      console.log('Transcript segments already exist for this video, skipping save to prevent overwriting user edits');
+      return true; // Return true since transcripts exist
+    }
+
+    // Save new transcript segments only if none exist
     if (transcriptResult.segments && transcriptResult.segments.length > 0) {
-      const segmentsToInsert = transcriptResult.segments.map((segment: any) => ({
+      const segmentsToInsert = transcriptResult.segments.map((segment: any, index: number) => ({
         video_id: videoId,
         text: segment.text || '',
-        start_time: segment.start || 0,
-        end_time: segment.end || 0,
+        start_time: Number(segment.start) || (index * 5), // Use index-based timing if start time is missing/duplicate
+        end_time: Number(segment.end) || ((index + 1) * 5),
         confidence: segment.confidence || null,
         language: transcriptResult.language || 'en',
         segment_type: 'dialogue',
-        speaker: segment.speaker || null,
+        speaker: segment.speaker || `Speaker ${(index % 3) + 1}`,
         speaker_color: '#3B82F6',
         emphasis: 'normal',
         pitch: 'normal',
         is_off_camera: false
       }));
 
-      console.log(`Saving ${segmentsToInsert.length} transcript segments to database`);
+      console.log(`Saving ${segmentsToInsert.length} new transcript segments to database`);
       
+      // Use upsert to handle potential conflicts
       const { error: insertError } = await supabase
         .from('transcript_segments')
-        .insert(segmentsToInsert);
+        .upsert(segmentsToInsert, { 
+          onConflict: 'video_id,language,start_time',
+          ignoreDuplicates: true 
+        });
 
       if (insertError) {
         console.error('Error inserting transcript segments:', insertError);
@@ -263,6 +274,50 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // If videoId provided, check for existing transcripts first to avoid duplicate processing
+    if (videoId && videoUrl) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          
+          console.log(`Checking for existing transcripts for video ${videoId} to avoid duplicate processing`);
+          const { data: existingSegments, error: checkError } = await supabase
+            .from('transcript_segments')
+            .select('*')
+            .eq('video_id', videoId)
+            .order('start_time', { ascending: true });
+
+          if (!checkError && existingSegments && existingSegments.length > 0) {
+            console.log(`Found ${existingSegments.length} existing transcript segments, returning cached result`);
+            
+            // Return existing transcripts in OpenAI format
+            const cachedResult = {
+              text: existingSegments.map(s => s.text).join(' '),
+              language: existingSegments[0]?.language || 'en',
+              duration: Math.max(...existingSegments.map(s => Number(s.end_time))),
+              segments: existingSegments.map(seg => ({
+                text: seg.text,
+                start: Number(seg.start_time),
+                end: Number(seg.end_time),
+                speaker: seg.speaker,
+                confidence: seg.confidence
+              })),
+              words: [] // Word-level data not stored in our schema
+            };
+            
+            return new Response(JSON.stringify(cachedResult), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } catch (cacheError) {
+          console.warn('Error checking cache, proceeding with transcription:', cacheError);
+        }
+      }
     }
 
     // Check OpenAI API key with debugging

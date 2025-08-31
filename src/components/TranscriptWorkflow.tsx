@@ -57,8 +57,19 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   useEffect(() => {
     // Load existing transcript, audio descriptions, and characters if available
     console.log('🔄 Loading existing video data for:', videoId);
+    
+    // Reset state when switching videos
+    setSegments([]);
+    setCurrentStep('extract');
+    setExtractionComplete(false);
+    setEditingId(null);
+    setCharacters([]);
+    setAudioDescriptions([]);
+    setDetectedLanguage(videoLanguage || 'en');
+    
+    // Load existing data for this video
     loadExistingTranscript();
-  }, [videoId]);
+  }, [videoId]); // Re-run when videoId changes
 
   useEffect(() => {
     // Auto-convert segments to captions when they're loaded/updated
@@ -365,41 +376,35 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     try {
       console.log('💾 Saving transcript to database...', segments.length, 'segments');
 
-      // First, delete existing segments for this video
-      const { error: deleteError } = await supabase
-        .from('transcript_segments')
-        .delete()
-        .eq('video_id', videoId);
-
-      if (deleteError) {
-        console.error('❌ Delete error:', deleteError);
-        throw deleteError;
-      }
-
-      // Insert new segments
-      const segmentsToInsert = segments.map(seg => ({
+      // Use upsert instead of delete+insert to avoid constraint violations
+      const segmentsToUpsert = segments.map((seg, index) => ({
         video_id: videoId,
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
         speaker: seg.speaker,
-        speaker_color: seg.speakerColor, // Save speaker color
-        emphasis: seg.emphasis, // Save emphasis
-        pitch: seg.pitch, // Save pitch
+        speaker_color: seg.speakerColor,
+        emphasis: seg.emphasis,
+        pitch: seg.pitch,
         language: detectedLanguage,
-        confidence: 0.95 // Default confidence
+        confidence: 0.95,
+        segment_type: 'dialogue',
+        is_off_camera: false
       }));
 
-      console.log('📦 Segments to insert:', JSON.stringify(segmentsToInsert, null, 2));
-      console.log('🔍 Video ID for insert:', videoId);
+      console.log('📦 Segments to upsert:', segmentsToUpsert.length);
 
+      // Use upsert with conflict resolution
       const { data, error } = await supabase
         .from('transcript_segments')
-        .insert(segmentsToInsert)
+        .upsert(segmentsToUpsert, { 
+          onConflict: 'video_id,language,start_time',
+          ignoreDuplicates: false 
+        })
         .select();
 
       if (error) {
-        console.error('❌ Insert error:', error.message, error.details, 'Segments attempted:', segmentsToInsert);
+        console.error('❌ Upsert error:', error.message, error.details, 'Segments attempted:', segmentsToUpsert);
         console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
         throw error;
       }
