@@ -171,17 +171,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
   };
 
   if (videosWithoutThumbnails.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-          <h3 className="text-lg font-semibold mb-2">All thumbnails are ready!</h3>
-          <p className="text-muted-foreground">
-            All your videos already have thumbnails generated.
-          </p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   return (
