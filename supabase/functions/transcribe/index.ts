@@ -23,32 +23,42 @@ serve(async (req) => {
   }
 
   try {
+    console.log("🔍 Parsing request body...");
     const body = await req.text();
+    console.log("📝 Raw body received, length:", body.length);
+    
     const { videoUrl, videoId, language, forceReExtract } = JSON.parse(body);
+    console.log("✅ Body parsed successfully");
     
     console.log("Processing video:", {
       videoId: videoId || 'none',
       hasVideoUrl: !!videoUrl,
+      videoUrlStart: videoUrl ? videoUrl.substring(0, 50) + "..." : "none",
       language: language || 'auto',
       forceReExtract: forceReExtract || false
     });
 
     if (!videoUrl) {
+      console.error("❌ No videoUrl provided");
       return new Response(JSON.stringify({ error: "videoUrl is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("🔑 Checking environment variables...");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
     
     console.log("Environment check:", {
       hasOpenAI: !!OPENAI_API_KEY,
-      hasAssemblyAI: !!ASSEMBLYAI_API_KEY
+      hasAssemblyAI: !!ASSEMBLYAI_API_KEY,
+      openAILength: OPENAI_API_KEY ? OPENAI_API_KEY.length : 0,
+      assemblyAILength: ASSEMBLYAI_API_KEY ? ASSEMBLYAI_API_KEY.length : 0
     });
     
     if (!OPENAI_API_KEY) {
+      console.error("❌ OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ 
         error: "OPENAI_API_KEY not configured" 
       }), {
@@ -57,16 +67,8 @@ serve(async (req) => {
       });
     }
 
-    // Get video size for logging
-    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
-    const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
-    const sizeMB = Math.round(contentLength / 1024 / 1024);
-    console.log(`Video size: ${sizeMB}MB`);
-
-    let transcriptionResult;
-
-    // Use AssemblyAI for all video files since OpenAI Whisper only accepts audio
     if (!ASSEMBLYAI_API_KEY) {
+      console.error("❌ ASSEMBLYAI_API_KEY not configured");
       return new Response(JSON.stringify({ 
         error: "ASSEMBLYAI_API_KEY not configured - required for video transcription" 
       }), {
@@ -75,24 +77,51 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Processing ${sizeMB}MB video with AssemblyAI...`);
-    transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language);
+    console.log("🔍 Checking video file accessibility...");
+    // Test video accessibility before proceeding
+    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+    if (!headResponse.ok) {
+      console.error("❌ Video file not accessible:", headResponse.status, headResponse.statusText);
+      return new Response(JSON.stringify({ 
+        error: `Video file not accessible: ${headResponse.status} ${headResponse.statusText}` 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
+    const sizeMB = Math.round(contentLength / 1024 / 1024);
+    console.log(`✅ Video accessible: ${sizeMB}MB`);
+
+    console.log("🚀 Starting transcription process...");
+    const transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language);
+    console.log("✅ Transcription completed, segments:", transcriptionResult.segments?.length || 0);
 
     // Save to database
     if (videoId && transcriptionResult.segments) {
+      console.log("💾 Saving to database...");
       await saveTranscriptToDatabase(videoId, transcriptionResult, forceReExtract);
+      console.log("✅ Database save completed");
+    } else {
+      console.log("⚠️ Skipping database save - no videoId or segments");
     }
 
+    console.log("🎉 Transcription process completed successfully");
     return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
-    console.error("Function error:", error);
+    console.error("💥 Function error:", error);
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
     
     return new Response(JSON.stringify({ 
       error: "Transcription failed",
-      details: String(error)
+      details: error?.message || String(error),
+      errorType: error?.name || "Unknown"
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
