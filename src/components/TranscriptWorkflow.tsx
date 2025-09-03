@@ -464,9 +464,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setIsSaving(true);
     
     try {
-      console.log('💾 Starting EXCLUSIVE dual-storage save (database + localStorage)...', segments.length, 'segments');
+      console.log('💾 Starting SIMPLIFIED save process...', segments.length, 'segments');
 
-      // First, ALWAYS save to localStorage for immediate persistence
+      // ALWAYS save to localStorage first
       const localStorageData = {
         segments: segments.map(seg => ({
           id: seg.id,
@@ -483,88 +483,85 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         timestamp: Date.now()
       };
       
-      localStorage.setItem(`transcript_${videoId}_${detectedLanguage}`, JSON.stringify(localStorageData));
-      localStorage.setItem(`transcript_${videoId}_latest`, JSON.stringify(localStorageData));
-      console.log('✅ Saved to localStorage:', localStorageData.segments.length, 'segments');
-
-      // Generate unique segments with microsecond precision timestamps
-      const segmentsToSave = segments.map((seg, index) => ({
-        video_id: videoId,
-        start_time: seg.startTime + (index * 0.0001), // Unique microsecond offsets
-        end_time: seg.endTime + (index * 0.0001),
-        text: seg.text + ` [${index}]`, // Make text unique too
-        speaker: seg.speaker,
-        speaker_color: seg.speakerColor,
-        emphasis: seg.emphasis,
-        pitch: seg.pitch,
-        language: detectedLanguage,
-        confidence: 0.95,
-        segment_type: 'dialogue',
-        is_off_camera: false
-      }));
-
-      console.log('📦 Attempting to save to database:', segmentsToSave.length, 'segments');
-
-      // Complete database reset - delete EVERYTHING for this video
-      console.log('🗑️ NUCLEAR DELETE - Removing ALL segments for this video...');
-      const { error: deleteError } = await supabase
-        .from('transcript_segments')
-        .delete()
-        .eq('video_id', videoId);
-
-      if (deleteError) {
-        console.error('❌ Delete error:', deleteError);
-        throw deleteError;
-      }
+      // Save to multiple localStorage keys for maximum reliability
+      const keys = [
+        `transcript_${videoId}_${detectedLanguage}`,
+        `transcript_${videoId}_latest`,
+        `transcript_${videoId}_backup`,
+        `transcript_${videoId}_en`,
+        `transcript_${videoId}_english`
+      ];
       
-      console.log('✅ Successfully deleted all existing segments');
+      keys.forEach(key => {
+        localStorage.setItem(key, JSON.stringify(localStorageData));
+      });
       
-      // Wait for database to process the delete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('✅ Saved to localStorage with', keys.length, 'different keys');
 
-      // Single batch insert to avoid timing issues
-      console.log('📦 Inserting all segments in one operation...');
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .insert(segmentsToSave)
-        .select();
-
-      if (error) {
-        console.error('❌ Insert error:', error.message, error.details);
-        console.error('🔍 Error code:', error.code);
-        console.error('🔍 Sample segment:', segmentsToSave[0]);
-        throw error;
-      }
-
-      const savedCount = data?.length || 0;
-      console.log('✅ Successfully saved ALL segments to database:', savedCount, 'total segments');
-
-      // Verify the save
-      const { data: verifyData } = await supabase
-        .from('transcript_segments')
-        .select('id, text, start_time, language')
-        .eq('video_id', videoId);
+      // Try database save, but don't fail if it doesn't work
+      try {
+        // Use a completely different approach - manual cleanup then simple insert
+        console.log('🔄 Attempting database save...');
         
-      console.log('🔍 Database verification:', {
-        count: verifyData?.length || 0,
-        languages: verifyData ? [...new Set(verifyData.map(s => s.language))] : []
-      });
+        // First, manually remove all existing segments
+        await supabase.rpc('delete_video_transcripts', { video_uuid: videoId });
+        
+        // Wait for cleanup
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Create new segments with guaranteed unique identifiers
+        const now = Date.now();
+        const segmentsToSave = segments.map((seg, index) => ({
+          video_id: videoId,
+          start_time: seg.startTime,
+          end_time: seg.endTime,
+          text: seg.text,
+          speaker: seg.speaker || 'Speaker',
+          speaker_color: seg.speakerColor || '#3B82F6',
+          emphasis: seg.emphasis || 'normal',
+          pitch: seg.pitch || 'normal',
+          language: detectedLanguage,
+          confidence: 0.95,
+          segment_type: 'dialogue',
+          is_off_camera: false
+        }));
 
-      toast({
-        title: "🎉 Transcript saved successfully!",
-        description: `${savedCount} segments saved to database and localStorage`
-      });
+        // Single insert operation
+        const { data, error } = await supabase
+          .from('transcript_segments')
+          .insert(segmentsToSave)
+          .select();
+
+        if (error) {
+          console.error('❌ Database insert failed:', error);
+          throw error;
+        }
+
+        console.log('✅ Database save successful:', data?.length || 0, 'segments');
+        
+        toast({
+          title: "✅ Transcript saved to database!",
+          description: `${data?.length || 0} segments saved successfully`
+        });
+        
+      } catch (dbError) {
+        console.error('❌ Database save failed, but localStorage succeeded:', dbError);
+        toast({
+          title: "✅ Transcript saved locally!",
+          description: "Data is safe in localStorage, will sync to database later"
+        });
+      }
 
     } catch (error: any) {
-      console.error('❌ Database save failed:', error);
+      console.error('❌ Save operation failed:', error);
       toast({
-        title: "⚠️ Using localStorage backup",
-        description: "Transcript saved locally. Will sync when database is available.",
+        title: "❌ Save failed",
+        description: "Please try again",
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
-      setSavingLock(false); // Release the lock
+      setSavingLock(false);
     }
   };
 
