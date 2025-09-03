@@ -61,9 +61,31 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
     video.addEventListener('timeupdate', updateTime);
     video.addEventListener('loadedmetadata', updateDuration);
 
+    // Enhanced timing synchronization for better caption sync
+    let animationFrame: number;
+    const updateTimeWithAnimation = () => {
+      if (video && !video.paused && !video.ended) {
+        setCurrentTime(video.currentTime);
+        animationFrame = requestAnimationFrame(updateTimeWithAnimation);
+      }
+    };
+
+    video.addEventListener('play', () => {
+      animationFrame = requestAnimationFrame(updateTimeWithAnimation);
+    });
+    
+    video.addEventListener('pause', () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    });
+
+    video.addEventListener('ended', () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    });
+
     return () => {
       video.removeEventListener('timeupdate', updateTime);
       video.removeEventListener('loadedmetadata', updateDuration);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
     };
   }, []);
 

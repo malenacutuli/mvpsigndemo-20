@@ -231,9 +231,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   if (!activeCaption) return null;
 
-  // Find currently speaking word
+  // Find currently speaking word with timing tolerance
+  const TIMING_TOLERANCE = 0.1; // 100ms tolerance for better sync
   const activeWord = activeCaption.words?.find(word => 
-    currentTime >= word.startTime && currentTime <= word.endTime
+    currentTime >= (word.startTime - TIMING_TOLERANCE) && 
+    currentTime <= (word.endTime + TIMING_TOLERANCE)
   );
 
   const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors);
@@ -314,16 +316,25 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                   const wordPitchStyle = getPitchBasedStyle(word.pitch);
                   const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
                   
+                  // Enhanced word timing logic with better synchronization
+                  const WORD_TOLERANCE = 0.05; // 50ms tolerance for word timing
+                  const isWordActive = currentTime >= (word.startTime - WORD_TOLERANCE) && 
+                                      currentTime <= (word.endTime + WORD_TOLERANCE);
+                  const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
+                  
                   return (
                      <span
                        key={index}
-                       className="inline-block transition-all duration-200 ease-out"
+                       className="inline-block transition-all duration-100 ease-out"
                        style={{
-                        // Read-ahead: show all words in white at 90% opacity
-                        // Color sync: change to speaker color as words are spoken
-                        color: hasBeenSpoken || isCurrentWord ? (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead,
-                        marginRight: '0.25em', // Consistent spacing
-                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`, // Individual word sizing based on emphasis
+                        // Enhanced color sync: use more precise timing for word highlighting
+                        color: wordHasBeenSpoken || isWordActive ? 
+                          (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead,
+                        // Add subtle glow effect for currently speaking word
+                        textShadow: isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40` : 'none',
+                        marginRight: '0.25em',
+                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
+                        transform: isWordActive ? 'scale(1.05)' : 'scale(1)', // Slight scale for active word
                         ...wordPitchStyle,
                       }}
                      >
