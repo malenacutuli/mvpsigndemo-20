@@ -69,6 +69,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     // Load existing data for this video
     loadExistingTranscript();
+    loadExistingAudioDescriptions();
+    loadExistingCharacters();
   }, [videoId]); // Re-run when videoId changes
 
   useEffect(() => {
@@ -148,6 +150,70 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
     } catch (error) {
       console.error('❌ Failed to load existing transcript:', error);
+    }
+  };
+
+  const loadExistingAudioDescriptions = async () => {
+    try {
+      console.log('🔍 Loading existing audio descriptions from database for video:', videoId);
+      
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedDescriptions = data.map(desc => ({
+          id: desc.id,
+          startTime: Number(desc.start_time),
+          endTime: Number(desc.end_time),
+          description: desc.description,
+          descriptionType: desc.description_type || 'visual',
+          confidence: desc.confidence
+        }));
+        setAudioDescriptions(loadedDescriptions);
+        onAudioDescriptionsUpdate?.(loadedDescriptions);
+        console.log('✅ Loaded existing audio descriptions:', loadedDescriptions.length, 'descriptions');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load existing audio descriptions:', error);
+    }
+  };
+
+  const loadExistingCharacters = async () => {
+    try {
+      console.log('🔍 Loading existing characters from database for video:', videoId);
+      
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedCharacters = data.map(char => ({
+          id: char.id,
+          name: char.name,
+          type: char.type,
+          color: char.color,
+          isOffCamera: char.is_off_camera,
+          voiceId: char.voice_id,
+          voiceName: char.voice_name,
+          voiceType: char.voice_type,
+          emphasis: char.emphasis || 'normal',
+          pitch: char.pitch || 'normal'
+        }));
+        setCharacters(loadedCharacters);
+        onCharactersUpdate?.(loadedCharacters);
+        console.log('✅ Loaded existing characters:', loadedCharacters.length, 'characters');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load existing characters:', error);
     }
   };
 
@@ -335,6 +401,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setSegments(prev => prev.map(seg => 
       seg.id === id ? { ...seg, [field]: value } : seg
     ));
+    // Auto-save changes after a brief delay
+    setTimeout(() => saveTranscript(), 1000);
   };
 
   const handleCharactersUpdate = (updatedCharacters: any[]) => {

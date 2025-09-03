@@ -175,10 +175,20 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     const updatedCharacters = [...characters, newCharacter];
     setCharacters(updatedCharacters);
     setNewCharacterName('');
+    
+    // Auto-save new character
+    setTimeout(async () => {
+      try {
+        await saveCharacters(updatedCharacters);
+        onCharactersUpdate?.(updatedCharacters);
+      } catch (error) {
+        console.error('Auto-save failed for new character:', error);
+      }
+    }, 500);
 
     toast({
       title: "Character Added",
-      description: `${newCharacter.name} assigned color ${availableColors[0].name}. Don't forget to save changes.`
+      description: `${newCharacter.name} has been added and will be saved automatically.`
     });
   };
 
@@ -210,6 +220,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       c.id === characterId ? { ...c, [property]: value } : c
     );
     setCharacters(updatedCharacters);
+    
+    // Auto-save characters after a brief delay to avoid too many saves during rapid editing
+    setTimeout(async () => {
+      try {
+        await saveCharacters(updatedCharacters);
+        onCharactersUpdate?.(updatedCharacters);
+      } catch (error) {
+        console.error('Auto-save failed for characters:', error);
+      }
+    }, 1000);
   };
 
   const updateCharacterVoice = (characterId: string, voiceId: string, voiceName: string, voiceType: 'elevenlabs' | 'native') => {

@@ -69,7 +69,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     loadDescriptionsData();
   }, [videoId, currentLanguage]);
 
-  // Save audio descriptions when they change
+  // Save audio descriptions when they change (auto-save on edit)
   const saveDescriptions = async (segments: AudioDescriptionSegment[]) => {
     const storageDescriptions: StorageAudioDescription[] = segments.map(segment => ({
       startTime: segment.startTime,
@@ -80,7 +80,15 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }));
     
     await saveAudioDescriptions(storageDescriptions, currentLanguage);
+    console.log('✅ Auto-saved audio descriptions:', segments.length, 'descriptions');
   };
+
+  // Auto-save descriptions whenever they change
+  useEffect(() => {
+    if (descriptions.length > 0) {
+      saveDescriptions(descriptions);
+    }
+  }, [descriptions, currentLanguage]);
 
   // Get native voices for current language
   const nativeVoices = getNativeVoices(currentLanguage);
