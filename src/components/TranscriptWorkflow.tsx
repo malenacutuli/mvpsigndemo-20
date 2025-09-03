@@ -108,12 +108,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       let loadedSegments: TranscriptSegment[] = [];
       let dataSource = 'none';
       
-      // FIRST: Try loading from database (all languages)
-      console.log('🗄️ Attempting to load from database...');
+      // FIRST: Try loading from database for the specific language
+      console.log('🗄️ Attempting to load from database for language:', detectedLanguage);
       const { data: dbData, error: dbError } = await supabase
         .from('transcript_segments')
         .select('*')  
         .eq('video_id', videoId)
+        .eq('language', detectedLanguage)
         .order('start_time', { ascending: true });
       
       if (dbError) {
