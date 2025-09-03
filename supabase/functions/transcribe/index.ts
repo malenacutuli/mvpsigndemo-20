@@ -28,7 +28,15 @@ serve(async (req) => {
     console.log("📥 Processing POST request");
     const { videoUrl, videoId, language } = await req.json();
 
+    console.log("📋 Request parameters:", {
+      hasVideoUrl: !!videoUrl,
+      hasVideoId: !!videoId,
+      language,
+      videoUrlStart: videoUrl?.substring(0, 50)
+    });
+
     if (!videoUrl) {
+      console.log("❌ Missing videoUrl");
       return new Response(JSON.stringify({ error: "videoUrl is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -39,6 +47,7 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
     if (!OPENAI_API_KEY) {
+      console.log("❌ Missing OpenAI API key");
       return new Response(JSON.stringify({ 
         error: "OpenAI API key not found",
         details: "Please configure OPENAI_API_KEY in Supabase secrets"
@@ -51,21 +60,25 @@ serve(async (req) => {
     console.log("Starting OpenAI Whisper transcription for video:", videoUrl.substring(0, 50) + "...");
 
     // Download video with size check
+    console.log("📥 Downloading video...");
     const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
+      console.log("❌ Video download failed:", videoResponse.status);
       throw new Error(`Failed to download video: ${videoResponse.status}`);
     }
     
     const videoArrayBuffer = await videoResponse.arrayBuffer();
     const videoSizeMB = Math.round(videoArrayBuffer.byteLength / 1024 / 1024);
-    console.log(`Video downloaded: ${videoSizeMB}MB`);
+    console.log(`✅ Video downloaded: ${videoSizeMB}MB`);
 
     // OpenAI Whisper has a 25MB file size limit
     if (videoArrayBuffer.byteLength > 25 * 1024 * 1024) {
+      console.log(`❌ Video too large: ${videoSizeMB}MB (limit: 25MB)`);
       throw new Error(`Video file too large (${videoSizeMB}MB). OpenAI Whisper has a 25MB limit.`);
     }
 
     // Create form data for OpenAI Whisper API
+    console.log("🔄 Preparing Whisper API request...");
     const formData = new FormData();
     const videoBlob = new Blob([videoArrayBuffer], { type: "video/mp4" });
     formData.append("file", videoBlob, "video.mp4");
@@ -74,9 +87,10 @@ serve(async (req) => {
     
     if (language && language !== "auto") {
       formData.append("language", language);
+      console.log("🌐 Using language:", language);
     }
 
-    console.log("Sending to OpenAI Whisper API...");
+    console.log("📤 Sending to OpenAI Whisper API...");
 
     // Call OpenAI Whisper API with better error handling
     const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -87,17 +101,23 @@ serve(async (req) => {
       body: formData
     });
 
-    console.log("OpenAI Whisper response status:", whisperResponse.status);
+    console.log("📨 OpenAI Whisper response status:", whisperResponse.status);
 
     if (!whisperResponse.ok) {
       const errorText = await whisperResponse.text();
-      console.error("OpenAI Whisper error response:", errorText);
+      console.error("❌ OpenAI Whisper error response:", errorText);
       throw new Error(`OpenAI Whisper API failed: ${whisperResponse.status} - ${errorText}`);
     }
 
     const whisperResult = await whisperResponse.json();
-    console.log("OpenAI Whisper transcription completed successfully");
-    console.log("Whisper result keys:", Object.keys(whisperResult));
+    console.log("✅ OpenAI Whisper transcription completed successfully");
+    console.log("📊 Whisper result structure:", {
+      hasText: !!whisperResult.text,
+      hasSegments: !!whisperResult.segments,
+      segmentsCount: whisperResult.segments?.length || 0,
+      language: whisperResult.language,
+      duration: whisperResult.duration
+    });
 
     // Format results for compatibility
     const segments = (whisperResult.segments || []).map((segment: any, index: number) => ({
@@ -115,18 +135,28 @@ serve(async (req) => {
       segments
     };
 
+    console.log("📊 Final result structure:", {
+      textLength: result.text.length,
+      segmentsCount: result.segments.length,
+      language: result.language,
+      duration: result.duration
+    });
+
     // Save to database if videoId provided
     if (videoId && segments.length > 0) {
+      console.log("💾 Saving to database...");
       await saveToDatabase(videoId, result);
+    } else {
+      console.log("ℹ️ Skipping database save (no videoId or no segments)");
     }
 
-    console.log(`Transcription completed: ${segments.length} segments`);
+    console.log(`✅ Transcription completed: ${segments.length} segments`);
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
-    console.error("Transcription error:", error);
+    console.error("❌ Transcription error:", error);
     return new Response(JSON.stringify({
       error: "Transcription failed",
       details: error.message

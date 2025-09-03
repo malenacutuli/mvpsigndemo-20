@@ -38,22 +38,36 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         body: { 
           videoUrl: videoUrl,
           videoId: videoId,
-          language: 'auto' // Add language parameter that the function expects
+          language: 'auto'
         }
       });
 
       if (error) {
+        console.error('Transcription error:', error);
         throw new Error(error.message || 'Transcription failed');
       }
 
       console.log('Transcription result:', data);
 
-      if (data?.text) {
+      if (data && data.segments && data.segments.length > 0) {
+        // Use the actual segments from OpenAI Whisper
+        const segments = data.segments.map((segment: any) => ({
+          text: segment.text,
+          start_time: segment.start,
+          end_time: segment.end,
+          speaker: 'narrator'
+        }));
+        
+        setTranscripts(segments);
+        onTranscriptUpdate?.(segments);
+        onTranscriptionComplete?.(segments, data.language || 'en');
+      } else if (data?.text) {
+        // Fallback for simple text response
         const segments = [
           { 
             text: data.text, 
             start_time: 0, 
-            end_time: 10, 
+            end_time: data.duration || 10, 
             speaker: 'narrator' 
           }
         ];
@@ -61,6 +75,8 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         setTranscripts(segments);
         onTranscriptUpdate?.(segments);
         onTranscriptionComplete?.(segments, data.language || 'en');
+      } else {
+        throw new Error('No transcript data received');
       }
     } catch (error) {
       console.error('Transcription error:', error);

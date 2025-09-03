@@ -231,18 +231,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.log('📋 Request details:', {
         videoId,
         videoUrl: videoUrl.substring(0, 100) + '...',
-        language: detectedLanguage,
-        rangeBytes: 200000000
+        language: detectedLanguage
       });
       
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl,
-          videoId, // Pass videoId for database saving
-          rangeBytes: 200000000,
-          fullTranscript: true,
-          forceReExtract: true, // Always force re-extract when user clicks the button
-          language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+          videoId,
+          language: detectedLanguage === 'auto' ? 'auto' : detectedLanguage
         }
       });
 
@@ -251,7 +247,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         error: error?.message,
         dataKeys: data ? Object.keys(data) : [],
         hasSegments: !!data?.segments,
-        hasWords: !!data?.words,
+        hasText: !!data?.text,
         language: data?.language
       });
 
