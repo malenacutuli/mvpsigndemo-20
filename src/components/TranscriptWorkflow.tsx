@@ -102,39 +102,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.log('🔍 TranscriptWorkflow - Loading existing transcript from database for video:', videoId);
       console.log('🔍 TranscriptWorkflow - Detected language:', detectedLanguage);
       
-      // Try to load transcripts for the detected language first, then fallback to 'en'
-      const languagesToTry = detectedLanguage !== 'en' ? [detectedLanguage, 'en'] : ['en'];
-      let data = null;
-      let error = null;
+      // Load ALL transcripts for this video regardless of language to ensure we find existing data
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .select('*')  
+        .eq('video_id', videoId)
+        .order('start_time', { ascending: true });
       
-      for (const lang of languagesToTry) {
-        console.log('🔍 TranscriptWorkflow - Trying to load transcripts for language:', lang);
-        
-        const result = await supabase
-          .from('transcript_segments')
-          .select('*')
-          .eq('video_id', videoId)
-          .eq('language', lang)
-          .order('start_time', { ascending: true });
-          
-        if (result.error) {
-          console.error('❌ TranscriptWorkflow - Database query error for language', lang, ':', result.error);
-          error = result.error;
-          continue;
-        }
-        
-        if (result.data && result.data.length > 0) {
-          console.log('✅ TranscriptWorkflow - Found transcripts for language:', lang, 'Count:', result.data.length);
-          data = result.data;
-          setDetectedLanguage(lang); // Update detected language to match found data
-          break;
-        }
-      }
-
-      console.log('📊 TranscriptWorkflow - Final database query result:', { 
+      console.log('📊 TranscriptWorkflow - Database query result:', { 
         error, 
         segmentCount: data?.length || 0,
-        language: detectedLanguage,
+        languages: data ? [...new Set(data.map(s => s.language))] : [],
         firstSegment: data?.[0] ? {
           text: data[0].text?.substring(0, 50) + '...',
           startTime: data[0].start_time,
@@ -143,8 +121,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         } : null
       });
 
-      if (error && !data) {
-        console.error('❌ TranscriptWorkflow - All database queries failed:', error);
+      if (error) {
+        console.error('❌ TranscriptWorkflow - Database query error:', error);
         throw error;
       }
 

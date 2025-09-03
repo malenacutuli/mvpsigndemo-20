@@ -146,7 +146,7 @@ const VideoDetail = () => {
     try {
       console.log('🔍 VideoDetail - Loading transcripts for video:', videoId);
       
-      // Try to load transcripts for any language, prioritize 'en'
+      // Load transcripts for any language - don't filter by language to ensure we find existing data
       const { data: segments, error } = await supabase
         .from('transcript_segments')
         .select('*')
@@ -156,6 +156,7 @@ const VideoDetail = () => {
       console.log('📊 VideoDetail - Database query result:', { 
         error, 
         segmentCount: segments?.length || 0,
+        languages: segments ? [...new Set(segments.map(s => s.language))] : [],
         firstSegment: segments?.[0] ? {
           text: segments[0].text?.substring(0, 50) + '...',
           language: segments[0].language,
@@ -169,7 +170,7 @@ const VideoDetail = () => {
       }
       
       if (segments && segments.length > 0) {
-        console.log('✅ VideoDetail - Found', segments.length, 'transcript segments');
+        console.log('✅ VideoDetail - Found', segments.length, 'transcript segments in languages:', [...new Set(segments.map(s => s.language))]);
         
         // Convert database segments to CaptionSegment format
         const captionSegments: CaptionSegment[] = segments.map(segment => {
