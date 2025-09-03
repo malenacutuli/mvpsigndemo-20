@@ -48,33 +48,25 @@ serve(async (req) => {
       });
     }
 
-    // Get video size
+    // Get video size for logging
     const headResponse = await fetch(videoUrl, { method: 'HEAD' });
     const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
     const sizeMB = Math.round(contentLength / 1024 / 1024);
     console.log(`Video size: ${sizeMB}MB`);
 
-    // Download video
-    console.log("Downloading video...");
-    const videoResponse = await fetch(videoUrl);
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to download video: ${videoResponse.status}`);
-    }
-    
-    const videoBuffer = await videoResponse.arrayBuffer();
-    console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
-
     let transcriptionResult;
 
-    // Check file size limit (OpenAI Whisper has a 25MB limit)
-    if (videoBuffer.byteLength > 25000000) { // 25MB limit
-      throw new Error(`Video file is too large (${sizeMB}MB). Maximum supported size is 25MB. Please compress your video or use a shorter clip.`);
+    // For large files, extract audio first using FFmpeg, then transcribe
+    if (contentLength > 25000000) { // > 25MB
+      console.log(`Large video (${sizeMB}MB) - extracting audio with FFmpeg...`);
+      transcriptionResult = await transcribeWithAudioExtraction(videoUrl, OPENAI_API_KEY, language);
+    } else {
+      // Small files can be processed directly
+      console.log(`Processing ${sizeMB}MB video directly...`);
+      const videoResponse = await fetch(videoUrl);
+      const videoBuffer = await videoResponse.arrayBuffer();
+      transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
     }
-
-    // Process the video directly
-    console.log(`Processing ${sizeMB}MB video directly...`);
-    transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-    console.log("✅ Transcription successful!");
 
     // Save to database
     if (videoId && transcriptionResult.segments) {
@@ -98,12 +90,78 @@ serve(async (req) => {
   }
 });
 
+// Extract audio using FFmpeg and transcribe
+async function transcribeWithAudioExtraction(videoUrl: string, apiKey: string, language?: string): Promise<any> {
+  console.log("Starting audio extraction with FFmpeg...");
+  
+  try {
+    // Create temporary file paths
+    const tempDir = await Deno.makeTempDir();
+    const inputVideo = `${tempDir}/input_video`;
+    const outputAudio = `${tempDir}/output_audio.mp3`;
+    
+    // Download video to temporary file
+    console.log("Downloading video file...");
+    const videoResponse = await fetch(videoUrl);
+    const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
+    await Deno.writeFile(inputVideo, videoBytes);
+    
+    console.log("Extracting audio with FFmpeg...");
+    
+    // Use FFmpeg to extract audio and compress it
+    const ffmpegProcess = new Deno.Command("ffmpeg", {
+      args: [
+        "-i", inputVideo,           // Input video file
+        "-vn",                     // No video
+        "-acodec", "mp3",          // Audio codec
+        "-ar", "16000",            // Sample rate (Whisper optimal)
+        "-ac", "1",                // Mono channel
+        "-ab", "64k",              // Audio bitrate (compressed)
+        "-y",                      // Overwrite output
+        outputAudio                // Output audio file
+      ],
+      stdout: "piped",
+      stderr: "piped"
+    });
+    
+    const { code, stdout, stderr } = await ffmpegProcess.output();
+    
+    if (code !== 0) {
+      const errorOutput = new TextDecoder().decode(stderr);
+      console.error("FFmpeg error:", errorOutput);
+      throw new Error(`FFmpeg failed: ${errorOutput}`);
+    }
+    
+    // Read the compressed audio file
+    const audioBytes = await Deno.readFile(outputAudio);
+    const audioSizeMB = Math.round(audioBytes.length / 1024 / 1024);
+    console.log(`Extracted audio: ${audioSizeMB}MB`);
+    
+    // Clean up input video file
+    await Deno.remove(inputVideo);
+    
+    // Transcribe the extracted audio
+    const result = await transcribeBuffer(audioBytes.buffer, apiKey, language);
+    
+    // Clean up audio file
+    await Deno.remove(outputAudio);
+    await Deno.remove(tempDir);
+    
+    console.log("✅ Audio extraction and transcription complete!");
+    return result;
+    
+  } catch (error) {
+    console.error("Audio extraction failed:", error);
+    throw new Error(`Failed to extract audio: ${error.message}`);
+  }
+}
+
 // Transcribe a buffer directly
 async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  const blob = new Blob([buffer], { type: "video/mp4" });
+  const blob = new Blob([buffer], { type: "audio/mp3" });
   
   const formData = new FormData();
-  formData.append("file", blob, "video.mp4");
+  formData.append("file", blob, "audio.mp3");
   formData.append("model", "whisper-1");
   formData.append("response_format", "verbose_json");
   formData.append("timestamp_granularities[]", "word");
@@ -130,13 +188,9 @@ async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: 
   return result;
 }
 
-// Note: Chunking video files by splitting binary data doesn't work
-// because it creates corrupted audio files that OpenAI can't decode.
-// For files larger than 25MB, users need to compress or split their videos manually.
-
 // Save transcript to database
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
-  console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
+  console.log(`Saving ${transcriptionResult.segments?.length || 0} segments to database...`);
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -159,7 +213,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
     }
     
     // Prepare segments for database
-    const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
+    const segmentsToSave = (transcriptionResult.segments || []).map((segment: any, index: number) => ({
       video_id: videoId,
       text: segment.text || '',
       start_time: Number(segment.start) || (index * 3),
