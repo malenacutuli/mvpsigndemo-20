@@ -332,9 +332,23 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   const updateSegment = (id: string, field: string, value: any) => {
-    setSegments(prev => prev.map(seg => 
-      seg.id === id ? { ...seg, [field]: value } : seg
-    ));
+    setSegments(prev => {
+      const updated = prev.map(seg => 
+        seg.id === id ? { ...seg, [field]: value } : seg
+      );
+      
+      // Auto-save changes after a brief delay to avoid excessive saves
+      setTimeout(async () => {
+        try {
+          console.log('💾 Auto-saving transcript changes...');
+          await saveTranscript();
+        } catch (error) {
+          console.error('❌ Auto-save failed:', error);
+        }
+      }, 1000);
+      
+      return updated;
+    });
   };
 
   const handleCharactersUpdate = (updatedCharacters: any[]) => {

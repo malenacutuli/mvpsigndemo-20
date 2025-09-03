@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mic, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
+import { useToast } from '@/hooks/use-toast';
 
 interface TranscriptionManagerProps {
   videoId?: string;
@@ -21,6 +23,39 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcripts, setTranscripts] = useState<any[]>([]);
+  const [hasExistingTranscript, setHasExistingTranscript] = useState(false);
+  const { loadTranscriptSegments, saveTranscriptSegments } = useVideoStorage(videoId || '');
+  const { toast } = useToast();
+
+  // Load existing transcripts on mount
+  useEffect(() => {
+    if (videoId) {
+      loadExistingTranscripts();
+    }
+  }, [videoId]);
+
+  const loadExistingTranscripts = async () => {
+    if (!videoId) return;
+    
+    try {
+      const existingSegments = await loadTranscriptSegments();
+      if (existingSegments.length > 0) {
+        console.log('✅ Found existing transcript:', existingSegments.length, 'segments');
+        const segments = existingSegments.map((seg) => ({
+          text: seg.text,
+          start_time: seg.startTime,
+          end_time: seg.endTime,
+          speaker: seg.speaker || 'narrator'
+        }));
+        setTranscripts(segments);
+        setHasExistingTranscript(true);
+        onTranscriptUpdate?.(segments);
+        onTranscriptionComplete?.(segments, 'en');
+      }
+    } catch (error) {
+      console.error('Failed to load existing transcript:', error);
+    }
+  };
 
   const generateTranscript = async () => {
     if (!videoUrl) {
@@ -48,17 +83,59 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
 
       console.log('Transcription result:', data);
 
-      if (data?.text) {
-        const segments = [
-          { 
-            text: data.text, 
-            start_time: 0, 
-            end_time: 10, 
-            speaker: 'narrator' 
-          }
-        ];
+      if (data?.text || data?.segments) {
+        let segments: any[] = [];
+        
+        if (data.segments && Array.isArray(data.segments)) {
+          // Use structured segments if available
+          segments = data.segments.map((seg: any, index: number) => ({
+            text: seg.text || '',
+            start_time: Number(seg.start) || 0,
+            end_time: Number(seg.end) || 0,
+            speaker: `Speaker ${(index % 3) + 1}`
+          }));
+        } else if (data.text) {
+          // Fallback to simple text
+          segments = [
+            { 
+              text: data.text, 
+              start_time: 0, 
+              end_time: 10, 
+              speaker: 'narrator' 
+            }
+          ];
+        }
         
         setTranscripts(segments);
+        setHasExistingTranscript(true);
+        
+        // Save to database/localStorage using useVideoStorage hook
+        try {
+          const transcriptSegments = segments.map((seg, index) => ({
+            text: seg.text,
+            startTime: seg.start_time,
+            endTime: seg.end_time,
+            speaker: seg.speaker,
+            speakerColor: '#3B82F6',
+            emphasis: 'normal' as const,
+            pitch: 'normal' as const
+          }));
+          
+          await saveTranscriptSegments(transcriptSegments, data.language || 'en');
+          
+          toast({
+            title: "Transcript saved",
+            description: `Successfully extracted and saved ${segments.length} segments`
+          });
+        } catch (saveError) {
+          console.error('Failed to save transcript:', saveError);
+          toast({
+            title: "Extraction successful, save failed", 
+            description: "Transcript extracted but couldn't save to database",
+            variant: "destructive"
+          });
+        }
+        
         onTranscriptUpdate?.(segments);
         onTranscriptionComplete?.(segments, data.language || 'en');
       }
@@ -95,7 +172,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
       <div className="space-y-4">
         <Button onClick={generateTranscript} disabled={isGenerating || !videoUrl}>
           <Mic className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating...' : 'Generate Transcript'}
+          {isGenerating ? 'Generating...' : hasExistingTranscript ? 'Re-generate Transcript' : 'Generate Transcript'}
         </Button>
         <Button 
           variant="outline" 
