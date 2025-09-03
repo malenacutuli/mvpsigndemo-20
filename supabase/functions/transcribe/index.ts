@@ -50,25 +50,35 @@ serve(async (req) => {
 
     console.log("Starting OpenAI Whisper transcription for video:", videoUrl.substring(0, 50) + "...");
 
-    // Download video
+    // Download video with size check
     const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
       throw new Error(`Failed to download video: ${videoResponse.status}`);
     }
-    const videoBuffer = await videoResponse.arrayBuffer();
-    console.log(`Video downloaded: ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB`);
+    
+    const videoArrayBuffer = await videoResponse.arrayBuffer();
+    const videoSizeMB = Math.round(videoArrayBuffer.byteLength / 1024 / 1024);
+    console.log(`Video downloaded: ${videoSizeMB}MB`);
+
+    // OpenAI Whisper has a 25MB file size limit
+    if (videoArrayBuffer.byteLength > 25 * 1024 * 1024) {
+      throw new Error(`Video file too large (${videoSizeMB}MB). OpenAI Whisper has a 25MB limit.`);
+    }
 
     // Create form data for OpenAI Whisper API
     const formData = new FormData();
-    formData.append("file", new Blob([videoBuffer], { type: "video/mp4" }), "video.mp4");
+    const videoBlob = new Blob([videoArrayBuffer], { type: "video/mp4" });
+    formData.append("file", videoBlob, "video.mp4");
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
-    formData.append("timestamp_granularities[]", "word");
+    
     if (language && language !== "auto") {
       formData.append("language", language);
     }
 
-    // Call OpenAI Whisper API
+    console.log("Sending to OpenAI Whisper API...");
+
+    // Call OpenAI Whisper API with better error handling
     const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
@@ -77,13 +87,17 @@ serve(async (req) => {
       body: formData
     });
 
+    console.log("OpenAI Whisper response status:", whisperResponse.status);
+
     if (!whisperResponse.ok) {
       const errorText = await whisperResponse.text();
+      console.error("OpenAI Whisper error response:", errorText);
       throw new Error(`OpenAI Whisper API failed: ${whisperResponse.status} - ${errorText}`);
     }
 
     const whisperResult = await whisperResponse.json();
-    console.log("OpenAI Whisper transcription completed");
+    console.log("OpenAI Whisper transcription completed successfully");
+    console.log("Whisper result keys:", Object.keys(whisperResult));
 
     // Format results for compatibility
     const segments = (whisperResult.segments || []).map((segment: any, index: number) => ({
