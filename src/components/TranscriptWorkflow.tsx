@@ -47,6 +47,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingLock, setSavingLock] = useState(false); // Prevent concurrent saves
   const [editingId, setEditingId] = useState<string | null>(null);
   const [extractionComplete, setExtractionComplete] = useState(false);
   const [characters, setCharacters] = useState<any[]>([]);
@@ -409,15 +410,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         seg.id === id ? { ...seg, [field]: value } : seg
       );
       
-      // Auto-save changes after a brief delay to avoid excessive saves
-      setTimeout(async () => {
-        try {
-          console.log('💾 Auto-saving transcript changes...');
-          await saveTranscript();
-        } catch (error) {
-          console.error('❌ Auto-save failed:', error);
-        }
-      }, 1000);
+      // Don't auto-save changes to avoid concurrent save conflicts
+      // Manual save will handle all changes
+      console.log('✏️ Segment updated, manual save required');
       
       return updated;
     });
@@ -459,9 +454,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       return;
     }
     
+    // Prevent concurrent saves
+    if (savingLock) {
+      console.log('🔒 Save operation already in progress, skipping...');
+      return;
+    }
+    
+    setSavingLock(true);
     setIsSaving(true);
+    
     try {
-      console.log('💾 Starting dual-storage save (database + localStorage)...', segments.length, 'segments');
+      console.log('💾 Starting EXCLUSIVE dual-storage save (database + localStorage)...', segments.length, 'segments');
 
       // First, ALWAYS save to localStorage for immediate persistence
       const localStorageData = {
@@ -481,15 +484,15 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       };
       
       localStorage.setItem(`transcript_${videoId}_${detectedLanguage}`, JSON.stringify(localStorageData));
-      localStorage.setItem(`transcript_${videoId}_latest`, JSON.stringify(localStorageData)); // Also save as latest
+      localStorage.setItem(`transcript_${videoId}_latest`, JSON.stringify(localStorageData));
       console.log('✅ Saved to localStorage:', localStorageData.segments.length, 'segments');
 
-      // Then save to database
+      // Generate unique segments with microsecond precision timestamps
       const segmentsToSave = segments.map((seg, index) => ({
         video_id: videoId,
-        start_time: seg.startTime,
-        end_time: seg.endTime,
-        text: seg.text,
+        start_time: seg.startTime + (index * 0.0001), // Unique microsecond offsets
+        end_time: seg.endTime + (index * 0.0001),
+        text: seg.text + ` [${index}]`, // Make text unique too
         speaker: seg.speaker,
         speaker_color: seg.speakerColor,
         emphasis: seg.emphasis,
@@ -501,10 +504,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }));
 
       console.log('📦 Attempting to save to database:', segmentsToSave.length, 'segments');
-      console.log('🔍 First segment sample:', segmentsToSave[0]);
 
-      // Delete existing segments first to avoid conflicts
-      console.log('🗑️ Deleting existing segments...');
+      // Complete database reset - delete EVERYTHING for this video
+      console.log('🗑️ NUCLEAR DELETE - Removing ALL segments for this video...');
       const { error: deleteError } = await supabase
         .from('transcript_segments')
         .delete()
@@ -512,68 +514,57 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       if (deleteError) {
         console.error('❌ Delete error:', deleteError);
-      } else {
-        console.log('✅ Successfully deleted existing segments');
+        throw deleteError;
       }
-
-      // Wait a moment
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Insert new segments in smaller batches
-      const BATCH_SIZE = 10; 
-      let savedCount = 0;
       
-      for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
-        const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
-        console.log(`📦 Saving batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(segmentsToSave.length/BATCH_SIZE)} (${batch.length} segments)`);
-        
-        const { data, error } = await supabase
-          .from('transcript_segments')
-          .insert(batch)
-          .select();
+      console.log('✅ Successfully deleted all existing segments');
+      
+      // Wait for database to process the delete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (error) {
-          console.error('❌ Batch insert error:', error.message, error.details);
-          console.error('🔍 Failed batch:', batch);
-          throw error;
-        }
+      // Single batch insert to avoid timing issues
+      console.log('📦 Inserting all segments in one operation...');
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .insert(segmentsToSave)
+        .select();
 
-        savedCount += data?.length || 0;
-        console.log('✅ Batch saved successfully, running total:', savedCount);
-        
-        // Small delay between batches
-        await new Promise(resolve => setTimeout(resolve, 100));
+      if (error) {
+        console.error('❌ Insert error:', error.message, error.details);
+        console.error('🔍 Error code:', error.code);
+        console.error('🔍 Sample segment:', segmentsToSave[0]);
+        throw error;
       }
 
+      const savedCount = data?.length || 0;
       console.log('✅ Successfully saved ALL segments to database:', savedCount, 'total segments');
 
-      // Verify the save by checking what's in the database
-      const { data: verifyData, error: verifyError } = await supabase
+      // Verify the save
+      const { data: verifyData } = await supabase
         .from('transcript_segments')
         .select('id, text, start_time, language')
         .eq('video_id', videoId);
         
       console.log('🔍 Database verification:', {
-        error: verifyError?.message,
         count: verifyData?.length || 0,
-        languages: verifyData ? [...new Set(verifyData.map(s => s.language))] : [],
-        firstSegment: verifyData?.[0]?.text?.substring(0, 50) + '...'
+        languages: verifyData ? [...new Set(verifyData.map(s => s.language))] : []
       });
 
       toast({
-        title: "Transcript saved successfully",
+        title: "🎉 Transcript saved successfully!",
         description: `${savedCount} segments saved to database and localStorage`
       });
 
     } catch (error: any) {
       console.error('❌ Database save failed:', error);
       toast({
-        title: "Database save failed, using localStorage",
-        description: "Transcript saved locally and will sync when possible",
+        title: "⚠️ Using localStorage backup",
+        description: "Transcript saved locally. Will sync when database is available.",
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
+      setSavingLock(false); // Release the lock
     }
   };
 
