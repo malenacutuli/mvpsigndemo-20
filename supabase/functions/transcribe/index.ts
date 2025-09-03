@@ -28,7 +28,9 @@ serve(async (req) => {
     
     console.log("Processing video:", {
       videoId: videoId || 'none',
-      language: language || 'auto'
+      hasVideoUrl: !!videoUrl,
+      language: language || 'auto',
+      forceReExtract: forceReExtract || false
     });
 
     if (!videoUrl) {

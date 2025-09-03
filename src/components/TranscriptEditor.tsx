@@ -133,10 +133,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         const response = await supabase.functions.invoke('transcribe', {
           body: { 
             videoUrl: videoUrl,
+            videoId: videoId, // Pass videoId for database saving
             rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
             language: 'auto', // Auto-detect language
             fullTranscript: true, // Request complete transcript
-            wordTimestamps: true // Request word-level timing
+            wordTimestamps: true, // Request word-level timing
+            forceReExtract: false // Don't force re-extract unless explicitly requested
           }
         });
 
