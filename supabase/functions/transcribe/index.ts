@@ -154,31 +154,26 @@ serve(async (req) => {
       });
     }
 
-    // For now, return a test success response instead of doing actual transcription
-    console.log("🎉 All tests passed - returning test response");
+    console.log("🎉 All tests passed - starting real transcription");
     
-    return new Response(JSON.stringify({ 
-      status: "success",
-      message: "Function is working correctly",
-      test_results: {
-        environment_ok: true,
-        assemblyai_connection_ok: true,
-        video_accessible: true
-      },
-      // Return mock segments for testing
-      segments: [
-        {
-          id: 0,
-          start: 0,
-          end: 3,
-          text: "Test transcript segment",
-          confidence: 0.95
-        }
-      ],
-      text: "Test transcript segment",
-      language: language || "en",
-      duration: 3
-    }), {
+    // Now do the actual transcription
+    const transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language, ASSEMBLYAI_API_KEY);
+    console.log("✅ Transcription completed, segments:", transcriptionResult.segments?.length || 0);
+
+    // Save to database if we have a videoId
+    if (videoId && transcriptionResult.segments && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      console.log("💾 Saving to database...");
+      await saveTranscriptToDatabase(videoId, transcriptionResult, false, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      console.log("✅ Database save completed");
+    } else {
+      console.log("⚠️ Skipping database save:", {
+        hasVideoId: !!videoId,
+        hasSegments: !!(transcriptionResult.segments?.length),
+        hasSupabaseCredentials: !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
+      });
+    }
+
+    return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
@@ -198,3 +193,191 @@ serve(async (req) => {
     });
   }
 });
+
+// Transcribe using AssemblyAI for video files
+async function transcribeWithAssemblyAI(videoUrl: string, language?: string, apiKey?: string): Promise<any> {
+  console.log("🎯 Starting AssemblyAI transcription for:", videoUrl.substring(0, 100) + "...");
+  
+  try {
+    console.log("📤 Step 1: Downloading video file...");
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`);
+    }
+    
+    const videoBuffer = await videoResponse.arrayBuffer();
+    const videoSize = videoBuffer.byteLength;
+    console.log(`📁 Video downloaded: ${Math.round(videoSize / 1024 / 1024)}MB`);
+    
+    console.log("📤 Step 2: Uploading to AssemblyAI...");
+    const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
+      method: "POST",
+      headers: {
+        "Authorization": apiKey!,
+        "Content-Type": "application/octet-stream"
+      },
+      body: new Uint8Array(videoBuffer)
+    });
+    
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error("❌ AssemblyAI upload failed:", uploadResponse.status, errorText);
+      throw new Error(`AssemblyAI upload error: ${uploadResponse.status} - ${errorText}`);
+    }
+    
+    const uploadResult = await uploadResponse.json();
+    console.log("✅ Video uploaded successfully, URL:", uploadResult.upload_url);
+    
+    console.log("🎬 Step 3: Starting transcription job...");
+    const transcriptConfig = {
+      audio_url: uploadResult.upload_url,
+      language_code: language && language !== 'auto' ? language : null,
+      word_timestamps: true,
+      speaker_labels: true,
+      punctuate: true,
+      format_text: true
+    };
+    
+    const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+      method: "POST",
+      headers: {
+        "Authorization": apiKey!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(transcriptConfig)
+    });
+    
+    if (!transcriptResponse.ok) {
+      const errorText = await transcriptResponse.text();
+      console.error("❌ AssemblyAI transcript request failed:", transcriptResponse.status, errorText);
+      throw new Error(`AssemblyAI transcript request error: ${transcriptResponse.status} - ${errorText}`);
+    }
+    
+    const transcriptJob = await transcriptResponse.json();
+    const transcriptId = transcriptJob.id;
+    console.log(`🔄 Transcription job started: ${transcriptId}`);
+    
+    console.log("⏳ Step 4: Waiting for completion...");
+    let transcript;
+    let attempts = 0;
+    const maxAttempts = 60; // 10 minutes max (10 seconds * 60)
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+      attempts++;
+      
+      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+        headers: {
+          "Authorization": apiKey!,
+        }
+      });
+      
+      if (!pollResponse.ok) {
+        console.error("❌ AssemblyAI poll error:", pollResponse.status);
+        throw new Error(`AssemblyAI poll error: ${pollResponse.status}`);
+      }
+      
+      transcript = await pollResponse.json();
+      console.log(`🔄 Attempt ${attempts}/${maxAttempts} - Status: ${transcript.status}`);
+      
+      if (transcript.status === "completed") {
+        console.log("✅ Transcription completed!");
+        break;
+      } else if (transcript.status === "error") {
+        console.error("❌ AssemblyAI transcription error:", transcript.error);
+        throw new Error(`AssemblyAI transcription failed: ${transcript.error}`);
+      }
+    }
+    
+    if (!transcript || transcript.status !== "completed") {
+      throw new Error(`Transcription timed out after ${attempts} attempts (${attempts * 10} seconds)`);
+    }
+    
+    console.log("🔄 Step 5: Converting results...");
+    const segments = transcript.utterances?.map((utterance: any, index: number) => ({
+      id: index,
+      start: utterance.start / 1000, // Convert ms to seconds
+      end: utterance.end / 1000,
+      text: utterance.text,
+      confidence: utterance.confidence,
+      words: utterance.words?.map((word: any) => ({
+        word: word.text,
+        start: word.start / 1000,
+        end: word.end / 1000,
+        confidence: word.confidence
+      })) || []
+    })) || [];
+    
+    const result = {
+      text: transcript.text || "",
+      language: transcript.language_code || language || "en",
+      duration: transcript.audio_duration || 0,
+      segments
+    };
+    
+    console.log(`✅ AssemblyAI transcription complete: ${segments.length} segments`);
+    return result;
+    
+  } catch (error) {
+    console.error("💥 AssemblyAI transcription failed:", error);
+    throw error; // Re-throw the original error for better debugging
+  }
+}
+
+// Save transcript to database
+async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean, supabaseUrl: string, supabaseServiceKey: string) {
+  console.log(`💾 Saving ${transcriptionResult.segments?.length || 0} segments to database...`);
+  
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Clear existing segments if force re-extract
+    if (forceReExtract) {
+      await supabase
+        .from('transcript_segments')
+        .delete()
+        .eq('video_id', videoId);
+      console.log("🗑️ Cleared existing segments");
+    }
+    
+    // Prepare segments for database
+    const segmentsToSave = (transcriptionResult.segments || []).map((segment: any, index: number) => ({
+      video_id: videoId,
+      text: segment.text || '',
+      start_time: Number(segment.start) || (index * 3),
+      end_time: Number(segment.end) || ((index + 1) * 3),
+      confidence: segment.confidence || null,
+      language: transcriptionResult.language || 'en',
+      segment_type: 'dialogue',
+      speaker: `Speaker ${(index % 3) + 1}`,
+      speaker_color: '#3B82F6',
+      emphasis: 'normal',
+      pitch: 'normal',
+      is_off_camera: false
+    }));
+    
+    // Save in batches
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
+      const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
+      
+      const { error } = await supabase
+        .from('transcript_segments')
+        .upsert(batch, { 
+          onConflict: 'video_id,language,start_time',
+          ignoreDuplicates: false
+        });
+        
+      if (error) {
+        console.error(`❌ Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
+      } else {
+        console.log(`✅ Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
+      }
+    }
+    
+    console.log(`✅ Database save complete: ${segmentsToSave.length} segments`);
+    
+  } catch (error) {
+    console.error("💥 Database save failed:", error);
+  }
+}
