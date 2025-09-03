@@ -107,6 +107,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       speakerColor: segment.speakerColor,
       emphasis: segment.emphasis,
       pitch: segment.pitch,
+      words: segment.words,
       isOffCamera: false,
       segmentType: 'dialogue' as const,
       confidence: 0.9

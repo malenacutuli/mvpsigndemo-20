@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+export interface WordData {
+  text: string;
+  startTime?: number;
+  endTime?: number;
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
+  pitch?: 'high' | 'low' | 'normal';
+}
+
 export interface TranscriptSegment {
   id?: string;
   text: string;
@@ -11,6 +19,7 @@ export interface TranscriptSegment {
   speakerColor?: string;
   emphasis?: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch?: 'normal' | 'high' | 'low';
+  words?: WordData[];
   isOffCamera?: boolean;
   segmentType?: 'dialogue' | 'soundeffect' | 'music';
   confidence?: number;
