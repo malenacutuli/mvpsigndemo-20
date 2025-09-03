@@ -56,13 +56,13 @@ serve(async (req) => {
 
     let transcriptionResult;
 
-    // For large files, extract audio first using FFmpeg, then transcribe
+    // For large files, use AssemblyAI which handles video files directly
     if (contentLength > 25000000) { // > 25MB
-      console.log(`Large video (${sizeMB}MB) - extracting audio with FFmpeg...`);
-      transcriptionResult = await transcribeWithAudioExtraction(videoUrl, OPENAI_API_KEY, language);
+      console.log(`Large video (${sizeMB}MB) - using AssemblyAI...`);
+      transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language);
     } else {
-      // Small files can be processed directly
-      console.log(`Processing ${sizeMB}MB video directly...`);
+      // Small files can be processed directly with OpenAI
+      console.log(`Processing ${sizeMB}MB video directly with OpenAI...`);
       const videoResponse = await fetch(videoUrl);
       const videoBuffer = await videoResponse.arrayBuffer();
       transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
@@ -90,69 +90,126 @@ serve(async (req) => {
   }
 });
 
-// Extract audio using FFmpeg and transcribe
-async function transcribeWithAudioExtraction(videoUrl: string, apiKey: string, language?: string): Promise<any> {
-  console.log("Starting audio extraction with FFmpeg...");
+// Transcribe using AssemblyAI for large video files
+async function transcribeWithAssemblyAI(videoUrl: string, language?: string): Promise<any> {
+  console.log("Starting AssemblyAI transcription...");
+  
+  const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+  if (!ASSEMBLYAI_API_KEY) {
+    throw new Error("ASSEMBLYAI_API_KEY not configured");
+  }
   
   try {
-    // Create temporary file paths
-    const tempDir = await Deno.makeTempDir();
-    const inputVideo = `${tempDir}/input_video`;
-    const outputAudio = `${tempDir}/output_audio.mp3`;
-    
-    // Download video to temporary file
-    console.log("Downloading video file...");
-    const videoResponse = await fetch(videoUrl);
-    const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
-    await Deno.writeFile(inputVideo, videoBytes);
-    
-    console.log("Extracting audio with FFmpeg...");
-    
-    // Use FFmpeg to extract audio and compress it
-    const ffmpegProcess = new Deno.Command("ffmpeg", {
-      args: [
-        "-i", inputVideo,           // Input video file
-        "-vn",                     // No video
-        "-acodec", "mp3",          // Audio codec
-        "-ar", "16000",            // Sample rate (Whisper optimal)
-        "-ac", "1",                // Mono channel
-        "-ab", "64k",              // Audio bitrate (compressed)
-        "-y",                      // Overwrite output
-        outputAudio                // Output audio file
-      ],
-      stdout: "piped",
-      stderr: "piped"
+    // Step 1: Upload the video file to AssemblyAI
+    console.log("Uploading video to AssemblyAI...");
+    const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
+      method: "POST",
+      headers: {
+        "Authorization": ASSEMBLYAI_API_KEY,
+      },
+      body: await fetch(videoUrl).then(r => r.arrayBuffer()).then(buf => new Uint8Array(buf))
     });
     
-    const { code, stdout, stderr } = await ffmpegProcess.output();
-    
-    if (code !== 0) {
-      const errorOutput = new TextDecoder().decode(stderr);
-      console.error("FFmpeg error:", errorOutput);
-      throw new Error(`FFmpeg failed: ${errorOutput}`);
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`AssemblyAI upload error: ${uploadResponse.status} - ${errorText}`);
     }
     
-    // Read the compressed audio file
-    const audioBytes = await Deno.readFile(outputAudio);
-    const audioSizeMB = Math.round(audioBytes.length / 1024 / 1024);
-    console.log(`Extracted audio: ${audioSizeMB}MB`);
+    const { upload_url } = await uploadResponse.json();
+    console.log("Video uploaded to AssemblyAI successfully");
     
-    // Clean up input video file
-    await Deno.remove(inputVideo);
+    // Step 2: Submit transcription request
+    console.log("Submitting transcription request...");
+    const transcriptConfig = {
+      audio_url: upload_url,
+      language_code: language && language !== 'auto' ? language : null,
+      word_timestamps: true,
+      speaker_labels: true,
+      punctuate: true,
+      format_text: true
+    };
     
-    // Transcribe the extracted audio
-    const result = await transcribeBuffer(audioBytes.buffer, apiKey, language);
+    const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+      method: "POST",
+      headers: {
+        "Authorization": ASSEMBLYAI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(transcriptConfig)
+    });
     
-    // Clean up audio file
-    await Deno.remove(outputAudio);
-    await Deno.remove(tempDir);
+    if (!transcriptResponse.ok) {
+      const errorText = await transcriptResponse.text();
+      throw new Error(`AssemblyAI transcript request error: ${transcriptResponse.status} - ${errorText}`);
+    }
     
-    console.log("✅ Audio extraction and transcription complete!");
+    const { id: transcriptId } = await transcriptResponse.json();
+    console.log(`Transcription job started: ${transcriptId}`);
+    
+    // Step 3: Poll for completion
+    console.log("Waiting for transcription to complete...");
+    let transcript;
+    let attempts = 0;
+    const maxAttempts = 180; // 30 minutes max
+    
+    while (attempts < maxAttempts) {
+      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+        headers: {
+          "Authorization": ASSEMBLYAI_API_KEY,
+        }
+      });
+      
+      if (!pollResponse.ok) {
+        throw new Error(`AssemblyAI poll error: ${pollResponse.status}`);
+      }
+      
+      transcript = await pollResponse.json();
+      
+      if (transcript.status === "completed") {
+        console.log("✅ Transcription completed!");
+        break;
+      } else if (transcript.status === "error") {
+        throw new Error(`AssemblyAI transcription failed: ${transcript.error}`);
+      }
+      
+      // Wait 10 seconds before next poll
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      attempts++;
+      console.log(`Polling attempt ${attempts}/${maxAttempts} - Status: ${transcript.status}`);
+    }
+    
+    if (!transcript || transcript.status !== "completed") {
+      throw new Error("Transcription timed out");
+    }
+    
+    // Step 4: Convert to OpenAI Whisper format for compatibility
+    const segments = transcript.utterances?.map((utterance: any, index: number) => ({
+      id: index,
+      start: utterance.start / 1000, // Convert ms to seconds
+      end: utterance.end / 1000,
+      text: utterance.text,
+      confidence: utterance.confidence,
+      words: utterance.words?.map((word: any) => ({
+        word: word.text,
+        start: word.start / 1000,
+        end: word.end / 1000,
+        confidence: word.confidence
+      })) || []
+    })) || [];
+    
+    const result = {
+      text: transcript.text || "",
+      language: transcript.language_code || language || "en",
+      duration: transcript.audio_duration || 0,
+      segments
+    };
+    
+    console.log(`✅ AssemblyAI transcription complete: ${segments.length} segments`);
     return result;
     
   } catch (error) {
-    console.error("Audio extraction failed:", error);
-    throw new Error(`Failed to extract audio: ${error.message}`);
+    console.error("AssemblyAI transcription failed:", error);
+    throw new Error(`AssemblyAI transcription failed: ${error.message}`);
   }
 }
 
