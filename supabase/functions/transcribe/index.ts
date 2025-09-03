@@ -41,6 +41,13 @@ serve(async (req) => {
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+    
+    console.log("Environment check:", {
+      hasOpenAI: !!OPENAI_API_KEY,
+      hasAssemblyAI: !!ASSEMBLYAI_API_KEY
+    });
+    
     if (!OPENAI_API_KEY) {
       return new Response(JSON.stringify({ 
         error: "OPENAI_API_KEY not configured" 
@@ -58,17 +65,18 @@ serve(async (req) => {
 
     let transcriptionResult;
 
-    // For large files, use AssemblyAI which handles video files directly
-    if (contentLength > 25000000) { // > 25MB
-      console.log(`Large video (${sizeMB}MB) - using AssemblyAI...`);
-      transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language);
-    } else {
-      // Small files can be processed directly with OpenAI
-      console.log(`Processing ${sizeMB}MB video directly with OpenAI...`);
-      const videoResponse = await fetch(videoUrl);
-      const videoBuffer = await videoResponse.arrayBuffer();
-      transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+    // Use AssemblyAI for all video files since OpenAI Whisper only accepts audio
+    if (!ASSEMBLYAI_API_KEY) {
+      return new Response(JSON.stringify({ 
+        error: "ASSEMBLYAI_API_KEY not configured - required for video transcription" 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    console.log(`Processing ${sizeMB}MB video with AssemblyAI...`);
+    transcriptionResult = await transcribeWithAssemblyAI(videoUrl, language);
 
     // Save to database
     if (videoId && transcriptionResult.segments) {
