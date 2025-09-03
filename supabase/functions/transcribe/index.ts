@@ -76,32 +76,127 @@ serve(async (req) => {
 
     console.log("✅ AssemblyAI API connection successful");
 
-    // For now, return mock data to test the complete flow
-    const mockResult = {
-      text: "This is a test transcript generated successfully.",
-      language: "en",
-      duration: 10,
-      segments: [
-        {
-          id: 0,
-          start: 0,
-          end: 5,
-          text: "This is a test transcript",
-          confidence: 0.95
-        },
-        {
-          id: 1,
-          start: 5,
-          end: 10,
-          text: "generated successfully.",
-          confidence: 0.92
+    if (!videoUrl) {
+      return new Response(JSON.stringify({ 
+        error: "videoUrl is required" 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("🎬 Starting real transcription for video:", videoUrl.substring(0, 100) + "...");
+
+    // Step 1: Download video
+    console.log("📥 Step 1: Downloading video...");
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error(`Failed to download video: ${videoResponse.status} ${videoResponse.statusText}`);
+    }
+
+    const videoBuffer = await videoResponse.arrayBuffer();
+    const videoSizeMB = Math.round(videoBuffer.byteLength / 1024 / 1024);
+    console.log(`✅ Video downloaded: ${videoSizeMB}MB`);
+
+    // Step 2: Upload to AssemblyAI
+    console.log("📤 Step 2: Uploading to AssemblyAI...");
+    const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
+      method: "POST",
+      headers: {
+        "Authorization": ASSEMBLYAI_API_KEY,
+      },
+      body: new Uint8Array(videoBuffer)
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`AssemblyAI upload failed: ${uploadResponse.status} - ${errorText}`);
+    }
+
+    const uploadResult = await uploadResponse.json();
+    console.log("✅ Video uploaded to AssemblyAI, URL:", uploadResult.upload_url);
+
+    // Step 3: Start transcription
+    console.log("🎯 Step 3: Starting transcription job...");
+    const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+      method: "POST",
+      headers: {
+        "Authorization": ASSEMBLYAI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        audio_url: uploadResult.upload_url,
+        word_timestamps: true,
+        speaker_labels: true,
+        punctuate: true,
+        format_text: true
+      })
+    });
+
+    if (!transcriptResponse.ok) {
+      const errorText = await transcriptResponse.text();
+      throw new Error(`AssemblyAI transcription request failed: ${transcriptResponse.status} - ${errorText}`);
+    }
+
+    const transcriptJob = await transcriptResponse.json();
+    const transcriptId = transcriptJob.id;
+    console.log("✅ Transcription job started:", transcriptId);
+
+    // Step 4: Poll for completion (simplified polling)
+    console.log("⏳ Step 4: Waiting for completion...");
+    let transcript;
+    let attempts = 0;
+    const maxAttempts = 30; // 5 minutes max (10 seconds * 30)
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+      attempts++;
+
+      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+        headers: {
+          "Authorization": ASSEMBLYAI_API_KEY,
         }
-      ]
+      });
+
+      if (!pollResponse.ok) {
+        throw new Error(`AssemblyAI polling failed: ${pollResponse.status}`);
+      }
+
+      transcript = await pollResponse.json();
+      console.log(`🔄 Poll ${attempts}/${maxAttempts}: Status = ${transcript.status}`);
+
+      if (transcript.status === "completed") {
+        console.log("✅ Transcription completed!");
+        break;
+      } else if (transcript.status === "error") {
+        throw new Error(`AssemblyAI transcription failed: ${transcript.error}`);
+      }
+    }
+
+    if (!transcript || transcript.status !== "completed") {
+      throw new Error(`Transcription timed out after ${attempts} attempts`);
+    }
+
+    // Step 5: Format results
+    console.log("📝 Step 5: Formatting results...");
+    const segments = transcript.utterances?.map((utterance: any, index: number) => ({
+      id: index,
+      start: utterance.start / 1000, // Convert ms to seconds
+      end: utterance.end / 1000,
+      text: utterance.text,
+      confidence: utterance.confidence
+    })) || [];
+
+    const result = {
+      text: transcript.text || "",
+      language: transcript.language_code || "en",
+      duration: transcript.audio_duration || 0,
+      segments
     };
 
-    console.log("🎉 Returning mock transcript with", mockResult.segments.length, "segments");
+    console.log("🎉 Transcription successful:", segments.length, "segments");
 
-    return new Response(JSON.stringify(mockResult), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
