@@ -362,6 +362,7 @@ export type Database = {
           text: string
           transcript_id: string | null
           video_id: string
+          words: Json | null
         }
         Insert: {
           confidence?: number | null
@@ -380,6 +381,7 @@ export type Database = {
           text: string
           transcript_id?: string | null
           video_id: string
+          words?: Json | null
         }
         Update: {
           confidence?: number | null
@@ -398,6 +400,7 @@ export type Database = {
           text?: string
           transcript_id?: string | null
           video_id?: string
+          words?: Json | null
         }
         Relationships: [
           {

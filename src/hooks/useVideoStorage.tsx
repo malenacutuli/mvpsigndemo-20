@@ -46,6 +46,26 @@ export const useVideoStorage = (videoId: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to safely parse words data from database
+  const parseWordsData = (wordsJson: any): WordData[] | undefined => {
+    if (!wordsJson) return undefined;
+    
+    try {
+      // If it's already an array, validate and return
+      if (Array.isArray(wordsJson)) {
+        return wordsJson.filter(word => 
+          word && 
+          typeof word === 'object' && 
+          typeof word.text === 'string'
+        ) as WordData[];
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Failed to parse words data:', error);
+      return undefined;
+    }
+  };
+
   // Save transcript segments to database with proper transaction handling
   const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
     if (!user) {
@@ -59,65 +79,35 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      // First verify the user owns this video or has access to it
-      const { data: videoData, error: videoError } = await supabase
-        .from('videos')
-        .select('user_id, title')
-        .eq('id', videoId)
-        .single();
+      // Use the new upsert function that handles word-level data
+      console.log('💾 Saving transcript segments with word-level data:', segments.length, 'segments');
+      
+      // Convert segments to the format expected by the database function
+      const dbSegments = segments.map((segment, index) => ({
+        idx: index,
+        text: segment.text,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        speaker: segment.speaker || 'Speaker',
+        speakerColor: segment.speakerColor || '#3B82F6',
+        emphasis: segment.emphasis || 'normal',
+        pitch: segment.pitch || 'normal',
+        words: segment.words ? JSON.parse(JSON.stringify(segment.words)) : null,
+        isOffCamera: segment.isOffCamera || false,
+        segmentType: segment.segmentType || 'dialogue',
+        confidence: segment.confidence || 0.95
+      }));
 
-      if (videoError || !videoData) {
-        throw new Error('Video not found or access denied');
-      }
+      const { error } = await supabase.rpc('upsert_transcript_segments', {
+        p_video_id: videoId,
+        p_language: language,
+        p_created_by: user.id,
+        p_segments: dbSegments
+      });
 
-      // Use a transaction-like approach: delete existing segments first
-      console.log('🗑️ Deleting existing transcript segments for video:', videoId, 'language:', language);
-      const { error: deleteError } = await supabase
-        .from('transcript_segments')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', language);
+      if (error) throw error;
 
-      if (deleteError) {
-        console.error('Delete error:', deleteError);
-        throw deleteError;
-      }
-
-      // Wait a moment to ensure delete is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Insert new segments with unique identifiers to prevent duplicates
-      const BATCH_SIZE = 50; // Reduced batch size for better reliability
-      for (let i = 0; i < segments.length; i += BATCH_SIZE) {
-        const batch = segments.slice(i, i + BATCH_SIZE);
-        const dbSegments = batch.map((segment, index) => ({
-          video_id: videoId,
-          text: segment.text,
-          start_time: segment.startTime,
-          end_time: segment.endTime,
-          speaker: segment.speaker || 'Speaker',
-          speaker_color: segment.speakerColor || '#3B82F6',
-          emphasis: segment.emphasis || 'normal',
-          pitch: segment.pitch || 'normal',
-          is_off_camera: segment.isOffCamera || false,
-          segment_type: segment.segmentType || 'dialogue',
-          language: language,
-          confidence: segment.confidence
-        }));
-
-        const { error: insertError } = await supabase
-          .from('transcript_segments')
-          .insert(dbSegments);
-
-        if (insertError) {
-          console.error('Insert error for batch', i / BATCH_SIZE + 1, ':', insertError);
-          throw insertError;
-        }
-
-        console.log(`✅ Inserted batch ${i / BATCH_SIZE + 1}/${Math.ceil(segments.length / BATCH_SIZE)} (${batch.length} segments)`);
-      }
-
-      console.log('✅ All transcript segments saved to database:', segments.length, 'segments for video:', videoData.title);
+      console.log('✅ Transcript segments with word-level data saved to database:', segments.length, 'segments');
     } catch (err) {
       console.error('Failed to save transcript segments:', err);
       setError(err instanceof Error ? err.message : 'Failed to save transcript');
@@ -172,6 +162,7 @@ export const useVideoStorage = (videoId: string) => {
         speakerColor: row.speaker_color,
         emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
         pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
+        words: row.words ? parseWordsData(row.words) : undefined,
         isOffCamera: row.is_off_camera,
         segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
         confidence: row.confidence
