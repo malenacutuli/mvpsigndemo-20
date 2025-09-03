@@ -99,59 +99,124 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   const loadExistingTranscript = async () => {
     try {
-      console.log('🔍 TranscriptWorkflow - Loading existing transcript from database for video:', videoId);
+      console.log('🔍 TranscriptWorkflow - Starting dual-source loading for video:', videoId);
       console.log('🔍 TranscriptWorkflow - Detected language:', detectedLanguage);
       
-      // Load ALL transcripts for this video regardless of language to ensure we find existing data
-      const { data, error } = await supabase
+      let loadedSegments: TranscriptSegment[] = [];
+      let dataSource = 'none';
+      
+      // FIRST: Try loading from database (all languages)
+      console.log('🗄️ Attempting to load from database...');
+      const { data: dbData, error: dbError } = await supabase
         .from('transcript_segments')
         .select('*')  
         .eq('video_id', videoId)
         .order('start_time', { ascending: true });
       
-      console.log('📊 TranscriptWorkflow - Database query result:', { 
-        error, 
-        segmentCount: data?.length || 0,
-        languages: data ? [...new Set(data.map(s => s.language))] : [],
-        firstSegment: data?.[0] ? {
-          text: data[0].text?.substring(0, 50) + '...',
-          startTime: data[0].start_time,
-          speaker: data[0].speaker,
-          language: data[0].language
-        } : null
-      });
-
-      if (error) {
-        console.error('❌ TranscriptWorkflow - Database query error:', error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        console.log('✅ TranscriptWorkflow - Found existing transcript with', data.length, 'segments');
-        const loadedSegments = data.map((seg, index) => ({
+      if (dbError) {
+        console.error('❌ Database load error:', dbError);
+      } else if (dbData && dbData.length > 0) {
+        console.log('✅ Found database data:', dbData.length, 'segments');
+        dataSource = 'database';
+        
+        loadedSegments = dbData.map((seg, index) => ({
           id: seg.id,
           text: seg.text,
           startTime: Number(seg.start_time),
           endTime: Number(seg.end_time),
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
-          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal', // Load saved emphasis
-          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal', // Load saved pitch
+          speakerColor: seg.speaker_color || getSpeakerColor(index),
+          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal',
+          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
         }));
+        
+        if (dbData[0]?.language) {
+          setDetectedLanguage(dbData[0].language);
+        }
+      }
+      
+      // FALLBACK: Try loading from localStorage if database failed
+      if (loadedSegments.length === 0) {
+        console.log('🗃️ Database empty, trying localStorage...');
+        
+        // Try specific language first
+        let localData = null;
+        const keys = [
+          `transcript_${videoId}_${detectedLanguage}`,
+          `transcript_${videoId}_latest`,
+          `transcript_${videoId}_en`,
+          `transcript_${videoId}_english`
+        ];
+        
+        for (const key of keys) {
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed.segments && parsed.segments.length > 0) {
+                console.log('✅ Found localStorage data in key:', key, parsed.segments.length, 'segments');
+                localData = parsed;
+                dataSource = 'localStorage';
+                break;
+              }
+            } catch (e) {
+              console.error('❌ Failed to parse localStorage key:', key, e);
+            }
+          }
+        }
+        
+        if (localData) {
+          loadedSegments = localData.segments.map((seg: any, index: number) => ({
+            id: seg.id || `segment-${index}`,
+            text: seg.text,
+            startTime: Number(seg.startTime),
+            endTime: Number(seg.endTime),
+            speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+            speakerColor: seg.speakerColor || getSpeakerColor(index),
+            emphasis: seg.emphasis || 'normal',
+            pitch: seg.pitch || 'normal',
+          }));
+          
+          if (localData.language) {
+            setDetectedLanguage(localData.language);
+          }
+        }
+      }
+      
+      console.log('📊 TranscriptWorkflow - Loading summary:', {
+        source: dataSource,
+        segmentCount: loadedSegments.length,
+        language: detectedLanguage,
+        firstSegment: loadedSegments[0] ? {
+          text: loadedSegments[0].text?.substring(0, 50) + '...',
+          startTime: loadedSegments[0].startTime,
+          speaker: loadedSegments[0].speaker
+        } : null
+      });
+
+      if (loadedSegments.length > 0) {
         setSegments(loadedSegments);
         setCurrentStep('edit');
         setExtractionComplete(true);
         
-        // Set detected language from first segment
-        if (data[0]?.language) {
-          setDetectedLanguage(data[0].language);
-        }
+        console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', loadedSegments.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Current step set to: edit');
         
-        console.log('✅ TranscriptWorkflow - Loaded existing transcript with all edits preserved:', loadedSegments.length, 'segments');
-        console.log('✅ TranscriptWorkflow - Current step set to:', 'edit');
+        // If loaded from localStorage but not in database, try to save to database
+        if (dataSource === 'localStorage') {
+          console.log('🔄 Found localStorage data, attempting to sync to database...');
+          setTimeout(async () => {
+            try {
+              await saveTranscript();
+              console.log('✅ Successfully synced localStorage data to database');
+            } catch (error) {
+              console.error('❌ Failed to sync to database:', error);
+            }
+          }, 1000);
+        }
       } else {
-        console.log('ℹ️ TranscriptWorkflow - No existing transcript found in database for video:', videoId);
-        console.log('ℹ️ TranscriptWorkflow - Current step remains:', 'extract');
+        console.log('ℹ️ TranscriptWorkflow - No transcript found in database or localStorage for video:', videoId);
+        console.log('ℹ️ TranscriptWorkflow - Current step remains: extract');
       }
     } catch (error) {
       console.error('❌ TranscriptWorkflow - Failed to load existing transcript:', error);
@@ -396,10 +461,31 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     setIsSaving(true);
     try {
-      console.log('💾 Saving transcript to database...', segments.length, 'segments');
+      console.log('💾 Starting dual-storage save (database + localStorage)...', segments.length, 'segments');
 
-      // Use upsert instead of delete+insert to avoid constraint violations
-      const segmentsToUpsert = segments.map((seg, index) => ({
+      // First, ALWAYS save to localStorage for immediate persistence
+      const localStorageData = {
+        segments: segments.map(seg => ({
+          id: seg.id,
+          text: seg.text,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          speaker: seg.speaker,
+          speakerColor: seg.speakerColor,
+          emphasis: seg.emphasis,
+          pitch: seg.pitch
+        })),
+        language: detectedLanguage,
+        videoId: videoId,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem(`transcript_${videoId}_${detectedLanguage}`, JSON.stringify(localStorageData));
+      localStorage.setItem(`transcript_${videoId}_latest`, JSON.stringify(localStorageData)); // Also save as latest
+      console.log('✅ Saved to localStorage:', localStorageData.segments.length, 'segments');
+
+      // Then save to database
+      const segmentsToSave = segments.map((seg, index) => ({
         video_id: videoId,
         start_time: seg.startTime,
         end_time: seg.endTime,
@@ -414,58 +500,76 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         is_off_camera: false
       }));
 
-      console.log('📦 Segments to upsert:', segmentsToUpsert.length);
+      console.log('📦 Attempting to save to database:', segmentsToSave.length, 'segments');
+      console.log('🔍 First segment sample:', segmentsToSave[0]);
 
-      // Use upsert with conflict resolution
-      const { data, error } = await supabase
+      // Delete existing segments first to avoid conflicts
+      console.log('🗑️ Deleting existing segments...');
+      const { error: deleteError } = await supabase
         .from('transcript_segments')
-        .upsert(segmentsToUpsert, { 
-          onConflict: 'video_id,language,start_time',
-          ignoreDuplicates: false 
-        })
-        .select();
+        .delete()
+        .eq('video_id', videoId);
 
-      if (error) {
-        console.error('❌ Upsert error:', error.message, error.details, 'Segments attempted:', segmentsToUpsert);
-        console.error('🔍 Full error object:', JSON.stringify(error, null, 2));
-        throw error;
+      if (deleteError) {
+        console.error('❌ Delete error:', deleteError);
+      } else {
+        console.log('✅ Successfully deleted existing segments');
       }
 
-      console.log('✅ Successfully saved', data?.length || 0, 'segments to database');
+      // Wait a moment
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Convert to CaptionSegment format for the player
-      const captionSegments: CaptionSegment[] = segments.map(seg => ({
-        text: seg.text,
-        speaker: seg.speaker,
-        startTime: seg.startTime,
-        endTime: seg.endTime,
-        words: seg.text.split(' ').map((word, i) => ({
-          text: word,
-          startTime: seg.startTime + (i * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
-          endTime: seg.startTime + ((i + 1) * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
-          emphasis: seg.emphasis,
-          pitch: seg.pitch,
-        })),
-        volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'quiet' ? 30 : 50,
-        pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
-        type: 'dialogue',
-        isOffCamera: false,
-        speakerColor: seg.speakerColor,
-      }));
+      // Insert new segments in smaller batches
+      const BATCH_SIZE = 10; 
+      let savedCount = 0;
+      
+      for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
+        const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
+        console.log(`📦 Saving batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(segmentsToSave.length/BATCH_SIZE)} (${batch.length} segments)`);
+        
+        const { data, error } = await supabase
+          .from('transcript_segments')
+          .insert(batch)
+          .select();
 
-      onTranscriptReady(captionSegments);
-      setCurrentStep('complete');
+        if (error) {
+          console.error('❌ Batch insert error:', error.message, error.details);
+          console.error('🔍 Failed batch:', batch);
+          throw error;
+        }
+
+        savedCount += data?.length || 0;
+        console.log('✅ Batch saved successfully, running total:', savedCount);
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      console.log('✅ Successfully saved ALL segments to database:', savedCount, 'total segments');
+
+      // Verify the save by checking what's in the database
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('transcript_segments')
+        .select('id, text, start_time, language')
+        .eq('video_id', videoId);
+        
+      console.log('🔍 Database verification:', {
+        error: verifyError?.message,
+        count: verifyData?.length || 0,
+        languages: verifyData ? [...new Set(verifyData.map(s => s.language))] : [],
+        firstSegment: verifyData?.[0]?.text?.substring(0, 50) + '...'
+      });
 
       toast({
-        title: "Transcript saved",
-        description: "All changes have been saved to the database"
+        title: "Transcript saved successfully",
+        description: `${savedCount} segments saved to database and localStorage`
       });
 
     } catch (error: any) {
-      console.error('❌ Save error:', error);
+      console.error('❌ Database save failed:', error);
       toast({
-        title: "Save failed", 
-        description: error.message,
+        title: "Database save failed, using localStorage",
+        description: "Transcript saved locally and will sync when possible",
         variant: "destructive"
       });
     } finally {
