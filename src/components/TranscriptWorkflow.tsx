@@ -69,8 +69,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     // Load existing data for this video
     loadExistingTranscript();
-    loadExistingAudioDescriptions();
-    loadExistingCharacters();
   }, [videoId]); // Re-run when videoId changes
 
   useEffect(() => {
@@ -153,70 +151,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     }
   };
 
-  const loadExistingAudioDescriptions = async () => {
-    try {
-      console.log('🔍 Loading existing audio descriptions from database for video:', videoId);
-      
-      const { data, error } = await supabase
-        .from('audio_descriptions')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const loadedDescriptions = data.map(desc => ({
-          id: desc.id,
-          startTime: Number(desc.start_time),
-          endTime: Number(desc.end_time),
-          description: desc.description,
-          descriptionType: desc.description_type || 'visual',
-          confidence: desc.confidence
-        }));
-        setAudioDescriptions(loadedDescriptions);
-        onAudioDescriptionsUpdate?.(loadedDescriptions);
-        console.log('✅ Loaded existing audio descriptions:', loadedDescriptions.length, 'descriptions');
-      }
-    } catch (error) {
-      console.error('❌ Failed to load existing audio descriptions:', error);
-    }
-  };
-
-  const loadExistingCharacters = async () => {
-    try {
-      console.log('🔍 Loading existing characters from database for video:', videoId);
-      
-      const { data, error } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const loadedCharacters = data.map(char => ({
-          id: char.id,
-          name: char.name,
-          type: char.type,
-          color: char.color,
-          isOffCamera: char.is_off_camera,
-          voiceId: char.voice_id,
-          voiceName: char.voice_name,
-          voiceType: char.voice_type,
-          emphasis: char.emphasis || 'normal',
-          pitch: char.pitch || 'normal'
-        }));
-        setCharacters(loadedCharacters);
-        onCharactersUpdate?.(loadedCharacters);
-        console.log('✅ Loaded existing characters:', loadedCharacters.length, 'characters');
-      }
-    } catch (error) {
-      console.error('❌ Failed to load existing characters:', error);
-    }
-  };
-
   const getSpeakerColor = (index: number) => {
     const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
     return colors[index % colors.length];
@@ -231,14 +165,18 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.log('📋 Request details:', {
         videoId,
         videoUrl: videoUrl.substring(0, 100) + '...',
-        language: detectedLanguage
+        language: detectedLanguage,
+        rangeBytes: 200000000
       });
       
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl,
-          videoId,
-          language: detectedLanguage === 'auto' ? 'auto' : detectedLanguage
+          videoId, // Pass videoId for database saving
+          rangeBytes: 200000000,
+          fullTranscript: true,
+          forceReExtract: true, // Always force re-extract when user clicks the button
+          language: detectedLanguage === 'auto' ? undefined : detectedLanguage
         }
       });
 
@@ -247,7 +185,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         error: error?.message,
         dataKeys: data ? Object.keys(data) : [],
         hasSegments: !!data?.segments,
-        hasText: !!data?.text,
+        hasWords: !!data?.words,
         language: data?.language
       });
 
@@ -397,8 +335,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setSegments(prev => prev.map(seg => 
       seg.id === id ? { ...seg, [field]: value } : seg
     ));
-    // Auto-save changes after a brief delay
-    setTimeout(() => saveTranscript(), 1000);
   };
 
   const handleCharactersUpdate = (updatedCharacters: any[]) => {

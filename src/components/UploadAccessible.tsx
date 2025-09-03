@@ -156,10 +156,7 @@ export const UploadAccessible: React.FC = () => {
       // Auto-transcribe first 15MB for MVP
       const videoUrlForTranscription = publicUrl?.publicUrl || `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${path}`;
       const { data, error } = await supabase.functions.invoke("transcribe", {
-        body: { 
-          videoUrl: videoUrlForTranscription, 
-          rangeBytes: 15000000 
-        },
+        body: { videoUrl: videoUrlForTranscription, rangeBytes: 15000000 },
       });
       
       if (error) {

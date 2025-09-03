@@ -37,37 +37,23 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
       const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl: videoUrl,
-          videoId: videoId,
-          language: 'auto'
+          videoId: videoId, // Pass videoId for database saving
+          rangeBytes: 15000000 // First 15MB for transcription
         }
       });
 
       if (error) {
-        console.error('Transcription error:', error);
         throw new Error(error.message || 'Transcription failed');
       }
 
       console.log('Transcription result:', data);
 
-      if (data && data.segments && data.segments.length > 0) {
-        // Use the actual segments from OpenAI Whisper
-        const segments = data.segments.map((segment: any) => ({
-          text: segment.text,
-          start_time: segment.start,
-          end_time: segment.end,
-          speaker: 'narrator'
-        }));
-        
-        setTranscripts(segments);
-        onTranscriptUpdate?.(segments);
-        onTranscriptionComplete?.(segments, data.language || 'en');
-      } else if (data?.text) {
-        // Fallback for simple text response
+      if (data?.text) {
         const segments = [
           { 
             text: data.text, 
             start_time: 0, 
-            end_time: data.duration || 10, 
+            end_time: 10, 
             speaker: 'narrator' 
           }
         ];
@@ -75,8 +61,6 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         setTranscripts(segments);
         onTranscriptUpdate?.(segments);
         onTranscriptionComplete?.(segments, data.language || 'en');
-      } else {
-        throw new Error('No transcript data received');
       }
     } catch (error) {
       console.error('Transcription error:', error);

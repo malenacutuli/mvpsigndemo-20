@@ -9,162 +9,94 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("🚀 Transcribe function called - method:", req.method);
-  
+  console.log("=== TRANSCRIBE FUNCTION CALLED ===");
+
   if (req.method === "OPTIONS") {
-    console.log("✅ Handling OPTIONS request");
     return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
-    console.log("❌ Invalid method:", req.method);
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
-    console.log("📥 Processing POST request");
-    const { videoUrl, videoId, language } = await req.json();
-
-    console.log("📋 Request parameters:", {
-      hasVideoUrl: !!videoUrl,
-      hasVideoId: !!videoId,
-      language,
-      videoUrlStart: videoUrl?.substring(0, 50)
+    const body = await req.text();
+    const { videoUrl, videoId, language, forceReExtract } = JSON.parse(body);
+    
+    console.log("Processing video:", {
+      videoId: videoId || 'none',
+      language: language || 'auto'
     });
 
     if (!videoUrl) {
-      console.log("❌ Missing videoUrl");
       return new Response(JSON.stringify({ error: "videoUrl is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get OpenAI API key
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-
     if (!OPENAI_API_KEY) {
-      console.log("❌ Missing OpenAI API key");
       return new Response(JSON.stringify({ 
-        error: "OpenAI API key not found",
-        details: "Please configure OPENAI_API_KEY in Supabase secrets"
+        error: "OPENAI_API_KEY not configured" 
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Starting OpenAI Whisper transcription for video:", videoUrl.substring(0, 50) + "...");
+    // Get video size
+    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+    const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
+    const sizeMB = Math.round(contentLength / 1024 / 1024);
+    console.log(`Video size: ${sizeMB}MB`);
 
-    // Download video with size check
-    console.log("📥 Downloading video...");
+    // Download video
+    console.log("Downloading video...");
     const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
-      console.log("❌ Video download failed:", videoResponse.status);
       throw new Error(`Failed to download video: ${videoResponse.status}`);
     }
     
-    const videoArrayBuffer = await videoResponse.arrayBuffer();
-    const videoSizeMB = Math.round(videoArrayBuffer.byteLength / 1024 / 1024);
-    console.log(`✅ Video downloaded: ${videoSizeMB}MB`);
+    const videoBuffer = await videoResponse.arrayBuffer();
+    console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
 
-    // For large files, we'll send the first 25MB for transcription
-    let audioBuffer = videoArrayBuffer;
-    let fileName = "video.mp4";
-    
-    if (videoArrayBuffer.byteLength > 25 * 1024 * 1024) {
-      console.log(`📏 Video too large (${videoSizeMB}MB), using first 25MB for transcription`);
-      // Take first 25MB of the video file
-      audioBuffer = videoArrayBuffer.slice(0, 25 * 1024 * 1024);
-      fileName = "video_chunk.mp4";
-    }
+    let transcriptionResult;
 
-    // Create form data for OpenAI Whisper API
-    console.log("🔄 Preparing Whisper API request...");
-    const formData = new FormData();
-    const videoBlob = new Blob([audioBuffer], { type: "video/mp4" });
-    formData.append("file", videoBlob, fileName);
-    formData.append("model", "whisper-1");
-    formData.append("response_format", "verbose_json");
-    
-    if (language && language !== "auto") {
-      formData.append("language", language);
-      console.log("🌐 Using language:", language);
-    }
-
-    console.log("📤 Sending to OpenAI Whisper API...");
-
-    // Call OpenAI Whisper API with better error handling
-    const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: formData
-    });
-
-    console.log("📨 OpenAI Whisper response status:", whisperResponse.status);
-
-    if (!whisperResponse.ok) {
-      const errorText = await whisperResponse.text();
-      console.error("❌ OpenAI Whisper error response:", errorText);
-      throw new Error(`OpenAI Whisper API failed: ${whisperResponse.status} - ${errorText}`);
-    }
-
-    const whisperResult = await whisperResponse.json();
-    console.log("✅ OpenAI Whisper transcription completed successfully");
-    console.log("📊 Whisper result structure:", {
-      hasText: !!whisperResult.text,
-      hasSegments: !!whisperResult.segments,
-      segmentsCount: whisperResult.segments?.length || 0,
-      language: whisperResult.language,
-      duration: whisperResult.duration
-    });
-
-    // Format results for compatibility
-    const segments = (whisperResult.segments || []).map((segment: any, index: number) => ({
-      id: index,
-      start: segment.start,
-      end: segment.end,
-      text: segment.text,
-      confidence: 0.9 // Whisper doesn't provide confidence scores
-    }));
-
-    const result = {
-      text: whisperResult.text || "",
-      language: whisperResult.language || "en",
-      duration: whisperResult.duration || 0,
-      segments
-    };
-
-    console.log("📊 Final result structure:", {
-      textLength: result.text.length,
-      segmentsCount: result.segments.length,
-      language: result.language,
-      duration: result.duration
-    });
-
-    // Save to database if videoId provided
-    if (videoId && segments.length > 0) {
-      console.log("💾 Saving to database...");
-      await saveToDatabase(videoId, result);
+    // Strategy 1: Try processing the whole video first (works for most cases under 25MB)
+    if (videoBuffer.byteLength <= 23000000) { // 23MB to be safe
+      console.log("Video under 23MB - processing directly...");
+      try {
+        transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+        console.log("✅ Direct processing successful!");
+      } catch (error) {
+        console.log("Direct processing failed, trying chunked approach:", error.message);
+        transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
+      }
     } else {
-      console.log("ℹ️ Skipping database save (no videoId or no segments)");
+      // Strategy 2: For larger files, use chunked approach
+      console.log(`Large video (${sizeMB}MB) - using chunked processing...`);
+      transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
     }
 
-    console.log(`✅ Transcription completed: ${segments.length} segments`);
-    return new Response(JSON.stringify(result), {
+    // Save to database
+    if (videoId && transcriptionResult.segments) {
+      await saveTranscriptToDatabase(videoId, transcriptionResult, forceReExtract);
+    }
+
+    return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
-    console.error("❌ Transcription error:", error);
-    return new Response(JSON.stringify({
+    console.error("Function error:", error);
+    
+    return new Response(JSON.stringify({ 
       error: "Transcription failed",
-      details: error.message
+      details: String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -172,33 +104,156 @@ serve(async (req) => {
   }
 });
 
-async function saveToDatabase(videoId: string, result: any) {
-  try {
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+// Transcribe a buffer directly
+async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  const blob = new Blob([buffer], { type: "video/mp4" });
+  
+  const formData = new FormData();
+  formData.append("file", blob, "video.mp4");
+  formData.append("model", "whisper-1");
+  formData.append("response_format", "verbose_json");
+  formData.append("timestamp_granularities[]", "word");
+  
+  if (language && language !== 'auto') {
+    formData.append("language", language);
+  }
+
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log(`Transcription complete: ${result.segments?.length || 0} segments`);
+  return result;
+}
+
+// Process large videos by splitting into time-based chunks
+async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  console.log("Starting chunked transcription...");
+  
+  // Split buffer into ~20MB chunks
+  const CHUNK_SIZE = 20000000; // 20MB
+  const chunks: ArrayBuffer[] = [];
+  
+  for (let i = 0; i < buffer.byteLength; i += CHUNK_SIZE) {
+    const end = Math.min(i + CHUNK_SIZE, buffer.byteLength);
+    chunks.push(buffer.slice(i, end));
+  }
+  
+  console.log(`Processing ${chunks.length} chunks...`);
+  
+  const results = [];
+  let totalDuration = 0;
+  let segmentOffset = 0;
+  
+  for (let i = 0; i < chunks.length; i++) {
+    console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
     
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.log("No Supabase credentials for database save");
+    try {
+      const chunkResult = await transcribeBuffer(chunks[i], apiKey, language);
+      
+      // Adjust timestamps to account for chunk position
+      if (chunkResult.segments) {
+        chunkResult.segments.forEach((segment: any) => {
+          segment.start += totalDuration;
+          segment.end += totalDuration;
+          segment.id = segmentOffset++;
+          
+          if (segment.words) {
+            segment.words.forEach((word: any) => {
+              word.start += totalDuration;
+              word.end += totalDuration;
+            });
+          }
+        });
+      }
+      
+      results.push(chunkResult);
+      totalDuration += chunkResult.duration || 0;
+      
+      // Brief pause between requests
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+    } catch (error) {
+      console.error(`Chunk ${i + 1} failed:`, error);
+      // Continue with remaining chunks
+    }
+  }
+  
+  if (results.length === 0) {
+    throw new Error("Failed to process any chunks successfully");
+  }
+  
+  // Combine results
+  const combinedResult = {
+    text: results.map(r => r.text || '').join(' '),
+    language: results.find(r => r.language)?.language || 'en',
+    duration: totalDuration,
+    segments: [],
+    words: []
+  };
+  
+  // Merge all segments and words
+  results.forEach(result => {
+    if (result.segments) {
+      combinedResult.segments.push(...result.segments);
+    }
+    if (result.words) {
+      combinedResult.words.push(...result.words);
+    }
+  });
+  
+  // Sort by time
+  combinedResult.segments.sort((a: any, b: any) => a.start - b.start);
+  combinedResult.words.sort((a: any, b: any) => a.start - b.start);
+  
+  console.log(`✅ Chunked processing complete: ${combinedResult.segments.length} segments`);
+  return combinedResult;
+}
+
+// Save transcript to database
+async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
+  console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
+  
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.log("Supabase credentials not available, skipping database save");
       return;
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Clear existing segments
-    await supabase
-      .from('transcript_segments')
-      .delete()
-      .eq('video_id', videoId)
-      .eq('language', result.language);
+    // Clear existing segments if force re-extract
+    if (forceReExtract) {
+      await supabase
+        .from('transcript_segments')
+        .delete()
+        .eq('video_id', videoId);
+      console.log("Cleared existing segments");
+    }
     
-    // Prepare segments
-    const segmentsToSave = result.segments.map((segment: any, index: number) => ({
+    // Prepare segments for database
+    const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
       video_id: videoId,
-      text: segment.text,
-      start_time: segment.start,
-      end_time: segment.end,
-      confidence: segment.confidence,
-      language: result.language,
+      text: segment.text || '',
+      start_time: Number(segment.start) || (index * 3),
+      end_time: Number(segment.end) || ((index + 1) * 3),
+      confidence: segment.confidence || null,
+      language: transcriptionResult.language || 'en',
       segment_type: 'dialogue',
       speaker: `Speaker ${(index % 3) + 1}`,
       speaker_color: '#3B82F6',
@@ -207,16 +262,26 @@ async function saveToDatabase(videoId: string, result: any) {
       is_off_camera: false
     }));
     
-    // Insert segments
-    const { error } = await supabase
-      .from('transcript_segments')
-      .insert(segmentsToSave);
-    
-    if (error) {
-      console.error("Database save error:", error);
-    } else {
-      console.log(`Saved ${segmentsToSave.length} segments to database`);
+    // Save in batches
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
+      const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
+      
+      const { error } = await supabase
+        .from('transcript_segments')
+        .upsert(batch, { 
+          onConflict: 'video_id,language,start_time',
+          ignoreDuplicates: false
+        });
+        
+      if (error) {
+        console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
+      } else {
+        console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
+      }
     }
+    
+    console.log(`✅ Database save complete: ${segmentsToSave.length} segments`);
     
   } catch (error) {
     console.error("Database save failed:", error);
