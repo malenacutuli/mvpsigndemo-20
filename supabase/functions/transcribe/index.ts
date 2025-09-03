@@ -9,11 +9,15 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("🚀 Transcribe function called - method:", req.method);
+  
   if (req.method === "OPTIONS") {
+    console.log("✅ Handling OPTIONS request");
     return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
+    console.log("❌ Invalid method:", req.method);
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,7 +25,23 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, language } = await req.json();
+    console.log("📥 Processing POST request");
+    const requestBody = await req.text();
+    console.log("📋 Raw request body length:", requestBody.length);
+    
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(requestBody);
+      console.log("✅ Successfully parsed JSON body");
+    } catch (parseError) {
+      console.error("❌ JSON parse error:", parseError);
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    const { videoUrl, videoId, language } = parsedBody;
 
     if (!videoUrl) {
       return new Response(JSON.stringify({ error: "videoUrl is required" }), {
