@@ -22,7 +22,7 @@ interface TranscriptSegment {
   endTime: number;
   speaker?: string;
   speakerColor?: string;
-  emphasis?: 'loud' | 'quiet' | 'normal';
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   words?: WordData[]; // Add word-level data support
 }
@@ -57,7 +57,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editEndTime, setEditEndTime] = useState('');
   const [editSpeaker, setEditSpeaker] = useState('');
   const [editSpeakerColor, setEditSpeakerColor] = useState('');
-  const [editEmphasis, setEditEmphasis] = useState<'loud' | 'quiet' | 'normal'>('normal');
+  const [editEmphasis, setEditEmphasis] = useState<'loud' | 'quiet' | 'normal' | 'yelling'>('normal');
   const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
   const [editWords, setEditWords] = useState<WordData[]>([]);
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
@@ -779,14 +779,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                             <Volume2 className="w-3 h-3" />
                             Emphasis
                           </Label>
-                          <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal')}>
+                          <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal' | 'yelling')}>
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="normal">Normal</SelectItem>
                               <SelectItem value="loud">Loud</SelectItem>
-                              <SelectItem value="quiet">Quiet</SelectItem>
+                              <SelectItem value="quiet">Quiet (Whisper)</SelectItem>
+                              <SelectItem value="yelling">Yelling (Bold)</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

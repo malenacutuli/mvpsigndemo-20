@@ -20,7 +20,7 @@ interface TranscriptSegment {
   endTime: number;
   speaker: string;
   speakerColor: string;
-  emphasis: 'normal' | 'loud' | 'quiet';
+  emphasis: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch: 'normal' | 'high' | 'low';
 }
 
@@ -88,7 +88,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           emphasis: seg.emphasis,
           pitch: seg.pitch,
         })),
-        volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'quiet' ? 30 : 50,
+        volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'yelling' ? 100 : seg.emphasis === 'quiet' ? 30 : 50,
         pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
         type: 'dialogue',
         isOffCamera: false,
@@ -127,7 +127,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           endTime: Number(seg.end_time),
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
           speakerColor: seg.speaker_color || getSpeakerColor(index),
-          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal',
+          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
           pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
         }));
         
@@ -718,6 +718,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                     <SelectItem value="quiet">Quiet</SelectItem>
                                     <SelectItem value="normal">Normal</SelectItem>
                                     <SelectItem value="loud">Loud</SelectItem>
+                                    <SelectItem value="yelling">Yelling (Bold)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>

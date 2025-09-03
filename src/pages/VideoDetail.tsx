@@ -181,7 +181,7 @@ const VideoDetail = () => {
               text: word,
               startTime: segment.start_time + (index * wordDuration),
               endTime: segment.start_time + ((index + 1) * wordDuration),
-              emphasis: (segment.emphasis as 'normal' | 'loud' | 'quiet') || 'normal',
+              emphasis: (segment.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
               pitch: (segment.pitch as 'normal' | 'high' | 'low') || 'normal',
             };
           });

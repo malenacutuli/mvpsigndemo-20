@@ -7,7 +7,7 @@ import { Volume2, Music } from 'lucide-react';
 
 export interface WordData {
   text: string;
-  emphasis?: 'loud' | 'quiet' | 'normal';
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
 }
 
@@ -160,7 +160,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
               </Label>
               <Select 
                 value={words[selectedWordIndex]?.emphasis || 'normal'} 
-                onValueChange={(value) => updateWord(selectedWordIndex, { emphasis: value as 'loud' | 'quiet' | 'normal' })}
+                onValueChange={(value) => updateWord(selectedWordIndex, { emphasis: value as 'loud' | 'quiet' | 'normal' | 'yelling' })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -169,6 +169,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="loud">Loud (Shouting)</SelectItem>
                   <SelectItem value="quiet">Quiet (Whisper)</SelectItem>
+                  <SelectItem value="yelling">Yelling (Bold)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

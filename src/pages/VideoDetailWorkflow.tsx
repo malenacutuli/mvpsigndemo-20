@@ -67,10 +67,10 @@ export default function VideoDetailWorkflow() {
             text: word,
             startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
             endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet') || 'normal', // Load saved emphasis with proper typing
+            emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal', // Load saved emphasis with proper typing
             pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal', // Load saved pitch with proper typing
           })),
-          volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'quiet' ? 30 : 50,
+          volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'yelling' ? 100 : seg.emphasis === 'quiet' ? 30 : 50,
           pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
           type: 'dialogue',
           isOffCamera: seg.is_off_camera || false,

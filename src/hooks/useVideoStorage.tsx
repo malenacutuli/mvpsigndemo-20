@@ -9,7 +9,7 @@ export interface TranscriptSegment {
   endTime: number;
   speaker?: string;
   speakerColor?: string;
-  emphasis?: 'normal' | 'loud' | 'quiet';
+  emphasis?: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch?: 'normal' | 'high' | 'low';
   isOffCamera?: boolean;
   segmentType?: 'dialogue' | 'soundeffect' | 'music';
@@ -161,7 +161,7 @@ export const useVideoStorage = (videoId: string) => {
         endTime: row.end_time,
         speaker: row.speaker,
         speakerColor: row.speaker_color,
-        emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet') || 'normal',
+        emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
         pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
         isOffCamera: row.is_off_camera,
         segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',

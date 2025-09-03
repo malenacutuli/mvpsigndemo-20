@@ -46,7 +46,7 @@ export interface WordSegment {
   text: string;
   startTime: number;
   endTime: number;
-  emphasis?: 'loud' | 'quiet' | 'normal';
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   syllables?: string[];
 }
@@ -100,7 +100,7 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>)
 /**
  * Calculate font size based on volume level or emphasis (3% to 12% of screen height)
  */
-const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?: 'loud' | 'quiet' | 'normal'): number => {
+const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'): number => {
   const minSize = screenHeight * 0.025; // 2.5% - whisper
   const maxSize = screenHeight * 0.08;  // 8% - yelling  
   const normalSize = screenHeight * 0.045; // 4.5% - baseline (normal speaking)
@@ -112,6 +112,8 @@ const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?:
         return minSize;
       case 'loud':
         return maxSize;
+      case 'yelling':
+        return maxSize * 1.2; // Even larger for yelling
       case 'normal':
       default:
         return normalSize;
@@ -134,12 +136,14 @@ const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?:
 /**
  * Get word-specific font size based on emphasis
  */
-const getWordFontSize = (baseSize: number, emphasis?: 'loud' | 'quiet' | 'normal'): number => {
+const getWordFontSize = (baseSize: number, emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'): number => {
   if (!emphasis || emphasis === 'normal') return baseSize;
   
   switch (emphasis) {
     case 'loud':
       return baseSize * 1.4; // 40% larger for shouting
+    case 'yelling':
+      return baseSize * 1.6; // 60% larger for yelling
     case 'quiet':
       return baseSize * 0.7; // 30% smaller for whispering
     default:
@@ -333,9 +337,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         // Add subtle glow effect for currently speaking word
                         textShadow: isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40` : 'none',
                         marginRight: '0.25em',
-                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
-                        transform: isWordActive ? 'scale(1.05)' : 'scale(1)', // Slight scale for active word
-                        ...wordPitchStyle,
+                         fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
+                         transform: isWordActive ? 'scale(1.05)' : 'scale(1)', // Slight scale for active word
+                         fontWeight: word.emphasis === 'yelling' ? 'bold' : 'normal', // Bold for yelling
+                         ...wordPitchStyle,
                       }}
                      >
                        {word.text}
