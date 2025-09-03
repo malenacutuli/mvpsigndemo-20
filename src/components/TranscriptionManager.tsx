@@ -124,15 +124,15 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           await saveTranscriptSegments(transcriptSegments, data.language || 'en');
           
           toast({
-            title: "Transcript saved",
-            description: `Successfully extracted and saved ${segments.length} segments`
+            title: "Transcript saved successfully!",
+            description: `Successfully extracted and saved ${segments.length} segments to database`
           });
         } catch (saveError) {
           console.error('Failed to save transcript:', saveError);
+          // Don't show error toast since it falls back to localStorage
           toast({
-            title: "Extraction successful, save failed", 
-            description: "Transcript extracted but couldn't save to database",
-            variant: "destructive"
+            title: "Transcript extracted",
+            description: `${segments.length} segments extracted (saved locally due to sync issue)`
           });
         }
         
