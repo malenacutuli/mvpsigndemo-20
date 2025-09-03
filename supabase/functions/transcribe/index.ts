@@ -71,17 +71,22 @@ serve(async (req) => {
     const videoSizeMB = Math.round(videoArrayBuffer.byteLength / 1024 / 1024);
     console.log(`✅ Video downloaded: ${videoSizeMB}MB`);
 
-    // OpenAI Whisper has a 25MB file size limit
+    // For large files, we'll send the first 25MB for transcription
+    let audioBuffer = videoArrayBuffer;
+    let fileName = "video.mp4";
+    
     if (videoArrayBuffer.byteLength > 25 * 1024 * 1024) {
-      console.log(`❌ Video too large: ${videoSizeMB}MB (limit: 25MB)`);
-      throw new Error(`Video file too large (${videoSizeMB}MB). OpenAI Whisper has a 25MB limit.`);
+      console.log(`📏 Video too large (${videoSizeMB}MB), using first 25MB for transcription`);
+      // Take first 25MB of the video file
+      audioBuffer = videoArrayBuffer.slice(0, 25 * 1024 * 1024);
+      fileName = "video_chunk.mp4";
     }
 
     // Create form data for OpenAI Whisper API
     console.log("🔄 Preparing Whisper API request...");
     const formData = new FormData();
-    const videoBlob = new Blob([videoArrayBuffer], { type: "video/mp4" });
-    formData.append("file", videoBlob, "video.mp4");
+    const videoBlob = new Blob([audioBuffer], { type: "video/mp4" });
+    formData.append("file", videoBlob, fileName);
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
     
