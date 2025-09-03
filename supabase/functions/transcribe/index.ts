@@ -26,22 +26,7 @@ serve(async (req) => {
 
   try {
     console.log("📥 Processing POST request");
-    const requestBody = await req.text();
-    console.log("📋 Raw request body length:", requestBody.length);
-    
-    let parsedBody;
-    try {
-      parsedBody = JSON.parse(requestBody);
-      console.log("✅ Successfully parsed JSON body");
-    } catch (parseError) {
-      console.error("❌ JSON parse error:", parseError);
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    
-    const { videoUrl, videoId, language } = parsedBody;
+    const { videoUrl, videoId, language } = await req.json();
 
     if (!videoUrl) {
       return new Response(JSON.stringify({ error: "videoUrl is required" }), {
@@ -50,22 +35,20 @@ serve(async (req) => {
       });
     }
 
-    // Get API key - try multiple possible names
-    const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY") || 
-                               Deno.env.get("ASSEMBLY_AI_API_KEY") ||
-                               Deno.env.get("assemblyai_api_key");
+    // Get OpenAI API key
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    if (!ASSEMBLYAI_API_KEY) {
+    if (!OPENAI_API_KEY) {
       return new Response(JSON.stringify({ 
-        error: "AssemblyAI API key not found",
-        details: "Please configure ASSEMBLYAI_API_KEY in Supabase secrets"
+        error: "OpenAI API key not found",
+        details: "Please configure OPENAI_API_KEY in Supabase secrets"
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Starting transcription for video:", videoUrl.substring(0, 50) + "...");
+    console.log("Starting OpenAI Whisper transcription for video:", videoUrl.substring(0, 50) + "...");
 
     // Download video
     const videoResponse = await fetch(videoUrl);
@@ -75,83 +58,46 @@ serve(async (req) => {
     const videoBuffer = await videoResponse.arrayBuffer();
     console.log(`Video downloaded: ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB`);
 
-    // Upload to AssemblyAI
-    const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
-      method: "POST",
-      headers: { "Authorization": ASSEMBLYAI_API_KEY },
-      body: videoBuffer
-    });
-
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      throw new Error(`AssemblyAI upload failed: ${uploadResponse.status} - ${errorText}`);
+    // Create form data for OpenAI Whisper API
+    const formData = new FormData();
+    formData.append("file", new Blob([videoBuffer], { type: "video/mp4" }), "video.mp4");
+    formData.append("model", "whisper-1");
+    formData.append("response_format", "verbose_json");
+    formData.append("timestamp_granularities[]", "word");
+    if (language && language !== "auto") {
+      formData.append("language", language);
     }
 
-    const { upload_url } = await uploadResponse.json();
-    console.log("Video uploaded to AssemblyAI");
-
-    // Start transcription
-    const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+    // Call OpenAI Whisper API
+    const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
-        "Authorization": ASSEMBLYAI_API_KEY,
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        audio_url: upload_url,
-        language_code: language && language !== "auto" ? language : null,
-        word_timestamps: true,
-        speaker_labels: true,
-        punctuate: true,
-        format_text: true
-      })
+      body: formData
     });
 
-    if (!transcriptResponse.ok) {
-      const errorText = await transcriptResponse.text();
-      throw new Error(`Transcription request failed: ${transcriptResponse.status} - ${errorText}`);
+    if (!whisperResponse.ok) {
+      const errorText = await whisperResponse.text();
+      throw new Error(`OpenAI Whisper API failed: ${whisperResponse.status} - ${errorText}`);
     }
 
-    const { id: transcriptId } = await transcriptResponse.json();
-    console.log("Transcription job started:", transcriptId);
+    const whisperResult = await whisperResponse.json();
+    console.log("OpenAI Whisper transcription completed");
 
-    // Poll for completion
-    let transcript;
-    let attempts = 0;
-    const maxAttempts = 60; // 10 minutes
-
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-      attempts++;
-
-      const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-        headers: { "Authorization": ASSEMBLYAI_API_KEY }
-      });
-
-      transcript = await pollResponse.json();
-      console.log(`Poll ${attempts}: ${transcript.status}`);
-
-      if (transcript.status === "completed") break;
-      if (transcript.status === "error") throw new Error(transcript.error);
-    }
-
-    if (transcript?.status !== "completed") {
-      throw new Error("Transcription timed out");
-    }
-
-    // Format results
-    const segments = (transcript.utterances || []).map((utterance: any, index: number) => ({
+    // Format results for compatibility
+    const segments = (whisperResult.segments || []).map((segment: any, index: number) => ({
       id: index,
-      start: utterance.start / 1000,
-      end: utterance.end / 1000,
-      text: utterance.text,
-      confidence: utterance.confidence
+      start: segment.start,
+      end: segment.end,
+      text: segment.text,
+      confidence: 0.9 // Whisper doesn't provide confidence scores
     }));
 
     const result = {
-      text: transcript.text || "",
-      language: transcript.language_code || "en",
-      duration: transcript.audio_duration || 0,
+      text: whisperResult.text || "",
+      language: whisperResult.language || "en",
+      duration: whisperResult.duration || 0,
       segments
     };
 
