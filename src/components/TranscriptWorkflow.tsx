@@ -56,7 +56,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   useEffect(() => {
     // Load existing transcript, audio descriptions, and characters if available
-    console.log('🔄 Loading existing video data for:', videoId);
+    console.log('🔄 TranscriptWorkflow - Loading existing video data for:', videoId);
+    console.log('🔄 TranscriptWorkflow - Video language:', videoLanguage);
     
     // Reset state when switching videos
     setSegments([]);
@@ -69,7 +70,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     // Load existing data for this video
     loadExistingTranscript();
-  }, [videoId]); // Re-run when videoId changes
+  }, [videoId, videoLanguage]); // Re-run when videoId OR videoLanguage changes
 
   useEffect(() => {
     // Auto-convert segments to captions when they're loaded/updated
@@ -98,31 +99,57 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   const loadExistingTranscript = async () => {
     try {
-      console.log('🔍 Loading existing transcript from database for video:', videoId);
+      console.log('🔍 TranscriptWorkflow - Loading existing transcript from database for video:', videoId);
+      console.log('🔍 TranscriptWorkflow - Detected language:', detectedLanguage);
       
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
+      // Try to load transcripts for the detected language first, then fallback to 'en'
+      const languagesToTry = detectedLanguage !== 'en' ? [detectedLanguage, 'en'] : ['en'];
+      let data = null;
+      let error = null;
+      
+      for (const lang of languagesToTry) {
+        console.log('🔍 TranscriptWorkflow - Trying to load transcripts for language:', lang);
+        
+        const result = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', lang)
+          .order('start_time', { ascending: true });
+          
+        if (result.error) {
+          console.error('❌ TranscriptWorkflow - Database query error for language', lang, ':', result.error);
+          error = result.error;
+          continue;
+        }
+        
+        if (result.data && result.data.length > 0) {
+          console.log('✅ TranscriptWorkflow - Found transcripts for language:', lang, 'Count:', result.data.length);
+          data = result.data;
+          setDetectedLanguage(lang); // Update detected language to match found data
+          break;
+        }
+      }
 
-      console.log('📊 Database query result:', { 
+      console.log('📊 TranscriptWorkflow - Final database query result:', { 
         error, 
         segmentCount: data?.length || 0,
+        language: detectedLanguage,
         firstSegment: data?.[0] ? {
           text: data[0].text?.substring(0, 50) + '...',
           startTime: data[0].start_time,
-          speaker: data[0].speaker
+          speaker: data[0].speaker,
+          language: data[0].language
         } : null
       });
 
-      if (error) {
-        console.error('❌ Database query error:', error);
+      if (error && !data) {
+        console.error('❌ TranscriptWorkflow - All database queries failed:', error);
         throw error;
       }
 
       if (data && data.length > 0) {
-        console.log('✅ Found existing transcript with', data.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Found existing transcript with', data.length, 'segments');
         const loadedSegments = data.map((seg, index) => ({
           id: seg.id,
           text: seg.text,
@@ -142,12 +169,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           setDetectedLanguage(data[0].language);
         }
         
-        console.log('✅ Loaded existing transcript with all edits preserved:', loadedSegments.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Loaded existing transcript with all edits preserved:', loadedSegments.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Current step set to:', 'edit');
       } else {
-        console.log('ℹ️ No existing transcript found in database for video:', videoId);
+        console.log('ℹ️ TranscriptWorkflow - No existing transcript found in database for video:', videoId);
+        console.log('ℹ️ TranscriptWorkflow - Current step remains:', 'extract');
       }
     } catch (error) {
-      console.error('❌ Failed to load existing transcript:', error);
+      console.error('❌ TranscriptWorkflow - Failed to load existing transcript:', error);
     }
   };
 
