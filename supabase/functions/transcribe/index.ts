@@ -66,21 +66,15 @@ serve(async (req) => {
 
     let transcriptionResult;
 
-    // Strategy 1: Try processing the whole video first (works for most cases under 25MB)
-    if (videoBuffer.byteLength <= 23000000) { // 23MB to be safe
-      console.log("Video under 23MB - processing directly...");
-      try {
-        transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-        console.log("✅ Direct processing successful!");
-      } catch (error) {
-        console.log("Direct processing failed, trying chunked approach:", error.message);
-        transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
-      }
-    } else {
-      // Strategy 2: For larger files, use chunked approach
-      console.log(`Large video (${sizeMB}MB) - using chunked processing...`);
-      transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
+    // Check file size limit (OpenAI Whisper has a 25MB limit)
+    if (videoBuffer.byteLength > 25000000) { // 25MB limit
+      throw new Error(`Video file is too large (${sizeMB}MB). Maximum supported size is 25MB. Please compress your video or use a shorter clip.`);
     }
+
+    // Process the video directly
+    console.log(`Processing ${sizeMB}MB video directly...`);
+    transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+    console.log("✅ Transcription successful!");
 
     // Save to database
     if (videoId && transcriptionResult.segments) {
@@ -136,91 +130,9 @@ async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: 
   return result;
 }
 
-// Process large videos by splitting into time-based chunks
-async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  console.log("Starting chunked transcription...");
-  
-  // Split buffer into ~20MB chunks
-  const CHUNK_SIZE = 20000000; // 20MB
-  const chunks: ArrayBuffer[] = [];
-  
-  for (let i = 0; i < buffer.byteLength; i += CHUNK_SIZE) {
-    const end = Math.min(i + CHUNK_SIZE, buffer.byteLength);
-    chunks.push(buffer.slice(i, end));
-  }
-  
-  console.log(`Processing ${chunks.length} chunks...`);
-  
-  const results = [];
-  let totalDuration = 0;
-  let segmentOffset = 0;
-  
-  for (let i = 0; i < chunks.length; i++) {
-    console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
-    
-    try {
-      const chunkResult = await transcribeBuffer(chunks[i], apiKey, language);
-      
-      // Adjust timestamps to account for chunk position
-      if (chunkResult.segments) {
-        chunkResult.segments.forEach((segment: any) => {
-          segment.start += totalDuration;
-          segment.end += totalDuration;
-          segment.id = segmentOffset++;
-          
-          if (segment.words) {
-            segment.words.forEach((word: any) => {
-              word.start += totalDuration;
-              word.end += totalDuration;
-            });
-          }
-        });
-      }
-      
-      results.push(chunkResult);
-      totalDuration += chunkResult.duration || 0;
-      
-      // Brief pause between requests
-      if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      
-    } catch (error) {
-      console.error(`Chunk ${i + 1} failed:`, error);
-      // Continue with remaining chunks
-    }
-  }
-  
-  if (results.length === 0) {
-    throw new Error("Failed to process any chunks successfully");
-  }
-  
-  // Combine results
-  const combinedResult = {
-    text: results.map(r => r.text || '').join(' '),
-    language: results.find(r => r.language)?.language || 'en',
-    duration: totalDuration,
-    segments: [],
-    words: []
-  };
-  
-  // Merge all segments and words
-  results.forEach(result => {
-    if (result.segments) {
-      combinedResult.segments.push(...result.segments);
-    }
-    if (result.words) {
-      combinedResult.words.push(...result.words);
-    }
-  });
-  
-  // Sort by time
-  combinedResult.segments.sort((a: any, b: any) => a.start - b.start);
-  combinedResult.words.sort((a: any, b: any) => a.start - b.start);
-  
-  console.log(`✅ Chunked processing complete: ${combinedResult.segments.length} segments`);
-  return combinedResult;
-}
+// Note: Chunking video files by splitting binary data doesn't work
+// because it creates corrupted audio files that OpenAI can't decode.
+// For files larger than 25MB, users need to compress or split their videos manually.
 
 // Save transcript to database
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
