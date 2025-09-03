@@ -504,7 +504,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         console.log('🔄 Attempting database save...');
         
         // First, manually remove all existing segments
-        await supabase.rpc('delete_video_transcripts', { video_uuid: videoId });
+        const { error: deleteError } = await supabase
+          .from('transcript_segments')
+          .delete()
+          .eq('video_id', videoId);
+          
+        if (deleteError) {
+          console.warn('Delete error (may be expected if no existing data):', deleteError);
+        }
         
         // Wait for cleanup
         await new Promise(resolve => setTimeout(resolve, 1000));
