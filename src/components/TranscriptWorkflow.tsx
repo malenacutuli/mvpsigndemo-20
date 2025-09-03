@@ -43,13 +43,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   onCharactersUpdate,
   onAudioDescriptionsUpdate
 }) => {
-  const [currentStep, setCurrentStep] = useState<'extract' | 'edit' | 'save' | 'complete'>('extract');
+  const [currentStep, setCurrentStep] = useState<'loading' | 'extract' | 'edit' | 'save' | 'complete'>('loading');
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savingLock, setSavingLock] = useState(false); // Prevent concurrent saves
   const [editingId, setEditingId] = useState<string | null>(null);
   const [extractionComplete, setExtractionComplete] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
@@ -62,12 +63,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     // Reset state when switching videos
     setSegments([]);
-    setCurrentStep('extract');
+    setCurrentStep('loading');
     setExtractionComplete(false);
     setEditingId(null);
     setCharacters([]);
     setAudioDescriptions([]);
     setDetectedLanguage(videoLanguage || 'en');
+    setIsLoadingExisting(true);
     
     // Load existing data for this video
     loadExistingTranscript();
@@ -200,6 +202,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setSegments(loadedSegments);
         setCurrentStep('edit');
         setExtractionComplete(true);
+        setIsLoadingExisting(false);
         
         console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', loadedSegments.length, 'segments');
         console.log('✅ TranscriptWorkflow - Current step set to: edit');
@@ -217,11 +220,15 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           }, 1000);
         }
       } else {
+        setCurrentStep('extract');
+        setIsLoadingExisting(false);
         console.log('ℹ️ TranscriptWorkflow - No transcript found in database or localStorage for video:', videoId);
-        console.log('ℹ️ TranscriptWorkflow - Current step remains: extract');
+        console.log('ℹ️ TranscriptWorkflow - Current step set to: extract');
       }
     } catch (error) {
       console.error('❌ TranscriptWorkflow - Failed to load existing transcript:', error);
+      setCurrentStep('extract');
+      setIsLoadingExisting(false);
     }
   };
 
@@ -582,10 +589,19 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {currentStep === 'loading' && (
+          <div className="text-center space-y-4 py-8">
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            <p className="text-muted-foreground">
+              Loading existing transcript...
+            </p>
+          </div>
+        )}
+
         {currentStep === 'extract' && (
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Extract transcript from your video with detailed timing information
+              No existing transcript found. Extract transcript from your video with detailed timing information.
             </p>
             <Button 
               onClick={extractTranscript} 
@@ -626,6 +642,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
             <TabsContent value="transcript" className="mt-4">
               <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      Existing transcript loaded ({segments.length} segments)
+                    </span>
+                  </div>
+                  <p className="text-green-600 text-xs mt-1">
+                    Your saved transcript is ready for editing. No need to extract again!
+                  </p>
+                </div>
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold">Edit Transcript Details</h3>
                   <div className="flex gap-2">
