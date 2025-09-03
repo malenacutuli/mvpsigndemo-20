@@ -140,10 +140,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       if (loadedSegments.length === 0) {
         console.log('🗃️ Database empty, trying localStorage...');
         
-        // Try specific language first
+        // Try new format first, then fallback to old formats
         let localData = null;
         const keys = [
-          `transcript_${videoId}_${detectedLanguage}`,
+          `transcript:${videoId}:${detectedLanguage}`,  // New atomic format
+          `transcript_${videoId}_${detectedLanguage}`,   // Legacy format
           `transcript_${videoId}_latest`,
           `transcript_${videoId}_en`,
           `transcript_${videoId}_english`
@@ -449,118 +450,90 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   const saveTranscript = async () => {
-    if (segments.length === 0) {
-      console.warn("⚠️ Attempted to save, but segments are empty.");
+    if (!segments.length || isSaving) {
+      console.log('❌ Cannot save: no segments or already saving');
       return;
     }
-    
-    // Prevent concurrent saves
-    if (savingLock) {
-      console.log('🔒 Save operation already in progress, skipping...');
-      return;
-    }
-    
-    setSavingLock(true);
+
     setIsSaving(true);
-    
+    console.log('💾 Starting atomic transcript save process...', { 
+      segmentCount: segments.length,
+      language: detectedLanguage 
+    });
+
     try {
-      console.log('💾 Starting SIMPLIFIED save process...', segments.length, 'segments');
-
-      // ALWAYS save to localStorage first
-      const localStorageData = {
-        segments: segments.map(seg => ({
-          id: seg.id,
-          text: seg.text,
-          startTime: seg.startTime,
-          endTime: seg.endTime,
-          speaker: seg.speaker,
-          speakerColor: seg.speakerColor,
-          emphasis: seg.emphasis,
-          pitch: seg.pitch
-        })),
-        language: detectedLanguage,
-        videoId: videoId,
-        timestamp: Date.now()
-      };
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      // Save to multiple localStorage keys for maximum reliability
-      const keys = [
-        `transcript_${videoId}_${detectedLanguage}`,
-        `transcript_${videoId}_latest`,
-        `transcript_${videoId}_backup`,
-        `transcript_${videoId}_en`,
-        `transcript_${videoId}_english`
-      ];
-      
-      keys.forEach(key => {
-        localStorage.setItem(key, JSON.stringify(localStorageData));
-      });
-      
-      console.log('✅ Saved to localStorage with', keys.length, 'different keys');
-
-      // Try database save, but don't fail if it doesn't work
-      try {
-        // Use a completely different approach - manual cleanup then simple insert
-        console.log('🔄 Attempting database save...');
-        
-        // First, manually remove all existing segments
-        const { error: deleteError } = await supabase
-          .from('transcript_segments')
-          .delete()
-          .eq('video_id', videoId);
-          
-        if (deleteError) {
-          console.warn('Delete error (may be expected if no existing data):', deleteError);
-        }
-        
-        // Wait for cleanup
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Create new segments with guaranteed unique identifiers
-        const now = Date.now();
-        const segmentsToSave = segments.map((seg, index) => ({
-          video_id: videoId,
-          start_time: seg.startTime,
-          end_time: seg.endTime,
-          text: seg.text,
-          speaker: seg.speaker || 'Speaker',
-          speaker_color: seg.speakerColor || '#3B82F6',
-          emphasis: seg.emphasis || 'normal',
-          pitch: seg.pitch || 'normal',
-          language: detectedLanguage,
-          confidence: 0.95,
-          segment_type: 'dialogue',
-          is_off_camera: false
-        }));
-
-        // Single insert operation
-        const { data, error } = await supabase
-          .from('transcript_segments')
-          .insert(segmentsToSave)
-          .select();
-
-        if (error) {
-          console.error('❌ Database insert failed:', error);
-          throw error;
-        }
-
-        console.log('✅ Database save successful:', data?.length || 0, 'segments');
-        
+      if (userError || !user) {
+        console.error('❌ User not authenticated:', userError);
         toast({
-          title: "✅ Transcript saved to database!",
-          description: `${data?.length || 0} segments saved successfully`
+          title: "Authentication required",
+          description: "Please log in to save transcripts",
+          variant: "destructive"
         });
-        
-      } catch (dbError) {
-        console.error('❌ Database save failed, but localStorage succeeded:', dbError);
+        return;
+      }
+
+      // Create checksum for change detection
+      const segmentData = segments.map((s, idx) => ({
+        idx,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        text: s.text,
+        speaker: s.speaker || 'Speaker',
+        speakerColor: s.speakerColor || '#3B82F6',
+        emphasis: s.emphasis || 'normal',
+        pitch: s.pitch || 'normal',
+        confidence: 0.95,
+        segmentType: 'dialogue',
+        isOffCamera: false
+      }));
+
+      const checksum = btoa(JSON.stringify(segmentData));
+
+      // Save to single localStorage key
+      const localKey = `transcript:${videoId}:${detectedLanguage}`;
+      localStorage.setItem(localKey, JSON.stringify({
+        segments: segmentData,
+        language: detectedLanguage,
+        videoId,
+        ts: Date.now()
+      }));
+      console.log(`✅ Saved to localStorage: ${localKey}`);
+
+      // Atomic database save using RPC
+      console.log('🔄 Attempting atomic database save...');
+      
+      const { error } = await supabase.rpc('upsert_transcript_segments', {
+        p_video_id: videoId,
+        p_language: detectedLanguage,
+        p_created_by: user.id,
+        p_segments: segmentData,
+        p_checksum: checksum
+      });
+
+      if (error) {
+        console.error('❌ Database save failed:', error);
         toast({
-          title: "✅ Transcript saved locally!",
-          description: "Data is safe in localStorage, will sync to database later"
+          title: "Save partially completed",
+          description: "Database save failed, but transcript saved locally",
+          variant: "destructive"
+        });
+      } else {
+        console.log('✅ Successfully saved to database via atomic RPC');
+        toast({
+          title: "✅ Transcript saved!",
+          description: `${segmentData.length} segments saved successfully`
         });
       }
 
-    } catch (error: any) {
-      console.error('❌ Save operation failed:', error);
+      // Mark workflow as complete
+      setCurrentStep('complete');
+      onWorkflowComplete();
+      
+    } catch (error) {
+      console.error('❌ Transcript save failed:', error);
       toast({
         title: "❌ Save failed",
         description: "Please try again",
@@ -568,7 +541,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       });
     } finally {
       setIsSaving(false);
-      setSavingLock(false);
     }
   };
 

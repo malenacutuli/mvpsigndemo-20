@@ -351,6 +351,7 @@ export type Database = {
           emphasis: string | null
           end_time: number
           id: string
+          idx: number | null
           is_off_camera: boolean | null
           language: string
           pitch: string | null
@@ -359,6 +360,7 @@ export type Database = {
           speaker_color: string | null
           start_time: number
           text: string
+          transcript_id: string | null
           video_id: string
         }
         Insert: {
@@ -367,6 +369,7 @@ export type Database = {
           emphasis?: string | null
           end_time: number
           id?: string
+          idx?: number | null
           is_off_camera?: boolean | null
           language?: string
           pitch?: string | null
@@ -375,6 +378,7 @@ export type Database = {
           speaker_color?: string | null
           start_time: number
           text: string
+          transcript_id?: string | null
           video_id: string
         }
         Update: {
@@ -383,6 +387,7 @@ export type Database = {
           emphasis?: string | null
           end_time?: number
           id?: string
+          idx?: number | null
           is_off_camera?: boolean | null
           language?: string
           pitch?: string | null
@@ -391,9 +396,17 @@ export type Database = {
           speaker_color?: string | null
           start_time?: number
           text?: string
+          transcript_id?: string | null
           video_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transcript_segments_transcript_id_fkey"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "transcripts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transcript_segments_video_id_fkey"
             columns: ["video_id"]
@@ -402,6 +415,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      transcripts: {
+        Row: {
+          checksum: string | null
+          created_by: string
+          id: string
+          language: string
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          checksum?: string | null
+          created_by: string
+          id?: string
+          language: string
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          checksum?: string | null
+          created_by?: string
+          id?: string
+          language?: string
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: []
       }
       videos: {
         Row: {
@@ -471,6 +511,16 @@ export type Database = {
       generate_embed_token: {
         Args: { video_uuid: string }
         Returns: string
+      }
+      upsert_transcript_segments: {
+        Args: {
+          p_checksum?: string
+          p_created_by: string
+          p_language: string
+          p_segments: Json
+          p_video_id: string
+        }
+        Returns: undefined
       }
       validate_embed_access: {
         Args: { referrer_domain?: string; token?: string; video_uuid: string }
