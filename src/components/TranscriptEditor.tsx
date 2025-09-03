@@ -67,15 +67,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   // Load saved transcript on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
+      console.log('🔍 TranscriptEditor: Loading saved segments for videoId:', videoId, 'language:', selectedLanguage);
       const segments = await loadTranscriptSegments(selectedLanguage);
+      console.log('📖 TranscriptEditor: Loaded segments from database:', segments.length, segments);
+      
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
           ...seg,
           id: seg.id || `segment-${Date.now()}-${Math.random()}`
         }));
+        console.log('✅ TranscriptEditor: Setting transcript with', convertedSegments.length, 'segments');
         setEditingTranscript(convertedSegments);
         setOriginalTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+      } else {
+        console.log('⚠️ TranscriptEditor: No saved segments found, clearing transcript');
+        setEditingTranscript([]);
+        setOriginalTranscript([]);
       }
     };
     loadTranscriptData();
