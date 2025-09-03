@@ -100,38 +100,49 @@ serve(async (req) => {
   }
 });
 
-// Transcribe using AssemblyAI for large video files
+// Transcribe using AssemblyAI for video files
 async function transcribeWithAssemblyAI(videoUrl: string, language?: string): Promise<any> {
-  console.log("Starting AssemblyAI transcription...");
+  console.log("🎯 Starting AssemblyAI transcription for:", videoUrl.substring(0, 100) + "...");
   
   const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
   if (!ASSEMBLYAI_API_KEY) {
+    console.error("❌ ASSEMBLYAI_API_KEY not found in environment");
     throw new Error("ASSEMBLYAI_API_KEY not configured");
   }
   
   try {
-    // Step 1: Upload the video file to AssemblyAI
-    console.log("Uploading video to AssemblyAI...");
+    console.log("📤 Step 1: Fetching video file...");
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`);
+    }
+    
+    const videoBuffer = await videoResponse.arrayBuffer();
+    const videoSize = videoBuffer.byteLength;
+    console.log(`📁 Video downloaded: ${Math.round(videoSize / 1024 / 1024)}MB`);
+    
+    console.log("📤 Step 2: Uploading to AssemblyAI...");
     const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
       method: "POST",
       headers: {
         "Authorization": ASSEMBLYAI_API_KEY,
+        "Content-Type": "application/octet-stream"
       },
-      body: await fetch(videoUrl).then(r => r.arrayBuffer()).then(buf => new Uint8Array(buf))
+      body: new Uint8Array(videoBuffer)
     });
     
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
+      console.error("❌ AssemblyAI upload failed:", uploadResponse.status, errorText);
       throw new Error(`AssemblyAI upload error: ${uploadResponse.status} - ${errorText}`);
     }
     
-    const { upload_url } = await uploadResponse.json();
-    console.log("Video uploaded to AssemblyAI successfully");
+    const uploadResult = await uploadResponse.json();
+    console.log("✅ Video uploaded successfully, URL:", uploadResult.upload_url);
     
-    // Step 2: Submit transcription request
-    console.log("Submitting transcription request...");
+    console.log("🎬 Step 3: Starting transcription job...");
     const transcriptConfig = {
-      audio_url: upload_url,
+      audio_url: uploadResult.upload_url,
       language_code: language && language !== 'auto' ? language : null,
       word_timestamps: true,
       speaker_labels: true,
@@ -150,19 +161,23 @@ async function transcribeWithAssemblyAI(videoUrl: string, language?: string): Pr
     
     if (!transcriptResponse.ok) {
       const errorText = await transcriptResponse.text();
+      console.error("❌ AssemblyAI transcript request failed:", transcriptResponse.status, errorText);
       throw new Error(`AssemblyAI transcript request error: ${transcriptResponse.status} - ${errorText}`);
     }
     
-    const { id: transcriptId } = await transcriptResponse.json();
-    console.log(`Transcription job started: ${transcriptId}`);
+    const transcriptJob = await transcriptResponse.json();
+    const transcriptId = transcriptJob.id;
+    console.log(`🔄 Transcription job started: ${transcriptId}`);
     
-    // Step 3: Poll for completion
-    console.log("Waiting for transcription to complete...");
+    console.log("⏳ Step 4: Waiting for completion...");
     let transcript;
     let attempts = 0;
-    const maxAttempts = 180; // 30 minutes max
+    const maxAttempts = 60; // 10 minutes max (10 seconds * 60)
     
     while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+      attempts++;
+      
       const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
         headers: {
           "Authorization": ASSEMBLYAI_API_KEY,
@@ -170,29 +185,27 @@ async function transcribeWithAssemblyAI(videoUrl: string, language?: string): Pr
       });
       
       if (!pollResponse.ok) {
+        console.error("❌ AssemblyAI poll error:", pollResponse.status);
         throw new Error(`AssemblyAI poll error: ${pollResponse.status}`);
       }
       
       transcript = await pollResponse.json();
+      console.log(`🔄 Attempt ${attempts}/${maxAttempts} - Status: ${transcript.status}`);
       
       if (transcript.status === "completed") {
         console.log("✅ Transcription completed!");
         break;
       } else if (transcript.status === "error") {
+        console.error("❌ AssemblyAI transcription error:", transcript.error);
         throw new Error(`AssemblyAI transcription failed: ${transcript.error}`);
       }
-      
-      // Wait 10 seconds before next poll
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      attempts++;
-      console.log(`Polling attempt ${attempts}/${maxAttempts} - Status: ${transcript.status}`);
     }
     
     if (!transcript || transcript.status !== "completed") {
-      throw new Error("Transcription timed out");
+      throw new Error(`Transcription timed out after ${attempts} attempts (${attempts * 10} seconds)`);
     }
     
-    // Step 4: Convert to OpenAI Whisper format for compatibility
+    console.log("🔄 Step 5: Converting results...");
     const segments = transcript.utterances?.map((utterance: any, index: number) => ({
       id: index,
       start: utterance.start / 1000, // Convert ms to seconds
@@ -218,8 +231,8 @@ async function transcribeWithAssemblyAI(videoUrl: string, language?: string): Pr
     return result;
     
   } catch (error) {
-    console.error("AssemblyAI transcription failed:", error);
-    throw new Error(`AssemblyAI transcription failed: ${error.message}`);
+    console.error("💥 AssemblyAI transcription failed:", error);
+    throw error; // Re-throw the original error for better debugging
   }
 }
 
