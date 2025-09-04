@@ -283,6 +283,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         // Use Twelve Labs for advanced analysis
         console.log('🎬 Using Twelve Labs for advanced video analysis');
         console.log('🎬 Twelve Labs extraction started for video:', videoId);
+        console.log('🎬 Twelve Labs request payload:', { videoUrl, videoId, language: detectedLanguage === 'auto' ? undefined : detectedLanguage });
+        
         const response = await supabase.functions.invoke('twelve-labs-analysis', {
           body: { 
             videoUrl,
@@ -291,17 +293,33 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           }
         });
         
+        console.log('🎬 Twelve Labs response:', { data: response.data, error: response.error });
         data = response.data;
         error = response.error;
         
-        // Store audio descriptions from Twelve Labs
+        // Store audio descriptions from Twelve Labs if successful
         if (data?.audioDescriptions) {
           setAudioDescriptions(data.audioDescriptions);
           if (onAudioDescriptionsUpdate) {
             onAudioDescriptionsUpdate(data.audioDescriptions);
           }
         }
-      } else {
+      }
+      
+      // If Twelve Labs failed or we're using Whisper, use Whisper extraction
+      if (extractionMethod === 'whisper' || (extractionMethod === 'twelvelabs' && (error || !data))) {
+        if (extractionMethod === 'twelvelabs' && (error || !data)) {
+          console.warn('⚠️ Twelve Labs failed, falling back to Whisper. Error:', error);
+          console.warn('⚠️ Twelve Labs response data:', data);
+          setExtractionMethod('whisper'); // Update the state to reflect fallback
+          
+          // Show user notification about fallback
+          toast({
+            title: "Switched to Whisper",
+            description: "Twelve Labs analysis failed, using Whisper for transcription",
+            variant: "default",
+          });
+        }
         // Use existing Whisper transcription
         console.log('📋 Request details:', {
           videoId,
