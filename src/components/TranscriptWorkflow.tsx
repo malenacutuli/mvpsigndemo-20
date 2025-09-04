@@ -144,12 +144,32 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       // FIRST: Try loading from database for the specific language
       console.log('🗄️ Attempting to load from database for language:', detectedLanguage);
-      const { data: dbData, error: dbError } = await supabase
+      let { data: dbData, error: dbError } = await supabase
         .from('transcript_segments')
         .select('*')  
         .eq('video_id', videoId)
         .eq('language', detectedLanguage)
         .order('start_time', { ascending: true });
+      
+      // If no results, try alternative language formats (english vs en)
+      if ((!dbData || dbData.length === 0) && !dbError) {
+        console.log('🔄 Trying alternative language formats...');
+        const altLanguage = detectedLanguage === 'en' ? 'english' : 
+                           detectedLanguage === 'english' ? 'en' : detectedLanguage;
+        
+        const altResult = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', altLanguage)
+          .order('start_time', { ascending: true });
+          
+        if (altResult.data && altResult.data.length > 0) {
+          console.log(`✅ Found transcript with alternative language: ${altLanguage}`);
+          dbData = altResult.data;
+          dbError = altResult.error;
+        }
+      }
       
       if (dbError) {
         console.error('❌ Database load error:', dbError);
