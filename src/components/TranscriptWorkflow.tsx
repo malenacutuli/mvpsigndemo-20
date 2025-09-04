@@ -82,9 +82,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   }, [videoId, videoLanguage]); // Re-run when videoId OR videoLanguage changes
 
   useEffect(() => {
-    // Auto-convert segments to captions when they're loaded/updated AND auto-save changes
-    if (segments.length > 0 && !savingLock) {
-      console.log('🔄 Auto-converting segments to captions and auto-saving:', segments.length, 'segments');
+    // Auto-convert segments to captions when they're loaded/updated
+    if (segments.length > 0 && !isSaving) {
+      console.log('🔄 Auto-converting segments to captions:', segments.length, 'segments');
       
       const captionSegments: CaptionSegment[] = segments.map(seg => {
         // Use existing word-level data if available, otherwise generate from segment
@@ -118,21 +118,18 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         };
       });
       onTranscriptReady(captionSegments);
-      
-      // Auto-save transcript changes when segments are updated
-      saveTranscript();
     }
-  }, [segments, savingLock, onTranscriptReady]);
+  }, [segments, isSaving]);
 
   // Save transcript changes when component unmounts or video changes
   useEffect(() => {
     return () => {
-      if (segments.length > 0) {
+      if (segments.length > 0 && !isSaving) {
         console.log('🔄 Saving transcript on component cleanup');
-        saveTranscript();
+        saveTranscript(false);
       }
     };
-  }, [videoId, segments]);
+  }, [videoId]);
 
   const loadExistingTranscript = async () => {
     try {
@@ -573,6 +570,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     }
 
     setIsSaving(true);
+    setSavingLock(true);
     console.log('💾 Starting atomic transcript save process...', { 
       segmentCount: segments.length,
       language: detectedLanguage 
@@ -660,6 +658,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       });
     } finally {
       setIsSaving(false);
+      setSavingLock(false);
     }
   };
 
