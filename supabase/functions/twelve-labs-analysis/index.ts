@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { TwelveLabs } from 'npm:twelvelabs-js@latest';
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,33 +40,52 @@ serve(async (req) => {
 
     console.log('🎬 Starting Twelve Labs analysis for video:', videoId);
 
-    // Initialize Twelve Labs SDK client
-    const client = new TwelveLabs({ apiKey: twelveLabsApiKey });
+    // Use direct API calls instead of SDK for better Deno compatibility
+    const baseUrl = 'https://api.twelvelabs.io/v1.2';
 
     // Step 1: Create index for video analysis
-    const indexParams = {
-      name: `video_analysis_${videoId}`,
-      engines: [
-        {
-          name: 'marengo2.6',
-          options: ['visual', 'conversation', 'text_in_video']
-        }
-      ]
-    };
+    const indexResponse = await fetch(`${baseUrl}/indexes`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        engine_name: 'marengo2.6',
+        index_options: ['visual', 'conversation', 'text_in_video'],
+        index_name: `video_analysis_${videoId}`,
+      }),
+    });
 
-    const index = await client.index.create(indexParams);
-    const indexId = index.id;
+    if (!indexResponse.ok) {
+      const error = await indexResponse.text();
+      throw new Error(`Failed to create index: ${error}`);
+    }
+
+    const indexData = await indexResponse.json();
+    const indexId = indexData._id;
     console.log('✅ Created Twelve Labs index:', indexId);
 
     // Step 2: Upload video for analysis
-    const videoParams = {
-      indexId: indexId,
-      url: videoUrl,
-      language: language || 'en'
-    };
+    const uploadResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: videoUrl,
+        language: language || 'en',
+      }),
+    });
 
-    const task = await client.task.create(videoParams);
-    const taskId = task.id;
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.text();
+      throw new Error(`Failed to upload video: ${error}`);
+    }
+
+    const uploadData = await uploadResponse.json();
+    const taskId = uploadData._id;
     console.log('🎥 Video upload initiated, task ID:', taskId);
 
     // Step 3: Wait for video processing to complete
@@ -78,13 +96,21 @@ serve(async (req) => {
     while (!processingComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
       
-      const taskStatus = await client.task.retrieve(taskId);
-      console.log(`📊 Processing status: ${taskStatus.status}`);
-      
-      if (taskStatus.status === 'ready') {
-        processingComplete = true;
-      } else if (taskStatus.status === 'failed') {
-        throw new Error(`Video processing failed: ${taskStatus.message || 'Unknown error'}`);
+      const statusResponse = await fetch(`${baseUrl}/tasks/${taskId}`, {
+        headers: {
+          'x-api-key': twelveLabsApiKey,
+        },
+      });
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        console.log(`📊 Processing status: ${statusData.status}`);
+        
+        if (statusData.status === 'ready') {
+          processingComplete = true;
+        } else if (statusData.status === 'failed') {
+          throw new Error(`Video processing failed: ${statusData.message || 'Unknown error'}`);
+        }
       }
       
       attempts++;
@@ -95,56 +121,60 @@ serve(async (req) => {
     }
 
     // Step 4: Get transcript with speaker identification
-    const videoId = taskId; // The task ID becomes the video ID once processed
-    
-    // Get conversation data from the uploaded video
-    const searchParams = {
-      indexId: indexId,
-      searchOptions: ['conversation'],
-      query: 'conversation and dialogue with speaker identification',
-      filter: { id: videoId }
-    };
+    const transcriptResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${taskId}/conversation`, {
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+      },
+    });
 
-    const searchResult = await client.search.query(searchParams);
-    const transcriptData = searchResult.data || [];
+    if (!transcriptResponse.ok) {
+      const error = await transcriptResponse.text();
+      throw new Error(`Failed to get transcript: ${error}`);
+    }
+
+    const transcriptData = await transcriptResponse.json();
     console.log('📝 Retrieved transcript data');
 
     // Step 5: Generate creative audio descriptions using comprehensive AI analysis
-    const visualSearchParams = {
-      indexId: indexId,
-      searchOptions: ['visual'],
-      query: 'Visual storytelling elements including cinematography, lighting, facial expressions, body language, environmental details, actions, transitions, camera movements, set design, wardrobe, props, spatial relationships, emotional atmosphere, and dramatic tension for immersive audio description',
-      filter: { id: videoId },
-      pageLimit: 50,
-      sortOption: 'score'
-    };
+    const videoDescriptionResponse = await fetch(`${baseUrl}/indexes/${indexId}/search`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: 'Visual storytelling elements including cinematography, lighting, facial expressions, body language, environmental details, actions, transitions, camera movements, set design, wardrobe, props, spatial relationships, emotional atmosphere, and dramatic tension for immersive audio description',
+        search_options: ['visual'],
+        filter: {
+          video_ids: [taskId]
+        },
+        page_limit: 50,
+        sort_option: 'score',
+      }),
+    });
 
     let audioDescriptions: AudioDescriptionSegment[] = [];
     
-    try {
-      const visualSearchResult = await client.search.query(visualSearchParams);
+    if (videoDescriptionResponse.ok) {
+      const descriptionData = await videoDescriptionResponse.json();
       console.log('🎨 Retrieved visual analysis data');
       
       // Process visual analysis into timed audio descriptions
       audioDescriptions = await generateTimedAudioDescriptions(
-        visualSearchResult.data || [],
-        transcriptData || [],
-        client,
-        indexId,
-        videoId
+        descriptionData.data || [],
+        transcriptData.conversation || [],
+        twelveLabsApiKey
       );
-    } catch (error) {
-      console.warn('⚠️ Visual search failed:', error);
+    } else {
+      console.warn('⚠️ Visual search failed');
     }
 
     // Step 6: Process transcript segments with speaker identification
     const speakerColors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
     const speakerMap = new Map<string, { color: string; displayName: string }>();
     
-    const segments = (transcriptData || []).map((segment: any, index: number) => {
-      // Extract conversation data from search results
-      const conversationData = segment.conversation || segment;
-      const speakerKey = conversationData.speaker || 'Unknown';
+    const segments = (transcriptData.conversation || []).map((segment: any, index: number) => {
+      const speakerKey = segment.speaker || 'Unknown';
       
       // Assign speaker colors and names
       if (!speakerMap.has(speakerKey)) {
@@ -158,19 +188,24 @@ serve(async (req) => {
       const speaker = speakerMap.get(speakerKey)!;
       
       return {
-        text: conversationData.text || conversationData.value || '',
-        start: conversationData.start || segment.start || 0,
-        end: conversationData.end || segment.end || 0,
+        text: segment.text,
+        start: segment.start,
+        end: segment.end,
         speaker: speaker.displayName,
         speakerColor: speaker.color,
-        confidence: conversationData.confidence || 0.9,
-        words: conversationData.words || []
+        confidence: segment.confidence || 0.9,
+        words: segment.words || []
       };
     }).filter(segment => segment.text.length > 0); // Filter out empty segments
 
     // Step 7: Cleanup - delete the temporary index
     try {
-      await client.index.delete(indexId);
+      await fetch(`${baseUrl}/indexes/${indexId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-api-key': twelveLabsApiKey,
+        },
+      });
       console.log('🧹 Cleaned up temporary index');
     } catch (error) {
       console.warn('⚠️ Failed to cleanup index:', error);
@@ -201,8 +236,12 @@ serve(async (req) => {
     if (typeof indexId !== 'undefined') {
       try {
         console.log('🧹 Attempting cleanup of index:', indexId);
-        const cleanupClient = new TwelveLabs({ apiKey: Deno.env.get('TWELVE_LABS_API_KEY') || '' });
-        await cleanupClient.index.delete(indexId);
+        await fetch(`${baseUrl}/indexes/${indexId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-api-key': Deno.env.get('TWELVE_LABS_API_KEY'),
+          },
+        });
         console.log('✨ Index cleanup completed');
       } catch (cleanupError) {
         console.error('⚠️ Failed to cleanup index:', cleanupError);
@@ -225,9 +264,7 @@ serve(async (req) => {
 async function generateTimedAudioDescriptions(
   visualData: any[],
   conversation: any[],
-  client: any,
-  indexId: string,
-  videoId: string
+  apiKey: string
 ): Promise<AudioDescriptionSegment[]> {
   const descriptions: AudioDescriptionSegment[] = [];
   
@@ -268,7 +305,7 @@ async function generateTimedAudioDescriptions(
       const surroundingContext = getSurroundingContext(clip, visualData, conversation);
       
       // Generate creative audio description with context
-      const description = await generateCreativeDescription(clip, client, indexId, videoId, surroundingContext);
+      const description = await generateCreativeDescription(clip, apiKey, surroundingContext);
       
       if (description && description.length > 10) { // Ensure meaningful content
         descriptions.push({
@@ -287,7 +324,7 @@ async function generateTimedAudioDescriptions(
   return finalDescriptions.sort((a, b) => a.startTime - b.startTime);
 }
 
-async function generateCreativeDescription(clip: any, client: any, indexId: string, videoId: string, context?: any): Promise<string | null> {
+async function generateCreativeDescription(clip: any, apiKey: string, context?: any): Promise<string | null> {
   try {
     // Enhanced creative prompt for cinematic storytelling
     const contextInfo = context ? `Context: ${context.narrative || ''}` : '';
@@ -308,17 +345,24 @@ Guidelines for cinematic audio description:
 
 Create an audio description that makes the visual content come alive through words, helping listeners feel present in the scene.`;
 
-    try {
-      const generateParams = {
-        videoId: videoId,
+    const response = await fetch('https://api.twelvelabs.io/v1.2/generate', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        video_id: clip.video_id,
         type: 'summary',
         prompt: cinematicPrompt,
         temperature: 0.8, // Higher creativity
-        maxTokens: 150,
-      };
-      
-      const result = await client.generate.text(generateParams);
-      let description = result.data || null;
+        max_tokens: 150,
+      }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      let description = data.data || null;
       
       // Post-process to ensure quality and appropriate length
       if (description) {
@@ -335,8 +379,8 @@ Create an audio description that makes the visual content come alive through wor
       }
       
       return description;
-    } catch (generateError) {
-      console.error('Failed to generate description with SDK:', generateError);
+    } catch (error) {
+      console.error('Failed to generate description:', error);
     }
   } catch (error) {
     console.error('Failed to generate description:', error);
