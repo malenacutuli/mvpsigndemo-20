@@ -59,6 +59,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
+  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs'>('whisper');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -274,26 +275,54 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const extractTranscript = async () => {
     setIsExtracting(true);
     try {
-      console.log('🎤 Starting transcript extraction for:', videoUrl);
+      console.log(`🎤 Starting ${extractionMethod} transcript extraction for:`, videoUrl);
       
-      // Add detailed logging for debugging
-      console.log('📋 Request details:', {
-        videoId,
-        videoUrl: videoUrl.substring(0, 100) + '...',
-        language: detectedLanguage,
-        rangeBytes: 200000000
-      });
+      let data, error;
       
-      const { data, error } = await supabase.functions.invoke('transcribe', {
-        body: { 
-          videoUrl,
-          videoId, // Pass videoId for database saving
-          rangeBytes: 200000000,
-          fullTranscript: true,
-          forceReExtract: true, // Always force re-extract when user clicks the button
-          language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+      if (extractionMethod === 'twelvelabs') {
+        // Use Twelve Labs for advanced analysis
+        console.log('🎬 Using Twelve Labs for advanced video analysis');
+        const response = await supabase.functions.invoke('twelve-labs-analysis', {
+          body: { 
+            videoUrl,
+            videoId,
+            language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+          }
+        });
+        
+        data = response.data;
+        error = response.error;
+        
+        // Store audio descriptions from Twelve Labs
+        if (data?.audioDescriptions) {
+          setAudioDescriptions(data.audioDescriptions);
+          if (onAudioDescriptionsUpdate) {
+            onAudioDescriptionsUpdate(data.audioDescriptions);
+          }
         }
-      });
+      } else {
+        // Use existing Whisper transcription
+        console.log('📋 Request details:', {
+          videoId,
+          videoUrl: videoUrl.substring(0, 100) + '...',
+          language: detectedLanguage,
+          rangeBytes: 200000000
+        });
+        
+        const response = await supabase.functions.invoke('transcribe', {
+          body: { 
+            videoUrl,
+            videoId, // Pass videoId for database saving
+            rangeBytes: 200000000,
+            fullTranscript: true,
+            forceReExtract: true, // Always force re-extract when user clicks the button
+            language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+          }
+        });
+        
+        data = response.data;
+        error = response.error;
+      }
 
       console.log('🔍 Transcribe response:', {
         success: !error,
@@ -346,8 +375,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           text: seg.text || '',
           startTime: Number(seg.start) || 0,
           endTime: Number(seg.end) || 0,
-          speaker: `Speaker ${(index % 3) + 1}`,
-          speakerColor: getSpeakerColor(index),
+          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          speakerColor: seg.speakerColor || getSpeakerColor(index),
           emphasis: 'normal' as const,
           pitch: 'normal' as const,
         }));
@@ -637,23 +666,55 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             <p className="text-muted-foreground">
               No existing transcript found. Extract transcript from your video with detailed timing information.
             </p>
-            <Button 
-              onClick={extractTranscript} 
-              disabled={isExtracting}
-              size="lg"
-            >
-              {isExtracting ? (
-                <>
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                  Extracting...
-                </>
-              ) : (
-                <>
-                  <Mic className="w-4 h-4 mr-2" />
-                  Extract Transcript
-                </>
-              )}
-            </Button>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Extraction Method
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant={extractionMethod === 'whisper' ? 'default' : 'outline'}
+                    onClick={() => setExtractionMethod('whisper')}
+                    className="text-sm"
+                  >
+                    Whisper (Fast)
+                  </Button>
+                  <Button 
+                    variant={extractionMethod === 'twelvelabs' ? 'default' : 'outline'}
+                    onClick={() => setExtractionMethod('twelvelabs')}
+                    className="text-sm"
+                  >
+                    Twelve Labs (Advanced)
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {extractionMethod === 'twelvelabs' 
+                    ? 'Advanced AI analysis with speaker ID, visual descriptions & creative audio descriptions'
+                    : 'Fast transcription with basic speaker detection'
+                  }
+                </p>
+              </div>
+              
+              <Button 
+                onClick={extractTranscript}
+                disabled={isExtracting || !videoUrl}
+                size="lg"
+                className="w-full"
+              >
+                {isExtracting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {extractionMethod === 'twelvelabs' ? 'Analyzing with AI...' : 'Extracting...'}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Mic className="h-4 w-4" />
+                    {extractionMethod === 'twelvelabs' ? 'Start AI Analysis' : 'Extract Transcript'}
+                  </div>
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -817,6 +878,23 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             </TabsContent>
 
             <TabsContent value="audio-desc" className="mt-4">
+              {audioDescriptions.length > 0 && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium text-sm mb-2">AI-Generated Audio Descriptions</h4>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {audioDescriptions.length} creative descriptions generated by Twelve Labs
+                  </p>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {audioDescriptions.slice(0, 3).map((desc, i) => (
+                      <div key={i} className="text-xs p-2 bg-background rounded border">
+                        <span className="font-mono text-muted-foreground">
+                          {Math.round(desc.startTime)}s:
+                        </span> {desc.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <AudioDescriptionEditor
                 videoUrl={videoUrl}
                 videoId={videoId}
