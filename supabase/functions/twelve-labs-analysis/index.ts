@@ -220,10 +220,36 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Twelve Labs analysis error:', error);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 500) // Truncate stack trace
+    });
+    
+    // Try to clean up any created index
+    if (typeof indexId !== 'undefined') {
+      try {
+        console.log('🧹 Attempting cleanup of index:', indexId);
+        await fetch(`https://api.twelvelabs.io/v1.2/indexes/${indexId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-api-key': Deno.env.get('TWELVE_LABS_API_KEY'),
+          },
+        });
+        console.log('✨ Index cleanup completed');
+      } catch (cleanupError) {
+        console.error('⚠️ Failed to cleanup index:', cleanupError);
+      }
+    }
+    
+    // Return error as 200 response so client can handle gracefully
     return new Response(JSON.stringify({ 
-      error: error.message || 'Twelve Labs analysis failed' 
+      error: error.message || 'Twelve Labs analysis failed',
+      errorType: 'twelve_labs_error',
+      details: error.toString(),
+      fallbackToWhisper: true
     }), {
-      status: 500,
+      status: 200, // Return 200 so client receives the error details
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

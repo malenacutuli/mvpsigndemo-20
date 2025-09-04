@@ -317,6 +317,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         data = response.data;
         error = response.error;
         
+        // Check if the response contains an error (even with 200 status)
+        if (data?.error || data?.errorType === 'twelve_labs_error') {
+          console.error('🎬 Twelve Labs API error:', data.error);
+          console.error('🎬 Error details:', data.details);
+          error = new Error(data.error || 'Twelve Labs analysis failed');
+          data = null;
+        }
+        
         // Store audio descriptions from Twelve Labs if successful
         if (data?.audioDescriptions) {
           setAudioDescriptions(data.audioDescriptions);
