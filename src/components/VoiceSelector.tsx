@@ -130,8 +130,8 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
       speechSynthesis.speak(utterance);
     } else {
       toast({
-        title: "ElevenLabs Preview",
-        description: "ElevenLabs voice testing requires API key setup. Voice will be used for dubbing when configured."
+        title: "Premium Voice Preview",
+        description: "Premium voice testing requires API key setup. Voice will be used for dubbing when configured."
       });
     }
   };
@@ -159,7 +159,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
             variant={selectedType === 'elevenlabs' ? 'default' : 'outline'}
             onClick={() => setSelectedType('elevenlabs')}
           >
-            ElevenLabs (Premium)
+            Premium Voices
             <ExternalLink className="w-3 h-3 ml-1" />
           </Button>
         </div>
@@ -200,7 +200,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
 
         {selectedType === 'elevenlabs' && (
           <div className="text-xs text-muted-foreground bg-accent/10 p-2 rounded">
-            <strong>Note:</strong> ElevenLabs voices require API key setup and may incur costs. 
+            <strong>Note:</strong> Premium voices require API key setup and may incur costs. 
             Native voices are free and work immediately.
           </div>
         )}

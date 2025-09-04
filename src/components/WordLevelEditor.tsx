@@ -173,7 +173,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
                 <SelectContent>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="loud">Loud (Shouting)</SelectItem>
-                  <SelectItem value="quiet">Quiet (Whisper)</SelectItem>
+                  <SelectItem value="quiet">Quiet</SelectItem>
                   <SelectItem value="yelling">Yelling (Bold)</SelectItem>
                 </SelectContent>
               </Select>
