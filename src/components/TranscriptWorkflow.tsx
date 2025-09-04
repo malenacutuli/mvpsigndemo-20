@@ -282,6 +282,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       if (extractionMethod === 'twelvelabs') {
         // Use Twelve Labs for advanced analysis
         console.log('🎬 Using Twelve Labs for advanced video analysis');
+        console.log('🎬 Twelve Labs extraction started for video:', videoId);
         const response = await supabase.functions.invoke('twelve-labs-analysis', {
           body: { 
             videoUrl,
@@ -738,14 +739,24 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             <TabsContent value="transcript" className="mt-4">
               <div className="space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-green-700">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">
-                      Existing transcript loaded ({segments.length} segments)
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        Existing transcript loaded ({segments.length} segments)
+                      </span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCurrentStep('extract')}
+                      className="text-xs"
+                    >
+                      Re-extract with {extractionMethod === 'twelvelabs' ? 'Twelve Labs' : 'Whisper'}
+                    </Button>
                   </div>
                   <p className="text-green-600 text-xs mt-1">
-                    Your saved transcript is ready for editing. No need to extract again!
+                    Your saved transcript is ready for editing. Click "Re-extract" to use {extractionMethod === 'twelvelabs' ? 'Twelve Labs for full video analysis' : 'Whisper for fast transcription'}.
                   </p>
                 </div>
                 <div className="flex justify-between items-center">
