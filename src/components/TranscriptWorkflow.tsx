@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { CharacterManager } from './CharacterManager';
+import { WordLevelEditor } from './WordLevelEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 
 interface TranscriptSegment {
@@ -54,6 +55,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savingLock, setSavingLock] = useState(false); // Prevent concurrent saves
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [wordEditingId, setWordEditingId] = useState<string | null>(null);
   const [extractionComplete, setExtractionComplete] = useState(false);
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const [characters, setCharacters] = useState<any[]>([]);
@@ -72,6 +74,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setCurrentStep('loading');
     setExtractionComplete(false);
     setEditingId(null);
+    setWordEditingId(null);
     setCharacters([]);
     setAudioDescriptions([]);
     setDetectedLanguage(videoLanguage || 'en');
@@ -533,6 +536,21 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     });
   };
 
+  const updateSegmentWords = (segmentId: string, wordsData: Array<{text: string; emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'; pitch?: 'high' | 'low' | 'normal'}>) => {
+    setSegments(prev => {
+      const updated = prev.map(seg => 
+        seg.id === segmentId ? { 
+          ...seg, 
+          words: wordsData,
+          text: wordsData.map(w => w.text).join(' ') // Update text from words
+        } : seg
+      );
+      
+      console.log('✏️ Segment words updated, manual save required');
+      return updated;
+    });
+  };
+
   const handleCharactersUpdate = (updatedCharacters: any[]) => {
     setCharacters(updatedCharacters);
     onCharactersUpdate?.(updatedCharacters);
@@ -863,7 +881,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 ) : (
                   <div className="max-h-96 overflow-y-auto space-y-3">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Click the edit icon next to any segment to modify it:
+                      Click the edit icon (✏️) for segment-level editing or the word icon (W) for word-by-word editing:
                     </p>
                     {segments.map((segment, index) => (
                       <Card key={segment.id} className="p-4">
@@ -884,9 +902,22 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               onClick={() => {
                                 console.log(`✏️ Edit button clicked for segment ${index + 1}:`, segment.text.substring(0, 50));
                                 setEditingId(editingId === segment.id ? null : segment.id);
+                                setWordEditingId(null); // Close word editing when opening segment editing
                               }}
                             >
                               <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                console.log(`📝 Word edit button clicked for segment ${index + 1}`);
+                                setWordEditingId(wordEditingId === segment.id ? null : segment.id);
+                                setEditingId(null); // Close segment editing when opening word editing
+                              }}
+                              title="Edit word-by-word (Captions with Intention)"
+                            >
+                              <span className="text-xs font-bold">W</span>
                             </Button>
                           </div>
                           
@@ -945,6 +976,22 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                   </Select>
                                 </div>
                               </div>
+                            </div>
+                          ) : wordEditingId === segment.id ? (
+                            <div className="space-y-3">
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <h4 className="text-sm font-medium text-blue-700 mb-2">
+                                  📝 Captions with Intention - Word-by-Word Editor
+                                </h4>
+                                <p className="text-xs text-blue-600">
+                                  Click on individual words to adjust their emphasis and pitch for better accessibility.
+                                </p>
+                              </div>
+                              <WordLevelEditor
+                                initialText={segment.text}
+                                onWordsChange={(words) => updateSegmentWords(segment.id, words)}
+                                className="border rounded-lg p-3"
+                              />
                             </div>
                           ) : (
                             <p className="text-sm bg-muted/30 p-2 rounded">{segment.text}</p>
