@@ -22,6 +22,11 @@ interface TranscriptSegment {
   speakerColor: string;
   emphasis: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch: 'normal' | 'high' | 'low';
+  words?: Array<{
+    text: string;
+    emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
+    pitch?: 'high' | 'low' | 'normal';
+  }>;
 }
 
 interface TranscriptWorkflowProps {
@@ -80,24 +85,37 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     if (segments.length > 0 && !savingLock) {
       console.log('🔄 Auto-converting segments to captions and auto-saving:', segments.length, 'segments');
       
-      const captionSegments: CaptionSegment[] = segments.map(seg => ({
-        text: seg.text,
-        speaker: seg.speaker,
-        startTime: seg.startTime,
-        endTime: seg.endTime,
-        words: seg.text.split(' ').map((word, i) => ({
-          text: word,
-          startTime: seg.startTime + (i * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
-          endTime: seg.startTime + ((i + 1) * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
-          emphasis: seg.emphasis,
-          pitch: seg.pitch,
-        })),
-        volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'yelling' ? 100 : seg.emphasis === 'quiet' ? 30 : 50,
-        pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
-        type: 'dialogue',
-        isOffCamera: false,
-        speakerColor: seg.speakerColor,
-      }));
+      const captionSegments: CaptionSegment[] = segments.map(seg => {
+        // Use existing word-level data if available, otherwise generate from segment
+        const words = seg.words && seg.words.length > 0 
+          ? seg.words.map((word, i) => ({
+              text: word.text,
+              startTime: seg.startTime + (i * (seg.endTime - seg.startTime) / seg.words!.length),
+              endTime: seg.startTime + ((i + 1) * (seg.endTime - seg.startTime) / seg.words!.length),
+              emphasis: word.emphasis || 'normal',
+              pitch: word.pitch || 'normal',
+            }))
+          : seg.text.split(' ').map((word, i) => ({
+              text: word,
+              startTime: seg.startTime + (i * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
+              endTime: seg.startTime + ((i + 1) * (seg.endTime - seg.startTime) / seg.text.split(' ').length),
+              emphasis: seg.emphasis || 'normal',
+              pitch: seg.pitch || 'normal',
+            }));
+
+        return {
+          text: seg.text,
+          speaker: seg.speaker,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          words: words,
+          volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'yelling' ? 100 : seg.emphasis === 'quiet' ? 30 : 50,
+          pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
+          type: 'dialogue',
+          isOffCamera: false,
+          speakerColor: seg.speakerColor,
+        };
+      });
       onTranscriptReady(captionSegments);
       
       // Auto-save transcript changes when segments are updated
