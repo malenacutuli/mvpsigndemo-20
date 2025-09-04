@@ -104,6 +104,33 @@ serve(async (req) => {
   }
 });
 
+// Convert language names to ISO-639-1 codes
+function getLanguageCode(language?: string): string | undefined {
+  if (!language || language === 'auto') return undefined;
+  
+  const languageMap: { [key: string]: string } = {
+    'english': 'en',
+    'spanish': 'es', 
+    'french': 'fr',
+    'german': 'de',
+    'italian': 'it',
+    'portuguese': 'pt',
+    'russian': 'ru',
+    'japanese': 'ja',
+    'chinese': 'zh',
+    'korean': 'ko',
+    'arabic': 'ar',
+    'hindi': 'hi',
+    'dutch': 'nl',
+    'swedish': 'sv',
+    'norwegian': 'no',
+    'danish': 'da',
+    'finnish': 'fi'
+  };
+  
+  return languageMap[language.toLowerCase()] || language;
+}
+
 // Transcribe a buffer directly
 async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
   const blob = new Blob([buffer], { type: "video/mp4" });
@@ -114,8 +141,9 @@ async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: 
   formData.append("response_format", "verbose_json");
   formData.append("timestamp_granularities[]", "word");
   
-  if (language && language !== 'auto') {
-    formData.append("language", language);
+  const languageCode = getLanguageCode(language);
+  if (languageCode) {
+    formData.append("language", languageCode);
   }
 
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
