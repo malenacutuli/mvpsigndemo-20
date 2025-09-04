@@ -494,7 +494,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       // Immediately trigger auto-save
       try {
-        await saveTranscript();
+        await saveTranscript(false);
         setCurrentStep('edit');
         toast({
           title: "Transcript saved",
@@ -566,7 +566,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     console.log('🔄 Audio descriptions updated and passed to parent');
   };
 
-  const saveTranscript = async () => {
+  const saveTranscript = async (complete: boolean = false) => {
     if (!segments.length || isSaving) {
       console.log('❌ Cannot save: no segments or already saving');
       return;
@@ -645,9 +645,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         });
       }
 
-      // Mark workflow as complete
-      setCurrentStep('complete');
-      onWorkflowComplete();
+      // Mark workflow as complete only if explicitly requested
+      if (complete) {
+        setCurrentStep('complete');
+        onWorkflowComplete();
+      }
       
     } catch (error) {
       console.error('❌ Transcript save failed:', error);
@@ -827,7 +829,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                       Export
                     </Button>
                     {segments.length > 0 ? (
-                      <Button onClick={saveTranscript} disabled={isSaving}>
+                      <Button onClick={() => saveTranscript(true)} disabled={isSaving}>
                         {isSaving ? (
                           <>
                             <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
