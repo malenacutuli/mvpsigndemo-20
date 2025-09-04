@@ -294,6 +294,12 @@ const VideoDetail = () => {
                 onClick={() => navigate(`/video/${id}/workflow`)}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
+                🎬 Twelve Labs Analysis
+              </Button>
+              <Button 
+                onClick={() => navigate(`/video/${id}/workflow`)}
+                variant="outline"
+              >
                 Edit Transcript & Captions
               </Button>
               <Button 
