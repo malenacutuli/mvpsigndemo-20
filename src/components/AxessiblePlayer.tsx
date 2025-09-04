@@ -724,9 +724,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
       {/* Control Overlay - Positioned lower to avoid caption overlap */}
       <div 
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-2 pt-8 px-2 transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-2 pt-8 px-2 opacity-100"
       >
         {/* Progress Bar - Extra space from captions */}
         <div className="mb-4">

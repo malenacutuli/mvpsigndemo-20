@@ -300,10 +300,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       let data, error;
       
       if (extractionMethod === 'twelvelabs') {
-        // Use Twelve Labs for advanced analysis
-        console.log('🎬 Using Twelve Labs for advanced video analysis');
-        console.log('🎬 Twelve Labs extraction started for video:', videoId);
-        console.log('🎬 Twelve Labs request payload:', { videoUrl, videoId, language: detectedLanguage === 'auto' ? undefined : detectedLanguage });
+        // Use Extended Analysis for advanced analysis
+        console.log('🎬 Using Extended Analysis for advanced video analysis');
+        console.log('🎬 Extended Analysis extraction started for video:', videoId);
+        console.log('🎬 Extended Analysis request payload:', { videoUrl, videoId, language: detectedLanguage === 'auto' ? undefined : detectedLanguage });
         
         const response = await supabase.functions.invoke('twelve-labs-analysis', {
           body: { 
@@ -313,19 +313,19 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           }
         });
         
-        console.log('🎬 Twelve Labs response:', { data: response.data, error: response.error });
+        console.log('🎬 Extended Analysis response:', { data: response.data, error: response.error });
         data = response.data;
         error = response.error;
         
         // Check if the response contains an error (even with 200 status)
         if (data?.error || data?.errorType === 'twelve_labs_error') {
-          console.error('🎬 Twelve Labs API error:', data.error);
+          console.error('🎬 Extended Analysis API error:', data.error);
           console.error('🎬 Error details:', data.details);
-          error = new Error(data.error || 'Twelve Labs analysis failed');
+          error = new Error(data.error || 'Extended Analysis failed');
           data = null;
         }
         
-        // Store audio descriptions from Twelve Labs if successful
+        // Store audio descriptions from Extended Analysis if successful
         if (data?.audioDescriptions) {
           setAudioDescriptions(data.audioDescriptions);
           if (onAudioDescriptionsUpdate) {
@@ -334,11 +334,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         }
       }
       
-      // If Twelve Labs failed or we're using Whisper, use Whisper extraction
+      // If Extended Analysis failed or we're using Whisper, use Whisper extraction
       if (extractionMethod === 'whisper' || (extractionMethod === 'twelvelabs' && (error || !data))) {
         if (extractionMethod === 'twelvelabs' && (error || !data)) {
-          console.warn('⚠️ Twelve Labs failed, falling back to Whisper. Error:', error);
-          console.warn('⚠️ Twelve Labs response data:', data);
+          console.warn('⚠️ Extended Analysis failed, falling back to Whisper. Error:', error);
+          console.warn('⚠️ Extended Analysis response data:', data);
           setExtractionMethod('whisper'); // Update the state to reflect fallback
           
           // Show user notification about fallback
