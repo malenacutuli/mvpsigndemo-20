@@ -59,7 +59,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
-  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs'>('whisper');
+  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs'>('twelvelabs');
   const { toast } = useToast();
 
   useEffect(() => {
