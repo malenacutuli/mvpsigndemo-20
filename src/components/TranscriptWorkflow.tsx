@@ -305,6 +305,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         console.log('🎬 Extended Analysis extraction started for video:', videoId);
         console.log('🎬 Extended Analysis request payload:', { videoUrl, videoId, language: detectedLanguage === 'auto' ? undefined : detectedLanguage });
         
+        // Show user that Extended Analysis is starting
+        toast({
+          title: "Starting Extended Analysis",
+          description: "Using advanced AI analysis for speaker identification and audio descriptions",
+          variant: "default",
+        });
+        
         const response = await supabase.functions.invoke('twelve-labs-analysis', {
           body: { 
             videoUrl,
@@ -317,12 +324,29 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         data = response.data;
         error = response.error;
         
+        // More detailed error checking
+        if (response.error) {
+          console.error('🚨 Supabase function error:', response.error);
+          error = response.error;
+          data = null;
+        }
+        
         // Check if the response contains an error (even with 200 status)
         if (data?.error || data?.errorType === 'twelve_labs_error') {
           console.error('🎬 Extended Analysis API error:', data.error);
           console.error('🎬 Error details:', data.details);
           error = new Error(data.error || 'Extended Analysis failed');
           data = null;
+        }
+        
+        // Success case
+        if (data && !error && data.segments) {
+          console.log('✅ Extended Analysis successful, segments received:', data.segments.length);
+          toast({
+            title: "Extended Analysis Complete",
+            description: `Successfully analyzed video with ${data.segments.length} segments`,
+            variant: "default",
+          });
         }
         
         // Store audio descriptions from Extended Analysis if successful
@@ -344,10 +368,12 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           // Show user notification about fallback
           toast({
             title: "Switched to Fast Mode",
-            description: "Advanced analysis failed, using fast transcription",
-            variant: "default",
+            description: `Extended analysis failed: ${error?.message || 'Unknown error'}. Using fast transcription instead.`,
+            variant: "destructive",
           });
         }
+        
+        console.log('🚀 Starting Whisper transcription...');
         // Use existing Whisper transcription
         console.log('📋 Request details:', {
           videoId,
