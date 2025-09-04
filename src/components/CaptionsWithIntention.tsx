@@ -326,7 +326,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                                       currentTime <= (word.endTime + WORD_TOLERANCE);
                   const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
                   
-                  return (
+                   return (
                      <span
                        key={index}
                        className="inline-block transition-all duration-100 ease-out"
@@ -339,8 +339,22 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         marginRight: '0.25em',
                          fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
                          transform: isWordActive ? 'scale(1.05)' : 'scale(1)', // Slight scale for active word
-                         fontWeight: word.emphasis === 'yelling' ? 'bold' : 'normal', // Bold for yelling
+                         // Apply emphasis-specific styling AFTER pitch style to ensure it takes precedence
                          ...wordPitchStyle,
+                         // Bold and enhanced styling for yelling - applied last to override pitch styles
+                         ...(word.emphasis === 'yelling' && {
+                          fontWeight: '900', // Extra bold for yelling
+                          textShadow: `${isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40, ` : ''}2px 2px 4px rgba(0,0,0,0.8)`, // Enhanced shadow
+                          letterSpacing: '0.05em' // Slightly wider letter spacing for emphasis
+                         }),
+                         // Regular bold for loud
+                         ...(word.emphasis === 'loud' && {
+                          fontWeight: 'bold'
+                         }),
+                         // Lighter for quiet
+                         ...(word.emphasis === 'quiet' && {
+                          fontWeight: '300'
+                         })
                       }}
                      >
                        {word.text}
