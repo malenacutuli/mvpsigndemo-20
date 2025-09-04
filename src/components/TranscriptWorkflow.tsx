@@ -76,8 +76,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   }, [videoId, videoLanguage]); // Re-run when videoId OR videoLanguage changes
 
   useEffect(() => {
-    // Auto-convert segments to captions when they're loaded/updated
-    if (segments.length > 0) {
+    // Auto-convert segments to captions when they're loaded/updated AND auto-save changes
+    if (segments.length > 0 && !savingLock) {
+      console.log('🔄 Auto-converting segments to captions and auto-saving:', segments.length, 'segments');
+      
       const captionSegments: CaptionSegment[] = segments.map(seg => ({
         text: seg.text,
         speaker: seg.speaker,
@@ -97,8 +99,21 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         speakerColor: seg.speakerColor,
       }));
       onTranscriptReady(captionSegments);
+      
+      // Auto-save transcript changes when segments are updated
+      saveTranscript();
     }
-  }, [segments, onTranscriptReady]);
+  }, [segments, savingLock, onTranscriptReady]);
+
+  // Save transcript changes when component unmounts or video changes
+  useEffect(() => {
+    return () => {
+      if (segments.length > 0) {
+        console.log('🔄 Saving transcript on component cleanup');
+        saveTranscript();
+      }
+    };
+  }, [videoId, segments]);
 
   const loadExistingTranscript = async () => {
     try {

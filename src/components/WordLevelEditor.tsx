@@ -59,8 +59,11 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
     if (word.emphasis === 'loud') {
       styles.backgroundColor = '#fee2e2';
       styles.color = '#dc2626';
-      styles.fontWeight = 'bold';
       styles.fontSize = '1.1em';
+    } else if (word.emphasis === 'yelling') {
+      styles.backgroundColor = '#fef2f2';
+      styles.color = '#991b1b';
+      styles.fontWeight = 'bold';
     } else if (word.emphasis === 'quiet') {
       styles.backgroundColor = '#f3f4f6';
       styles.color = '#6b7280';
@@ -108,7 +111,8 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
       <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md border">
         <p className="font-medium mb-1">Word-Level Editing:</p>
         <p>• Click on any word to select and modify its emphasis or pitch</p>
-        <p>• <strong className="text-red-600">Loud</strong> words appear larger and bold</p>
+        <p>• <strong className="text-red-600">Loud</strong> words appear larger</p>
+        <p>• <strong className="text-red-900 font-bold">Yelling</strong> words appear bold</p>
         <p>• <span className="text-gray-500">Quiet</span> words appear smaller and muted</p>
         <p>• <u className="text-blue-600">High pitch</u> words are underlined</p>
         <p>• <span className="border-b-2 border-purple-500">Low pitch</span> words have bottom border</p>
@@ -131,6 +135,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
               {(word.emphasis !== 'normal' || word.pitch !== 'normal') && (
                 <sup className="ml-1">
                   {word.emphasis === 'loud' && '↗'}
+                  {word.emphasis === 'yelling' && '❗'}
                   {word.emphasis === 'quiet' && '↘'}
                   {word.pitch === 'high' && '♪'}
                   {word.pitch === 'low' && '♫'}
