@@ -379,8 +379,6 @@ Create an audio description that makes the visual content come alive through wor
       }
       
       return description;
-    } catch (error) {
-      console.error('Failed to generate description:', error);
     }
   } catch (error) {
     console.error('Failed to generate description:', error);
