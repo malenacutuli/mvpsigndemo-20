@@ -74,12 +74,12 @@ serve(async (req) => {
         console.log("✅ Direct processing successful!");
       } catch (error) {
         console.log("Direct processing failed, trying chunked approach:", error.message);
-        transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
+        transcriptionResult = await transcribeWithAssemblyAI(videoBuffer, OPENAI_API_KEY, language);
       }
     } else {
-      // Strategy 2: For larger files, use chunked approach
-      console.log(`Large video (${sizeMB}MB) - using chunked processing...`);
-      transcriptionResult = await transcribeInChunks(videoBuffer, OPENAI_API_KEY, language);
+      // Strategy 2: For larger files, use AssemblyAI
+      console.log(`Large video (${sizeMB}MB) - using AssemblyAI...`);
+      transcriptionResult = await transcribeWithAssemblyAI(videoBuffer, OPENAI_API_KEY, language);
     }
 
     // Save to database
@@ -164,90 +164,158 @@ async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: 
   return result;
 }
 
-// Process large videos by splitting into time-based chunks
-async function transcribeInChunks(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  console.log("Starting chunked transcription...");
+// Process large videos using AssemblyAI (proper approach for large files)
+async function transcribeWithAssemblyAI(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
+  console.log("Using AssemblyAI for large file transcription...");
   
-  // Split buffer into ~20MB chunks
-  const CHUNK_SIZE = 20000000; // 20MB
-  const chunks: ArrayBuffer[] = [];
-  
-  for (let i = 0; i < buffer.byteLength; i += CHUNK_SIZE) {
-    const end = Math.min(i + CHUNK_SIZE, buffer.byteLength);
-    chunks.push(buffer.slice(i, end));
+  const assemblyAIKey = Deno.env.get("ASSEMBLYAI_API_KEY");
+  if (!assemblyAIKey) {
+    throw new Error("AssemblyAI API key not configured for large file processing");
   }
-  
-  console.log(`Processing ${chunks.length} chunks...`);
-  
-  const results = [];
-  let totalDuration = 0;
-  let segmentOffset = 0;
-  
-  for (let i = 0; i < chunks.length; i++) {
-    console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
-    
-    try {
-      const chunkResult = await transcribeBuffer(chunks[i], apiKey, language);
+
+  // Upload to AssemblyAI
+  const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
+    method: "POST",
+    headers: {
+      Authorization: assemblyAIKey,
+      "Content-Type": "application/octet-stream",
+    },
+    body: buffer,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`AssemblyAI upload failed: ${uploadResponse.statusText}`);
+  }
+
+  const { upload_url } = await uploadResponse.json();
+  console.log("File uploaded to AssemblyAI");
+
+  // Request transcription
+  const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+    method: "POST",
+    headers: {
+      Authorization: assemblyAIKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      audio_url: upload_url,
+      language_code: getAssemblyAILanguageCode(language),
+      speaker_labels: true,
+      word_timestamps: true,
+    }),
+  });
+
+  if (!transcriptResponse.ok) {
+    throw new Error(`AssemblyAI transcription request failed: ${transcriptResponse.statusText}`);
+  }
+
+  const { id } = await transcriptResponse.json();
+  console.log("AssemblyAI transcription started, ID:", id);
+
+  // Poll for completion
+  let status = "processing";
+  let attempts = 0;
+  const maxAttempts = 60; // 5 minutes max
+
+  while (status === "processing" || status === "queued") {
+    if (attempts >= maxAttempts) {
+      throw new Error("AssemblyAI transcription timed out");
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+    const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
+      headers: { Authorization: assemblyAIKey },
+    });
+
+    const result = await pollResponse.json();
+    status = result.status;
+    attempts++;
+
+    console.log(`AssemblyAI status: ${status} (attempt ${attempts}/${maxAttempts})`);
+
+    if (status === "completed") {
+      console.log(`AssemblyAI transcription complete: ${result.words?.length || 0} words`);
       
-      // Adjust timestamps to account for chunk position
-      if (chunkResult.segments) {
-        chunkResult.segments.forEach((segment: any) => {
-          segment.start += totalDuration;
-          segment.end += totalDuration;
-          segment.id = segmentOffset++;
-          
-          if (segment.words) {
-            segment.words.forEach((word: any) => {
-              word.start += totalDuration;
-              word.end += totalDuration;
-            });
-          }
-        });
-      }
-      
-      results.push(chunkResult);
-      totalDuration += chunkResult.duration || 0;
-      
-      // Brief pause between requests
-      if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      
-    } catch (error) {
-      console.error(`Chunk ${i + 1} failed:`, error);
-      // Continue with remaining chunks
+      // Convert AssemblyAI format to OpenAI-like format
+      return convertAssemblyAIToOpenAI(result);
+    } else if (status === "error") {
+      throw new Error(`AssemblyAI transcription failed: ${result.error}`);
     }
   }
+
+  throw new Error("AssemblyAI transcription failed with unknown status");
+}
+
+function getAssemblyAILanguageCode(language?: string): string | undefined {
+  if (!language || language === 'auto') return undefined;
   
-  if (results.length === 0) {
-    throw new Error("Failed to process any chunks successfully");
-  }
-  
-  // Combine results
-  const combinedResult = {
-    text: results.map(r => r.text || '').join(' '),
-    language: results.find(r => r.language)?.language || 'en',
-    duration: totalDuration,
-    segments: [],
-    words: []
+  const languageMap: Record<string, string> = {
+    'english': 'en',
+    'spanish': 'es',
+    'french': 'fr',
+    'german': 'de',
+    'italian': 'it',
+    'portuguese': 'pt',
+    'russian': 'ru',
+    'japanese': 'ja',
+    'korean': 'ko',
+    'chinese': 'zh',
+    'arabic': 'ar',
+    'dutch': 'nl',
   };
   
-  // Merge all segments and words
-  results.forEach(result => {
-    if (result.segments) {
-      combinedResult.segments.push(...result.segments);
-    }
-    if (result.words) {
-      combinedResult.words.push(...result.words);
-    }
-  });
+  return languageMap[language.toLowerCase()];
+}
+
+function convertAssemblyAIToOpenAI(assemblyResult: any): any {
+  const segments = [];
   
-  // Sort by time
-  combinedResult.segments.sort((a: any, b: any) => a.start - b.start);
-  combinedResult.words.sort((a: any, b: any) => a.start - b.start);
-  
-  console.log(`✅ Chunked processing complete: ${combinedResult.segments.length} segments`);
-  return combinedResult;
+  if (assemblyResult.words && assemblyResult.words.length > 0) {
+    // Group words into sentence-like segments
+    let currentSegment: any = null;
+    
+    for (const word of assemblyResult.words) {
+      if (!currentSegment || 
+          (word.start - currentSegment.end > 2.0) || // 2 second gap
+          (currentSegment.text.length > 200)) { // Max segment length
+        
+        if (currentSegment) {
+          segments.push(currentSegment);
+        }
+        
+        currentSegment = {
+          start: word.start / 1000, // Convert ms to seconds
+          end: word.end / 1000,
+          text: word.text,
+          words: [{
+            word: word.text,
+            start: word.start / 1000,
+            end: word.end / 1000
+          }]
+        };
+      } else {
+        currentSegment.text += " " + word.text;
+        currentSegment.end = word.end / 1000;
+        currentSegment.words.push({
+          word: word.text,
+          start: word.start / 1000,
+          end: word.end / 1000
+        });
+      }
+    }
+    
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+  }
+
+  return {
+    text: assemblyResult.text || "",
+    segments: segments,
+    language: assemblyResult.language_code || 'en'
+  };
+}
 }
 
 // Save transcript to database
