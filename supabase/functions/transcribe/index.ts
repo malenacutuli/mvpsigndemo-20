@@ -316,7 +316,6 @@ function convertAssemblyAIToOpenAI(assemblyResult: any): any {
     language: assemblyResult.language_code || 'en'
   };
 }
-}
 
 // Save transcript to database
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
