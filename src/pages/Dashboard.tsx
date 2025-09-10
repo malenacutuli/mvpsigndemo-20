@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { StorageIndicator } from '@/components/StorageIndicator';
+import { SubscriptionManager } from '@/components/SubscriptionManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Video, Wand2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -81,6 +82,7 @@ const Dashboard = () => {
               {/* Sidebar */}
               <div className="lg:col-span-1">
                 <div className="sticky top-8 space-y-6">
+                  <SubscriptionManager />
                   <StorageIndicator />
                 </div>
               </div>

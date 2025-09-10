@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 
 const plans = [
@@ -146,13 +147,13 @@ const comparisonFeatures = [
 
 export default function Pricing() {
   const { user } = useAuth();
+  const { createCheckout, subscribed, subscription_tier, loading } = useSubscription();
   const navigate = useNavigate();
 
-  const handlePlanAction = (planName: string) => {
+  const handlePlanAction = async (planName: string) => {
     if (planName === 'Starter') {
-      // For starter plan, redirect to signup if not authenticated, otherwise to dashboard
       if (user) {
-        navigate('/dashboard');
+        await createCheckout('starter');
       } else {
         navigate('/auth?plan=starter');
       }
@@ -160,10 +161,9 @@ export default function Pricing() {
       // Contact sales for enterprise
       window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
     } else {
-      // For other paid plans, redirect to auth with plan info
+      // For other paid plans
       if (user) {
-        // Show upgrade modal or redirect to billing
-        alert(`Upgrade to ${planName} plan - Billing integration coming soon!`);
+        await createCheckout(planName.toLowerCase());
       } else {
         navigate(`/auth?plan=${planName.toLowerCase()}`);
       }
@@ -201,11 +201,19 @@ export default function Pricing() {
           {plans.map((plan) => (
             <Card 
               key={plan.name} 
-              className={`relative ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''}`}
+              className={`relative ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
+                subscribed && subscription_tier === plan.name ? 'ring-2 ring-green-500' : ''
+              }`}
             >
               {plan.highlight && (
                 <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
                   Most Popular
+                </Badge>
+              )}
+              
+              {subscribed && subscription_tier === plan.name && (
+                <Badge className="absolute -top-2 right-4 bg-green-600">
+                  Current Plan
                 </Badge>
               )}
               
@@ -237,8 +245,14 @@ export default function Pricing() {
                   className="w-full" 
                   variant={plan.highlight ? "default" : "outline"}
                   onClick={() => handlePlanAction(plan.name)}
+                  disabled={loading || (subscribed && subscription_tier === plan.name)}
                 >
-                  {plan.cta}
+                  {loading 
+                    ? "Loading..." 
+                    : subscribed && subscription_tier === plan.name 
+                    ? "Current Plan" 
+                    : plan.cta
+                  }
                 </Button>
               </CardContent>
             </Card>
