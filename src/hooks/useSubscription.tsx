@@ -86,8 +86,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       if (error) throw error;
 
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
+      // Redirect to Stripe checkout in the same tab (popup blockers won't interfere)
+      window.location.href = data.url;
     } catch (error) {
       console.error('Failed to create checkout:', error);
       toast({
@@ -120,8 +120,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       if (error) throw error;
 
-      // Open Stripe customer portal in a new tab
-      window.open(data.url, '_blank');
+      // Redirect to Stripe customer portal in the same tab
+      window.location.href = data.url;
     } catch (error) {
       console.error('Failed to open customer portal:', error);
       toast({
