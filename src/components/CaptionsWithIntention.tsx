@@ -239,6 +239,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     currentTime >= caption.startTime && currentTime <= caption.endTime
   );
 
+  console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
+  if (activeCaption) {
+    console.log('🎯 Active caption details:', {
+      startTime: activeCaption.startTime,
+      endTime: activeCaption.endTime,
+      text: activeCaption.text.substring(0, 30) + '...',
+      speaker: activeCaption.speaker
+    });
+  }
+
   if (!activeCaption) return null;
 
   // Find currently speaking word with timing tolerance
