@@ -93,7 +93,7 @@ const Explore = () => {
         .from('videos')
         .select('*')
         .eq('is_public', true)
-        .eq('status', 'ready')
+        .in('status', ['ready', 'uploaded'])
         .order('published_at', { ascending: false })
         .limit(50);
 
