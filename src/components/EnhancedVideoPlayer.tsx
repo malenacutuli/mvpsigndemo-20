@@ -6,6 +6,8 @@ import { CharacterManager } from './CharacterManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
+import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
+import { useSpeakerIdentification } from '@/hooks/useSpeakerIdentification';
 
 interface EnhancedVideoPlayerProps {
   videoSrc: string;
@@ -47,6 +49,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
   const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
+  const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
+  const { identifySpeakers, assignSpeakerColors } = useSpeakerIdentification();
 
   // Add immediate debugging
   useEffect(() => {
@@ -271,23 +275,100 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
       
       if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
+        let captionSegments: CaptionSegment[] = [];
+        
+        try {
+          // Convert database segments to caption format first
+          captionSegments = segments.map(segment => ({
+            text: segment.text,
+            speaker: segment.speaker || 'Speaker',
+            startTime: segment.startTime,
+            endTime: segment.endTime,
+            words: (segment.words || []).map(word => ({
+              text: word.text,
+              startTime: word.startTime || 0,
+              endTime: word.endTime || 0,
+              emphasis: word.emphasis,
+              pitch: word.pitch
+            })),
+            speakerColor: segment.speakerColor || '#3B82F6',
+            // Convert string pitch to number for vocal analysis
+            pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+            volume: 50, // Default volume
+            type: 'dialogue' as const,
+            isOffCamera: segment.isOffCamera || false,
+            // Copy vocal intensity if already analyzed
+            vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+            intensity_confidence: (segment as any).intensity_confidence,
+            auto_styling: (segment as any).auto_styling
+          }));
+          
+          // 1. Identify speakers and assign colors
+          console.log('🎭 Processing speaker identification...');
+          captionSegments = identifySpeakers(captionSegments);
+          
+          // 2. Analyze vocal intensity if segments don't have it
+          const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
+          if (needsIntensityAnalysis) {
+            console.log('🔊 Analyzing vocal intensity for captions...');
+            const analyzedSegments = await analyzeVocalIntensity(videoId, captionSegments);
+            captionSegments = analyzedSegments.map(analyzed => {
+              const originalSegment = captionSegments.find(c => 
+                Math.abs(c.startTime - (analyzed.start_time || 0)) < 0.1
+              );
+              
+              return {
+                text: analyzed.text,
+                speaker: originalSegment?.speaker || 'Speaker',
+                startTime: analyzed.start_time || 0,
+                endTime: analyzed.end_time || 0,
+                words: originalSegment?.words || [],
+                speakerColor: originalSegment?.speakerColor || '#3B82F6',
+                pitch: originalSegment?.pitch || 180,
+                volume: 50,
+                type: 'dialogue' as const,
+                isOffCamera: false,
+                vocal_intensity: analyzed.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+                intensity_confidence: analyzed.intensity_confidence,
+                auto_styling: analyzed.auto_styling
+              };
+            });
+          }
+          
+        } catch (error) {
+          console.error('Failed to process segments:', error);
+          // Fallback: convert with basic speaker colors
+          captionSegments = assignSpeakerColors(segments.map(segment => ({
+            text: segment.text,
+            speaker: segment.speaker || 'Speaker',
+            startTime: segment.startTime,
+            endTime: segment.endTime,
+            words: (segment.words || []).map(word => ({
+              text: word.text,
+              startTime: word.startTime || 0,
+              endTime: word.endTime || 0,
+              emphasis: word.emphasis,
+              pitch: word.pitch
+            })),
+            speakerColor: segment.speakerColor,
+            pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+            volume: 50,
+            type: 'dialogue' as const,
+            isOffCamera: segment.isOffCamera || false
+          })));
+        }
+        
+        // Convert processed segments to caption format for player
+        const convertedSegments = captionSegments.map((seg, index) => ({
           ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`,
-          // Ensure all caption properties are present
-          text: seg.text,
-          startTime: seg.startTime,
-          endTime: seg.endTime,
-          speaker: seg.speaker || 'Speaker',
-          speakerColor: seg.speakerColor || '#3B82F6',
-          emphasis: seg.emphasis || 'normal',
-          pitch: seg.pitch || 'normal'
+          id: `segment-${Date.now()}-${index}`,
+          _updateKey: `${Date.now()}-${Math.random()}` // Force update in player
         }));
         
         console.log('🎯 Converting database segments to captions:', convertedSegments.map(s => ({
           speaker: s.speaker,
           color: s.speakerColor,
-          emphasis: s.emphasis,
+          vocalIntensity: s.vocal_intensity,
           pitch: s.pitch,
           text: s.text.substring(0, 30) + '...'
         })));
