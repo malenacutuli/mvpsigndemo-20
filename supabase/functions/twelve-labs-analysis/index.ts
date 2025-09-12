@@ -253,21 +253,8 @@ serve(async (req) => {
       stack: error.stack?.substring(0, 500) // Truncate stack trace
     });
     
-    // Try to clean up any created index
-    if (typeof indexId !== 'undefined') {
-      try {
-        console.log('🧹 Attempting cleanup of index:', indexId);
-        await fetch(`${baseUrl}/indexes/${indexId}`, {
-          method: 'DELETE',
-          headers: {
-            'x-api-key': Deno.env.get('TWELVE_LABS_API_KEY'),
-          },
-        });
-        console.log('✨ Index cleanup completed');
-      } catch (cleanupError) {
-        console.error('⚠️ Failed to cleanup index:', cleanupError);
-      }
-    }
+    // Skipping index cleanup on error to avoid scope issues; indexes auto-expire
+
     
     // Return error as 200 response so client can handle gracefully
     return new Response(JSON.stringify({ 

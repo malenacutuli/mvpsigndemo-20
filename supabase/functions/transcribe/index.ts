@@ -87,22 +87,22 @@ serve(async (req) => {
         throw new Error("Twelve Labs fallback");
       }
     } catch (error) {
-      console.log("Twelve Labs failed, using OpenAI fallback:", error.message);
+      console.log("Twelve Labs failed, falling back:", error.message);
       
-      // Strategy 2: Fallback to OpenAI processing
-      if (videoBuffer.byteLength <= 23000000) { // 23MB to be safe
+      // Prefer AssemblyAI for large files; use OpenAI only when small enough
+      if (sizeMB <= 23) {
         console.log("Video under 23MB - processing with OpenAI directly...");
         try {
           transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
           console.log("✅ OpenAI direct processing successful!");
         } catch (openaiError) {
-          console.log("OpenAI direct failed, trying chunked approach:", openaiError.message);
-          transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+          console.log("OpenAI direct failed, using AssemblyAI fallback:", (openaiError as any).message);
+          transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
         }
       } else {
-        // Strategy 3: For larger files, use chunked approach with OpenAI
-        console.log(`Large video (${sizeMB}MB) - using chunked OpenAI processing...`);
-        transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+        // For larger files, use AssemblyAI which supports URL-based long-form transcription
+        console.log(`Large video (${sizeMB}MB) - using AssemblyAI processing...`);
+        transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
       }
     }
 
@@ -278,6 +278,128 @@ function deduplicateSegments(segments: any[]): any[] {
   }
   
   return deduplicated;
+}
+
+// Fallback: Use AssemblyAI for URL-based long-form transcription
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Promise<any> {
+  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl });
+
+  const apiKey = Deno.env.get("ASSEMBLYAI_API_KEY");
+  if (!apiKey) {
+    throw new Error("ASSEMBLYAI_API_KEY not configured");
+  }
+
+  const headers = {
+    authorization: apiKey,
+    "content-type": "application/json",
+  } as Record<string, string>;
+
+  const languageCode = getLanguageCode(language);
+  const body: Record<string, any> = {
+    audio_url: audioUrl,
+    punctuate: true,
+    format_text: true,
+    speaker_labels: true,
+    // enable_word_timestamps: true // (AssemblyAI words are included by default when available)
+  };
+  if (languageCode) {
+    body.language_code = languageCode;
+  } else {
+    body.language_detection = true;
+  }
+
+  const createRes = await fetch("https://api.assemblyai.com/v2/transcript", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text();
+    throw new Error(`AssemblyAI create error: ${createRes.status} - ${err}`);
+  }
+
+  const createData = await createRes.json();
+  const transcriptId = createData.id;
+  console.log("📝 AssemblyAI transcript created", { transcriptId });
+
+  // Poll for completion
+  let attempts = 0;
+  const maxAttempts = 120; // ~10 minutes at 5s intervals
+  let status = createData.status as string;
+  let resultData: any = createData;
+
+  while (attempts < maxAttempts) {
+    const statusRes = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+      headers: { authorization: apiKey },
+    });
+
+    if (!statusRes.ok) {
+      const err = await statusRes.text();
+      throw new Error(`AssemblyAI status error: ${statusRes.status} - ${err}`);
+    }
+
+    resultData = await statusRes.json();
+    status = resultData.status;
+    console.log("📊 AssemblyAI status:", status);
+
+    if (status === "completed") break;
+    if (status === "error") throw new Error(`AssemblyAI failed: ${resultData.error}`);
+
+    await new Promise((r) => setTimeout(r, 5000));
+    attempts++;
+  }
+
+  if (status !== "completed") {
+    throw new Error("AssemblyAI transcription timeout");
+  }
+
+  // Build segments from utterances when available
+  const segments: any[] = [];
+  if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
+    for (const u of resultData.utterances) {
+      segments.push({
+        text: u.text,
+        start: (u.start || 0) / 1000,
+        end: (u.end || 0) / 1000,
+        words: (u.words || []).map((w: any) => ({
+          start: (w.start || 0) / 1000,
+          end: (w.end || 0) / 1000,
+          word: w.text ?? w.word,
+          confidence: w.confidence,
+        })),
+        speaker: u.speaker || undefined,
+      });
+    }
+  } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
+    // Group words into ~5s sentences
+    let current: any = { text: "", start: null as number | null, end: null as number | null, words: [] as any[] };
+    for (const w of resultData.words) {
+      const ws = (w.start || 0) / 1000;
+      const we = (w.end || 0) / 1000;
+      if (current.start === null) current.start = ws;
+      current.end = we;
+      current.text += (w.text ?? w.word ?? "") + " ";
+      current.words.push({ start: ws, end: we, word: w.text ?? w.word, confidence: w.confidence });
+      if ((current.end - current.start) >= 5 || /[.?!]$/.test(current.text.trim())) {
+        segments.push({ text: current.text.trim(), start: current.start, end: current.end, words: current.words });
+        current = { text: "", start: null, end: null, words: [] };
+      }
+    }
+    if (current.start !== null) {
+      segments.push({ text: current.text.trim(), start: current.start, end: current.end, words: current.words });
+    }
+  } else {
+    segments.push({ text: resultData.text || "", start: 0, end: (resultData.audio_duration || resultData.duration || 0) });
+  }
+
+  const fullText = (resultData.text as string) || segments.map((s) => s.text).join(" ");
+  return {
+    text: fullText,
+    segments,
+    language: languageCode || resultData.language_code || "en",
+    words: segments.flatMap((s: any) => s.words || []),
+  };
 }
 
 // Use Twelve Labs for comprehensive video analysis

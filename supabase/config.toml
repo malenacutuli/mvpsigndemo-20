@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.embed-analytics]
 verify_jwt = false
+
+[functions.twelve-labs-analysis]
+verify_jwt = false
