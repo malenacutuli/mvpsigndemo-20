@@ -54,6 +54,43 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { identifySpeakers, assignSpeakerColors } = useSpeakerIdentification();
 
+  // Stable speaker color assignment function
+  const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
+    // Create consistent speaker color mapping based on speaker names
+    const speakerColorMap = new Map<string, string>();
+    const availableColors = [
+      '#E5E517', // CI Main Yellow
+      '#17E5E5', // CI Main Blue  
+      '#E51717', // CI Main Red
+      '#E58017', // CI Main Orange
+      '#17E517', // CI Main Green
+      '#E517E5', // CI Main Pink
+      '#E85C2E', // CI Support Orange
+      '#47C2EB', // CI Support Blue I
+      '#EBC247', // CI Support Yellow
+      '#5E82ED', // CI Support Blue II
+      '#C2EB47', // CI Support Green I
+      '#8C6BED'  // CI Support Purple I
+    ];
+    
+    let colorIndex = 0;
+    
+    // First pass: identify unique speakers and assign consistent colors
+    segments.forEach(segment => {
+      const speakerName = segment.speaker || 'Speaker';
+      if (!speakerColorMap.has(speakerName)) {
+        speakerColorMap.set(speakerName, availableColors[colorIndex % availableColors.length]);
+        colorIndex++;
+      }
+    });
+    
+    // Second pass: apply consistent colors to all segments
+    return segments.map(segment => ({
+      ...segment,
+      speakerColor: speakerColorMap.get(segment.speaker || 'Speaker') || availableColors[0]
+    }));
+  };
+
   // Add immediate debugging
   useEffect(() => {
     console.log('🚨 EnhancedVideoPlayer component mounted/updated');
@@ -138,6 +175,14 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const loadSavedData = async () => {
       console.log('🔄 ENHANCED PLAYER: Loading database content for video:', videoId, 'language:', currentLanguage);
       
+      // Prevent multiple simultaneous loads
+      const loadingKey = `loading_${videoId}_${currentLanguage}`;
+      if (sessionStorage.getItem(loadingKey)) {
+        console.log('⚠️ Already loading data for this video/language combination');
+        return;
+      }
+      sessionStorage.setItem(loadingKey, 'true');
+      
       try {
         // Load saved transcript from database
         const segments = await loadTranscriptSegments(currentLanguage);
@@ -207,35 +252,33 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Identify speakers and assign colors
-            console.log('🎭 ENHANCED PLAYER: Processing speaker identification...');
-            captionSegments = identifySpeakers(captionSegments);
-            console.log('🎨 ENHANCED PLAYER: After speaker identification:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+            // 1. Stabilize speaker identification - maintain consistent colors per speaker name
+            console.log('🎭 ENHANCED PLAYER: Processing stable speaker identification...');
+            captionSegments = stabilizeSpeakerColors(captionSegments);
+            console.log('🎨 ENHANCED PLAYER: After speaker stabilization:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
             
-            // 2. Analyze vocal intensity if needed
+            // 2. Analyze vocal intensity ONCE if needed - prevent multiple calls
             const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
-            console.log('🔊 ENHANCED PLAYER: Needs intensity analysis:', needsIntensityAnalysis);
+            const hasIntensityKey = `intensity_analyzed_${videoId}_${currentLanguage}`;
+            const alreadyAnalyzed = sessionStorage.getItem(hasIntensityKey);
             
-            if (needsIntensityAnalysis && !isAnalyzingIntensity) {
-              console.log('🔊 ENHANCED PLAYER: Starting vocal intensity analysis...');
+            console.log('🔊 ENHANCED PLAYER: Needs intensity analysis:', needsIntensityAnalysis, 'Already analyzed:', !!alreadyAnalyzed);
+            
+            if (needsIntensityAnalysis && !isAnalyzingIntensity && !alreadyAnalyzed) {
+              console.log('🔊 ENHANCED PLAYER: Starting ONE-TIME vocal intensity analysis...');
+              sessionStorage.setItem(hasIntensityKey, 'true'); // Prevent duplicate calls
               try {
                 const analyzedSegments = await analyzeVocalIntensity(videoId, captionSegments);
-                captionSegments = analyzedSegments.map(analyzed => {
-                  const originalSegment = captionSegments.find(c => 
+                captionSegments = analyzedSegments.map((analyzed, idx) => {
+                  const originalSegment = captionSegments[idx] || captionSegments.find(c => 
                     Math.abs(c.startTime - (analyzed.start_time || 0)) < 0.1
                   );
                   
                   return {
-                    text: analyzed.text,
-                    speaker: originalSegment?.speaker || 'Speaker',
-                    startTime: analyzed.start_time || 0,
-                    endTime: analyzed.end_time || 0,
-                    words: originalSegment?.words || [],
-                    speakerColor: originalSegment?.speakerColor || '#3B82F6',
-                    pitch: originalSegment?.pitch || 180,
-                    volume: 50,
-                    type: 'dialogue' as const,
-                    isOffCamera: false,
+                    ...originalSegment,
+                    text: analyzed.text || originalSegment?.text || '',
+                    startTime: analyzed.start_time || originalSegment?.startTime || 0,
+                    endTime: analyzed.end_time || originalSegment?.endTime || 0,
                     vocal_intensity: analyzed.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
                     intensity_confidence: analyzed.intensity_confidence,
                     auto_styling: analyzed.auto_styling
@@ -244,6 +287,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 console.log('🔊 ENHANCED PLAYER: Vocal intensity analysis completed');
               } catch (error) {
                 console.error('❌ ENHANCED PLAYER: Vocal intensity analysis failed:', error);
+                sessionStorage.removeItem(hasIntensityKey); // Allow retry on failure
               }
             }
             
@@ -322,13 +366,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       } catch (error) {
         console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
         setCaptions([]);
+      } finally {
+        sessionStorage.removeItem(loadingKey); // Allow future loads
       }
     };
 
     if (videoId && currentLanguage) {
       loadSavedData();
     }
-  }, [videoId, currentLanguage, loadTranscriptSegments, identifySpeakers, assignSpeakerColors, analyzeVocalIntensity, isAnalyzingIntensity]);
+  }, [videoId, currentLanguage, loadTranscriptSegments, analyzeVocalIntensity, isAnalyzingIntensity]);
 
   return (
     <div className="space-y-6">

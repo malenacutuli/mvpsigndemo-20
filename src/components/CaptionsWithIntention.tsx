@@ -220,24 +220,23 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, []);
 
-  // Debug caption rendering
-  useEffect(() => {
-    if (captions && captions.length > 0) {
-      console.log('🎬 CaptionsWithIntention - Rendering captions:', captions.length, 'segments');
-      console.log('⏰ Current time:', currentTime);
-      console.log('🎭 Active captions:', captions.filter(c => currentTime >= c.startTime && currentTime <= c.endTime));
-    }
-  }, [captions, currentTime]);
-
-  if (!isVisible || !captions || captions.length === 0) {
-    console.log('❌ CaptionsWithIntention - Not rendering:', { isVisible, captionsLength: captions?.length });
-    return null;
-  }
-
   // Find active caption based on current time
   const activeCaption = captions.find(caption => 
     currentTime >= caption.startTime && currentTime <= caption.endTime
   );
+
+  // Debug caption rendering
+  useEffect(() => {
+    if (captions && captions.length > 0) {
+      console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
+      console.log('📊 Available captions count:', captions.length);
+      console.log('🔍 Caption time ranges:', captions.slice(0, 3).map(c => ({ 
+        start: c.startTime, 
+        end: c.endTime, 
+        text: c.text.substring(0, 20) + '...' 
+      })));
+    }
+  }, [captions, currentTime, activeCaption]);
 
   console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
   console.log('📊 Available captions count:', captions.length);
@@ -354,54 +353,78 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               style={{ fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal' }}
             >
               {activeCaption.words && activeCaption.words.length > 0 ? (
-                activeCaption.words.map((word, index) => {
-                  const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
-                  const hasBeenSpoken = currentTime >= word.endTime;
-                  const wordPitchStyle = getPitchBasedStyle(word.pitch);
-                  const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
-                  
-                  // Enhanced word timing logic with better synchronization
-                  const WORD_TOLERANCE = 0.05; // 50ms tolerance for word timing
-                  const isWordActive = currentTime >= (word.startTime - WORD_TOLERANCE) && 
-                                      currentTime <= (word.endTime + WORD_TOLERANCE);
-                  const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
-                  
-                   return (
-                     <span
-                       key={index}
-                       className="inline-block transition-colors duration-150 ease-out"
-                       style={{
-                        // Enhanced color sync: use more precise timing for word highlighting
-                        color: wordHasBeenSpoken || isWordActive ? 
-                          (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead,
-                        // Add subtle glow effect for currently speaking word
-                        textShadow: isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40` : 'none',
-                        marginRight: '0.25em',
-                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
-                        // Avoid layout shifts by not scaling words
-                        willChange: 'color, text-shadow',
-                        // Apply emphasis-specific styling AFTER pitch style to ensure it takes precedence
-                        ...wordPitchStyle,
-                        // Bold and enhanced styling for yelling - applied last to override pitch styles
-                        ...(word.emphasis === 'yelling' && {
-                          fontWeight: '900', // Extra bold for yelling
-                          textShadow: `${isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40, ` : ''}2px 2px 4px rgba(0,0,0,0.8)`, // Enhanced shadow
-                          letterSpacing: '0.05em' // Slightly wider letter spacing for emphasis
-                        }),
-                        // Regular bold for loud
-                        ...(word.emphasis === 'loud' && {
-                          fontWeight: 'bold'
-                        }),
-                        // Lighter for quiet
-                        ...(word.emphasis === 'quiet' && {
-                          fontWeight: '300'
-                        })
-                      }}
-                     >
-                       {word.text}
-                     </span>
-                   );
-                })
+                 activeCaption.words.map((word, index) => {
+                   const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
+                   const hasBeenSpoken = currentTime >= word.endTime;
+                   const wordPitchStyle = getPitchBasedStyle(word.pitch);
+                   const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
+                   
+                   // Enhanced word timing logic with better synchronization
+                   const WORD_TOLERANCE = 0.05; // 50ms tolerance for word timing
+                   const isWordActive = currentTime >= (word.startTime - WORD_TOLERANCE) && 
+                                       currentTime <= (word.endTime + WORD_TOLERANCE);
+                   const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
+                   
+                   // Calculate word color for accessibility - high contrast between spoken/unspoken
+                   const wordColor = wordHasBeenSpoken || isWordActive ? 
+                     (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead;
+                   
+                   // Enhanced visual cues for deaf users
+                   const isUpcoming = currentTime < (word.startTime - WORD_TOLERANCE);
+                   const wordVisualCues = {
+                     // Current word gets a subtle pulse and glow
+                     ...(isWordActive && {
+                       textShadow: `0 0 12px ${activeCaption.speakerColor || speakerColor}60, 0 0 6px ${activeCaption.speakerColor || speakerColor}40`,
+                       animation: 'caption-pop 0.3s ease-out'
+                     }),
+                     // Upcoming words are slightly dimmed but visible
+                     ...(isUpcoming && {
+                       opacity: 0.7,
+                       filter: 'brightness(0.9)'
+                     }),
+                     // Spoken words maintain full color saturation
+                     ...(wordHasBeenSpoken && {
+                       opacity: 1,
+                       filter: 'brightness(1.1)'
+                     })
+                   };
+                   
+                    return (
+                      <span
+                        key={`${activeCaption.startTime}-${index}`} // Stable key for animations
+                        className="inline-block transition-all duration-200 ease-out"
+                        style={{
+                         color: wordColor,
+                         marginRight: '0.25em',
+                         fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
+                         willChange: 'color, text-shadow, opacity',
+                         // Apply emphasis-specific styling AFTER pitch style
+                         ...wordPitchStyle,
+                         ...wordVisualCues,
+                         // Emphasis styling with enhanced visual hierarchy for deaf users
+                         ...(word.emphasis === 'yelling' && {
+                           fontWeight: '900',
+                           textTransform: 'uppercase' as const,
+                           letterSpacing: '0.1em',
+                           textShadow: `${isWordActive ? `0 0 12px ${wordColor}60, ` : ''}3px 3px 6px rgba(0,0,0,0.9)`,
+                           filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.3))'
+                         }),
+                         ...(word.emphasis === 'loud' && {
+                           fontWeight: 'bold',
+                           letterSpacing: '0.05em',
+                           textShadow: `${isWordActive ? `0 0 8px ${wordColor}40, ` : ''}2px 2px 4px rgba(0,0,0,0.7)`
+                         }),
+                         ...(word.emphasis === 'quiet' && {
+                           fontWeight: '300',
+                           opacity: (wordVisualCues.opacity || 1) * 0.8,
+                           fontStyle: 'italic'
+                         })
+                       }}
+                      >
+                        {word.text}
+                      </span>
+                    );
+                 })
               ) : (
                 // Fallback: show full text if no word-level timing
                 <span style={{ color: activeCaption.speakerColor || speakerColor }}>
