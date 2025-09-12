@@ -276,27 +276,49 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Enhanced word timing and highlighting logic
   const TIMING_TOLERANCE = 0.01; // 10ms tolerance for ultra-precise sync
-  const activeWordIndex = activeCaption.words?.findIndex(word => 
+  
+  // Synthesize word-level timing if missing
+  let workingCaption = { ...activeCaption };
+  if (!workingCaption.words || workingCaption.words.length === 0) {
+    console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
+    const words = workingCaption.text.trim().split(/\s+/).filter(Boolean);
+    const duration = workingCaption.endTime - workingCaption.startTime;
+    const wordDuration = Math.max(0.15, duration / words.length); // Min 150ms per word
+    
+    workingCaption.words = words.map((word, index) => ({
+      text: word,
+      startTime: workingCaption.startTime + (index * wordDuration),
+      endTime: workingCaption.startTime + ((index + 1) * wordDuration),
+      emphasis: 'normal' as const,
+      pitch: 'normal' as const
+    }));
+    
+    console.log('✅ CAPTIONS: Synthesized', words.length, 'words for current segment');
+  }
+  
+  const activeWordIndex = workingCaption.words?.findIndex(word => 
     currentTime >= (word.startTime - TIMING_TOLERANCE) && 
     currentTime <= (word.endTime + TIMING_TOLERANCE)
   ) ?? -1;
-  const activeWord = activeWordIndex >= 0 ? activeCaption.words?.[activeWordIndex] : undefined;
+  const activeWord = activeWordIndex >= 0 ? workingCaption.words?.[activeWordIndex] : undefined;
 
   // Debug word timing for development
-  if (activeCaption.words && activeCaption.words.length > 0) {
+  if (workingCaption.words && workingCaption.words.length > 0) {
     console.log('⏰ Word timing debug:', {
       currentTime: currentTime.toFixed(3),
       activeWordIndex,
-      totalWords: activeCaption.words.length,
+      totalWords: workingCaption.words.length,
       activeWord: activeWord ? {
         text: activeWord.text,
         start: activeWord.startTime?.toFixed(3),
         end: activeWord.endTime?.toFixed(3)
       } : null,
       segment: {
-        text: activeCaption.text.substring(0, 30) + '...',
-        start: activeCaption.startTime.toFixed(3),
-        end: activeCaption.endTime.toFixed(3)
+        text: workingCaption.text.substring(0, 30) + '...',
+        start: workingCaption.startTime.toFixed(3),
+        end: workingCaption.endTime.toFixed(3),
+        hasWords: !!workingCaption.words,
+        wordCount: workingCaption.words?.length || 0
       }
     });
   }
@@ -397,8 +419,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
               style={{ fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal' }}
             >
-              {activeCaption.words && activeCaption.words.length > 0 ? (
-                 activeCaption.words.map((word, index) => {
+              {workingCaption.words && workingCaption.words.length > 0 ? (
+                 workingCaption.words.map((word, index) => {
                    const wordPitchStyle = getPitchBasedStyle(word.pitch);
                    const wordFontSize = getIntonationBasedFontSize(
                      screenHeight, 
@@ -527,12 +549,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      };
                    };
                    
-                    return (
-                      <span
-                        key={`${activeCaption.startTime}-${index}`}
-                        className={`inline-block caption-word word-${wordState} ${
-                          activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''
-                        }`}
+                     return (
+                       <span
+                         key={`${workingCaption.startTime}-${index}`}
+                         className={`inline-block caption-word word-${wordState} ${
+                           activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''
+                         }`}
                         data-wid={index}
                         data-start={word.startTime}
                         data-end={word.endTime}
