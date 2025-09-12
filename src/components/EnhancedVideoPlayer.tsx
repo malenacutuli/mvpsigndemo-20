@@ -3,6 +3,7 @@ import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
+import { SpeakerIdentificationPanel } from './SpeakerIdentificationPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -113,19 +114,25 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     });
   };
 
-  // Enhanced speaker identification using advanced analysis
-  const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[]): Promise<CaptionSegment[]> => {
+  // Enhanced speaker identification using advanced analysis with AssemblyAI
+  const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
     
     console.log('🎭 ENHANCED PLAYER: Starting advanced speaker analysis...');
     
     try {
-      const speakerClusters = await analyzeSpeakers(segments);
+      const speakerClusters = await analyzeSpeakers(segments, videoUrl, videoId);
       console.log('🎯 ENHANCED PLAYER: Identified speakers:', speakerClusters.map(s => s.name));
       
       // Apply speaker assignments to segments
       const updatedSegments = segments.map(segment => {
-        const cluster = speakerClusters.find(c => c.segments.includes(segment));
+        const cluster = speakerClusters.find(c => 
+          c.segments.some(clusterSeg => 
+            Math.abs(clusterSeg.startTime - segment.startTime) < 0.1 &&
+            Math.abs(clusterSeg.endTime - segment.endTime) < 0.1
+          )
+        );
+        
         if (cluster) {
           return {
             ...segment,
@@ -329,10 +336,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Advanced speaker identification - analyze speakers and assign colors
+            // 1. Advanced speaker identification - use AssemblyAI if possible
             console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification...');
             try {
-              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments);
+              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
               console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
             } catch (error) {
               console.warn('⚠️ Advanced speaker analysis failed, falling back to color stabilization:', error);
@@ -476,9 +483,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       {/* Content Generation and Management Controls */}
       <Tabs defaultValue="transcript" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="transcript">Transcript Extraction</TabsTrigger>
           <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
+          <TabsTrigger value="speaker-id">Speaker ID</TabsTrigger>
           <TabsTrigger value="characters">Character Management</TabsTrigger>
         </TabsList>
         
@@ -515,11 +523,28 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           </div>
         </TabsContent>
         
+        <TabsContent value="speaker-id" className="space-y-4">
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">Automatic Speaker Identification</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Use AI-powered speaker diarization to automatically identify and assign colors to different speakers for better accessibility.
+            </p>
+            <SpeakerIdentificationPanel
+              videoUrl={videoSrc}
+              videoId={videoId}
+              onSpeakersIdentified={(speakers) => {
+                console.log('🎭 Speakers identified:', speakers);
+                // This will trigger a re-analysis of the video with proper speaker assignments
+              }}
+            />
+          </div>
+        </TabsContent>
+        
         <TabsContent value="characters" className="space-y-4">
           <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Character Color Assignment</h3>
+            <h3 className="text-lg font-semibold mb-4">Manual Character Assignment</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Assign colors to characters following the Captions with Intention protocol for better accessibility.
+              Manually assign colors to characters following the Captions with Intention protocol for better accessibility.
             </p>
             <CharacterManager
               videoId={videoId || 'default'}

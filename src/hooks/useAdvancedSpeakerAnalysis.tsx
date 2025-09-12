@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { CaptionSegment } from '@/components/CaptionsWithIntention';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceFingerprint {
   avgPitch: number;
@@ -20,7 +21,8 @@ interface SpeakerCluster {
 }
 
 interface UseAdvancedSpeakerAnalysisReturn {
-  analyzeSpeakers: (segments: CaptionSegment[]) => Promise<SpeakerCluster[]>;
+  analyzeSpeakers: (segments: CaptionSegment[], videoUrl?: string, videoId?: string) => Promise<SpeakerCluster[]>;
+  analyzeSpeakersFromAudio: (videoUrl: string, videoId: string) => Promise<SpeakerCluster[]>;
   isAnalyzing: boolean;
 }
 
@@ -33,13 +35,93 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   /**
-   * Advanced speaker analysis using multiple acoustic and linguistic features
+   * Advanced speaker analysis using AssemblyAI's speaker diarization
    */
-  const analyzeSpeakers = useCallback(async (segments: CaptionSegment[]): Promise<SpeakerCluster[]> => {
+  const analyzeSpeakersFromAudio = useCallback(async (videoUrl: string, videoId: string): Promise<SpeakerCluster[]> => {
     setIsAnalyzing(true);
     
     try {
-      console.log('🎭 Starting advanced speaker analysis for', segments.length, 'segments');
+      console.log('🎤 Starting AssemblyAI speaker diarization for video:', videoId);
+      
+      // Check cache first
+      const cached = await loadCachedSpeakerAnalysis(videoId);
+      if (cached) {
+        console.log('💿 Using cached speaker diarization results');
+        return cached;
+      }
+      
+      // Call our speaker diarization edge function
+      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
+        body: { videoUrl, videoId }
+      });
+      
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Speaker diarization failed');
+      }
+      
+      // Convert API response to SpeakerCluster format
+      const clusters: SpeakerCluster[] = data.speakers.map((speaker: any, index: number) => ({
+        id: speaker.id,
+        name: speaker.name,
+        color: speaker.color,
+        fingerprint: {
+          avgPitch: 180, // Default values since we don't have detailed audio analysis
+          pitchVariance: 20,
+          speechRate: 2.5,
+          pausePattern: 0,
+          volumeProfile: [50],
+          textualStyle: 'conversational' as const
+        },
+        segments: data.segments
+          .filter((seg: any) => seg.speaker === speaker.name)
+          .map((seg: any) => ({
+            text: seg.text,
+            speaker: seg.speaker,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+            words: [], // Will be populated later if needed
+            speakerColor: speaker.color,
+            pitch: 180,
+            volume: 50,
+            type: 'dialogue' as const,
+            isOffCamera: false
+          })),
+        confidence: 0.9
+      }));
+      
+      console.log('✅ AssemblyAI speaker diarization complete:', clusters.length, 'speakers identified');
+      return clusters;
+      
+    } catch (error) {
+      console.error('❌ AssemblyAI speaker diarization failed:', error);
+      return [];
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, []);
+
+  /**
+   * Advanced speaker analysis with fallback to heuristic analysis
+   */
+  const analyzeSpeakers = useCallback(async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<SpeakerCluster[]> => {
+    // If we have video URL and ID, use AssemblyAI for superior results
+    if (videoUrl && videoId) {
+      try {
+        const clusters = await analyzeSpeakersFromAudio(videoUrl, videoId);
+        if (clusters.length > 0) {
+          return clusters;
+        }
+      } catch (error) {
+        console.warn('🔄 AssemblyAI failed, falling back to heuristic analysis:', error);
+      }
+    }
+    
+    setIsAnalyzing(true);
+    
+    try {
+      console.log('🎭 Starting heuristic speaker analysis for', segments.length, 'segments');
       
       // Step 1: Extract voice fingerprints for each segment
       const fingerprints = segments.map(segment => extractVoiceFingerprint(segment));
@@ -53,7 +135,7 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
       // Step 4: Assign meaningful names and colors
       const namedClusters = assignSpeakerIdentities(refinedClusters);
       
-      console.log('🎯 Advanced analysis complete:', namedClusters.length, 'speakers identified');
+      console.log('🎯 Heuristic analysis complete:', namedClusters.length, 'speakers identified');
       
       return namedClusters;
       
@@ -66,7 +148,7 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [analyzeSpeakersFromAudio]);
 
   /**
    * Extract comprehensive voice fingerprint from segment
@@ -341,8 +423,64 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
     return clusters;
   };
 
+  /**
+   * Load cached speaker analysis results
+   */
+  const loadCachedSpeakerAnalysis = async (videoId: string): Promise<SpeakerCluster[] | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('content_generation_cache')
+        .select('result_data')
+        .eq('video_id', videoId)
+        .eq('content_type', 'speaker_diarization')
+        .eq('language', 'en')
+        .single();
+
+      if (error || !data) return null;
+
+      const result = data.result_data as any;
+      if (!result || !result.speakers || !result.segments) return null;
+
+      // Convert cached data back to SpeakerCluster format
+      const clusters: SpeakerCluster[] = result.speakers.map((speaker: any) => ({
+        id: speaker.id,
+        name: speaker.name,
+        color: speaker.color,
+        fingerprint: {
+          avgPitch: 180,
+          pitchVariance: 20,
+          speechRate: 2.5,
+          pausePattern: 0,
+          volumeProfile: [50],
+          textualStyle: 'conversational' as const
+        },
+        segments: result.segments
+          .filter((seg: any) => seg.speaker === speaker.name)
+          .map((seg: any) => ({
+            text: seg.text,
+            speaker: seg.speaker,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+            words: [],
+            speakerColor: speaker.color,
+            pitch: 180,
+            volume: 50,
+            type: 'dialogue' as const,
+            isOffCamera: false
+          })),
+        confidence: 0.9
+      }));
+
+      return clusters;
+    } catch (error) {
+      console.error('Failed to load cached speaker analysis:', error);
+      return null;
+    }
+  };
+
   return {
     analyzeSpeakers,
+    analyzeSpeakersFromAudio,
     isAnalyzing
   };
 };
