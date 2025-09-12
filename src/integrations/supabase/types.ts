@@ -53,6 +53,72 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_subscriptions: {
+        Row: {
+          channel_id: string
+          id: string
+          subscribed_at: string
+          subscriber_email: string | null
+          subscriber_user_id: string | null
+        }
+        Insert: {
+          channel_id: string
+          id?: string
+          subscribed_at?: string
+          subscriber_email?: string | null
+          subscriber_user_id?: string | null
+        }
+        Update: {
+          channel_id?: string
+          id?: string
+          subscribed_at?: string
+          subscriber_email?: string | null
+          subscriber_user_id?: string | null
+        }
+        Relationships: []
+      }
+      channels: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          subscriber_count: number
+          updated_at: string
+          user_id: string
+          video_count: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          subscriber_count?: number
+          updated_at?: string
+          user_id: string
+          video_count?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          subscriber_count?: number
+          updated_at?: string
+          user_id?: string
+          video_count?: number
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           color: string
@@ -531,6 +597,7 @@ export type Database = {
       }
       videos: {
         Row: {
+          channel_id: string | null
           content_type: string | null
           created_at: string
           description: string | null
@@ -553,6 +620,7 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          channel_id?: string | null
           content_type?: string | null
           created_at?: string
           description?: string | null
@@ -575,6 +643,7 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          channel_id?: string | null
           content_type?: string | null
           created_at?: string
           description?: string | null
