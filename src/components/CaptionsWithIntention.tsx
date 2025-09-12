@@ -103,39 +103,56 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>)
 };
 
 /**
- * Calculate font size based on volume level or emphasis (3% to 12% of screen height)
+ * Calculate font size based on vocal intensity, volume, or emphasis
  */
-const getVolumeBasedFontSize = (volume: number, screenHeight: number, emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'): number => {
-  const minSize = screenHeight * 0.025; // 2.5% - whisper
-  const maxSize = screenHeight * 0.08;  // 8% - yelling  
-  const normalSize = screenHeight * 0.045; // 4.5% - baseline (normal speaking)
+const getIntonationBasedFontSize = (
+  screenHeight: number, 
+  vocalIntensity?: 'whisper' | 'normal' | 'yell' | 'shout',
+  volume?: number,
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'
+): number => {
+  const baseSize = screenHeight * 0.04; // 4% baseline
+  const minSize = screenHeight * 0.025; // 2.5% for whispers
+  const maxSize = screenHeight * 0.07;  // 7% for yelling/shouting
   
-  // Priority: Use emphasis from transcript editing if available
+  // Priority 1: Use vocal intensity analysis if available
+  if (vocalIntensity) {
+    switch (vocalIntensity) {
+      case 'whisper':
+        return minSize;
+      case 'yell':
+        return baseSize * 1.4;
+      case 'shout':
+        return maxSize;
+      case 'normal':
+      default:
+        return baseSize;
+    }
+  }
+  
+  // Priority 2: Use manual emphasis from transcript editing
   if (emphasis) {
     switch (emphasis) {
       case 'quiet':
         return minSize;
       case 'loud':
-        return maxSize;
+        return baseSize * 1.3;
       case 'yelling':
-        return maxSize * 1.2; // Even larger for yelling
+        return maxSize;
       case 'normal':
       default:
-        return normalSize;
+        return baseSize;
     }
   }
   
-  // Fallback: Map volume to font size
-  if (volume <= 30) {
-    // Quiet range (0-30 dB) → whisper size
-    return minSize + ((volume / 30) * (normalSize - minSize));
-  } else if (volume >= 85) {
-    // Loud range (85+ dB) → yelling size
-    return maxSize;
-  } else {
-    // Normal range (30-85 dB) → normal to loud
-    return normalSize + (((volume - 30) / 55) * (maxSize - normalSize));
+  // Fallback: Use volume level
+  if (volume !== undefined) {
+    if (volume <= 30) return minSize + ((volume / 30) * (baseSize - minSize));
+    if (volume >= 85) return maxSize;
+    return baseSize + (((volume - 30) / 55) * (maxSize - baseSize));
   }
+  
+  return baseSize;
 };
 
 /**
@@ -257,16 +274,22 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   if (!activeCaption) return null;
 
-  // Find currently speaking word with timing tolerance
-  const TIMING_TOLERANCE = 0.1; // 100ms tolerance for better sync
-  const activeWord = activeCaption.words?.find(word => 
+  // Enhanced word timing and highlighting logic
+  const TIMING_TOLERANCE = 0.05; // 50ms tolerance for precise sync
+  const activeWordIndex = activeCaption.words?.findIndex(word => 
     currentTime >= (word.startTime - TIMING_TOLERANCE) && 
     currentTime <= (word.endTime + TIMING_TOLERANCE)
-  );
+  ) ?? -1;
+  const activeWord = activeWordIndex >= 0 ? activeCaption.words?.[activeWordIndex] : undefined;
 
   const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors);
   const volume = (activeCaption as any)?.volume || 50;
-  const baseFontSize = getVolumeBasedFontSize(volume, screenHeight, activeCaption.words?.[0]?.emphasis);
+  const baseFontSize = getIntonationBasedFontSize(
+    screenHeight, 
+    activeCaption.vocal_intensity, 
+    volume, 
+    activeCaption.words?.[0]?.emphasis
+  );
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
   
   // Derive numeric pitch and an 'enthusiastic' heuristic
@@ -354,70 +377,124 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             >
               {activeCaption.words && activeCaption.words.length > 0 ? (
                  activeCaption.words.map((word, index) => {
-                   const isCurrentWord = activeWord && word.startTime === activeWord.startTime;
-                   const hasBeenSpoken = currentTime >= word.endTime;
                    const wordPitchStyle = getPitchBasedStyle(word.pitch);
-                   const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
+                   const wordFontSize = getIntonationBasedFontSize(
+                     screenHeight, 
+                     activeCaption.vocal_intensity, 
+                     volume, 
+                     word.emphasis
+                   );
                    
-                   // Enhanced word timing logic with better synchronization
-                   const WORD_TOLERANCE = 0.05; // 50ms tolerance for word timing
+                   // Progressive word highlighting states
+                   const WORD_TOLERANCE = 0.02; // 20ms precision for better sync
                    const isWordActive = currentTime >= (word.startTime - WORD_TOLERANCE) && 
                                        currentTime <= (word.endTime + WORD_TOLERANCE);
                    const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
-                   
-                   // Calculate word color for accessibility - high contrast between spoken/unspoken
-                   const wordColor = wordHasBeenSpoken || isWordActive ? 
-                     (activeCaption.speakerColor || speakerColor) : CI_COLORS.readahead;
-                   
-                   // Enhanced visual cues for deaf users
                    const isUpcoming = currentTime < (word.startTime - WORD_TOLERANCE);
-                   const wordVisualCues = {
-                     // Current word gets a subtle pulse and glow
-                     ...(isWordActive && {
-                       textShadow: `0 0 12px ${activeCaption.speakerColor || speakerColor}60, 0 0 6px ${activeCaption.speakerColor || speakerColor}40`,
-                       animation: 'caption-pop 0.3s ease-out'
-                     }),
-                     // Upcoming words are slightly dimmed but visible
-                     ...(isUpcoming && {
-                       opacity: 0.7,
-                       filter: 'brightness(0.9)'
-                     }),
-                     // Spoken words maintain full color saturation
-                     ...(wordHasBeenSpoken && {
-                       opacity: 1,
-                       filter: 'brightness(1.1)'
-                     })
+                   
+                   // Calculate progressive highlight - words fade from gray to full color as spoken
+                   let wordColor: string;
+                   let wordOpacity = 1;
+                   
+                   if (wordHasBeenSpoken) {
+                     // Fully spoken: full speaker color with slight fade
+                     wordColor = activeCaption.speakerColor || speakerColor;
+                     wordOpacity = 0.85;
+                   } else if (isWordActive) {
+                     // Currently speaking: bright full color with glow
+                     wordColor = activeCaption.speakerColor || speakerColor;
+                     wordOpacity = 1;
+                   } else if (isUpcoming) {
+                     // Not yet spoken: dim gray for read-ahead
+                     wordColor = 'hsl(var(--muted-foreground))';
+                     wordOpacity = 0.6;
+                   } else {
+                     // Default fallback
+                     wordColor = CI_COLORS.readahead;
+                     wordOpacity = 0.7;
+                   }
+                   
+                   // Enhanced vocal intensity styling
+                   const getIntensityWordStyle = (): React.CSSProperties => {
+                     const baseStyle: React.CSSProperties = {
+                       transition: 'all 0.15s ease-out',
+                       willChange: 'transform, opacity, color'
+                     };
+                     
+                     if (activeCaption.vocal_intensity) {
+                       switch (activeCaption.vocal_intensity) {
+                         case 'whisper':
+                           return {
+                             ...baseStyle,
+                             fontSize: `${wordFontSize * 0.8}px`,
+                             fontWeight: 300,
+                             opacity: wordOpacity * 0.8,
+                             fontStyle: 'italic',
+                             letterSpacing: '-0.02em'
+                           };
+                         case 'yell':
+                           return {
+                             ...baseStyle,
+                             fontSize: `${wordFontSize * 1.25}px`,
+                             fontWeight: 600,
+                             letterSpacing: '0.05em',
+                             textShadow: isWordActive ? 
+                               `0 0 8px ${wordColor}40, 0 2px 4px rgba(0,0,0,0.3)` : 
+                               '0 1px 2px rgba(0,0,0,0.2)'
+                           };
+                         case 'shout':
+                           return {
+                             ...baseStyle,
+                             fontSize: `${wordFontSize * 1.5}px`,
+                             fontWeight: 700,
+                             textTransform: 'uppercase' as const,
+                             letterSpacing: '0.1em',
+                             textShadow: isWordActive ? 
+                               `0 0 12px ${wordColor}60, 0 0 6px ${wordColor}40, 0 2px 6px rgba(0,0,0,0.4)` : 
+                               '0 2px 4px rgba(0,0,0,0.3)'
+                           };
+                         default:
+                           return baseStyle;
+                       }
+                     }
+                     
+                     // Fallback to manual emphasis
+                     if (word.emphasis) {
+                       switch (word.emphasis) {
+                         case 'quiet':
+                           return { ...baseStyle, fontSize: `${wordFontSize * 0.8}px`, fontWeight: 300, fontStyle: 'italic' };
+                         case 'loud':
+                           return { ...baseStyle, fontSize: `${wordFontSize * 1.2}px`, fontWeight: 600 };
+                         case 'yelling':
+                           return { 
+                             ...baseStyle, 
+                             fontSize: `${wordFontSize * 1.4}px`, 
+                             fontWeight: 700, 
+                             textTransform: 'uppercase' as const 
+                           };
+                         default:
+                           return baseStyle;
+                       }
+                     }
+                     
+                     return baseStyle;
                    };
                    
                     return (
                       <span
-                        key={`${activeCaption.startTime}-${index}`} // Stable key for animations
-                        className="inline-block transition-all duration-200 ease-out"
+                        key={`${activeCaption.startTime}-${index}`}
+                        className="inline-block"
                         style={{
                          color: wordColor,
+                         opacity: wordOpacity,
                          marginRight: '0.25em',
-                         fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
-                         willChange: 'color, text-shadow, opacity',
-                         // Apply emphasis-specific styling AFTER pitch style
+                         fontSize: `${wordFontSize}px`,
                          ...wordPitchStyle,
-                         ...wordVisualCues,
-                         // Emphasis styling with enhanced visual hierarchy for deaf users
-                         ...(word.emphasis === 'yelling' && {
-                           fontWeight: '900',
-                           textTransform: 'uppercase' as const,
-                           letterSpacing: '0.1em',
-                           textShadow: `${isWordActive ? `0 0 12px ${wordColor}60, ` : ''}3px 3px 6px rgba(0,0,0,0.9)`,
-                           filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.3))'
-                         }),
-                         ...(word.emphasis === 'loud' && {
-                           fontWeight: 'bold',
-                           letterSpacing: '0.05em',
-                           textShadow: `${isWordActive ? `0 0 8px ${wordColor}40, ` : ''}2px 2px 4px rgba(0,0,0,0.7)`
-                         }),
-                         ...(word.emphasis === 'quiet' && {
-                           fontWeight: '300',
-                           opacity: (wordVisualCues.opacity || 1) * 0.8,
-                           fontStyle: 'italic'
+                         ...getIntensityWordStyle(),
+                         // Active word gets subtle highlight pulse
+                         ...(isWordActive && {
+                           textShadow: `0 0 8px ${wordColor}30`,
+                           transform: 'scale(1.02)',
                          })
                        }}
                       >

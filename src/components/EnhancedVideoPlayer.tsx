@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
-import { useSpeakerIdentification } from '@/hooks/useSpeakerIdentification';
+import { useAdvancedSpeakerAnalysis } from '@/hooks/useAdvancedSpeakerAnalysis';
 
 interface EnhancedVideoPlayerProps {
   videoSrc: string;
@@ -52,7 +52,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
-  const { identifySpeakers, assignSpeakerColors } = useSpeakerIdentification();
+  const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
 
   // Stable speaker color assignment function
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
@@ -89,6 +89,59 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       ...segment,
       speakerColor: speakerColorMap.get(segment.speaker || 'Speaker') || availableColors[0]
     }));
+  };
+
+  // Fallback speaker color assignment for error cases
+  const applyFallbackSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
+    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017'];
+    let colorIndex = 0;
+    let lastEndTime = 0;
+    
+    return segments.map((segment, index) => {
+      // Change speaker on significant pauses
+      if (index > 0 && segment.startTime - lastEndTime > 1.5) {
+        colorIndex = (colorIndex + 1) % colors.length;
+      }
+      
+      lastEndTime = segment.endTime;
+      
+      return {
+        ...segment,
+        speaker: `Speaker ${colorIndex + 1}`,
+        speakerColor: colors[colorIndex]
+      };
+    });
+  };
+
+  // Enhanced speaker identification using advanced analysis
+  const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[]): Promise<CaptionSegment[]> => {
+    if (!segments || segments.length === 0) return segments;
+    
+    console.log('🎭 ENHANCED PLAYER: Starting advanced speaker analysis...');
+    
+    try {
+      const speakerClusters = await analyzeSpeakers(segments);
+      console.log('🎯 ENHANCED PLAYER: Identified speakers:', speakerClusters.map(s => s.name));
+      
+      // Apply speaker assignments to segments
+      const updatedSegments = segments.map(segment => {
+        const cluster = speakerClusters.find(c => c.segments.includes(segment));
+        if (cluster) {
+          return {
+            ...segment,
+            speaker: cluster.name,
+            speakerColor: cluster.color
+          };
+        }
+        return segment;
+      });
+      
+      return updatedSegments;
+      
+    } catch (error) {
+      console.error('❌ Advanced speaker analysis failed:', error);
+      return applyFallbackSpeakerColors(segments);
+    }
   };
 
   // Add immediate debugging
@@ -252,10 +305,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Stabilize speaker identification - maintain consistent colors per speaker name
-            console.log('🎭 ENHANCED PLAYER: Processing stable speaker identification...');
-            captionSegments = stabilizeSpeakerColors(captionSegments);
-            console.log('🎨 ENHANCED PLAYER: After speaker stabilization:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+            // 1. Advanced speaker identification - analyze speakers and assign colors
+            console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification...');
+            try {
+              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments);
+              console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+            } catch (error) {
+              console.warn('⚠️ Advanced speaker analysis failed, falling back to color stabilization:', error);
+              captionSegments = stabilizeSpeakerColors(captionSegments);
+            }
             
             // 2. Analyze vocal intensity ONCE if needed - prevent multiple calls
             const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
@@ -294,7 +352,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           } catch (error) {
             console.error('❌ ENHANCED PLAYER: Failed to process segments:', error);
             // Fallback: convert with basic speaker colors
-            captionSegments = assignSpeakerColors(segments.map(segment => ({
+            captionSegments = applyFallbackSpeakerColors(segments.map(segment => ({
               text: segment.text,
               speaker: segment.speaker || 'Speaker',
               startTime: segment.startTime,
