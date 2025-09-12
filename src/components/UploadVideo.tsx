@@ -471,9 +471,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
     } catch (error) {
       console.error('Upload error:', error);
+      let desc = error instanceof Error ? (error.message || 'An error occurred during upload') : 'An error occurred during upload';
+      const lower = desc.toLowerCase();
+      if (lower.includes('413') || lower.includes('maximum size') || lower.includes('payload too large')) {
+        desc = "Your Supabase project's Storage file size limit is below this file's size. Increase it in Storage > Settings (or compress the file).";
+      }
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "An error occurred during upload",
+        description: desc,
         variant: "destructive"
       });
     } finally {
