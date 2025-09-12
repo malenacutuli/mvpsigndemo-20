@@ -293,48 +293,79 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   return (
     <Card className="p-4">
       <div className="space-y-4">
-        {/* Editing Status */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Editing Status:</span>
-            {editingComplete ? (
-              <Badge variant="default">
-                <Eye className="w-3 h-3 mr-1" />
-                Ready to Publish
-              </Badge>
-            ) : (
-              <Badge variant="secondary">
-                <EyeOff className="w-3 h-3 mr-1" />
-                Editing in Progress
-              </Badge>
+        {/* Step-by-Step Workflow */}
+        <div className="space-y-3">
+          <h3 className="font-medium text-lg">Publishing Workflow</h3>
+          
+          {/* Step 1: Video Processing */}
+          <div className="flex items-center gap-3 p-3 rounded-md border">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              isVideoReady ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+            }`}>
+              1
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">Video Processing</p>
+              <p className="text-sm text-muted-foreground">
+                {isVideoReady ? "✓ Video processed and ready" : "Processing video for accessibility features..."}
+              </p>
+            </div>
+            {!isVideoReady && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingComplete(!editingComplete)}
-          >
-            {editingComplete ? "Resume Editing" : "Mark as Complete"}
-          </Button>
-        </div>
 
-        {/* Publishing Controls */}
-        {!isVideoReady && (
-          <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <AlertCircle className="w-4 h-4 text-yellow-600" />
-            <span className="text-sm text-yellow-800">
-              Video is still processing. Please wait before publishing.
-            </span>
+          {/* Step 2: Complete Editing */}
+          <div className="flex items-center gap-3 p-3 rounded-md border">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              editingComplete ? 'bg-green-100 text-green-700' : isVideoReady ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'
+            }`}>
+              2
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">Complete Editing</p>
+              <p className="text-sm text-muted-foreground">
+                {editingComplete ? "✓ Editing completed" : "Review and finalize your video edits"}
+              </p>
+            </div>
+            {isVideoReady && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingComplete(!editingComplete)}
+                disabled={!isVideoReady}
+              >
+                {editingComplete ? "Resume Editing" : "Mark Complete"}
+              </Button>
+            )}
           </div>
-        )}
+
+          {/* Step 3: Assign to Channel & Publish */}
+          <div className="flex items-center gap-3 p-3 rounded-md border">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              isVideoReady && editingComplete ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'
+            }`}>
+              3
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">Assign Channel & Publish</p>
+              <p className="text-sm text-muted-foreground">
+                Choose channel and make video public
+              </p>
+            </div>
+          </div>
+        </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button 
               className="w-full" 
               disabled={!isVideoReady || !editingComplete}
+              size="lg"
             >
-              {!isVideoReady ? "Processing..." : !editingComplete ? "Complete Editing First" : "Publish to My Channel"}
+              {!isVideoReady ? "⏳ Processing Video..." : 
+               !editingComplete ? "Complete Editing First" : 
+               "🚀 Assign Channel & Publish"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
