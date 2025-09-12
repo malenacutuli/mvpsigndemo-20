@@ -89,20 +89,40 @@ serve(async (req) => {
     } catch (error) {
       console.log("Twelve Labs failed, falling back:", error.message);
       
-      // Prefer AssemblyAI for large files; use OpenAI only when small enough
+      const hasAssembly = !!Deno.env.get("ASSEMBLYAI_API_KEY");
       if (sizeMB <= 23) {
         console.log("Video under 23MB - processing with OpenAI directly...");
         try {
           transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
           console.log("✅ OpenAI direct processing successful!");
         } catch (openaiError) {
-          console.log("OpenAI direct failed, using AssemblyAI fallback:", (openaiError as any).message);
-          transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+          console.log("OpenAI direct failed:", (openaiError as any).message);
+          if (hasAssembly) {
+            try {
+              console.log("Using AssemblyAI fallback...");
+              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+            } catch (aaie) {
+              console.log("AssemblyAI fallback failed, trying chunked OpenAI:", (aaie as any).message);
+              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+            }
+          } else {
+            console.log("AssemblyAI key not set; trying chunked OpenAI...");
+            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+          }
         }
       } else {
-        // For larger files, use AssemblyAI which supports URL-based long-form transcription
-        console.log(`Large video (${sizeMB}MB) - using AssemblyAI processing...`);
-        transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+        if (hasAssembly) {
+          console.log(`Large video (${sizeMB}MB) - using AssemblyAI processing...`);
+          try {
+            transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+          } catch (aaie) {
+            console.log("AssemblyAI failed, falling back to chunked OpenAI:", (aaie as any).message);
+            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+          }
+        } else {
+          console.log(`Large video (${sizeMB}MB) - AssemblyAI key missing; using chunked OpenAI processing...`);
+          transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+        }
       }
     }
 
@@ -122,7 +142,7 @@ serve(async (req) => {
       error: "Transcription failed",
       details: String(error)
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
