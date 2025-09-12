@@ -11,6 +11,8 @@ interface AnalysisRequest {
   gapStart: number;
   gapEnd: number;
   duration: number;
+  frameDataUrls?: string[]; // Optional extracted frames for vision analysis
+  surroundingText?: string; // Nearby transcript context
 }
 
 serve(async (req) => {
@@ -60,6 +62,36 @@ serve(async (req) => {
         // Create context-aware prompt for visual description
         const prompt = createVisualDescriptionPrompt(request, language, contentType);
         
+        // Prepare messages - include frames if available for vision analysis
+        const messages: any[] = [
+          {
+            role: 'system',
+            content: `You are an expert audio description writer creating descriptions for ${contentType} content in ${language}. Generate concise, vivid descriptions that help visually impaired users understand what's happening on screen during dialogue gaps.`
+          }
+        ];
+
+        // If frames are provided, use GPT-5 with vision
+        if (request.frameDataUrls && request.frameDataUrls.length > 0) {
+          const imageContents = request.frameDataUrls.map(dataUrl => ({
+            type: "image_url",
+            image_url: { url: dataUrl }
+          }));
+
+          messages.push({
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              ...imageContents
+            ]
+          });
+        } else {
+          // Text-only mode
+          messages.push({
+            role: 'user',
+            content: prompt
+          });
+        }
+        
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -67,17 +99,8 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-5-mini-2025-08-07', // Fast model for description generation
-            messages: [
-              {
-                role: 'system',
-                content: `You are an expert audio description writer creating descriptions for ${contentType} content in ${language}. Generate concise, vivid descriptions that help visually impaired users understand what's happening on screen during dialogue gaps.`
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
+            model: request.frameDataUrls && request.frameDataUrls.length > 0 ? 'gpt-5-2025-08-07' : 'gpt-5-mini-2025-08-07',
+            messages,
             max_completion_tokens: 150,
           }),
         });
@@ -172,10 +195,19 @@ serve(async (req) => {
 });
 
 function createVisualDescriptionPrompt(request: AnalysisRequest, language: string, contentType: string): string {
+  const hasFrames = request.frameDataUrls && request.frameDataUrls.length > 0;
+  const contextText = request.surroundingText ? `\n\nNearby dialogue context: "${request.surroundingText}"` : '';
+  
   const contextPrompts = {
-    recipe: `At timestamp ${request.timestamp} seconds in a cooking video, describe what cooking action, ingredient, or technique is being shown. Focus on visual elements like: cooking methods, ingredient preparation, equipment being used, food appearance, cooking progress.`,
-    education: `At timestamp ${request.timestamp} seconds in an educational video, describe the key visual elements that support learning. Focus on: demonstrations, visual aids, gestures, objects being shown, environment, or educational materials.`,
-    default: `At timestamp ${request.timestamp} seconds, describe the main visual elements and actions happening on screen that would be important for understanding the content.`
+    recipe: hasFrames 
+      ? `Analyze these video frames from timestamp ${request.timestamp} seconds in a cooking video. Describe the cooking action, ingredient, or technique being shown. Focus on visual elements like cooking methods, ingredient preparation, equipment, food appearance, and cooking progress.`
+      : `At timestamp ${request.timestamp} seconds in a cooking video, describe what cooking action, ingredient, or technique is being shown. Focus on visual elements like: cooking methods, ingredient preparation, equipment being used, food appearance, cooking progress.`,
+    education: hasFrames
+      ? `Analyze these video frames from timestamp ${request.timestamp} seconds in an educational video. Describe the key visual elements that support learning: demonstrations, visual aids, gestures, objects being shown, environment, or educational materials.`
+      : `At timestamp ${request.timestamp} seconds in an educational video, describe the key visual elements that support learning. Focus on: demonstrations, visual aids, gestures, objects being shown, environment, or educational materials.`,
+    default: hasFrames
+      ? `Analyze these video frames from timestamp ${request.timestamp} seconds. Describe the main visual elements and actions happening on screen that would be important for understanding the content.`
+      : `At timestamp ${request.timestamp} seconds, describe the main visual elements and actions happening on screen that would be important for understanding the content.`
   };
 
   const prompt = contextPrompts[contentType as keyof typeof contextPrompts] || contextPrompts.default;
@@ -191,7 +223,7 @@ function createVisualDescriptionPrompt(request: AnalysisRequest, language: strin
   return `${prompt}
 
 Duration available: ${request.duration.toFixed(1)} seconds
-Gap timing: ${request.gapStart.toFixed(1)}s to ${request.gapEnd.toFixed(1)}s
+Gap timing: ${request.gapStart.toFixed(1)}s to ${request.gapEnd.toFixed(1)}s${contextText}
 
 Requirements:
 - Keep description under 25 words for ${request.duration.toFixed(1)}s duration

@@ -154,73 +154,167 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       return [];
     }
 
-    // 2) Ask AI for creative description proposals (text only)
-    const segmentsPayload = transcript
-      .filter(s => typeof s.text === 'string')
-      .map(s => ({
-        text: String(s.text || ''),
-        startTime: Number(s.startTime || 0),
-        endTime: Number(s.endTime || 0),
-      }))
-      .slice(0, 200);
+    let scheduledDescriptions: AudioDescriptionSegment[] = [];
 
-    const { data, error } = await supabase.functions.invoke('generate-ad', {
-      body: {
-        contentType,
-        language: language,
-        segments: segmentsPayload,
-      }
-    });
-
-    if (error) {
-      console.error('❌ generate-ad failed:', error);
-      throw new Error(error.message || 'AD generation failed');
-    }
-
-    const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
-    if (!proposals.length) return [];
-
-    // 3) Schedule proposals into gaps with durations estimated from text
-    const scheduled: AudioDescriptionSegment[] = [];
-    let gapIndex = 0;
-    let cursor = gaps[0].start;
-
-    for (const p of proposals) {
-      // Advance to next usable gap if current is exhausted
-      while (gapIndex < gaps.length && cursor + 0.01 >= gaps[gapIndex].end) {
-        gapIndex++;
-        if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
-      }
-      if (gapIndex >= gaps.length) break;
-
-      const gap = gaps[gapIndex];
-      const dur = estimateDurationForText(p.text);
-      const available = gap.end - cursor;
-
-      if (available < 1.0) {
-        // Too tight; move to next gap
-        gapIndex++;
-        if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
-        continue;
-      }
-
-      const actualDur = Math.min(dur, available);
-      const start = cursor;
-      const end = start + actualDur;
-
-      scheduled.push({
-        text: p.text,
-        startTime: start,
-        endTime: end,
-        voiceStyle: (p.voiceStyle as any) || determineVoiceStyle(p.text, contentType),
-        timestamp: (start + end) / 2,
+    // First, try Twelve Labs (most accurate for video analysis)
+    console.log('🎬 Attempting Twelve Labs analysis...');
+    try {
+      const tlResponse = await supabase.functions.invoke('twelve-labs-analysis', {
+        body: {
+          videoUrl,
+          videoId,
+          language: currentLanguage
+        }
       });
 
-      // small breathing room between items
-      cursor = end + 0.2;
+      if (tlResponse.data && !tlResponse.data.error && tlResponse.data.audioDescriptions?.length > 0) {
+        console.log('✅ Twelve Labs succeeded with', tlResponse.data.audioDescriptions.length, 'descriptions');
+        
+        // Schedule TL descriptions into gaps
+        scheduledDescriptions = scheduleDescriptionsIntoGaps(tlResponse.data.audioDescriptions, gaps);
+        
+        if (scheduledDescriptions.length > 0) {
+          console.log(`✅ Scheduled ${scheduledDescriptions.length} Twelve Labs descriptions`);
+          return scheduledDescriptions;
+        }
+      } else {
+        console.log('⚠️ Twelve Labs failed or returned no descriptions, falling back to GPT-5');
+      }
+    } catch (tlError) {
+      console.log('⚠️ Twelve Labs error, falling back to GPT-5:', tlError);
     }
 
-    console.log(`✅ Scheduled ${scheduled.length} descriptions across ${gaps.length} gaps`);
+    // Fallback: Use GPT-5 with visual analysis (keyframes + context)
+    console.log('🖼️ Using GPT-5 with visual analysis...');
+    const analysisRequests = gaps.map(gap => ({
+      timestamp: gap.start + ((gap.end - gap.start) / 2), // Middle of gap
+      gapStart: gap.start,
+      gapEnd: gap.end,
+      duration: gap.end - gap.start,
+      surroundingText: getSurroundingTranscriptText(gap.start, gap.end, transcript)
+    }));
+
+    try {
+      const visualResponse = await supabase.functions.invoke('generate-visual-descriptions', {
+        body: {
+          videoId,
+          analysisRequests,
+          language: currentLanguage,
+          contentType
+        }
+      });
+
+      if (visualResponse.error) {
+        throw new Error(visualResponse.error.message || 'Failed to generate visual descriptions');
+      }
+
+      const descriptions = visualResponse.data?.descriptions || [];
+      console.log('✅ Generated visual descriptions:', descriptions.length);
+      return descriptions;
+
+    } catch (visualError) {
+      console.log('⚠️ Visual analysis failed, using text-only fallback:', visualError);
+      
+      // Final fallback: text-only analysis
+      const segmentsPayload = transcript
+        .filter(s => typeof s.text === 'string')
+        .map(s => ({
+          text: String(s.text || ''),
+          startTime: Number(s.startTime || 0),
+          endTime: Number(s.endTime || 0),
+        }))
+        .slice(0, 200);
+
+      const { data, error } = await supabase.functions.invoke('generate-ad', {
+        body: {
+          contentType,
+          language: language,
+          segments: segmentsPayload,
+        }
+      });
+
+      if (error) {
+        console.error('❌ generate-ad failed:', error);
+        throw new Error(error.message || 'AD generation failed');
+      }
+
+      const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
+      if (!proposals.length) return [];
+
+      // Schedule proposals into gaps with durations estimated from text
+      scheduledDescriptions = [];
+      let gapIndex = 0;
+      let cursor = gaps[0].start;
+
+      for (const p of proposals) {
+        // Advance to next usable gap if current is exhausted
+        while (gapIndex < gaps.length && cursor + 0.01 >= gaps[gapIndex].end) {
+          gapIndex++;
+          if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
+        }
+        if (gapIndex >= gaps.length) break;
+
+        const gap = gaps[gapIndex];
+        const dur = estimateDurationForText(p.text);
+        const available = gap.end - cursor;
+
+        if (available < 1.0) {
+          // Too tight; move to next gap
+          gapIndex++;
+          if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
+          continue;
+        }
+
+        const actualDur = Math.min(dur, available);
+        const start = cursor;
+        const end = start + actualDur;
+
+        scheduledDescriptions.push({
+          text: p.text,
+          startTime: start,
+          endTime: end,
+          voiceStyle: (p.voiceStyle as any) || determineVoiceStyle(p.text, contentType),
+          timestamp: (start + end) / 2,
+        });
+
+        // small breathing room between items
+        cursor = end + 0.2;
+      }
+
+      console.log(`✅ Scheduled ${scheduledDescriptions.length} text-only descriptions across ${gaps.length} gaps`);
+      return scheduledDescriptions;
+    }
+  };
+
+  const getSurroundingTranscriptText = (gapStart: number, gapEnd: number, transcript: any[]): string => {
+    return transcript
+      .filter(seg => Math.abs(seg.startTime - gapStart) < 30 || Math.abs(seg.endTime - gapEnd) < 30)
+      .map(seg => seg.text)
+      .join(' ')
+      .substring(0, 200);
+  };
+
+  const scheduleDescriptionsIntoGaps = (tlDescriptions: any[], gaps: { start: number; end: number }[]): AudioDescriptionSegment[] => {
+    const scheduled: AudioDescriptionSegment[] = [];
+    
+    for (const tlDesc of tlDescriptions) {
+      // Find a suitable gap for this description
+      const suitableGap = gaps.find(gap => 
+        tlDesc.startTime >= gap.start && 
+        tlDesc.endTime <= gap.end &&
+        !scheduled.some(s => s.startTime < gap.end && s.endTime > gap.start)
+      );
+
+      if (suitableGap) {
+        scheduled.push({
+          text: tlDesc.text,
+          startTime: tlDesc.startTime,
+          endTime: tlDesc.endTime,
+          voiceStyle: tlDesc.voiceStyle || determineVoiceStyle(tlDesc.text)
+        });
+      }
+    }
+
     return scheduled;
   };
 

@@ -53,7 +53,7 @@ serve(async (req) => {
       body: JSON.stringify({
         index_name: `video_analysis_${inputVideoId || Date.now()}`,
         models: [
-          { model_name: 'marengo2.6', model_options: ['audio', 'visual'] }
+          { model_name: 'marengo2.7', model_options: ['audio', 'visual'] }
         ]
       }),
     });
