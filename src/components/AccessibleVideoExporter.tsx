@@ -39,17 +39,17 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
 
   const getProgressMessage = (stage: string, progress: number): string => {
     switch (stage) {
-      case 'preparing': return 'Preparing video and accessibility data...';
-      case 'processing': return `Processing video with captions and audio descriptions... ${progress}%`;
-      case 'finalizing': return 'Finalizing accessible video file...';
-      case 'complete': return 'Accessible video ready for download!';
+      case 'preparing': return 'Preparing video for caption rendering...';
+      case 'processing': return `Rendering captions directly into video... ${progress}%`;
+      case 'finalizing': return 'Finalizing social media-ready MP4...';
+      case 'complete': return 'Video with burned-in captions ready!';
       default: return 'Processing...';
     }
   };
 
   const handleExport = async () => {
-    if (!captions.length && !audioDescriptions.length) {
-      toast.error('No accessibility features to embed. Please generate captions or audio descriptions first.');
+    if (!captions.length) {
+      toast.error('No captions to embed. Please generate captions first.');
       return;
     }
 
@@ -89,7 +89,7 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
         }
       };
 
-      setExportProgress({ stage: 'processing', progress: 30, message: 'Processing video...' });
+      setExportProgress({ stage: 'processing', progress: 30, message: 'Rendering captions into video...' });
 
       // Call edge function to process video
       const { data, error } = await supabase.functions.invoke('export-accessible-video', {
@@ -154,7 +154,7 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
         setExportProgress({ 
           stage: 'processing', 
           progress, 
-          message: `Processing video... ${Math.round(progress)}%` 
+          message: `Burning captions into video... ${Math.round(progress)}%` 
         });
 
         attempts++;
@@ -187,7 +187,7 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
     }
   };
 
-  const featuresCount = (captions.length > 0 ? 1 : 0) + (audioDescriptions.length > 0 ? 1 : 0);
+  const featuresCount = (captions.length > 0 ? 1 : 0);
   const speakersCount = Object.keys(characterColors).length;
 
   return (
@@ -200,37 +200,30 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Accessibility Features to Include:
-          </h4>
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              Captions to Burn Into Video:
+            </h4>
           
           <div className="flex flex-wrap gap-2 mb-3">
             {captions.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 <FileText className="w-3 h-3" />
-                Speaker-Colored Captions ({captions.length})
-              </Badge>
-            )}
-            
-            {audioDescriptions.length > 0 && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <Volume2 className="w-3 h-3" />
-                Audio Descriptions ({audioDescriptions.length})
+                Captions with Speaker Colors ({captions.length})
               </Badge>
             )}
             
             {speakersCount > 0 && (
               <Badge variant="outline">
-                {speakersCount} Speaker{speakersCount > 1 ? 's' : ''} Identified
+                {speakersCount} Speaker{speakersCount > 1 ? 's' : ''} with Colors
               </Badge>
             )}
           </div>
 
-          {featuresCount === 0 && (
+          {captions.length === 0 && (
             <Alert>
               <AlertDescription>
-                Generate captions and/or audio descriptions first to create an accessible video export.
+                Generate captions first to create a video with burned-in subtitles.
               </AlertDescription>
             </Alert>
           )}
@@ -251,7 +244,7 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
           <Alert>
             <Download className="w-4 h-4" />
             <AlertDescription>
-              Your accessible video is ready! The file includes embedded captions with speaker identification colors and synchronized audio descriptions.
+              Your video with burned-in captions is ready! No need to add subtitles when uploading to social media.
             </AlertDescription>
           </Alert>
         )}
@@ -259,18 +252,18 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
         <div className="flex gap-2">
           <Button 
             onClick={handleExport}
-            disabled={isExporting || featuresCount === 0}
+            disabled={isExporting || captions.length === 0}
             className="flex-1"
           >
             {isExporting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Exporting...
+                Burning Captions...
               </>
             ) : (
               <>
                 <Video className="w-4 h-4 mr-2" />
-                Export Accessible Video
+                Render Video with Captions
               </>
             )}
           </Button>
@@ -284,9 +277,9 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <p><strong>Output format:</strong> MP4 with embedded subtitles and enhanced audio</p>
-          <p><strong>Social media ready:</strong> Compatible with YouTube, Instagram, TikTok, Facebook, and more</p>
-          <p><strong>Accessibility features:</strong> WCAG compliant captions and audio descriptions</p>
+          <p><strong>Output format:</strong> MP4 with captions burned directly into video</p>
+          <p><strong>Social media ready:</strong> Upload anywhere without needing to add subtitles</p>
+          <p><strong>Speaker colors:</strong> Each speaker gets a unique color for easy identification</p>
         </div>
       </CardContent>
     </Card>

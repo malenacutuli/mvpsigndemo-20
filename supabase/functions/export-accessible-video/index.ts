@@ -1,6 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// @ts-ignore
+declare global {
+  const EdgeRuntime: {
+    waitUntil(promise: Promise<any>): void;
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -90,112 +97,155 @@ async function processAccessibleVideo(
   supabase: any, 
   processId: string
 ) {
-  console.log('🔄 Processing accessible video...');
+  console.log('🔄 Processing accessible video with burned-in captions...');
   
   try {
-    // Generate subtitle file (SRT format) with speaker colors as comments
-    let subtitleContent = '';
-    let audioDescriptionScript = '';
-    
-    // Process captions into SRT format
-    if (exportData.captions && exportData.captions.length > 0) {
-      subtitleContent = generateSRTSubtitles(exportData.captions);
-      console.log('📝 Generated SRT subtitles:', subtitleContent.substring(0, 200) + '...');
-    }
-    
-    // Process audio descriptions into a script
-    if (exportData.audioDescriptions && exportData.audioDescriptions.length > 0) {
-      audioDescriptionScript = generateAudioDescriptionScript(exportData.audioDescriptions);
-      console.log('🎙️ Generated audio description script:', audioDescriptionScript.substring(0, 200) + '...');
-    }
-
-    // For this demo, we'll create downloadable files
-    // In production, you would use FFmpeg to actually embed these into the video
-    
-    // Store the generated files in Supabase Storage
-    const files = [];
-    
-    if (subtitleContent) {
-      const subtitleFileName = `${exportData.videoId}_subtitles.srt`;
-      const { data: subtitleUpload, error: subtitleError } = await supabase.storage
-        .from('processed-videos')
-        .upload(subtitleFileName, subtitleContent, {
-          contentType: 'text/plain',
-          upsert: true
-        });
-      
-      if (!subtitleError) {
-        const { data: subtitleUrl } = supabase.storage
-          .from('processed-videos')
-          .getPublicUrl(subtitleFileName);
-        
-        files.push({
-          type: 'subtitles',
-          name: 'Speaker-Colored Subtitles (SRT)',
-          url: subtitleUrl.publicUrl
-        });
-      }
-    }
-    
-    if (audioDescriptionScript) {
-      const scriptFileName = `${exportData.videoId}_audio_descriptions.txt`;
-      const { data: scriptUpload, error: scriptError } = await supabase.storage
-        .from('processed-videos')
-        .upload(scriptFileName, audioDescriptionScript, {
-          contentType: 'text/plain', 
-          upsert: true
-        });
-      
-      if (!scriptError) {
-        const { data: scriptUrl } = supabase.storage
-          .from('processed-videos')
-          .getPublicUrl(scriptFileName);
-        
-        files.push({
-          type: 'audio-description',
-          name: 'Audio Description Script',
-          url: scriptUrl.publicUrl
-        });
-      }
-    }
-
-    // Generate instructions for manual video editing
-    const instructionsContent = generateEditingInstructions(exportData);
-    const instructionsFileName = `${exportData.videoId}_instructions.md`;
-    
-    const { data: instructionsUpload, error: instructionsError } = await supabase.storage
-      .from('processed-videos')
-      .upload(instructionsFileName, instructionsContent, {
-        contentType: 'text/markdown',
-        upsert: true
-      });
-
-    if (!instructionsError) {
-      const { data: instructionsUrl } = supabase.storage
-        .from('processed-videos')
-        .getPublicUrl(instructionsFileName);
-      
-      files.push({
-        type: 'instructions',
-        name: 'Video Editing Instructions',
-        url: instructionsUrl.publicUrl
-      });
-    }
-
-    console.log('✅ Accessible video processing complete');
+    // Start background video processing
+    EdgeRuntime.waitUntil(renderVideoWithCaptions(exportData, supabase, processId));
     
     return {
       success: true,
       processId,
-      files,
-      message: 'Accessibility files generated successfully. Use these files with video editing software to create your accessible video.',
-      totalFeatures: files.length
+      message: 'Video rendering started. Your accessible video with burned-in captions is being processed.',
+      status: 'processing'
     };
 
   } catch (error) {
     console.error('❌ Processing failed:', error);
     throw new Error(`Video processing failed: ${error.message}`);
   }
+}
+
+async function renderVideoWithCaptions(
+  exportData: ExportRequest, 
+  supabase: any, 
+  processId: string
+) {
+  try {
+    console.log('🎬 Starting video rendering with FFmpeg...');
+    
+    // Generate FFmpeg filter for captions with speaker colors
+    const captionFilter = generateCaptionFilter(exportData.captions);
+    
+    // Create temporary files
+    const inputVideoPath = `/tmp/input_${processId}.mp4`;
+    const outputVideoPath = `/tmp/output_${processId}.mp4`;
+    
+    // Download original video
+    console.log('⬇️ Downloading original video...');
+    const videoResponse = await fetch(exportData.videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error('Failed to download original video');
+    }
+    
+    const videoData = await videoResponse.arrayBuffer();
+    await Deno.writeFile(inputVideoPath, new Uint8Array(videoData));
+    
+    // Prepare FFmpeg command
+    const ffmpegCmd = [
+      'ffmpeg',
+      '-i', inputVideoPath,
+      '-vf', captionFilter,
+      '-c:a', 'copy', // Keep original audio
+      '-c:v', 'libx264', // Re-encode video with captions
+      '-preset', 'fast',
+      '-crf', '23',
+      '-movflags', '+faststart', // Optimize for streaming
+      outputVideoPath
+    ];
+    
+    console.log('🔧 Running FFmpeg command:', ffmpegCmd.join(' '));
+    
+    // Execute FFmpeg
+    const process = new Deno.Command('ffmpeg', {
+      args: ffmpegCmd.slice(1),
+      stdout: 'pipe',
+      stderr: 'pipe'
+    });
+    
+    const { code, stdout, stderr } = await process.output();
+    
+    if (code !== 0) {
+      const errorText = new TextDecoder().decode(stderr);
+      console.error('❌ FFmpeg failed:', errorText);
+      throw new Error(`FFmpeg processing failed: ${errorText}`);
+    }
+    
+    console.log('✅ Video rendering complete');
+    
+    // Upload processed video to Supabase Storage
+    const outputVideo = await Deno.readFile(outputVideoPath);
+    const outputFileName = `${exportData.videoId}_accessible.mp4`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('processed-videos')
+      .upload(outputFileName, outputVideo, {
+        contentType: 'video/mp4',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('❌ Upload failed:', uploadError);
+      throw new Error('Failed to upload processed video');
+    }
+    
+    const { data: videoUrl } = supabase.storage
+      .from('processed-videos')
+      .getPublicUrl(outputFileName);
+    
+    console.log('🎉 Accessible video ready:', videoUrl.publicUrl);
+    
+    // Update process status in database (you'd implement this)
+    // For now, we'll just log success
+    console.log('✅ Process complete for:', processId);
+    
+    // Clean up temporary files
+    try {
+      await Deno.remove(inputVideoPath);
+      await Deno.remove(outputVideoPath);
+    } catch (cleanupError) {
+      console.warn('⚠️ Cleanup warning:', cleanupError.message);
+    }
+    
+  } catch (error) {
+    console.error('❌ Video rendering failed:', error);
+    // In a real implementation, you'd update the process status to 'failed'
+  }
+}
+
+function generateCaptionFilter(captions: Caption[]): string {
+  if (!captions || captions.length === 0) {
+    return 'null'; // No captions to add
+  }
+  
+  // Create drawtext filters for each caption with timing and colors
+  const textFilters = captions.map((caption, index) => {
+    const startTime = caption.startTime;
+    const endTime = caption.endTime;
+    const text = caption.text.replace(/'/g, "\\'").replace(/:/g, "\\:"); // Escape special chars
+    const color = getSpeakerColorHex(caption.speakerColor || '#FFFFFF');
+    
+    return `drawtext=text='${text}':fontfile=/System/Library/Fonts/Arial.ttf:fontsize=36:fontcolor=${color}:box=1:boxcolor=black@0.7:boxborderw=8:x=(w-tw)/2:y=h-th-50:enable='between(t,${startTime},${endTime})'`;
+  });
+  
+  // Join all drawtext filters
+  return textFilters.join(',');
+}
+
+function getSpeakerColorHex(color: string): string {
+  // Convert color names or other formats to hex
+  const colorMap: { [key: string]: string } = {
+    'blue': '#3B82F6',
+    'green': '#10B981', 
+    'red': '#EF4444',
+    'yellow': '#F59E0B',
+    'purple': '#8B5CF6',
+    'pink': '#EC4899',
+    'orange': '#F97316',
+    'cyan': '#06B6D4'
+  };
+  
+  return colorMap[color.toLowerCase()] || color || '#FFFFFF';
 }
 
 function generateSRTSubtitles(captions: Caption[]): string {
