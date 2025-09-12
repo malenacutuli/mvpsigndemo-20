@@ -379,17 +379,6 @@ const VideoDetail = () => {
           </Card>
 
           {/* Export Accessible Video */}
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">🎬 Export Debug Info</h3>
-            <div className="text-sm space-y-2">
-              <p>Captions loaded: {captions.length} segments</p>
-              <p>Video URL available: {videoUrl ? '✅ Yes' : '❌ No'}</p>
-              <p>Should show exporter: {captions.length > 0 && videoUrl ? '✅ Yes' : '❌ No'}</p>
-              {captions.length === 0 && <p className="text-orange-600">⚠️ No captions found - exporter won't show</p>}
-              {!videoUrl && <p className="text-red-600">❌ No video URL - exporter won't show</p>}
-            </div>
-          </div>
-          
           {captions.length > 0 && videoUrl && (
             <AccessibleVideoExporter
               videoUrl={videoUrl}

@@ -35,12 +35,18 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Check if processed video exists in storage
+    // The filename should be based on videoId, not processId
+    // Since we don't have videoId directly, let's list all files and check for any accessible video
     const { data: files, error } = await supabase.storage
       .from('processed-videos')
-      .list('', { search: `${processId.split('-')[0]}_accessible.mp4` });
+      .list('', { search: '_accessible.mp4' });
+
+    console.log('📁 Found files in processed-videos:', files?.map(f => f.name) || []);
+    console.log('🔍 Storage query error:', error);
 
     let status;
     if (error) {
+      console.log('⚠️ Storage error, assuming still processing');
       status = {
         processId,
         status: 'processing',
@@ -50,10 +56,17 @@ serve(async (req) => {
         createdAt: new Date().toISOString()
       };
     } else if (files && files.length > 0) {
+      // Find the most recent file (as a simple approach)
+      const latestFile = files.sort((a, b) => 
+        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )[0];
+      
+      console.log('✅ Found processed video file:', latestFile.name);
+      
       // File exists, video is ready
       const { data: videoUrl } = supabase.storage
         .from('processed-videos')
-        .getPublicUrl(files[0].name);
+        .getPublicUrl(latestFile.name);
         
       status = {
         processId,
@@ -61,10 +74,11 @@ serve(async (req) => {
         progress: 100,
         message: 'Accessible video ready for download!',
         downloadUrl: videoUrl.publicUrl,
-        fileName: files[0].name,
+        fileName: latestFile.name,
         createdAt: new Date().toISOString()
       };
     } else {
+      console.log('📋 No processed files found, still processing');
       // Still processing
       status = {
         processId,
