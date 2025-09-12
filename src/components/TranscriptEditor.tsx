@@ -175,7 +175,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             // If not JSON, use the message directly
             errorMessage = response.error.message;
             if (response.error.message.includes('413') || response.error.message.includes('too large')) {
-              errorDetails = 'Maximum supported size is 25MB. Please compress your video.';
+              errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
             }
           }
         }

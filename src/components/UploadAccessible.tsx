@@ -209,7 +209,7 @@ export const UploadAccessible: React.FC = () => {
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     Supported formats: MP4, WebM, MOV<br/>
-                    Maximum size: 100MB
+                    Maximum size: 5GB
                   </p>
                   <input
                     type="file"
