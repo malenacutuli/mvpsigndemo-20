@@ -346,7 +346,7 @@ const VideoDetail = () => {
                     language={video.language}
                     selectedVoice={selectedVoice}
                     selectedASLAvatar={selectedASLAvatar}
-                    contentType={video.content_type === 'education' ? 'education' : 'recipe'}
+                    contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                     className="w-full"
                   />
                   
