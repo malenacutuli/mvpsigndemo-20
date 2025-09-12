@@ -297,6 +297,53 @@ export type Database = {
         }
         Relationships: []
       }
+      public_video_views: {
+        Row: {
+          accessibility_features_used: Json | null
+          created_at: string
+          id: string
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          video_id: string
+          view_duration_seconds: number | null
+          viewer_ip: unknown | null
+          watched_percentage: number | null
+        }
+        Insert: {
+          accessibility_features_used?: Json | null
+          created_at?: string
+          id?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          video_id: string
+          view_duration_seconds?: number | null
+          viewer_ip?: unknown | null
+          watched_percentage?: number | null
+        }
+        Update: {
+          accessibility_features_used?: Json | null
+          created_at?: string
+          id?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          video_id?: string
+          view_duration_seconds?: number | null
+          viewer_ip?: unknown | null
+          watched_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -493,14 +540,17 @@ export type Database = {
           embed_settings: Json | null
           embed_token: string | null
           id: string
+          is_public: boolean
           language: string
           metadata: Json | null
+          published_at: string | null
           status: Database["public"]["Enums"]["video_status"]
           storage_path: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
           user_id: string
+          view_count: number
         }
         Insert: {
           content_type?: string | null
@@ -512,14 +562,17 @@ export type Database = {
           embed_settings?: Json | null
           embed_token?: string | null
           id?: string
+          is_public?: boolean
           language?: string
           metadata?: Json | null
+          published_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           storage_path?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
           user_id: string
+          view_count?: number
         }
         Update: {
           content_type?: string | null
@@ -531,14 +584,17 @@ export type Database = {
           embed_settings?: Json | null
           embed_token?: string | null
           id?: string
+          is_public?: boolean
           language?: string
           metadata?: Json | null
+          published_at?: string | null
           status?: Database["public"]["Enums"]["video_status"]
           storage_path?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -550,6 +606,10 @@ export type Database = {
       generate_embed_token: {
         Args: { video_uuid: string }
         Returns: string
+      }
+      increment_video_views: {
+        Args: { video_uuid: string }
+        Returns: undefined
       }
       upsert_transcript_segments: {
         Args: {
