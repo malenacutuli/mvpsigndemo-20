@@ -27,7 +27,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, language } = await req.json();
+    const { videoUrl, videoId: inputVideoId, language } = await req.json();
     
     if (!videoUrl) {
       throw new Error('Video URL is required');
@@ -38,7 +38,7 @@ serve(async (req) => {
       throw new Error('Twelve Labs API key not configured');
     }
 
-    console.log('🎬 Starting Twelve Labs analysis for video:', videoId);
+    console.log('🎬 Starting Twelve Labs analysis for video:', inputVideoId);
 
     // Use direct API calls instead of SDK for better Deno compatibility
     const baseUrl = 'https://api.twelvelabs.io/v1.3';

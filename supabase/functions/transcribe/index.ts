@@ -61,7 +61,8 @@ serve(async (req) => {
     const headResponse = await fetch(resolvedVideoUrl, { method: 'HEAD' });
     const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
     const sizeMB = Math.round(contentLength / 1024 / 1024);
-    console.log(`Video size: ${sizeMB}MB`);
+    const contentType = headResponse.headers.get('content-type') || '';
+    console.log(`Video size: ${sizeMB}MB, content-type: ${contentType}`);
 
     // Download video
     console.log("Downloading video...");
@@ -102,12 +103,22 @@ serve(async (req) => {
               console.log("Using AssemblyAI fallback...");
               transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
             } catch (aaie) {
-              console.log("AssemblyAI fallback failed, trying chunked OpenAI:", (aaie as any).message);
-              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+              if (contentType.startsWith('audio/')) {
+                console.log("AssemblyAI fallback failed, trying chunked OpenAI:", (aaie as any).message);
+                transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+              } else {
+                console.log("AssemblyAI fallback failed and content is video; skipping chunked processing.");
+                transcriptionResult = { error: 'assembly_required', message: 'Video transcription failed. For video content, please configure ASSEMBLYAI_API_KEY or use a smaller audio-only file under 23MB.' };
+              }
             }
           } else {
-            console.log("AssemblyAI key not set; trying chunked OpenAI...");
-            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+            if (contentType.startsWith('audio/')) {
+              console.log("AssemblyAI key not set; trying chunked OpenAI for audio...");
+              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+            } else {
+              console.log("AssemblyAI key not set and content is video; skipping chunked processing.");
+              transcriptionResult = { error: 'assembly_required', message: 'Large or unsupported video for Whisper. Please add ASSEMBLYAI_API_KEY in Supabase or upload an audio-only file under 23MB.' };
+            }
           }
         }
       } else {
@@ -116,12 +127,22 @@ serve(async (req) => {
           try {
             transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
           } catch (aaie) {
-            console.log("AssemblyAI failed, falling back to chunked OpenAI:", (aaie as any).message);
-            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+            if (contentType.startsWith('audio/')) {
+              console.log("AssemblyAI failed, falling back to chunked OpenAI:", (aaie as any).message);
+              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+            } else {
+              console.log(`AssemblyAI failed and content is video; skipping chunked processing to avoid decoding errors.`);
+              transcriptionResult = { error: 'assembly_required', message: 'Large video files require ASSEMBLYAI_API_KEY configured in Supabase or reducing file size under 23MB.' };
+            }
           }
         } else {
-          console.log(`Large video (${sizeMB}MB) - AssemblyAI key missing; using chunked OpenAI processing...`);
-          transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+          if (contentType.startsWith('audio/')) {
+            console.log(`Large audio file (${sizeMB}MB) - AssemblyAI key missing; using chunked OpenAI processing...`);
+            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+          } else {
+            console.log(`Large video file (${sizeMB}MB) without AssemblyAI key - aborting chunked processing to avoid decode errors.`);
+            transcriptionResult = { error: 'assembly_required', message: 'Please add ASSEMBLYAI_API_KEY in Supabase Edge Function secrets to process large video files, or upload an audio-only file under 23MB.' };
+          }
         }
       }
     }
