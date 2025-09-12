@@ -101,8 +101,8 @@ serve(async (req) => {
           transcriptionResult = { error: 'openai_failed', message: 'Video transcription failed with OpenAI. Please try a smaller file or check video format.' };
         }
       } else {
-        console.log(`Large video file (${sizeMB}MB) - OpenAI has 25MB limit`);
-        transcriptionResult = { error: 'file_too_large', message: 'Video file is too large for OpenAI Whisper (25MB limit). Please use a smaller file.' };
+        console.log(`Large video file (${sizeMB}MB) - skipping OpenAI fallback; returning Twelve Labs error`);
+        transcriptionResult = { error: 'twelve_labs_failed', message: (error as any)?.message || 'Twelve Labs analysis failed. Please verify API key, model_name, and video URL accessibility.' };
       }
     }
 
