@@ -84,27 +84,18 @@ const Explore = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch public videos with channel info
+      // Fetch public videos first
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
-        .select(`
-          *,
-          channels (
-            id,
-            name,
-            avatar_url,
-            subscriber_count
-          )
-        `)
+        .select('*')
         .eq('is_public', true)
         .eq('status', 'ready')
         .order('published_at', { ascending: false })
         .limit(50);
 
       if (videosError) throw videosError;
-      setVideos(videosData || []);
 
-      // Fetch public channels
+      // Fetch channels separately
       const { data: channelsData, error: channelsError } = await supabase
         .from('channels')
         .select('*')
@@ -113,6 +104,16 @@ const Explore = () => {
         .limit(20);
 
       if (channelsError) throw channelsError;
+
+      // Manually join videos with their channels
+      const videosWithChannels = (videosData || []).map(video => ({
+        ...video,
+        channel: video.channel_id 
+          ? (channelsData || []).find(channel => channel.id === video.channel_id)
+          : null
+      }));
+
+      setVideos(videosWithChannels);
       setChannels(channelsData || []);
 
     } catch (error) {
