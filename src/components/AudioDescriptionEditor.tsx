@@ -223,12 +223,19 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         return;
       }
       
-      setDescriptions(contextualDescriptions);
-      onDescriptionsUpdate?.(contextualDescriptions);
+      // Filter out any empty descriptions just in case
+      const filtered = contextualDescriptions.filter(d => d.text && d.text.trim().length > 0);
+      if (filtered.length === 0) {
+        toast.error("Generation returned empty descriptions. Please try again.");
+        return;
+      }
       
-      toast.success(`Audio descriptions generated! Created ${contextualDescriptions.length} contextual descriptions synchronized with video content`);
+      setDescriptions(filtered);
+      onDescriptionsUpdate?.(filtered);
       
-      console.log('✅ Generated contextual descriptions:', contextualDescriptions);
+      toast.success(`Audio descriptions generated! Created ${filtered.length} contextual descriptions synchronized with video content`);
+      
+      console.log('✅ Generated contextual descriptions:', filtered);
       
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);

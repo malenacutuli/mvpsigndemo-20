@@ -88,7 +88,48 @@ serve(async (req) => {
         }
 
         const data = await response.json();
-        const description = data.choices[0].message.content.trim();
+        let description = (data?.choices?.[0]?.message?.content || '').trim();
+
+        // Fallback: retry with a more reliable model if empty
+        if (!description) {
+          console.log('⚠️ Empty description from first model, retrying with gpt-4.1-2025-04-14');
+          const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4.1-2025-04-14',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert audio description writer creating descriptions for ${contentType} content in ${language}. Generate one concise, vivid sentence only.`
+                },
+                {
+                  role: 'user',
+                  content: prompt + '\nReturn only the sentence, no extra text.'
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 120,
+            }),
+          });
+
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            description = (retryData?.choices?.[0]?.message?.content || '').trim();
+          } else {
+            console.error('❌ Retry model error:', retryRes.status);
+          }
+        }
+
+        // Last-resort non-empty fallback to prevent blanks in UI
+        if (!description) {
+          description = language === 'es' 
+            ? 'Pausa visual breve en pantalla.' 
+            : 'Brief visual pause on screen.';
+        }
 
         // Estimate voice style based on content
         const voiceStyle = determineVoiceStyle(description, contentType);
@@ -103,7 +144,6 @@ serve(async (req) => {
         });
 
         console.log(`✅ Generated description for ${request.timestamp}s: "${description.substring(0, 50)}..."`);
-        
       } catch (error) {
         console.error(`❌ Failed to generate description for timestamp ${request.timestamp}:`, error);
       }
