@@ -62,6 +62,8 @@ serve(async (req) => {
         // Create context-aware prompt for visual description
         const prompt = createVisualDescriptionPrompt(request, language, contentType);
         
+        let messages;
+        
         // If frames are provided, use GPT-5 with vision for accurate analysis
         if (request.frameDataUrls && request.frameDataUrls.length > 0) {
           const imageContents = request.frameDataUrls.map(dataUrl => ({
@@ -69,21 +71,21 @@ serve(async (req) => {
             image_url: { url: dataUrl }
           }));
 
-          messages.push({
+          messages = [{
             role: "user",
             content: [
               { type: "text", text: prompt },
               ...imageContents
             ]
-          });
+          }];
           
           console.log(`🖼️ Using GPT-5 vision with ${request.frameDataUrls.length} frames for timestamp ${request.timestamp}s`);
         } else {
           // Text-only mode
-          messages.push({
+          messages = [{
             role: 'user',
             content: prompt
-          });
+          }];
           
           console.log(`📝 Using text-only mode for timestamp ${request.timestamp}s`);
         }
@@ -127,14 +129,6 @@ serve(async (req) => {
             }
           }
         }
-
-        if (!response.ok) {
-          console.error(`❌ OpenAI API error for timestamp ${request.timestamp}:`, response.status);
-          continue;
-        }
-
-        const data = await response.json();
-        let description = (data?.choices?.[0]?.message?.content || '').trim();
 
         // Fallback: retry with a more reliable model if empty
         if (!description) {
@@ -294,6 +288,14 @@ function createVisualDescriptionPrompt(request: AnalysisRequest, language: strin
   const hasFrames = request.frameDataUrls && request.frameDataUrls.length > 0;
   const contextText = request.surroundingText ? `\n\nNearby dialogue context: "${request.surroundingText}"` : '';
   
+  const languageInstructions = {
+    es: 'Provide the description in clear, natural Spanish.',
+    fr: 'Provide the description in clear, natural French.',
+    de: 'Provide the description in clear, natural German.',
+    it: 'Provide the description in clear, natural Italian.',
+    en: 'Provide the description in clear, natural English.'
+  };
+  
   if (hasFrames) {
     // Frame-based analysis prompt
     return `You are analyzing video frames from timestamp ${request.timestamp.toFixed(1)} seconds. 
@@ -304,6 +306,7 @@ CRITICAL INSTRUCTIONS:
 3. If frames show unclear/dark/blurred content, generate a brief neutral description
 4. Be specific about visible elements: people, objects, actions, settings
 5. Keep description under 20 words for ${request.duration.toFixed(1)}s duration
+6. ${languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.en}
 
 Your task: Create a factual audio description based solely on what's visible in these frames.${contextText}
 
@@ -326,32 +329,11 @@ Requirements:
 - Be general and supportive of the content theme
 - Avoid assumptions about specific unseen details
 - Focus on atmospheric or transitional elements
+- ${languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.en}
 
 Generate only the audio description text, no additional formatting or explanation.`;
   }
 }
-  
-  const languageInstructions = {
-    es: 'Provide the description in clear, natural Spanish.',
-    fr: 'Provide the description in clear, natural French.',
-    de: 'Provide the description in clear, natural German.',
-    it: 'Provide the description in clear, natural Italian.',
-    en: 'Provide the description in clear, natural English.'
-  };
-
-  return `${prompt}
-
-Duration available: ${request.duration.toFixed(1)} seconds
-Gap timing: ${request.gapStart.toFixed(1)}s to ${request.gapEnd.toFixed(1)}s${contextText}
-
-Requirements:
-- Keep description under 25 words for ${request.duration.toFixed(1)}s duration
-- Be specific and vivid, not generic
-- Focus on actionable visual information
-- Avoid assumptions about dialogue content
-- ${languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.en}
-
-Generate only the audio description text, no additional formatting or explanation.`;
 }
 
 function determineVoiceStyle(description: string, contentType: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' {
