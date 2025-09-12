@@ -385,116 +385,153 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      word.emphasis
                    );
                    
-                   // Progressive word highlighting states
-                   const WORD_TOLERANCE = 0.02; // 20ms precision for better sync
-                   const isWordActive = currentTime >= (word.startTime - WORD_TOLERANCE) && 
-                                       currentTime <= (word.endTime + WORD_TOLERANCE);
-                   const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_TOLERANCE);
-                   const isUpcoming = currentTime < (word.startTime - WORD_TOLERANCE);
+                   // Ultra-precise word timing with smaller tolerance (like axs.so)
+                   const WORD_PRECISION = 0.01; // 10ms precision for perfect sync
+                   const isWordActive = currentTime >= (word.startTime - WORD_PRECISION) && 
+                                       currentTime <= (word.endTime + WORD_PRECISION);
+                   const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
+                   const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
                    
-                   // Calculate progressive highlight - words fade from gray to full color as spoken
-                   let wordColor: string;
-                   let wordOpacity = 1;
+                   // Progressive word state system (inspired by axs.so approach)
+                   let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
+                   if (wordHasBeenSpoken) wordState = 'spoken';
+                   else if (isWordActive) wordState = 'active';
                    
-                   if (wordHasBeenSpoken) {
-                     // Fully spoken: full speaker color with slight fade
-                     wordColor = activeCaption.speakerColor || speakerColor;
-                     wordOpacity = 0.85;
-                   } else if (isWordActive) {
-                     // Currently speaking: bright full color with glow
-                     wordColor = activeCaption.speakerColor || speakerColor;
-                     wordOpacity = 1;
-                   } else if (isUpcoming) {
-                     // Not yet spoken: dim gray for read-ahead
-                     wordColor = 'hsl(var(--muted-foreground))';
-                     wordOpacity = 0.6;
-                   } else {
-                     // Default fallback
-                     wordColor = CI_COLORS.readahead;
-                     wordOpacity = 0.7;
-                   }
+                   // Color system based on word state
+                   const getWordColorByState = () => {
+                     switch (wordState) {
+                       case 'active':
+                         return activeCaption.speakerColor || speakerColor; // Full bright color
+                       case 'spoken':
+                         return `color-mix(in srgb, ${activeCaption.speakerColor || speakerColor} 70%, hsl(var(--muted-foreground)))`; // Slightly dimmed
+                       case 'upcoming':
+                         return 'hsl(var(--muted-foreground))'; // Gray for unspoken words
+                       default:
+                         return CI_COLORS.readahead;
+                     }
+                   };
                    
-                   // Enhanced vocal intensity styling
-                   const getIntensityWordStyle = (): React.CSSProperties => {
+                   // Enhanced vocal intensity styling with word-level precision
+                   const getWordIntensityStyle = (): React.CSSProperties => {
                      const baseStyle: React.CSSProperties = {
-                       transition: 'all 0.15s ease-out',
-                       willChange: 'transform, opacity, color'
+                       transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth but quick transitions
+                       willChange: 'transform, opacity, color, font-size',
+                       transformOrigin: 'center bottom' // Jump from bottom like axs.so
                      };
                      
+                     // Apply vocal intensity effects
                      if (activeCaption.vocal_intensity) {
                        switch (activeCaption.vocal_intensity) {
                          case 'whisper':
                            return {
                              ...baseStyle,
-                             fontSize: `${wordFontSize * 0.8}px`,
+                             fontSize: `${wordFontSize * 0.75}px`,
                              fontWeight: 300,
-                             opacity: wordOpacity * 0.8,
+                             opacity: wordState === 'active' ? 0.9 : 0.7,
                              fontStyle: 'italic',
-                             letterSpacing: '-0.02em'
+                             letterSpacing: '-0.03em',
+                             transform: wordState === 'active' ? 'scale(1.05) translateY(-1px)' : 'scale(1)'
                            };
                          case 'yell':
                            return {
                              ...baseStyle,
-                             fontSize: `${wordFontSize * 1.25}px`,
-                             fontWeight: 600,
+                             fontSize: `${wordFontSize * 1.3}px`,
+                             fontWeight: 700,
                              letterSpacing: '0.05em',
-                             textShadow: isWordActive ? 
-                               `0 0 8px ${wordColor}40, 0 2px 4px rgba(0,0,0,0.3)` : 
-                               '0 1px 2px rgba(0,0,0,0.2)'
+                             textShadow: wordState === 'active' ? 
+                               `0 0 12px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.3)` : 
+                               '0 1px 2px rgba(0,0,0,0.2)',
+                             transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
                            };
                          case 'shout':
                            return {
                              ...baseStyle,
                              fontSize: `${wordFontSize * 1.5}px`,
-                             fontWeight: 700,
+                             fontWeight: 800,
                              textTransform: 'uppercase' as const,
                              letterSpacing: '0.1em',
-                             textShadow: isWordActive ? 
-                               `0 0 12px ${wordColor}60, 0 0 6px ${wordColor}40, 0 2px 6px rgba(0,0,0,0.4)` : 
-                               '0 2px 4px rgba(0,0,0,0.3)'
+                             textShadow: wordState === 'active' ? 
+                               `0 0 16px ${getWordColorByState()}60, 0 0 8px ${getWordColorByState()}40, 0 3px 6px rgba(0,0,0,0.4)` : 
+                               '0 2px 4px rgba(0,0,0,0.3)',
+                             transform: wordState === 'active' ? 'scale(1.12) translateY(-4px)' : 'scale(1)',
+                             animation: wordState === 'active' ? 'pulse 0.6s ease-out' : undefined
                            };
                          default:
-                           return baseStyle;
+                           return {
+                             ...baseStyle,
+                             transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                           };
                        }
                      }
                      
-                     // Fallback to manual emphasis
+                     // Fallback to manual emphasis with jump effects
                      if (word.emphasis) {
                        switch (word.emphasis) {
                          case 'quiet':
-                           return { ...baseStyle, fontSize: `${wordFontSize * 0.8}px`, fontWeight: 300, fontStyle: 'italic' };
+                           return { 
+                             ...baseStyle, 
+                             fontSize: `${wordFontSize * 0.8}px`, 
+                             fontWeight: 300, 
+                             fontStyle: 'italic',
+                             transform: wordState === 'active' ? 'scale(1.05) translateY(-1px)' : 'scale(1)'
+                           };
                          case 'loud':
-                           return { ...baseStyle, fontSize: `${wordFontSize * 1.2}px`, fontWeight: 600 };
+                           return { 
+                             ...baseStyle, 
+                             fontSize: `${wordFontSize * 1.25}px`, 
+                             fontWeight: 600,
+                             transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
+                           };
                          case 'yelling':
                            return { 
                              ...baseStyle, 
                              fontSize: `${wordFontSize * 1.4}px`, 
                              fontWeight: 700, 
-                             textTransform: 'uppercase' as const 
+                             textTransform: 'uppercase' as const,
+                             transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)'
                            };
                          default:
-                           return baseStyle;
+                           return {
+                             ...baseStyle,
+                             transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                           };
                        }
                      }
                      
-                     return baseStyle;
+                     // Default state with subtle jump
+                     return {
+                       ...baseStyle,
+                       transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                     };
                    };
                    
                     return (
                       <span
                         key={`${activeCaption.startTime}-${index}`}
-                        className="inline-block"
+                        className={`inline-block caption-word word-${wordState}`}
+                        data-wid={index}
+                        data-start={word.startTime}
+                        data-end={word.endTime}
                         style={{
-                         color: wordColor,
-                         opacity: wordOpacity,
-                         marginRight: '0.25em',
+                         color: getWordColorByState(),
+                         marginRight: '0.3em',
                          fontSize: `${wordFontSize}px`,
+                         cursor: 'default',
                          ...wordPitchStyle,
-                         ...getIntensityWordStyle(),
-                         // Active word gets subtle highlight pulse
-                         ...(isWordActive && {
-                           textShadow: `0 0 8px ${wordColor}30`,
-                           transform: 'scale(1.02)',
+                         ...getWordIntensityStyle(),
+                         // Active word gets enhanced glow and jump
+                         ...(wordState === 'active' && {
+                           textShadow: `0 0 10px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.2)`,
+                           zIndex: 10,
+                           position: 'relative'
+                         }),
+                         // Spoken words get subtle persistence
+                         ...(wordState === 'spoken' && {
+                           opacity: 0.85
+                         }),
+                         // Upcoming words are dimmed but visible
+                         ...(wordState === 'upcoming' && {
+                           opacity: 0.6
                          })
                        }}
                       >

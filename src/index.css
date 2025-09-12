@@ -157,6 +157,54 @@ Focused on high contrast, readable typography, and inclusive design.
   .cwi-support-orange { color: hsl(var(--cwi-support-orange)); }
   .cwi-support-cyan { color: hsl(var(--cwi-support-cyan)); }
   .cwi-support-pink { color: hsl(var(--cwi-support-pink)); }
+
+  /* Enhanced word-level caption animations (inspired by axs.so) */
+  @keyframes word-jump {
+    0% { transform: scale(1) translateY(0); }
+    50% { transform: scale(1.05) translateY(-3px); }
+    100% { transform: scale(1.02) translateY(-2px); }
+  }
+
+  @keyframes word-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes word-glow {
+    0% { text-shadow: 0 0 5px currentColor; }
+    50% { text-shadow: 0 0 12px currentColor, 0 0 20px currentColor; }
+    100% { text-shadow: 0 0 8px currentColor; }
+  }
+
+  /* Word state classes for synchronized caption highlighting */
+  .caption-word {
+    display: inline-block;
+    transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center bottom;
+    will-change: transform, color, text-shadow;
+  }
+
+  .word-active {
+    animation: word-jump 0.3s ease-out;
+  }
+
+  .word-active.intensity-yell {
+    animation: word-jump 0.3s ease-out, word-glow 0.6s ease-out;
+  }
+
+  .word-active.intensity-shout {
+    animation: word-jump 0.4s ease-out, word-pulse 0.6s ease-out;
+  }
+
+  .word-upcoming {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+
+  .word-spoken {
+    opacity: 0.85;
+    transform: scale(1);
+  }
 }
 
 @layer base {
