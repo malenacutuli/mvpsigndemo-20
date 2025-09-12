@@ -334,7 +334,6 @@ Requirements:
 Generate only the audio description text, no additional formatting or explanation.`;
   }
 }
-}
 
 function determineVoiceStyle(description: string, contentType: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' {
   const text = description.toLowerCase();
