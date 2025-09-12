@@ -275,12 +275,31 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   if (!activeCaption) return null;
 
   // Enhanced word timing and highlighting logic
-  const TIMING_TOLERANCE = 0.05; // 50ms tolerance for precise sync
+  const TIMING_TOLERANCE = 0.01; // 10ms tolerance for ultra-precise sync
   const activeWordIndex = activeCaption.words?.findIndex(word => 
     currentTime >= (word.startTime - TIMING_TOLERANCE) && 
     currentTime <= (word.endTime + TIMING_TOLERANCE)
   ) ?? -1;
   const activeWord = activeWordIndex >= 0 ? activeCaption.words?.[activeWordIndex] : undefined;
+
+  // Debug word timing for development
+  if (activeCaption.words && activeCaption.words.length > 0) {
+    console.log('⏰ Word timing debug:', {
+      currentTime: currentTime.toFixed(3),
+      activeWordIndex,
+      totalWords: activeCaption.words.length,
+      activeWord: activeWord ? {
+        text: activeWord.text,
+        start: activeWord.startTime?.toFixed(3),
+        end: activeWord.endTime?.toFixed(3)
+      } : null,
+      segment: {
+        text: activeCaption.text.substring(0, 30) + '...',
+        start: activeCaption.startTime.toFixed(3),
+        end: activeCaption.endTime.toFixed(3)
+      }
+    });
+  }
 
   const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors);
   const volume = (activeCaption as any)?.volume || 50;
@@ -330,7 +349,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             background: 'none',
             padding: 0,
             margin: 0,
-          })
+          }),
+          // Enhanced layout containment for smooth animations
+          contain: 'layout style paint',
+          willChange: 'contents'
         }}
       >
         {/* Speaker name label - only show for dialogue, not sound effects or music */}
@@ -508,7 +530,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     return (
                       <span
                         key={`${activeCaption.startTime}-${index}`}
-                        className={`inline-block caption-word word-${wordState}`}
+                        className={`inline-block caption-word word-${wordState} ${
+                          activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''
+                        }`}
                         data-wid={index}
                         data-start={word.startTime}
                         data-end={word.endTime}

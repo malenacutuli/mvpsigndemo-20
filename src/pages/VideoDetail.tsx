@@ -44,7 +44,6 @@ const VideoDetail = () => {
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [captions, setCaptions] = useState<CaptionSegment[] | null>(null);
   const [showEmbedSettings, setShowEmbedSettings] = useState(false);
   
   // Voice and ASL Avatar options for accessibility
@@ -131,9 +130,8 @@ const VideoDetail = () => {
         console.warn('⚠️ No storage path found for video');
       }
       
-      // Load existing captions/transcripts for this video
-      console.log('📝 Loading transcripts...');
-      await loadVideoTranscripts(data.id);
+      // Load existing captions/transcripts for this video - Let EnhancedVideoPlayer handle this
+      console.log('📝 Captions will be loaded by EnhancedVideoPlayer...');
     } catch (error) {
       console.error('❌ Error fetching video:', error);
     } finally {
@@ -142,73 +140,7 @@ const VideoDetail = () => {
     }
   };
 
-  const loadVideoTranscripts = async (videoId: string) => {
-    try {
-      console.log('🔍 VideoDetail - Loading transcripts for video:', videoId);
-      
-      // Load transcripts for any language - don't filter by language to ensure we find existing data
-      const { data: segments, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
-      
-      console.log('📊 VideoDetail - Database query result:', { 
-        error, 
-        segmentCount: segments?.length || 0,
-        languages: segments ? [...new Set(segments.map(s => s.language))] : [],
-        firstSegment: segments?.[0] ? {
-          text: segments[0].text?.substring(0, 50) + '...',
-          language: segments[0].language,
-          speaker: segments[0].speaker
-        } : null
-      });
-      
-      if (error) {
-        console.error('❌ VideoDetail - Error loading transcripts:', error);
-        return;
-      }
-      
-      if (segments && segments.length > 0) {
-        console.log('✅ VideoDetail - Found', segments.length, 'transcript segments in languages:', [...new Set(segments.map(s => s.language))]);
-        
-        // Convert database segments to CaptionSegment format
-        const captionSegments: CaptionSegment[] = segments.map(segment => {
-          const words = segment.text.split(' ').map((word, index, arr) => {
-            const duration = segment.end_time - segment.start_time;
-            const wordDuration = duration / arr.length;
-            return {
-              text: word,
-              startTime: segment.start_time + (index * wordDuration),
-              endTime: segment.start_time + ((index + 1) * wordDuration),
-              emphasis: (segment.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-              pitch: (segment.pitch as 'normal' | 'high' | 'low') || 'normal',
-            };
-          });
-          
-          return {
-            text: segment.text,
-            speaker: segment.speaker || 'narrator' as any,
-            startTime: segment.start_time,
-            endTime: segment.end_time,
-            words,
-            volume: segment.emphasis === 'loud' ? 80 : segment.emphasis === 'quiet' ? 30 : 50,
-            pitch: segment.pitch === 'high' ? 200 : segment.pitch === 'low' ? 120 : 160,
-            type: 'dialogue' as const,
-            isOffCamera: segment.is_off_camera || false,
-            speakerColor: segment.speaker_color || '#3B82F6',
-          };
-        });
-        
-        setCaptions(captionSegments);
-        console.log('✅ VideoDetail - Loaded captions for video:', captionSegments.length, 'segments');
-      } else {
-        console.log('ℹ️ VideoDetail - No transcripts found for video:', videoId);
-      }
-    } catch (error) {
-      console.error('❌ VideoDetail - Error loading video transcripts:', error);
-    }
-  };
+  // Removed loadVideoTranscripts - EnhancedVideoPlayer handles transcript loading
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "Unknown";
