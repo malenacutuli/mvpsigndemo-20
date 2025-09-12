@@ -25,58 +25,22 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
-    const { segments, contentType, language } = await req.json();
-
-    if (!Array.isArray(segments) || segments.length === 0) {
-      return new Response(JSON.stringify({ error: "'segments' array is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    const { segments, contentType } = await req.json();
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "OPENAI_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    // Trim to a reasonable payload size
-    const compact = (segments as InputSegment[]).slice(0, 200).map(s => ({
-      text: String(s.text || "").slice(0, 500),
-      startTime: Number(s.startTime || 0),
-      endTime: Number(s.endTime || (Number(s.startTime || 0) + 2)),
-    }));
+    const system = `You are generating Audio Descriptions (AD) for blind and low-vision users. 
+- Describe only visual context that is NOT already spoken in dialogue.
+- Be creative but concise - enhance storytelling, not overwhelm.
+- Use cinematic storytelling language like narrating a podcast or radio play.
+- Focus on emotions, setting, and atmosphere, not just physical movements.
+- Keep each description within its time window [startTime, endTime].
+- Return ONLY valid JSON array with fields: text, startTime, endTime, voiceStyle.
+- voiceStyle must be one of: passionate, warm, authoritative, encouraging.
 
-    const system = `You are an award-winning audio describer crafting cinematic, immersive descriptions for blind and low-vision audiences.
-Core principles:
-- Describe only meaningful visual information not already conveyed by dialogue.
-- Evoke mood, emotion, action, setting, and camera movement; write like a skilled novelist while staying clear and concrete.
-- Present tense. Do not say "we see" or "on screen"—describe directly.
-- Keep each description concise (typically 4–18 words) and impactful; vary rhythm across items.
-- Include emotional cues (gasp, laughter, crying), atmosphere (music, crowd, weather), and key gestures or expressions.
-- Never duplicate spoken lines or spoil surprises before they occur. Only summarize on-screen text if essential for comprehension.
-Output format (strict JSON array only): [{ "text": string, "voiceStyle": "passionate" | "warm" | "authoritative" | "encouraging" }]
-Write all output in the target language provided.`;
-
-    const user = {
-      role: "user",
-      content: JSON.stringify({
-        contentType: contentType || "education",
-        language: language || "en",
-        guidance: "Propose 6–12 vivid, cinematic audio descriptions that would naturally fit between spoken segments. Do not include time fields; focus on rich, concise descriptions only.",
-        segments: compact,
-      }),
-    } as const;
+STYLE EXAMPLES:
+- Instead of "The man picks up a cup" → "John pauses, his hand trembling as he lifts the chipped coffee mug, bracing himself"
+- Instead of "A car drives down the street" → "The sleek vehicle glides through rain-soaked city streets, headlights cutting through evening mist"`;
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -88,53 +52,30 @@ Write all output in the target language provided.`;
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: system },
-          user,
-          { role: "user", content: "Return ONLY the JSON array of objects with fields: text, voiceStyle. No prose, no backticks." },
+          { role: "user", content: JSON.stringify({ contentType: contentType || "education", segments }) }
         ],
-        temperature: 0.9,
+        temperature: 0.2,
       }),
     });
 
-    if (!res.ok) {
-      const txt = await res.text();
-      return new Response(JSON.stringify({ error: "OpenAI error", details: txt }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content || "";
-
-    // Attempt to parse JSON (strip markdown fences if present)
-    const jsonStr = (() => {
-      const match = content.match(/```json\n([\s\S]*?)\n```/);
-      if (match) return match[1];
-      return content.trim();
-    })();
-
-    let parsed: OutputDescription[] = [];
+    
+    // Parse JSON response
+    let parsed = [];
     try {
-      const arr = JSON.parse(jsonStr);
-      if (Array.isArray(arr)) parsed = arr as OutputDescription[];
+      const jsonStr = content.match(/```json\n([\s\S]*?)\n```/)?.[1] || content.trim();
+      parsed = JSON.parse(jsonStr);
     } catch (_) {
-      // fallback: return empty list
       parsed = [];
     }
 
-    // Basic sanitization
-    const descriptions = parsed
-      .filter(d => d && typeof d.text === "string")
-      .map(d => ({
-        text: d.text.slice(0, 400),
-        // Times are intentionally set to 0; the client schedules into safe non-dialogue gaps
-        startTime: 0,
-        endTime: 0,
-        voiceStyle: ((): OutputDescription["voiceStyle"] => {
-          const v = String(d.voiceStyle || '').toLowerCase();
-          return (v === 'passionate' || v === 'warm' || v === 'authoritative' || v === 'encouraging') ? v as any : 'warm';
-        })(),
-      }));
+    const descriptions = parsed.map(d => ({
+      text: d.text.slice(0, 400),
+      startTime: Math.max(0, Number(d.startTime || 0)),
+      endTime: Math.max(Number(d.startTime || 0), Number(d.endTime || 0)),
+      voiceStyle: ['passionate', 'warm', 'authoritative', 'encouraging'].includes(d.voiceStyle) ? d.voiceStyle : 'warm',
+    }));
 
     return new Response(JSON.stringify({ descriptions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
