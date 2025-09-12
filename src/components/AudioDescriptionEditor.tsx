@@ -37,6 +37,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   transcriptSegments = [],
   onDescriptionsUpdate
 }) => {
+  console.log('🎬 AudioDescriptionEditor rendered with:', {
+    videoId,
+    currentLanguage,
+    contentType,
+    transcriptSegmentsCount: transcriptSegments?.length || 0,
+    transcriptSegments: transcriptSegments?.slice(0, 2) // Show first 2 for debugging
+  });
   const [descriptions, setDescriptions] = useState<AudioDescriptionSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -171,6 +178,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   };
 
   const generateAIDescriptions = async () => {
+    console.log('🎬 Generate AI Descriptions clicked!');
+    console.log('📝 transcriptSegments:', transcriptSegments);
+    console.log('📊 transcriptSegments length:', transcriptSegments?.length || 0);
+    
     if (!transcriptSegments || transcriptSegments.length === 0) {
       toast({
         title: "No transcript available",
@@ -181,6 +192,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }
 
     setIsGenerating(true);
+    console.log('🚀 Starting AI description generation...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-ad', {
         body: { 
@@ -190,6 +203,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           voiceOptions: nativeVoices // Include native voice options
         }
       });
+
+      console.log('📨 Edge function response:', { data, error });
 
       if (error) throw new Error(error.message || 'Audio description generation failed');
 
@@ -202,8 +217,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           voiceStyle: desc.voiceStyle || 'warm'
         }));
 
+        console.log('🎯 Generated descriptions:', aiDescriptions);
+
         // Perfect sync: schedule into non-dialogue gaps to avoid overlap with speakers
         const scheduled = scheduleIntoGaps(aiDescriptions, transcriptSegments);
+        
+        console.log('⏰ Scheduled descriptions:', scheduled);
 
         setDescriptions(scheduled);
         await saveDescriptions(scheduled); // Save to storage
