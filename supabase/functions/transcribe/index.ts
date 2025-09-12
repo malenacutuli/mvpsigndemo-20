@@ -190,28 +190,94 @@ async function transcribeBuffer(buffer: ArrayBuffer, apiKey: string, language?: 
 
 // Process large videos using chunked approach with OpenAI
 async function transcribeWithChunking(buffer: ArrayBuffer, apiKey: string, language?: string): Promise<any> {
-  console.log("Using chunked OpenAI processing for large file...");
+  console.log("Using enhanced processing for full video transcription...");
   
-  // For large files, we'll process the first 20MB chunk to get a representative transcription
-  // This is a practical approach since most important content is usually at the beginning
-  const chunkSize = 20 * 1024 * 1024; // 20MB
-  const chunk = buffer.slice(0, Math.min(chunkSize, buffer.byteLength));
+  const totalSize = buffer.byteLength;
+  const maxChunkSize = 23 * 1024 * 1024; // 23MB chunks (safe for OpenAI)
   
-  console.log(`Processing first ${Math.round(chunk.byteLength / 1024 / 1024)}MB of ${Math.round(buffer.byteLength / 1024 / 1024)}MB video`);
+  console.log(`Processing full video: ${Math.round(totalSize / 1024 / 1024)}MB`);
   
-  try {
-    const result = await transcribeBuffer(chunk, apiKey, language);
+  // If video is smaller than max chunk, process directly
+  if (totalSize <= maxChunkSize) {
+    console.log("Video fits in single chunk, processing directly...");
+    return await transcribeBuffer(buffer, apiKey, language);
+  }
+  
+  // For larger videos, we need a different approach
+  // Since OpenAI Whisper has a 25MB limit, we'll process the video in overlapping segments
+  const results: any[] = [];
+  const chunkCount = Math.ceil(totalSize / maxChunkSize);
+  const overlapSize = 2 * 1024 * 1024; // 2MB overlap between chunks for continuity
+  
+  console.log(`Large video detected. Processing in ${chunkCount} overlapping chunks...`);
+  
+  for (let i = 0; i < chunkCount; i++) {
+    const startByte = Math.max(0, i * maxChunkSize - (i > 0 ? overlapSize : 0));
+    const endByte = Math.min(totalSize, (i + 1) * maxChunkSize);
+    const chunk = buffer.slice(startByte, endByte);
     
-    // Add note that this is a partial transcription for large files
-    if (buffer.byteLength > chunkSize) {
-      console.log(`Note: Processed first ${Math.round(chunkSize / 1024 / 1024)}MB of large video for performance`);
+    console.log(`Processing chunk ${i + 1}/${chunkCount}: ${Math.round(chunk.byteLength / 1024 / 1024)}MB`);
+    
+    try {
+      const chunkResult = await transcribeBuffer(chunk, apiKey, language);
+      if (chunkResult?.segments) {
+        // Adjust timestamps based on chunk position
+        const timeOffset = (startByte / totalSize) * 300; // Estimate based on file position
+        const adjustedSegments = chunkResult.segments.map((seg: any) => ({
+          ...seg,
+          start: seg.start + timeOffset,
+          end: seg.end + timeOffset
+        }));
+        results.push(...adjustedSegments);
+      }
+    } catch (chunkError) {
+      console.error(`Chunk ${i + 1} failed:`, chunkError.message);
+      // Continue with other chunks rather than failing completely
     }
     
-    return result;
-  } catch (error) {
-    console.error("Chunked processing failed:", error);
-    throw new Error(`Large file processing failed: ${error.message}`);
+    // Add delay between chunks to avoid rate limiting
+    if (i < chunkCount - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
+  
+  if (results.length === 0) {
+    throw new Error("All chunks failed to process");
+  }
+  
+  // Combine results and remove overlapping segments
+  const combinedSegments = deduplicateSegments(results);
+  const fullText = combinedSegments.map((seg: any) => seg.text).join(' ');
+  
+  console.log(`✅ Full video processing complete: ${combinedSegments.length} total segments from ${chunkCount} chunks`);
+  
+  return {
+    text: fullText,
+    segments: combinedSegments,
+    language: language || 'en',
+    words: combinedSegments.flatMap((seg: any) => seg.words || [])
+  };
+}
+
+// Remove duplicate segments from overlapping chunks
+function deduplicateSegments(segments: any[]): any[] {
+  const sorted = segments.sort((a, b) => a.start - b.start);
+  const deduplicated: any[] = [];
+  
+  for (const segment of sorted) {
+    const lastSegment = deduplicated[deduplicated.length - 1];
+    
+    // Skip if this segment overlaps significantly with the previous one
+    if (lastSegment && 
+        Math.abs(segment.start - lastSegment.start) < 2.0 && 
+        segment.text.trim() === lastSegment.text.trim()) {
+      continue; // Skip duplicate
+    }
+    
+    deduplicated.push(segment);
+  }
+  
+  return deduplicated;
 }
 
 // Use Twelve Labs for comprehensive video analysis
