@@ -129,65 +129,74 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
     }
   };
 
-  const pollExportStatus = async (processId: string) => {
+  const pollExportStatus = (processId: string) => {
     const maxAttempts = 60; // 5 minutes with 5-second intervals
     let attempts = 0;
 
-    const poll = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('export-status', {
-          body: { processId, videoId }
-        });
+    return new Promise<void>((resolve, reject) => {
+      const poll = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('export-status', {
+            body: { processId, videoId }
+          });
 
-        if (error) throw error;
+          if (error) throw error;
 
-        if (data.status === 'complete') {
-          setDownloadUrl(data.downloadUrl);
-          setExportProgress({ stage: 'complete', progress: 100, message: 'Export complete!' });
-          toast.success('Accessible video exported successfully!');
-          onExportComplete?.(data.downloadUrl);
-          return;
+          if (data.status === 'complete') {
+            setDownloadUrl(data.downloadUrl);
+            setExportProgress({ stage: 'complete', progress: 100, message: 'Export complete!' });
+            toast.success('Accessible video exported successfully!');
+            onExportComplete?.(data.downloadUrl);
+            resolve();
+            return;
+          }
+
+          if (data.status === 'failed') {
+            reject(new Error(data.error || 'Export failed'));
+            return;
+          }
+
+          // Update progress
+          const progress = Math.min(90, 30 + (attempts * 2));
+          setExportProgress({ 
+            stage: 'processing', 
+            progress, 
+            message: `Burning captions into video... ${Math.round(progress)}%` 
+          });
+
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000); // Poll every 5 seconds
+          } else {
+            reject(new Error('Export timeout - please try again'));
+          }
+        } catch (error: any) {
+          console.error('❌ Polling failed:', error);
+          toast.error(`Export failed: ${error.message}`);
+          setExportProgress(null);
+          setIsExporting(false);
+          reject(error);
         }
+      };
 
-        if (data.status === 'failed') {
-          throw new Error(data.error || 'Export failed');
-        }
-
-        // Update progress
-        const progress = Math.min(90, 30 + (attempts * 2));
-        setExportProgress({ 
-          stage: 'processing', 
-          progress, 
-          message: `Burning captions into video... ${Math.round(progress)}%` 
-        });
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000); // Poll every 5 seconds
-        } else {
-          throw new Error('Export timeout - please try again');
-        }
-      } catch (error) {
-        console.error('❌ Polling failed:', error);
-        toast.error(`Export failed: ${error.message}`);
-        setExportProgress(null);
-        setIsExporting(false);
-      }
-    };
-
-    poll();
+      poll();
+    });
   };
 
   const handleDownload = () => {
     if (downloadUrl) {
+      // Open in a new tab to make the file easy to find
+      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+
+      // Also trigger a download when possible
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = `accessible-video-${videoId}.mp4`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      toast.success('Download started!');
+
+      toast.success('Opening file in a new tab...');
     }
   };
 
@@ -245,12 +254,31 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
         )}
 
         {downloadUrl && !isExporting && (
-          <Alert>
-            <Download className="w-4 h-4" />
-            <AlertDescription>
-              Your video with burned-in captions is ready! No need to add subtitles when uploading to social media.
-            </AlertDescription>
-          </Alert>
+          <>
+            <Alert>
+              <Download className="w-4 h-4" />
+              <AlertDescription>
+                Your video with burned-in captions is ready! Click Download or open the link below.
+              </AlertDescription>
+            </Alert>
+            <div className="flex items-center gap-3">
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                Open in new tab
+              </a>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (downloadUrl) {
+                    navigator.clipboard.writeText(downloadUrl);
+                    toast.success('Link copied to clipboard');
+                  }
+                }}
+              >
+                Copy link
+              </Button>
+            </div>
+          </>
         )}
 
         <div className="flex gap-2">
