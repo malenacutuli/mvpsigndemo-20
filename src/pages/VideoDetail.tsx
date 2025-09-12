@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
 import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
+import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
@@ -45,6 +46,8 @@ const VideoDetail = () => {
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [showEmbedSettings, setShowEmbedSettings] = useState(false);
+  const [captions, setCaptions] = useState<CaptionSegment[]>([]);
+  const [characterColors, setCharacterColors] = useState<{ [key: string]: string }>({});
   
   // Voice and ASL Avatar options for accessibility
   const [selectedVoice] = useState<VoiceOption>({
@@ -130,8 +133,9 @@ const VideoDetail = () => {
         console.warn('⚠️ No storage path found for video');
       }
       
-      // Load existing captions/transcripts for this video - Let EnhancedVideoPlayer handle this
-      console.log('📝 Captions will be loaded by EnhancedVideoPlayer...');
+      // Load existing captions/transcripts for this video
+      console.log('📝 Loading captions for export functionality...');
+      await loadExistingCaptions();
     } catch (error) {
       console.error('❌ Error fetching video:', error);
     } finally {
@@ -140,7 +144,60 @@ const VideoDetail = () => {
     }
   };
 
-  // Removed loadVideoTranscripts - EnhancedVideoPlayer handles transcript loading
+  const loadExistingCaptions = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .select('*')
+        .eq('video_id', id)
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const captionSegments = data.map((seg, index) => ({
+          text: seg.text,
+          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          startTime: Number(seg.start_time),
+          endTime: Number(seg.end_time),
+          speakerColor: seg.speaker_color || getSpeakerColor(index),
+          words: seg.text.split(' ').map((word, i) => ({
+            text: word,
+            startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+            endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+            emphasis: 'normal' as const,
+            pitch: 'normal' as const,
+          })),
+          volume: 50,
+          pitch: 160,
+          type: 'dialogue' as const,
+          isOffCamera: seg.is_off_camera || false,
+        }));
+        
+        setCaptions(captionSegments);
+        
+        // Build character colors map
+        const colors = data.reduce((acc, seg) => {
+          if (seg.speaker && seg.speaker_color) {
+            acc[seg.speaker] = seg.speaker_color;
+          }
+          return acc;
+        }, {} as { [key: string]: string });
+        setCharacterColors(colors);
+        
+        console.log('✅ Loaded captions for export:', captionSegments.length, 'segments');
+      }
+    } catch (error) {
+      console.error('Error loading captions:', error);
+    }
+  };
+
+  const getSpeakerColor = (index: number) => {
+    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
+    return colors[index % colors.length];
+  };
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "Unknown";
@@ -320,6 +377,20 @@ const VideoDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Export Accessible Video */}
+          {captions.length > 0 && videoUrl && (
+            <AccessibleVideoExporter
+              videoUrl={videoUrl}
+              videoId={video.id}
+              captions={captions}
+              characterColors={characterColors}
+              currentLanguage={video.language}
+              onExportComplete={(downloadUrl) => {
+                console.log('✅ Export complete:', downloadUrl);
+              }}
+            />
+          )}
 
           {/* Embed Settings and Analytics */}
           {showEmbedSettings && (
