@@ -62,7 +62,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     console.log('💾 loadTranscriptSegments available:', typeof loadTranscriptSegments);
   }, [videoId, currentLanguage, loadTranscriptSegments]);
 
-  const handleTranscriptUpdate = (segments: CaptionSegment[], language: string) => {
+  const handleTranscriptUpdate = (segments: any[], language: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', language);
     console.log('🔍 ENHANCED PLAYER: First segment in handleTranscriptUpdate:', segments[0] ? {
       speaker: segments[0].speaker,
@@ -80,7 +80,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (onTranscriptUpdate) {
       onTranscriptUpdate(segments, language);
     }
-  };
   };
 
   const handleContentGenerated = (content: {

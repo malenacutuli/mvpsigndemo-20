@@ -240,6 +240,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   );
 
   console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
+  console.log('📊 Available captions count:', captions.length);
+  console.log('🔍 Caption time ranges:', captions.slice(0, 3).map(c => ({ 
+    start: c.startTime, 
+    end: c.endTime, 
+    text: c.text.substring(0, 20) + '...' 
+  })));
+  
   if (activeCaption) {
     console.log('🎯 Active caption details:', {
       startTime: activeCaption.startTime,
