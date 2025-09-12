@@ -16,6 +16,8 @@ import Embed from "./pages/Embed";
 import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import { Auth } from "./pages/Auth";
+import Explore from "./pages/Explore";
+import PublicVideo from "./pages/PublicVideo";
 
 const queryClient = new QueryClient();
 
@@ -27,9 +29,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <Routes>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/watch/:id" element={<PublicVideo />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
