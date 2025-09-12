@@ -41,7 +41,7 @@ serve(async (req) => {
     console.log('🎬 Starting Twelve Labs analysis for video:', videoId);
 
     // Use direct API calls instead of SDK for better Deno compatibility
-    const baseUrl = 'https://api.twelvelabs.io/v1.2';
+    const baseUrl = 'https://api.twelvelabs.io/v1.3';
 
     // Step 1: Create index for video analysis
     const indexResponse = await fetch(`${baseUrl}/indexes`, {
@@ -51,9 +51,10 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        engine_name: 'marengo2.6',
-        index_options: ['visual', 'conversation', 'text_in_video'],
         index_name: `video_analysis_${videoId}`,
+        models: [
+          { name: 'marengo2.6', options: ['visual', 'conversation', 'text_in_video'] }
+        ]
       }),
     });
 
@@ -66,27 +67,29 @@ serve(async (req) => {
     const indexId = indexData._id;
     console.log('✅ Created Twelve Labs index:', indexId);
 
-    // Step 2: Upload video for analysis
-    const uploadResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos`, {
+    // Step 2: Create video indexing task
+    const taskCreateResponse = await fetch(`${baseUrl}/tasks`, {
       method: 'POST',
       headers: {
         'x-api-key': twelveLabsApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: videoUrl,
-        language: language || 'en',
+        index_id: indexId,
+        video_url: videoUrl,
+        enable_video_stream: false
       }),
     });
 
-    if (!uploadResponse.ok) {
-      const error = await uploadResponse.text();
-      throw new Error(`Failed to upload video: ${error}`);
+    if (!taskCreateResponse.ok) {
+      const error = await taskCreateResponse.text();
+      throw new Error(`Failed to create indexing task: ${error}`);
     }
 
-    const uploadData = await uploadResponse.json();
-    const taskId = uploadData._id;
-    console.log('🎥 Video upload initiated, task ID:', taskId);
+    const taskData = await taskCreateResponse.json();
+    const taskId = taskData._id;
+    let videoId = taskData.video_id || null;
+    console.log('🎥 Indexing task created:', { taskId, videoId });
 
     // Step 3: Wait for video processing to complete
     let processingComplete = false;
@@ -108,6 +111,9 @@ serve(async (req) => {
         
         if (statusData.status === 'ready') {
           processingComplete = true;
+          if (!videoId && (statusData.video_id || statusData.videoId)) {
+            videoId = statusData.video_id || statusData.videoId;
+          }
         } else if (statusData.status === 'failed') {
           throw new Error(`Video processing failed: ${statusData.message || 'Unknown error'}`);
         }
@@ -120,8 +126,23 @@ serve(async (req) => {
       throw new Error('Video processing timeout');
     }
 
+    // Ensure we have the video_id
+    if (!videoId) {
+      const finalTaskResponse = await fetch(`${baseUrl}/tasks/${taskId}`, {
+        headers: {
+          'x-api-key': twelveLabsApiKey,
+        },
+      });
+      const finalTask = await finalTaskResponse.json();
+      videoId = finalTask.video_id || finalTask.videoId;
+    }
+
+    if (!videoId) {
+      throw new Error('Video ID could not be retrieved after processing');
+    }
+
     // Step 4: Get transcript with speaker identification
-    const transcriptResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${taskId}/conversation`, {
+    const transcriptResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${videoId}/conversation`, {
       headers: {
         'x-api-key': twelveLabsApiKey,
       },
@@ -146,7 +167,7 @@ serve(async (req) => {
         query: 'Visual storytelling elements including cinematography, lighting, facial expressions, body language, environmental details, actions, transitions, camera movements, set design, wardrobe, props, spatial relationships, emotional atmosphere, and dramatic tension for immersive audio description',
         search_options: ['visual'],
         filter: {
-          video_ids: [taskId]
+          video_ids: [videoId]
         },
         page_limit: 50,
         sort_option: 'score',
@@ -345,7 +366,7 @@ Guidelines for cinematic audio description:
 
 Create an audio description that makes the visual content come alive through words, helping listeners feel present in the scene.`;
 
-    const response = await fetch('https://api.twelvelabs.io/v1.2/generate', {
+    const response = await fetch('https://api.twelvelabs.io/v1.3/generate', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,

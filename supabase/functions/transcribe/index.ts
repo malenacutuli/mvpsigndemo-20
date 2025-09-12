@@ -292,29 +292,28 @@ async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, lang
   try {
     // Call the existing twelve-labs-analysis function
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const functionUrl = `${supabaseUrl}/functions/v1/twelve-labs-analysis`;
-    
-    const response = await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-      },
-      body: JSON.stringify({
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase credentials missing for function invocation');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
+      body: {
         videoUrl,
         videoId: videoId || 'transcribe-request',
         language: language || 'en'
-      }),
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`Twelve Labs request failed: ${response.status}`);
+    if (error) {
+      throw new Error(`Twelve Labs request failed: ${error.message || JSON.stringify(error)}`);
     }
 
-    const result = await response.json();
+    const result = data as any;
     
-    if (result.error) {
-      throw new Error(result.error);
+    if ((result as any).error) {
+      throw new Error((result as any).error);
     }
 
     // Convert Twelve Labs format to our expected format
