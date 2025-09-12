@@ -172,16 +172,17 @@ serve(async (req) => {
             confidence: intensityAnalysis.confidence
           });
         } else {
-          // Enhanced text-based analysis for intensity detection
+          // Enhanced text-based analysis for intensity detection with emotional expressions
           const text = segment.text || '';
           const textLower = text.toLowerCase();
           const textUpper = text.toUpperCase();
           
-          // Enhanced pattern detection
+          // Enhanced pattern detection including emotional expressions
           const patterns = {
             shout: /!{3,}|SHOUT|SCREAM|YELL|[A-Z\s]{15,}/i,
             yell: /!{2}|[A-Z\s]{8,}|[!?]{2,}|\b[A-Z]{4,}\b/,
             whisper: /\*whisper\*|\*quiet\*|\.{3,}|\bshh\b|\bpss\b|^\s*\([^)]*\)\s*$|quiet|soft/i,
+            emotional: /\*gasp\*|\*laugh\*|\*cry\*|\*sob\*|\*sigh\*|\*wow\*|\*oh\*|\*ah\*|laughter|crying|gasping|sobbing/i,
             normal: /[.!?]$/
           };
 
@@ -190,6 +191,16 @@ serve(async (req) => {
           const hasAllCapsWords = /\b[A-Z]{4,}\b/.test(text);
           const isLongAllCaps = text.length > 10 && text === textUpper && /[A-Z]/.test(text);
           const hasWhisperIndicators = patterns.whisper.test(text);
+          const hasEmotionalExpression = patterns.emotional.test(text);
+          
+          // Detect specific emotional expressions
+          let emotionalType = null;
+          if (hasEmotionalExpression) {
+            if (/gasp|wow|oh|ah/i.test(text)) emotionalType = 'surprise';
+            else if (/laugh|laughter/i.test(text)) emotionalType = 'laughter';
+            else if (/cry|sob|crying|sobbing/i.test(text)) emotionalType = 'crying';
+            else if (/sigh/i.test(text)) emotionalType = 'sigh';
+          }
           
           if (patterns.shout.test(text) || isLongAllCaps || hasMultipleExclamations) {
             intensityAnalysis = {
@@ -199,7 +210,8 @@ serve(async (req) => {
                 source: 'enhanced_text_analysis', 
                 reason: 'strong_emphasis_patterns',
                 hasMultipleExclamations, 
-                isLongAllCaps 
+                isLongAllCaps,
+                emotionalType 
               }
             };
           } else if (patterns.yell.test(text) || hasAllCapsWords) {
@@ -209,7 +221,8 @@ serve(async (req) => {
               metadata: { 
                 source: 'enhanced_text_analysis', 
                 reason: 'moderate_emphasis_patterns',
-                hasAllCapsWords 
+                hasAllCapsWords,
+                emotionalType 
               }
             };
           } else if (hasWhisperIndicators || (text.length < 15 && textLower.includes('quiet'))) {
@@ -219,7 +232,19 @@ serve(async (req) => {
               metadata: { 
                 source: 'enhanced_text_analysis', 
                 reason: 'whisper_indicators',
-                hasWhisperIndicators 
+                hasWhisperIndicators,
+                emotionalType 
+              }
+            };
+          } else if (hasEmotionalExpression) {
+            // Emotional expressions get special 'yell' treatment for visibility
+            intensityAnalysis = {
+              level: 'yell' as const,
+              confidence: 0.75,
+              metadata: { 
+                source: 'enhanced_text_analysis', 
+                reason: 'emotional_expression',
+                emotionalType 
               }
             };
           } else {
@@ -231,7 +256,8 @@ serve(async (req) => {
               metadata: { 
                 source: 'enhanced_text_analysis', 
                 reason: 'default_classification',
-                textLength: text.length 
+                textLength: text.length,
+                emotionalType 
               }
             };
           }
@@ -317,38 +343,42 @@ function getIntensityStyling(level: string, confidence: number) {
   switch (level) {
     case 'whisper':
       return {
-        fontSize: `${Math.max(0.7, 1 - baseIntensity * 0.4)}em`,
-        fontWeight: 'normal',
-        opacity: Math.max(0.6, 1 - baseIntensity * 0.3),
-        textTransform: 'none',
+        fontSize: `${Math.max(0.75, 1 - baseIntensity * 0.3)}em`,
+        fontWeight: '300',
+        opacity: Math.max(0.7, 1 - baseIntensity * 0.2),
+        // NO textTransform to preserve original case
         color: 'hsl(var(--muted-foreground))',
-        fontStyle: 'italic'
+        fontStyle: 'italic',
+        letterSpacing: '-0.01em'
       };
       
     case 'yell':
       return {
-        fontSize: `${1 + baseIntensity * 0.3}em`,
-        fontWeight: '600',
-        textTransform: 'none',
+        fontSize: `${1 + baseIntensity * 0.25}em`,
+        fontWeight: '700', // Bold for emphasis
+        // NO textTransform to preserve original case
         color: 'hsl(var(--primary))',
-        textShadow: '0 0 8px hsl(var(--primary) / 0.3)'
+        textShadow: '0 0 8px hsl(var(--primary) / 0.3)',
+        letterSpacing: '0.03em'
       };
       
     case 'shout':
       return {
-        fontSize: `${1 + baseIntensity * 0.5}em`,
-        fontWeight: '700',
-        textTransform: 'uppercase',
+        fontSize: `${1 + baseIntensity * 0.4}em`,
+        fontWeight: '800', // Extra bold
+        // NO textTransform - preserve original case for accessibility
         color: 'hsl(var(--destructive))',
-        textShadow: '0 0 12px hsl(var(--destructive) / 0.4)',
-        animation: 'pulse 1s infinite'
+        textShadow: '0 0 12px hsl(var(--destructive) / 0.4), 0 0 6px hsl(var(--destructive) / 0.2)',
+        letterSpacing: '0.05em',
+        // Use animation for attention instead of caps
+        animation: 'pulse 1.5s ease-in-out infinite'
       };
       
     default: // normal
       return {
         fontSize: '1em',
-        fontWeight: 'normal',
-        textTransform: 'none',
+        fontWeight: '400',
+        // NO textTransform to preserve original case
         color: 'hsl(var(--foreground))'
       };
   }

@@ -460,98 +460,128 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      }
                    };
                    
-                   // Enhanced vocal intensity styling with word-level precision
-                   const getWordIntensityStyle = (): React.CSSProperties => {
-                     const baseStyle: React.CSSProperties = {
-                       transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth but quick transitions
-                       willChange: 'transform, opacity, color, font-size',
-                       transformOrigin: 'center bottom' // Jump from bottom like axs.so
-                     };
-                     
-                     // Apply vocal intensity effects
-                     if (activeCaption.vocal_intensity) {
-                       switch (activeCaption.vocal_intensity) {
-                         case 'whisper':
-                           return {
-                             ...baseStyle,
-                             fontSize: `${wordFontSize * 0.75}px`,
-                             fontWeight: 300,
-                             opacity: wordState === 'active' ? 0.9 : 0.7,
-                             fontStyle: 'italic',
-                             letterSpacing: '-0.03em',
-                             transform: wordState === 'active' ? 'scale(1.05) translateY(-1px)' : 'scale(1)'
-                           };
-                         case 'yell':
-                           return {
-                             ...baseStyle,
-                             fontSize: `${wordFontSize * 1.3}px`,
-                             fontWeight: 700,
-                             letterSpacing: '0.05em',
-                             textShadow: wordState === 'active' ? 
-                               `0 0 12px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.3)` : 
-                               '0 1px 2px rgba(0,0,0,0.2)',
-                             transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
-                           };
-                          case 'shout':
+                    // Enhanced vocal intensity styling with word-level precision and emotional expressions
+                    const getWordIntensityStyle = (): React.CSSProperties => {
+                      const baseStyle: React.CSSProperties = {
+                        transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth but quick transitions
+                        willChange: 'transform, opacity, color, font-size',
+                        transformOrigin: 'center bottom' // Jump from bottom like axs.so
+                      };
+                      
+                      // Check for emotional expressions in the segment
+                      const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
+                      
+                      // Apply vocal intensity effects with emotional context
+                      if (activeCaption.vocal_intensity) {
+                        switch (activeCaption.vocal_intensity) {
+                          case 'whisper':
                             return {
                               ...baseStyle,
-                              fontSize: `${wordFontSize * 1.3}px`, // Reduced from 1.5x
-                              fontWeight: 800,
-                              letterSpacing: '0.08em',
-                              textShadow: wordState === 'active' ? 
-                                `0 0 16px ${getWordColorByState()}60, 0 0 8px ${getWordColorByState()}40, 0 3px 6px rgba(0,0,0,0.4)` : 
-                                '0 2px 4px rgba(0,0,0,0.3)',
-                              transform: wordState === 'active' ? 'scale(1.12) translateY(-4px)' : 'scale(1)',
-                              animation: wordState === 'active' ? 'pulse 0.6s ease-out' : undefined
+                              fontSize: `${wordFontSize * 0.8}px`,
+                              fontWeight: 300,
+                              opacity: wordState === 'active' ? 0.9 : 0.75,
+                              fontStyle: 'italic',
+                              letterSpacing: '-0.02em',
+                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)',
+                              filter: wordState === 'active' ? 'brightness(1.1)' : 'none'
                             };
-                         default:
-                           return {
-                             ...baseStyle,
-                             transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                           };
-                       }
-                     }
-                     
-                     // Fallback to manual emphasis with jump effects
-                     if (word.emphasis) {
-                       switch (word.emphasis) {
-                         case 'quiet':
-                           return { 
-                             ...baseStyle, 
-                             fontSize: `${wordFontSize * 0.8}px`, 
-                             fontWeight: 300, 
-                             fontStyle: 'italic',
-                             transform: wordState === 'active' ? 'scale(1.05) translateY(-1px)' : 'scale(1)'
-                           };
-                         case 'loud':
-                           return { 
-                             ...baseStyle, 
-                             fontSize: `${wordFontSize * 1.25}px`, 
-                             fontWeight: 600,
-                             transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
-                           };
+                          case 'yell':
+                            const isEmotional = emotionalType && ['surprise', 'laughter'].includes(emotionalType);
+                            return {
+                              ...baseStyle,
+                              fontSize: `${wordFontSize * (isEmotional ? 1.4 : 1.25)}px`,
+                              fontWeight: isEmotional ? 800 : 700,
+                              letterSpacing: isEmotional ? '0.08em' : '0.04em',
+                              textShadow: wordState === 'active' ? 
+                                `0 0 15px ${getWordColorByState()}50, 0 2px 4px rgba(0,0,0,0.3)` : 
+                                '0 1px 2px rgba(0,0,0,0.2)',
+                              transform: wordState === 'active' ? 
+                                `scale(${isEmotional ? 1.12 : 1.06}) translateY(-3px)` : 'scale(1)',
+                              // Add emotional visual cues
+                              ...(emotionalType === 'laughter' && {
+                                animation: wordState === 'active' ? 'bounce 0.6s ease-out' : undefined
+                              }),
+                              ...(emotionalType === 'surprise' && {
+                                filter: wordState === 'active' ? 'brightness(1.3) contrast(1.1)' : 'none'
+                              })
+                            };
+                          case 'shout':
+                            const isCrying = emotionalType === 'crying';
+                            return {
+                              ...baseStyle,
+                              fontSize: `${wordFontSize * (isCrying ? 1.1 : 1.35)}px`,
+                              fontWeight: 800,
+                              letterSpacing: isCrying ? '0.02em' : '0.06em',
+                              textShadow: wordState === 'active' ? 
+                                `0 0 20px ${getWordColorByState()}70, 0 0 10px ${getWordColorByState()}50, 0 3px 6px rgba(0,0,0,0.4)` : 
+                                '0 2px 4px rgba(0,0,0,0.3)',
+                              transform: wordState === 'active' ? 
+                                `scale(${isCrying ? 1.05 : 1.15}) translateY(-4px)` : 'scale(1)',
+                              animation: wordState === 'active' ? 
+                                (isCrying ? 'pulse 1.2s ease-in-out' : 'pulse 0.8s ease-out') : undefined,
+                              // Emotional context styling
+                              ...(isCrying && {
+                                filter: wordState === 'active' ? 'blur(0.5px) brightness(0.9)' : 'none',
+                                opacity: 0.9
+                              })
+                            };
+                          default:
+                            return {
+                              ...baseStyle,
+                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                            };
+                        }
+                      }
+                      
+                      // Fallback to manual emphasis with jump effects and emotional context
+                      if (word.emphasis) {
+                        const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
+                        switch (word.emphasis) {
+                          case 'quiet':
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 0.85}px`, 
+                              fontWeight: 300, 
+                              fontStyle: 'italic',
+                              opacity: 0.8,
+                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)'
+                            };
+                          case 'loud':
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 1.3}px`, 
+                              fontWeight: 700,
+                              letterSpacing: '0.02em',
+                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
+                              ...(emotionalType && {
+                                textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
+                              })
+                            };
                           case 'yelling':
                             return { 
                               ...baseStyle, 
-                              fontSize: `${wordFontSize * 1.25}px`, // Reduced from 1.4x
-                              fontWeight: 700, 
+                              fontSize: `${wordFontSize * 1.35}px`, // Increased from 1.25x
+                              fontWeight: 800, 
                               letterSpacing: '0.05em',
-                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)'
+                              textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none',
+                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)',
+                              // Keep original case - no uppercase transformation
+                              animation: wordState === 'active' && emotionalType ? 'pulse 0.8s ease-out' : undefined
                             };
-                         default:
-                           return {
-                             ...baseStyle,
-                             transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                           };
-                       }
-                     }
-                     
-                     // Default state with subtle jump
-                     return {
-                       ...baseStyle,
-                       transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                     };
-                   };
+                          default:
+                            return {
+                              ...baseStyle,
+                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                            };
+                        }
+                      }
+                      
+                      // Default state with subtle jump
+                      return {
+                        ...baseStyle,
+                        transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                      };
+                    };
                    
                      return (
                        <span
