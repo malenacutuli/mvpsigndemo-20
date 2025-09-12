@@ -92,11 +92,15 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
       setExportProgress({ stage: 'processing', progress: 30, message: 'Rendering captions into video...' });
 
       // Call edge function to process video
+      console.log('🚀 Starting export with data:', exportData);
       const { data, error } = await supabase.functions.invoke('export-accessible-video', {
         body: exportData
       });
 
+      console.log('📥 Export response:', { data, error });
+
       if (error) {
+        console.error('❌ Export function error:', error);
         throw new Error(error.message || 'Failed to export video');
       }
 
