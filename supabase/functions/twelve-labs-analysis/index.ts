@@ -53,7 +53,7 @@ serve(async (req) => {
       body: JSON.stringify({
         index_name: `video_analysis_${inputVideoId || Date.now()}`,
         models: [
-          { model_name: 'marengo2.6', options: ['visual', 'conversation', 'text_in_video'] }
+          { model_name: 'marengo2.6', model_options: ['audio', 'visual'] }
         ]
       }),
     });
@@ -164,7 +164,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: 'Visual storytelling elements including cinematography, lighting, facial expressions, body language, environmental details, actions, transitions, camera movements, set design, wardrobe, props, spatial relationships, emotional atmosphere, and dramatic tension for immersive audio description',
+        query_text: 'Visual storytelling elements including cinematography, lighting, facial expressions, body language, environmental details, actions, transitions, camera movements, set design, wardrobe, props, spatial relationships, emotional atmosphere, and dramatic tension for immersive audio description',
         search_options: ['visual'],
         filter: {
           video_ids: [videoId]
