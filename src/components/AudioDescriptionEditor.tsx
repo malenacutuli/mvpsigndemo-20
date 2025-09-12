@@ -209,11 +209,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('📊 transcriptSegments length:', transcriptSegments?.length || 0);
     
     if (!transcriptSegments || transcriptSegments.length === 0) {
-      toast({
-        title: "No transcript available",
-        description: "Please generate a transcript first to create audio descriptions",
-        variant: "destructive"
-      });
+      toast.error("No transcript available - Please generate a transcript first to create audio descriptions");
       return;
     }
 
@@ -223,31 +219,20 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       const contextualDescriptions = await generateContextualDescriptions(videoId, transcriptSegments);
       
       if (contextualDescriptions.length === 0) {
-        toast({
-          title: "No suitable gaps found",
-          description: "The video has continuous dialogue with no gaps for audio descriptions",
-          variant: "destructive"
-        });
+        toast.error("No suitable gaps found - The video has continuous dialogue with no gaps for audio descriptions");
         return;
       }
       
       setDescriptions(contextualDescriptions);
       onDescriptionsUpdate?.(contextualDescriptions);
       
-      toast({
-        title: "Audio descriptions generated!",
-        description: `Created ${contextualDescriptions.length} contextual descriptions synchronized with video content`
-      });
+      toast.success(`Audio descriptions generated! Created ${contextualDescriptions.length} contextual descriptions synchronized with video content`);
       
       console.log('✅ Generated contextual descriptions:', contextualDescriptions);
       
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast({
-        title: "Generation failed",
-        description: "Failed to generate audio descriptions. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Generation failed - Failed to generate audio descriptions. Please try again.");
     } finally {
       setIsGenerating(false);
     }
