@@ -78,9 +78,14 @@ interface CaptionsWithIntentionProps {
 }
 
 /**
- * Get speaker color based on character assignment or fallback to default colors
+ * Get speaker color with proper fallback to segment's assigned color
  */
-const getSpeakerColor = (speaker: string, customColors?: Record<string, string>): string => {
+const getSpeakerColor = (speaker: string, customColors?: Record<string, string>, segmentColor?: string): string => {
+  // Use segment's assigned color if available (from speaker identification)
+  if (segmentColor) {
+    return segmentColor;
+  }
+  
   // Use custom assigned color if available
   if (customColors && customColors[speaker]) {
     return customColors[speaker];
@@ -103,7 +108,7 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>)
 };
 
 /**
- * Calculate font size based on vocal intensity, volume, or emphasis
+ * Calculate font size based on vocal intensity, volume, or emphasis - REDUCED SIZES
  */
 const getIntonationBasedFontSize = (
   screenHeight: number, 
@@ -111,9 +116,9 @@ const getIntonationBasedFontSize = (
   volume?: number,
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'
 ): number => {
-  const baseSize = screenHeight * 0.04; // 4% baseline
-  const minSize = screenHeight * 0.025; // 2.5% for whispers
-  const maxSize = screenHeight * 0.07;  // 7% for yelling/shouting
+  const baseSize = Math.max(16, screenHeight * 0.022); // Reduced from 4% to 2.2%
+  const minSize = Math.max(12, screenHeight * 0.015);  // Reduced from 2.5% to 1.5%
+  const maxSize = Math.max(24, screenHeight * 0.035);  // Reduced from 7% to 3.5%
   
   // Priority 1: Use vocal intensity analysis if available
   if (vocalIntensity) {
@@ -121,9 +126,9 @@ const getIntonationBasedFontSize = (
       case 'whisper':
         return minSize;
       case 'yell':
-        return baseSize * 1.4;
+        return baseSize * 1.2; // Reduced from 1.4x
       case 'shout':
-        return maxSize;
+        return baseSize * 1.4; // Reduced from maxSize
       case 'normal':
       default:
         return baseSize;
@@ -136,9 +141,9 @@ const getIntonationBasedFontSize = (
       case 'quiet':
         return minSize;
       case 'loud':
-        return baseSize * 1.3;
+        return baseSize * 1.2; // Reduced from 1.3x
       case 'yelling':
-        return maxSize;
+        return baseSize * 1.4; // Reduced from maxSize
       case 'normal':
       default:
         return baseSize;
@@ -148,8 +153,8 @@ const getIntonationBasedFontSize = (
   // Fallback: Use volume level
   if (volume !== undefined) {
     if (volume <= 30) return minSize + ((volume / 30) * (baseSize - minSize));
-    if (volume >= 85) return maxSize;
-    return baseSize + (((volume - 30) / 55) * (maxSize - baseSize));
+    if (volume >= 85) return baseSize * 1.4; // Reduced from maxSize
+    return baseSize + (((volume - 30) / 55) * (baseSize * 1.4 - baseSize));
   }
   
   return baseSize;
@@ -323,7 +328,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors);
+  const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors, activeCaption.speakerColor);
   const volume = (activeCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 
@@ -356,14 +361,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       className="absolute bottom-20 left-0 right-0 flex items-center justify-center pointer-events-none px-4 z-40"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
-      {/* Captions Container Box */}
+      {/* Captions Container Box - REDUCED SIZE */}
       <div 
         className={`
-          relative max-w-3xl w-full text-center
-          ${isLoudBurst ? '' : 'bg-black/80'} 
-          ${isLoudBurst ? '' : 'rounded-md'} 
-          ${isLoudBurst ? '' : 'px-2 py-1'}
-          ${isLoudBurst ? '' : 'mx-2'}
+          relative max-w-2xl w-full text-center
+          ${isLoudBurst ? '' : 'bg-black/70'} 
+          ${isLoudBurst ? '' : 'rounded-lg'} 
+          ${isLoudBurst ? '' : 'px-3 py-2'}
+          ${isLoudBurst ? '' : 'mx-4'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -383,7 +388,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             className="text-xs font-medium mb-1 text-center"
             style={{ 
               color: activeCaption.speakerColor || speakerColor,
-              fontSize: `${Math.max(10, baseFontSize * 0.4)}px` // Smaller - 40% of main text
+              fontSize: `${Math.max(8, baseFontSize * 0.35)}px` // Smaller - 35% of main text
             }}
           >
             {activeCaption.speaker.toUpperCase()}
@@ -394,7 +399,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize, screenHeight * 0.06)}px`, // Increased cap for loud words
+            fontSize: `${Math.min(baseFontSize, screenHeight * 0.035)}px`, // Reduced cap for main text
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
@@ -487,19 +492,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                                '0 1px 2px rgba(0,0,0,0.2)',
                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
                            };
-                         case 'shout':
-                           return {
-                             ...baseStyle,
-                             fontSize: `${wordFontSize * 1.5}px`,
-                             fontWeight: 800,
-                             textTransform: 'uppercase' as const,
-                             letterSpacing: '0.1em',
-                             textShadow: wordState === 'active' ? 
-                               `0 0 16px ${getWordColorByState()}60, 0 0 8px ${getWordColorByState()}40, 0 3px 6px rgba(0,0,0,0.4)` : 
-                               '0 2px 4px rgba(0,0,0,0.3)',
-                             transform: wordState === 'active' ? 'scale(1.12) translateY(-4px)' : 'scale(1)',
-                             animation: wordState === 'active' ? 'pulse 0.6s ease-out' : undefined
-                           };
+                          case 'shout':
+                            return {
+                              ...baseStyle,
+                              fontSize: `${wordFontSize * 1.3}px`, // Reduced from 1.5x
+                              fontWeight: 800,
+                              letterSpacing: '0.08em',
+                              textShadow: wordState === 'active' ? 
+                                `0 0 16px ${getWordColorByState()}60, 0 0 8px ${getWordColorByState()}40, 0 3px 6px rgba(0,0,0,0.4)` : 
+                                '0 2px 4px rgba(0,0,0,0.3)',
+                              transform: wordState === 'active' ? 'scale(1.12) translateY(-4px)' : 'scale(1)',
+                              animation: wordState === 'active' ? 'pulse 0.6s ease-out' : undefined
+                            };
                          default:
                            return {
                              ...baseStyle,
@@ -526,14 +530,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                              fontWeight: 600,
                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)'
                            };
-                         case 'yelling':
-                           return { 
-                             ...baseStyle, 
-                             fontSize: `${wordFontSize * 1.4}px`, 
-                             fontWeight: 700, 
-                             textTransform: 'uppercase' as const,
-                             transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)'
-                           };
+                          case 'yelling':
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 1.25}px`, // Reduced from 1.4x
+                              fontWeight: 700, 
+                              letterSpacing: '0.05em',
+                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)'
+                            };
                          default:
                            return {
                              ...baseStyle,
