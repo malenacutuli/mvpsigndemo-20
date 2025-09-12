@@ -133,7 +133,7 @@ serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { video_id, segments, audio_data, sample_rate = 24000 } = body;
+    const { video_id, video_url, segments, audio_data, sample_rate = 24000 } = body;
 
     if (!video_id || !segments) {
       throw new Error('Missing required fields: video_id and segments');
@@ -141,7 +141,8 @@ serve(async (req) => {
 
     logStep('Processing segments', { 
       segmentCount: segments.length, 
-      hasAudioData: !!audio_data 
+      hasAudioData: !!audio_data,
+      hasVideoUrl: !!video_url
     });
 
     const analyzedSegments = [];
@@ -171,29 +172,67 @@ serve(async (req) => {
             confidence: intensityAnalysis.confidence
           });
         } else {
-          // Fallback: Analyze text patterns for intensity hints
+          // Enhanced text-based analysis for intensity detection
           const text = segment.text || '';
-          const hasExclamation = /[!]{2,}/.test(text);
-          const hasAllCaps = /[A-Z]{3,}/.test(text);
-          const hasQuestionMarks = /[?]{2,}/.test(text);
+          const textLower = text.toLowerCase();
+          const textUpper = text.toUpperCase();
           
-          if (hasExclamation || hasAllCaps) {
+          // Enhanced pattern detection
+          const patterns = {
+            shout: /!{3,}|SHOUT|SCREAM|YELL|[A-Z\s]{15,}/i,
+            yell: /!{2}|[A-Z\s]{8,}|[!?]{2,}|\b[A-Z]{4,}\b/,
+            whisper: /\*whisper\*|\*quiet\*|\.{3,}|\bshh\b|\bpss\b|^\s*\([^)]*\)\s*$|quiet|soft/i,
+            normal: /[.!?]$/
+          };
+
+          // Analyze text characteristics
+          const hasMultipleExclamations = (text.match(/!/g) || []).length >= 3;
+          const hasAllCapsWords = /\b[A-Z]{4,}\b/.test(text);
+          const isLongAllCaps = text.length > 10 && text === textUpper && /[A-Z]/.test(text);
+          const hasWhisperIndicators = patterns.whisper.test(text);
+          
+          if (patterns.shout.test(text) || isLongAllCaps || hasMultipleExclamations) {
+            intensityAnalysis = {
+              level: 'shout' as const,
+              confidence: 0.8,
+              metadata: { 
+                source: 'enhanced_text_analysis', 
+                reason: 'strong_emphasis_patterns',
+                hasMultipleExclamations, 
+                isLongAllCaps 
+              }
+            };
+          } else if (patterns.yell.test(text) || hasAllCapsWords) {
             intensityAnalysis = {
               level: 'yell' as const,
-              confidence: 0.6,
-              metadata: { source: 'text_analysis', hasExclamation, hasAllCaps }
+              confidence: 0.7,
+              metadata: { 
+                source: 'enhanced_text_analysis', 
+                reason: 'moderate_emphasis_patterns',
+                hasAllCapsWords 
+              }
             };
-          } else if (text.length < 20 && !hasQuestionMarks) {
+          } else if (hasWhisperIndicators || (text.length < 15 && textLower.includes('quiet'))) {
             intensityAnalysis = {
               level: 'whisper' as const,
-              confidence: 0.5,
-              metadata: { source: 'text_analysis', shortText: true }
+              confidence: 0.6,
+              metadata: { 
+                source: 'enhanced_text_analysis', 
+                reason: 'whisper_indicators',
+                hasWhisperIndicators 
+              }
             };
           } else {
+            // Default to normal with confidence based on text length and punctuation
+            const confidence = text.length > 50 ? 0.8 : 0.6;
             intensityAnalysis = {
               level: 'normal' as const,
-              confidence: 0.7,
-              metadata: { source: 'text_analysis' }
+              confidence,
+              metadata: { 
+                source: 'enhanced_text_analysis', 
+                reason: 'default_classification',
+                textLength: text.length 
+              }
             };
           }
         }

@@ -3,7 +3,7 @@ import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
-import { SpeakerIdentificationPanel } from './SpeakerIdentificationPanel';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -114,40 +114,62 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     });
   };
 
-  // Enhanced speaker identification using advanced analysis with AssemblyAI
+  // Enhanced speaker identification using AssemblyAI edge function
   const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
     
-    console.log('🎭 ENHANCED PLAYER: Starting advanced speaker analysis...');
+    console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
     
     try {
-      const speakerClusters = await analyzeSpeakers(segments, videoUrl, videoId);
-      console.log('🎯 ENHANCED PLAYER: Identified speakers:', speakerClusters.map(s => s.name));
+      // Use the speaker-diarization edge function directly
+      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
+        body: { 
+          video_id: videoId,
+          video_url: videoUrl,
+          force_reanalysis: false // Use cached results if available
+        }
+      });
+
+      if (error) throw error;
       
-      // Apply speaker assignments to segments
+      if (!data?.success || !data?.speakers) {
+        console.warn('⚠️ No speaker data returned from AssemblyAI');
+        return stabilizeSpeakerColors(segments);
+      }
+
+      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', data.speakers.length, 'speakers');
+      
+      // Apply speaker assignments from AssemblyAI results
+      const speakerMap = new Map();
+      data.speakers.forEach((speaker: any) => {
+        speakerMap.set(speaker.id, { name: speaker.name, color: speaker.color });
+      });
+
       const updatedSegments = segments.map(segment => {
-        const cluster = speakerClusters.find(c => 
-          c.segments.some(clusterSeg => 
-            Math.abs(clusterSeg.startTime - segment.startTime) < 0.1 &&
-            Math.abs(clusterSeg.endTime - segment.endTime) < 0.1
-          )
+        // Find matching segment in AssemblyAI results based on timing
+        const matchingSpeakerSegment = data.segments?.find((diarSegment: any) => 
+          Math.abs(diarSegment.startTime - segment.startTime) < 1.0 &&
+          Math.abs(diarSegment.endTime - segment.endTime) < 1.0
         );
         
-        if (cluster) {
+        if (matchingSpeakerSegment && speakerMap.has(matchingSpeakerSegment.speakerId)) {
+          const speakerInfo = speakerMap.get(matchingSpeakerSegment.speakerId);
           return {
             ...segment,
-            speaker: cluster.name,
-            speakerColor: cluster.color
+            speaker: speakerInfo.name,
+            speakerColor: speakerInfo.color
           };
         }
+        
         return segment;
       });
-      
+
+      console.log('✅ ENHANCED PLAYER: Applied speaker assignments to', updatedSegments.length, 'segments');
       return updatedSegments;
       
     } catch (error) {
-      console.error('❌ Advanced speaker analysis failed:', error);
-      return applyFallbackSpeakerColors(segments);
+      console.error('❌ AssemblyAI speaker analysis failed:', error);
+      return stabilizeSpeakerColors(segments);
     }
   };
 
@@ -346,7 +368,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               captionSegments = stabilizeSpeakerColors(captionSegments);
             }
             
-            // 2. Analyze vocal intensity ONCE if needed - prevent multiple calls
+            // 2. Analyze vocal intensity ONCE if needed with improved audio handling
             const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
             const hasIntensityKey = `intensity_analyzed_${videoId}_${currentLanguage}`;
             const alreadyAnalyzed = sessionStorage.getItem(hasIntensityKey);
@@ -354,29 +376,70 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             console.log('🔊 ENHANCED PLAYER: Needs intensity analysis:', needsIntensityAnalysis, 'Already analyzed:', !!alreadyAnalyzed);
             
             if (needsIntensityAnalysis && !isAnalyzingIntensity && !alreadyAnalyzed) {
-              console.log('🔊 ENHANCED PLAYER: Starting ONE-TIME vocal intensity analysis...');
+              console.log('🔊 ENHANCED PLAYER: Starting enhanced vocal intensity analysis with audio extraction...');
               sessionStorage.setItem(hasIntensityKey, 'true'); // Prevent duplicate calls
               try {
-                const analyzedSegments = await analyzeVocalIntensity(videoId, captionSegments);
-                captionSegments = analyzedSegments.map((analyzed, idx) => {
-                  const originalSegment = captionSegments[idx] || captionSegments.find(c => 
-                    Math.abs(c.startTime - (analyzed.start_time || 0)) < 0.1
-                  );
+                // Enhanced analysis with video URL for better audio processing
+                const { data, error } = await supabase.functions.invoke('analyze-vocal-intensity', {
+                  body: {
+                    video_id: videoId,
+                    video_url: videoSrc, // Provide video URL for audio extraction
+                    segments: captionSegments.map(seg => ({
+                      text: seg.text,
+                      start_time: seg.startTime,
+                      end_time: seg.endTime,
+                      speaker: seg.speaker
+                    }))
+                  }
+                });
+
+                if (error) throw error;
+
+                if (data?.success && data?.analyzed_segments) {
+                  captionSegments = captionSegments.map((segment, idx) => {
+                    const analyzedSegment = data.analyzed_segments[idx];
+                    if (analyzedSegment) {
+                      return {
+                        ...segment,
+                        vocal_intensity: analyzedSegment.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+                        intensity_confidence: analyzedSegment.intensity_confidence || 0.5,
+                        auto_styling: analyzedSegment.auto_styling
+                      };
+                    }
+                    return segment;
+                  });
+                  console.log('🔊 ENHANCED PLAYER: Enhanced vocal intensity analysis completed for', data.analyzed_segments.length, 'segments');
+                } else {
+                  console.warn('⚠️ Vocal intensity analysis returned no data');
+                }
+              } catch (error) {
+                console.error('❌ ENHANCED PLAYER: Enhanced vocal intensity analysis failed:', error);
+                sessionStorage.removeItem(hasIntensityKey); // Allow retry on failure
+                
+                // Fallback: basic text-based analysis
+                captionSegments = captionSegments.map(segment => {
+                  const text = segment.text.toLowerCase();
+                  let intensity: 'whisper' | 'normal' | 'yell' | 'shout' = 'normal';
+                  let confidence = 0.3;
+                  
+                  if (text.includes('!!!') || text === text.toUpperCase()) {
+                    intensity = 'shout';
+                    confidence = 0.7;
+                  } else if (text.includes('!!') || /[!?]{2,}/.test(text)) {
+                    intensity = 'yell';
+                    confidence = 0.6;
+                  } else if (text.includes('...') || text.includes('*whisper')) {
+                    intensity = 'whisper';
+                    confidence = 0.5;
+                  }
                   
                   return {
-                    ...originalSegment,
-                    text: analyzed.text || originalSegment?.text || '',
-                    startTime: analyzed.start_time || originalSegment?.startTime || 0,
-                    endTime: analyzed.end_time || originalSegment?.endTime || 0,
-                    vocal_intensity: analyzed.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
-                    intensity_confidence: analyzed.intensity_confidence,
-                    auto_styling: analyzed.auto_styling
+                    ...segment,
+                    vocal_intensity: intensity,
+                    intensity_confidence: confidence,
+                    auto_styling: {}
                   };
                 });
-                console.log('🔊 ENHANCED PLAYER: Vocal intensity analysis completed');
-              } catch (error) {
-                console.error('❌ ENHANCED PLAYER: Vocal intensity analysis failed:', error);
-                sessionStorage.removeItem(hasIntensityKey); // Allow retry on failure
               }
             }
             
@@ -483,19 +546,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       {/* Content Generation and Management Controls */}
       <Tabs defaultValue="transcript" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="transcript">Transcript Extraction</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
           <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
-          <TabsTrigger value="speaker-id">Speaker ID</TabsTrigger>
-          <TabsTrigger value="characters">Character Management</TabsTrigger>
+          <TabsTrigger value="characters">Speaker & Character Management</TabsTrigger>
         </TabsList>
         
         <TabsContent value="transcript" className="space-y-4">
           <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & Editing</h3>
+            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Extract speech from the video, edit timing, add emphasis, and manage captions with intention protocol.
+              Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
             </p>
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+              </p>
+            </div>
             <TranscriptEditor
               videoUrl={videoSrc}
               videoId={videoId || 'default'}
@@ -523,29 +590,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           </div>
         </TabsContent>
         
-        <TabsContent value="speaker-id" className="space-y-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Automatic Speaker Identification</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Use AI-powered speaker diarization to automatically identify and assign colors to different speakers for better accessibility.
-            </p>
-            <SpeakerIdentificationPanel
-              videoUrl={videoSrc}
-              videoId={videoId}
-              onSpeakersIdentified={(speakers) => {
-                console.log('🎭 Speakers identified:', speakers);
-                // This will trigger a re-analysis of the video with proper speaker assignments
-              }}
-            />
-          </div>
-        </TabsContent>
-        
         <TabsContent value="characters" className="space-y-4">
           <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Manual Character Assignment</h3>
+            <h3 className="text-lg font-semibold mb-4">Speaker & Character Management</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Manually assign colors to characters following the Captions with Intention protocol for better accessibility.
+              Speakers are automatically identified and colored during transcript generation. Use this panel to manually adjust speaker names, colors, and assignments following the Captions with Intention protocol.
             </p>
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                <strong>Tip:</strong> Speaker identification happens automatically, but you can override any assignments here. Changes will immediately update the captions.
+              </p>
+            </div>
             <CharacterManager
               videoId={videoId || 'default'}
               onCharactersUpdate={handleCharactersUpdate}
