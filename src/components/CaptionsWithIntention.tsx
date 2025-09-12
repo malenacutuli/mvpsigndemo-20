@@ -81,17 +81,19 @@ interface CaptionsWithIntentionProps {
  * Get speaker color with proper fallback to segment's assigned color
  */
 const getSpeakerColor = (speaker: string, customColors?: Record<string, string>, segmentColor?: string): string => {
-  // Use segment's assigned color if available (from speaker identification)
+  // Priority 1: Use segment's assigned color from character management (most important)
   if (segmentColor) {
+    console.log('🎨 Using segment assigned color for', speaker, ':', segmentColor);
     return segmentColor;
   }
   
-  // Use custom assigned color if available
+  // Priority 2: Use custom assigned color from character manager
   if (customColors && customColors[speaker]) {
+    console.log('🎨 Using custom character color for', speaker, ':', customColors[speaker]);
     return customColors[speaker];
   }
   
-  // Default color assignments for common speakers
+  // Priority 3: Default color assignments for common speakers
   const defaultColors: Record<string, string> = {
     narrator: CI_COLORS.main.blue,
     chef: CI_COLORS.main.orange,
@@ -104,7 +106,9 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>,
     music: '#FFFFFF'
   };
   
-  return defaultColors[speaker.toLowerCase()] || CI_COLORS.main.blue;
+  const defaultColor = defaultColors[speaker.toLowerCase()] || CI_COLORS.main.blue;
+  console.log('🎨 Using default color for', speaker, ':', defaultColor);
+  return defaultColor;
 };
 
 /**
@@ -234,11 +238,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Load custom character colors from localStorage
+  // Load custom character colors from localStorage as fallback only
   useEffect(() => {
     const savedColors = localStorage.getItem('character-colors');
     if (savedColors) {
-      setCustomSpeakerColors(JSON.parse(savedColors));
+      const parsedColors = JSON.parse(savedColors);
+      setCustomSpeakerColors(parsedColors);
+      console.log('🎨 Loaded character colors from localStorage:', parsedColors);
     }
   }, []);
 

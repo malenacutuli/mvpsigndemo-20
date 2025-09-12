@@ -610,6 +610,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               videoId={videoId || 'default'}
               onCharactersUpdate={handleCharactersUpdate}
               existingCharacters={characters}
+              language={currentLanguage} // Pass current video language for voice filtering
             />
           </div>
         </TabsContent>

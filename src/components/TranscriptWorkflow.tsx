@@ -1035,6 +1035,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 videoId={videoId}
                 onCharactersUpdate={handleCharactersUpdate}
                 existingCharacters={characters}
+                language={videoLanguage} // Pass video language for voice filtering
               />
             </TabsContent>
 

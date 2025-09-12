@@ -77,18 +77,21 @@ interface Character {
   voiceType?: 'elevenlabs' | 'native';
   emphasis?: 'loud' | 'quiet' | 'normal';
   pitch?: 'high' | 'low' | 'normal';
+  language?: string; // Add language property for multilingual support
 }
 
 interface CharacterManagerProps {
   videoId: string;
   onCharactersUpdate?: (characters: Character[]) => void;
   existingCharacters?: Character[];
+  language?: string; // Add language prop for multilingual support
 }
 
 export const CharacterManager: React.FC<CharacterManagerProps> = ({ 
   videoId, 
   onCharactersUpdate, 
-  existingCharacters = [] 
+  existingCharacters = [],
+  language = 'en' // Default to English
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
@@ -433,6 +436,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           onVoiceSelect={(voiceId, voiceName, voiceType) => 
                             updateCharacterVoice(character.id, voiceId, voiceName, voiceType)
                           }
+                          language={language} // Use project language for voice filtering
                         />
                       </div>
                     </div>
