@@ -273,8 +273,8 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     setLoading(false);
   };
 
-  // Check if video is ready for publishing
-  const isVideoReady = videoStatus === 'ready';
+  // Check if video is ready for publishing - video is ready when uploaded successfully
+  const isVideoReady = videoStatus === 'uploaded';
   const hasChannel = channels.length > 0 || formData.channelId !== 'none';
 
   if (isPublic) {
