@@ -270,10 +270,20 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const baseFontSize = getVolumeBasedFontSize(volume, screenHeight, activeCaption.words?.[0]?.emphasis);
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
   
+  // Derive numeric pitch and an 'enthusiastic' heuristic
+  const numericPitch = (() => {
+    const p = (activeWord?.pitch || activeCaption.pitch) as any;
+    if (typeof p === 'number') return p;
+    if (p === 'high') return 220;
+    if (p === 'low') return 100;
+    return 180;
+  })();
+  
   // Apply vocal intensity styling if available
   const intensityStyles = activeCaption.vocal_intensity ? 
     getIntensityStyles(activeCaption.vocal_intensity, activeCaption.intensity_confidence) : {};
   
+  const isEnthusiastic = (!activeCaption.vocal_intensity || activeCaption.vocal_intensity === 'normal') && numericPitch >= 210 && volume < 80;
   const isLoudBurst = volume >= 85;
   const isSoundEffect = (activeCaption as any)?.type === 'soundeffect';
   const isMusic = (activeCaption as any)?.type === 'music';
@@ -321,10 +331,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             fontSize: `${Math.min(baseFontSize, screenHeight * 0.06)}px`, // Increased cap for loud words
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
+            ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
             hyphens: 'auto',
             maxWidth: '100%',
+            contain: 'layout paint'
           }}
         >
           {/* Sound effects and music formatting */}
@@ -357,7 +369,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                    return (
                      <span
                        key={index}
-                       className="inline-block transition-all duration-100 ease-out"
+                       className="inline-block transition-colors duration-150 ease-out"
                        style={{
                         // Enhanced color sync: use more precise timing for word highlighting
                         color: wordHasBeenSpoken || isWordActive ? 
@@ -365,24 +377,25 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         // Add subtle glow effect for currently speaking word
                         textShadow: isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40` : 'none',
                         marginRight: '0.25em',
-                         fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
-                         transform: isWordActive ? 'scale(1.05)' : 'scale(1)', // Slight scale for active word
-                         // Apply emphasis-specific styling AFTER pitch style to ensure it takes precedence
-                         ...wordPitchStyle,
-                         // Bold and enhanced styling for yelling - applied last to override pitch styles
-                         ...(word.emphasis === 'yelling' && {
+                        fontSize: `${Math.min(wordFontSize, screenHeight * 0.08)}px`,
+                        // Avoid layout shifts by not scaling words
+                        willChange: 'color, text-shadow',
+                        // Apply emphasis-specific styling AFTER pitch style to ensure it takes precedence
+                        ...wordPitchStyle,
+                        // Bold and enhanced styling for yelling - applied last to override pitch styles
+                        ...(word.emphasis === 'yelling' && {
                           fontWeight: '900', // Extra bold for yelling
                           textShadow: `${isWordActive ? `0 0 8px ${activeCaption.speakerColor || speakerColor}40, ` : ''}2px 2px 4px rgba(0,0,0,0.8)`, // Enhanced shadow
                           letterSpacing: '0.05em' // Slightly wider letter spacing for emphasis
-                         }),
-                         // Regular bold for loud
-                         ...(word.emphasis === 'loud' && {
+                        }),
+                        // Regular bold for loud
+                        ...(word.emphasis === 'loud' && {
                           fontWeight: 'bold'
-                         }),
-                         // Lighter for quiet
-                         ...(word.emphasis === 'quiet' && {
+                        }),
+                        // Lighter for quiet
+                        ...(word.emphasis === 'quiet' && {
                           fontWeight: '300'
-                         })
+                        })
                       }}
                      >
                        {word.text}

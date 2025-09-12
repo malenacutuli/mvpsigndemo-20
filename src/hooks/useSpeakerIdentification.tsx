@@ -78,9 +78,8 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
     console.log('🎯 Identified', speakers.length, 'unique speakers:', speakers.map(s => s.name));
 
     // Assign speaker information back to segments
-    const updatedSegments = segments.map(segment => {
+    let updatedSegments = segments.map(segment => {
       const signature = createSpeakerSignature(segment, segments.indexOf(segment), segments);
-      const speakerGroup = Object.entries(speakerGroups).find(([sig]) => sig === signature);
       const speakerIndex = Object.keys(speakerGroups).indexOf(signature);
       const speaker = speakers[speakerIndex];
       
@@ -90,6 +89,40 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
         speakerColor: speaker?.color || CI_SPEAKER_COLORS[0]
       };
     });
+
+    // Fallback: if only one speaker detected, alternate speakers by conversational turns
+    const uniqueSpeakers = new Set(updatedSegments.map(s => s.speaker)).size;
+    if (uniqueSpeakers <= 1) {
+      console.log('ℹ️ Speaker ID fallback: alternating speakers by pauses/pitch changes');
+      let currentIdx = 0;
+      const maxSpeakers = 3; // offer up to 3 distinct colors
+      updatedSegments = updatedSegments.map((seg, i, arr) => {
+        if (i > 0) {
+          const prev = arr[i - 1];
+          const gap = seg.startTime - prev.endTime;
+          const punctChange = /[!?]$/.test(prev.text.trim());
+          const prevPitch = typeof prev.pitch === 'number' ? prev.pitch : prev.pitch === 'high' ? 220 : prev.pitch === 'low' ? 100 : 180;
+          const nowPitch = typeof seg.pitch === 'number' ? seg.pitch : seg.pitch === 'high' ? 220 : seg.pitch === 'low' ? 100 : 180;
+          if (gap > 1.2 || punctChange || Math.abs(nowPitch - prevPitch) > 30) {
+            currentIdx = (currentIdx + 1) % maxSpeakers;
+          }
+        }
+        return {
+          ...seg,
+          speaker: `Speaker ${currentIdx + 1}`,
+          speakerColor: CI_SPEAKER_COLORS[currentIdx % CI_SPEAKER_COLORS.length]
+        };
+      });
+
+      const names = Array.from(new Set(updatedSegments.map(s => s.speaker)));
+      setIdentifiedSpeakers(names.map((name, idx) => ({
+        id: `speaker_${idx + 1}`,
+        name,
+        color: CI_SPEAKER_COLORS[idx % CI_SPEAKER_COLORS.length],
+        voiceCharacteristics: {},
+        segmentCount: updatedSegments.filter(s => s.speaker === name).length
+      })));
+    }
 
     return updatedSegments;
   };
