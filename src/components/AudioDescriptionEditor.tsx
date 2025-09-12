@@ -92,6 +92,84 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     { value: 'encouraging', label: 'Encouraging', color: 'text-green-400' },
   ];
 
+  // Estimate duration needed to read a description (seconds)
+  const estimateDurationForText = (text: string): number => {
+    const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+    const wps = 2.6; // ~2.6 words/sec for clarity
+    return Math.min(5.0, Math.max(1.2, words / wps));
+  };
+
+  // Compute non-dialogue gaps from transcript (where AD can safely play)
+  const computeGaps = (segments: any[]): { start: number; end: number }[] => {
+    if (!segments || segments.length === 0) return [{ start: 0, end: 9999 }];
+    const sorted = [...segments]
+      .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
+      .sort((a, b) => a.startTime - b.startTime);
+
+    const gaps: { start: number; end: number }[] = [];
+    const pad = 0.08; // small padding to avoid edges
+
+    // Pre-roll gap
+    if (sorted[0].startTime > 0.5) {
+      gaps.push({ start: 0, end: Math.max(0, sorted[0].startTime - pad) });
+    }
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const end = sorted[i].endTime + pad;
+      const nextStart = Math.max(sorted[i + 1].startTime - pad, end);
+      if (nextStart - end >= 1.0) {
+        gaps.push({ start: end, end: nextStart });
+      }
+    }
+
+    // Post-roll large window to allow final AD
+    const lastEnd = sorted[sorted.length - 1].endTime + pad;
+    gaps.push({ start: lastEnd, end: lastEnd + 10 });
+    return gaps;
+  };
+
+  // Schedule descriptions into non-overlapping gaps with trimming if needed
+  const scheduleIntoGaps = (raw: AudioDescriptionSegment[], transcript: any[]): AudioDescriptionSegment[] => {
+    if (raw.length === 0) return [];
+    const gaps = computeGaps(transcript);
+    const scheduled: AudioDescriptionSegment[] = [];
+
+    let gapIndex = 0;
+    for (const item of raw) {
+      // Estimate duration needed
+      const need = estimateDurationForText(item.text);
+
+      // Find next gap that can fit it (or partially fit with min 1.0s)
+      let placed = false;
+      while (gapIndex < gaps.length && !placed) {
+        const gap = gaps[gapIndex];
+        const available = gap.end - gap.start;
+        if (available >= 1.0) {
+          const duration = Math.min(need, available);
+          const start = gap.start;
+          const end = start + duration;
+
+          scheduled.push({
+            ...item,
+            startTime: start,
+            endTime: end,
+          });
+
+          // Advance gap start
+          gap.start = end + 0.05; // small separation
+          if (gap.start >= gap.end) gapIndex++;
+          placed = true;
+        } else {
+          gapIndex++;
+        }
+      }
+      // If no gap found at all, drop this description (no safe window)
+    }
+
+    // Ensure chronological order
+    return scheduled.sort((a, b) => a.startTime - b.startTime);
+  };
+
   const generateAIDescriptions = async () => {
     if (!transcriptSegments || transcriptSegments.length === 0) {
       toast({
@@ -124,13 +202,16 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           voiceStyle: desc.voiceStyle || 'warm'
         }));
 
-        setDescriptions(aiDescriptions);
-        saveDescriptions(aiDescriptions); // Save to storage
-        onDescriptionsUpdate?.(aiDescriptions);
+        // Perfect sync: schedule into non-dialogue gaps to avoid overlap with speakers
+        const scheduled = scheduleIntoGaps(aiDescriptions, transcriptSegments);
+
+        setDescriptions(scheduled);
+        await saveDescriptions(scheduled); // Save to storage
+        onDescriptionsUpdate?.(scheduled);
         
         toast({
-          title: "Audio descriptions generated!",
-          description: `Created ${aiDescriptions.length} descriptions using AI.`,
+          title: 'Audio descriptions generated!',
+          description: `Created ${scheduled.length} perfectly timed descriptions.`,
         });
       }
     } catch (error: any) {

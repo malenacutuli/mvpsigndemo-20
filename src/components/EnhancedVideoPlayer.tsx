@@ -269,6 +269,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         // Load saved transcript from database
         const segments = await loadTranscriptSegments(currentLanguage);
         console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments');
+        setTranscriptSegments(segments);
         
         if (segments.length > 0) {
           console.log('🎯 ENHANCED PLAYER: First segment timing check:', segments[0] ? { 

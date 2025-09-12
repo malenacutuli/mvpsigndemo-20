@@ -123,7 +123,7 @@ export const useVocalIntensityAnalysis = (): UseVocalIntensityAnalysisReturn => 
         return {
           fontSize: `${1 + baseIntensity * 0.5}em`,
           fontWeight: '700',
-          textTransform: 'uppercase' as const,
+          // Avoid forcing uppercase to preserve natural casing
           color: 'hsl(var(--destructive))',
           textShadow: '0 0 12px hsl(var(--destructive) / 0.4)',
           animation: 'pulse 1s infinite',
