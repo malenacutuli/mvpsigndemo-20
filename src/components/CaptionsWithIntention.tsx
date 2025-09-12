@@ -120,9 +120,9 @@ const getIntonationBasedFontSize = (
   volume?: number,
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'
 ): number => {
-  const baseSize = Math.max(16, screenHeight * 0.022); // Reduced from 4% to 2.2%
-  const minSize = Math.max(12, screenHeight * 0.015);  // Reduced from 2.5% to 1.5%
-  const maxSize = Math.max(24, screenHeight * 0.035);  // Reduced from 7% to 3.5%
+  const baseSize = Math.max(20, screenHeight * 0.0286); // Increased by 30% (0.022 * 1.3)
+  const minSize = Math.max(12, screenHeight * 0.015);   // Keep whisper size unchanged
+  const maxSize = Math.max(31, screenHeight * 0.0455);  // Increased by 30% (0.035 * 1.3)
   
   // Priority 1: Use vocal intensity analysis if available
   if (vocalIntensity) {
@@ -405,7 +405,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize, screenHeight * 0.035)}px`, // Reduced cap for main text
+            fontSize: `${Math.min(baseFontSize, screenHeight * 0.0455)}px`, // Increased cap by 30%
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),

@@ -67,8 +67,6 @@ const Explore = () => {
 
   const categories = [
     { id: 'all', label: 'All', icon: Globe },
-    { id: 'education', label: 'Education', icon: Video },
-    { id: 'recipe', label: 'Recipes', icon: TrendingUp },
   ];
 
   const sidebarItems = [
