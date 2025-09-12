@@ -339,7 +339,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         setIsGeneratingAD(true);
         setGenerateADError(null);
         const payload = {
-          contentType,
+          contentType: 'general', // Use general instead of specific content type
+          language: currentLanguage || 'en',
           segments: generatedCaptions.map(seg => ({
             text: seg.text,
             startTime: seg.startTime,
@@ -363,14 +364,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         };
         const determineVoice = (text: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' => {
           const t = (text || '').toLowerCase();
-          if (contentType === 'recipe') {
-            if (t.includes('sizzle') || t.includes('steam') || t.includes('garlic')) return 'passionate';
-            if (t.includes('stir') || t.includes('mix') || t.includes('gentle')) return 'warm';
-            return 'authoritative';
-          }
           if (t.includes('practice') || t.includes('learn')) return 'encouraging';
-          if (t.includes('show') || t.includes('diagram') || t.includes('explain')) return 'authoritative';
-          return 'warm';
+          if (t.includes('show') || t.includes('demonstrate') || t.includes('explain')) return 'authoritative';
+          if (t.includes('gentle') || t.includes('calm')) return 'warm';
+          return 'encouraging'; // Default for general content
         };
 
         const scheduled: any[] = [];
