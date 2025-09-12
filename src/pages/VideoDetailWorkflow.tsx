@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
 import { TranscriptWorkflow } from '@/components/TranscriptWorkflow';
 import { CleanAxessiblePlayer } from '@/components/CleanAxessiblePlayer';
+import { AccessibleVideoExporter } from '@/components/AccessibleVideoExporter';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -363,11 +364,32 @@ export default function VideoDetailWorkflow() {
                         // Refresh data when re-entering workflow - no need for loadExistingCaptions since TranscriptWorkflow will load its own data
                       }}
                       className="w-full"
-                    >
-                      Edit Transcript
-                    </Button>
-                  </CardContent>
-                </Card>
+                     >
+                       Edit Transcript
+                     </Button>
+                   </CardContent>
+                 </Card>
+               )}
+
+              {/* Accessible Video Export */}
+              {!showWorkflow && (captions.length > 0 || audioDescriptions.length > 0) && (
+                <AccessibleVideoExporter
+                  videoUrl={videoUrl}
+                  videoId={video.id}
+                  captions={captions}
+                  audioDescriptions={audioDescriptions}
+                  characterColors={characters.reduce((acc, char) => ({
+                    ...acc,
+                    [char.name]: char.color
+                  }), {})}
+                  currentLanguage={video.language}
+                  onExportComplete={(downloadUrl) => {
+                    toast({
+                      title: "Export Complete!",
+                      description: "Your accessible video files are ready for download."
+                    });
+                  }}
+                />
               )}
 
               {/* Video Info */}
