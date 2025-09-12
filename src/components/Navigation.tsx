@@ -53,16 +53,29 @@ export const Navigation: React.FC = () => {
             </Link>
             
             {user && (
-              <Link 
-                to="/dashboard" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActivePath('/dashboard') 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground'
-                }`}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActivePath('/dashboard') 
+                      ? 'text-primary' 
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                
+                <Link 
+                  to="/videos" 
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    isActivePath('/videos') 
+                      ? 'text-primary' 
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  My Videos
+                </Link>
+              </>
             )}
           </div>
           
