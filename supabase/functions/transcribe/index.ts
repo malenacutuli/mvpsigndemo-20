@@ -75,20 +75,35 @@ serve(async (req) => {
 
     let transcriptionResult;
 
-    // Strategy 1: Try processing the whole video first (works for most cases under 25MB)
-    if (videoBuffer.byteLength <= 23000000) { // 23MB to be safe
-      console.log("Video under 23MB - processing directly...");
-      try {
-        transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-        console.log("✅ Direct processing successful!");
-      } catch (error) {
-        console.log("Direct processing failed, trying chunked approach:", error.message);
+    // Strategy 1: Try Twelve Labs for comprehensive analysis (best quality)
+    console.log("Attempting Twelve Labs analysis first...");
+    try {
+      const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+      if (twelveLabsResult && !twelveLabsResult.error) {
+        console.log("✅ Twelve Labs analysis successful!");
+        transcriptionResult = twelveLabsResult;
+      } else {
+        console.log("Twelve Labs failed, falling back to OpenAI:", twelveLabsResult?.error);
+        throw new Error("Twelve Labs fallback");
+      }
+    } catch (error) {
+      console.log("Twelve Labs failed, using OpenAI fallback:", error.message);
+      
+      // Strategy 2: Fallback to OpenAI processing
+      if (videoBuffer.byteLength <= 23000000) { // 23MB to be safe
+        console.log("Video under 23MB - processing with OpenAI directly...");
+        try {
+          transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+          console.log("✅ OpenAI direct processing successful!");
+        } catch (openaiError) {
+          console.log("OpenAI direct failed, trying chunked approach:", openaiError.message);
+          transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
+        }
+      } else {
+        // Strategy 3: For larger files, use chunked approach with OpenAI
+        console.log(`Large video (${sizeMB}MB) - using chunked OpenAI processing...`);
         transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
       }
-    } else {
-      // Strategy 2: For larger files, use chunked approach with OpenAI
-      console.log(`Large video (${sizeMB}MB) - using chunked OpenAI processing...`);
-      transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
     }
 
     // Save to database
@@ -196,6 +211,68 @@ async function transcribeWithChunking(buffer: ArrayBuffer, apiKey: string, langu
   } catch (error) {
     console.error("Chunked processing failed:", error);
     throw new Error(`Large file processing failed: ${error.message}`);
+  }
+}
+
+// Use Twelve Labs for comprehensive video analysis
+async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, language?: string): Promise<any> {
+  console.log("Using Twelve Labs for comprehensive video analysis...");
+  
+  const twelveLabsKey = Deno.env.get("TWELVE_LABS_API_KEY");
+  if (!twelveLabsKey) {
+    throw new Error("Twelve Labs API key not configured");
+  }
+
+  try {
+    // Call the existing twelve-labs-analysis function
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const functionUrl = `${supabaseUrl}/functions/v1/twelve-labs-analysis`;
+    
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      },
+      body: JSON.stringify({
+        videoUrl,
+        videoId: videoId || 'transcribe-request',
+        language: language || 'en'
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Twelve Labs request failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    // Convert Twelve Labs format to our expected format
+    const segments = result.segments || [];
+    const audioDescriptions = result.audioDescriptions || [];
+    
+    console.log(`Twelve Labs analysis complete: ${segments.length} transcript segments, ${audioDescriptions.length} audio descriptions`);
+    
+    return {
+      text: segments.map((s: any) => s.text).join(' '),
+      segments: segments.map((s: any) => ({
+        text: s.text,
+        start: s.start,
+        end: s.end,
+        words: s.words || []
+      })),
+      language: result.language || language || 'en',
+      speakers: result.speakers || [],
+      audioDescriptions: audioDescriptions
+    };
+    
+  } catch (error) {
+    console.error("Twelve Labs analysis failed:", error);
+    return { error: error.message };
   }
 }
 
