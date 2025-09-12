@@ -76,7 +76,7 @@ const PublicVideo = () => {
         .select('*')
         .eq('id', id)
         .eq('is_public', true)
-        .eq('status', 'ready')
+        .in('status', ['ready', 'uploaded'])
         .single();
 
       if (error) {
