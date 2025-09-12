@@ -114,6 +114,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     });
   };
 
+  // Helper to compute overlap of two intervals (moved outside function for cleaner scope)
+  const computeOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => 
+    Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+
   // Enhanced speaker identification using AssemblyAI edge function
   const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
@@ -144,16 +148,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const speakerByName = new Map<string, { name: string; color: string }>();
       data.speakers.forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
 
-      // Helper to compute overlap of two intervals
-      const overlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
-
       const updatedSegments = segments.map(segment => {
         let bestName = segment.speaker;
         let bestColor = segment.speakerColor;
         let bestOv = 0;
 
         for (const diar of data.segments as Array<any>) {
-          const ov = overlap(segment.startTime, segment.endTime, diar.startTime, diar.endTime);
+          const ov = computeOverlap(segment.startTime, segment.endTime, diar.startTime, diar.endTime);
           if (ov > bestOv) {
             bestOv = ov;
             const meta = speakerByName.get(diar.speaker);
