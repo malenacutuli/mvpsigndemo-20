@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Calendar, Clock, Languages, Eye, Trash2 } from 'lucide-react';
+import { Play, Calendar, Clock, Languages, Eye, Trash2, Settings, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ThumbnailGenerator } from '@/components/ThumbnailGenerator';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { VideoPublishingControls } from '@/components/VideoPublishingControls';
+import { ChannelManager } from '@/components/ChannelManager';
 
 interface Video {
   id: string;
@@ -25,6 +28,8 @@ interface Video {
   storage_path: string | null;
   created_at: string;
   updated_at: string;
+  is_public: boolean;
+  channel_id: string | null;
 }
 
 export default function Videos() {
@@ -182,184 +187,211 @@ export default function Videos() {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Your Videos</h1>
-            <p className="text-muted-foreground">
-              Manage and view your accessible video content
-            </p>
-          </div>
-          <Button asChild>
-            <Link to="/upload">Upload New Video</Link>
-          </Button>
-        </div>
+          <Tabs defaultValue="videos" className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Video Management</h1>
+                <p className="text-muted-foreground">
+                  Manage your videos, publish them to Explore, and organize with channels
+                </p>
+              </div>
+              <div className="flex items-center gap-2 mt-4 md:mt-0">
+                <TabsList>
+                  <TabsTrigger value="videos">My Videos</TabsTrigger>
+                  <TabsTrigger value="channels">Channels</TabsTrigger>
+                </TabsList>
+                <Button asChild>
+                  <Link to="/upload">Upload New Video</Link>
+                </Button>
+              </div>
+            </div>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1">
-            <Input
-              placeholder="Search videos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <Select value={languageFilter} onValueChange={setLanguageFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All languages" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All languages</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="ready">Ready</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="uploading">Uploading</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Thumbnail Generator */}
-        <div className="mb-8">
-          <ThumbnailGenerator 
-            videos={videos}
-            onThumbnailsGenerated={fetchVideos}
-          />
-        </div>
-
-        {/* Videos Grid */}
-        {filteredVideos.length === 0 ? (
-          <div className="text-center py-12">
-            <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">No videos found</h3>
-            <p className="text-muted-foreground mb-4">
-              {videos.length === 0 
-                ? "You haven't uploaded any videos yet." 
-                : "No videos match your current filters."}
-            </p>
-            {videos.length === 0 && (
-              <Button asChild>
-                <Link to="/upload">Upload Your First Video</Link>
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredVideos.map((video) => (
-              <Card key={video.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="p-0">
-                  <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center relative overflow-hidden">
-                    {video.thumbnail_url ? (
-                      <img 
-                        src={video.thumbnail_url} 
-                        alt={video.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('❌ Thumbnail failed to load:', video.thumbnail_url);
-                          console.error('Error details:', e);
-                          // Hide the broken image and show the play icon instead
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                        onLoad={() => {
-                          console.log('✅ Thumbnail loaded successfully:', video.thumbnail_url);
-                        }}
-                      />
-                    ) : null}
-                    
-                    {/* Always show play icon as fallback */}
-                    {!video.thumbnail_url && (
-                      <Play className="w-12 h-12 text-muted-foreground" />
-                    )}
-                    
-                    <div className="absolute top-2 right-2">
-                      <Badge className={getStatusColor(video.status)}>
-                        {video.status}
-                      </Badge>
-                    </div>
-                    
-                    {video.duration_seconds && (
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        {formatDuration(video.duration_seconds)}
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
+            <TabsContent value="videos" className="space-y-6">
+              {/* Filters */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search videos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
                 
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2 line-clamp-2">{video.title}</h3>
-                  
-                  {video.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {video.description}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                    <div className="flex items-center gap-1">
-                      <Languages className="w-3 h-3" />
-                      {getLanguageDisplay(video.language)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(video.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" className="flex-1">
-                      <Link to={`/videos/${video.id}`}>
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Link>
+                <Select value={languageFilter} onValueChange={setLanguageFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="All languages" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All languages</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Spanish</SelectItem>
+                    <SelectItem value="fr">French</SelectItem>
+                    <SelectItem value="de">German</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="ready">Ready</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="uploading">Uploading</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Thumbnail Generator */}
+              <div>
+                <ThumbnailGenerator 
+                  videos={videos}
+                  onThumbnailsGenerated={fetchVideos}
+                />
+              </div>
+
+              {/* Videos Grid */}
+              {filteredVideos.length === 0 ? (
+                <div className="text-center py-12">
+                  <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-xl font-semibold mb-2">No videos found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {videos.length === 0 
+                      ? "You haven't uploaded any videos yet." 
+                      : "No videos match your current filters."}
+                  </p>
+                  {videos.length === 0 && (
+                    <Button asChild>
+                      <Link to="/upload">Upload Your First Video</Link>
                     </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          disabled={deletingVideo === video.id}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Video</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{video.title}"? This action cannot be undone and will permanently remove the video and all associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => deleteVideo(video.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete Video
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                  )}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredVideos.map((video) => (
+                    <Card key={video.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="p-0">
+                        <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center relative overflow-hidden">
+                          {video.thumbnail_url ? (
+                            <img 
+                              src={video.thumbnail_url} 
+                              alt={video.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error('❌ Thumbnail failed to load:', video.thumbnail_url);
+                                console.error('Error details:', e);
+                                // Hide the broken image and show the play icon instead
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('✅ Thumbnail loaded successfully:', video.thumbnail_url);
+                              }}
+                            />
+                          ) : null}
+                          
+                          {/* Always show play icon as fallback */}
+                          {!video.thumbnail_url && (
+                            <Play className="w-12 h-12 text-muted-foreground" />
+                          )}
+                          
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            <Badge className={getStatusColor(video.status)}>
+                              {video.status}
+                            </Badge>
+                            {video.is_public && (
+                              <Badge variant="outline" className="bg-green-50 text-green-700">
+                                Public
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {video.duration_seconds && (
+                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                              {formatDuration(video.duration_seconds)}
+                            </div>
+                          )}
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2 line-clamp-2">{video.title}</h3>
+                        
+                        {video.description && (
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                            {video.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                          <div className="flex items-center gap-1">
+                            <Languages className="w-3 h-3" />
+                            {getLanguageDisplay(video.language)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(video.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button asChild size="sm" className="flex-1">
+                            <Link to={`/videos/${video.id}`}>
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Link>
+                          </Button>
+                          
+                          <VideoPublishingControls
+                            videoId={video.id}
+                            isPublic={video.is_public}
+                            contentType={video.content_type}
+                            description={video.description}
+                            channelId={video.channel_id}
+                            onUpdate={fetchVideos}
+                          />
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                disabled={deletingVideo === video.id}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Video</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{video.title}"? This action cannot be undone and will permanently remove the video and all associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteVideo(video.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Video
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="channels">
+              <ChannelManager />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </ProtectedRoute>

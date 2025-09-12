@@ -11,6 +11,7 @@ import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscrip
 import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
+import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
@@ -25,6 +26,8 @@ interface Video {
   duration_seconds: number | null;
   created_at: string;
   updated_at: string;
+  is_public: boolean;
+  channel_id: string | null;
 }
 
 interface VoiceOption {
@@ -279,6 +282,14 @@ const VideoDetail = () => {
               Back to Videos
             </Button>
             <div className="flex items-center gap-2">
+              <VideoPublishingControls
+                videoId={video.id}
+                isPublic={video.is_public}
+                contentType={video.content_type}
+                description={video.description}
+                channelId={video.channel_id}
+                onUpdate={fetchVideo}
+              />
               <Button 
                 onClick={() => navigate(`/video/${id}/workflow`)}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
