@@ -7,13 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor, type WordData } from './WordLevelEditor';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
+import { VocalIntensityIndicator } from './VocalIntensityIndicator';
+import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 
 interface TranscriptSegment {
   id: string;
@@ -25,6 +28,9 @@ interface TranscriptSegment {
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   words?: WordData[]; // Add word-level data support
+  vocal_intensity?: 'whisper' | 'normal' | 'yell' | 'shout';
+  intensity_confidence?: number;
+  auto_styling?: any;
 }
 
 interface TranscriptEditorProps {
@@ -61,8 +67,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editPitch, setEditPitch] = useState<'high' | 'low' | 'normal'>('normal');
   const [editWords, setEditWords] = useState<WordData[]>([]);
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
+  const [showIntensity, setShowIntensity] = useState(true);
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
+  const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // Load saved transcript on component mount
   useEffect(() => {
@@ -531,6 +539,37 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleVocalIntensityAnalysis = async () => {
+    if (!editingTranscript || editingTranscript.length === 0) return;
+    
+    try {
+      const analyzedSegments = await analyzeVocalIntensity(
+        videoId, // Use actual video ID
+        editingTranscript
+      );
+      
+      const updatedSegments = analyzedSegments.map((segment: any) => ({
+        id: segment.id || `segment-${Date.now()}-${Math.random()}`,
+        text: segment.text,
+        startTime: segment.start_time || segment.startTime,
+        endTime: segment.end_time || segment.endTime,
+        speaker: segment.speaker || 'Speaker',
+        speakerColor: segment.speakerColor || '#3B82F6',
+        emphasis: segment.emphasis || 'normal' as const,
+        pitch: segment.pitch || 'normal' as const,
+        vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,
+        intensity_confidence: segment.intensity_confidence,
+        auto_styling: segment.auto_styling,
+      }));
+      
+      setEditingTranscript(updatedSegments);
+      saveTranscriptData(updatedSegments, selectedLanguage);
+      onTranscriptUpdate?.(updatedSegments, selectedLanguage);
+    } catch (error) {
+      console.error('Failed to analyze vocal intensity:', error);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -612,6 +651,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           >
             <Download className="w-4 h-4 mr-2" />
             Export
+          </Button>
+          
+          <Button
+            onClick={handleVocalIntensityAnalysis}
+            disabled={isAnalyzing || editingTranscript.length === 0}
+            size="sm"
+            variant="outline"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
           </Button>
         </div>
 

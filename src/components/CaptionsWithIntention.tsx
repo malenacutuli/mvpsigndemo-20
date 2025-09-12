@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
@@ -63,6 +64,10 @@ export interface CaptionSegment {
   type?: 'dialogue' | 'soundeffect' | 'music';
   isOffCamera?: boolean;    // For italic styling
   speakerColor?: string;    // Character-specific color
+  // Vocal intensity analysis properties
+  vocal_intensity?: 'whisper' | 'normal' | 'yell' | 'shout';
+  intensity_confidence?: number;
+  auto_styling?: any;       // Computed styling from vocal intensity
 }
 
 interface CaptionsWithIntentionProps {
@@ -205,6 +210,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   screenHeight = 1080
 }) => {
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
+  const { getIntensityStyles } = useVocalIntensityAnalysis();
 
   // Load custom character colors from localStorage
   useEffect(() => {
@@ -246,6 +252,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const volume = (activeCaption as any)?.volume || 50;
   const baseFontSize = getVolumeBasedFontSize(volume, screenHeight, activeCaption.words?.[0]?.emphasis);
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
+  
+  // Apply vocal intensity styling if available
+  const intensityStyles = activeCaption.vocal_intensity ? 
+    getIntensityStyles(activeCaption.vocal_intensity, activeCaption.intensity_confidence) : {};
   
   const isLoudBurst = volume >= 85;
   const isSoundEffect = (activeCaption as any)?.type === 'soundeffect';
@@ -293,6 +303,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           style={{
             fontSize: `${Math.min(baseFontSize, screenHeight * 0.06)}px`, // Increased cap for loud words
             ...pitchStyle,
+            ...intensityStyles, // Apply vocal intensity styling
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
             hyphens: 'auto',
