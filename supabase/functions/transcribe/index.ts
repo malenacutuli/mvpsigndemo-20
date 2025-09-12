@@ -26,13 +26,22 @@ serve(async (req) => {
     const body = await req.text();
     const { videoUrl, videoId, language, forceReExtract } = JSON.parse(body);
     
+    const origin = req.headers.get("origin") || "";
+    const resolvedVideoUrl = (videoUrl && (videoUrl.startsWith("http://") || videoUrl.startsWith("https://")))
+      ? videoUrl
+      : (origin ? `${origin}${(videoUrl || "").startsWith("/") ? "" : "/"}${videoUrl || ""}` : videoUrl);
+    
     console.log("Processing video:", {
       videoId: videoId || 'none',
-      language: language || 'auto'
+      language: language || 'auto',
+      resolvedVideoUrl
     });
 
-    if (!videoUrl) {
-      return new Response(JSON.stringify({ error: "videoUrl is required" }), {
+    if (!resolvedVideoUrl || !resolvedVideoUrl.startsWith("http")) {
+      return new Response(JSON.stringify({ 
+        error: "Invalid videoUrl",
+        details: "Provide an absolute URL to a publicly accessible video"
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -49,14 +58,14 @@ serve(async (req) => {
     }
 
     // Get video size
-    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+    const headResponse = await fetch(resolvedVideoUrl, { method: 'HEAD' });
     const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
     const sizeMB = Math.round(contentLength / 1024 / 1024);
     console.log(`Video size: ${sizeMB}MB`);
 
     // Download video
     console.log("Downloading video...");
-    const videoResponse = await fetch(videoUrl);
+    const videoResponse = await fetch(resolvedVideoUrl);
     if (!videoResponse.ok) {
       throw new Error(`Failed to download video: ${videoResponse.status}`);
     }
