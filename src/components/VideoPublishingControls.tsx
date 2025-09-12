@@ -212,6 +212,36 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     });
   };
 
+  const handleSaveDetails = async () => {
+    setLoading(true);
+    try {
+      const updatePayload: any = {
+        channel_id: formData.channelId === 'none' ? null : formData.channelId,
+        content_type: formData.contentType,
+        description: formData.description
+      };
+
+      const { error } = await supabase
+        .from('videos')
+        .update(updatePayload)
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      onUpdate();
+      toast({
+        title: "Details saved",
+        description: "Channel and details saved. You can publish when ready."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error saving details",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+    setLoading(false);
+  };
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
       return;
@@ -311,7 +341,10 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               </p>
             </div>
             {!isVideoReady && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <Button variant="outline" size="sm" onClick={onUpdate}>Refresh</Button>
+              </div>
             )}
           </div>
 
@@ -328,16 +361,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 {editingComplete ? "✓ Editing completed" : "Review and finalize your video edits"}
               </p>
             </div>
-            {isVideoReady && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingComplete(!editingComplete)}
-                disabled={!isVideoReady}
-              >
-                {editingComplete ? "Resume Editing" : "Mark Complete"}
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingComplete(!editingComplete)}
+            >
+              {editingComplete ? "Resume Editing" : "Mark Complete"}
+            </Button>
           </div>
 
           {/* Step 3: Assign to Channel & Publish */}
@@ -360,12 +390,10 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
           <DialogTrigger asChild>
             <Button 
               className="w-full" 
-              disabled={!isVideoReady || !editingComplete}
+              disabled={!editingComplete}
               size="lg"
             >
-              {!isVideoReady ? "⏳ Processing Video..." : 
-               !editingComplete ? "Complete Editing First" : 
-               "🚀 Assign Channel & Publish"}
+              {!editingComplete ? "Complete Editing First" : "🚀 Assign Channel & Publish"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
@@ -506,13 +534,20 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                Close
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleSaveDetails}
+                disabled={loading || formData.channelId === 'none'}
+              >
+                {loading ? "Saving..." : "Save Details"}
               </Button>
               <Button
                 onClick={handlePublish}
-                disabled={loading || formData.channelId === 'none'}
+                disabled={loading || formData.channelId === 'none' || !isVideoReady || !editingComplete}
               >
-                {loading ? "Publishing..." : "Publish Video"}
+                {loading ? "Publishing..." : "Publish to Channel"}
               </Button>
             </DialogFooter>
           </DialogContent>
