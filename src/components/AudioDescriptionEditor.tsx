@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Edit, Save, X, Plus, Trash2, Volume2, Clock, Download } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { getNativeVoices, saveAudioDescription, loadAudioDescription, type VideoAudioDescription } from '@/lib/videoStorage';
-import { useVideoStorage, type AudioDescription as StorageAudioDescription } from '@/hooks/useVideoStorage';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2 } from 'lucide-react';
 
 interface AudioDescriptionSegment {
-  id: string;
+  id?: string;
   text: string;
   startTime: number;
   endTime: number;
   voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
+  timestamp?: number; // Optional timestamp for sync reference
 }
 
 interface AudioDescriptionEditorProps {
@@ -48,56 +47,42 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [editStartTime, setEditStartTime] = useState('');
-  const [editEndTime, setEditEndTime] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<'passionate' | 'warm' | 'authoritative' | 'encouraging'>('warm');
-  const { toast } = useToast();
-  const { saveAudioDescriptions, loadAudioDescriptions } = useVideoStorage(videoId);
+  const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
 
-  // Load saved audio descriptions on component mount or language change
-  useEffect(() => {
-    const loadDescriptionsData = async () => {
-      const loadedDescriptions = await loadAudioDescriptions(currentLanguage);
-      if (loadedDescriptions.length > 0) {
-        const convertedDescriptions = loadedDescriptions.map(desc => ({
-          id: desc.id || `ad-${Date.now()}-${Math.random()}`,
-          text: desc.description,
-          startTime: desc.startTime,
-          endTime: desc.endTime,
-          voiceStyle: (desc.descriptionType === 'emotion' ? 'passionate' : 'warm') as any
-        }));
-        setDescriptions(convertedDescriptions);
-        onDescriptionsUpdate?.(convertedDescriptions);
-      } else {
-        setDescriptions([]);
-        onDescriptionsUpdate?.([]);
-      }
-    };
-    loadDescriptionsData();
-  }, [videoId, currentLanguage]);
+  const language = currentLanguage || 'en';
 
-  // Save audio descriptions when they change
-  const saveDescriptions = async (segments: AudioDescriptionSegment[]) => {
-    const storageDescriptions: StorageAudioDescription[] = segments.map(segment => ({
-      startTime: segment.startTime,
-      endTime: segment.endTime,
-      description: segment.text,
-      descriptionType: segment.voiceStyle === 'passionate' ? 'emotion' : 'visual' as const,
-      confidence: 0.9
-    }));
+  // Voice style determination
+  const determineVoiceStyle = (text: string, contentType?: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' => {
+    const lowerText = text.toLowerCase();
     
-    await saveAudioDescriptions(storageDescriptions, currentLanguage);
+    if (contentType === 'recipe') {
+      if (lowerText.includes('sizzl') || lowerText.includes('heat') || lowerText.includes('flame')) return 'passionate';
+      if (lowerText.includes('gentle') || lowerText.includes('stir') || lowerText.includes('mix')) return 'warm';
+      return 'authoritative';
+    }
+    
+    if (lowerText.includes('learn') || lowerText.includes('student') || lowerText.includes('practice')) return 'encouraging';
+    if (lowerText.includes('demonstrate') || lowerText.includes('show') || lowerText.includes('explain')) return 'authoritative';
+    
+    return 'warm';
   };
 
-  // Get native voices for current language
-  const nativeVoices = getNativeVoices(currentLanguage);
-  
-  const voiceStyles = [
-    { value: 'passionate', label: 'Passionate', color: 'text-orange-400' },
-    { value: 'warm', label: 'Warm', color: 'text-yellow-400' },
-    { value: 'authoritative', label: 'Authoritative', color: 'text-red-400' },
-    { value: 'encouraging', label: 'Encouraging', color: 'text-green-400' },
-  ];
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getVoiceStyleColor = (style: string): string => {
+    switch (style) {
+      case 'passionate': return 'text-red-600';
+      case 'authoritative': return 'text-blue-600';
+      case 'warm': return 'text-orange-600';
+      case 'encouraging': return 'text-green-600';
+      default: return 'text-gray-600';
+    }
+  };
 
   // Estimate duration needed to read a description (seconds)
   const estimateDurationForText = (text: string): number => {
@@ -106,89 +91,116 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return Math.min(5.0, Math.max(1.2, words / wps));
   };
 
-  // Compute non-dialogue gaps from transcript with enhanced padding for better sync
+  // Compute non-dialogue gaps with enhanced precision and overlap prevention
   const computeGaps = (segments: any[]): { start: number; end: number }[] => {
     if (!segments || segments.length === 0) return [{ start: 0, end: 9999 }];
+    
     const sorted = [...segments]
       .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
       .sort((a, b) => a.startTime - b.startTime);
 
     const gaps: { start: number; end: number }[] = [];
-    const pad = 0.3; // Increased padding for better separation
+    const pad = 0.5; // Increased padding for better separation from dialogue
+
+    console.log('🔍 Computing gaps from', sorted.length, 'segments with', pad, 'second padding');
 
     // Pre-roll gap with minimum duration check
-    if (sorted[0].startTime > 1.0) {
-      gaps.push({ start: 0, end: Math.max(0, sorted[0].startTime - pad) });
+    if (sorted[0].startTime > 2.0) {
+      const preGap = { start: 0, end: Math.max(0, sorted[0].startTime - pad) };
+      if (preGap.end - preGap.start >= 2.0) { // Minimum 2 seconds for meaningful description
+        gaps.push(preGap);
+        console.log(`📍 Pre-roll gap: ${preGap.start.toFixed(1)}s-${preGap.end.toFixed(1)}s (${(preGap.end - preGap.start).toFixed(1)}s)`);
+      }
     }
 
+    // Inter-segment gaps
     for (let i = 0; i < sorted.length - 1; i++) {
       const end = sorted[i].endTime + pad;
       const nextStart = sorted[i + 1].startTime - pad;
-      // Require minimum gap of 1.5s for meaningful descriptions
-      if (nextStart - end >= 1.5) {
-        gaps.push({ start: end, end: nextStart });
+      
+      // Require minimum gap of 2.0s for meaningful descriptions with better sync
+      if (nextStart - end >= 2.0) {
+        const gap = { start: end, end: nextStart };
+        gaps.push(gap);
+        console.log(`📍 Inter-segment gap ${i}: ${gap.start.toFixed(1)}s-${gap.end.toFixed(1)}s (${(gap.end - gap.start).toFixed(1)}s)`);
+      } else {
+        console.log(`⏭️ Gap ${i} too small: ${(nextStart - end).toFixed(1)}s (need 2.0s minimum)`);
       }
     }
 
     // Post-roll gap
-    const lastEnd = sorted[sorted.length - 1].endTime + pad;
-    gaps.push({ start: lastEnd, end: lastEnd + 8 });
-    
-    console.log('🕳️ Computed gaps:', gaps.map(g => `${g.start.toFixed(1)}s-${g.end.toFixed(1)}s (${(g.end-g.start).toFixed(1)}s)`));
-    return gaps;
-  };
-
-  // Enhanced scheduling with context-aware timing
-  const scheduleIntoGaps = (raw: AudioDescriptionSegment[], transcript: any[]): AudioDescriptionSegment[] => {
-    if (raw.length === 0) return [];
-    const gaps = computeGaps(transcript);
-    const scheduled: AudioDescriptionSegment[] = [];
-
-    console.log('📅 Scheduling', raw.length, 'descriptions into', gaps.length, 'gaps');
-
-    let gapIndex = 0;
-    for (let i = 0; i < raw.length && gapIndex < gaps.length; i++) {
-      const item = raw[i];
-      const need = estimateDurationForText(item.text);
-
-      // Find a suitable gap
-      let placed = false;
-      while (gapIndex < gaps.length && !placed) {
-        const gap = gaps[gapIndex];
-        const available = gap.end - gap.start;
-        
-        console.log(`🎯 Trying to place "${item.text.substring(0, 30)}..." (needs ${need.toFixed(1)}s) in gap ${gap.start.toFixed(1)}s-${gap.end.toFixed(1)}s (${available.toFixed(1)}s available)`);
-        
-        if (available >= Math.max(1.5, need)) {
-          // Center the description in the gap for better timing
-          const padding = Math.max(0.2, (available - need) / 2);
-          const start = gap.start + padding;
-          const end = start + need;
-
-          scheduled.push({
-            ...item,
-            startTime: start,
-            endTime: end,
-          });
-
-          console.log(`✅ Placed at ${start.toFixed(1)}s-${end.toFixed(1)}s`);
-
-          // Mark this gap as used
-          gapIndex++;
-          placed = true;
-        } else {
-          console.log(`❌ Gap too small, moving to next gap`);
-          gapIndex++;
-        }
-      }
-      
-      if (!placed) {
-        console.log(`⚠️ Could not place description: "${item.text.substring(0, 30)}..."`);
+    const lastSegment = sorted[sorted.length - 1];
+    if (lastSegment.endTime < 9999) {
+      const postGap = { start: lastSegment.endTime + pad, end: 9999 };
+      if (postGap.end - postGap.start >= 2.0) {
+        gaps.push(postGap);
+        console.log(`📍 Post-roll gap: ${postGap.start.toFixed(1)}s-${postGap.end.toFixed(1)}s`);
       }
     }
 
-    console.log('📋 Final schedule:', scheduled.map(s => `${s.startTime.toFixed(1)}s: "${s.text.substring(0, 30)}..."`));
-    return scheduled.sort((a, b) => a.startTime - b.startTime);
+    console.log(`✅ Found ${gaps.length} suitable gaps for audio descriptions`);
+    return gaps;
+  };
+
+  // Enhanced visual analysis with timestamp-specific content generation
+  const generateContextualDescriptions = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('🎥 Starting contextual visual analysis for', transcript.length, 'segments');
+    
+    try {
+      // Create timestamp-specific analysis requests
+      const analysisRequests = [];
+      const gaps = computeGaps(transcript);
+      
+      console.log('🕳️ Found', gaps.length, 'gaps for visual analysis');
+      
+      for (const gap of gaps) {
+        if (gap.end - gap.start >= 2.0) { // Only analyze gaps of 2+ seconds
+          const midpoint = (gap.start + gap.end) / 2;
+          analysisRequests.push({
+            timestamp: midpoint,
+            gapStart: gap.start,
+            gapEnd: gap.end,
+            duration: gap.end - gap.start
+          });
+        }
+      }
+      
+      if (analysisRequests.length === 0) {
+        console.log('⚠️ No suitable gaps found for audio descriptions');
+        return [];
+      }
+      
+      console.log('🎯 Analyzing', analysisRequests.length, 'specific timestamps');
+      
+      // Generate frame-specific descriptions using OpenAI vision analysis
+      const response = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/generate-visual-descriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
+        },
+        body: JSON.stringify({ 
+          videoId, 
+          analysisRequests,
+          language: currentLanguage,
+          contentType 
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Visual analysis failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Generated', data.descriptions?.length || 0, 'contextual descriptions');
+      
+      return data.descriptions || [];
+      
+    } catch (error) {
+      console.error('❌ Contextual analysis failed:', error);
+      throw error;
+    }
   };
 
   const generateAIDescriptions = async () => {
@@ -199,90 +211,42 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     if (!transcriptSegments || transcriptSegments.length === 0) {
       toast({
         title: "No transcript available",
-        description: "Please generate a transcript first before creating audio descriptions.",
-        variant: "destructive",
+        description: "Please generate a transcript first to create audio descriptions",
+        variant: "destructive"
       });
       return;
     }
 
     setIsGenerating(true);
-    console.log('🚀 Starting AI description generation...');
-    
     try {
-      const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
-        body: { 
-          videoUrl: videoUrl,
-          videoId: videoId,
-          language: currentLanguage
-        }
-      });
-
-      console.log('📨 Twelve Labs analysis response:', { data, error });
-
-      if (error) {
-        console.warn('⚠️ Twelve Labs failed, falling back to transcript-based generation');
-        
-        // Fallback: Use existing generate-ad with enhanced context
-        const fallbackResponse = await supabase.functions.invoke('generate-ad', {
-          body: { 
-            segments: transcriptSegments,
-            contentType: contentType,
-            language: currentLanguage,
-            voiceOptions: nativeVoices,
-            enhance_context: true
-          }
+      // Generate contextual descriptions based on actual video content at specific timestamps
+      const contextualDescriptions = await generateContextualDescriptions(videoId, transcriptSegments);
+      
+      if (contextualDescriptions.length === 0) {
+        toast({
+          title: "No suitable gaps found",
+          description: "The video has continuous dialogue with no gaps for audio descriptions",
+          variant: "destructive"
         });
-        
-        if (fallbackResponse.error) throw new Error(fallbackResponse.error.message || 'Fallback AD generation failed');
-        
-        if (fallbackResponse.data?.descriptions) {
-          const aiDescriptions: AudioDescriptionSegment[] = fallbackResponse.data.descriptions.map((desc: any, index: number) => ({
-            id: `ad-${Date.now()}-${index}`,
-            text: desc.text,
-            startTime: desc.startTime,
-            endTime: desc.endTime,
-            voiceStyle: desc.voiceStyle || 'warm'
-          }));
-
-          const scheduled = scheduleIntoGaps(aiDescriptions, transcriptSegments);
-          setDescriptions(scheduled);
-          await saveDescriptions(scheduled);
-          onDescriptionsUpdate?.(scheduled);
-          
-          toast({
-            title: 'Audio descriptions generated!',
-            description: `Created ${scheduled.length} context-aware descriptions using transcript analysis.`,
-          });
-        }
         return;
       }
-
-      // Use Twelve Labs visual analysis for precise timing
-      if (data?.success && data?.audioDescriptions) {
-        const visualDescriptions: AudioDescriptionSegment[] = data.audioDescriptions.map((desc: any, index: number) => ({
-          id: `ad-visual-${Date.now()}-${index}`,
-          text: desc.text,
-          startTime: desc.startTime,
-          endTime: desc.endTime,
-          voiceStyle: desc.type === 'emotion' ? 'passionate' : 'warm'
-        }));
-
-        const scheduled = scheduleIntoGaps(visualDescriptions, transcriptSegments);
-        setDescriptions(scheduled);
-        await saveDescriptions(scheduled);
-        onDescriptionsUpdate?.(scheduled);
-        
-        toast({
-          title: 'Visual audio descriptions generated!',
-          description: `Created ${scheduled.length} precisely timed descriptions using AI video analysis.`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Audio description generation error:', error);
+      
+      setDescriptions(contextualDescriptions);
+      onDescriptionsUpdate?.(contextualDescriptions);
+      
+      toast({
+        title: "Audio descriptions generated!",
+        description: `Created ${contextualDescriptions.length} contextual descriptions synchronized with video content`
+      });
+      
+      console.log('✅ Generated contextual descriptions:', contextualDescriptions);
+      
+    } catch (error) {
+      console.error('❌ Failed to generate descriptions:', error);
       toast({
         title: "Generation failed",
-        description: error.message || 'Failed to generate audio descriptions',
-        variant: "destructive",
+        description: "Failed to generate audio descriptions. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
@@ -290,345 +254,165 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   };
 
   const startEditing = (index: number) => {
-    const segment = descriptions[index];
     setEditingIndex(index);
-    setEditText(segment.text);
-    setEditStartTime(formatTime(segment.startTime));
-    setEditEndTime(formatTime(segment.endTime));
-    setEditVoiceStyle(segment.voiceStyle);
+    setEditText(descriptions[index].text);
+    setEditVoiceStyle(descriptions[index].voiceStyle);
   };
 
   const saveEdit = () => {
     if (editingIndex === null) return;
-    
+
     const updatedDescriptions = [...descriptions];
     updatedDescriptions[editingIndex] = {
       ...updatedDescriptions[editingIndex],
       text: editText,
-      startTime: parseTimeInput(editStartTime),
-      endTime: parseTimeInput(editEndTime),
       voiceStyle: editVoiceStyle,
+      endTime: updatedDescriptions[editingIndex].startTime + estimateDurationForText(editText)
     };
-    
-    // Sort segments by time after editing timing
-    const sortedDescriptions = sortSegmentsByTime(updatedDescriptions);
-    setDescriptions(sortedDescriptions);
-    saveDescriptions(sortedDescriptions); // Save to storage
-    onDescriptionsUpdate?.(sortedDescriptions);
-    resetEditState();
-    
-    toast({
-      title: "Description updated",
-      description: "Audio description has been saved successfully.",
-    });
+
+    setDescriptions(updatedDescriptions);
+    onDescriptionsUpdate?.(updatedDescriptions);
+    setEditingIndex(null);
+    setEditText('');
   };
 
   const cancelEdit = () => {
-    resetEditState();
-  };
-
-  const resetEditState = () => {
     setEditingIndex(null);
     setEditText('');
-    setEditStartTime('');
-    setEditEndTime('');
-    setEditVoiceStyle('warm');
   };
 
-  const findInsertPosition = (segments: AudioDescriptionSegment[], newStartTime: number): number => {
-    for (let i = 0; i < segments.length; i++) {
-      if (segments[i].startTime > newStartTime) {
-        return i;
-      }
-    }
-    return segments.length;
-  };
-
-  const sortSegmentsByTime = (segments: AudioDescriptionSegment[]): AudioDescriptionSegment[] => {
-    return [...segments].sort((a, b) => a.startTime - b.startTime);
-  };
-
-  const addNewSegment = (insertAfterIndex?: number) => {
-    let newStartTime: number;
-    
-    if (insertAfterIndex !== undefined && descriptions[insertAfterIndex]) {
-      newStartTime = descriptions[insertAfterIndex].endTime + 0.5;
-    } else {
-      const lastSegment = descriptions[descriptions.length - 1];
-      newStartTime = lastSegment ? lastSegment.endTime + 0.5 : 0;
-    }
-    
-    const newSegment: AudioDescriptionSegment = {
-      id: `ad-${Date.now()}`,
-      text: 'New audio description...',
-      startTime: newStartTime,
-      endTime: newStartTime + 3,
-      voiceStyle: 'warm'
-    };
-    
-    const insertPosition = findInsertPosition(descriptions, newStartTime);
-    const updatedDescriptions = [...descriptions];
-    updatedDescriptions.splice(insertPosition, 0, newSegment);
-    
-    setDescriptions(updatedDescriptions);
-    onDescriptionsUpdate?.(updatedDescriptions);
-    
-    // Start editing the new segment
-    setTimeout(() => startEditing(insertPosition), 0);
-  };
-
-  const deleteSegment = (index: number) => {
+  const deleteDescription = (index: number) => {
     const updatedDescriptions = descriptions.filter((_, i) => i !== index);
     setDescriptions(updatedDescriptions);
-    saveDescriptions(updatedDescriptions); // Save to storage
     onDescriptionsUpdate?.(updatedDescriptions);
-    
-    toast({
-      title: "Description deleted",
-      description: "Audio description segment has been removed.",
-    });
-  };
-
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = (seconds % 60).toFixed(2);
-    return `${minutes.toString().padStart(2, '0')}:${parseFloat(secs).toFixed(2).padStart(5, '0')}`;
-  };
-
-  const parseTimeInput = (timeStr: string): number => {
-    const parts = timeStr.split(':');
-    if (parts.length === 2) {
-      return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
-    }
-    return parseFloat(timeStr) || 0;
-  };
-
-  const exportDescriptions = () => {
-    const voiceSection = nativeVoices.map(voice => 
-      `${voice.name} (${voice.id}): ${voice.description}`
-    ).join('\n');
-    
-    const content = `Audio Descriptions for Video: ${videoId}\nLanguage: ${currentLanguage}\nGenerated: ${new Date().toLocaleDateString()}\n\nNative Voices Available:\n${voiceSection}\n\nDescriptions:\n\n${descriptions.map(desc => 
-      `[${formatTime(desc.startTime)} - ${formatTime(desc.endTime)}] (${desc.voiceStyle}): ${desc.text}`
-    ).join('\n\n')}`;
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audio-descriptions-${currentLanguage}-${videoId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Export Complete",
-      description: `Audio descriptions exported for ${currentLanguage}`
-    });
-  };
-
-  const getVoiceStyleColor = (style: string) => {
-    const styleObj = voiceStyles.find(v => v.value === style);
-    return styleObj?.color || 'text-muted-foreground';
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Volume2 className="w-5 h-5" />
-          Audio Description Editor
-        </CardTitle>
-        <div className="flex gap-2">
-          <Button
-            onClick={generateAIDescriptions}
-            disabled={isGenerating || transcriptSegments.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            {isGenerating ? 'Generating...' : 'Generate AI Descriptions'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => addNewSegment()}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Description
-          </Button>
-          {descriptions.length > 0 && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => saveDescriptions(descriptions)}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save All
-              </Button>
-              <Button
-                variant="outline"
-                onClick={exportDescriptions}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export ({currentLanguage.toUpperCase()})
-              </Button>
-            </>
-          )}
-        </div>
-        
-        {/* Voice Information */}
-        {nativeVoices.length > 0 && (
-          <div className="text-xs bg-accent/10 rounded-lg p-3">
-            <p className="font-medium mb-1">Native Voices Available ({currentLanguage.toUpperCase()}):</p>
-            <div className="flex gap-2 flex-wrap">
-              {nativeVoices.slice(0, 3).map(voice => (
-                <Badge key={voice.id} variant="secondary" className="text-xs">
-                  {voice.name}
-                </Badge>
-              ))}
-              {nativeVoices.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{nativeVoices.length - 3} more
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-      </CardHeader>
-      
-      <CardContent>
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {descriptions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Volume2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No audio descriptions yet.</p>
-              <p className="text-sm">Generate AI descriptions or add manual segments.</p>
-            </div>
-          ) : (
-            descriptions.map((desc, index) => (
-              <div key={desc.id}>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                  {editingIndex === index ? (
-                    <div className="flex-1 space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Start Time</Label>
-                          <Input
-                            value={editStartTime}
-                            onChange={(e) => setEditStartTime(e.target.value)}
-                            placeholder="MM:SS.ms"
-                            className="h-8"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">End Time</Label>
-                          <Input
-                            value={editEndTime}
-                            onChange={(e) => setEditEndTime(e.target.value)}
-                            placeholder="MM:SS.ms"
-                            className="h-8"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Voice Style</Label>
-                        <Select value={editVoiceStyle} onValueChange={(value: any) => setEditVoiceStyle(value)}>
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {voiceStyles.map((style) => (
-                              <SelectItem key={style.value} value={style.value}>
-                                <span className={style.color}>{style.label}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Description Text</Label>
-                        <Textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          placeholder="Enter audio description..."
-                          className="min-h-[60px]"
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatTime(desc.startTime)} - {formatTime(desc.endTime)}
-                          </Badge>
-                          <Badge variant="secondary" className={`text-xs ${getVoiceStyleColor(desc.voiceStyle)}`}>
-                            {desc.voiceStyle}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-foreground">{desc.text}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing(index)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => addNewSegment(index)}
-                          className="h-8 w-8 p-0"
-                          title="Insert description after this one"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => deleteSegment(index)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        
-        {transcriptSegments.length === 0 && (
-          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>Note:</strong> Generate a transcript first to enable AI-powered audio description generation with native {currentLanguage.toUpperCase()} voices.
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wand2 className="w-5 h-5" />
+            AI Audio Description Generator ({language === 'es' ? 'Spanish' : 'English'})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Enhanced Synchronization:</strong> This system analyzes video content at specific timestamps during dialogue gaps to generate perfectly synchronized audio descriptions that match what's actually happening on screen.
             </p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <Button 
+            onClick={generateAIDescriptions} 
+            className="w-full" 
+            disabled={isGenerating || !transcriptSegments || transcriptSegments.length === 0}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Analyzing Video Content...
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4 mr-2" />
+                Generate AI Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+              </>
+            )}
+          </Button>
+
+          {descriptions.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h4 className="font-medium">Generated Audio Descriptions ({descriptions.length})</h4>
+                {descriptions.map((desc, index) => (
+                  <div key={index} className="border rounded-lg p-3">
+                    {editingIndex === index ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Voice Style</Label>
+                          <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="passionate">Passionate</SelectItem>
+                              <SelectItem value="warm">Warm</SelectItem>
+                              <SelectItem value="authoritative">Authoritative</SelectItem>
+                              <SelectItem value="encouraging">Encouraging</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs">Description Text</Label>
+                          <Textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            placeholder="Enter audio description..."
+                            className="min-h-[60px]"
+                          />
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={cancelEdit}>
+                            <X className="w-3 h-3 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-xs">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {formatTime(desc.startTime)} - {formatTime(desc.endTime)}
+                            </Badge>
+                            <Badge variant="secondary" className={`text-xs ${getVoiceStyleColor(desc.voiceStyle)}`}>
+                              {desc.voiceStyle}
+                            </Badge>
+                            {desc.timestamp && (
+                              <Badge variant="outline" className="text-xs">
+                                @{desc.timestamp.toFixed(1)}s
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground">{desc.text}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-1 mt-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing(index)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteDescription(index)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

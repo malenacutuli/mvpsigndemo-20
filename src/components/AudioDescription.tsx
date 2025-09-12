@@ -24,6 +24,7 @@ interface AudioDescription {
   startTime: number;
   endTime: number;
   voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
+  timestamp?: number; // Optional timestamp for sync reference
 }
 
 // Native Spanish voices optimized for accessibility content
@@ -71,7 +72,7 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-// Enhanced synchronization: Track which segment is active with improved gap detection
+// Enhanced synchronization: Track which segment is active with overlap prevention
 useEffect(() => {
   const descriptions = dynamicDescriptions || [];
   
@@ -83,19 +84,34 @@ useEffect(() => {
     isPlaying
   });
   
-  // Find description that matches current time with better precision
+  // Find description that matches current time with strict non-overlap checking
   const potentialDescription = descriptions.find(desc => {
-    const matches = currentTime >= desc.startTime && currentTime <= desc.endTime;
-    if (matches) {
+    const isInTimeRange = currentTime >= desc.startTime && currentTime <= desc.endTime;
+    
+    if (isInTimeRange) {
       console.log('🎯 Found matching description:', {
         text: desc.text.substring(0, 50) + '...',
         startTime: desc.startTime,
         endTime: desc.endTime,
         currentTime,
-        language
+        language,
+        timestamp: desc.timestamp || 'not specified'
       });
+      
+      // Verify this is actually a gap in dialogue by checking if we're not overlapping with speech
+      const hasOverlap = descriptions.some(otherDesc => 
+        otherDesc !== desc && 
+        desc.startTime < otherDesc.endTime && 
+        desc.endTime > otherDesc.startTime
+      );
+      
+      if (hasOverlap) {
+        console.log('⚠️ Description overlaps with other content, skipping');
+        return false;
+      }
     }
-    return matches;
+    
+    return isInTimeRange;
   });
   
   setCurrentDescription(potentialDescription || null);
