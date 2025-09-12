@@ -36,6 +36,18 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <Link to="/explore" className="group">
+              <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                  <Video className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-center">Explore Videos</h3>
+                <p className="text-muted-foreground text-center text-sm">
+                  Discover accessible videos from our community, subscribe to channels, and find content that interests you
+                </p>
+              </div>
+            </Link>
+            
             <Link to="/upload" className="group">
               <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
@@ -51,23 +63,11 @@ const Index = () => {
             <Link to="/videos" className="group">
               <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                  <Video className="w-6 h-6 text-primary" />
+                  <DollarSign className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-center">Manage Videos</h3>
                 <p className="text-muted-foreground text-center text-sm">
                   View, organize, and manage your accessible video library
-                </p>
-              </div>
-            </Link>
-            
-            <Link to="/pricing" className="group">
-              <div className="bg-card rounded-xl p-6 border hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                  <DollarSign className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-center">View Pricing</h3>
-                <p className="text-muted-foreground text-center text-sm">
-                  Choose the perfect plan for your accessibility needs
                 </p>
               </div>
             </Link>
