@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Wand2, Save, Edit, X, Clock, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -143,64 +144,84 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   };
 
   // Enhanced visual analysis with timestamp-specific content generation
-  const generateContextualDescriptions = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
-    console.log('🎥 Starting contextual visual analysis for', transcript.length, 'segments');
-    
-    try {
-      // Create timestamp-specific analysis requests
-      const analysisRequests = [];
-      const gaps = computeGaps(transcript);
-      
-      console.log('🕳️ Found', gaps.length, 'gaps for visual analysis');
-      
-      for (const gap of gaps) {
-        if (gap.end - gap.start >= 2.0) { // Only analyze gaps of 2+ seconds
-          const midpoint = (gap.start + gap.end) / 2;
-          analysisRequests.push({
-            timestamp: midpoint,
-            gapStart: gap.start,
-            gapEnd: gap.end,
-            duration: gap.end - gap.start
-          });
-        }
-      }
-      
-      if (analysisRequests.length === 0) {
-        console.log('⚠️ No suitable gaps found for audio descriptions');
-        return [];
-      }
-      
-      console.log('🎯 Analyzing', analysisRequests.length, 'specific timestamps');
-      
-      // Generate frame-specific descriptions using OpenAI vision analysis
-      const response = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/generate-visual-descriptions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
-        },
-        body: JSON.stringify({ 
-          videoId, 
-          analysisRequests,
-          language: currentLanguage,
-          contentType 
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Visual analysis failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Generated', data.descriptions?.length || 0, 'contextual descriptions');
-      
-      return data.descriptions || [];
-      
-    } catch (error) {
-      console.error('❌ Contextual analysis failed:', error);
-      throw error;
+  const generateDescriptionsFromTranscript = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('📝 Generating AD from transcript gaps for', transcript.length, 'segments');
+
+    // 1) Compute safe non-dialogue gaps
+    const gaps = computeGaps(transcript);
+    if (gaps.length === 0) {
+      console.log('⚠️ No gaps available');
+      return [];
     }
+
+    // 2) Ask AI for creative description proposals (text only)
+    const segmentsPayload = transcript
+      .filter(s => typeof s.text === 'string')
+      .map(s => ({
+        text: String(s.text || ''),
+        startTime: Number(s.startTime || 0),
+        endTime: Number(s.endTime || 0),
+      }))
+      .slice(0, 200);
+
+    const { data, error } = await supabase.functions.invoke('generate-ad', {
+      body: {
+        contentType,
+        language: language,
+        segments: segmentsPayload,
+      }
+    });
+
+    if (error) {
+      console.error('❌ generate-ad failed:', error);
+      throw new Error(error.message || 'AD generation failed');
+    }
+
+    const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
+    if (!proposals.length) return [];
+
+    // 3) Schedule proposals into gaps with durations estimated from text
+    const scheduled: AudioDescriptionSegment[] = [];
+    let gapIndex = 0;
+    let cursor = gaps[0].start;
+
+    for (const p of proposals) {
+      // Advance to next usable gap if current is exhausted
+      while (gapIndex < gaps.length && cursor + 0.01 >= gaps[gapIndex].end) {
+        gapIndex++;
+        if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
+      }
+      if (gapIndex >= gaps.length) break;
+
+      const gap = gaps[gapIndex];
+      const dur = estimateDurationForText(p.text);
+      const available = gap.end - cursor;
+
+      if (available < 1.0) {
+        // Too tight; move to next gap
+        gapIndex++;
+        if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
+        continue;
+      }
+
+      const actualDur = Math.min(dur, available);
+      const start = cursor;
+      const end = start + actualDur;
+
+      scheduled.push({
+        text: p.text,
+        startTime: start,
+        endTime: end,
+        voiceStyle: (p.voiceStyle as any) || determineVoiceStyle(p.text, contentType),
+        timestamp: (start + end) / 2,
+      });
+
+      // small breathing room between items
+      cursor = end + 0.2;
+    }
+
+    console.log(`✅ Scheduled ${scheduled.length} descriptions across ${gaps.length} gaps`);
+    return scheduled;
   };
 
   const generateAIDescriptions = async () => {
@@ -215,31 +236,22 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     setIsGenerating(true);
     try {
-      // Generate contextual descriptions based on actual video content at specific timestamps
-      const contextualDescriptions = await generateContextualDescriptions(videoId, transcriptSegments);
-      
-      if (contextualDescriptions.length === 0) {
-        toast.error("No suitable gaps found - The video has continuous dialogue with no gaps for audio descriptions");
+      const scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
+
+      if (scheduled.length === 0) {
+        toast.error("No suitable silent gaps found to place audio descriptions");
         return;
       }
-      
-      // Filter out any empty descriptions just in case
-      const filtered = contextualDescriptions.filter(d => d.text && d.text.trim().length > 0);
-      if (filtered.length === 0) {
-        toast.error("Generation returned empty descriptions. Please try again.");
-        return;
-      }
-      
-      setDescriptions(filtered);
-      onDescriptionsUpdate?.(filtered);
-      
-      toast.success(`Audio descriptions generated! Created ${filtered.length} contextual descriptions synchronized with video content`);
-      
-      console.log('✅ Generated contextual descriptions:', filtered);
-      
+
+      setDescriptions(scheduled);
+      onDescriptionsUpdate?.(scheduled);
+
+      toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
+
+      console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error("Generation failed - Failed to generate audio descriptions. Please try again.");
+      toast.error("Generation failed - Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -291,7 +303,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardContent className="space-y-4">
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Enhanced Synchronization:</strong> This system analyzes video content at specific timestamps during dialogue gaps to generate perfectly synchronized audio descriptions that match what's actually happening on screen.
+              <strong>Transcript-guided:</strong> We analyze the transcript to find silence windows and generate creative, on-screen descriptions that fit naturally into those gaps.
             </p>
           </div>
 
