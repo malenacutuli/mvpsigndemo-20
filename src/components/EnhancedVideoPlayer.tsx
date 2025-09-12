@@ -117,51 +117,52 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   // Enhanced speaker identification using AssemblyAI edge function
   const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
-    
+    if (!videoUrl || !videoId) return stabilizeSpeakerColors(segments);
+
     console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
-    
+
     try {
       // Use the speaker-diarization edge function directly
       const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
-          video_id: videoId,
-          video_url: videoUrl,
+          videoUrl,
+          videoId,
           force_reanalysis: false // Use cached results if available
         }
       });
 
       if (error) throw error;
       
-      if (!data?.success || !data?.speakers) {
-        console.warn('⚠️ No speaker data returned from AssemblyAI');
+      if (!data?.success || !data?.speakers || !data?.segments) {
+        console.warn('⚠️ No speaker data returned from diarization');
         return stabilizeSpeakerColors(segments);
       }
 
       console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', data.speakers.length, 'speakers');
       
-      // Apply speaker assignments from AssemblyAI results
-      const speakerMap = new Map();
-      data.speakers.forEach((speaker: any) => {
-        speakerMap.set(speaker.id, { name: speaker.name, color: speaker.color });
-      });
+      // Map by speaker name for color lookup
+      const speakerByName = new Map<string, { name: string; color: string }>();
+      data.speakers.forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
+
+      // Helper to compute overlap of two intervals
+      const overlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 
       const updatedSegments = segments.map(segment => {
-        // Find matching segment in AssemblyAI results based on timing
-        const matchingSpeakerSegment = data.segments?.find((diarSegment: any) => 
-          Math.abs(diarSegment.startTime - segment.startTime) < 1.0 &&
-          Math.abs(diarSegment.endTime - segment.endTime) < 1.0
-        );
-        
-        if (matchingSpeakerSegment && speakerMap.has(matchingSpeakerSegment.speakerId)) {
-          const speakerInfo = speakerMap.get(matchingSpeakerSegment.speakerId);
-          return {
-            ...segment,
-            speaker: speakerInfo.name,
-            speakerColor: speakerInfo.color
-          };
+        let bestName = segment.speaker;
+        let bestColor = segment.speakerColor;
+        let bestOv = 0;
+
+        for (const diar of data.segments as Array<any>) {
+          const ov = overlap(segment.startTime, segment.endTime, diar.startTime, diar.endTime);
+          if (ov > bestOv) {
+            bestOv = ov;
+            const meta = speakerByName.get(diar.speaker);
+            bestName = meta?.name || diar.speaker || bestName;
+            bestColor = meta?.color || bestColor;
+          }
         }
-        
-        return segment;
+
+        return { ...segment, speaker: bestName, speakerColor: bestColor };
       });
 
       console.log('✅ ENHANCED PLAYER: Applied speaker assignments to', updatedSegments.length, 'segments');

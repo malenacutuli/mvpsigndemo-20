@@ -391,7 +391,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               fontSize: `${Math.max(8, baseFontSize * 0.35)}px` // Smaller - 35% of main text
             }}
           >
-            {activeCaption.speaker.toUpperCase()}
+            {activeCaption.speaker}
           </div>
         )}
         
