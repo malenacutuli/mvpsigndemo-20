@@ -194,9 +194,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       text: segments[0].text.substring(0, 30) + '...'
     } : 'No segments');
     
+    // Keep captions for the player UI and also persist raw segments for AD scheduler
     setCaptions([...segments]); // Force array recreation
+    setTranscriptSegments([...segments]);
     
-    console.log('✅ ENHANCED PLAYER: Updated captions state with', segments.length, 'segments');
+    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', segments.length, 'segments');
     
     if (onTranscriptUpdate) {
       onTranscriptUpdate(segments, language);
