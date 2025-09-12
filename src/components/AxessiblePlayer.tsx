@@ -17,6 +17,7 @@ import { SynchronizedDubbingPlayer } from './SynchronizedDubbingPlayer';
 import { FeatureExplanation } from './FeatureExplanation';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
+import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
 
 interface VoiceOption {
   id: string;
@@ -347,8 +348,49 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         };
         const { data, error } = await supabase.functions.invoke('generate-ad', { body: payload });
         if (error) throw new Error(error.message || 'AD generation failed');
-        const descs = (data as any)?.descriptions || [];
-        setGeneratedAD(descs);
+        const proposals = (data as any)?.descriptions || [];
+
+        // Schedule generated proposals into silence gaps
+        const segmentsForGaps = generatedCaptions.map(seg => ({ start: seg.startTime, end: seg.endTime, text: seg.text }));
+        const videoDur = duration || (generatedCaptions[generatedCaptions.length - 1]?.endTime ?? 9999);
+        const gaps = computeGaps(segmentsForGaps as any, videoDur, 1.0, 0.12);
+        const slots = allocateAdSlots(gaps, 2.0);
+
+        const estimateDurationForText = (text: string) => {
+          const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+          const wps = 2.6; // ~2.6 words/sec for clarity
+          return Math.min(5.0, Math.max(1.2, words / wps));
+        };
+        const determineVoice = (text: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' => {
+          const t = (text || '').toLowerCase();
+          if (contentType === 'recipe') {
+            if (t.includes('sizzle') || t.includes('steam') || t.includes('garlic')) return 'passionate';
+            if (t.includes('stir') || t.includes('mix') || t.includes('gentle')) return 'warm';
+            return 'authoritative';
+          }
+          if (t.includes('practice') || t.includes('learn')) return 'encouraging';
+          if (t.includes('show') || t.includes('diagram') || t.includes('explain')) return 'authoritative';
+          return 'warm';
+        };
+
+        const scheduled: any[] = [];
+        let i = 0;
+        for (const slot of slots) {
+          if (i >= proposals.length) break;
+          const p = proposals[i++];
+          const dur = Math.min(estimateDurationForText(p.text), Math.max(0.7, slot.maxDur));
+          const start = slot.start;
+          const end = Math.min(slot.end, start + dur);
+          scheduled.push({
+            text: p.text,
+            startTime: start,
+            endTime: end,
+            voiceStyle: (p.voiceStyle as any) || determineVoice(p.text),
+            timestamp: (start + end) / 2,
+          });
+        }
+
+        setGeneratedAD(scheduled);
       } catch (e: any) {
         setGenerateADError(e.message || 'Failed to generate AD');
         setDynamicADEnabled(false);
