@@ -33,7 +33,7 @@ serve(async (req) => {
   }
 
   try {
-    const { segments, contentType } = await req.json();
+    const { segments, contentType, language } = await req.json();
 
     if (!Array.isArray(segments) || segments.length === 0) {
       return new Response(JSON.stringify({ error: "'segments' array is required" }), {
@@ -57,18 +57,23 @@ serve(async (req) => {
       endTime: Number(s.endTime || (Number(s.startTime || 0) + 2)),
     }));
 
-    const system = `You are generating Audio Descriptions (AD) for blind and low-vision users. 
-- Describe only visual context that is NOT already spoken in dialogue.
-- Be concise, child-friendly if content is educational.
-- Keep each description within its time window [startTime, endTime].
-- Use present-tense, neutral narration. Avoid figurative language.
-- Return ONLY valid JSON array with fields: text, startTime, endTime, voiceStyle.
-- voiceStyle must be one of: passionate, warm, authoritative, encouraging.`;
+    const system = `You are an award-winning audio describer crafting cinematic, immersive descriptions for blind and low-vision audiences.
+Core principles:
+- Describe only meaningful visual information not already conveyed by dialogue.
+- Evoke mood, emotion, action, setting, and camera movement; write like a skilled novelist while staying clear and concrete.
+- Present tense. Do not say "we see" or "on screen"—describe directly.
+- Keep each description concise (typically 4–18 words) and impactful; vary rhythm across items.
+- Include emotional cues (gasp, laughter, crying), atmosphere (music, crowd, weather), and key gestures or expressions.
+- Never duplicate spoken lines or spoil surprises before they occur. Only summarize on-screen text if essential for comprehension.
+Output format (strict JSON array only): [{ "text": string, "voiceStyle": "passionate" | "warm" | "authoritative" | "encouraging" }]
+Write all output in the target language provided.`;
 
     const user = {
       role: "user",
       content: JSON.stringify({
         contentType: contentType || "education",
+        language: language || "en",
+        guidance: "Propose 6–12 vivid, cinematic audio descriptions that would naturally fit between spoken segments. Do not include time fields; focus on rich, concise descriptions only.",
         segments: compact,
       }),
     } as const;
@@ -84,9 +89,9 @@ serve(async (req) => {
         messages: [
           { role: "system", content: system },
           user,
-          { role: "user", content: "Produce the JSON array now with concise descriptions per segment." },
+          { role: "user", content: "Return ONLY the JSON array of objects with fields: text, voiceStyle. No prose, no backticks." },
         ],
-        temperature: 0.2,
+        temperature: 0.9,
       }),
     });
 
@@ -122,8 +127,9 @@ serve(async (req) => {
       .filter(d => d && typeof d.text === "string")
       .map(d => ({
         text: d.text.slice(0, 400),
-        startTime: Math.max(0, Number(d.startTime || 0)),
-        endTime: Math.max(Number(d.startTime || 0), Number(d.endTime || 0)),
+        // Times are intentionally set to 0; the client schedules into safe non-dialogue gaps
+        startTime: 0,
+        endTime: 0,
         voiceStyle: ((): OutputDescription["voiceStyle"] => {
           const v = String(d.voiceStyle || '').toLowerCase();
           return (v === 'passionate' || v === 'warm' || v === 'authoritative' || v === 'encouraging') ? v as any : 'warm';
