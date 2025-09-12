@@ -343,14 +343,15 @@ export default function Videos() {
                             </Link>
                           </Button>
                           
-                          <VideoPublishingControls
-                            videoId={video.id}
-                            isPublic={video.is_public}
-                            contentType={video.content_type}
-                            description={video.description}
-                            channelId={video.channel_id}
-                            onUpdate={fetchVideos}
-                          />
+              <VideoPublishingControls
+                videoId={video.id}
+                isPublic={video.is_public}
+                contentType={video.content_type}
+                description={video.description}
+                channelId={video.channel_id}
+                videoStatus={video.status}
+                onUpdate={fetchVideos}
+              />
                           
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

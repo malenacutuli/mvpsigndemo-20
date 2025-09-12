@@ -288,6 +288,7 @@ const VideoDetail = () => {
                 contentType={video.content_type}
                 description={video.description}
                 channelId={video.channel_id}
+                videoStatus={video.status}
                 onUpdate={fetchVideo}
               />
               <Button 
