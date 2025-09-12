@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Users, Video, Edit, Trash2 } from 'lucide-react';
+import { Plus, Users, Video, Edit, Trash2, Upload, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,6 +28,10 @@ export const ChannelManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -70,6 +74,7 @@ export const ChannelManager: React.FC = () => {
         description: channel.description || '',
         isPublic: channel.is_public
       });
+      setAvatarPreview(channel.avatar_url);
     } else {
       setEditingChannel(null);
       setFormData({
@@ -77,8 +82,71 @@ export const ChannelManager: React.FC = () => {
         description: '',
         isPublic: true
       });
+      setAvatarPreview(null);
     }
+    setAvatarFile(null);
     setOpen(true);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error", 
+        description: "Image must be less than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAvatarFile(file);
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile) return null;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('thumbnails')
+        .upload(fileName, avatarFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('thumbnails')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      throw error;
+    }
   };
 
   const handleSave = async () => {
@@ -92,13 +160,22 @@ export const ChannelManager: React.FC = () => {
     }
 
     try {
+      setUploading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      let avatarUrl = editingChannel?.avatar_url || null;
+      
+      // Upload new avatar if selected
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar();
+      }
 
       const channelData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         is_public: formData.isPublic,
+        avatar_url: avatarUrl,
         user_id: user.id
       };
 
@@ -124,7 +201,7 @@ export const ChannelManager: React.FC = () => {
         if (error) throw error;
 
         toast({
-          title: "Channel Created",
+          title: "Channel Created", 
           description: "Your new channel has been created successfully",
         });
       }
@@ -138,6 +215,8 @@ export const ChannelManager: React.FC = () => {
         description: "Failed to save channel",
         variant: "destructive"
       });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -206,6 +285,39 @@ export const ChannelManager: React.FC = () => {
 
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label>Channel Avatar</Label>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage src={avatarPreview || undefined} />
+                    <AvatarFallback>
+                      {formData.name ? formData.name.substring(0, 2).toUpperCase() : <Camera className="w-6 h-6" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {avatarPreview ? 'Change Avatar' : 'Upload Avatar'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Upload an image (JPG, PNG, max 5MB)
+                    </p>
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="name">Channel Name</Label>
                 <Input
                   id="name"
@@ -235,7 +347,10 @@ export const ChannelManager: React.FC = () => {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={uploading}>
+                {uploading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                ) : null}
                 {editingChannel ? 'Update' : 'Create'} Channel
               </Button>
             </DialogFooter>
