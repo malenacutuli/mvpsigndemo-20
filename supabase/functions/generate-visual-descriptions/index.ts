@@ -62,15 +62,7 @@ serve(async (req) => {
         // Create context-aware prompt for visual description
         const prompt = createVisualDescriptionPrompt(request, language, contentType);
         
-        // Prepare messages - include frames if available for vision analysis
-        const messages: any[] = [
-          {
-            role: 'system',
-            content: `You are an expert audio description writer creating descriptions for ${contentType} content in ${language}. Generate concise, vivid descriptions that help visually impaired users understand what's happening on screen during dialogue gaps.`
-          }
-        ];
-
-        // If frames are provided, use GPT-5 with vision
+        // If frames are provided, use GPT-5 with vision for accurate analysis
         if (request.frameDataUrls && request.frameDataUrls.length > 0) {
           const imageContents = request.frameDataUrls.map(dataUrl => ({
             type: "image_url",
@@ -84,12 +76,16 @@ serve(async (req) => {
               ...imageContents
             ]
           });
+          
+          console.log(`🖼️ Using GPT-5 vision with ${request.frameDataUrls.length} frames for timestamp ${request.timestamp}s`);
         } else {
           // Text-only mode
           messages.push({
             role: 'user',
             content: prompt
           });
+          
+          console.log(`📝 Using text-only mode for timestamp ${request.timestamp}s`);
         }
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -101,9 +97,36 @@ serve(async (req) => {
           body: JSON.stringify({
             model: request.frameDataUrls && request.frameDataUrls.length > 0 ? 'gpt-5-2025-08-07' : 'gpt-5-mini-2025-08-07',
             messages,
-            max_completion_tokens: 150,
+            max_completion_tokens: 100, // Shorter for more focused descriptions
           }),
         });
+
+        if (!response.ok) {
+          console.error(`❌ OpenAI API error for timestamp ${request.timestamp}:`, response.status);
+          continue;
+        }
+
+        const data = await response.json();
+        let description = (data?.choices?.[0]?.message?.content || '').trim();
+
+        // Frame validation: if we have frames, validate the description matches visible content
+        if (request.frameDataUrls && request.frameDataUrls.length > 0 && description) {
+          const validationResult = await validateDescriptionAgainstFrames(description, request.frameDataUrls, openAIApiKey);
+          
+          if (!validationResult.isValid) {
+            console.log(`⚠️ Description validation failed for ${request.timestamp}s: ${validationResult.reason}`);
+            
+            // Try to get a corrected description
+            if (validationResult.correctedDescription) {
+              description = validationResult.correctedDescription;
+              console.log(`✅ Using corrected description: "${description}"`);
+            } else {
+              // Skip this description if we can't validate it
+              console.log(`❌ Skipping unvalidated description for ${request.timestamp}s`);
+              continue;
+            }
+          }
+        }
 
         if (!response.ok) {
           console.error(`❌ OpenAI API error for timestamp ${request.timestamp}:`, response.status);
@@ -194,23 +217,119 @@ serve(async (req) => {
   }
 });
 
+// Frame validation function to ensure descriptions match visible content
+async function validateDescriptionAgainstFrames(description: string, frameDataUrls: string[], apiKey: string): Promise<{
+  isValid: boolean;
+  reason?: string;
+  correctedDescription?: string;
+}> {
+  try {
+    const imageContents = frameDataUrls.map(dataUrl => ({
+      type: "image_url", 
+      image_url: { url: dataUrl }
+    }));
+
+    const validationPrompt = `You are a critic reviewing an audio description for accuracy against video frames.
+
+Audio description to validate: "${description}"
+
+Your task:
+1. Check if EVERY element mentioned in the description is clearly visible in the frames
+2. If description is accurate, respond: "VALID"  
+3. If inaccurate, respond: "INVALID: [reason]"
+4. If mostly accurate but needs minor correction, respond: "CORRECTED: [improved version under 15 words]"
+
+Be strict - reject descriptions that mention things not clearly visible in the frames.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-5-mini-2025-08-07', // Fast model for validation
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: validationPrompt },
+            ...imageContents
+          ]
+        }],
+        max_completion_tokens: 60,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const result = (data?.choices?.[0]?.message?.content || '').trim();
+      
+      if (result.startsWith('VALID')) {
+        return { isValid: true };
+      } else if (result.startsWith('CORRECTED:')) {
+        const corrected = result.replace('CORRECTED:', '').trim();
+        return { 
+          isValid: true, 
+          correctedDescription: corrected
+        };
+      } else if (result.startsWith('INVALID:')) {
+        const reason = result.replace('INVALID:', '').trim();
+        return { 
+          isValid: false, 
+          reason 
+        };
+      }
+    }
+    
+    // Default to valid if validation fails
+    return { isValid: true };
+    
+  } catch (error) {
+    console.error('Validation error:', error);
+    return { isValid: true }; // Default to accepting if validation fails
+  }
+}
+
 function createVisualDescriptionPrompt(request: AnalysisRequest, language: string, contentType: string): string {
   const hasFrames = request.frameDataUrls && request.frameDataUrls.length > 0;
   const contextText = request.surroundingText ? `\n\nNearby dialogue context: "${request.surroundingText}"` : '';
   
-  const contextPrompts = {
-    recipe: hasFrames 
-      ? `Analyze these video frames from timestamp ${request.timestamp} seconds in a cooking video. Describe the cooking action, ingredient, or technique being shown. Focus on visual elements like cooking methods, ingredient preparation, equipment, food appearance, and cooking progress.`
-      : `At timestamp ${request.timestamp} seconds in a cooking video, describe what cooking action, ingredient, or technique is being shown. Focus on visual elements like: cooking methods, ingredient preparation, equipment being used, food appearance, cooking progress.`,
-    education: hasFrames
-      ? `Analyze these video frames from timestamp ${request.timestamp} seconds in an educational video. Describe the key visual elements that support learning: demonstrations, visual aids, gestures, objects being shown, environment, or educational materials.`
-      : `At timestamp ${request.timestamp} seconds in an educational video, describe the key visual elements that support learning. Focus on: demonstrations, visual aids, gestures, objects being shown, environment, or educational materials.`,
-    default: hasFrames
-      ? `Analyze these video frames from timestamp ${request.timestamp} seconds. Describe the main visual elements and actions happening on screen that would be important for understanding the content.`
-      : `At timestamp ${request.timestamp} seconds, describe the main visual elements and actions happening on screen that would be important for understanding the content.`
-  };
+  if (hasFrames) {
+    // Frame-based analysis prompt
+    return `You are analyzing video frames from timestamp ${request.timestamp.toFixed(1)} seconds. 
 
-  const prompt = contextPrompts[contentType as keyof typeof contextPrompts] || contextPrompts.default;
+CRITICAL INSTRUCTIONS:
+1. ONLY describe what you can clearly see in the provided frames
+2. DO NOT make assumptions about content not visible in the frames
+3. If frames show unclear/dark/blurred content, generate a brief neutral description
+4. Be specific about visible elements: people, objects, actions, settings
+5. Keep description under 20 words for ${request.duration.toFixed(1)}s duration
+
+Your task: Create a factual audio description based solely on what's visible in these frames.${contextText}
+
+Generate only the description text, no formatting or explanation.`;
+  } else {
+    // Text-only fallback prompt  
+    const contextPrompts = {
+      general: `At timestamp ${request.timestamp} seconds, describe general visual elements that would complement the nearby dialogue without making specific assumptions about unseen content.`
+    };
+
+    const prompt = contextPrompts.general;
+    
+    return `${prompt}
+
+Duration available: ${request.duration.toFixed(1)} seconds
+Gap timing: ${request.gapStart.toFixed(1)}s to ${request.gapEnd.toFixed(1)}s${contextText}
+
+Requirements:
+- Keep description under 20 words for ${request.duration.toFixed(1)}s duration  
+- Be general and supportive of the content theme
+- Avoid assumptions about specific unseen details
+- Focus on atmospheric or transitional elements
+
+Generate only the audio description text, no additional formatting or explanation.`;
+  }
+}
   
   const languageInstructions = {
     es: 'Provide the description in clear, natural Spanish.',

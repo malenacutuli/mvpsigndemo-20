@@ -143,9 +143,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return gaps;
   };
 
-  // Simple transcript-based AD generation (working approach)
+  // Frame-grounded AD generation with visual analysis
   const generateDescriptionsFromTranscript = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
-    console.log('📝 Generating AD from transcript gaps for', transcript.length, 'segments');
+    console.log('📝 Generating frame-grounded AD for', transcript.length, 'segments');
 
     // 1) Compute safe non-dialogue gaps
     const gaps = computeGaps(transcript);
@@ -154,7 +154,148 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       return [];
     }
 
-    // 2) Generate contextual descriptions using the transcript content (not video analysis)
+    console.log('🎬 Extracting keyframes for', gaps.length, 'gaps');
+
+    // 2) Extract keyframes for each gap and generate visual analysis requests
+    const analysisRequests = [];
+    
+    for (const gap of gaps.slice(0, 5)) { // Limit to first 5 gaps for performance
+      const midTime = gap.start + ((gap.end - gap.start) / 2);
+      
+      try {
+        // Create a video element to extract frames from
+        const video = document.createElement('video');
+        video.src = videoUrl;
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        
+        // Extract keyframes around the gap midpoint
+        const frameDataUrls: string[] = [];
+        const frameTimes = [
+          Math.max(0, midTime - 1), // 1 second before mid
+          midTime, // at midpoint  
+          Math.min(midTime + 1, gap.end - 0.5) // 1 second after or near gap end
+        ].filter(time => time >= gap.start && time <= gap.end - 0.5);
+
+        console.log(`🎥 Extracting ${frameTimes.length} frames for gap ${gap.start.toFixed(1)}-${gap.end.toFixed(1)}s`);
+
+        // Extract frames sequentially to avoid racing issues
+        for (const frameTime of frameTimes) {
+          try {
+            const frameDataUrl = await extractFrameAtTime(video, frameTime);
+            if (frameDataUrl) {
+              frameDataUrls.push(frameDataUrl);
+            }
+          } catch (frameError) {
+            console.warn(`⚠️ Failed to extract frame at ${frameTime}s:`, frameError);
+          }
+        }
+        
+        analysisRequests.push({
+          timestamp: midTime,
+          gapStart: gap.start,
+          gapEnd: gap.end,
+          duration: gap.end - gap.start,
+          frameDataUrls,
+          surroundingText: getSurroundingTranscriptText(gap.start, gap.end, transcript)
+        });
+        
+      } catch (error) {
+        console.error('❌ Failed to extract frames for gap', gap.start, '-', gap.end, ':', error);
+        
+        // Fallback: text-only analysis for this gap
+        analysisRequests.push({
+          timestamp: midTime,
+          gapStart: gap.start,
+          gapEnd: gap.end,
+          duration: gap.end - gap.start,
+          surroundingText: getSurroundingTranscriptText(gap.start, gap.end, transcript)
+        });
+      }
+    }
+
+    if (analysisRequests.length === 0) {
+      console.log('⚠️ No analysis requests created');
+      return [];
+    }
+
+    // 3) Send requests to visual description function with frames
+    console.log('🖼️ Sending', analysisRequests.length, 'frame analysis requests');
+    
+    try {
+      const visualResponse = await supabase.functions.invoke('generate-visual-descriptions', {
+        body: {
+          videoId,
+          analysisRequests,
+          language: currentLanguage,
+          contentType: 'general' // Always use general to avoid bias
+        }
+      });
+
+      if (visualResponse.error) {
+        throw new Error(visualResponse.error.message || 'Failed to generate visual descriptions');
+      }
+
+      const descriptions = visualResponse.data?.descriptions || [];
+      console.log('✅ Generated', descriptions.length, 'frame-grounded descriptions');
+      return descriptions;
+
+    } catch (error) {
+      console.error('❌ Frame-grounded analysis failed:', error);
+      
+      // Final fallback: simple text-based generation
+      return generateTextOnlyFallback(transcript, gaps);
+    }
+  };
+
+  // Helper function to extract frame at specific time
+  const extractFrameAtTime = (video: HTMLVideoElement, timeInSeconds: number): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) {
+        resolve(null);
+        return;
+      }
+      
+      video.currentTime = timeInSeconds;
+      
+      const onSeeked = () => {
+        try {
+          canvas.width = Math.min(video.videoWidth || 640, 512);
+          canvas.height = Math.min(video.videoHeight || 360, 512);
+          
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        } catch (error) {
+          console.error('Frame extraction error:', error);
+          resolve(null);
+        } finally {
+          video.removeEventListener('seeked', onSeeked);
+        }
+      };
+      
+      video.addEventListener('seeked', onSeeked);
+      
+      video.onerror = () => {
+        video.removeEventListener('seeked', onSeeked);
+        resolve(null);
+      };
+      
+      // Timeout fallback
+      setTimeout(() => {
+        video.removeEventListener('seeked', onSeeked);
+        resolve(null);
+      }, 3000);
+    });
+  };
+
+  // Fallback for when frame extraction fails
+  const generateTextOnlyFallback = async (transcript: any[], gaps: { start: number; end: number }[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('📝 Using text-only fallback generation');
+    
     const segmentsPayload = transcript
       .filter(s => typeof s.text === 'string')
       .map(s => ({
@@ -166,7 +307,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     const { data, error } = await supabase.functions.invoke('generate-ad', {
       body: {
-        contentType: 'general', // Use general content type to avoid cooking bias
+        contentType: 'general',
         language: language,
         segments: segmentsPayload,
       }
@@ -180,13 +321,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
     if (!proposals.length) return [];
 
-    // 3) Schedule proposals into gaps with durations estimated from text
+    // Schedule proposals into gaps
     const scheduled: AudioDescriptionSegment[] = [];
     let gapIndex = 0;
     let cursor = gaps[0]?.start || 0;
 
     for (const p of proposals) {
-      // Advance to next usable gap if current is exhausted
       while (gapIndex < gaps.length && cursor + 0.01 >= gaps[gapIndex].end) {
         gapIndex++;
         if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
@@ -198,7 +338,6 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       const available = gap.end - cursor;
 
       if (available < 1.0) {
-        // Too tight; move to next gap
         gapIndex++;
         if (gapIndex < gaps.length) cursor = gaps[gapIndex].start;
         continue;
@@ -216,12 +355,19 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         timestamp: (start + end) / 2,
       });
 
-      // Small breathing room between items
       cursor = end + 0.2;
     }
 
-    console.log(`✅ Scheduled ${scheduled.length} descriptions across ${gaps.length} gaps`);
+    console.log(`✅ Fallback: Scheduled ${scheduled.length} descriptions`);
     return scheduled;
+  };
+
+  const getSurroundingTranscriptText = (gapStart: number, gapEnd: number, transcript: any[]): string => {
+    return transcript
+      .filter(seg => Math.abs(seg.startTime - gapStart) < 30 || Math.abs(seg.endTime - gapEnd) < 30)
+      .map(seg => seg.text)
+      .join(' ')
+      .substring(0, 200);
   };
 
   const generateAIDescriptions = async () => {
