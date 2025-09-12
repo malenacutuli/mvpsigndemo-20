@@ -122,130 +122,167 @@ async function renderVideoWithCaptions(
   processId: string
 ) {
   try {
-    console.log('🎬 Starting video rendering with FFmpeg...');
+    console.log('🎬 Starting video rendering with Rendi API...');
     
-    // Generate FFmpeg filter for captions with speaker colors
-    const captionFilter = generateCaptionFilter(exportData.captions);
-    
-    // Create temporary files
-    const inputVideoPath = `/tmp/input_${processId}.mp4`;
-    const outputVideoPath = `/tmp/output_${processId}.mp4`;
-    
-    // Download original video
-    console.log('⬇️ Downloading original video...');
-    const videoResponse = await fetch(exportData.videoUrl);
-    if (!videoResponse.ok) {
-      throw new Error('Failed to download original video');
+    const rendiApiKey = Deno.env.get('RENDI_API_KEY');
+    if (!rendiApiKey) {
+      throw new Error('RENDI_API_KEY is not configured');
     }
     
-    const videoData = await videoResponse.arrayBuffer();
-    await Deno.writeFile(inputVideoPath, new Uint8Array(videoData));
+    // Generate subtitle layers for Rendi
+    const subtitleLayers = generateRendiSubtitleLayers(exportData.captions);
     
-    // Prepare FFmpeg command
-    const ffmpegCmd = [
-      'ffmpeg',
-      '-i', inputVideoPath,
-      '-vf', captionFilter,
-      '-c:a', 'copy', // Keep original audio
-      '-c:v', 'libx264', // Re-encode video with captions
-      '-preset', 'fast',
-      '-crf', '23',
-      '-movflags', '+faststart', // Optimize for streaming
-      outputVideoPath
-    ];
+    // Prepare Rendi render request
+    const rendiRequest = {
+      template: {
+        width: 1920,
+        height: 1080,
+        duration: Math.max(...exportData.captions.map(c => c.endTime)) + 1,
+        backgroundColor: "#000000",
+        layers: [
+          // Video layer
+          {
+            type: "video",
+            src: exportData.videoUrl,
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            start: 0,
+            duration: Math.max(...exportData.captions.map(c => c.endTime)) + 1
+          },
+          // Subtitle layers
+          ...subtitleLayers
+        ]
+      },
+      webhook: null,
+      metadata: {
+        processId,
+        videoId: exportData.videoId
+      }
+    };
     
-    console.log('🔧 Running FFmpeg command:', ffmpegCmd.join(' '));
+    console.log('🚀 Sending render request to Rendi...');
     
-    // Execute FFmpeg
-    const process = new Deno.Command('ffmpeg', {
-      args: ffmpegCmd.slice(1),
-      stdout: 'pipe',
-      stderr: 'pipe'
+    // Submit render to Rendi
+    const renderResponse = await fetch('https://api.rendi.io/v1/render', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${rendiApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(rendiRequest)
     });
     
-    const { code, stdout, stderr } = await process.output();
-    
-    if (code !== 0) {
-      const errorText = new TextDecoder().decode(stderr);
-      console.error('❌ FFmpeg failed:', errorText);
-      throw new Error(`FFmpeg processing failed: ${errorText}`);
+    if (!renderResponse.ok) {
+      const errorText = await renderResponse.text();
+      console.error('❌ Rendi render request failed:', errorText);
+      throw new Error(`Rendi API error: ${renderResponse.status} ${errorText}`);
     }
     
-    console.log('✅ Video rendering complete');
+    const renderResult = await renderResponse.json();
+    const renderId = renderResult.id;
     
-    // Upload processed video to Supabase Storage
-    const outputVideo = await Deno.readFile(outputVideoPath);
-    const outputFileName = `${exportData.videoId}_accessible.mp4`;
+    console.log('✅ Render submitted to Rendi, ID:', renderId);
     
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('processed-videos')
-      .upload(outputFileName, outputVideo, {
-        contentType: 'video/mp4',
-        upsert: true
+    // Poll for completion
+    let renderStatus = 'processing';
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max wait time
+    
+    while (renderStatus === 'processing' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      
+      const statusResponse = await fetch(`https://api.rendi.io/v1/render/${renderId}`, {
+        headers: {
+          'Authorization': `Bearer ${rendiApiKey}`
+        }
       });
-    
-    if (uploadError) {
-      console.error('❌ Upload failed:', uploadError);
-      throw new Error('Failed to upload processed video');
+      
+      if (statusResponse.ok) {
+        const statusResult = await statusResponse.json();
+        renderStatus = statusResult.status;
+        
+        console.log(`📊 Render status (attempt ${attempts + 1}):`, renderStatus);
+        
+        if (renderStatus === 'completed') {
+          console.log('🎉 Video rendering complete!');
+          
+          // Download the rendered video
+          const videoDownloadUrl = statusResult.url;
+          const videoResponse = await fetch(videoDownloadUrl);
+          
+          if (!videoResponse.ok) {
+            throw new Error('Failed to download rendered video from Rendi');
+          }
+          
+          const videoData = await videoResponse.arrayBuffer();
+          const outputFileName = `${exportData.videoId}_accessible.mp4`;
+          
+          // Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('processed-videos')
+            .upload(outputFileName, videoData, {
+              contentType: 'video/mp4',
+              upsert: true
+            });
+          
+          if (uploadError) {
+            console.error('❌ Upload failed:', uploadError);
+            throw new Error('Failed to upload processed video');
+          }
+          
+          const { data: videoUrl } = supabase.storage
+            .from('processed-videos')
+            .getPublicUrl(outputFileName);
+          
+          console.log('🎉 Accessible video ready:', videoUrl.publicUrl);
+          console.log('✅ Process complete for:', processId);
+          break;
+          
+        } else if (renderStatus === 'failed') {
+          throw new Error(`Rendi rendering failed: ${statusResult.error || 'Unknown error'}`);
+        }
+      }
+      
+      attempts++;
     }
     
-    const { data: videoUrl } = supabase.storage
-      .from('processed-videos')
-      .getPublicUrl(outputFileName);
-    
-    console.log('🎉 Accessible video ready:', videoUrl.publicUrl);
-    
-    // Update process status in database (you'd implement this)
-    // For now, we'll just log success
-    console.log('✅ Process complete for:', processId);
-    
-    // Clean up temporary files
-    try {
-      await Deno.remove(inputVideoPath);
-      await Deno.remove(outputVideoPath);
-    } catch (cleanupError) {
-      console.warn('⚠️ Cleanup warning:', cleanupError.message);
+    if (renderStatus === 'processing' && attempts >= maxAttempts) {
+      throw new Error('Render timed out after 5 minutes');
     }
     
   } catch (error) {
     console.error('❌ Video rendering failed:', error);
     // In a real implementation, you'd update the process status to 'failed'
+    throw error;
   }
 }
 
-function generateCaptionFilter(captions: Caption[]): string {
-  if (!captions || captions.length === 0) {
-    return 'null'; // No captions to add
-  }
-  
-  // Create drawtext filters for each caption with timing and colors
-  const textFilters = captions.map((caption, index) => {
-    const startTime = caption.startTime;
-    const endTime = caption.endTime;
-    const text = caption.text.replace(/'/g, "\\'").replace(/:/g, "\\:"); // Escape special chars
-    const color = getSpeakerColorHex(caption.speakerColor || '#FFFFFF');
-    
-    return `drawtext=text='${text}':fontfile=/System/Library/Fonts/Arial.ttf:fontsize=36:fontcolor=${color}:box=1:boxcolor=black@0.7:boxborderw=8:x=(w-tw)/2:y=h-th-50:enable='between(t,${startTime},${endTime})'`;
-  });
-  
-  // Join all drawtext filters
-  return textFilters.join(',');
-}
-
-function getSpeakerColorHex(color: string): string {
-  // Convert color names or other formats to hex
-  const colorMap: { [key: string]: string } = {
-    'blue': '#3B82F6',
-    'green': '#10B981', 
-    'red': '#EF4444',
-    'yellow': '#F59E0B',
-    'purple': '#8B5CF6',
-    'pink': '#EC4899',
-    'orange': '#F97316',
-    'cyan': '#06B6D4'
-  };
-  
-  return colorMap[color.toLowerCase()] || color || '#FFFFFF';
+function generateRendiSubtitleLayers(captions: Caption[]): any[] {
+  return captions.map((caption, index) => ({
+    type: "text",
+    text: caption.text,
+    x: 960, // Center horizontally
+    y: 900, // Near bottom
+    width: 1600,
+    height: 120,
+    fontSize: 48,
+    fontFamily: "Arial",
+    fontWeight: "bold",
+    color: getSpeakerColorHex(caption.speakerColor || '#FFFFFF'),
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    textAlign: "center",
+    verticalAlign: "middle",
+    borderRadius: 8,
+    padding: 16,
+    start: caption.startTime,
+    duration: caption.endTime - caption.startTime,
+    animation: {
+      fadeIn: 0.2,
+      fadeOut: 0.2
+    }
+  }));
 }
 
 function generateSRTSubtitles(captions: Caption[]): string {
@@ -264,6 +301,22 @@ function generateSRTSubtitles(captions: Caption[]): string {
   });
   
   return srt;
+}
+
+function getSpeakerColorHex(color: string): string {
+  // Convert color names or other formats to hex
+  const colorMap: { [key: string]: string } = {
+    'blue': '#3B82F6',
+    'green': '#10B981', 
+    'red': '#EF4444',
+    'yellow': '#F59E0B',
+    'purple': '#8B5CF6',
+    'pink': '#EC4899',
+    'orange': '#F97316',
+    'cyan': '#06B6D4'
+  };
+  
+  return colorMap[color.toLowerCase()] || color || '#FFFFFF';
 }
 
 function generateAudioDescriptionScript(descriptions: AudioDescription[]): string {
