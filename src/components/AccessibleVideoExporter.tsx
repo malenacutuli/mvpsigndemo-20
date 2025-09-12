@@ -136,7 +136,7 @@ export const AccessibleVideoExporter: React.FC<AccessibleVideoExporterProps> = (
     const poll = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('export-status', {
-          body: { processId }
+          body: { processId, videoId }
         });
 
         if (error) throw error;
