@@ -262,11 +262,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
     const loadAudioDescriptions = async () => {
       try {
+        // Query for both 'es' and 'spanish' language values to handle inconsistency
         const { data, error } = await supabase
           .from('audio_descriptions')
           .select('*')
           .eq('video_id', videoId)
-          .eq('language', currentLanguage || 'en')
+          .in('language', [currentLanguage || 'en', 'spanish', 'es'])
           .order('start_time');
 
         if (error) {
@@ -278,49 +279,14 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           const formattedDescriptions = data.map(desc => ({
             text: desc.description,
             startTime: desc.start_time,
-            endTime: desc.end_time,
+            endTime: desc.end_time,  
             voiceStyle: 'warm' as const,
             timestamp: desc.start_time
           }));
           setAudioDescriptions(formattedDescriptions);
-          console.log('📥 Loaded audio descriptions from database:', formattedDescriptions.length);
-        }
-      } catch (error) {
-        console.error('Failed to load audio descriptions:', error);
-      }
-    };
-
-    loadAudioDescriptions();
-  }, [videoId, currentLanguage]);
-
-  // Load saved audio descriptions from database
-  useEffect(() => {
-    if (!videoId) return;
-
-    const loadAudioDescriptions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('audio_descriptions')
-          .select('*')
-          .eq('video_id', videoId)
-          .eq('language', currentLanguage || 'en')
-          .order('start_time');
-
-        if (error) {
-          console.error('Error loading audio descriptions:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const formattedDescriptions = data.map(desc => ({
-            text: desc.description,
-            startTime: desc.start_time,
-            endTime: desc.end_time,
-            voiceStyle: 'warm' as const,
-            timestamp: desc.start_time
-          }));
-          setAudioDescriptions(formattedDescriptions);
-          console.log('📥 Loaded audio descriptions from database:', formattedDescriptions.length);
+          console.log('📢 Loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions');
+        } else {
+          console.log('📢 No audio descriptions found for video:', videoId, 'language:', currentLanguage);
         }
       } catch (error) {
         console.error('Failed to load audio descriptions:', error);

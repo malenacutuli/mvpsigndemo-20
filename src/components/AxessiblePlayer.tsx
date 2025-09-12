@@ -148,6 +148,46 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, []);
 
+  // Load saved audio descriptions from database
+  useEffect(() => {
+    if (!videoId) return;
+
+    const loadAudioDescriptions = async () => {
+      try {
+        // Query for both 'es' and 'spanish' language values to handle inconsistency
+        const { data, error } = await supabase
+          .from('audio_descriptions')
+          .select('*')
+          .eq('video_id', videoId)
+          .in('language', [currentLanguage || 'en', 'spanish', 'es'])
+          .order('start_time');
+
+        if (error) {
+          console.error('Error loading audio descriptions:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const formattedDescriptions = data.map(desc => ({
+            text: desc.description,
+            startTime: desc.start_time,
+            endTime: desc.end_time,  
+            voiceStyle: 'warm' as const,
+            timestamp: desc.start_time
+          }));
+          setGeneratedAD(formattedDescriptions);
+          console.log('📢 AxessiblePlayer loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions');
+        } else {
+          console.log('📢 AxessiblePlayer: No audio descriptions found for video:', videoId, 'language:', currentLanguage);
+        }
+      } catch (error) {
+        console.error('Failed to load audio descriptions:', error);
+      }
+    };
+
+    loadAudioDescriptions();
+  }, [videoId, currentLanguage]);
+
 
   const togglePlay = async () => {
     const video = videoRef.current;
@@ -718,7 +758,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             isPlaying={isPlaying}
             contentType={contentType}
             selectedVoice={selectedVoice}
-            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (dynamicADEnabled && generatedAD ? generatedAD : undefined)}
+            dynamicDescriptions={generatedAD}
+            language={currentLanguage}
           />
         )}
 
