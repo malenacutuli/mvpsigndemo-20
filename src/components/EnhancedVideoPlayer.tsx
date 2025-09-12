@@ -153,28 +153,57 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           let captionSegments: CaptionSegment[] = [];
           
           try {
-            // Convert database segments to caption format first
-            captionSegments = segments.map(segment => ({
-              text: segment.text,
-              speaker: segment.speaker || 'Speaker',
-              startTime: segment.startTime,
-              endTime: segment.endTime,
-              words: (segment.words || []).map(word => ({
-                text: word.text,
-                startTime: word.startTime || 0,
-                endTime: word.endTime || 0,
-                emphasis: word.emphasis,
-                pitch: word.pitch
-              })),
-              speakerColor: segment.speakerColor || '#3B82F6',
-              pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
-              volume: 50,
-              type: 'dialogue' as const,
-              isOffCamera: segment.isOffCamera || false,
-              vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
-              intensity_confidence: (segment as any).intensity_confidence,
-              auto_styling: (segment as any).auto_styling
-            }));
+            // Convert database segments to caption format first, fixing missing timings and word timestamps
+            captionSegments = segments.map((segment, segIdx) => {
+              const rawWords = (segment.words || []).filter((w: any) => w && typeof w.text === 'string');
+              // Compute segment-level times with robust fallbacks
+              let start = Number(segment.startTime) || 0;
+              let end = Number(segment.endTime) || 0;
+
+              const firstWordWithTime = rawWords.find((w: any) => typeof w.startTime === 'number');
+              const lastWordWithTime = [...rawWords].reverse().find((w: any) => typeof w.endTime === 'number');
+
+              if ((start === 0 || !isFinite(start)) && firstWordWithTime) start = firstWordWithTime.startTime;
+              if ((end === 0 || !isFinite(end)) && lastWordWithTime) end = lastWordWithTime.endTime;
+
+              // If end still invalid or <= start, assign a minimal duration
+              if (!isFinite(end) || end <= start) {
+                end = start + Math.max(1, rawWords.length * 0.3);
+              }
+
+              // Build words with guaranteed timings (uniformly distributed when missing)
+              let words = rawWords.map((word: any) => ({ ...word }));
+              const needsDistribution = words.length > 0 && !words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+              if (words.length > 0 && needsDistribution) {
+                const total = Math.max(end - start, Math.max(1, words.length * 0.3));
+                const step = total / words.length;
+                words = words.map((w: any, i: number) => ({
+                  text: w.text,
+                  startTime: typeof w.startTime === 'number' ? w.startTime : start + i * step,
+                  endTime: typeof w.endTime === 'number' ? w.endTime : start + (i + 1) * step,
+                  emphasis: w.emphasis,
+                  pitch: w.pitch
+                }));
+                // Ensure segment end matches last word end
+                end = words[words.length - 1].endTime;
+              }
+
+              return {
+                text: segment.text,
+                speaker: segment.speaker || 'Speaker',
+                startTime: start,
+                endTime: end,
+                words,
+                speakerColor: segment.speakerColor || '#3B82F6',
+                pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+                volume: 50,
+                type: 'dialogue' as const,
+                isOffCamera: segment.isOffCamera || false,
+                vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+                intensity_confidence: (segment as any).intensity_confidence,
+                auto_styling: (segment as any).auto_styling
+              };
+            });
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
