@@ -18,6 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import { Auth } from "./pages/Auth";
 import Explore from "./pages/Explore";
 import PublicVideo from "./pages/PublicVideo";
+import PublicBoard from "./pages/PublicBoard";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/explore" element={<Explore />} />
+            <Route path="/public" element={<PublicBoard />} />
             <Route path="/watch/:id" element={<PublicVideo />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>

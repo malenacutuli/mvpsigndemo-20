@@ -220,7 +220,7 @@ export const VideoPrivacyControls: React.FC<VideoPrivacyControlsProps> = ({
           <div className="pt-2 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full">
               <a 
-                href={`/public/${videoId}`} 
+                href={`/watch/${videoId}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"

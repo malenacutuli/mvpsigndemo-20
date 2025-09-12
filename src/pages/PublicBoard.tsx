@@ -39,7 +39,7 @@ export default function PublicBoard() {
         .from('videos')
         .select('id, title, description, language, content_type, duration_seconds, thumbnail_url, view_count, published_at, created_at')
         .eq('is_public', true)
-        .eq('status', 'ready')
+        .in('status', ['ready', 'uploaded'])
         .order('published_at', { ascending: false });
 
       if (error) throw error;
@@ -256,7 +256,7 @@ export default function PublicBoard() {
                   </div>
                   
                   <Button asChild className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <Link to={`/public/${video.id}`}>
+                    <Link to={`/watch/${video.id}`}>
                       <Play className="w-4 h-4 mr-2" />
                       Watch Accessible Video
                     </Link>
