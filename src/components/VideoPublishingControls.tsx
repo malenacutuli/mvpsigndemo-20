@@ -45,7 +45,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     isPublic,
     contentType,
     description: description || '',
-    channelId: channelId || '',
+    channelId: channelId || 'none',
     keywords: ''
   });
 
@@ -82,7 +82,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
         is_public: formData.isPublic,
         content_type: formData.contentType,
         description: formData.description.trim() || null,
-        channel_id: formData.channelId || null
+        channel_id: (formData.channelId && formData.channelId !== 'none') ? formData.channelId : null
       };
 
       // If publishing, set published_at
@@ -234,14 +234,17 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 <Select
                   value={formData.channelId}
                   onValueChange={(value) => 
-                    setFormData(prev => ({ ...prev, channelId: value }))
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      channelId: value === "none" ? "" : value 
+                    }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a channel" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No channel</SelectItem>
+                    <SelectItem value="none">No channel</SelectItem>
                     {channels.map((channel) => (
                       <SelectItem key={channel.id} value={channel.id}>
                         <div className="flex items-center justify-between w-full">
