@@ -378,8 +378,8 @@ const VideoDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Export Accessible Video */}
-          {captions.length > 0 && videoUrl && (
+          {/* Export Accessible Video - Temporarily Hidden */}
+          {/* {captions.length > 0 && videoUrl && (
             <AccessibleVideoExporter
               videoUrl={videoUrl}
               videoId={video.id}
@@ -390,7 +390,7 @@ const VideoDetail = () => {
                 console.log('✅ Export complete:', downloadUrl);
               }}
             />
-          )}
+          )} */}
 
           {/* Embed Settings and Analytics */}
           {showEmbedSettings && (

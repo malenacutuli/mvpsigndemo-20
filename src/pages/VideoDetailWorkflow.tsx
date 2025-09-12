@@ -371,8 +371,8 @@ export default function VideoDetailWorkflow() {
                  </Card>
                )}
 
-              {/* Accessible Video Export */}
-              {!showWorkflow && (captions.length > 0 || audioDescriptions.length > 0) && (
+              {/* Accessible Video Export - Temporarily Hidden */}
+              {/* {!showWorkflow && (captions.length > 0 || audioDescriptions.length > 0) && (
                 <AccessibleVideoExporter
                   videoUrl={videoUrl}
                   videoId={video.id}
@@ -390,7 +390,7 @@ export default function VideoDetailWorkflow() {
                     });
                   }}
                 />
-              )}
+              )} */}
 
               {/* Video Info */}
               <Card>
