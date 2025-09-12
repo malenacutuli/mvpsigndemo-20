@@ -68,14 +68,7 @@ export const Navigation: React.FC = () => {
           
           {/* CTA and Auth */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <Button asChild variant="default" size="sm" className="font-medium">
-                <Link to="/upload">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload
-                </Link>
-              </Button>
-            ) : (
+            {!user && (
               <Button asChild variant="default" size="sm" className="font-medium">
                 <Link to="/auth">
                   Get Started
@@ -88,13 +81,7 @@ export const Navigation: React.FC = () => {
           
           {/* Mobile menu */}
           <div className="md:hidden flex items-center space-x-3">
-            {user ? (
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/upload">
-                  <Upload className="w-4 h-4" />
-                </Link>
-              </Button>
-            ) : (
+            {!user && (
               <Button asChild variant="default" size="sm">
                 <Link to="/auth">
                   Start

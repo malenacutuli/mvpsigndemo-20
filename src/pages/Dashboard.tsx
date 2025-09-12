@@ -4,9 +4,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { StorageIndicator } from '@/components/StorageIndicator';
 import { SubscriptionManager } from '@/components/SubscriptionManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Video, Wand2 } from 'lucide-react';
+import { Upload, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
   return (
@@ -30,7 +29,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                   <Link to="/upload" className="group">
                     <Card className="hover:shadow-lg transition-all duration-300 group-hover:scale-105">
                       <CardHeader className="text-center pb-4">
@@ -62,20 +61,6 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
                   </Link>
-
-                  <Card className="hover:shadow-lg transition-all duration-300">
-                    <CardHeader className="text-center pb-4">
-                      <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                        <Wand2 className="w-6 h-6 text-accent" />
-                      </div>
-                      <CardTitle className="text-xl">AI Tools</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground text-center text-sm">
-                        Create custom ASL clips for personalized accessibility
-                      </p>
-                    </CardContent>
-                  </Card>
                 </div>
               </div>
 
