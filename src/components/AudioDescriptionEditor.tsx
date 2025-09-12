@@ -106,7 +106,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return Math.min(5.0, Math.max(1.2, words / wps));
   };
 
-  // Compute non-dialogue gaps from transcript (where AD can safely play)
+  // Compute non-dialogue gaps from transcript with enhanced padding for better sync
   const computeGaps = (segments: any[]): { start: number; end: number }[] => {
     if (!segments || segments.length === 0) return [{ start: 0, end: 9999 }];
     const sorted = [...segments]
@@ -114,47 +114,56 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       .sort((a, b) => a.startTime - b.startTime);
 
     const gaps: { start: number; end: number }[] = [];
-    const pad = 0.08; // small padding to avoid edges
+    const pad = 0.3; // Increased padding for better separation
 
-    // Pre-roll gap
-    if (sorted[0].startTime > 0.5) {
+    // Pre-roll gap with minimum duration check
+    if (sorted[0].startTime > 1.0) {
       gaps.push({ start: 0, end: Math.max(0, sorted[0].startTime - pad) });
     }
 
     for (let i = 0; i < sorted.length - 1; i++) {
       const end = sorted[i].endTime + pad;
-      const nextStart = Math.max(sorted[i + 1].startTime - pad, end);
-      if (nextStart - end >= 1.0) {
+      const nextStart = sorted[i + 1].startTime - pad;
+      // Require minimum gap of 1.5s for meaningful descriptions
+      if (nextStart - end >= 1.5) {
         gaps.push({ start: end, end: nextStart });
       }
     }
 
-    // Post-roll large window to allow final AD
+    // Post-roll gap
     const lastEnd = sorted[sorted.length - 1].endTime + pad;
-    gaps.push({ start: lastEnd, end: lastEnd + 10 });
+    gaps.push({ start: lastEnd, end: lastEnd + 8 });
+    
+    console.log('🕳️ Computed gaps:', gaps.map(g => `${g.start.toFixed(1)}s-${g.end.toFixed(1)}s (${(g.end-g.start).toFixed(1)}s)`));
     return gaps;
   };
 
-  // Schedule descriptions into non-overlapping gaps with trimming if needed
+  // Enhanced scheduling with context-aware timing
   const scheduleIntoGaps = (raw: AudioDescriptionSegment[], transcript: any[]): AudioDescriptionSegment[] => {
     if (raw.length === 0) return [];
     const gaps = computeGaps(transcript);
     const scheduled: AudioDescriptionSegment[] = [];
 
+    console.log('📅 Scheduling', raw.length, 'descriptions into', gaps.length, 'gaps');
+
     let gapIndex = 0;
-    for (const item of raw) {
-      // Estimate duration needed
+    for (let i = 0; i < raw.length && gapIndex < gaps.length; i++) {
+      const item = raw[i];
       const need = estimateDurationForText(item.text);
 
-      // Find next gap that can fit it (or partially fit with min 1.0s)
+      // Find a suitable gap
       let placed = false;
       while (gapIndex < gaps.length && !placed) {
         const gap = gaps[gapIndex];
         const available = gap.end - gap.start;
-        if (available >= 1.0) {
-          const duration = Math.min(need, available);
-          const start = gap.start;
-          const end = start + duration;
+        
+        console.log(`🎯 Trying to place "${item.text.substring(0, 30)}..." (needs ${need.toFixed(1)}s) in gap ${gap.start.toFixed(1)}s-${gap.end.toFixed(1)}s (${available.toFixed(1)}s available)`);
+        
+        if (available >= Math.max(1.5, need)) {
+          // Center the description in the gap for better timing
+          const padding = Math.max(0.2, (available - need) / 2);
+          const start = gap.start + padding;
+          const end = start + need;
 
           scheduled.push({
             ...item,
@@ -162,18 +171,23 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             endTime: end,
           });
 
-          // Advance gap start
-          gap.start = end + 0.05; // small separation
-          if (gap.start >= gap.end) gapIndex++;
+          console.log(`✅ Placed at ${start.toFixed(1)}s-${end.toFixed(1)}s`);
+
+          // Mark this gap as used
+          gapIndex++;
           placed = true;
         } else {
+          console.log(`❌ Gap too small, moving to next gap`);
           gapIndex++;
         }
       }
-      // If no gap found at all, drop this description (no safe window)
+      
+      if (!placed) {
+        console.log(`⚠️ Could not place description: "${item.text.substring(0, 30)}..."`);
+      }
     }
 
-    // Ensure chronological order
+    console.log('📋 Final schedule:', scheduled.map(s => `${s.startTime.toFixed(1)}s: "${s.text.substring(0, 30)}..."`));
     return scheduled.sort((a, b) => a.startTime - b.startTime);
   };
 
@@ -195,42 +209,72 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🚀 Starting AI description generation...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-ad', {
+      const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
         body: { 
-          segments: transcriptSegments,
-          contentType: contentType,
-          language: currentLanguage,
-          voiceOptions: nativeVoices // Include native voice options
+          videoUrl: videoUrl,
+          videoId: videoId,
+          language: currentLanguage
         }
       });
 
-      console.log('📨 Edge function response:', { data, error });
+      console.log('📨 Twelve Labs analysis response:', { data, error });
 
-      if (error) throw new Error(error.message || 'Audio description generation failed');
+      if (error) {
+        console.warn('⚠️ Twelve Labs failed, falling back to transcript-based generation');
+        
+        // Fallback: Use existing generate-ad with enhanced context
+        const fallbackResponse = await supabase.functions.invoke('generate-ad', {
+          body: { 
+            segments: transcriptSegments,
+            contentType: contentType,
+            language: currentLanguage,
+            voiceOptions: nativeVoices,
+            enhance_context: true
+          }
+        });
+        
+        if (fallbackResponse.error) throw new Error(fallbackResponse.error.message || 'Fallback AD generation failed');
+        
+        if (fallbackResponse.data?.descriptions) {
+          const aiDescriptions: AudioDescriptionSegment[] = fallbackResponse.data.descriptions.map((desc: any, index: number) => ({
+            id: `ad-${Date.now()}-${index}`,
+            text: desc.text,
+            startTime: desc.startTime,
+            endTime: desc.endTime,
+            voiceStyle: desc.voiceStyle || 'warm'
+          }));
 
-      if (data?.descriptions) {
-        const aiDescriptions: AudioDescriptionSegment[] = data.descriptions.map((desc: any, index: number) => ({
-          id: `ad-${Date.now()}-${index}`,
+          const scheduled = scheduleIntoGaps(aiDescriptions, transcriptSegments);
+          setDescriptions(scheduled);
+          await saveDescriptions(scheduled);
+          onDescriptionsUpdate?.(scheduled);
+          
+          toast({
+            title: 'Audio descriptions generated!',
+            description: `Created ${scheduled.length} context-aware descriptions using transcript analysis.`,
+          });
+        }
+        return;
+      }
+
+      // Use Twelve Labs visual analysis for precise timing
+      if (data?.success && data?.audioDescriptions) {
+        const visualDescriptions: AudioDescriptionSegment[] = data.audioDescriptions.map((desc: any, index: number) => ({
+          id: `ad-visual-${Date.now()}-${index}`,
           text: desc.text,
           startTime: desc.startTime,
           endTime: desc.endTime,
-          voiceStyle: desc.voiceStyle || 'warm'
+          voiceStyle: desc.type === 'emotion' ? 'passionate' : 'warm'
         }));
 
-        console.log('🎯 Generated descriptions:', aiDescriptions);
-
-        // Perfect sync: schedule into non-dialogue gaps to avoid overlap with speakers
-        const scheduled = scheduleIntoGaps(aiDescriptions, transcriptSegments);
-        
-        console.log('⏰ Scheduled descriptions:', scheduled);
-
+        const scheduled = scheduleIntoGaps(visualDescriptions, transcriptSegments);
         setDescriptions(scheduled);
-        await saveDescriptions(scheduled); // Save to storage
+        await saveDescriptions(scheduled);
         onDescriptionsUpdate?.(scheduled);
         
         toast({
-          title: 'Audio descriptions generated!',
-          description: `Created ${scheduled.length} perfectly timed descriptions.`,
+          title: 'Visual audio descriptions generated!',
+          description: `Created ${scheduled.length} precisely timed descriptions using AI video analysis.`,
         });
       }
     } catch (error: any) {

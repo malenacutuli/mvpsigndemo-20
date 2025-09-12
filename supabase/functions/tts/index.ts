@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId, modelId } = await req.json();
+    const { text, voiceId, modelId, language } = await req.json();
 
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "Missing 'text'" }), { 
@@ -29,7 +29,7 @@ serve(async (req) => {
     const XI_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     console.log("TTS Function - Environment check:");
     console.log("- ELEVENLABS_API_KEY present:", !!XI_API_KEY);
-    console.log("- Request payload:", { text: text.substring(0, 50) + "...", voiceId, modelId });
+    console.log("- Request payload:", { text: text.substring(0, 50) + "...", voiceId, modelId, language });
     
     if (!XI_API_KEY) {
       console.error("ELEVENLABS_API_KEY not found in environment");
@@ -42,8 +42,31 @@ serve(async (req) => {
       });
     }
 
-    const resolvedVoiceId = voiceId || "EXAVITQu4vr4xnSDxMaL"; // Default to Sarah
-    const resolvedModelId = modelId || "eleven_turbo_v2_5";
+    // Smart voice selection based on language and content
+    const getOptimalVoice = (language?: string, voice?: string) => {
+      // Native Spanish voices optimized for accessibility
+      const spanishVoices = {
+        female: "pFZP5JQG7iQjIQuC4Bku", // Lily - clear Spanish
+        warm: "cgSgspJ2msm6clMCkdW9",   // Jessica - warm Spanish  
+        energetic: "XrExE9yKIg1WjnnlVkGX" // Matilda - animated Spanish
+      };
+      
+      const englishVoices = {
+        default: "EXAVITQu4vr4xnSDxMaL", // Sarah
+        male: "nPczCjzI2devNBz1zQrb"    // Brian
+      };
+      
+      if (voice) return voice; // Use provided voice if specified
+      
+      if (language === 'es' || language === 'spanish') {
+        return spanishVoices.female; // Default to clear Spanish voice
+      }
+      
+      return englishVoices.default;
+    };
+
+    const resolvedVoiceId = getOptimalVoice(language, voiceId);
+    const resolvedModelId = modelId || (language === 'es' ? "eleven_multilingual_v2" : "eleven_turbo_v2_5");
 
     const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`;
 
@@ -51,12 +74,12 @@ serve(async (req) => {
       model_id: resolvedModelId,
       text,
       voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.5,
+        stability: language === 'es' ? 0.6 : 0.5,        // Slightly more stable for Spanish
+        similarity_boost: language === 'es' ? 0.8 : 0.75, // Higher boost for Spanish clarity  
+        style: language === 'es' ? 0.3 : 0.5,            // Less style variation for Spanish
         use_speaker_boost: true,
       },
-      optimize_streaming_latency: 4,
+      optimize_streaming_latency: 3, // Slightly less aggressive for better quality
       output_format: "mp3_44100_128",
     };
 
