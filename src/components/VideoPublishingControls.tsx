@@ -321,251 +321,141 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   }
 
   return (
-    <Card className="p-4">
-      <div className="space-y-4">
-        {/* Step-by-Step Workflow */}
-        <div className="space-y-3">
-          <h3 className="font-medium text-lg">Publishing Workflow</h3>
-          
-          {/* Step 1: Video Processing */}
-          <div className="flex items-center gap-3 p-3 rounded-md border">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-              isVideoReady ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-            }`}>
-              1
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Video Processing</p>
-              <p className="text-sm text-muted-foreground">
-                {isVideoReady ? "✓ Video processed and ready" : "Processing video for accessibility features..."}
-              </p>
-            </div>
-            {!isVideoReady && (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                <Button variant="outline" size="sm" onClick={onUpdate}>Refresh</Button>
-              </div>
-            )}
-          </div>
-
-          {/* Step 2: Complete Editing */}
-          <div className="flex items-center gap-3 p-3 rounded-md border">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-              editingComplete ? 'bg-green-100 text-green-700' : isVideoReady ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'
-            }`}>
-              2
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Complete Editing</p>
-              <p className="text-sm text-muted-foreground">
-                {editingComplete ? "✓ Editing completed" : "Review and finalize your video edits"}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditingComplete(!editingComplete)}
-            >
-              {editingComplete ? "Resume Editing" : "Mark Complete"}
-            </Button>
-          </div>
-
-          {/* Step 3: Assign to Channel & Publish */}
-          <div className="flex items-center gap-3 p-3 rounded-md border">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-              isVideoReady && editingComplete ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'
-            }`}>
-              3
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Assign Channel & Publish</p>
-              <p className="text-sm text-muted-foreground">
-                Choose channel and make video public
-              </p>
-            </div>
-          </div>
+    <div className="flex items-center gap-2">
+      {!isVideoReady ? (
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+          <span className="text-sm text-blue-700">Processing...</span>
+          <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
         </div>
-
+      ) : !editingComplete ? (
+        <Button
+          variant="outline"
+          onClick={() => setEditingComplete(true)}
+        >
+          ✓ Done Editing
+        </Button>
+      ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className="w-full" 
-              disabled={!editingComplete}
-              size="lg"
-            >
-              {!editingComplete ? "Complete Editing First" : "🚀 Assign Channel & Publish"}
+            <Button>
+              Publish to Channel
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Publish Video to Channel</DialogTitle>
-              <DialogDescription>
-                Choose a channel and configure your video settings before publishing.
-              </DialogDescription>
+              <DialogTitle>Publish to Channel</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Channel Selection */}
-              <div className="space-y-3">
-                <Label htmlFor="channel">Select Channel</Label>
-                {channels.length === 0 && !showChannelCreation ? (
-                  <div className="text-center p-4 border border-dashed rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      You need a channel to publish your video.
-                    </p>
+              {channels.length === 0 && !showChannelCreation ? (
+                <div className="text-center p-4 border border-dashed rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Create a channel to publish your video.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowChannelCreation(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Channel
+                  </Button>
+                </div>
+              ) : showChannelCreation ? (
+                <div className="space-y-3">
+                  <Label>Create New Channel</Label>
+                  <Input
+                    value={newChannel.name}
+                    onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Channel name"
+                  />
+                  <Textarea
+                    value={newChannel.description}
+                    onChange={(e) => setNewChannel(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Channel description (optional)"
+                    rows={2}
+                  />
+                  <div className="flex gap-2">
                     <Button
-                      variant="outline"
-                      onClick={() => setShowChannelCreation(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Channel
-                    </Button>
-                  </div>
-                ) : showChannelCreation ? (
-                  <Card className="p-4">
-                    <h3 className="font-medium mb-3">Create New Channel</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="channelName">Channel Name *</Label>
-                        <Input
-                          id="channelName"
-                          value={newChannel.name}
-                          onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Enter channel name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="channelDescription">Channel Description</Label>
-                        <Textarea
-                          id="channelDescription"
-                          value={newChannel.description}
-                          onChange={(e) => setNewChannel(prev => ({ ...prev, description: e.target.value }))}
-                          placeholder="Describe your channel"
-                          rows={2}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={createChannel}
-                          disabled={!newChannel.name.trim() || loading}
-                          size="sm"
-                        >
-                          {loading ? "Creating..." : "Create Channel"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowChannelCreation(false)}
-                          size="sm"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    <Select
-                      value={formData.channelId}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, channelId: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a channel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {channels.map((channel) => (
-                          <SelectItem key={channel.id} value={channel.id}>
-                            {channel.name} ({channel.video_count} videos)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
+                      onClick={createChannel}
+                      disabled={!newChannel.name.trim() || loading}
                       size="sm"
-                      onClick={() => setShowChannelCreation(true)}
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create New Channel
+                      {loading ? "Creating..." : "Create"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowChannelCreation(false)}
+                      size="sm"
+                    >
+                      Cancel
                     </Button>
                   </div>
-                )}
-              </div>
-
-              {/* Video Metadata */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contentType">Content Type</Label>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label>Channel</Label>
                   <Select
-                    value={formData.contentType}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, contentType: value }))}
+                    value={formData.channelId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, channelId: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select channel" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recipe">Recipe</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
+                    <SelectContent className="bg-background">
+                      {channels.map((channel) => (
+                        <SelectItem key={channel.id} value={channel.id}>
+                          {channel.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowChannelCreation(true)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    New Channel
+                  </Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="keywords">Keywords (optional)</Label>
-                  <Input
-                    id="keywords"
-                    value={formData.keywords}
-                    onChange={(e) => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
-                    placeholder="cooking, tutorial, etc."
-                  />
-                </div>
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-3">
+                <Label>Description (optional)</Label>
                 <Textarea
-                  id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Describe your video..."
-                  rows={3}
+                  rows={2}
                 />
               </div>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
-                Close
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleSaveDetails}
-                disabled={loading || formData.channelId === 'none'}
-              >
-                {loading ? "Saving..." : "Save Details"}
+                Cancel
               </Button>
               <Button
                 onClick={handlePublish}
-                disabled={loading || formData.channelId === 'none' || !isVideoReady || !editingComplete}
+                disabled={loading || formData.channelId === 'none'}
               >
-                {loading ? "Publishing..." : "Publish to Channel"}
+                {loading ? "Publishing..." : "Publish"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={loading}
-          >
-            <Trash2 className="w-3 h-3 mr-1" />
-            Delete Video
-          </Button>
-        </div>
-      </div>
-    </Card>
+      )}
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleDelete}
+        disabled={loading}
+      >
+        <Trash2 className="w-3 h-3" />
+      </Button>
+    </div>
   );
 };
