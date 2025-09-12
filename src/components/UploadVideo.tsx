@@ -13,6 +13,7 @@ import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
 import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
+import { Upload as TusUpload } from 'tus-js-client';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -318,17 +319,58 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
         console.log('Using resumable upload for large file...');
         
-        // Use resumable upload for large files
-        const { data, error } = await supabase.storage
-          .from('videos')
-          .upload(`originals/${fileName}`, videoFile, {
-            contentType: videoFile.type,
-            upsert: false,
-            duplex: 'half' // Enable resumable uploads
+        // Use Supabase Storage TUS (resumable) upload for large files
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+          throw new Error('You must be signed in to upload large files.');
+        }
+
+        const endpoint = `https://faeyekynudyzeotbjfsj.storage.supabase.co/storage/v1/upload/resumable`;
+        const objectPath = `originals/${fileName}`;
+
+        await new Promise<void>((resolve, reject) => {
+          const upload = new TusUpload(videoFile, {
+            endpoint,
+            retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              'x-upsert': 'false',
+            },
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            metadata: {
+              bucketName: 'videos',
+              objectName: objectPath,
+              contentType: videoFile.type || 'video/mp4',
+              cacheControl: '3600',
+            },
+            chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
+            onError: (err) => {
+              console.error('Resumable upload error:', err);
+              reject(err);
+            },
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const pct = Math.min(60, Math.round((bytesUploaded / bytesTotal) * 60)); // cap at 60% until post-processing
+              setUploadProgress(pct);
+            },
+            onSuccess: () => {
+              console.log('Resumable upload completed.');
+              resolve();
+            },
           });
-          
-        uploadData = data;
-        uploadError = error;
+
+          upload.findPreviousUploads().then((previous) => {
+            if (previous.length) {
+              upload.resumeFromPreviousUpload(previous[0]);
+            }
+            upload.start();
+          });
+        });
+
+        // Mimic Supabase upload response
+        uploadData = { path: objectPath } as any;
+        uploadError = null;
       } else {
         console.log('Using standard upload for small file...');
         
@@ -476,7 +518,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div>
               <p className="text-sm font-medium">Drop your video file here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Supports MP4, MOV, AVI (max 2048MB)
+                Supports MP4, MOV, AVI (max 5GB)
               </p>
             </div>
           )}
