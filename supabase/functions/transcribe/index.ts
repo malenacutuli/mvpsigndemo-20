@@ -88,9 +88,9 @@ serve(async (req) => {
         throw new Error("Twelve Labs fallback");
       }
     } catch (error) {
-      console.log("Twelve Labs failed, falling back:", error.message);
+      console.log("Twelve Labs failed, falling back to OpenAI:", error.message);
       
-      const hasAssembly = !!Deno.env.get("ASSEMBLYAI_API_KEY");
+      // Fallback to OpenAI only (no AssemblyAI per user request)
       if (sizeMB <= 23) {
         console.log("Video under 23MB - processing with OpenAI directly...");
         try {
@@ -98,52 +98,11 @@ serve(async (req) => {
           console.log("✅ OpenAI direct processing successful!");
         } catch (openaiError) {
           console.log("OpenAI direct failed:", (openaiError as any).message);
-          if (hasAssembly) {
-            try {
-              console.log("Using AssemblyAI fallback...");
-              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-            } catch (aaie) {
-              if (contentType.startsWith('audio/')) {
-                console.log("AssemblyAI fallback failed, trying chunked OpenAI:", (aaie as any).message);
-                transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
-              } else {
-                console.log("AssemblyAI fallback failed and content is video; skipping chunked processing.");
-                transcriptionResult = { error: 'assembly_required', message: 'Video transcription failed. For video content, please configure ASSEMBLYAI_API_KEY or use a smaller audio-only file under 23MB.' };
-              }
-            }
-          } else {
-            if (contentType.startsWith('audio/')) {
-              console.log("AssemblyAI key not set; trying chunked OpenAI for audio...");
-              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
-            } else {
-              console.log("AssemblyAI key not set and content is video; skipping chunked processing.");
-              transcriptionResult = { error: 'assembly_required', message: 'Large or unsupported video for Whisper. Please add ASSEMBLYAI_API_KEY in Supabase or upload an audio-only file under 23MB.' };
-            }
-          }
+          transcriptionResult = { error: 'openai_failed', message: 'Video transcription failed with OpenAI. Please try a smaller file or check video format.' };
         }
       } else {
-        if (hasAssembly) {
-          console.log(`Large video (${sizeMB}MB) - using AssemblyAI processing...`);
-          try {
-            transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-          } catch (aaie) {
-            if (contentType.startsWith('audio/')) {
-              console.log("AssemblyAI failed, falling back to chunked OpenAI:", (aaie as any).message);
-              transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
-            } else {
-              console.log(`AssemblyAI failed and content is video; skipping chunked processing to avoid decoding errors.`);
-              transcriptionResult = { error: 'assembly_required', message: 'Large video files require ASSEMBLYAI_API_KEY configured in Supabase or reducing file size under 23MB.' };
-            }
-          }
-        } else {
-          if (contentType.startsWith('audio/')) {
-            console.log(`Large audio file (${sizeMB}MB) - AssemblyAI key missing; using chunked OpenAI processing...`);
-            transcriptionResult = await transcribeWithChunking(videoBuffer, OPENAI_API_KEY, language);
-          } else {
-            console.log(`Large video file (${sizeMB}MB) without AssemblyAI key - aborting chunked processing to avoid decode errors.`);
-            transcriptionResult = { error: 'assembly_required', message: 'Please add ASSEMBLYAI_API_KEY in Supabase Edge Function secrets to process large video files, or upload an audio-only file under 23MB.' };
-          }
-        }
+        console.log(`Large video file (${sizeMB}MB) - OpenAI has 25MB limit`);
+        transcriptionResult = { error: 'file_too_large', message: 'Video file is too large for OpenAI Whisper (25MB limit). Please use a smaller file.' };
       }
     }
 
