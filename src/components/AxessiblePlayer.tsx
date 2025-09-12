@@ -758,7 +758,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             isPlaying={isPlaying}
             contentType={contentType}
             selectedVoice={selectedVoice}
-            dynamicDescriptions={generatedAD}
+            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
             language={currentLanguage}
           />
         )}
