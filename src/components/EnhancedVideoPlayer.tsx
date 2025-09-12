@@ -264,13 +264,37 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               if ((start === 0 || !isFinite(start)) && firstWordWithTime) start = firstWordWithTime.startTime;
               if ((end === 0 || !isFinite(end)) && lastWordWithTime) end = lastWordWithTime.endTime;
 
-              // If end still invalid or <= start, assign a minimal duration
+              // If end still invalid or <= start, assign a minimal duration (will be refined below)
               if (!isFinite(end) || end <= start) {
                 end = start + Math.max(1, rawWords.length * 0.3);
               }
 
-              // Build words with guaranteed timings (uniformly distributed when missing)
+              // Build words with guaranteed timings
               let words = rawWords.map((word: any) => ({ ...word }));
+
+              // Fallback: if no word array present, synthesize it by splitting the text
+              if ((!words || words.length === 0) && typeof segment.text === 'string' && segment.text.trim().length > 0) {
+                const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
+                const tokenCount = tokens.length;
+                // Ensure duration is enough; if invalid or too short, expand proportionally
+                const minPerWord = 0.18; // ~180ms per word baseline
+                const minDuration = Math.max(1, tokenCount * minPerWord);
+                if (!isFinite(end) || end <= start || (end - start) < minDuration) {
+                  end = start + minDuration;
+                }
+                const step = (end - start) / Math.max(1, tokenCount);
+                words = tokens.map((t, i) => ({
+                  text: t,
+                  startTime: start + i * step,
+                  endTime: start + (i + 1) * step,
+                }));
+                // Debug once per synthesized segment
+                if (segIdx < 5) {
+                  console.log(`🧩 ENHANCED PLAYER: Synthesized ${tokenCount} words for segment ${segIdx}`);
+                }
+              }
+
+              // If words exist but missing timings, distribute uniformly
               const needsDistribution = words.length > 0 && !words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
               if (words.length > 0 && needsDistribution) {
                 const total = Math.max(end - start, Math.max(1, words.length * 0.3));
