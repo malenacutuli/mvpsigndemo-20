@@ -108,18 +108,21 @@ const PublicVideo = () => {
 
       if (segments) {
         const formattedCaptions: CaptionSegment[] = segments.map(segment => ({
-          id: segment.id,
-          startTime: segment.start_time,
-          endTime: segment.end_time,
           text: segment.text,
           speaker: segment.speaker || 'Speaker',
+          startTime: segment.start_time,
+          endTime: segment.end_time,
+          words: Array.isArray(segment.words) 
+            ? segment.words.filter((word): word is any => 
+                typeof word === 'object' && 
+                word !== null && 
+                'text' in word && 
+                'startTime' in word && 
+                'endTime' in word
+              )
+            : [],
           speakerColor: segment.speaker_color || '#3B82F6',
-          emphasis: segment.emphasis || 'normal',
-          pitch: segment.pitch || 'normal',
-          confidence: segment.confidence || 0.95,
-          segmentType: segment.segment_type || 'dialogue',
-          isOffCamera: segment.is_off_camera || false,
-          words: segment.words || []
+          isOffCamera: segment.is_off_camera || false
         }));
         setCaptions(formattedCaptions);
       }
@@ -273,13 +276,11 @@ const PublicVideo = () => {
               posterSrc={video.thumbnail_url || undefined}
               title={video.title}
               videoId={video.id}
-              language={video.language}
               selectedVoice={undefined}
               selectedASLAvatar={undefined}
               contentType={video.content_type as 'recipe' | 'education'}
-              transcriptSegments={captions}
-              audioDescriptions={audioDescriptions}
-              isPublicView={true} // New prop to indicate this is public viewing
+              initialCaptions={captions}
+              dynamicDescriptions={audioDescriptions}
             />
           )}
         </div>
