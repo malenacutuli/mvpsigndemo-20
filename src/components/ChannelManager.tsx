@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Users, Video, Edit, Trash2, Upload, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface Channel {
   id: string;
@@ -24,6 +25,7 @@ interface Channel {
 }
 
 export const ChannelManager: React.FC = () => {
+  const { t } = useTranslation();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -95,8 +97,8 @@ export const ChannelManager: React.FC = () => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "Error",
-        description: "Please select an image file",
+        title: t('common.error'),
+        description: t('channels.errors.selectImage'),
         variant: "destructive"
       });
       return;
@@ -105,8 +107,8 @@ export const ChannelManager: React.FC = () => {
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Error", 
-        description: "Image must be less than 5MB",
+        title: t('common.error'), 
+        description: t('channels.errors.fileTooLarge'),
         variant: "destructive"
       });
       return;
@@ -152,8 +154,8 @@ export const ChannelManager: React.FC = () => {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
-        title: "Error",
-        description: "Channel name is required",
+        title: t('common.error'),
+        description: t('channels.errors.nameRequired'),
         variant: "destructive"
       });
       return;
@@ -189,8 +191,8 @@ export const ChannelManager: React.FC = () => {
         if (error) throw error;
 
         toast({
-          title: "Channel Updated",
-          description: "Your channel has been updated successfully",
+          title: t('channels.updated'),
+          description: t('channels.updatedSuccess'),
         });
       } else {
         // Create new channel
@@ -201,8 +203,8 @@ export const ChannelManager: React.FC = () => {
         if (error) throw error;
 
         toast({
-          title: "Channel Created", 
-          description: "Your new channel has been created successfully",
+          title: t('channels.created'), 
+          description: t('channels.createdSuccess'),
         });
       }
 
@@ -211,8 +213,8 @@ export const ChannelManager: React.FC = () => {
     } catch (error) {
       console.error('Error saving channel:', error);
       toast({
-        title: "Error",
-        description: "Failed to save channel",
+        title: t('common.error'),
+        description: t('channels.errors.saveFailed'),
         variant: "destructive"
       });
     } finally {
@@ -221,7 +223,7 @@ export const ChannelManager: React.FC = () => {
   };
 
   const handleDelete = async (channel: Channel) => {
-    if (!confirm(`Are you sure you want to delete the channel "${channel.name}"? This will remove the channel assignment from all videos but won't delete the videos themselves.`)) {
+    if (!confirm(t('channels.deleteConfirm', { name: channel.name }))) {
       return;
     }
 
@@ -234,16 +236,16 @@ export const ChannelManager: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: "Channel Deleted",
-        description: "The channel has been deleted successfully",
+        title: t('channels.deleted'),
+        description: t('channels.deletedSuccess'),
       });
 
       fetchChannels();
     } catch (error) {
       console.error('Error deleting channel:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete channel",
+        title: t('common.error'),
+        description: t('channels.errors.deleteFailed'),
         variant: "destructive"
       });
     }
@@ -261,31 +263,31 @@ export const ChannelManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Your Channels</h2>
+          <h2 className="text-2xl font-bold">{t('channels.title')}</h2>
           <p className="text-muted-foreground">
-            Create and manage channels to organize your videos
+            {t('channels.subtitle')}
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="w-4 h-4 mr-2" />
-              Create Channel
+              {t('channels.create')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingChannel ? 'Edit Channel' : 'Create New Channel'}
+                {editingChannel ? t('channels.edit') : t('channels.createNew')}
               </DialogTitle>
               <DialogDescription>
-                Channels help organize your videos and make them easier for viewers to discover
+                {t('channels.description')}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Channel Avatar</Label>
+                <Label>{t('channels.avatar')}</Label>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-16 h-16">
                     <AvatarImage src={avatarPreview || undefined} />
@@ -301,10 +303,10 @@ export const ChannelManager: React.FC = () => {
                       disabled={uploading}
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {avatarPreview ? 'Change Avatar' : 'Upload Avatar'}
+                      {avatarPreview ? t('channels.changeAvatar') : t('channels.uploadAvatar')}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Upload an image (JPG, PNG, max 5MB)
+                      {t('channels.avatarHelp')}
                     </p>
                   </div>
                 </div>
@@ -318,10 +320,10 @@ export const ChannelManager: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">Channel Name</Label>
+                <Label htmlFor="name">{t('channels.name')}</Label>
                 <Input
                   id="name"
-                  placeholder="Enter channel name"
+                  placeholder={t('channels.namePlaceholder')}
                   value={formData.name}
                   onChange={(e) => 
                     setFormData(prev => ({ ...prev, name: e.target.value }))
@@ -330,10 +332,10 @@ export const ChannelManager: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('channels.descriptionLabel')}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe what this channel is about..."
+                  placeholder={t('channels.descriptionPlaceholder')}
                   value={formData.description}
                   onChange={(e) => 
                     setFormData(prev => ({ ...prev, description: e.target.value }))
@@ -345,13 +347,13 @@ export const ChannelManager: React.FC = () => {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleSave} disabled={uploading}>
                 {uploading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                 ) : null}
-                {editingChannel ? 'Update' : 'Create'} Channel
+                {editingChannel ? t('common.update') : t('common.create')} {t('channels.channel')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -362,13 +364,13 @@ export const ChannelManager: React.FC = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Video className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Channels Yet</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('channels.noChannels')}</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Create your first channel to start organizing your videos and building an audience
+              {t('channels.noChannelsText')}
             </p>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="w-4 h-4 mr-2" />
-              Create Your First Channel
+              {t('channels.createFirst')}
             </Button>
           </CardContent>
         </Card>
@@ -389,11 +391,11 @@ export const ChannelManager: React.FC = () => {
                       <CardTitle className="flex items-center gap-2">
                         {channel.name}
                         {channel.is_public && (
-                          <Badge variant="outline">Public</Badge>
+                          <Badge variant="outline">{t('channels.public')}</Badge>
                         )}
                       </CardTitle>
                       <CardDescription className="mt-1">
-                        {channel.description || 'No description'}
+                        {channel.description || t('channels.noDescription')}
                       </CardDescription>
                     </div>
                   </div>
@@ -419,14 +421,14 @@ export const ChannelManager: React.FC = () => {
                 <div className="flex items-center gap-6 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Video className="w-4 h-4" />
-                    {channel.video_count} videos
+                    {channel.video_count} {t('channels.videos')}
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    {channel.subscriber_count} subscribers
+                    {channel.subscriber_count} {t('channels.subscribers')}
                   </div>
                   <div>
-                    Created {new Date(channel.created_at).toLocaleDateString()}
+                    {t('channels.created')} {new Date(channel.created_at).toLocaleDateString()}
                   </div>
                 </div>
               </CardContent>
