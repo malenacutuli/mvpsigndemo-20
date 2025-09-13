@@ -18,6 +18,7 @@ import { FeatureExplanation } from './FeatureExplanation';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VoiceOption {
   id: string;
@@ -101,6 +102,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Hooks
+  const isMobile = useIsMobile();
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -127,6 +132,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       if (video && !video.paused && !video.ended) {
         setCurrentTime(video.currentTime);
         animationFrame = requestAnimationFrame(updateTimeWithAnimation);
+      }
+    };
+
+    // Fullscreen change detection
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      video.removeEventListener('timeupdate', updateTime);
+      video.removeEventListener('loadedmetadata', updateDuration);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
       }
     };
 
@@ -751,43 +772,45 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       )}
 
 
-      {/* Captions with Intention */}
+      {/* Captions with Intention - Positioned above control area */}
       {showCaptions && (
-        <CaptionsWithIntention 
-          captions={(() => {
-            // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
-            let finalCaptions = [];
-            
-            if (initialCaptions && initialCaptions.length > 0) {
-              finalCaptions = initialCaptions;
-              console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
-            } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
-              finalCaptions = translatedContent.captions;
-              console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
-            } else if (generatedCaptions && generatedCaptions.length > 0) {
-              finalCaptions = generatedCaptions;
-              console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
-            } else {
-              finalCaptions = [];
-              console.log('⚠️ No captions available from any source');
-            }
-            
-            console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
-            console.log('🎯 First caption being passed:', finalCaptions[0] ? {
-              speaker: finalCaptions[0].speaker,
-              color: finalCaptions[0].speakerColor,
-              emphasis: finalCaptions[0].words?.[0]?.emphasis,
-              pitch: finalCaptions[0].words?.[0]?.pitch,
-              text: finalCaptions[0].text?.substring(0, 50) + '...',
-              source: 'database-priority'
-            } : 'No captions');
-            
-            return finalCaptions;
-          })()}
-          currentTime={currentTime}
-          isVisible={showCaptions}
-          screenHeight={window?.innerHeight || 1080}
-        />
+        <div className={`absolute ${isFullscreen && isMobile ? 'bottom-20' : 'bottom-24'} left-1/2 transform -translate-x-1/2 z-30 pointer-events-none`}>
+          <CaptionsWithIntention 
+            captions={(() => {
+              // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
+              let finalCaptions = [];
+              
+              if (initialCaptions && initialCaptions.length > 0) {
+                finalCaptions = initialCaptions;
+                console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
+              } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
+                finalCaptions = translatedContent.captions;
+                console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
+              } else if (generatedCaptions && generatedCaptions.length > 0) {
+                finalCaptions = generatedCaptions;
+                console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
+              } else {
+                finalCaptions = [];
+                console.log('⚠️ No captions available from any source');
+              }
+              
+              console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
+              console.log('🎯 First caption being passed:', finalCaptions[0] ? {
+                speaker: finalCaptions[0].speaker,
+                color: finalCaptions[0].speakerColor,
+                emphasis: finalCaptions[0].words?.[0]?.emphasis,
+                pitch: finalCaptions[0].words?.[0]?.pitch,
+                text: finalCaptions[0].text?.substring(0, 50) + '...',
+                source: 'database-priority'
+              } : 'No captions');
+              
+              return finalCaptions;
+            })()}
+            currentTime={currentTime}
+            isVisible={showCaptions}
+            screenHeight={window?.innerHeight || 1080}
+          />
+        </div>
       )}
 
         {/* Audio Description */}
@@ -802,9 +825,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           />
         )}
 
-      {/* Control Overlay - Positioned lower to avoid caption overlap */}
+      {/* Control Overlay - Positioned lower to avoid caption overlap with fullscreen/mobile adjustments */}
       <div 
-        className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-2 pt-8 px-2 opacity-100"
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent ${
+          isFullscreen && isMobile ? 'pb-4 pt-12 px-4 z-50' : 'pb-2 pt-8 px-2'
+        } opacity-100 transition-all duration-300`}
       >
         {/* Progress Bar - Extra space from captions */}
         <div className="mb-4">
