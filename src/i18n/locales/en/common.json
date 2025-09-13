@@ -115,7 +115,7 @@
     "language": "Language",
     "feature": "Feature"
   },
-  "hero": {
+  "enterpriseHero": {
     "subtitle": "VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS",
     "headline": "Build something better.",
     "headlineSecond": "For everyone.",
@@ -123,7 +123,7 @@
     "cta": "Start Your Upload",
     "inclusivity": {
       "title": "Inclusivity comes standard",
-      "description": "Everything from customizable captions to high-contrast colors are baked into every video you host with Axessible, so accessibility isn't something you have to think about. It's just the way your videos are."
+      "description": "Everything from customizable captions to high-contrast colors are baked into every video host with Axessible, so accessibility isn't something you have to think about. It's just the way your videos are."
     }
   },
   "featureBoxes": {
