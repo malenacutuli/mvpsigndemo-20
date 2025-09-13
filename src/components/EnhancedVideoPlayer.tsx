@@ -627,8 +627,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             <AudioDescriptionEditor
               videoUrl={videoSrc}
               videoId={videoId || 'default'}
-              currentLanguage={currentLanguage}
-              contentType={contentType}
+              videoData={{ transcript_language: currentLanguage }}
               transcriptSegments={transcriptSegments}
               onDescriptionsUpdate={handleAudioDescriptionsUpdate}
             />

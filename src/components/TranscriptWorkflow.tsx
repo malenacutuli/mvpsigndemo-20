@@ -1060,8 +1060,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
               <AudioDescriptionEditor
                 videoUrl={videoUrl}
                 videoId={videoId}
-                currentLanguage={detectedLanguage} // Use detected language instead of hardcoded 'en'
-                contentType="education"
+                videoData={{ transcript_language: detectedLanguage }}
                 transcriptSegments={segments}
                 onDescriptionsUpdate={handleAudioDescriptionsUpdate}
               />

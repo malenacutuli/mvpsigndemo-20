@@ -16,15 +16,14 @@ interface AudioDescriptionSegment {
   text: string;
   startTime: number;
   endTime: number;
-  voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
+  voiceStyle: string; // ElevenLabs voice ID
   timestamp?: number; // Optional timestamp for sync reference
 }
 
 interface AudioDescriptionEditorProps {
   videoUrl: string;
   videoId: string;
-  currentLanguage?: string;
-  contentType?: 'recipe' | 'education';
+  videoData?: any; // Video data including transcript_language
   transcriptSegments?: any[];
   onDescriptionsUpdate?: (segments: AudioDescriptionSegment[]) => void;
 }
@@ -32,15 +31,13 @@ interface AudioDescriptionEditorProps {
 export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   videoUrl,
   videoId,
-  currentLanguage = 'en',
-  contentType = 'education',
+  videoData,
   transcriptSegments = [],
   onDescriptionsUpdate
 }) => {
   console.log('🎬 AudioDescriptionEditor rendered with:', {
     videoId,
-    currentLanguage,
-    contentType,
+    detectedLanguage: videoData?.transcript_language || 'en',
     transcriptSegmentsCount: transcriptSegments?.length || 0,
     transcriptSegments: transcriptSegments?.slice(0, 2) // Show first 2 for debugging
   });
@@ -48,26 +45,28 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [editVoiceStyle, setEditVoiceStyle] = useState<'passionate' | 'warm' | 'authoritative' | 'encouraging'>('warm');
+  const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface'>('openai');
 
-  const language = currentLanguage || 'en';
+  const detectedLanguage = videoData?.transcript_language || 'en';
 
-  // Voice style determination
-  const determineVoiceStyle = (text: string, contentType?: string): 'passionate' | 'warm' | 'authoritative' | 'encouraging' => {
-    const lowerText = text.toLowerCase();
-    
-    if (contentType === 'recipe') {
-      if (lowerText.includes('sizzl') || lowerText.includes('heat') || lowerText.includes('flame')) return 'passionate';
-      if (lowerText.includes('gentle') || lowerText.includes('stir') || lowerText.includes('mix')) return 'warm';
-      return 'authoritative';
-    }
-    
-    if (lowerText.includes('learn') || lowerText.includes('student') || lowerText.includes('practice')) return 'encouraging';
-    if (lowerText.includes('demonstrate') || lowerText.includes('show') || lowerText.includes('explain')) return 'authoritative';
-    
-    return 'warm';
+  // Get ElevenLabs native voice for detected language
+  const getLanguageNativeVoice = (language: string): string => {
+    const languageVoices = {
+      'en': 'EXAVITQu4vr4xnSDxMaL', // Sarah - English
+      'es': 'VR6AewLTigWG4xSOukaG', // Pablo - Spanish  
+      'fr': 'ThT5KcBeYPX3keUQqHPh', // Alain - French
+      'de': 'TxGEqnHWrfWFTfGW9XjX', // Klaus - German
+      'it': 'XrExE9yKIg1WjnnlVkGX', // Matilda - Italian
+      'pt': 'TxGEqnHWrfWFTfGW9XjX', // Portuguese variant
+      'nl': 'bVMeCyTHy58xNoL34h3p', // Dutch
+      'pl': 'EXAVITQu4vr4xnSDxMaL', // Polish (fallback to English)
+      'zh': 'onwK4e9ZLuTAKqWW03F9', // Chinese
+      'ja': 'pNInz6obpgDQGcFmaJgB', // Japanese
+      'ko': 'pFZP5JQG7iQjIQuC4Bku'  // Korean
+    };
+    return languageVoices[language] || languageVoices['en'];
   };
 
   const formatTime = (seconds: number): string => {
@@ -76,14 +75,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getVoiceStyleColor = (style: string): string => {
-    switch (style) {
-      case 'passionate': return 'text-red-600';
-      case 'authoritative': return 'text-blue-600';
-      case 'warm': return 'text-orange-600';
-      case 'encouraging': return 'text-green-600';
-      default: return 'text-gray-600';
-    }
+  const getVoiceStyleColor = (voiceId: string): string => {
+    // Color coding based on voice characteristics  
+    if (voiceId.includes('VR6AewLTigWG4xSOukaG')) return 'text-blue-600'; // Spanish
+    if (voiceId.includes('ThT5KcBeYPX3keUQqHPh')) return 'text-purple-600'; // French
+    if (voiceId.includes('TxGEqnHWrfWFTfGW9XjX')) return 'text-green-600'; // German
+    return 'text-orange-600'; // Default/English
   };
 
   // Estimate duration needed to read a description (seconds)
@@ -224,14 +221,14 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🖼️ Sending', analysisRequests.length, 'frame analysis requests');
     
     try {
-      const visualResponse = await supabase.functions.invoke('generate-visual-descriptions', {
-        body: {
-          videoId,
-          analysisRequests,
-          language: currentLanguage,
-          contentType: 'general' // Always use general to avoid bias
-        }
-      });
+        const visualResponse = await supabase.functions.invoke('generate-visual-descriptions', {
+          body: {
+            videoId,
+            analysisRequests,
+            language: detectedLanguage,
+            contentType: 'general' // Always use general to avoid bias
+          }
+        });
 
       if (visualResponse.error) {
         throw new Error(visualResponse.error.message || 'Failed to generate visual descriptions');
@@ -306,13 +303,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       }))
       .slice(0, 200);
 
-    const { data, error } = await supabase.functions.invoke('generate-ad', {
-      body: {
-        contentType: 'general',
-        language: language,
-        segments: segmentsPayload,
-      }
-    });
+        const { data, error } = await supabase.functions.invoke('generate-ad', {
+          body: {
+            contentType: 'general',
+            language: detectedLanguage,
+            segments: segmentsPayload,
+          }
+        });
 
     if (error) {
       console.error('❌ generate-ad failed:', error);
@@ -348,13 +345,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       const start = cursor;
       const end = start + actualDur;
 
-      scheduled.push({
-        text: p.text,
-        startTime: start,
-        endTime: end,
-        voiceStyle: (p.voiceStyle as any) || determineVoiceStyle(p.text, 'general'),
-        timestamp: (start + end) / 2,
-      });
+        scheduled.push({
+          text: p.text,
+          startTime: start,
+          endTime: end,
+          voiceStyle: getLanguageNativeVoice(detectedLanguage),
+          timestamp: (start + end) / 2,
+        });
 
       cursor = end + 0.2;
     }
@@ -419,8 +416,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         body: {
           videoId,
           analysisRequests,
-          language: currentLanguage,
-          contentType
+          detectedLanguage
         }
       });
 
@@ -528,7 +524,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
-            AI Audio Description Generator ({language === 'es' ? 'Spanish' : 'English'})
+            AI Audio Description Generator ({detectedLanguage === 'es' ? 'Spanish' : 'English'})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

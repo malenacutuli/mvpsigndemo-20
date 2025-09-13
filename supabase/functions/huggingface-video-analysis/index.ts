@@ -30,11 +30,10 @@ serve(async (req) => {
     const { 
       videoId, 
       analysisRequests, 
-      language = 'en', 
-      contentType = 'general' 
+      detectedLanguage = 'en'
     } = await req.json()
 
-    console.log(`Processing ${analysisRequests.length} analysis requests for video ${videoId}`)
+    console.log(`Processing ${analysisRequests.length} analysis requests for video ${videoId} in language: ${detectedLanguage}`)
 
     if (!analysisRequests || analysisRequests.length === 0) {
       throw new Error('No analysis requests provided')
@@ -62,43 +61,38 @@ serve(async (req) => {
         }
         const imageBlob = new Blob([bytes], { type: 'image/jpeg' })
 
-        // Use BLIP-2 for image captioning - great for scene understanding
+        // Use BLIP-2 for image captioning - pure scene understanding
         const result = await hf.imageToText({
           data: imageBlob,
           model: 'Salesforce/blip-image-captioning-large'
         })
 
-        let rawDescription = result.generated_text || 'Scene content not detected'
+        let description = result.generated_text || 'Scene content not detected'
 
-        // Enhance description based on content type and language
-        const enhancedDescription = enhanceDescription(
-          rawDescription, 
-          contentType, 
-          language,
-          request.context
-        )
+        // Clean and format for audio description (no content assumptions)
+        description = cleanDescription(description)
 
-        // Determine voice style based on content
-        const voiceStyle = determineVoiceStyle(enhancedDescription, contentType)
+        // Get appropriate voice for detected language
+        const voiceId = getLanguageNativeVoice(detectedLanguage)
 
         descriptions.push({
-          text: enhancedDescription,
+          text: description,
           startTime: request.timestamp,
           endTime: request.timestamp + request.duration,
-          voiceStyle
+          voiceStyle: voiceId
         })
 
-        console.log(`Generated description: "${enhancedDescription}" (${voiceStyle})`)
+        console.log(`Generated description: "${description}" (voice: ${voiceId})`)
 
       } catch (error) {
         console.error(`Error analyzing frame at ${request.timestamp}s:`, error)
         
         // Provide fallback description
         descriptions.push({
-          text: generateFallbackDescription(contentType, language),
+          text: getFallbackDescription(detectedLanguage),
           startTime: request.timestamp,
           endTime: request.timestamp + request.duration,
-          voiceStyle: 'warm'
+          voiceStyle: getLanguageNativeVoice(detectedLanguage)
         })
       }
     }
@@ -110,8 +104,7 @@ serve(async (req) => {
         success: true,
         descriptions,
         model: 'Salesforce/blip-image-captioning-large',
-        language,
-        contentType
+        detectedLanguage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -132,138 +125,55 @@ serve(async (req) => {
   }
 })
 
-function enhanceDescription(
-  rawDescription: string, 
-  contentType: string, 
-  language: string,
-  context?: string
-): string {
-  // Clean up the raw description
-  let enhanced = rawDescription
+function cleanDescription(rawDescription: string): string {
+  // Clean up the raw description for audio accessibility
+  let cleaned = rawDescription
     .replace(/^(a |an |the )/i, '') // Remove leading articles
     .replace(/\.$/, '') // Remove trailing period
     .trim()
 
-  // Add context-specific enhancements
-  if (contentType === 'recipe') {
-    enhanced = enhanceRecipeDescription(enhanced, context)
-  } else if (contentType === 'education') {
-    enhanced = enhanceEducationDescription(enhanced, context)
-  }
-
-  // Add language-specific formatting
-  if (language === 'es') {
-    enhanced = translateToSpanish(enhanced)
-  }
-
   // Ensure it's concise for audio description (max ~15 words)
-  const words = enhanced.split(' ')
+  const words = cleaned.split(' ')
   if (words.length > 15) {
-    enhanced = words.slice(0, 15).join(' ') + '...'
+    cleaned = words.slice(0, 15).join(' ') + '...'
   }
 
-  return enhanced.charAt(0).toUpperCase() + enhanced.slice(1)
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
 }
 
-function enhanceRecipeDescription(description: string, context?: string): string {
-  const recipeKeywords = {
-    'bowl': 'mixing bowl',
-    'pan': 'cooking pan',
-    'pot': 'cooking pot',
-    'knife': 'chef\'s knife',
-    'cutting': 'chopping ingredients',
-    'cooking': 'preparing the dish',
-    'stirring': 'mixing ingredients',
-    'food': 'ingredients'
+function getLanguageNativeVoice(language: string): string {
+  // ElevenLabs native voices by language
+  const languageVoices = {
+    'en': 'EXAVITQu4vr4xnSDxMaL', // Sarah - English
+    'es': 'VR6AewLTigWG4xSOukaG', // Pablo - Spanish
+    'fr': 'ThT5KcBeYPX3keUQqHPh', // Alain - French
+    'de': 'TxGEqnHWrfWFTfGW9XjX', // Klaus - German
+    'it': 'XrExE9yKIg1WjnnlVkGX', // Matilda - Italian
+    'pt': 'TxGEqnHWrfWFTfGW9XjX', // Portuguese variant
+    'nl': 'bVMeCyTHy58xNoL34h3p', // Dutch
+    'pl': 'EXAVITQu4vr4xnSDxMaL', // Polish (fallback to English)
+    'zh': 'onwK4e9ZLuTAKqWW03F9', // Chinese
+    'ja': 'pNInz6obpgDQGcFmaJgB', // Japanese
+    'ko': 'pFZP5JQG7iQjIQuC4Bku'  // Korean
   }
 
-  let enhanced = description
-  for (const [key, value] of Object.entries(recipeKeywords)) {
-    enhanced = enhanced.replace(new RegExp(key, 'gi'), value)
-  }
-
-  return enhanced
+  return languageVoices[language] || languageVoices['en'] // Default to English
 }
 
-function enhanceEducationDescription(description: string, context?: string): string {
-  const educationKeywords = {
-    'person': 'instructor',
-    'people': 'students',
-    'book': 'educational materials',
-    'writing': 'taking notes',
-    'reading': 'studying content'
-  }
-
-  let enhanced = description
-  for (const [key, value] of Object.entries(educationKeywords)) {
-    enhanced = enhanced.replace(new RegExp(key, 'gi'), value)
-  }
-
-  return enhanced
-}
-
-function translateToSpanish(text: string): string {
-  // Basic translation for common terms (in production, use a proper translation service)
-  const translations = {
-    'mixing bowl': 'tazón de mezcla',
-    'cooking pan': 'sartén',
-    'cooking pot': 'olla',
-    'ingredients': 'ingredientes',
-    'preparing': 'preparando',
-    'cooking': 'cocinando',
-    'instructor': 'instructor',
-    'students': 'estudiantes'
-  }
-
-  let translated = text
-  for (const [english, spanish] of Object.entries(translations)) {
-    translated = translated.replace(new RegExp(english, 'gi'), spanish)
-  }
-
-  return translated
-}
-
-function determineVoiceStyle(
-  description: string, 
-  contentType: string
-): 'passionate' | 'warm' | 'authoritative' | 'encouraging' {
-  const lowerDesc = description.toLowerCase()
-
-  if (contentType === 'recipe') {
-    if (lowerDesc.includes('cooking') || lowerDesc.includes('preparing')) {
-      return 'passionate'
-    }
-    return 'warm'
-  } else if (contentType === 'education') {
-    if (lowerDesc.includes('instructor') || lowerDesc.includes('teaching')) {
-      return 'authoritative'
-    }
-    return 'encouraging'
-  }
-
-  // Default based on content emotion
-  if (lowerDesc.includes('action') || lowerDesc.includes('moving')) {
-    return 'passionate'
-  } else if (lowerDesc.includes('calm') || lowerDesc.includes('peaceful')) {
-    return 'warm'
-  } else {
-    return 'encouraging'
-  }
-}
-
-function generateFallbackDescription(contentType: string, language: string): string {
+function getFallbackDescription(language: string): string {
   const fallbacks = {
-    en: {
-      recipe: 'Cooking process continues',
-      education: 'Learning activity in progress',
-      general: 'Scene continues'
-    },
-    es: {
-      recipe: 'El proceso de cocina continúa',
-      education: 'Actividad de aprendizaje en progreso',
-      general: 'La escena continúa'
-    }
+    'en': 'Scene continues',
+    'es': 'La escena continúa',
+    'fr': 'La scène continue',
+    'de': 'Die Szene geht weiter',
+    'it': 'La scena continua',
+    'pt': 'A cena continua',
+    'nl': 'Scène gaat door',
+    'pl': 'Scena trwa',
+    'zh': '场景继续',
+    'ja': 'シーンが続きます',
+    'ko': '장면이 계속됩니다'
   }
 
-  return fallbacks[language]?.[contentType] || fallbacks.en.general
+  return fallbacks[language] || fallbacks['en']
 }
