@@ -371,9 +371,22 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // Load saved transcript from database
-        const segments = await loadTranscriptSegments(currentLanguage);
-        console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments');
+        // Try to load saved transcript from database with current language first
+        let segments = await loadTranscriptSegments(currentLanguage);
+        console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments for language:', currentLanguage);
+        
+        // If no segments found and currentLanguage is not 'en', try loading with 'en'
+        if (segments.length === 0 && currentLanguage !== 'en') {
+          console.log('🔄 ENHANCED PLAYER: No segments found for', currentLanguage, ', trying fallback to "en"');
+          segments = await loadTranscriptSegments('en');
+          console.log('📖 ENHANCED PLAYER: Fallback loaded:', segments.length, 'segments for language: en');
+          
+          // If we found segments with 'en', update the current language
+          if (segments.length > 0) {
+            console.log('✅ ENHANCED PLAYER: Found transcript in English, updating current language');
+            setCurrentLanguage('en');
+          }
+        }
         setTranscriptSegments(segments);
         
         if (segments.length > 0) {
