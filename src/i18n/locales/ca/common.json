@@ -547,6 +547,74 @@
       }
     }
   },
+  "videos": {
+    "title": "Els Meus Vídeos",
+    "search": "Cercar vídeos...",
+    "filters": {
+      "language": "Idioma",
+      "status": "Estat",
+      "allLanguages": "Tots els idiomes",
+      "allStatuses": "Tots els estats"
+    },
+    "status": {
+      "uploaded": "Pujat",
+      "processing": "Processant",
+      "ready": "Llest",
+      "error": "Error",
+      "failed": "Fallit"
+    },
+    "empty": {
+      "title": "Cap vídeo trobat",
+      "description": "Comença pujant el teu primer vídeo per crear contingut accessible.",
+      "uploadButton": "Pujar Vídeo"
+    },
+    "loadingError": "Error en carregar els vídeos",
+    "deleteSuccess": "Vídeo eliminat correctament",
+    "deleteError": "Error en eliminar el vídeo",
+    "createdAt": "Creat el",
+    "duration": "Durada",
+    "noVideos": "Cap vídeo disponible."
+  },
+  "videoDetail": {
+    "notFound": "Vídeo no trobat",
+    "backToVideos": "Tornar als Vídeos",
+    "videoInformation": "Informació del Vídeo",
+    "description": "Descripció",
+    "status": "Estat",
+    "language": "Idioma",
+    "duration": "Durada",
+    "createdAt": "Creat el",
+    "accessibility": {
+      "title": "Funcions d'Accessibilitat",
+      "captions": "Subtítols Intel·ligents",
+      "audioDescription": "Descripció d'Àudio",
+      "signLanguage": "Llengua de Signes",
+      "keyboardNavigation": "Navegació per Teclat"
+    },
+    "embed": {
+      "title": "Configuració d'Incorporació",
+      "hideEmbedSettings": "Amagar Configuració d'Incorporació",
+      "showEmbedSettings": "Mostrar Configuració d'Incorporació"
+    },
+    "loadingError": "Error en carregar el vídeo",
+    "deleteSuccess": "Vídeo eliminat correctament",
+    "deleteError": "Error en eliminar el vídeo"
+  },
+  "languages": {
+    "en": "Anglès",
+    "es": "Espanyol",
+    "fr": "Francès",
+    "de": "Alemany",
+    "it": "Italià",
+    "pt": "Portuguès",
+    "ca": "Català",
+    "zh": "Xinès",
+    "ja": "Japonès",
+    "ko": "Coreà",
+    "ar": "Àrab",
+    "hi": "Hindi",
+    "ru": "Rus"
+  },
   "upload": {
     "title": "Puja el teu Vídeo",
     "subtitle": "Transforma el teu contingut amb característiques d'accessibilitat",

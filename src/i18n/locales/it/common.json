@@ -547,6 +547,74 @@
       }
     }
   },
+  "videos": {
+    "title": "I Miei Video",
+    "search": "Cerca video...",
+    "filters": {
+      "language": "Lingua",
+      "status": "Stato",
+      "allLanguages": "Tutte le lingue",
+      "allStatuses": "Tutti gli stati"
+    },
+    "status": {
+      "uploaded": "Caricato",
+      "processing": "In elaborazione",
+      "ready": "Pronto",
+      "error": "Errore",
+      "failed": "Fallito"
+    },
+    "empty": {
+      "title": "Nessun video trovato",
+      "description": "Inizia caricando il tuo primo video per creare contenuti accessibili.",
+      "uploadButton": "Carica Video"
+    },
+    "loadingError": "Errore nel caricamento dei video",
+    "deleteSuccess": "Video eliminato con successo",
+    "deleteError": "Errore nell'eliminazione del video",
+    "createdAt": "Creato il",
+    "duration": "Durata",
+    "noVideos": "Nessun video disponibile."
+  },
+  "videoDetail": {
+    "notFound": "Video non trovato",
+    "backToVideos": "Torna ai Video",
+    "videoInformation": "Informazioni Video",
+    "description": "Descrizione",
+    "status": "Stato",
+    "language": "Lingua",
+    "duration": "Durata",
+    "createdAt": "Creato il",
+    "accessibility": {
+      "title": "Funzionalità di Accessibilità",
+      "captions": "Sottotitoli Intelligenti",
+      "audioDescription": "Descrizione Audio",
+      "signLanguage": "Lingua dei Segni",
+      "keyboardNavigation": "Navigazione da Tastiera"
+    },
+    "embed": {
+      "title": "Impostazioni di Incorporamento",
+      "hideEmbedSettings": "Nascondi Impostazioni Incorporamento",
+      "showEmbedSettings": "Mostra Impostazioni Incorporamento"
+    },
+    "loadingError": "Errore nel caricamento del video",
+    "deleteSuccess": "Video eliminato con successo",
+    "deleteError": "Errore nell'eliminazione del video"
+  },
+  "languages": {
+    "en": "Inglese",
+    "es": "Spagnolo",
+    "fr": "Francese",
+    "de": "Tedesco",
+    "it": "Italiano",
+    "pt": "Portoghese",
+    "ca": "Catalano",
+    "zh": "Cinese",
+    "ja": "Giapponese",
+    "ko": "Coreano",
+    "ar": "Arabo",
+    "hi": "Hindi",
+    "ru": "Russo"
+  },
   "upload": {
     "title": "Carica il tuo Video",
     "subtitle": "Trasforma il tuo contenuto con funzionalità di accessibilità",

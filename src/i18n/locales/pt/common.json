@@ -547,6 +547,74 @@
       }
     }
   },
+  "videos": {
+    "title": "Meus Vídeos",
+    "search": "Pesquisar vídeos...",
+    "filters": {
+      "language": "Idioma",
+      "status": "Status",
+      "allLanguages": "Todos os idiomas",
+      "allStatuses": "Todos os status"
+    },
+    "status": {
+      "uploaded": "Carregado",
+      "processing": "Processando",
+      "ready": "Pronto",
+      "error": "Erro",
+      "failed": "Falhou"
+    },
+    "empty": {
+      "title": "Nenhum vídeo encontrado",
+      "description": "Comece carregando seu primeiro vídeo para criar conteúdo acessível.",
+      "uploadButton": "Carregar Vídeo"
+    },
+    "loadingError": "Erro ao carregar vídeos",
+    "deleteSuccess": "Vídeo excluído com sucesso",
+    "deleteError": "Erro ao excluir vídeo",
+    "createdAt": "Criado em",
+    "duration": "Duração",
+    "noVideos": "Nenhum vídeo disponível."
+  },
+  "videoDetail": {
+    "notFound": "Vídeo não encontrado",
+    "backToVideos": "Voltar aos Vídeos",
+    "videoInformation": "Informações do Vídeo",
+    "description": "Descrição",
+    "status": "Status",
+    "language": "Idioma",
+    "duration": "Duração",
+    "createdAt": "Criado em",
+    "accessibility": {
+      "title": "Recursos de Acessibilidade",
+      "captions": "Legendas Inteligentes",
+      "audioDescription": "Descrição de Áudio",
+      "signLanguage": "Linguagem de Sinais",
+      "keyboardNavigation": "Navegação por Teclado"
+    },
+    "embed": {
+      "title": "Configurações de Incorporação",
+      "hideEmbedSettings": "Ocultar Configurações de Incorporação",
+      "showEmbedSettings": "Mostrar Configurações de Incorporação"
+    },
+    "loadingError": "Erro ao carregar vídeo",
+    "deleteSuccess": "Vídeo excluído com sucesso",
+    "deleteError": "Erro ao excluir vídeo"
+  },
+  "languages": {
+    "en": "Inglês",
+    "es": "Espanhol",
+    "fr": "Francês",
+    "de": "Alemão",
+    "it": "Italiano",
+    "pt": "Português",
+    "ca": "Catalão",
+    "zh": "Chinês",
+    "ja": "Japonês",
+    "ko": "Coreano",
+    "ar": "Árabe",
+    "hi": "Hindi",
+    "ru": "Russo"
+  },
   "upload": {
     "title": "Envie seu Vídeo",
     "subtitle": "Transforme seu conteúdo com recursos de acessibilidade",

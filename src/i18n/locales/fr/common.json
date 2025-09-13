@@ -547,6 +547,74 @@
       }
     }
   },
+  "videos": {
+    "title": "Mes Vidéos",
+    "search": "Rechercher des vidéos...",
+    "filters": {
+      "language": "Langue",
+      "status": "Statut",
+      "allLanguages": "Toutes les langues",
+      "allStatuses": "Tous les statuts"
+    },
+    "status": {
+      "uploaded": "Téléchargée",
+      "processing": "En cours",
+      "ready": "Prête",
+      "error": "Erreur",
+      "failed": "Échouée"
+    },
+    "empty": {
+      "title": "Aucune vidéo trouvée",
+      "description": "Commencez par télécharger votre première vidéo pour créer du contenu accessible.",
+      "uploadButton": "Télécharger une Vidéo"
+    },
+    "loadingError": "Erreur lors du chargement des vidéos",
+    "deleteSuccess": "Vidéo supprimée avec succès",
+    "deleteError": "Erreur lors de la suppression de la vidéo",
+    "createdAt": "Créée le",
+    "duration": "Durée",
+    "noVideos": "Aucune vidéo disponible."
+  },
+  "videoDetail": {
+    "notFound": "Vidéo non trouvée",
+    "backToVideos": "Retour aux Vidéos",
+    "videoInformation": "Informations Vidéo",
+    "description": "Description",
+    "status": "Statut",
+    "language": "Langue",
+    "duration": "Durée",
+    "createdAt": "Créée le",
+    "accessibility": {
+      "title": "Fonctionnalités d'Accessibilité",
+      "captions": "Sous-titres Intelligents",
+      "audioDescription": "Description Audio",
+      "signLanguage": "Langue des Signes",
+      "keyboardNavigation": "Navigation Clavier"
+    },
+    "embed": {
+      "title": "Paramètres d'Intégration",
+      "hideEmbedSettings": "Masquer les Paramètres d'Intégration",
+      "showEmbedSettings": "Afficher les Paramètres d'Intégration"
+    },
+    "loadingError": "Erreur lors du chargement de la vidéo",
+    "deleteSuccess": "Vidéo supprimée avec succès",
+    "deleteError": "Erreur lors de la suppression de la vidéo"
+  },
+  "languages": {
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français",
+    "de": "Allemand",
+    "it": "Italien",
+    "pt": "Portugais",
+    "ca": "Catalan",
+    "zh": "Chinois",
+    "ja": "Japonais",
+    "ko": "Coréen",
+    "ar": "Arabe",
+    "hi": "Hindi",
+    "ru": "Russe"
+  },
   "upload": {
     "title": "Téléchargez votre Vidéo",
     "subtitle": "Transformez votre contenu avec des fonctionnalités d'accessibilité",

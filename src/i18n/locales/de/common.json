@@ -521,6 +521,74 @@
       }
     }
   },
+  "videos": {
+    "title": "Meine Videos",
+    "search": "Videos suchen...",
+    "filters": {
+      "language": "Sprache",
+      "status": "Status",
+      "allLanguages": "Alle Sprachen",
+      "allStatuses": "Alle Status"
+    },
+    "status": {
+      "uploaded": "Hochgeladen",
+      "processing": "Wird bearbeitet",
+      "ready": "Bereit",
+      "error": "Fehler",
+      "failed": "Fehlgeschlagen"
+    },
+    "empty": {
+      "title": "Keine Videos gefunden",
+      "description": "Beginnen Sie mit dem Hochladen Ihres ersten Videos, um barrierefreie Inhalte zu erstellen.",
+      "uploadButton": "Video Hochladen"
+    },
+    "loadingError": "Fehler beim Laden der Videos",
+    "deleteSuccess": "Video erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen des Videos",
+    "createdAt": "Erstellt am",
+    "duration": "Dauer",
+    "noVideos": "Keine Videos verfügbar."
+  },
+  "videoDetail": {
+    "notFound": "Video nicht gefunden",
+    "backToVideos": "Zurück zu Videos",
+    "videoInformation": "Video-Informationen",
+    "description": "Beschreibung",
+    "status": "Status",
+    "language": "Sprache",
+    "duration": "Dauer",
+    "createdAt": "Erstellt am",
+    "accessibility": {
+      "title": "Barrierefreiheits-Funktionen",
+      "captions": "Intelligente Untertitel",
+      "audioDescription": "Audio-Beschreibung",
+      "signLanguage": "Gebärdensprache",
+      "keyboardNavigation": "Tastatur-Navigation"
+    },
+    "embed": {
+      "title": "Einbettungs-Einstellungen",
+      "hideEmbedSettings": "Einbettungs-Einstellungen ausblenden",
+      "showEmbedSettings": "Einbettungs-Einstellungen anzeigen"
+    },
+    "loadingError": "Fehler beim Laden des Videos",
+    "deleteSuccess": "Video erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen des Videos"
+  },
+  "languages": {
+    "en": "Englisch",
+    "es": "Spanisch",
+    "fr": "Französisch",
+    "de": "Deutsch",
+    "it": "Italienisch",
+    "pt": "Portugiesisch",
+    "ca": "Katalanisch",
+    "zh": "Chinesisch",
+    "ja": "Japanisch",
+    "ko": "Koreanisch",
+    "ar": "Arabisch",
+    "hi": "Hindi",
+    "ru": "Russisch"
+  },
   "upload": {
     "title": "Ihr Video Hochladen",
     "subtitle": "Verwandeln Sie Ihren Inhalt mit Barrierefreiheitsfunktionen",
