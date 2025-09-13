@@ -676,6 +676,17 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: string
       }
+      get_channel_subscriber_count: {
+        Args: { channel_uuid: string }
+        Returns: number
+      }
+      get_user_subscription_status: {
+        Args: { channel_uuid: string }
+        Returns: {
+          is_subscribed: boolean
+          subscribed_at: string
+        }[]
+      }
       increment_video_views: {
         Args: { video_uuid: string }
         Returns: undefined
