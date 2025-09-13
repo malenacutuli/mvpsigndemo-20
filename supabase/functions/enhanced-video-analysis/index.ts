@@ -12,17 +12,16 @@ interface Gap {
   duration: number;
 }
 
-interface StrategicFrame {
+interface FrameData {
   timestamp: number;
   frameDataUrl: string;
-  isTransition: boolean;
-  motionScore: number;
+  gapStart: number;
+  gapEnd: number;
 }
 
 interface AnalysisRequest {
   videoId: string;
-  videoUrl: string;
-  gaps: Gap[];
+  frames: FrameData[];
   transcript: Array<{
     startTime: number;
     endTime: number;
@@ -38,9 +37,9 @@ serve(async (req) => {
   }
 
   try {
-    const { videoId, videoUrl, gaps, transcript, detectedLanguage }: AnalysisRequest = await req.json();
+    const { videoId, frames, transcript, detectedLanguage }: AnalysisRequest = await req.json();
 
-    console.log(`🎬 Enhanced Analysis: Processing ${gaps.length} gaps for video ${videoId}`);
+    console.log(`🎬 Enhanced Analysis: Processing ${frames.length} frames for video ${videoId}`);
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
@@ -49,69 +48,50 @@ serve(async (req) => {
 
     const descriptions = [];
 
-    // Process each gap with enhanced multi-frame analysis
-    for (const gap of gaps.slice(0, 6)) { // Limit for performance
+    // Process each frame with enhanced contextual analysis
+    for (const frame of frames.slice(0, 6)) { // Limit for performance
       try {
-        console.log(`📊 Analyzing gap: ${gap.start}s-${gap.end}s (${gap.duration}s)`);
+        console.log(`📊 Analyzing frame at ${frame.timestamp}s (gap: ${frame.gapStart}s-${frame.gapEnd}s)`);
 
-        // 1. Extract strategic frames across the gap duration
-        const keyFrames = await extractStrategicFrames(videoUrl, gap, {
-          frameCount: Math.min(5, Math.ceil(gap.duration / 2)),
-          includeTransitionFrames: true,
-          optimizeForMotion: true
-        });
-
-        if (keyFrames.length === 0) {
-          console.log(`⚠️ No frames extracted for gap ${gap.start}s-${gap.end}s`);
-          continue;
-        }
-
-        // 2. Get context from surrounding dialogue
-        const previousDialogue = getPreviousDialogue(gap, transcript);
-        const sceneContext = getSceneContext(gap, transcript);
+        // Get context from surrounding dialogue
+        const previousDialogue = getPreviousDialogue(frame.gapStart, transcript);
+        const sceneContext = getSceneContext(frame.gapStart, transcript);
         const contentType = determineContentType(transcript);
+        const gapDuration = frame.gapEnd - frame.gapStart;
 
         console.log(`🔍 Context - Previous: "${previousDialogue}", Scene: "${sceneContext}", Type: ${contentType}`);
 
-        // 3. Use GPT-5 vision for contextual understanding
-        const visualAnalysis = await analyzeFramesWithContext(keyFrames, {
+        // Use GPT-5 vision for contextual understanding
+        const visualAnalysis = await analyzeFrameWithContext(frame.frameDataUrl, {
           previousDialogue,
           sceneContext,
           contentType,
           detectedLanguage,
-          gapDuration: gap.duration
+          gapDuration
         }, openaiApiKey);
 
-        // 4. Validate against frame sequence
-        const validatedDescription = await validateWithFrameSequence(
-          visualAnalysis,
-          keyFrames,
-          gap,
-          detectedLanguage
-        );
-
         descriptions.push({
-          text: validatedDescription.text,
-          startTime: gap.start,
-          endTime: gap.end,
+          text: visualAnalysis.text,
+          startTime: frame.gapStart,
+          endTime: frame.gapEnd,
           voiceStyle: getLanguageNativeVoice(detectedLanguage),
-          confidence: validatedDescription.confidence,
-          timestamp: gap.start + gap.duration / 2
+          confidence: visualAnalysis.confidence,
+          timestamp: frame.timestamp
         });
 
-        console.log(`✅ Generated: "${validatedDescription.text}" (confidence: ${validatedDescription.confidence})`);
+        console.log(`✅ Generated: "${visualAnalysis.text}" (confidence: ${visualAnalysis.confidence})`);
 
       } catch (error) {
-        console.error(`❌ Error processing gap ${gap.start}s-${gap.end}s:`, error);
+        console.error(`❌ Error processing frame at ${frame.timestamp}s:`, error);
         
         // Fallback description
         descriptions.push({
           text: getFallbackDescription(detectedLanguage),
-          startTime: gap.start,
-          endTime: gap.end,
+          startTime: frame.gapStart,
+          endTime: frame.gapEnd,
           voiceStyle: getLanguageNativeVoice(detectedLanguage),
           confidence: 0.3,
-          timestamp: gap.start + gap.duration / 2
+          timestamp: frame.timestamp
         });
       }
     }
@@ -123,7 +103,7 @@ serve(async (req) => {
         success: true,
         descriptions,
         model: 'gpt-5-2025-08-07',
-        analysisType: 'enhanced-multi-frame',
+        analysisType: 'enhanced-contextual',
         detectedLanguage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -145,112 +125,9 @@ serve(async (req) => {
   }
 });
 
-// Enhanced multi-frame analysis
-async function extractStrategicFrames(
-  videoUrl: string, 
-  gap: Gap, 
-  options: {
-    frameCount: number;
-    includeTransitionFrames: boolean;
-    optimizeForMotion: boolean;
-  }
-): Promise<StrategicFrame[]> {
-  
-  const frames: StrategicFrame[] = [];
-  const { frameCount, includeTransitionFrames } = options;
-  
-  // Create video element for frame extraction
-  const video = document.createElement('video');
-  video.src = videoUrl;
-  video.crossOrigin = 'anonymous';
-  video.muted = true;
-
-  try {
-    // Wait for metadata
-    await new Promise((resolve, reject) => {
-      video.addEventListener('loadedmetadata', resolve, { once: true });
-      video.addEventListener('error', reject, { once: true });
-    });
-
-    // Calculate strategic timestamps
-    const timestamps: number[] = [];
-    
-    if (includeTransitionFrames && gap.duration > 2) {
-      // Add transition frames at start and end
-      timestamps.push(gap.start + 0.2); // Just after gap starts
-      timestamps.push(gap.end - 0.2);   // Just before gap ends
-    }
-    
-    // Add evenly distributed frames across the gap
-    const midFrameCount = Math.max(1, frameCount - (includeTransitionFrames ? 2 : 0));
-    for (let i = 0; i < midFrameCount; i++) {
-      const progress = (i + 1) / (midFrameCount + 1);
-      const timestamp = gap.start + (gap.duration * progress);
-      timestamps.push(timestamp);
-    }
-
-    // Extract frames at calculated timestamps
-    for (const timestamp of timestamps) {
-      const frameDataUrl = await extractFrameAtTime(video, timestamp);
-      if (frameDataUrl) {
-        frames.push({
-          timestamp,
-          frameDataUrl,
-          isTransition: timestamp <= gap.start + 0.5 || timestamp >= gap.end - 0.5,
-          motionScore: Math.random() // Simplified motion detection
-        });
-      }
-    }
-
-    return frames;
-
-  } catch (error) {
-    console.error('❌ Strategic frame extraction failed:', error);
-    return [];
-  }
-}
-
-async function extractFrameAtTime(video: HTMLVideoElement, timeInSeconds: number): Promise<string | null> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    if (!context) {
-      resolve(null);
-      return;
-    }
-    
-    video.currentTime = timeInSeconds;
-    
-    const onSeeked = () => {
-      try {
-        canvas.width = Math.min(video.videoWidth || 640, 512);
-        canvas.height = Math.min(video.videoHeight || 360, 512);
-        
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        resolve(dataUrl);
-      } catch (error) {
-        console.error('Frame extraction error:', error);
-        resolve(null);
-      } finally {
-        video.removeEventListener('seeked', onSeeked);
-      }
-    };
-    
-    video.addEventListener('seeked', onSeeked);
-    
-    // Timeout fallback
-    setTimeout(() => {
-      video.removeEventListener('seeked', onSeeked);
-      resolve(null);
-    }, 3000);
-  });
-}
-
-function getPreviousDialogue(gap: Gap, transcript: any[]): string {
+function getPreviousDialogue(gapStart: number, transcript: any[]): string {
   const beforeGap = transcript
-    .filter(seg => seg.endTime <= gap.start)
+    .filter(seg => seg.endTime <= gapStart)
     .slice(-2) // Last 2 segments before gap
     .map(seg => seg.text)
     .join(' ');
@@ -258,10 +135,10 @@ function getPreviousDialogue(gap: Gap, transcript: any[]): string {
   return beforeGap || 'Beginning of video';
 }
 
-function getSceneContext(gap: Gap, transcript: any[]): string {
+function getSceneContext(gapStart: number, transcript: any[]): string {
   // Analyze transcript around the gap for scene understanding
   const contextWindow = transcript.filter(seg => 
-    Math.abs(seg.startTime - gap.start) < 20 // Within 20 seconds
+    Math.abs(seg.startTime - gapStart) < 20 // Within 20 seconds
   );
   
   const contextText = contextWindow.map(seg => seg.text).join(' ').toLowerCase();
@@ -290,8 +167,8 @@ function determineContentType(transcript: any[]): string {
   return 'general';
 }
 
-async function analyzeFramesWithContext(
-  keyFrames: StrategicFrame[],
+async function analyzeFrameWithContext(
+  frameDataUrl: string,
   context: {
     previousDialogue: string;
     sceneContext: string;
@@ -303,14 +180,6 @@ async function analyzeFramesWithContext(
 ): Promise<{ text: string; confidence: number }> {
 
   const { previousDialogue, sceneContext, contentType, detectedLanguage, gapDuration } = context;
-  
-  // Prepare images for GPT-5 Vision
-  const images = keyFrames.map(frame => ({
-    type: "image_url" as const,
-    image_url: {
-      url: frame.frameDataUrl
-    }
-  }));
 
   const systemPrompt = `You are an expert at creating concise, contextually appropriate audio descriptions for ${detectedLanguage === 'es' ? 'Spanish' : 'English'} videos. 
 
@@ -330,7 +199,7 @@ REQUIREMENTS:
 
 Return ONLY the description text, nothing else.`;
 
-  const userPrompt = `Based on these ${keyFrames.length} sequential frames from a ${gapDuration}-second gap, create a contextual audio description:`;
+  const userPrompt = `Based on this frame from a ${gapDuration}-second gap, create a contextual audio description:`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -351,7 +220,12 @@ Return ONLY the description text, nothing else.`;
             role: 'user',
             content: [
               { type: "text", text: userPrompt },
-              ...images
+              {
+                type: "image_url",
+                image_url: {
+                  url: frameDataUrl
+                }
+              }
             ]
           }
         ]
@@ -379,42 +253,6 @@ Return ONLY the description text, nothing else.`;
   }
 }
 
-async function validateWithFrameSequence(
-  analysis: { text: string; confidence: number },
-  keyFrames: StrategicFrame[],
-  gap: Gap,
-  language: string
-): Promise<{ text: string; confidence: number }> {
-  
-  // Basic validation - ensure description length is appropriate for gap duration
-  const words = analysis.text.split(' ').length;
-  const readingTime = words / 2.5; // ~2.5 words per second
-  
-  if (readingTime > gap.duration * 0.8) {
-    // Description too long, truncate
-    const maxWords = Math.floor(gap.duration * 0.8 * 2.5);
-    const truncated = analysis.text.split(' ').slice(0, maxWords).join(' ');
-    
-    return {
-      text: truncated,
-      confidence: Math.max(0.4, analysis.confidence - 0.2)
-    };
-  }
-  
-  // Validate against frame consistency (simplified)
-  if (keyFrames.length > 1) {
-    // If multiple frames suggest motion/change, ensure description reflects this
-    const motionFrames = keyFrames.filter(f => f.motionScore > 0.5).length;
-    const hasMotionWords = /mueve|camina|gira|moves|walks|turns/i.test(analysis.text);
-    
-    if (motionFrames > keyFrames.length / 2 && !hasMotionWords) {
-      // Add subtle motion indicator if missing
-      analysis.confidence = Math.max(0.5, analysis.confidence - 0.1);
-    }
-  }
-  
-  return analysis;
-}
 
 function getLanguageNativeVoice(language: string): string {
   const languageVoices = {

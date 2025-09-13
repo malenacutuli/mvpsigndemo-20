@@ -373,12 +373,47 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     console.log('🎬 Processing gaps with enhanced multi-frame analysis:', gaps.length);
 
+    // 2) Extract frames on client side for each gap
+    const frames = [];
+    
+    for (const gap of gaps.slice(0, 6)) { // Limit for performance
+      try {
+        const midTime = gap.start + ((gap.end - gap.start) / 2);
+        
+        // Create a video element to extract frames from
+        const video = document.createElement('video');
+        video.src = videoUrl;
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        
+        const frameDataUrl = await extractFrameAtTime(video, midTime);
+        
+        if (frameDataUrl) {
+          frames.push({
+            timestamp: midTime,
+            frameDataUrl,
+            gapStart: gap.start,
+            gapEnd: gap.end
+          });
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to extract frame for gap', gap.start, '-', gap.end, ':', error);
+      }
+    }
+
+    if (frames.length === 0) {
+      console.log('⚠️ No frames extracted for enhanced analysis');
+      return [];
+    }
+
+    console.log('🖼️ Extracted', frames.length, 'frames, sending to enhanced analysis');
+
     try {
       const enhancedResponse = await supabase.functions.invoke('enhanced-video-analysis', {
         body: {
           videoId,
-          videoUrl,
-          gaps: gaps.slice(0, 6), // Limit for performance
+          frames,
           transcript,
           detectedLanguage
         }
