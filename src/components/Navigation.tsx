@@ -42,6 +42,17 @@ export const Navigation: React.FC = () => {
             </Link>
             
             <Link 
+              to="/enterprise" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActivePath('/enterprise') 
+                  ? 'text-primary' 
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Enterprise
+            </Link>
+            
+            <Link 
               to="/pricing" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 isActivePath('/pricing') 

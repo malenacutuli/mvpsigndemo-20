@@ -19,6 +19,7 @@ import { Auth } from "./pages/Auth";
 import Explore from "./pages/Explore";
 import PublicVideo from "./pages/PublicVideo";
 import PublicBoard from "./pages/PublicBoard";
+import Enterprise from "./pages/Enterprise";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/explore" element={<Explore />} />
+            <Route path="/enterprise" element={<Enterprise />} />
             <Route path="/public" element={<PublicBoard />} />
             <Route path="/watch/:id" element={<PublicVideo />} />
             <Route path="/dashboard" element={
