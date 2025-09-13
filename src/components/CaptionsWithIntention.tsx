@@ -364,17 +364,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-20 left-0 right-0 flex items-center justify-center pointer-events-none px-4 z-40"
+      className="absolute bottom-16 sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 flex items-center justify-center pointer-events-none z-40"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
-      {/* Captions Container Box - REDUCED SIZE */}
+      {/* Captions Container Box - Mobile Responsive */}
       <div 
         className={`
-          relative max-w-2xl w-full text-center
+          relative w-full max-w-xs sm:max-w-2xl text-center
           ${isLoudBurst ? '' : 'bg-black/70'} 
           ${isLoudBurst ? '' : 'rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-3 py-2'}
-          ${isLoudBurst ? '' : 'mx-4'}
+          ${isLoudBurst ? '' : 'px-2 py-1 sm:px-3 sm:py-2'}
+          ${isLoudBurst ? '' : 'mx-1 sm:mx-4'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -394,7 +394,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             className="text-xs font-medium mb-1 text-center"
             style={{ 
               color: activeCaption.speakerColor || speakerColor,
-              fontSize: `${Math.max(8, baseFontSize * 0.35)}px` // Smaller - 35% of main text
+              fontSize: `${Math.max(6, baseFontSize * (window.innerWidth < 640 ? 0.25 : 0.35))}px` // Smaller on mobile
             }}
           >
             {activeCaption.speaker}
@@ -405,7 +405,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize, screenHeight * 0.0455)}px`, // Increased cap by 30%
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.75 : 1), screenHeight * 0.0455)}px`, // Smaller on mobile
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
@@ -413,7 +413,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             overflowWrap: 'break-word',
             hyphens: 'auto',
             maxWidth: '100%',
-            contain: 'layout paint'
+            contain: 'layout paint',
+            lineHeight: window.innerWidth < 640 ? '1.2' : '1.3' // Tighter line height on mobile
           }}
         >
           {/* Sound effects and music formatting */}

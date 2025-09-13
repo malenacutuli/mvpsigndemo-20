@@ -21,7 +21,7 @@ export const Navigation: React.FC = () => {
               <img
                 src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
                 alt="Axessible"
-                className="h-8 w-auto"
+                className="h-6 sm:h-8 w-auto object-contain flex-shrink-0"
                 loading="lazy"
                 decoding="async"
               />
