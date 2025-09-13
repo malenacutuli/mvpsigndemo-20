@@ -46,16 +46,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .from('profiles')
                 .select('id')
                 .eq('user_id', session.user.id)
-                .single();
+                .maybeSingle();
               
               if (!existingProfile) {
-                // Create profile for new user
+                // Create profile for new user (email removed for security - it stays in auth.users only)
                 const { error } = await supabase
                   .from('profiles')
                   .insert({
                     user_id: session.user.id,
-                    email: session.user.email,
-                    display_name: session.user.user_metadata?.full_name || session.user.email,
+                    display_name: session.user.user_metadata?.full_name || 'User',
                     avatar_url: session.user.user_metadata?.avatar_url
                   });
                 

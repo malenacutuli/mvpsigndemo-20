@@ -335,7 +335,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
-          email: string | null
           id: string
           role: string | null
           updated_at: string
@@ -345,7 +344,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
           id?: string
           role?: string | null
           updated_at?: string
@@ -355,7 +353,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
           id?: string
           role?: string | null
           updated_at?: string
@@ -710,6 +707,10 @@ export type Database = {
           latest_subscription: string
           total_subscribers: number
         }[]
+      }
+      get_current_user_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_subscription_status: {
         Args: { channel_uuid: string }
