@@ -32,10 +32,10 @@ export const Navigation: React.FC = () => {
           <div className="hidden md:flex items-center space-x-10">
             <Link 
               to="/explore" 
-              className={`text-base font-medium transition-colors hover:text-primary ${
+              className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/explore') 
-                  ? 'text-primary font-semibold' 
-                  : 'text-muted-foreground'
+                  ? 'text-primary font-medium' 
+                  : 'text-slate-600'
               }`}
             >
               Explore
@@ -43,10 +43,10 @@ export const Navigation: React.FC = () => {
             
             <Link 
               to="/enterprise" 
-              className={`text-base font-medium transition-colors hover:text-primary ${
+              className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/enterprise') 
-                  ? 'text-primary font-semibold' 
-                  : 'text-muted-foreground'
+                  ? 'text-primary font-medium' 
+                  : 'text-slate-600'
               }`}
             >
               Enterprise
@@ -54,10 +54,10 @@ export const Navigation: React.FC = () => {
             
             <Link 
               to="/pricing" 
-              className={`text-base font-medium transition-colors hover:text-primary ${
+              className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/pricing') 
-                  ? 'text-primary font-semibold' 
-                  : 'text-muted-foreground'
+                  ? 'text-primary font-medium' 
+                  : 'text-slate-600'
               }`}
             >
               Pricing

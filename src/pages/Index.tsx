@@ -11,55 +11,32 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-background via-muted/10 to-primary/5 py-32 lg:py-40 overflow-hidden">
         <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="space-y-8">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold text-slate-800 leading-[0.9] tracking-tight">
-                  Where Every Story is{" "}
-                  <span className="text-primary block">Truly Seen</span>,{" "}
-                  <span className="block">Heard, and Felt.</span>
-                </h1>
-                
-                <p className="text-lg md:text-xl text-slate-600 leading-relaxed font-normal max-w-2xl">
-                  The world's first video platform designed for everyone - powered by captions with intention, 
-                  creative audio descriptions, and immersive accessibility tools.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button asChild size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
-                    <Link to="/explore">
-                      <Play className="w-5 h-5 mr-3" />
-                      Start Watching
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
-                    <Link to="/upload">
-                      <Upload className="w-5 h-5 mr-3" />
-                      Share Your Content
-                    </Link>
-                  </Button>
-                </div>
-              </div>
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="space-y-8">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold text-slate-800 leading-[0.9] tracking-tight">
+                Where Every Story is{" "}
+                <span className="text-primary block">Truly Seen</span>,{" "}
+                <span className="block">Heard, and Felt.</span>
+              </h1>
               
-              <div className="hidden lg:block">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl transform rotate-3"></div>
-                  <div className="relative bg-card rounded-3xl p-8 border shadow-elegant transform -rotate-1 hover:rotate-0 transition-transform duration-500">
-                    <div className="space-y-4">
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-4 bg-primary/20 rounded w-full"></div>
-                      <div className="h-4 bg-muted rounded w-2/3"></div>
-                      <div className="h-32 bg-gradient-primary rounded-lg mt-6"></div>
-                      <div className="flex gap-3 mt-4">
-                        <div className="h-8 w-8 bg-primary/30 rounded-full"></div>
-                        <div className="flex-1">
-                          <div className="h-3 bg-muted rounded w-1/2 mb-2"></div>
-                          <div className="h-3 bg-muted/60 rounded w-1/3"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <p className="text-lg md:text-xl text-slate-500 font-light leading-relaxed max-w-3xl mx-auto">
+                The world's first video platform designed for everyone - powered by captions with intention, 
+                creative audio descriptions, and immersive accessibility tools.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
+                <Button asChild size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
+                  <Link to="/explore">
+                    <Play className="w-5 h-5 mr-3" />
+                    Start Watching
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
+                  <Link to="/upload">
+                    <Upload className="w-5 h-5 mr-3" />
+                    Share Your Content
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
