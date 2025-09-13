@@ -549,6 +549,92 @@
       }
     }
   },
+  "videos": {
+    "title": "My Videos",
+    "subtitle": "Manage your videos, publish to Explore, and organize with channels",
+    "tabs": {
+      "myVideos": "My Videos",
+      "channels": "Channels"
+    },
+    "actions": {
+      "uploadNew": "Upload New Video",
+      "uploadFirst": "Upload Your First Video",
+      "view": "View"
+    },
+    "search": "Search videos...",
+    "filters": {
+      "language": "Language",
+      "status": "Status",
+      "allLanguages": "All languages",
+      "allStatuses": "All statuses"
+    },
+    "status": {
+      "uploaded": "Uploaded",
+      "processing": "Processing",
+      "ready": "Ready",
+      "error": "Error",
+      "uploading": "Uploading"
+    },
+    "badges": {
+      "public": "Public"
+    },
+    "empty": {
+      "title": "No videos found",
+      "description": "Start by uploading your first video to create accessible content.",
+      "noMatch": "No videos match your current filters.",
+      "uploadButton": "Upload Video"
+    },
+    "loading": "Loading your videos...",
+    "toast": {
+      "deletedTitle": "Video deleted",
+      "deletedDesc": "The video has been successfully deleted.",
+      "deleteErrorTitle": "Error deleting video",
+      "deleteErrorDesc": "There was an error deleting the video. Please try again."
+    },
+    "createdAt": "Created",
+    "duration": "Duration",
+    "noVideos": "No videos available."
+  },
+  "videoDetail": {
+    "notFound": "Video Not Found",
+    "backToVideos": "Back to Videos",
+    "videoInformation": "Video Information",
+    "description": "Description",
+    "status": "Status",
+    "language": "Language",
+    "duration": "Duration",
+    "createdAt": "Created",
+    "accessibility": {
+      "title": "Accessibility Features",
+      "captions": "Smart Captions",
+      "audioDescription": "Audio Description",
+      "signLanguage": "Sign Language",
+      "keyboardNavigation": "Keyboard Navigation"
+    },
+    "embed": {
+      "title": "Embed Settings",
+      "hideEmbedSettings": "Hide Embed Settings",
+      "showEmbedSettings": "Show Embed Settings"
+    },
+    "loadingError": "Error loading video",
+    "deleteSuccess": "Video deleted successfully",
+    "deleteError": "Error deleting video"
+  },
+  "languages": {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "ca": "Catalan",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "ru": "Russian"
+  },
   "upload": {
     "title": "Upload Your Video",
     "subtitle": "Transform your content with accessibility features",

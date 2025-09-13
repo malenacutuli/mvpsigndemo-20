@@ -113,7 +113,9 @@
     "share": "Compartir",
     "copy": "Copiar",
     "language": "Idioma",
-    "feature": "Característica"
+    "feature": "Característica",
+    "refresh": "Actualizar",
+    "na": "N/D"
   },
   "hero": {
     "subtitle": "PLATAFORMA DE ACCESIBILIDAD DE VIDEO DISEÑADA PARA TU NEGOCIO",
@@ -546,6 +548,92 @@
         "dedicated": "Dedicado"
       }
     }
+  },
+  "videos": {
+    "title": "Mis Videos",
+    "subtitle": "Gestiona tus videos, publícalos en Explorar y organízalos con canales",
+    "tabs": {
+      "myVideos": "Mis Videos",
+      "channels": "Canales"
+    },
+    "actions": {
+      "uploadNew": "Subir Nuevo Video",
+      "uploadFirst": "Sube tu Primer Video",
+      "view": "Ver"
+    },
+    "search": "Buscar videos...",
+    "filters": {
+      "language": "Idioma",
+      "status": "Estado",
+      "allLanguages": "Todos los idiomas",
+      "allStatuses": "Todos los estados"
+    },
+    "status": {
+      "uploaded": "Subido",
+      "processing": "Procesando",
+      "ready": "Listo",
+      "error": "Error",
+      "uploading": "Subiendo"
+    },
+    "badges": {
+      "public": "Público"
+    },
+    "empty": {
+      "title": "No se encontraron videos",
+      "description": "Comienza subiendo tu primer video para crear contenido accesible.",
+      "noMatch": "Ningún video coincide con tus filtros.",
+      "uploadButton": "Subir Video"
+    },
+    "loading": "Cargando tus videos...",
+    "toast": {
+      "deletedTitle": "Video eliminado",
+      "deletedDesc": "El video se ha eliminado correctamente.",
+      "deleteErrorTitle": "Error al eliminar el video",
+      "deleteErrorDesc": "Hubo un error al eliminar el video. Inténtalo de nuevo."
+    },
+    "createdAt": "Creado",
+    "duration": "Duración",
+    "noVideos": "No hay videos disponibles."
+  },
+  "videoDetail": {
+    "notFound": "Video no encontrado",
+    "backToVideos": "Volver a Videos",
+    "videoInformation": "Información del Video",
+    "description": "Descripción",
+    "status": "Estado",
+    "language": "Idioma",
+    "duration": "Duración",
+    "createdAt": "Creado",
+    "accessibility": {
+      "title": "Funciones de Accesibilidad",
+      "captions": "Subtítulos Inteligentes",
+      "audioDescription": "Descripción de Audio",
+      "signLanguage": "Lengua de Señas",
+      "keyboardNavigation": "Navegación por Teclado"
+    },
+    "embed": {
+      "title": "Ajustes de Inserción",
+      "hideEmbedSettings": "Ocultar Ajustes de Inserción",
+      "showEmbedSettings": "Mostrar Ajustes de Inserción"
+    },
+    "loadingError": "Error al cargar el video",
+    "deleteSuccess": "Video eliminado con éxito",
+    "deleteError": "Error al eliminar el video"
+  },
+  "languages": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés",
+    "de": "Alemán",
+    "it": "Italiano",
+    "pt": "Portugués",
+    "ca": "Catalán",
+    "zh": "Chino",
+    "ja": "Japonés",
+    "ko": "Coreano",
+    "ar": "Árabe",
+    "hi": "Hindi",
+    "ru": "Ruso"
   },
   "upload": {
     "title": "Sube tu Video",

@@ -14,6 +14,7 @@ import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
+import { useTranslation } from 'react-i18next';
 
 interface Video {
   id: string;
@@ -46,6 +47,7 @@ interface ASLOption {
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -321,11 +323,11 @@ const VideoDetail = () => {
         <Navigation />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Video Not Found</h1>
+            <h1 className="text-2xl font-bold mb-4">{t('videoDetail.notFound')}</h1>
             <p className="text-muted-foreground mb-6">The video you're looking for doesn't exist or you don't have permission to view it.</p>
             <Button onClick={() => navigate('/videos')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Videos
+              {t('videoDetail.backToVideos')}
             </Button>
           </div>
         </main>
@@ -341,7 +343,7 @@ const VideoDetail = () => {
           <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={() => navigate('/videos')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Videos
+              {t('videoDetail.backToVideos')}
             </Button>
             <div className="flex items-center gap-2">
               <VideoPublishingControls
@@ -360,7 +362,7 @@ const VideoDetail = () => {
                 onClick={() => setShowEmbedSettings(!showEmbedSettings)}
               >
                 <Share className="w-4 h-4 mr-2" />
-                Embed Settings
+                {t('videoDetail.embed.title')}
               </Button>
             </div>
           </div>
@@ -407,9 +409,9 @@ const VideoDetail = () => {
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Play className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-muted-foreground">Video not available</p>
+                    <p className="text-muted-foreground">{t('videoDetail.unavailableTitle')}</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {video.storage_path ? 'Generating video URL...' : 'No video file found'}
+                      {video.storage_path ? t('videoDetail.unavailableGenerating') : t('videoDetail.unavailableNoFile')}
                     </p>
                   </div>
                 </div>
@@ -419,19 +421,19 @@ const VideoDetail = () => {
               <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Play className="w-4 h-4" />
-                  Accessibility Features
+                  {t('videoDetail.accessibility.title')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">Captions</Badge>
+                    <Badge variant="outline">{t('videoDetail.accessibility.captions')}</Badge>
                     <span className="text-muted-foreground">AI-powered with emotional context</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">Audio Description</Badge>
+                    <Badge variant="outline">{t('videoDetail.accessibility.audioDescription')}</Badge>
                     <span className="text-muted-foreground">Celebrity-style narration</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">ASL Avatar</Badge>
+                    <Badge variant="outline">{t('videoDetail.accessibility.signLanguage')}</Badge>
                     <span className="text-muted-foreground">AI-animated sign language</span>
                   </div>
                 </div>
