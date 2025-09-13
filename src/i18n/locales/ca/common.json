@@ -248,6 +248,32 @@
     "myVideos": {
       "title": "Els Meus Vídeos",
       "description": "Accedeix a les teves transcripcions desades, descripcions d'àudio i dades de personatges"
+    },
+    "subscription": {
+      "title": "Estat de la subscripció",
+      "manageDesc": "Gestiona la teva subscripció d'Axessible",
+      "statusLabel": "Estat:",
+      "active": "Subscripció activa",
+      "inactive": "Sense subscripció activa",
+      "planLabel": "Pla:",
+      "nextBilling": "Proper cobrament:",
+      "manageButton": "Gestionar subscripció",
+      "noActive": "No tens cap subscripció activa",
+      "viewPlans": "Veure plans"
+    },
+    "storage": {
+      "title": "Ús d'emmagatzematge",
+      "overLimit": "Límit superat",
+      "nearlyFull": "Gairebé ple",
+      "usedOfTotal": "{{used}} utilitzats de {{total}}",
+      "overLimitTitle": "S'ha superat el límit d'emmagatzematge",
+      "overLimitDesc": "Has superat el límit de 100GB. Actualitza per continuar pujant vídeos.",
+      "upgradeStandard": "Actualitza a Standard (2TB)",
+      "nearlyFullTitle": "Emmagatzematge gairebé ple",
+      "nearlyFullDesc": "Et queda poc espai. Passa a Standard per 2TB d'emmagatzematge.",
+      "viewUpgradeOptions": "Veure opcions d'actualització",
+      "onStarter": "Ets al pla Starter amb 100GB d'emmagatzematge.",
+      "viewOtherPlans": "Veure altres plans"
     }
   },
   "patentClaims": {

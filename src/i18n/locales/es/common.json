@@ -248,6 +248,32 @@
     "myVideos": {
       "title": "Mis Videos",
       "description": "Accede a tus transcripciones guardadas, descripciones de audio y datos de personajes"
+    },
+    "subscription": {
+      "title": "Estado de Suscripción",
+      "manageDesc": "Administra tu suscripción a Axessible",
+      "statusLabel": "Estado:",
+      "active": "Suscripción Activa",
+      "inactive": "Sin Suscripción Activa",
+      "planLabel": "Plan:",
+      "nextBilling": "Próxima Facturación:",
+      "manageButton": "Gestionar Suscripción",
+      "noActive": "No tienes una suscripción activa",
+      "viewPlans": "Ver Planes"
+    },
+    "storage": {
+      "title": "Uso de Almacenamiento",
+      "overLimit": "Límite Superado",
+      "nearlyFull": "Casi Lleno",
+      "usedOfTotal": "{{used}} usados de {{total}}",
+      "overLimitTitle": "Límite de almacenamiento superado",
+      "overLimitDesc": "Has superado tu límite de almacenamiento de 100GB. Mejora tu plan para continuar subiendo videos.",
+      "upgradeStandard": "Actualizar a Standard (2TB)",
+      "nearlyFullTitle": "Almacenamiento casi lleno",
+      "nearlyFullDesc": "Te estás quedando sin espacio. Mejora a Standard para 2TB de almacenamiento.",
+      "viewUpgradeOptions": "Ver Opciones de Mejora",
+      "onStarter": "Estás en el plan Starter con 100GB de almacenamiento.",
+      "viewOtherPlans": "Ver otros planes"
     }
   },
   "patentClaims": {

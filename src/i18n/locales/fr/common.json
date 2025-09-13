@@ -248,6 +248,32 @@
     "myVideos": {
       "title": "Mes Vidéos",
       "description": "Accédez à vos transcriptions sauvegardées, descriptions audio et données de personnages"
+    },
+    "subscription": {
+      "title": "Statut de l'abonnement",
+      "manageDesc": "Gérez votre abonnement Axessible",
+      "statusLabel": "Statut :",
+      "active": "Abonnement actif",
+      "inactive": "Aucun abonnement actif",
+      "planLabel": "Forfait :",
+      "nextBilling": "Prochaine facturation :",
+      "manageButton": "Gérer l'abonnement",
+      "noActive": "Vous n'avez pas d'abonnement actif",
+      "viewPlans": "Voir les offres"
+    },
+    "storage": {
+      "title": "Utilisation du stockage",
+      "overLimit": "Limite dépassée",
+      "nearlyFull": "Presque plein",
+      "usedOfTotal": "{{used}} utilisés sur {{total}}",
+      "overLimitTitle": "Limite de stockage dépassée",
+      "overLimitDesc": "Vous avez dépassé la limite de stockage de 100 Go. Mettez à niveau pour continuer à téléverser des vidéos.",
+      "upgradeStandard": "Passer à Standard (2 To)",
+      "nearlyFullTitle": "Stockage presque plein",
+      "nearlyFullDesc": "L'espace de stockage est faible. Passez à Standard pour 2 To de stockage.",
+      "viewUpgradeOptions": "Voir les options de mise à niveau",
+      "onStarter": "Vous êtes sur l'offre Starter avec 100 Go de stockage.",
+      "viewOtherPlans": "Voir les autres offres"
     }
   },
   "patentClaims": {

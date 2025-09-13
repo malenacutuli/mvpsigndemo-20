@@ -248,6 +248,32 @@
     "myVideos": {
       "title": "I Miei Video",
       "description": "Accedi alle tue trascrizioni salvate, descrizioni audio e dati dei personaggi"
+    },
+    "subscription": {
+      "title": "Stato dell'abbonamento",
+      "manageDesc": "Gestisci il tuo abbonamento Axessible",
+      "statusLabel": "Stato:",
+      "active": "Abbonamento attivo",
+      "inactive": "Nessun abbonamento attivo",
+      "planLabel": "Piano:",
+      "nextBilling": "Prossima fatturazione:",
+      "manageButton": "Gestisci abbonamento",
+      "noActive": "Non hai un abbonamento attivo",
+      "viewPlans": "Vedi piani"
+    },
+    "storage": {
+      "title": "Utilizzo dello spazio",
+      "overLimit": "Limite superato",
+      "nearlyFull": "Quasi pieno",
+      "usedOfTotal": "{{used}} utilizzati su {{total}}",
+      "overLimitTitle": "Limite di spazio superato",
+      "overLimitDesc": "Hai superato il limite di 100GB. Aggiorna per continuare a caricare video.",
+      "upgradeStandard": "Passa a Standard (2TB)",
+      "nearlyFullTitle": "Spazio quasi pieno",
+      "nearlyFullDesc": "Stai esaurendo lo spazio. Passa a Standard per 2TB di spazio.",
+      "viewUpgradeOptions": "Vedi opzioni di upgrade",
+      "onStarter": "Sei nel piano Starter con 100GB di spazio.",
+      "viewOtherPlans": "Vedi altri piani"
     }
   },
   "patentClaims": {

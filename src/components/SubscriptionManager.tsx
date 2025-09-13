@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Calendar, CreditCard, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const SubscriptionManager: React.FC = () => {
   const { 
@@ -14,14 +15,19 @@ export const SubscriptionManager: React.FC = () => {
     checkSubscription, 
     openCustomerPortal 
   } = useSubscription();
+  const { t, i18n } = useTranslation();
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    if (!dateString) return t('common.na');
+    try {
+      return new Date(dateString).toLocaleDateString(i18n.language || 'en', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return t('common.na');
+    }
   };
 
   const getStatusColor = () => {
@@ -30,8 +36,8 @@ export const SubscriptionManager: React.FC = () => {
   };
 
   const getStatusText = () => {
-    if (!subscribed) return 'No Active Subscription';
-    return 'Active Subscription';
+    if (!subscribed) return t('dashboard.subscription.inactive');
+    return t('dashboard.subscription.active');
   };
 
   return (
@@ -41,10 +47,10 @@ export const SubscriptionManager: React.FC = () => {
           <div className="min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2 text-base">
               <CreditCard className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">Subscription Status</span>
+              <span className="truncate">{t('dashboard.subscription.title')}</span>
             </CardTitle>
             <CardDescription className="text-sm truncate">
-              Manage your Axessible subscription
+              {t('dashboard.subscription.manageDesc')}
             </CardDescription>
           </div>
           <Button
@@ -53,6 +59,7 @@ export const SubscriptionManager: React.FC = () => {
             onClick={checkSubscription}
             disabled={loading}
             className="flex-shrink-0 ml-2"
+            aria-label={t('common.refresh')}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -61,7 +68,7 @@ export const SubscriptionManager: React.FC = () => {
       
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between min-w-0">
-          <span className="text-sm font-medium flex-shrink-0">Status:</span>
+          <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.statusLabel')}</span>
           <Badge variant={getStatusColor()} className="ml-2 text-xs">
             <span className="truncate">{getStatusText()}</span>
           </Badge>
@@ -69,7 +76,7 @@ export const SubscriptionManager: React.FC = () => {
 
         {subscribed && subscription_tier && (
           <div className="flex items-center justify-between min-w-0">
-            <span className="text-sm font-medium flex-shrink-0">Plan:</span>
+            <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.planLabel')}</span>
             <Badge variant="outline" className="ml-2 text-xs">
               <span className="truncate">{subscription_tier}</span>
             </Badge>
@@ -78,7 +85,7 @@ export const SubscriptionManager: React.FC = () => {
 
         {subscription_end && (
           <div className="flex items-center justify-between min-w-0">
-            <span className="text-sm font-medium flex-shrink-0">Next Billing:</span>
+            <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.nextBilling')}</span>
             <div className="flex items-center gap-1 text-xs ml-2 min-w-0">
               <Calendar className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{formatDate(subscription_end)}</span>
@@ -93,19 +100,19 @@ export const SubscriptionManager: React.FC = () => {
               disabled={loading}
               className="w-full"
             >
-              Manage Subscription
+              {t('dashboard.subscription.manageButton')}
             </Button>
           ) : (
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-3">
-                You don't have an active subscription
+                {t('dashboard.subscription.noActive')}
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => window.location.href = '/pricing'}
                 className="w-full"
               >
-                View Plans
+                {t('dashboard.subscription.viewPlans')}
               </Button>
             </div>
           )}

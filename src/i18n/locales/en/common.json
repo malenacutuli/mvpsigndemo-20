@@ -113,7 +113,9 @@
     "share": "Share",
     "copy": "Copy",
     "language": "Language",
-    "feature": "Feature"
+    "feature": "Feature",
+    "refresh": "Refresh",
+    "na": "N/A"
   },
   "enterpriseHero": {
     "subtitle": "VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS",
@@ -248,6 +250,32 @@
     "myVideos": {
       "title": "My Videos",
       "description": "Access your saved transcripts, audio descriptions, and character data"
+    },
+    "subscription": {
+      "title": "Subscription Status",
+      "manageDesc": "Manage your Axessible subscription",
+      "statusLabel": "Status:",
+      "active": "Active Subscription",
+      "inactive": "No Active Subscription",
+      "planLabel": "Plan:",
+      "nextBilling": "Next Billing:",
+      "manageButton": "Manage Subscription",
+      "noActive": "You don't have an active subscription",
+      "viewPlans": "View Plans"
+    },
+    "storage": {
+      "title": "Storage Usage",
+      "overLimit": "Over Limit",
+      "nearlyFull": "Nearly Full",
+      "usedOfTotal": "{{used}} used of {{total}}",
+      "overLimitTitle": "Storage limit exceeded",
+      "overLimitDesc": "You've exceeded your 100GB storage limit. Upgrade to continue uploading videos.",
+      "upgradeStandard": "Upgrade to Standard (2TB)",
+      "nearlyFullTitle": "Storage nearly full",
+      "nearlyFullDesc": "You're running low on storage. Upgrade to Standard for 2TB of storage.",
+      "viewUpgradeOptions": "View Upgrade Options",
+      "onStarter": "You're on the Starter plan with 100GB of storage.",
+      "viewOtherPlans": "View other plans"
     }
   },
   "patentClaims": {
