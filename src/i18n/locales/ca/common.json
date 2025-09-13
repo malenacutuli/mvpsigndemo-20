@@ -115,6 +115,24 @@
     "language": "Idioma",
     "feature": "Funcionalitat"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Comença amb Axessible Video",
+      "subtitle": "Transforma el teu contingut de vídeo amb característiques d'accessibilitat automàtiques",
+      "exploreVideos": {
+        "title": "Explorar Vídeos",
+        "description": "Descobreix vídeos accessibles de la nostra comunitat, subscriu-te a canals i troba contingut que t'interessi"
+      },
+      "uploadVideo": {
+        "title": "Pujar Vídeo",
+        "description": "Puja el teu vídeo i deixa que l'IA generi subtítols, descripcions d'àudio i suport ASL"
+      },
+      "manageVideos": {
+        "title": "Gestionar Vídeos",
+        "description": "Visualitza, organitza i gestiona la teva biblioteca de vídeos accessibles"
+      }
+    }
+  },
   "auth": {
     "signIn": "Iniciar Sessió",
     "signUp": "Registrar-se",

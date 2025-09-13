@@ -115,6 +115,24 @@
     "language": "Idioma",
     "feature": "Funcionalidade"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Comece com Axessível Video",
+      "subtitle": "Transforme seu conteúdo de vídeo com recursos de acessibilidade automáticos",
+      "exploreVideos": {
+        "title": "Explorar Vídeos",
+        "description": "Descubra vídeos acessíveis da nossa comunidade, inscreva-se em canais e encontre conteúdo que te interesse"
+      },
+      "uploadVideo": {
+        "title": "Enviar Vídeo",
+        "description": "Envie seu vídeo e deixe a IA gerar legendas, descrições de áudio e suporte ASL"
+      },
+      "manageVideos": {
+        "title": "Gerenciar Vídeos",
+        "description": "Visualize, organize e gerencie sua biblioteca de vídeos acessíveis"
+      }
+    }
+  },
   "auth": {
     "signIn": "Entrar",
     "signUp": "Cadastrar",

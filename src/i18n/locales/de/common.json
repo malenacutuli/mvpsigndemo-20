@@ -115,6 +115,24 @@
     "language": "Sprache",
     "feature": "Funktion"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Beginnen Sie mit Axessible Video",
+      "subtitle": "Verwandeln Sie Ihren Videoinhalt mit automatischen Barrierefreiheitsfunktionen",
+      "exploreVideos": {
+        "title": "Videos Erkunden",
+        "description": "Entdecken Sie barrierefreie Videos aus unserer Community, abonnieren Sie Kanäle und finden Sie Inhalte, die Sie interessieren"
+      },
+      "uploadVideo": {
+        "title": "Video Hochladen",
+        "description": "Laden Sie Ihr Video hoch und lassen Sie KI Untertitel, Audiobeschreibungen und ASL-Unterstützung generieren"
+      },
+      "manageVideos": {
+        "title": "Videos Verwalten",
+        "description": "Sehen, organisieren und verwalten Sie Ihre barrierefreie Videobibliothek"
+      }
+    }
+  },
   "auth": {
     "signIn": "Anmelden",
     "signUp": "Registrieren",

@@ -115,6 +115,24 @@
     "language": "Lingua",
     "feature": "Funzionalità"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Inizia con Axessible Video",
+      "subtitle": "Trasforma il tuo contenuto video con funzionalità di accessibilità automatiche",
+      "exploreVideos": {
+        "title": "Esplora Video",
+        "description": "Scopri video accessibili dalla nostra comunità, iscriviti ai canali e trova contenuti che ti interessano"
+      },
+      "uploadVideo": {
+        "title": "Carica Video",
+        "description": "Carica il tuo video e lascia che l'IA generi sottotitoli, descrizioni audio e supporto ASL"
+      },
+      "manageVideos": {
+        "title": "Gestisci Video",
+        "description": "Visualizza, organizza e gestisci la tua libreria di video accessibili"
+      }
+    }
+  },
   "auth": {
     "signIn": "Accedi",
     "signUp": "Registrati",

@@ -115,6 +115,24 @@
     "language": "Language",
     "feature": "Feature"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Get Started with Axessible Video",
+      "subtitle": "Transform your video content with automatic accessibility features",
+      "exploreVideos": {
+        "title": "Explore Videos",
+        "description": "Discover accessible videos from our community, subscribe to channels, and find content that interests you"
+      },
+      "uploadVideo": {
+        "title": "Upload Video", 
+        "description": "Upload your video and let AI generate captions, audio descriptions, and ASL support"
+      },
+      "manageVideos": {
+        "title": "Manage Videos",
+        "description": "View, organize, and manage your accessible video library"
+      }
+    }
+  },
   "auth": {
     "signIn": "Sign In",
     "signUp": "Sign Up",

@@ -10,8 +10,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, Video, DollarSign } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
+import { useTranslation } from 'react-i18next';
 
 const Enterprise = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -28,10 +31,10 @@ const Enterprise = () => {
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
-              Get Started with Axessible Video
+              {t('enterprise.quickAccess.title')}
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Transform your video content with automatic accessibility features
+              {t('enterprise.quickAccess.subtitle')}
             </p>
           </div>
           
@@ -41,9 +44,9 @@ const Enterprise = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <Video className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-center">Explore Videos</h3>
+                <h3 className="text-xl font-semibold mb-2 text-center">{t('enterprise.quickAccess.exploreVideos.title')}</h3>
                 <p className="text-muted-foreground text-center text-sm">
-                  Discover accessible videos from our community, subscribe to channels, and find content that interests you
+                  {t('enterprise.quickAccess.exploreVideos.description')}
                 </p>
               </div>
             </Link>
@@ -53,9 +56,9 @@ const Enterprise = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <Upload className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-center">Upload Video</h3>
+                <h3 className="text-xl font-semibold mb-2 text-center">{t('enterprise.quickAccess.uploadVideo.title')}</h3>
                 <p className="text-muted-foreground text-center text-sm">
-                  Upload your video and let AI generate captions, audio descriptions, and ASL support
+                  {t('enterprise.quickAccess.uploadVideo.description')}
                 </p>
               </div>
             </Link>
@@ -65,9 +68,9 @@ const Enterprise = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                   <DollarSign className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-center">Manage Videos</h3>
+                <h3 className="text-xl font-semibold mb-2 text-center">{t('enterprise.quickAccess.manageVideos.title')}</h3>
                 <p className="text-muted-foreground text-center text-sm">
-                  View, organize, and manage your accessible video library
+                  {t('enterprise.quickAccess.manageVideos.description')}
                 </p>
               </div>
             </Link>
