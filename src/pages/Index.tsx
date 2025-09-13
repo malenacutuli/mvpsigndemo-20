@@ -201,7 +201,7 @@ const Index = () => {
               </p>
               <p>{t('sections.community.visionaries')}</p>
             </div>
-            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto px-5 py-4 text-sm sm:text-base font-semibold rounded-full text-center leading-snug whitespace-normal break-words">
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto px-3 py-3 text-xs sm:text-sm font-medium rounded-full text-center leading-tight whitespace-normal break-words max-w-full">
               <Link to="/explore">{t('sections.community.meetPioneers')}</Link>
             </Button>
           </div>
