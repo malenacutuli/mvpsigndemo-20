@@ -175,6 +175,33 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   };
 
+  // Auto-detect language from captions text
+  const detectLanguageFromCaptions = (captions: any[]): string => {
+    if (!captions || captions.length === 0) return 'en';
+    
+    const combinedText = captions.map(cap => cap.text || '').join(' ').toLowerCase();
+    
+    // Spanish detection patterns
+    if (combinedText.includes('imagina') || 
+        combinedText.includes('verano') || 
+        combinedText.includes('corazón') ||
+        combinedText.includes('más') ||
+        combinedText.includes('tu') && combinedText.includes('el ')) {
+      return 'es';
+    }
+    
+    // French detection patterns
+    if (combinedText.includes('bonjour') || 
+        combinedText.includes('merci') || 
+        combinedText.includes('votre') ||
+        combinedText.includes('avec')) {
+      return 'fr';
+    }
+    
+    // Default to English
+    return 'en';
+  };
+
   // Add immediate debugging
   useEffect(() => {
     console.log('🚨 EnhancedVideoPlayer component mounted/updated');
@@ -183,8 +210,18 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     console.log('💾 loadTranscriptSegments available:', typeof loadTranscriptSegments);
   }, [videoId, currentLanguage, loadTranscriptSegments]);
 
-  const handleTranscriptUpdate = (segments: any[], language: string) => {
-    console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', language);
+  const handleTranscriptUpdate = (segments: any[], detectedLang?: string) => {
+    console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
+    
+    // Auto-detect language if not provided
+    const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
+    
+    // Update current language if auto-detected language is different
+    if (autoDetectedLang !== currentLanguage) {
+      console.log('🌐 Language auto-detected:', autoDetectedLang, 'changing from:', currentLanguage);
+      setCurrentLanguage(autoDetectedLang);
+    }
+    
     console.log('🔍 ENHANCED PLAYER: First segment in handleTranscriptUpdate:', segments[0] ? {
       speaker: segments[0].speaker,
       color: segments[0].speakerColor,
@@ -198,10 +235,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setCaptions([...segments]); // Force array recreation
     setTranscriptSegments([...segments]);
     
-    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', segments.length, 'segments');
+    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', segments.length, 'segments, detected language:', autoDetectedLang);
     
     if (onTranscriptUpdate) {
-      onTranscriptUpdate(segments, language);
+      onTranscriptUpdate(segments, autoDetectedLang);
     }
   };
 
@@ -528,10 +565,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             text: s.text.substring(0, 30) + '...'
           })));
           
-          handleTranscriptUpdate(convertedSegments, currentLanguage);
+          // Auto-detect language and update transcript
+          const detectedLang = detectLanguageFromCaptions(convertedSegments);
+          console.log('🌐 Auto-detected language from transcript:', detectedLang);
+          
+          handleTranscriptUpdate(convertedSegments, detectedLang);
         } else {
           console.log('⚠️ ENHANCED PLAYER: No saved transcript found for language:', currentLanguage);
-          setCaptions([]);
+          
+          // Check if there are generated captions available and convert them to transcripts
+          if (captions.length > 0) {
+            console.log('🔄 Converting existing captions to transcript segments:', captions.length);
+            const detectedLang = detectLanguageFromCaptions(captions);
+            handleTranscriptUpdate(captions, detectedLang);
+          } else {
+            setCaptions([]);
+            setTranscriptSegments([]);
+          }
         }
         
         // Load saved audio descriptions
