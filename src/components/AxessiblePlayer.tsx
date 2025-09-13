@@ -103,9 +103,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileFullscreen, setIsMobileFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Hooks
   const isMobile = useIsMobile();
+
+  // Lock scroll when simulating fullscreen on mobile
+  useEffect(() => {
+    if (isMobile && isMobileFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, isMobileFullscreen]);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -581,7 +595,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   return (
     <div 
-      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${className}`}
+      ref={containerRef}
+      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${isMobile && isMobileFullscreen ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' : ''} ${className}`}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
     >
@@ -594,6 +609,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
+        playsInline
         preload="auto"
         onError={(e) => {
           console.error('Video loading error:', e);
@@ -774,7 +790,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
       {/* Captions with Intention - Positioned above control area */}
       {showCaptions && (
-        <div className={`absolute ${isFullscreen && isMobile ? 'bottom-20' : 'bottom-24'} left-1/2 transform -translate-x-1/2 z-30 pointer-events-none`}>
+        <div className={`absolute ${isMobile && (isFullscreen || isMobileFullscreen) ? 'bottom-20' : 'bottom-24'} left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none`}>
           <CaptionsWithIntention 
             captions={(() => {
               // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
@@ -828,7 +844,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {/* Control Overlay - Positioned lower to avoid caption overlap with fullscreen/mobile adjustments */}
       <div 
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent ${
-          isFullscreen && isMobile ? 'pb-4 pt-12 px-4 z-50' : 'pb-2 pt-8 px-2'
+          isMobile && (isFullscreen || isMobileFullscreen) ? 'pb-4 pt-12 px-4 z-50' : 'pb-2 pt-8 px-2'
         } opacity-100 transition-all duration-300`}
       >
         {/* Progress Bar - Extra space from captions */}
@@ -974,16 +990,20 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => {
-                const container = videoRef.current?.closest('div');
-                if (container && document.fullscreenEnabled) {
-                  if (!document.fullscreenElement) {
-                    container.requestFullscreen().catch(console.error);
-                  } else {
-                    document.exitFullscreen().catch(console.error);
+                if (isMobile) {
+                  setIsMobileFullscreen((v) => !v);
+                } else {
+                  const container = containerRef.current;
+                  if (container && document.fullscreenEnabled) {
+                    if (!document.fullscreenElement) {
+                      container.requestFullscreen().catch(console.error);
+                    } else {
+                      document.exitFullscreen().catch(console.error);
+                    }
                   }
                 }
               }}
-              title="Enter fullscreen mode"
+              title="Toggle fullscreen"
               className="text-primary-foreground hover:text-primary hover:bg-primary/20"
             >
               <Maximize className="w-4 h-4" />
