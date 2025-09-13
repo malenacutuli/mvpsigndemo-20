@@ -279,20 +279,21 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
 
   if (isPublic) {
     return (
-      <Card className="p-4">
-        <div className="flex items-center justify-between">
+      <Card className="p-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Badge variant="secondary">
               <Globe className="w-3 h-3 mr-1" />
               Published
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handleReplace}
               disabled={loading}
+              className="text-xs px-2"
             >
               <Replace className="w-3 h-3 mr-1" />
               Replace
@@ -302,6 +303,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               size="sm"
               onClick={handleUnpublish}
               disabled={loading}
+              className="text-xs px-2"
             >
               {loading ? "Unpublishing..." : "Unpublish"}
             </Button>
@@ -310,6 +312,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               size="sm"
               onClick={handleDelete}
               disabled={loading}
+              className="text-xs px-2"
             >
               <Trash2 className="w-3 h-3 mr-1" />
               Delete
@@ -403,7 +406,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                     <SelectTrigger>
                       <SelectValue placeholder="Select channel" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background">
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
                       {channels.map((channel) => (
                         <SelectItem key={channel.id} value={channel.id}>
                           {channel.name}
