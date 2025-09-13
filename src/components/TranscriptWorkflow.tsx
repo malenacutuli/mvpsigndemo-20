@@ -840,14 +840,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             </div>
             
             <Tabs defaultValue="transcript" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="transcript" className="flex items-center gap-2">
                 <Mic className="w-4 h-4" />
-                Transcript ({segments.length})
-              </TabsTrigger>
-              <TabsTrigger value="characters" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Characters
+                Transcript & Characters ({segments.length})
               </TabsTrigger>
               <TabsTrigger value="audio-desc" className="flex items-center gap-2">
                 <Volume2 className="w-4 h-4" />
@@ -1000,6 +996,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                       </div>
                       <div>• <em>Off-camera dialogue is displayed in italic</em></div>
                     </div>
+                  </div>
+
+                  {/* Character Management */}
+                  <div className="border-t pt-4">
+                    <CharacterManager
+                      videoId={videoId}
+                      onCharactersUpdate={handleCharactersUpdate}
+                      existingCharacters={characters}
+                      language={videoLanguage}
+                      existingSpeakers={[...new Set(segments.map(s => s.speaker).filter(Boolean))]}
+                    />
                   </div>
                 </div>
                 
@@ -1472,16 +1479,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   </div>
                 )}
               </div>
-            </TabsContent>
-
-            <TabsContent value="characters" className="mt-4">
-              <CharacterManager
-                videoId={videoId}
-                onCharactersUpdate={handleCharactersUpdate}
-                existingCharacters={characters}
-                language={videoLanguage} // Pass video language for voice filtering
-                existingSpeakers={[...new Set(segments.map(s => s.speaker).filter(Boolean))]}
-              />
             </TabsContent>
 
             <TabsContent value="audio-desc" className="mt-4">
