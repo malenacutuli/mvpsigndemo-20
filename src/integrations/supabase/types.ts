@@ -672,6 +672,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_channel_subscription: {
+        Args: { channel_uuid: string }
+        Returns: {
+          is_subscribed: boolean
+          subscribed_at: string
+        }[]
+      }
       check_user_subscription_status: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -683,6 +690,13 @@ export type Database = {
       generate_embed_token: {
         Args: { video_uuid: string }
         Returns: string
+      }
+      get_channel_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          latest_subscription: string
+          subscriber_count: number
+        }[]
       }
       get_channel_subscriber_count: {
         Args: { channel_uuid: string }
