@@ -12,14 +12,13 @@ const Index = () => {
       <section className="relative bg-gradient-to-br from-background via-muted/20 to-primary/5 py-24 lg:py-32 overflow-hidden">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <div className="text-4xl mb-4">🎥</div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-none mb-8">
               Where Every Story is <span className="text-primary">Truly Seen</span>, 
               <span className="block">Heard, and Felt.</span>
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12">
-              The world's first video platform designed for everyone — powered by captions with intention, 
+              The world's first video platform designed for everyone - powered by captions with intention, 
               creative audio descriptions, and immersive accessibility tools.
             </p>
             
@@ -33,15 +32,10 @@ const Index = () => {
               <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
                 <Link to="/upload">
                   <Upload className="w-5 h-5 mr-2" />
-                  Upload Your Story
+                  Share Your Content
                 </Link>
               </Button>
             </div>
-            
-            <p className="text-sm text-muted-foreground italic">
-              Background visual: Looped video montage featuring a student laughing while reading expressive captions, 
-              a blind woman listening to vivid descriptions, and hands signing illuminated by a screen.
-            </p>
           </div>
         </div>
       </section>
@@ -54,7 +48,7 @@ const Index = () => {
               Because most videos leave someone out.
             </h2>
             <div className="space-y-6 text-lg text-muted-foreground max-w-3xl mx-auto">
-              <p>On YouTube and Vimeo, videos are easy to share — but not always easy to experience.</p>
+              <p>On other platforms, videos are easy to share - but not always easy to experience.</p>
               <div className="grid md:grid-cols-3 gap-6 my-12">
                 <div className="text-center">
                   <p className="font-semibold text-foreground">Captions miss the nuance.</p>
@@ -99,7 +93,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-bold text-foreground">Creative Audio Descriptions</h3>
                 <p className="text-muted-foreground">
-                  Not robotic — but cinematic narration that paints the scene, so those who listen feel everything.
+                  Not robotic - but cinematic narration that paints the scene, so those who listen feel everything.
                 </p>
               </div>
               
@@ -107,9 +101,9 @@ const Index = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                   <Hand className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Integrated Sign Language Avatars</h3>
+                <h3 className="text-xl font-bold text-foreground">Work with us to create Sign Language Descriptions for your videos</h3>
                 <p className="text-muted-foreground">
-                  Seamless ASL translation woven into videos, making inclusion natural.
+                  Driven by experts, making inclusion natural.
                 </p>
               </div>
               
@@ -119,7 +113,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-bold text-foreground">Universal Player</h3>
                 <p className="text-muted-foreground">
-                  Designed for everyone: adjust text size, color, playback, narration speed — all in one simple player.
+                  Designed for everyone: adjust text size, color, playback, narration speed - all in one simple player.
                 </p>
               </div>
             </div>
@@ -182,7 +176,7 @@ const Index = () => {
               </div>
             </div>
             <Button asChild size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-              <Link to="/upload">Upload Your Story</Link>
+              <Link to="/upload">Share Your Content</Link>
             </Button>
           </div>
         </div>
@@ -193,7 +187,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-8">
-              A platform built with — not just for — the community.
+              A platform built with - not just for - the community.
             </h2>
             <div className="space-y-6 text-lg text-muted-foreground mb-12">
               <p>We collaborate with deaf, blind, and disabled creators, educators, and advocates to design every feature.</p>
@@ -259,7 +253,7 @@ const Index = () => {
                 <Link to="/explore">Watch Now</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-                <Link to="/upload">Upload Your Story</Link>
+                <Link to="/upload">Share Your Content</Link>
               </Button>
             </div>
           </div>
@@ -302,7 +296,7 @@ const Index = () => {
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              <p>&copy; 2024 Axessible. All rights reserved.</p>
+              <p>&copy; 2025 Axessible Tech, INC. All rights reserved.</p>
             </div>
           </div>
         </div>
