@@ -521,18 +521,6 @@
       }
     }
   },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome back",
-    "yourVideos": "Your Videos",
-    "analytics": "Analytics",
-    "settings": "Settings",
-    "uploadVideo": "Upload Video",
-    "viewAll": "View All",
-    "totalViews": "Total Views",
-    "totalVideos": "Total Videos",
-    "engagement": "Engagement"
-  },
   "upload": {
     "title": "Upload Your Video",
     "subtitle": "Transform your content with accessibility features",

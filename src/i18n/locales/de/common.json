@@ -521,18 +521,6 @@
       }
     }
   },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Willkommen zurück",
-    "yourVideos": "Ihre Videos",
-    "analytics": "Analysen",
-    "settings": "Einstellungen",
-    "uploadVideo": "Video Hochladen",
-    "viewAll": "Alle Anzeigen",
-    "totalViews": "Gesamtaufrufe",
-    "totalVideos": "Gesamte Videos",
-    "engagement": "Engagement"
-  },
   "upload": {
     "title": "Ihr Video Hochladen",
     "subtitle": "Verwandeln Sie Ihren Inhalt mit Barrierefreiheitsfunktionen",

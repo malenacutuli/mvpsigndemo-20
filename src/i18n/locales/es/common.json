@@ -521,18 +521,6 @@
       }
     }
   },
-  "dashboard": {
-    "title": "Panel",
-    "welcome": "Bienvenido de nuevo",
-    "yourVideos": "Tus Videos",
-    "analytics": "Análisis",
-    "settings": "Configuración",
-    "uploadVideo": "Subir Video",
-    "viewAll": "Ver Todo",
-    "totalViews": "Visualizaciones Totales",
-    "totalVideos": "Videos Totales",
-    "engagement": "Compromiso"
-  },
   "upload": {
     "title": "Sube tu Video",
     "subtitle": "Transforma tu contenido con características de accesibilidad",
