@@ -202,6 +202,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     return 'en';
   };
 
+  // Watch for captions changes and convert them to transcript segments if no saved transcripts exist
+  useEffect(() => {
+    if (captions.length > 0 && transcriptSegments.length === 0) {
+      console.log('🔄 Converting generated captions to transcript segments:', captions.length);
+      console.log('📋 First caption for conversion:', captions[0]);
+      
+      const detectedLang = detectLanguageFromCaptions(captions);
+      console.log('🌐 Auto-detected language from captions:', detectedLang);
+      
+      // Convert captions to transcript segment format
+      const convertedSegments = captions.map(caption => ({
+        ...caption,
+        startTime: caption.startTime || 0,
+        endTime: caption.endTime || 0,
+        text: caption.text || '',
+        speaker: caption.speaker || 'Speaker',
+        speakerColor: caption.speakerColor || '#3B82F6'
+      }));
+      
+      console.log('✅ Converted segments for AudioDescriptionEditor:', convertedSegments.length);
+      handleTranscriptUpdate(convertedSegments, detectedLang);
+    }
+  }, [captions.length, transcriptSegments.length]);
+
   // Add immediate debugging
   useEffect(() => {
     console.log('🚨 EnhancedVideoPlayer component mounted/updated');
