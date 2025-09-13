@@ -100,6 +100,8 @@
     "success": "Successo",
     "cancel": "Annulla",
     "save": "Salva",
+    "create": "Crea",
+    "update": "Aggiorna",
     "delete": "Elimina",
     "edit": "Modifica",
     "close": "Chiudi",

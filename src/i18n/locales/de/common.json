@@ -100,6 +100,8 @@
     "success": "Erfolg",
     "cancel": "Abbrechen",
     "save": "Speichern",
+    "create": "Erstellen",
+    "update": "Aktualisieren",
     "delete": "Löschen",
     "edit": "Bearbeiten",
     "close": "Schließen",
