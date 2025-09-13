@@ -649,11 +649,17 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           <div className="space-y-3">
             <div>
               <Label className="text-sm font-medium">AI Model Selection</Label>
-              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as 'openai' | 'huggingface')}>
+              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as 'openai' | 'huggingface' | 'enhanced')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="enhanced">
+                    <div className="flex flex-col">
+                      <span>🎯 Enhanced GPT-5 Vision (Best)</span>
+                      <span className="text-xs text-muted-foreground">Multi-frame context analysis</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="openai">
                     <div className="flex flex-col">
                       <span>OpenAI GPT-4V (Premium)</span>
