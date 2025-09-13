@@ -312,22 +312,38 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
               <div>
-                <div className="flex flex-wrap gap-6 text-sm">
-                  <Link to="/enterprise" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.about')}</Link>
-                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.community')}</Link>
-                  <Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.pricing')}</Link>
-                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
-                  <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link>
+                <h3 className="font-semibold text-foreground mb-4">{t('footer.about')}</h3>
+                <div className="space-y-2 text-sm">
+                  <Link to="/enterprise" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.enterprise')}</Link>
+                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.community')}</Link>
+                  <Link to="/pricing" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.pricing')}</Link>
                 </div>
               </div>
               
               <div>
-                <div className="flex flex-wrap gap-6 text-sm">
-                  <Link to="/accessibility-statement" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.accessibilityStatement')}</Link>
-                  <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link>
-                  <Link to="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link>
+                <h3 className="font-semibold text-foreground mb-4">{t('common.feature')}</h3>
+                <div className="space-y-2 text-sm">
+                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.explore')}</Link>
+                  <Link to="/upload" className="block text-muted-foreground hover:text-primary transition-colors">{t('common.upload')}</Link>
+                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-4">{t('footer.contact')}</h3>
+                <div className="space-y-2 text-sm">
+                  <Link to="/contact" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link>
+                  <Link to="/accessibility-statement" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.accessibilityStatement')}</Link>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-4">{t('footer.terms')}</h3>
+                <div className="space-y-2 text-sm">
+                  <Link to="/terms" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link>
+                  <Link to="/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link>
                 </div>
               </div>
             </div>
