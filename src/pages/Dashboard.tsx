@@ -67,8 +67,12 @@ const Dashboard = () => {
               {/* Sidebar */}
               <div className="lg:col-span-1">
                 <div className="sticky top-8 space-y-6">
-                  <SubscriptionManager />
-                  <StorageIndicator />
+                  <div className="min-w-0">
+                    <SubscriptionManager />
+                  </div>
+                  <div className="min-w-0">
+                    <StorageIndicator />
+                  </div>
                 </div>
               </div>
             </div>
