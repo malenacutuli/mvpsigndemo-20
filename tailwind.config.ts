@@ -21,6 +21,9 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
       },
+      fontWeight: {
+        'extralight': '200',
+      },
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -76,7 +79,8 @@ export default {
 					'support-orange': 'hsl(var(--cwi-support-orange))',
 					'support-cyan': 'hsl(var(--cwi-support-cyan))',
 					'support-pink': 'hsl(var(--cwi-support-pink))'
-				}
+				},
+				charcoal: 'hsl(var(--charcoal))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
