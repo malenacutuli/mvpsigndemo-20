@@ -2,29 +2,32 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Settings, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const Implementation: React.FC = () => {
+  const { t } = useTranslation();
+  
   const steps = [
     {
       number: '1',
       icon: Upload,
-      title: 'Content Input',
-      description: 'Upload existing videos or generate from text prompts',
-      features: ['Bulk video processing', 'AI video generation', 'Live stream integration']
+      title: t('implementation.steps.contentInput.title'),
+      description: t('implementation.steps.contentInput.description'),
+      features: t('implementation.steps.contentInput.features', { returnObjects: true }) as string[]
     },
     {
       number: '2',
       icon: Settings,
-      title: 'Feature Selection',
-      description: 'Configure accessibility features for your use case',
-      features: ['Emotional captions', 'Audio descriptions', 'Multi-language ASL']
+      title: t('implementation.steps.featureSelection.title'),
+      description: t('implementation.steps.featureSelection.description'),  
+      features: t('implementation.steps.featureSelection.features', { returnObjects: true }) as string[]
     },
     {
       number: '3',
       icon: Rocket,
-      title: 'Deploy & Monitor',
-      description: 'Enterprise-ready player with compliance reporting',
-      features: ['Embeddable player', 'Real-time analytics', 'Compliance audits']
+      title: t('implementation.steps.deployMonitor.title'),
+      description: t('implementation.steps.deployMonitor.description'),
+      features: t('implementation.steps.deployMonitor.features', { returnObjects: true }) as string[]
     }
   ];
 
@@ -33,13 +36,13 @@ export const Implementation: React.FC = () => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <Badge variant="secondary" className="mb-4 text-sm font-medium px-4 py-2">
-            IMPLEMENTATION
+            {t('implementation.badge')}
           </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Deploy in Minutes, Not Months
+            {t('implementation.title')}
           </h2>
           <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Three simple steps to enterprise-grade accessibility compliance
+            {t('implementation.description')}
           </p>
         </div>
 
@@ -77,20 +80,20 @@ export const Implementation: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center">
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-              Zero Code Integration
+              {t('implementation.highlights.zeroCode')}
             </span>
             <span className="flex items-center">
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-              User-Toggleable Features
+              {t('implementation.highlights.userToggleable')}
             </span>
             <span className="flex items-center">
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-              Enterprise SSO Ready
+              {t('implementation.highlights.enterpriseSSO')}
             </span>
           </div>
           
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Deploy to millions of users in under 30 minutes with our enterprise-grade infrastructure
+            {t('implementation.deployMessage')}
           </p>
         </div>
       </div>

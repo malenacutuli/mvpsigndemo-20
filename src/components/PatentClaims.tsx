@@ -2,47 +2,35 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Award, Workflow, HandHelping, Shield, ArrowRight, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const PatentClaims: React.FC = () => {
+  const { t } = useTranslation();
+  
   const patentClaims = [
     {
       icon: <Workflow className="w-6 h-6" />,
-      number: "Claim 1",
-      title: "Data Processing Logic",
-      description: "Automated multi-modal processing pipeline with intelligent data routing",
-      validatedBy: [
-        "ASR with precise word-level timestamps",
-        "Sophisticated caption generation algorithms",
-        "Contextual scene analysis and summarization",
-        "Modular processing with error handling"
-      ],
-      implementation: "Complete automated workflow orchestration"
+      number: t('patentClaims.claims.dataProcessing.number'),
+      title: t('patentClaims.claims.dataProcessing.title'),
+      description: t('patentClaims.claims.dataProcessing.description'),
+      validatedBy: t('patentClaims.claims.dataProcessing.validatedBy', { returnObjects: true }) as string[],
+      implementation: t('patentClaims.claims.dataProcessing.implementation')
     },
     {
       icon: <HandHelping className="w-6 h-6" />,
-      number: "Claim 2",
-      title: "Avatar Generation with Timing Sync",
-      description: "AI-animated ASL avatars with precise speech synchronization",
-      validatedBy: [
-        "Three distinct children-friendly ASL avatars",
-        "Speech timestamp parsing and gesture mapping",
-        "Timeline-matched animation rendering",
-        "Real-time synchronization with spoken content"
-      ],
-      implementation: "Advanced ASL generation with pixel-perfect timing"
+      number: t('patentClaims.claims.avatarGeneration.number'),
+      title: t('patentClaims.claims.avatarGeneration.title'),
+      description: t('patentClaims.claims.avatarGeneration.description'),
+      validatedBy: t('patentClaims.claims.avatarGeneration.validatedBy', { returnObjects: true }) as string[],
+      implementation: t('patentClaims.claims.avatarGeneration.implementation')
     },
     {
       icon: <Shield className="w-6 h-6" />,
-      number: "Claim 3",
-      title: "Integrated Compliance Layer",
-      description: "Automated accessibility compliance validation and formatting",
-      validatedBy: [
-        "WCAG 2.1 Level AA compliance checks",
-        "EAA and ADA standards adherence",
-        "Automatic visual element reformatting",
-        "Content auditing and validation"
-      ],
-      implementation: "Built-in accessibility verification system"
+      number: t('patentClaims.claims.complianceLayer.number'),
+      title: t('patentClaims.claims.complianceLayer.title'),
+      description: t('patentClaims.claims.complianceLayer.description'),
+      validatedBy: t('patentClaims.claims.complianceLayer.validatedBy', { returnObjects: true }) as string[],
+      implementation: t('patentClaims.claims.complianceLayer.implementation')
     }
   ];
 
@@ -53,14 +41,13 @@ export const PatentClaims: React.FC = () => {
         <div className="text-center mb-12">
           <Badge variant="secondary" className="mb-4">
             <Award className="w-4 h-4 mr-2" />
-            Patent Validation
+            {t('patentClaims.badge')}
           </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Protecting Revolutionary Innovation
+            {t('patentClaims.title')}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Our MVP directly validates key patent claims, demonstrating unique intellectual property 
-            that creates substantial competitive advantages in the accessibility market.
+            {t('patentClaims.description')}
           </p>
         </div>
 
@@ -82,7 +69,7 @@ export const PatentClaims: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Validated By:
+                    {t('patentClaims.validatedBy')}
                   </h4>
                   <ul className="space-y-2">
                     {claim.validatedBy.map((validation, vIndex) => (
@@ -107,9 +94,9 @@ export const PatentClaims: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Strategic Importance</CardTitle>
+              <CardTitle className="text-2xl">{t('patentClaims.strategicImportance.title')}</CardTitle>
               <CardDescription className="text-base">
-                Why these patent claims create substantial market value
+                {t('patentClaims.strategicImportance.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -118,9 +105,9 @@ export const PatentClaims: React.FC = () => {
                   <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <ArrowRight className="w-6 h-6 text-primary" />
                   </div>
-                  <h4 className="font-semibold mb-2">Market Differentiation</h4>
+                  <h4 className="font-semibold mb-2">{t('patentClaims.strategicImportance.differentiation.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Unique features that competitors cannot easily replicate
+                    {t('patentClaims.strategicImportance.differentiation.description')}
                   </p>
                 </div>
                 
@@ -128,9 +115,9 @@ export const PatentClaims: React.FC = () => {
                   <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Shield className="w-6 h-6 text-accent" />
                   </div>
-                  <h4 className="font-semibold mb-2">IP Protection</h4>
+                  <h4 className="font-semibold mb-2">{t('patentClaims.strategicImportance.protection.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Enforceable intellectual property rights for core technology
+                    {t('patentClaims.strategicImportance.protection.description')}
                   </p>
                 </div>
                 
@@ -138,9 +125,9 @@ export const PatentClaims: React.FC = () => {
                   <div className="w-12 h-12 bg-cwi-main-green/20 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Award className="w-6 h-6 text-cwi-main-green" />
                   </div>
-                  <h4 className="font-semibold mb-2">Investment Value</h4>
+                  <h4 className="font-semibold mb-2">{t('patentClaims.strategicImportance.investment.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Proven innovation backing future development and scaling
+                    {t('patentClaims.strategicImportance.investment.description')}
                   </p>
                 </div>
               </div>

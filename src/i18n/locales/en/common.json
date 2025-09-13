@@ -115,6 +115,219 @@
     "language": "Language",
     "feature": "Feature"
   },
+  "hero": {
+    "subtitle": "VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS",
+    "headline": "Build something better.",
+    "headlineSecond": "For everyone.",
+    "description": "Create inclusive experiences that meet WCAG and EAA standards, thanks to the leading platform in digital accessibility and the support of expert services.",
+    "cta": "Start Your Upload",
+    "inclusivity": {
+      "title": "Inclusivity comes standard",
+      "description": "Everything from customizable captions to high-contrast colors are baked into every video you host with Axessible, so accessibility isn't something you have to think about. It's just the way your videos are."
+    }
+  },
+  "featureBoxes": {
+    "compliance": {
+      "title": "Compliance",
+      "description": "WCAG 2.1 AA and UNE-EN 301549 based remediation for EAA compliance."
+    },
+    "solutions": {
+      "title": "Customizable Solutions",
+      "description": "Plans designed to adapt to all types of businesses."
+    },
+    "heavyWork": {
+      "title": "We Handle the Heavy Work",
+      "description": "Fast implementation, effortlessly. We do the heavy lifting."
+    },
+    "contactUs": "Contact us"
+  },
+  "industryFirst": {
+    "badge": "INDUSTRY FIRST",
+    "title": "Multi-Modal Video Accessibility Engine",
+    "description": "Where competitors offer point solutions, Axessible delivers end-to-end automation. Our patent-pending platform transforms video accessibility from compliance burden to competitive advantage.",
+    "features": {
+      "aiSync": {
+        "title": "Patent-Pending AI Synchronization",
+        "description": "Advanced neural networks ensure perfect timing between visual content and accessibility features."
+      },
+      "emotionalCaptions": {
+        "title": "Emotional Intelligence Captions",
+        "description": "Context-aware captions with tone detection and visual styling for enhanced comprehension."
+      },
+      "enterprise": {
+        "title": "Enterprise Features",
+        "compliance": "Built-in compliance auditing & reporting",
+        "whiteLabel": "White-label embeddable player",
+        "apiFirst": "API-first architecture",
+        "sso": "Enterprise SSO & user management"
+      }
+    },
+    "quote": "\"We don't just enhance video—we future-proof it.\""
+  },
+  "implementation": {
+    "badge": "IMPLEMENTATION",
+    "title": "Deploy in Minutes, Not Months",
+    "description": "Three simple steps to enterprise-grade accessibility compliance",
+    "steps": {
+      "contentInput": {
+        "title": "Content Input",
+        "description": "Upload existing videos or generate from text prompts",
+        "features": ["Bulk video processing", "AI video generation", "Live stream integration"]
+      },
+      "featureSelection": {
+        "title": "Feature Selection",
+        "description": "Configure accessibility features for your use case",
+        "features": ["Emotional captions", "Audio descriptions", "Multi-language ASL"]
+      },
+      "deployMonitor": {
+        "title": "Deploy & Monitor",
+        "description": "Enterprise-ready player with compliance reporting",
+        "features": ["Embeddable player", "Real-time analytics", "Compliance audits"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "Zero Code Integration",
+      "userToggleable": "User-Toggleable Features",
+      "enterpriseSSO": "Enterprise SSO Ready"
+    },
+    "deployMessage": "Deploy to millions of users in under 30 minutes with our enterprise-grade infrastructure"
+  },
+  "techStack": {
+    "badge": "Technology Stack",
+    "title": "Cutting-Edge AI Infrastructure",
+    "description": "Built on enterprise-grade cloud services and advanced AI models to deliver unparalleled video accessibility at scale.",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "Cloud Infrastructure",
+        "description": "Scalable, enterprise-grade cloud services"
+      },
+      "aiMachineLearning": {
+        "title": "AI & Machine Learning",
+        "description": "Advanced AI models for accessibility",
+        "technologies": ["Vision-Language Models", "Custom ASL Models", "LLM Integration"]
+      },
+      "voiceAudio": {
+        "title": "Voice & Audio",
+        "description": "Adaptive voice synthesis",
+        "technologies": ["Custom Voice Models", "Audio Analysis"]
+      },
+      "computerVision": {
+        "title": "Computer Vision",
+        "description": "Scene analysis and visual understanding",
+        "technologies": ["Blender Integration", "3D Animation", "Pose Estimation"]
+      },
+      "complianceSecurity": {
+        "title": "Compliance & Security",
+        "description": "Accessibility standards adherence",
+        "technologies": ["WCAG 2.1 AA", "EAA Compliance", "ADA Standards", "Security Protocols"]
+      }
+    },
+    "architectureHighlights": {
+      "title": "Architecture Highlights",
+      "gpu": {
+        "title": "GPU-Accelerated Processing",
+        "description": "High-performance compute for real-time AI inference and complex ASL generation"
+      },
+      "eventDriven": {
+        "title": "Event-Driven Architecture",
+        "description": "Serverless workflows with robust error handling and automatic retry mechanisms"
+      },
+      "complianceFirst": {
+        "title": "Compliance-First Design",
+        "description": "Built-in accessibility validation and automatic compliance formatting"
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "Patent Validation",
+    "title": "Protecting Revolutionary Innovation",
+    "description": "Our MVP directly validates key patent claims, demonstrating unique intellectual property that creates substantial competitive advantages in the accessibility market.",
+    "validatedBy": "Validated By:",
+    "claims": {
+      "dataProcessing": {
+        "number": "Claim 1",
+        "title": "Data Processing Logic",
+        "description": "Automated multi-modal processing pipeline with intelligent data routing",
+        "validatedBy": [
+          "ASR with precise word-level timestamps",
+          "Sophisticated caption generation algorithms",
+          "Contextual scene analysis and summarization",
+          "Modular processing with error handling"
+        ],
+        "implementation": "Complete automated workflow orchestration"
+      },
+      "avatarGeneration": {
+        "number": "Claim 2",
+        "title": "Avatar Generation with Timing Sync",
+        "description": "AI-animated ASL avatars with precise speech synchronization",
+        "validatedBy": [
+          "Three distinct children-friendly ASL avatars",
+          "Speech timestamp parsing and gesture mapping",
+          "Timeline-matched animation rendering",
+          "Real-time synchronization with spoken content"
+        ],
+        "implementation": "Advanced ASL generation with pixel-perfect timing"
+      },
+      "complianceLayer": {
+        "number": "Claim 3",
+        "title": "Integrated Compliance Layer",
+        "description": "Automated accessibility compliance validation and formatting",
+        "validatedBy": [
+          "WCAG 2.1 Level AA compliance checks",
+          "EAA and ADA standards adherence",
+          "Automatic visual element reformatting",
+          "Content auditing and validation"
+        ],
+        "implementation": "Built-in accessibility verification system"
+      }
+    },
+    "strategicImportance": {
+      "title": "Strategic Importance",
+      "subtitle": "Why these patent claims create substantial market value",
+      "differentiation": {
+        "title": "Market Differentiation",
+        "description": "Unique features that competitors cannot easily replicate"
+      },
+      "protection": {
+        "title": "IP Protection",
+        "description": "Enforceable intellectual property rights for core technology"
+      },
+      "investment": {
+        "title": "Investment Value",
+        "description": "Proven innovation backing future development and scaling"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "MARKET URGENCY",
+    "title": "The $13B Accessibility Gap",
+    "description": "With 215+ million hours of video uploaded annually and accessibility regulations tightening globally, the cost of non-compliance has never been higher.",
+    "stats": {
+      "userIssues": {
+        "title": "User Accessibility Issues",
+        "description": "Report barriers when accessing digital content"
+      },
+      "brandAbandonment": {
+        "title": "Brand Abandonment",
+        "description": "Due to inaccessible user experiences"
+      },
+      "eaaEnforcement": {
+        "date": "June 2025",
+        "title": "EAA Enforcement",
+        "description": "European Accessibility Act penalties begin"
+      }
+    },
+    "solution": {
+      "title": "Turn Compliance from Cost Center to Revenue Driver",
+      "description": "Axessible transforms accessibility from regulatory burden to competitive advantage—enabling enterprises, governments, and educators to reach 100% of their audience while ensuring full compliance across all major standards."
+    },
+    "compliance": {
+      "wcag": "WCAG 2.1 AAA Compliant",
+      "ada": "ADA Compatible",
+      "eaa": "EAA Ready",
+      "section508": "Section 508 Certified"
+    }
+  },
   "enterprise": {
     "quickAccess": {
       "title": "Get Started with Axessible Video",

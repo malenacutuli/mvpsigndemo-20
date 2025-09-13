@@ -2,21 +2,23 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Zap, Brain, Users, Building } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const IndustryFirst: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <Badge variant="secondary" className="mb-4 text-sm font-medium px-4 py-2">
-            INDUSTRY FIRST
+            {t('industryFirst.badge')}
           </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Multi-Modal Video Accessibility Engine
+            {t('industryFirst.title')}
           </h2>
           <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Where competitors offer point solutions, Axessible delivers end-to-end automation. 
-            Our patent-pending platform transforms video accessibility from compliance burden to competitive advantage.
+            {t('industryFirst.description')}
           </p>
         </div>
 
@@ -24,9 +26,9 @@ export const IndustryFirst: React.FC = () => {
           <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
             <CardContent className="p-8 text-center">
               <Zap className="w-12 h-12 text-primary mb-4 mx-auto" />
-              <h3 className="text-xl font-semibold mb-3">Patent-Pending AI Synchronization</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('industryFirst.features.aiSync.title')}</h3>
               <p className="text-muted-foreground">
-                Advanced neural networks ensure perfect timing between visual content and accessibility features.
+                {t('industryFirst.features.aiSync.description')}
               </p>
             </CardContent>
           </Card>
@@ -34,9 +36,9 @@ export const IndustryFirst: React.FC = () => {
           <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
             <CardContent className="p-8 text-center">
               <Brain className="w-12 h-12 text-accent mb-4 mx-auto" />
-              <h3 className="text-xl font-semibold mb-3">Emotional Intelligence Captions</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('industryFirst.features.emotionalCaptions.title')}</h3>
               <p className="text-muted-foreground">
-                Context-aware captions with tone detection and visual styling for enhanced comprehension.
+                {t('industryFirst.features.emotionalCaptions.description')}
               </p>
             </CardContent>
           </Card>
@@ -44,13 +46,13 @@ export const IndustryFirst: React.FC = () => {
           <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
             <CardContent className="p-8 text-center">
               <Building className="w-12 h-12 text-primary mb-4 mx-auto" />
-              <h3 className="text-xl font-semibold mb-3">Enterprise Features</h3>
+              <h3 className="text-xl font-semibold mb-3">{t('industryFirst.features.enterprise.title')}</h3>
               <div className="text-muted-foreground text-left">
                 <ul className="space-y-2 text-sm">
-                  <li>• Built-in compliance auditing & reporting</li>
-                  <li>• White-label embeddable player</li>
-                  <li>• API-first architecture</li>
-                  <li>• Enterprise SSO & user management</li>
+                  <li>• {t('industryFirst.features.enterprise.compliance')}</li>
+                  <li>• {t('industryFirst.features.enterprise.whiteLabel')}</li>
+                  <li>• {t('industryFirst.features.enterprise.apiFirst')}</li>
+                  <li>• {t('industryFirst.features.enterprise.sso')}</li>
                 </ul>
               </div>
             </CardContent>
@@ -59,7 +61,7 @@ export const IndustryFirst: React.FC = () => {
 
         <div className="text-center">
           <blockquote className="text-2xl md:text-3xl font-bold text-foreground italic">
-            "We don't just enhance video—we future-proof it."
+            {t('industryFirst.quote')}
           </blockquote>
         </div>
       </div>

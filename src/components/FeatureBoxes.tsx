@@ -2,8 +2,11 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const FeatureBoxes: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-6">
@@ -11,30 +14,30 @@ export const FeatureBoxes: React.FC = () => {
           {/* Compliance Box */}
           <div className="bg-blue-50 rounded-2xl p-8 text-left">
             <h3 className="text-xl font-bold text-foreground mb-4">
-              Compliance
+              {t('featureBoxes.compliance.title')}
             </h3>
             <p className="text-muted-foreground">
-              WCAG 2.1 AA and UNE-EN 301549 based remediation for EAA compliance.
+              {t('featureBoxes.compliance.description')}
             </p>
           </div>
           
           {/* Custom Solutions Box */}
           <div className="bg-gray-50 rounded-2xl p-8 text-left">
             <h3 className="text-xl font-bold text-foreground mb-4">
-              Customizable Solutions
+              {t('featureBoxes.solutions.title')}
             </h3>
             <p className="text-muted-foreground">
-              Plans designed to adapt to all types of businesses.
+              {t('featureBoxes.solutions.description')}
             </p>
           </div>
           
           {/* Heavy Lifting Box */}
           <div className="bg-gray-50 rounded-2xl p-8 text-left">
             <h3 className="text-xl font-bold text-foreground mb-4">
-              We Handle the Heavy Work
+              {t('featureBoxes.heavyWork.title')}
             </h3>
             <p className="text-muted-foreground">
-              Fast implementation, effortlessly. We do the heavy lifting.
+              {t('featureBoxes.heavyWork.description')}
             </p>
           </div>
         </div>
@@ -46,7 +49,7 @@ export const FeatureBoxes: React.FC = () => {
               size="lg" 
               className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold rounded-full inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Contact us
+              {t('featureBoxes.contactUs')}
               <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
