@@ -435,6 +435,79 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }
   };
 
+  // Fallback when no transcript: sample frames across the whole video timeline
+  const generateDescriptionsWithoutTranscript = async (): Promise<AudioDescriptionSegment[]> => {
+    try {
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+
+      // Wait for metadata to get duration
+      await new Promise((resolve, reject) => {
+        const onLoaded = () => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          resolve(null);
+        };
+        const onError = () => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          reject(new Error('Failed to load video metadata'));
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+        video.addEventListener('error', onError, { once: true });
+      });
+
+      const duration = Math.max(0, video.duration || 0);
+      if (!duration || !isFinite(duration)) throw new Error('Invalid video duration');
+
+      // Sample roughly every 8-10 seconds, minimum 6 samples
+      const targetSamples = Math.max(6, Math.ceil(duration / 10));
+      const interval = duration / targetSamples;
+
+      const analysisRequests: any[] = [];
+      for (let i = 0; i < targetSamples; i++) {
+        const t = Math.min(duration - 0.5, Math.max(0.5, i * interval + interval / 2));
+        const frame = await extractFrameAtTime(video, t);
+        if (frame) {
+          analysisRequests.push({
+            timestamp: t,
+            frameDataUrl: frame,
+            frameDataUrls: [frame],
+            duration: Math.min(4, interval)
+          });
+        }
+      }
+
+      if (analysisRequests.length === 0) return [];
+
+      // Route to selected model
+      if (selectedModel === 'huggingface') {
+        const hfResponse = await supabase.functions.invoke('huggingface-video-analysis', {
+          body: {
+            videoId,
+            analysisRequests,
+            detectedLanguage
+          }
+        });
+        if (hfResponse.error) throw new Error(hfResponse.error.message || 'HF analysis failed');
+        return hfResponse.data?.descriptions || [];
+      } else {
+        const visualResponse = await supabase.functions.invoke('generate-visual-descriptions', {
+          body: {
+            videoId,
+            analysisRequests,
+            language: detectedLanguage,
+            contentType: 'general'
+          }
+        });
+        if (visualResponse.error) throw new Error(visualResponse.error.message || 'OpenAI analysis failed');
+        return visualResponse.data?.descriptions || [];
+      }
+    } catch (e) {
+      console.error('❌ Failed no-transcript generation:', e);
+      return [];
+    }
+  };
   const getSurroundingTranscriptText = (gapStart: number, gapEnd: number, transcript: any[]): string => {
     return transcript
       .filter(seg => Math.abs(seg.startTime - gapStart) < 30 || Math.abs(seg.endTime - gapEnd) < 30)
@@ -448,23 +521,24 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('📝 transcriptSegments:', transcriptSegments);
     console.log('📊 transcriptSegments length:', transcriptSegments?.length || 0);
     
-    if (!transcriptSegments || transcriptSegments.length === 0) {
-      toast.error("No transcript available - Please generate a transcript first to create audio descriptions");
-      return;
-    }
-
     setIsGenerating(true);
     try {
       let scheduled: AudioDescriptionSegment[];
       
-      if (selectedModel === 'huggingface') {
-        scheduled = await generateDescriptionsWithHuggingFace(videoId, transcriptSegments);
-        toast.success(`🤗 Open source descriptions generated! Placed ${scheduled.length} items using Hugging Face BLIP-2`, {
-          description: "Using Salesforce/blip-image-captioning-large model for scene analysis"
-        });
+      if (transcriptSegments && transcriptSegments.length > 0) {
+        if (selectedModel === 'huggingface') {
+          scheduled = await generateDescriptionsWithHuggingFace(videoId, transcriptSegments);
+          toast.success(`🤗 Open source descriptions generated! Placed ${scheduled.length} items using Hugging Face BLIP-2`, {
+            description: "Using Salesforce/blip-image-captioning-large model for scene analysis"
+          });
+        } else {
+          scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
+          toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
+        }
       } else {
-        scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
-        toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
+        // Fallback: no transcript available, sample frames across timeline
+        scheduled = await generateDescriptionsWithoutTranscript();
+        toast.success(`Generated ${scheduled.length} descriptions by sampling the video timeline`);
       }
 
       if (scheduled.length === 0) {
@@ -568,7 +642,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           <Button 
             onClick={generateAIDescriptions} 
             className="w-full" 
-            disabled={isGenerating || !transcriptSegments || transcriptSegments.length === 0}
+            disabled={isGenerating}
           >
             {isGenerating ? (
               <>
