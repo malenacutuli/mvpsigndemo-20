@@ -282,10 +282,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   };
 
   const updateSpeakerMapping = (speakerName: string, characterName: string) => {
-    setSpeakerMappings(prev => ({
-      ...prev,
-      [speakerName]: characterName
-    }));
+    setSpeakerMappings(prev => {
+      const updated = { ...prev };
+      if (characterName === "unassigned") {
+        delete updated[speakerName]; // Remove mapping
+      } else {
+        updated[speakerName] = characterName;
+      }
+      return updated;
+    });
   };
 
   const getCharacterTypeIcon = (type: Character['type']) => {
@@ -329,14 +334,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                   </Badge>
                   <span className="text-muted-foreground">→</span>
                   <Select 
-                    value={speakerMappings[speaker] || ""} 
+                    value={speakerMappings[speaker] || "unassigned"} 
                     onValueChange={(value) => updateSpeakerMapping(speaker, value)}
                   >
                     <SelectTrigger className="h-7 w-32">
                       <SelectValue placeholder="Assign to..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {characters.map(char => (
                         <SelectItem key={char.id} value={char.name}>
                           <div className="flex items-center gap-2">
