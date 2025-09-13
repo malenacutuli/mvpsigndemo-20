@@ -35,9 +35,8 @@ const plans = [
     storage: "2TB storage",
     features: [
       "Everything in Starter",
-      "Branding in the player",
       "Third-party player support",
-      "Advanced Audio Description Prompt Studio",
+      "Human in the Loop support for Audio Description up to 3 videos a month",
       "Custom Text to Transcript Integration"
     ],
     cta: "Try Standard",
@@ -55,8 +54,7 @@ const plans = [
       "Marketing automation integrations",
       "WCAG/ADA compliance reporting",
       "Expert-led accessibility audit for your videos",
-      "Specialized team support to convert up to 15 videos",
-      "Creative storytelling for Audio Description with manual timing-synchronization"
+      "Human in the Loop support for Creative Storytelling Audio Description with manual timing-synchronization for up to 10 videos a month"
     ],
     cta: "Go Advanced",
     highlight: true
@@ -126,13 +124,6 @@ const comparisonFeatures = [
         standard: "2TB",
         advanced: "7TB",
         enterprise: "Custom"
-      },
-      {
-        name: "Users",
-        starter: "1",
-        standard: "5",
-        advanced: "10",
-        enterprise: "Unlimited"
       },
       {
         name: "Video Processing",
@@ -227,7 +218,7 @@ export default function Pricing() {
                   <div className="text-sm text-muted-foreground">{plan.cadence}</div>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {plan.users} • {plan.storage}
+                  {plan.storage}
                 </div>
               </CardHeader>
 
