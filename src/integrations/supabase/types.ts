@@ -407,6 +407,39 @@ export type Database = {
           },
         ]
       }
+      subscriber_access_audit: {
+        Row: {
+          access_type: string
+          accessed_fields: string[] | null
+          accessed_subscriber_id: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type: string
+          accessed_fields?: string[] | null
+          accessed_subscriber_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          accessed_fields?: string[] | null
+          accessed_subscriber_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -712,6 +745,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_masked_subscriber_data: {
+        Args: { target_user_id?: string }
+        Returns: {
+          created_date: string
+          is_active: boolean
+          masked_stripe_id: string
+          tier: string
+          user_id: string
+        }[]
+      }
+      get_user_subscription_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          expires_at: string
+          features_available: Json
+          is_active: boolean
+          tier_name: string
+        }[]
+      }
       get_user_subscription_status: {
         Args: { channel_uuid: string }
         Returns: {
@@ -725,6 +777,20 @@ export type Database = {
       }
       is_email_subscribed_to_channel: {
         Args: { channel_uuid: string; email_to_check: string }
+        Returns: boolean
+      }
+      system_manage_subscription: {
+        Args: {
+          end_date?: string
+          is_active?: boolean
+          stripe_customer?: string
+          target_user_id: string
+          tier?: string
+        }
+        Returns: boolean
+      }
+      update_user_subscription_preferences: {
+        Args: { email_notifications?: boolean }
         Returns: boolean
       }
       upsert_transcript_segments: {

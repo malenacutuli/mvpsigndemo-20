@@ -7,6 +7,10 @@ interface SubscriptionData {
   subscribed: boolean;
   subscription_tier: string | null;
   subscription_end: string | null;
+  features?: {
+    storage_gb: number;
+    videos_per_month: number;
+  };
 }
 
 interface SubscriptionContextType extends SubscriptionData {
@@ -32,15 +36,25 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     subscribed: false,
     subscription_tier: null,
     subscription_end: null,
+    features: { storage_gb: 1, videos_per_month: 1 },
   });
   const [loading, setLoading] = useState(false);
 
   const checkSubscription = async () => {
-    if (!user || !session) return;
+    if (!user || !session) {
+      setSubscriptionData({
+        subscribed: false,
+        subscription_tier: null,
+        subscription_end: null,
+        features: { storage_gb: 1, videos_per_month: 1 },
+      });
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
+      // Use the new secure edge function
+      const { data, error } = await supabase.functions.invoke('get-subscription-info', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -52,9 +66,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscribed: data.subscribed || false,
         subscription_tier: data.subscription_tier || null,
         subscription_end: data.subscription_end || null,
+        features: data.features || { storage_gb: 1, videos_per_month: 1 },
       });
     } catch (error) {
       console.error('Failed to check subscription:', error);
+      // Set secure defaults on error
+      setSubscriptionData({
+        subscribed: false,
+        subscription_tier: null,
+        subscription_end: null,
+        features: { storage_gb: 1, videos_per_month: 1 },
+      });
       toast({
         title: "Error",
         description: "Failed to check subscription status",
@@ -143,6 +165,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscribed: false,
         subscription_tier: null,
         subscription_end: null,
+        features: { storage_gb: 1, videos_per_month: 1 },
       });
     }
   }, [user, session]);

@@ -47,17 +47,25 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, updating unsubscribed state");
-      await supabaseClient.from("subscribers").upsert({
-        email: user.email,
-        user_id: user.id,
-        stripe_customer_id: null,
+      logStep("No customer found, using secure system function to update");
+      // Use secure system function instead of direct table access
+      const { error: updateError } = await supabaseClient.rpc('system_manage_subscription', {
+        target_user_id: user.id,
+        stripe_customer: null,
+        tier: null,
+        is_active: false,
+        end_date: null
+      });
+      
+      if (updateError) {
+        logStep("Error updating subscription via secure function", { error: updateError.message });
+      }
+      
+      return new Response(JSON.stringify({ 
         subscribed: false,
         subscription_tier: null,
-        subscription_end: null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'email' });
-      return new Response(JSON.stringify({ subscribed: false }), {
+        subscription_end: null 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -85,28 +93,32 @@ serve(async (req) => {
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
       if (amount <= 2600) {
-        subscriptionTier = "Starter";
+        subscriptionTier = "starter";
       } else if (amount <= 6500) {
-        subscriptionTier = "Standard";
+        subscriptionTier = "standard";
       } else {
-        subscriptionTier = "Advanced";
+        subscriptionTier = "premium";
       }
       logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
       logStep("No active subscription found");
     }
 
-    await supabaseClient.from("subscribers").upsert({
-      email: user.email,
-      user_id: user.id,
-      stripe_customer_id: customerId,
-      subscribed: hasActiveSub,
-      subscription_tier: subscriptionTier,
-      subscription_end: subscriptionEnd,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'email' });
+    // Use secure system function to update subscription data
+    const { error: updateError } = await supabaseClient.rpc('system_manage_subscription', {
+      target_user_id: user.id,
+      stripe_customer: customerId,
+      tier: subscriptionTier,
+      is_active: hasActiveSub,
+      end_date: subscriptionEnd
+    });
 
-    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
+    if (updateError) {
+      logStep("Error updating subscription via secure function", { error: updateError.message });
+      throw new Error(`Failed to update subscription: ${updateError.message}`);
+    }
+
+    logStep("Updated database with subscription info via secure function", { subscribed: hasActiveSub, subscriptionTier });
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscription_tier: subscriptionTier,
