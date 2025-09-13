@@ -256,54 +256,48 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
 
   if (isPublic) {
     return (
-      <Card className="p-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">
-              <Globe className="w-3 h-3 mr-1" />
-              Published
-            </Badge>
-          </div>
-          <div className="flex items-center gap-1 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReplace}
-              disabled={loading}
-              className="text-xs px-2"
-            >
-              <Replace className="w-3 h-3 mr-1" />
-              Replace
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUnpublish}
-              disabled={loading}
-              className="text-xs px-2"
-            >
-              {loading ? "Unpublishing..." : "Unpublish"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-xs px-2"
-            >
-              <Trash2 className="w-3 h-3 mr-1" />
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <div className="flex items-center gap-2 w-full">
+        <Button asChild size="sm" variant="outline" className="flex-1">
+          <span className="flex items-center justify-center gap-1">
+            <Globe className="w-3 h-3" />
+            Published
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReplace}
+          disabled={loading}
+          className="px-3"
+        >
+          <Replace className="w-3 h-3" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleUnpublish}
+          disabled={loading}
+          className="px-3"
+        >
+          <EyeOff className="w-3 h-3" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="px-3"
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 w-full">
       {!isVideoReady ? (
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md">
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md flex-1">
           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
           <span className="text-sm text-blue-700">Processing...</span>
           <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
@@ -313,6 +307,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
           <Button
             variant="outline"
             onClick={() => setEditingComplete(true)}
+            className="flex-1"
           >
             ✓ Done Editing
           </Button>
@@ -321,15 +316,16 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
             size="sm"
             onClick={handleDelete}
             disabled={isDeleting}
+            className="px-3"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3" />
           </Button>
         </>
       ) : (
         <>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="flex-1">
                 Publish to Channel
               </Button>
             </DialogTrigger>
@@ -442,8 +438,9 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
             size="sm"
             onClick={handleDelete}
             disabled={isDeleting}
+            className="px-3"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3" />
           </Button>
         </>
       )}

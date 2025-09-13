@@ -335,7 +335,7 @@ export default function Videos() {
                           </div>
                         </div>
                         
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2 w-full">
                           <Button asChild size="sm" className="flex-1">
                             <Link to={`/videos/${video.id}`}>
                               <Eye className="w-4 h-4 mr-1" />
