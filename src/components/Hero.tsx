@@ -17,13 +17,13 @@ export const Hero: React.FC = () => {
           </p>
           
           {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-none mb-8">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8">
             {t('hero.headline')}
             <span className="block">{t('hero.headlineSecond')}</span>
           </h1>
           
           {/* Description */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12 px-4">
             {t('hero.description')}
           </p>
           
@@ -39,11 +39,11 @@ export const Hero: React.FC = () => {
           </Link>
           
           {/* Inclusivity Message */}
-          <div className="mt-16 max-w-3xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+          <div className="mt-16 max-w-3xl mx-auto px-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4">
               {t('hero.inclusivity.title')}
             </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {t('hero.inclusivity.description')}
             </p>
           </div>
