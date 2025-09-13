@@ -11,17 +11,17 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-background via-muted/10 to-primary/5 py-32 lg:py-40 overflow-hidden">
-        <div className="container mx-auto px-6">
+      <section className="relative bg-gradient-to-br from-background via-muted/10 to-primary/5 py-20 sm:py-28 lg:py-40 overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-black leading-[0.9] tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-foreground leading-tight tracking-tight break-words px-2">
                 {t('hero.title')}{" "}
                 <span className="text-primary block">{t('hero.titleAccent')}</span>{" "}
                 <span className="block">{t('hero.titleEnd')}</span>
               </h1>
               
-              <p className="text-lg md:text-xl text-slate-700 font-light leading-relaxed max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-slate-700 font-light leading-relaxed max-w-3xl mx-auto px-4">
                 {t('hero.subtitle')}
               </p>
               
