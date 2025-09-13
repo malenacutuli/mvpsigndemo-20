@@ -125,17 +125,6 @@
     "language": "Idioma",
     "feature": "Funcionalitat"
   },
-  "hero": {
-    "subtitle": "PLATAFORMA D'ACCESSIBILITAT DE VÍDEO DISSENYADA PER AL TEU NEGOCI",
-    "headline": "Construeix alguna cosa millor.",
-    "headlineSecond": "Per a tothom.",
-    "description": "Crea experiències inclusives que compleixen els estàndards WCAG i EAA, gràcies a la plataforma líder en accessibilitat digital i el suport de serveis experts.",
-    "cta": "Comença la Teva Pujada",
-    "inclusivity": {
-      "title": "La inclusivitat ve d'estàndard",
-      "description": "Tot, des de subtítols personalitzables fins a colors d'alt contrast, està integrat en cada vídeo que allotges amb Axessible, així que l'accessibilitat no és quelcom en què hagis de pensar. És simplement com són els teus vídeos."
-    }
-  },
   "featureBoxes": {
     "compliance": {
       "title": "Compliment",
