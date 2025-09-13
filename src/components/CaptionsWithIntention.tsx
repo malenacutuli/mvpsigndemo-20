@@ -364,17 +364,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-16 sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 flex items-center justify-center pointer-events-none z-40"
+      className="absolute bottom-24 sm:bottom-28 left-2 right-2 sm:left-4 sm:right-4 flex items-center justify-center pointer-events-none z-50"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box - Mobile Responsive */}
       <div 
         className={`
-          relative w-full max-w-xs sm:max-w-2xl text-center
-          ${isLoudBurst ? '' : 'bg-black/70'} 
+          relative w-full max-w-sm sm:max-w-2xl text-center
+          ${isLoudBurst ? '' : 'bg-black/80'} 
           ${isLoudBurst ? '' : 'rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-2 py-1 sm:px-3 sm:py-2'}
-          ${isLoudBurst ? '' : 'mx-1 sm:mx-4'}
+          ${isLoudBurst ? '' : 'px-3 py-2 sm:px-4 sm:py-3'}
+          ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -394,7 +394,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             className="text-xs font-medium mb-1 text-center"
             style={{ 
               color: activeCaption.speakerColor || speakerColor,
-              fontSize: `${Math.max(6, baseFontSize * (window.innerWidth < 640 ? 0.25 : 0.35))}px` // Smaller on mobile
+              fontSize: `${Math.max(8, baseFontSize * (window.innerWidth < 640 ? 0.4 : 0.35))}px` // More readable on mobile
             }}
           >
             {activeCaption.speaker}
@@ -405,7 +405,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.75 : 1), screenHeight * 0.0455)}px`, // Smaller on mobile
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.85 : 1), screenHeight * 0.0455)}px`, // More readable on mobile
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
@@ -414,7 +414,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.2' : '1.3' // Tighter line height on mobile
+            lineHeight: window.innerWidth < 640 ? '1.3' : '1.3' // Consistent line height
           }}
         >
           {/* Sound effects and music formatting */}
