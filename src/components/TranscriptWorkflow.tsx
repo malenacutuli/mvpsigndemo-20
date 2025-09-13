@@ -581,23 +581,41 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setCharacters(updatedCharacters);
     onCharactersUpdate?.(updatedCharacters);
     
-    // Apply character properties to transcript segments
+    // Apply character properties to transcript segments with improved matching
     const updatedSegments = segments.map(seg => {
-      const character = updatedCharacters.find(char => char.name === seg.speaker);
+      // Try multiple matching strategies
+      const character = updatedCharacters.find(char => 
+        // Exact name match
+        char.name.toLowerCase() === seg.speaker.toLowerCase() ||
+        // Color match (for existing assignments)
+        char.color === seg.speakerColor ||
+        // Generic speaker name match (Speaker 1 -> first character, etc.)
+        (seg.speaker.match(/^speaker\s*(\d+)$/i) && 
+         updatedCharacters.indexOf(char) === parseInt(seg.speaker.match(/\d+/)?.[0] || '0') - 1)
+      );
+      
       if (character) {
+        console.log(`🎭 CHAR UPDATE: Applying "${character.name}" (${character.color}) to segment "${seg.speaker}"`);
         return {
           ...seg,
+          speaker: character.name, // Update speaker name to character name
           speakerColor: character.color,
           emphasis: character.emphasis || seg.emphasis,
-          pitch: character.pitch || seg.pitch,
+          pitch: character.pitch || seg.pitch
         };
       }
       return seg;
     });
     
-    if (JSON.stringify(updatedSegments) !== JSON.stringify(segments)) {
-      setSegments(updatedSegments);
-      console.log('🔄 Segments refreshed with character updates');
+    setSegments(updatedSegments);
+    
+    // Show update summary
+    const appliedCount = updatedSegments.filter(s => 
+      updatedCharacters.some(c => c.name === s.speaker)
+    ).length;
+    
+    if (appliedCount > 0) {
+      console.log(`✅ CHAR UPDATE: Applied character settings to ${appliedCount} segments`);
     }
   };
 
@@ -864,13 +882,125 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   </p>
                 </div>
                 
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold">Edit Transcript Details</h3>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={exportTranscript}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Export
-                    </Button>
+                {/* Transcript Analysis Summary */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <h4 className="text-sm font-medium text-blue-700 mb-2">📊 Transcript Analysis Summary</h4>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <span className="text-blue-600 font-medium">Speakers:</span>
+                      <div className="mt-1">
+                        {(() => {
+                          const speakers = [...new Set(segments.map(s => s.speaker))];
+                          const speakerColorConsistency = speakers.map(speaker => {
+                            const colors = [...new Set(segments.filter(s => s.speaker === speaker).map(s => s.speakerColor))];
+                            return { speaker, colors: colors.length };
+                          });
+                          return speakerColorConsistency.map(({ speaker, colors }) => (
+                            <div key={speaker} className="flex items-center gap-1">
+                              <span>{speaker}</span>
+                              {colors > 1 && <span className="text-red-600">⚠️ {colors} colors</span>}
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-medium">Vocal Intensity:</span>
+                      <div className="mt-1">
+                        {(() => {
+                          const withIntensity = segments.filter(s => (s as any).vocal_intensity);
+                          const intensityCount = {
+                            whisper: withIntensity.filter(s => (s as any).vocal_intensity === 'whisper').length,
+                            normal: withIntensity.filter(s => (s as any).vocal_intensity === 'normal').length,
+                            yell: withIntensity.filter(s => (s as any).vocal_intensity === 'yell').length,
+                            shout: withIntensity.filter(s => (s as any).vocal_intensity === 'shout').length,
+                          };
+                          return (
+                            <div>
+                              <div>Analyzed: {withIntensity.length}/{segments.length}</div>
+                              {intensityCount.whisper > 0 && <div>🤫 Whisper: {intensityCount.whisper}</div>}
+                              {intensityCount.yell > 0 && <div>📢 Yell: {intensityCount.yell}</div>}
+                              {intensityCount.shout > 0 && <div>🗣️ Shout: {intensityCount.shout}</div>}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-medium">Manual Overrides:</span>
+                      <div className="mt-1">
+                        {(() => {
+                          const withEmphasis = segments.filter(s => s.emphasis && s.emphasis !== 'normal');
+                          const withPitch = segments.filter(s => s.pitch && s.pitch !== 'normal');
+                          return (
+                            <div>
+                              <div>Emphasis: {withEmphasis.length}</div>
+                              <div>Pitch: {withPitch.length}</div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                 <div className="flex justify-between items-center">
+                   <h3 className="font-semibold">Edit Transcript Details</h3>
+                   <div className="flex gap-2">
+                     {/* Speaker Consistency Analyzer */}
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={() => {
+                         // Analyze speaker consistency
+                         const speakerGroups: Record<string, { colors: Set<string>, segments: any[] }> = {};
+                         segments.forEach(segment => {
+                           if (!speakerGroups[segment.speaker]) {
+                             speakerGroups[segment.speaker] = { colors: new Set(), segments: [] };
+                           }
+                           speakerGroups[segment.speaker].colors.add(segment.speakerColor);
+                           speakerGroups[segment.speaker].segments.push(segment);
+                         });
+                         
+                         // Find inconsistencies
+                         const inconsistencies = Object.entries(speakerGroups)
+                           .filter(([_, data]) => data.colors.size > 1);
+                         
+                         if (inconsistencies.length > 0) {
+                           const message = inconsistencies.map(([speaker, data]) => 
+                             `${speaker}: ${data.colors.size} different colors`
+                           ).join(', ');
+                           
+                           if (confirm(`Found inconsistencies: ${message}. Fix by using most common color for each speaker?`)) {
+                             const updatedSegments = segments.map(segment => {
+                               const group = speakerGroups[segment.speaker];
+                               if (group.colors.size > 1) {
+                                 // Use most common color for this speaker
+                                 const colorCounts: Record<string, number> = {};
+                                 group.segments.forEach(s => {
+                                   colorCounts[s.speakerColor] = (colorCounts[s.speakerColor] || 0) + 1;
+                                 });
+                                 const mostCommonColor = Object.entries(colorCounts)
+                                   .sort(([,a], [,b]) => b - a)[0][0];
+                                 return { ...segment, speakerColor: mostCommonColor };
+                               }
+                               return segment;
+                             });
+                             setSegments(updatedSegments);
+                           }
+                         } else {
+                           alert('✅ All speakers have consistent colors!');
+                         }
+                       }}
+                       className="text-xs"
+                     >
+                       🔍 Check Consistency
+                     </Button>
+                     
+                     <Button variant="outline" size="sm" onClick={exportTranscript}>
+                       <Download className="w-4 h-4 mr-2" />
+                       Export
+                     </Button>
                     {segments.length > 0 ? (
                       <Button onClick={() => saveTranscript(true)} disabled={isSaving}>
                         {isSaving ? (
@@ -912,16 +1042,44 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                     {segments.map((segment, index) => (
                       <Card key={segment.id} className="p-4">
                         <div className="grid gap-3">
-                          <div className="flex items-center gap-2">
-                            <Badge style={{ backgroundColor: segment.speakerColor, color: '#000' }}>
-                              {segment.speaker}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {segment.startTime.toFixed(1)}s - {segment.endTime.toFixed(1)}s
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              #{index + 1}
-                            </span>
+                           <div className="flex items-center gap-2 flex-wrap">
+                             <Badge style={{ backgroundColor: segment.speakerColor, color: '#000' }}>
+                               {segment.speaker}
+                             </Badge>
+                             <span className="text-sm text-muted-foreground">
+                               {segment.startTime.toFixed(1)}s - {segment.endTime.toFixed(1)}s
+                             </span>
+                             <span className="text-xs text-muted-foreground">
+                               #{index + 1}
+                             </span>
+                             
+                             {/* Vocal Intensity Indicators */}
+                             {(segment as any).vocal_intensity && (
+                               <Badge 
+                                 variant={(segment as any).vocal_intensity === 'whisper' ? 'secondary' : 
+                                         (segment as any).vocal_intensity === 'yell' ? 'default' : 
+                                         (segment as any).vocal_intensity === 'shout' ? 'destructive' : 'outline'}
+                                 className="text-xs"
+                               >
+                                 🎤 {(segment as any).vocal_intensity}
+                               </Badge>
+                             )}
+                             
+                             {/* Manual Styling Indicators */}
+                             {segment.emphasis && segment.emphasis !== 'normal' && (
+                               <Badge variant="outline" className="text-xs bg-blue-50">
+                                 {segment.emphasis === 'quiet' ? '🤫' : 
+                                  segment.emphasis === 'loud' ? '📢' : 
+                                  segment.emphasis === 'yelling' ? '🗣️' : ''}
+                                 {segment.emphasis}
+                               </Badge>
+                             )}
+                             
+                             {segment.pitch && segment.pitch !== 'normal' && (
+                               <Badge variant="outline" className="text-xs bg-green-50">
+                                 {segment.pitch === 'low' ? '🔽' : '🔼'} {segment.pitch}
+                               </Badge>
+                             )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -947,59 +1105,142 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                             </Button>
                           </div>
                           
-                          {editingId === segment.id ? (
-                            <div className="grid gap-2">
+                           {editingId === segment.id ? (
+                            <div className="grid gap-3">
                               <Textarea
                                 value={segment.text}
                                 onChange={(e) => updateSegment(segment.id, 'text', e.target.value)}
                                 rows={2}
                                 placeholder="Edit transcript text..."
                               />
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Speaker</label>
-                                  <Input
-                                    value={segment.speaker}
-                                    onChange={(e) => updateSegment(segment.id, 'speaker', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Color</label>
-                                  <input
-                                    type="color"
-                                    value={segment.speakerColor}
-                                    onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
-                                    className="w-full h-8 rounded border"
-                                  />
+                              
+                              {/* Speaker Identity & Color Management */}
+                              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                                <h4 className="text-sm font-medium text-blue-700 mb-2">👤 Speaker Identity</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Character Name</label>
+                                    <Input
+                                      value={segment.speaker}
+                                      onChange={(e) => updateSegment(segment.id, 'speaker', e.target.value)}
+                                      placeholder="e.g., Sarah, Host, Expert"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Color (Lock for consistency)</label>
+                                    <div className="flex gap-1">
+                                      <input
+                                        type="color"
+                                        value={segment.speakerColor}
+                                        onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
+                                        className="w-16 h-8 rounded border"
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          // Lock this color to all segments with same speaker
+                                          const updatedSegments = segments.map(s => 
+                                            s.speaker === segment.speaker 
+                                              ? { ...s, speakerColor: segment.speakerColor }
+                                              : s
+                                          );
+                                          setSegments(updatedSegments);
+                                        }}
+                                        className="text-xs px-2"
+                                      >
+                                        🔒 Lock
+                                      </Button>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Emphasis</label>
-                                  <Select value={segment.emphasis} onValueChange={(value) => updateSegment(segment.id, 'emphasis', value)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="quiet">Quiet</SelectItem>
-                                      <SelectItem value="normal">Normal</SelectItem>
-                                      <SelectItem value="loud">Loud</SelectItem>
-                                      <SelectItem value="yelling">Yelling (Bold)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+
+                              {/* Vocal Intensity Analysis */}
+                              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                <h4 className="text-sm font-medium text-yellow-700 mb-2">🎤 Vocal Intensity Analysis</h4>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">AI Detected</label>
+                                    <div className="text-sm font-medium">
+                                      {(segment as any).vocal_intensity ? (
+                                        <Badge variant={(segment as any).vocal_intensity === 'whisper' ? 'secondary' : 
+                                               (segment as any).vocal_intensity === 'yell' ? 'default' : 
+                                               (segment as any).vocal_intensity === 'shout' ? 'destructive' : 'outline'}>
+                                          {(segment as any).vocal_intensity}
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-muted-foreground text-xs">Not analyzed</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Confidence</label>
+                                    <div className="text-sm">
+                                      {(segment as any).intensity_confidence 
+                                        ? `${Math.round((segment as any).intensity_confidence * 100)}%`
+                                        : 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Manual Override</label>
+                                    <Select 
+                                      value={segment.emphasis} 
+                                      onValueChange={(value) => updateSegment(segment.id, 'emphasis', value)}
+                                    >
+                                      <SelectTrigger className="h-7">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="quiet">🤫 Quiet/Whisper</SelectItem>
+                                        <SelectItem value="normal">😐 Normal</SelectItem>
+                                        <SelectItem value="loud">📢 Loud</SelectItem>
+                                        <SelectItem value="yelling">🗣️ Yelling (Bold)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                 </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Pitch</label>
-                                  <Select value={segment.pitch} onValueChange={(value) => updateSegment(segment.id, 'pitch', value)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="low">Low</SelectItem>
-                                      <SelectItem value="normal">Normal</SelectItem>
-                                      <SelectItem value="high">High</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                              </div>
+
+                              {/* Captions with Intention Styling Rules */}
+                              <div className="bg-green-50 border border-green-200 rounded p-3">
+                                <h4 className="text-sm font-medium text-green-700 mb-2">🎨 Captions with Intention Rules</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Voice Pitch</label>
+                                    <Select value={segment.pitch} onValueChange={(value) => updateSegment(segment.id, 'pitch', value)}>
+                                      <SelectTrigger className="h-7">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low">🔽 Low (Heavier, Wider)</SelectItem>
+                                        <SelectItem value="normal">➡️ Normal</SelectItem>
+                                        <SelectItem value="high">🔼 High (Lighter, Narrower)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-muted-foreground">Visual Preview</label>
+                                    <div className="text-sm p-1 bg-white rounded border text-center">
+                                      <span 
+                                        style={{
+                                          fontSize: segment.emphasis === 'quiet' ? '0.8em' : 
+                                                   segment.emphasis === 'loud' ? '1.2em' :
+                                                   segment.emphasis === 'yelling' ? '1.4em' : '1em',
+                                          fontWeight: segment.emphasis === 'yelling' ? 'bold' : 
+                                                     segment.pitch === 'low' ? '600' :
+                                                     segment.pitch === 'high' ? '300' : 'normal',
+                                          fontStretch: segment.pitch === 'low' ? '110%' :
+                                                      segment.pitch === 'high' ? '90%' : 'normal'
+                                        }}
+                                      >
+                                        Sample Text
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-green-600 mt-2">
+                                  Rules: Whisper = smaller, Yell/Loud = bigger + bold, Low pitch = heavier + wider, High pitch = lighter + narrower
                                 </div>
                               </div>
                             </div>
