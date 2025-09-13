@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.huggingface-video-analysis]
 verify_jwt = true
+
+[functions.enhanced-video-analysis]
+verify_jwt = false

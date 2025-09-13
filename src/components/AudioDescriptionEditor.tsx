@@ -47,7 +47,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
-  const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface'>('openai');
+  const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
 
   const detectedLanguage = videoData?.transcript_language || 'en';
 
@@ -360,6 +360,45 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return scheduled;
   };
 
+  // Enhanced multi-frame analysis using GPT-5 Vision
+  const generateEnhancedDescriptions = async (videoUrl: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('🎯 Enhanced Analysis: Using GPT-5 Vision with multi-frame context');
+
+    // 1) Compute safe non-dialogue gaps
+    const gaps = computeGaps(transcript);
+    if (gaps.length === 0) {
+      console.log('⚠️ No gaps available for enhanced analysis');
+      return [];
+    }
+
+    console.log('🎬 Processing gaps with enhanced multi-frame analysis:', gaps.length);
+
+    try {
+      const enhancedResponse = await supabase.functions.invoke('enhanced-video-analysis', {
+        body: {
+          videoId,
+          videoUrl,
+          gaps: gaps.slice(0, 6), // Limit for performance
+          transcript,
+          detectedLanguage
+        }
+      });
+
+      if (enhancedResponse.error) {
+        throw new Error(enhancedResponse.error.message || 'Enhanced analysis failed');
+      }
+
+      const descriptions = enhancedResponse.data?.descriptions || [];
+      console.log('✅ Enhanced GPT-5 Vision generated', descriptions.length, 'contextual descriptions');
+      
+      return descriptions;
+
+    } catch (error) {
+      console.error('❌ Enhanced analysis failed:', error);
+      throw error;
+    }
+  };
+
   // New open source video analysis function
   const generateDescriptionsWithHuggingFace = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
     console.log('🤗 Generating descriptions with Hugging Face open source models');
@@ -526,7 +565,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       let scheduled: AudioDescriptionSegment[];
       
       if (transcriptSegments && transcriptSegments.length > 0) {
-        if (selectedModel === 'huggingface') {
+        if (selectedModel === 'enhanced') {
+          scheduled = await generateEnhancedDescriptions(videoUrl, transcriptSegments);
+          toast.success(`🎯 Enhanced GPT-5 Vision analysis complete! Generated ${scheduled.length} contextual descriptions`, {
+            description: "Using multi-frame analysis with dialogue context and scene understanding"
+          });
+        } else if (selectedModel === 'huggingface') {
           scheduled = await generateDescriptionsWithHuggingFace(videoId, transcriptSegments);
           toast.success(`🤗 Open source descriptions generated! Placed ${scheduled.length} items using Hugging Face BLIP-2`, {
             description: "Using Salesforce/blip-image-captioning-large model for scene analysis"
@@ -552,7 +596,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error(`Generation failed with ${selectedModel === 'huggingface' ? 'Hugging Face' : 'OpenAI'} - Please try again.`);
+      toast.error(`Generation failed with ${selectedModel === 'enhanced' ? 'Enhanced GPT-5 Vision' : selectedModel === 'huggingface' ? 'Hugging Face' : 'OpenAI'} - Please try again.`);
     } finally {
       setIsGenerating(false);
     }
@@ -647,12 +691,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {selectedModel === 'huggingface' ? 'Analyzing with Open Source Models...' : 'Analyzing Video Content...'}
+                {selectedModel === 'enhanced' ? 'Analyzing with GPT-5 Vision Multi-Frame Context...' : selectedModel === 'huggingface' ? 'Analyzing with Open Source Models...' : 'Analyzing Video Content...'}
               </>
             ) : (
               <>
-                {selectedModel === 'huggingface' ? '🤗' : <Wand2 className="w-4 h-4 mr-2" />}
-                Generate {selectedModel === 'huggingface' ? 'Open Source' : 'AI'} Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+                {selectedModel === 'enhanced' ? '🎯' : selectedModel === 'huggingface' ? '🤗' : <Wand2 className="w-4 h-4 mr-2" />}
+                Generate {selectedModel === 'enhanced' ? 'Enhanced Vision' : selectedModel === 'huggingface' ? 'Open Source' : 'AI'} Descriptions ({transcriptSegments?.length || 0} transcript segments available)
               </>
             )}
           </Button>
