@@ -49,39 +49,24 @@ STYLE EXAMPLES:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-5-mini-2025-08-07",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: system },
           { role: "user", content: JSON.stringify({ contentType: contentType || "education", segments }) }
         ],
-        max_completion_tokens: 2000,
+        temperature: 0.2,
       }),
     });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("OpenAI API error:", errorData);
-      throw new Error(`OpenAI API error: ${errorData.error?.message || res.statusText}`);
-    }
-
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content || "";
-    console.log("OpenAI response content:", content);
     
-    // Parse JSON response with improved error handling
+    // Parse JSON response
     let parsed = [];
     try {
-      // Try to extract JSON from code blocks first
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : content.trim();
+      const jsonStr = content.match(/```json\n([\s\S]*?)\n```/)?.[1] || content.trim();
       parsed = JSON.parse(jsonStr);
-      
-      if (!Array.isArray(parsed)) {
-        console.error("Response is not an array:", parsed);
-        parsed = [];
-      }
-    } catch (parseError) {
-      console.error("JSON parsing error:", parseError, "Content:", content);
+    } catch (_) {
       parsed = [];
     }
 
