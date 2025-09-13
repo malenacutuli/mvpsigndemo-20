@@ -10,9 +10,17 @@
   },
   "hero": {
     "title": "On Cada Història és",
-    "titleAccent": "Veritablement Vista,",
+    "titleAccent": "Verdaderament Vista,",
     "titleEnd": "Escoltada i Sentida.",
-    "subtitle": "La primera plataforma de vídeo del món dissenyada per a tothom - impulsada per subtítols amb intenció, descripcions d'àudio creatives i eines d'accessibilitat immersives.",
+    "subtitle": "PLATAFORMA D'ACCESSIBILITAT DE VÍDEO DISSENYADA PER AL TEU NEGOCI",
+    "headline": "Construeix quelcom millor.",
+    "headlineSecond": "Per a tothom.",
+    "description": "Crea experiències inclusives que compleixin els estàndards WCAG i EAA, gràcies a la plataforma líder en accessibilitat digital i el suport de serveis experts.",
+    "cta": "Comença la teva Pujada",
+    "inclusivity": {
+      "title": "La inclusivitat ve estàndard",
+      "description": "Tot, des de subtítols personalitzables fins a colors d'alt contrast, està integrat en cada vídeo allotjat amb Axessible, així que l'accessibilitat no és quelcom en què hagis de pensar. És simplement la manera com són els teus vídeos."
+    },
     "startWatching": "Començar a Veure",
     "shareContent": "Comparteix el teu Contingut"
   },

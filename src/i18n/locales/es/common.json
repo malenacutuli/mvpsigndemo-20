@@ -12,7 +12,15 @@
     "title": "Donde Cada Historia es",
     "titleAccent": "Verdaderamente Vista,",
     "titleEnd": "Escuchada y Sentida.",
-    "subtitle": "La primera plataforma de video del mundo diseñada para todos - impulsada por subtítulos con intención, descripciones de audio creativas y herramientas de accesibilidad inmersivas.",
+    "subtitle": "PLATAFORMA DE ACCESIBILIDAD DE VIDEO DISEÑADA PARA SU NEGOCIO",
+    "headline": "Construye algo mejor.",
+    "headlineSecond": "Para todos.",
+    "description": "Crea experiencias inclusivas que cumplan con los estándares WCAG y EAA, gracias a la plataforma líder en accesibilidad digital y el apoyo de servicios expertos.",
+    "cta": "Comienza tu Subida",
+    "inclusivity": {
+      "title": "La inclusividad viene de serie",
+      "description": "Todo, desde subtítulos personalizables hasta colores de alto contraste, está integrado en cada video alojado con Axessible, por lo que la accesibilidad no es algo en lo que tengas que pensar. Es simplemente la forma en que son tus videos."
+    },
     "startWatching": "Comenzar a Ver",
     "shareContent": "Comparte tu Contenido"
   },

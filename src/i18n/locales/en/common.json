@@ -12,7 +12,15 @@
     "title": "Where Every Story is",
     "titleAccent": "Truly Seen,",
     "titleEnd": "Heard, and Felt.",
-    "subtitle": "The world's first video platform designed for everyone - powered by captions with intention, creative audio descriptions, and immersive accessibility tools.",
+    "subtitle": "VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS",
+    "headline": "Build something better.",
+    "headlineSecond": "For everyone.",
+    "description": "Create inclusive experiences that meet WCAG and EAA standards, thanks to the leading platform in digital accessibility and the support of expert services.",
+    "cta": "Start Your Upload",
+    "inclusivity": {
+      "title": "Inclusivity comes standard",
+      "description": "Everything from customizable captions to high-contrast colors are baked into every video host with Axessible, so accessibility isn't something you have to think about. It's just the way your videos are."
+    },
     "startWatching": "Start Watching",
     "shareContent": "Share Your Content"
   },
