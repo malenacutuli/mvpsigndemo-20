@@ -308,7 +308,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               {loading ? "Unpublishing..." : "Unpublish"}
             </Button>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
               onClick={handleDelete}
               disabled={loading}
@@ -450,15 +450,6 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
           </DialogContent>
         </Dialog>
       )}
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleDelete}
-        disabled={loading}
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
     </div>
   );
 };
