@@ -702,6 +702,15 @@ export type Database = {
         Args: { channel_uuid: string }
         Returns: number
       }
+      get_channel_subscriber_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          authenticated_subscribers: number
+          email_subscribers: number
+          latest_subscription: string
+          total_subscribers: number
+        }[]
+      }
       get_user_subscription_status: {
         Args: { channel_uuid: string }
         Returns: {
@@ -712,6 +721,10 @@ export type Database = {
       increment_video_views: {
         Args: { video_uuid: string }
         Returns: undefined
+      }
+      is_email_subscribed_to_channel: {
+        Args: { channel_uuid: string; email_to_check: string }
+        Returns: boolean
       }
       upsert_transcript_segments: {
         Args: {
