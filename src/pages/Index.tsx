@@ -77,7 +77,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-extralight text-center text-black mb-20 leading-tight">
-              Video without barriers.
+              {t('sections.axessibleExperience.title')}
             </h2>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -85,9 +85,9 @@ const Index = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
                   <Eye className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">Captions with Intention</h3>
+                <h3 className="text-2xl font-bold text-foreground">{t('sections.axessibleExperience.captionsTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  More than words. Dynamic, expressive captions that move, pause, and flow with emotion.
+                  {t('sections.axessibleExperience.captionsDesc')}
                 </p>
               </div>
               
@@ -95,9 +95,9 @@ const Index = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
                   <Ear className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">Creative Audio Descriptions</h3>
+                <h3 className="text-2xl font-bold text-foreground">{t('sections.axessibleExperience.audioDescTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Not robotic - but cinematic narration that paints the scene, so those who listen feel everything.
+                  {t('sections.axessibleExperience.audioDescDesc')}
                 </p>
               </div>
               
@@ -105,9 +105,9 @@ const Index = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
                   <Hand className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">Work with us to create Sign Language Descriptions for your videos</h3>
+                <h3 className="text-2xl font-bold text-foreground">{t('sections.axessibleExperience.signLanguageTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Driven by experts, making inclusion natural.
+                  {t('sections.axessibleExperience.signLanguageDesc')}
                 </p>
               </div>
               
@@ -115,9 +115,9 @@ const Index = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
                   <Play className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">Universal Player</h3>
+                <h3 className="text-2xl font-bold text-foreground">{t('sections.axessibleExperience.playerTitle')}</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Designed for everyone: adjust text size, color, playback, narration speed - all in one simple player.
+                  {t('sections.axessibleExperience.playerDesc')}
                 </p>
               </div>
             </div>
@@ -130,25 +130,25 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-8">
-              Delight in a richer way to watch.
+              {t('sections.forViewers.title')}
             </h2>
             <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p>Axessible isn't just for people with disabilities. It's for anyone who loves stories:</p>
+              <p>{t('sections.forViewers.description')}</p>
               <div className="grid md:grid-cols-3 gap-6 my-8">
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">Captions that double as design.</p>
+                  <p className="font-semibold text-foreground">{t('sections.forViewers.captionsDesign')}</p>
                 </div>
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">Narration that adds dimension.</p>
+                  <p className="font-semibold text-foreground">{t('sections.forViewers.narrationDimension')}</p>
                 </div>
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">Sign language as living art.</p>
+                  <p className="font-semibold text-foreground">{t('sections.forViewers.signLanguageArt')}</p>
                 </div>
               </div>
-              <p className="text-xl font-semibold text-primary">Watching here feels more human.</p>
+              <p className="text-xl font-semibold text-primary">{t('sections.forViewers.watchingFeels')}</p>
             </div>
             <Button asChild size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-              <Link to="/explore">Start Watching</Link>
+              <Link to="/explore">{t('sections.forViewers.startWatching')}</Link>
             </Button>
           </div>
         </div>
@@ -159,28 +159,28 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-8">
-              Turn your videos into experiences everyone can share.
+              {t('sections.forCreators.title')}
             </h2>
             <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p>Upload your content — and our platform transforms it with:</p>
+              <p>{t('sections.forCreators.description')}</p>
               <div className="grid md:grid-cols-3 gap-6 my-8">
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">AI-driven accessibility tools</p>
+                  <p className="font-semibold text-foreground">{t('sections.forCreators.aiTools')}</p>
                 </div>
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">Human-guided refinement</p>
+                  <p className="font-semibold text-foreground">{t('sections.forCreators.humanGuidance')}</p>
                 </div>
                 <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-semibold text-foreground">Automatic compliance with global accessibility standards</p>
+                  <p className="font-semibold text-foreground">{t('sections.forCreators.compliance')}</p>
                 </div>
               </div>
               <div className="space-y-4">
-                <p>So your stories don't just reach more people…</p>
-                <p className="text-xl font-semibold text-primary">They move more people.</p>
+                <p>{t('sections.forCreators.storiesReach')}</p>
+                <p className="text-xl font-semibold text-primary">{t('sections.forCreators.storiesMove')}</p>
               </div>
             </div>
             <Button asChild size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-              <Link to="/upload">Share Your Content</Link>
+              <Link to="/upload">{t('sections.forCreators.shareContent')}</Link>
             </Button>
           </div>
         </div>
@@ -191,18 +191,18 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-8">
-              A platform built with - not just for - the community.
+              {t('sections.community.title')}
             </h2>
             <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p>We collaborate with deaf, blind, and disabled creators, educators, and advocates to design every feature.</p>
-              <p>Every video added here helps make the internet more inclusive.</p>
+              <p>{t('sections.community.collaborate')}</p>
+              <p>{t('sections.community.everyVideo')}</p>
               <p className="text-xl font-semibold text-primary">
-                Together, we're building a library of stories that everyone can truly experience.
+                {t('sections.community.buildingLibrary')}
               </p>
-              <p>From global brands to indie creators, these are the visionaries who believe access isn't an afterthought - it's the future of video.</p>
+              <p>{t('sections.community.visionaries')}</p>
             </div>
             <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-              <Link to="/explore">Meet the Pioneers of Inclusive Storytelling</Link>
+              <Link to="/explore">{t('sections.community.meetPioneers')}</Link>
             </Button>
           </div>
         </div>
@@ -213,7 +213,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-semibold text-center text-slate-800 mb-20 leading-tight">
-              See What Our Viewers Are Saying
+              {t('sections.testimonials.title')}
             </h2>
             
             {/* Large Impact Statistics - Eko Style */}
@@ -223,8 +223,8 @@ const Index = () => {
                   95<span className="text-primary">%</span>
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-medium text-foreground">Increase in</h3>
-                  <p className="text-lg text-slate-500 font-light">viewer engagement</p>
+                  <h3 className="text-lg font-medium text-foreground">{t('sections.testimonials.engagementIncrease')}</h3>
+                  <p className="text-lg text-slate-500 font-light">{t('sections.testimonials.viewerEngagement')}</p>
                 </div>
               </div>
               
@@ -233,8 +233,8 @@ const Index = () => {
                   78<span className="text-primary">%</span>
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-medium text-foreground">Better</h3>
-                  <p className="text-lg text-slate-500 font-light">content comprehension</p>
+                  <h3 className="text-lg font-medium text-foreground">{t('sections.testimonials.betterComprehension')}</h3>
+                  <p className="text-lg text-slate-500 font-light">{t('sections.testimonials.contentComprehension')}</p>
                 </div>
               </div>
               
@@ -243,8 +243,8 @@ const Index = () => {
                   24<span className="text-primary">x</span>
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-medium text-foreground">More</h3>
-                  <p className="text-lg text-slate-500 font-light">accessible videos created</p>
+                  <h3 className="text-lg font-medium text-foreground">{t('sections.testimonials.moreVideos')}</h3>
+                  <p className="text-lg text-slate-500 font-light">{t('sections.testimonials.accessibleVideos')}</p>
                 </div>
               </div>
             </div>
@@ -253,19 +253,19 @@ const Index = () => {
             <div className="grid md:grid-cols-3 gap-8 mt-16">
               <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
-                  "I never realized captions could feel this alive."
+                  "{t('sections.testimonials.testimonial1')}"
                 </p>
               </div>
               
               <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
-                  "Audio descriptions here are like poetry - they pull you deeper into the story."
+                  "{t('sections.testimonials.testimonial2')}"
                 </p>
               </div>
               
               <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
-                  "Watching on Axessible feels better, whether you rely on accessibility or not."
+                  "{t('sections.testimonials.testimonial3')}"
                 </p>
                 
               </div>
@@ -279,18 +279,18 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6">
-              Access isn't optional. It's storytelling reimagined.
+              {t('sections.cta.title')}
             </h2>
             <p className="text-xl text-muted-foreground mb-12">
-              Join the platform where every story belongs.
+              {t('sections.cta.subtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-                <Link to="/explore">Watch Now</Link>
+                <Link to="/explore">{t('sections.cta.watchNow')}</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-                <Link to="/upload">Share Your Content</Link>
+                <Link to="/upload">{t('sections.cta.shareContent')}</Link>
               </Button>
             </div>
           </div>
@@ -308,32 +308,32 @@ const Index = () => {
                   alt="Axessible"
                   className="h-8 w-auto"
                 />
-                <span className="text-sm text-muted-foreground">Hear the Unheard. See the Unseen.</span>
+                <span className="text-sm text-muted-foreground">{t('footer.tagline')}</span>
               </div>
             </div>
             
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
                 <div className="flex flex-wrap gap-6 text-sm">
-                  <Link to="/enterprise" className="text-muted-foreground hover:text-primary transition-colors">About</Link>
-                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">Community</Link>
-                  <Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">Pricing</Link>
-                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">Blog</Link>
-                  <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</Link>
+                  <Link to="/enterprise" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.about')}</Link>
+                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.community')}</Link>
+                  <Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.pricing')}</Link>
+                  <Link to="/explore" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
+                  <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link>
                 </div>
               </div>
               
               <div>
                 <div className="flex flex-wrap gap-6 text-sm">
-                  <Link to="/accessibility-statement" className="text-muted-foreground hover:text-primary transition-colors">Accessibility Statement</Link>
-                  <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms</Link>
-                  <Link to="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
+                  <Link to="/accessibility-statement" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.accessibilityStatement')}</Link>
+                  <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link>
+                  <Link to="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link>
                 </div>
               </div>
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              <p>&copy; 2025 Axessible Tech, INC. All rights reserved.</p>
+              <p>{t('footer.copyright')}</p>
             </div>
           </div>
         </div>
