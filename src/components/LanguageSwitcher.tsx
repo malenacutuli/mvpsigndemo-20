@@ -15,7 +15,7 @@ const languages: Language[] = [
   { code: 'es', name: 'Spanish', nativeName: 'Español', shortCode: 'ESP' },
   { code: 'fr', name: 'French', nativeName: 'Français', shortCode: 'FR' },
   { code: 'it', name: 'Italian', nativeName: 'Italiano', shortCode: 'IT' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', shortCode: 'GE' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', shortCode: 'DE' },
   { code: 'pt', name: 'Portuguese', nativeName: 'Português', shortCode: 'POR' },
   { code: 'ca', name: 'Catalan', nativeName: 'Català', shortCode: 'CAT' },
 ];

@@ -505,11 +505,11 @@ const Explore = () => {
                       <div className="flex justify-center space-x-6 mb-4 text-sm text-muted-foreground">
                         <div>
                           <div className="font-semibold text-foreground">{formatViewCount(channel.subscriber_count)}</div>
-                          <div>subscribers</div>
+                          <div>{t('explore.subscribers')}</div>
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{channel.video_count}</div>
-                          <div>videos</div>
+                          <div>{t('explore.videos')}</div>
                         </div>
                       </div>
                       <Button
@@ -521,12 +521,12 @@ const Explore = () => {
                         {subscriptions.has(channel.id) ? (
                           <>
                             <BellRing className="w-4 h-4 mr-2" />
-                            Subscribed
+                            {t('explore.subscribed')}
                           </>
                         ) : (
                           <>
                             <Bell className="w-4 h-4 mr-2" />
-                            Subscribe
+                            {t('explore.subscribe')}
                           </>
                         )}
                       </Button>
@@ -538,9 +538,9 @@ const Explore = () => {
 
             {(activeTab === 'subscribed' || activeTab === 'trending' || activeTab === 'saved') && (
               <div className="text-center py-12">
-                <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
+                <h3 className="text-xl font-semibold mb-2">{t('explore.comingSoon')}</h3>
                 <p className="text-muted-foreground">
-                  This feature is under development and will be available soon.
+                  {t('explore.comingSoonDesc')}
                 </p>
               </div>
             )}

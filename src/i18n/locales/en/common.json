@@ -157,7 +157,9 @@
     "error": "Error",
     "subscriptionError": "Failed to update subscription",
     "noResults": "No videos found matching your criteria",
-    "tryAdjusting": "Try adjusting your search or filters"
+    "tryAdjusting": "Try adjusting your search or filters",
+    "comingSoon": "Coming Soon",
+    "comingSoonDesc": "This feature is under development and will be available soon."
   },
   "pricing": {
     "title": "Plans that make every video Axessible",
