@@ -9,7 +9,7 @@ export const Hero: React.FC = () => {
   
   return (
     <section className="relative bg-white py-20 lg:py-32 overflow-hidden">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
           {/* Subtitle */}
           <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-medium">
@@ -17,7 +17,7 @@ export const Hero: React.FC = () => {
           </p>
           
           {/* Main Headline */}
-          <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8 px-2">
             {t('hero.headline')}
             <span className="block">{t('hero.headlineSecond')}</span>
           </h1>
