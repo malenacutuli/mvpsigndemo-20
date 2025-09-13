@@ -12,9 +12,9 @@ export const Navigation: React.FC = () => {
   const isActivePath = (path: string) => location.pathname === path;
   
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/20">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3">
@@ -29,12 +29,12 @@ export const Navigation: React.FC = () => {
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-10">
             <Link 
               to="/explore" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`text-base font-medium transition-colors hover:text-primary ${
                 isActivePath('/explore') 
-                  ? 'text-primary' 
+                  ? 'text-primary font-semibold' 
                   : 'text-muted-foreground'
               }`}
             >
@@ -43,9 +43,9 @@ export const Navigation: React.FC = () => {
             
             <Link 
               to="/enterprise" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`text-base font-medium transition-colors hover:text-primary ${
                 isActivePath('/enterprise') 
-                  ? 'text-primary' 
+                  ? 'text-primary font-semibold' 
                   : 'text-muted-foreground'
               }`}
             >
@@ -54,9 +54,9 @@ export const Navigation: React.FC = () => {
             
             <Link 
               to="/pricing" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`text-base font-medium transition-colors hover:text-primary ${
                 isActivePath('/pricing') 
-                  ? 'text-primary' 
+                  ? 'text-primary font-semibold' 
                   : 'text-muted-foreground'
               }`}
             >
@@ -67,9 +67,9 @@ export const Navigation: React.FC = () => {
               <>
                 <Link 
                   to="/dashboard" 
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                  className={`text-base font-medium transition-colors hover:text-primary ${
                     isActivePath('/dashboard') 
-                      ? 'text-primary' 
+                      ? 'text-primary font-semibold' 
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -78,9 +78,9 @@ export const Navigation: React.FC = () => {
                 
                 <Link 
                   to="/videos" 
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                  className={`text-base font-medium transition-colors hover:text-primary ${
                     isActivePath('/videos') 
-                      ? 'text-primary' 
+                      ? 'text-primary font-semibold' 
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -93,7 +93,7 @@ export const Navigation: React.FC = () => {
           {/* CTA and Auth */}
           <div className="hidden md:flex items-center space-x-4">
             {!user && (
-              <Button asChild variant="default" size="sm" className="font-medium">
+              <Button asChild variant="default" size="lg" className="font-semibold px-8 py-3 rounded-full">
                 <Link to="/auth">
                   Get Started
                 </Link>
@@ -106,7 +106,7 @@ export const Navigation: React.FC = () => {
           {/* Mobile menu */}
           <div className="md:hidden flex items-center space-x-3">
             {!user && (
-              <Button asChild variant="default" size="sm">
+              <Button asChild variant="default" size="sm" className="font-semibold rounded-full">
                 <Link to="/auth">
                   Start
                 </Link>

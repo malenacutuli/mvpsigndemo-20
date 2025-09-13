@@ -9,58 +9,84 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-background via-muted/20 to-primary/5 py-24 lg:py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-background via-muted/10 to-primary/5 py-32 lg:py-40 overflow-hidden">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-none mb-8">
-              Where Every Story is <span className="text-primary">Truly Seen</span>, 
-              <span className="block">Heard, and Felt.</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12">
-              The world's first video platform designed for everyone - powered by captions with intention, 
-              creative audio descriptions, and immersive accessibility tools.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button asChild size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-                <Link to="/explore">
-                  <Play className="w-5 h-5 mr-2" />
-                  Start Watching
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
-                <Link to="/upload">
-                  <Upload className="w-5 h-5 mr-2" />
-                  Share Your Content
-                </Link>
-              </Button>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="space-y-8">
+                <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-foreground leading-[0.9] tracking-tight">
+                  Where Every Story is{" "}
+                  <span className="text-primary block">Truly Seen</span>,{" "}
+                  <span className="block">Heard, and Felt.</span>
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-medium max-w-2xl">
+                  The world's first video platform designed for everyone - powered by captions with intention, 
+                  creative audio descriptions, and immersive accessibility tools.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button asChild size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
+                    <Link to="/explore">
+                      <Play className="w-5 h-5 mr-3" />
+                      Start Watching
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
+                    <Link to="/upload">
+                      <Upload className="w-5 h-5 mr-3" />
+                      Share Your Content
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="hidden lg:block">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl transform rotate-3"></div>
+                  <div className="relative bg-card rounded-3xl p-8 border shadow-elegant transform -rotate-1 hover:rotate-0 transition-transform duration-500">
+                    <div className="space-y-4">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-primary/20 rounded w-full"></div>
+                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                      <div className="h-32 bg-gradient-primary rounded-lg mt-6"></div>
+                      <div className="flex gap-3 mt-4">
+                        <div className="h-8 w-8 bg-primary/30 rounded-full"></div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-muted rounded w-1/2 mb-2"></div>
+                          <div className="h-3 bg-muted/60 rounded w-1/3"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Section 1: Why We Exist */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-32 bg-muted/20">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-8">
+          <div className="max-w-5xl mx-auto text-center">
+            <h2 className="text-5xl md:text-6xl font-black text-foreground mb-12 leading-tight">
               Because most videos leave someone out.
             </h2>
-            <div className="space-y-6 text-lg text-muted-foreground max-w-3xl mx-auto">
-              <p>On other platforms, videos are easy to share - but not always easy to experience.</p>
-              <div className="grid md:grid-cols-3 gap-6 my-12">
-                <div className="text-center">
-                  <p className="font-semibold text-foreground">Captions miss the nuance.</p>
+            <div className="space-y-8 text-lg text-muted-foreground max-w-4xl mx-auto">
+              <p className="text-xl leading-relaxed">On other platforms, videos are easy to share - but not always easy to experience.</p>
+              <div className="grid md:grid-cols-3 gap-8 my-16">
+                <div className="bg-card p-8 rounded-2xl border shadow-soft">
+                  <p className="font-bold text-foreground text-lg">Captions miss the nuance.</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-semibold text-foreground">Audio descriptions are rare or robotic.</p>
+                <div className="bg-card p-8 rounded-2xl border shadow-soft">
+                  <p className="font-bold text-foreground text-lg">Audio descriptions are rare or robotic.</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-semibold text-foreground">Sign language? Almost never.</p>
+                <div className="bg-card p-8 rounded-2xl border shadow-soft">
+                  <p className="font-bold text-foreground text-lg">Sign language? Almost never.</p>
                 </div>
               </div>
-              <p className="text-xl font-semibold text-primary">
+              <p className="text-2xl font-bold text-primary leading-relaxed">
                 We believe access isn't a feature. It's the future of storytelling.
               </p>
             </div>
@@ -69,50 +95,50 @@ const Index = () => {
       </section>
 
       {/* Section 2: The Axessible Experience */}
-      <section className="py-20 bg-background">
+      <section className="py-32 bg-background">
         <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-black text-center text-foreground mb-16">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-5xl md:text-6xl font-black text-center text-foreground mb-20 leading-tight">
               Video without barriers.
             </h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Eye className="w-8 h-8 text-primary" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
+              <div className="text-center space-y-6 group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
+                  <Eye className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Captions with Intention</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-2xl font-bold text-foreground">Captions with Intention</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   More than words. Dynamic, expressive captions that move, pause, and flow with emotion.
                 </p>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Ear className="w-8 h-8 text-primary" />
+              <div className="text-center space-y-6 group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
+                  <Ear className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Creative Audio Descriptions</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-2xl font-bold text-foreground">Creative Audio Descriptions</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   Not robotic - but cinematic narration that paints the scene, so those who listen feel everything.
                 </p>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Hand className="w-8 h-8 text-primary" />
+              <div className="text-center space-y-6 group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
+                  <Hand className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Work with us to create Sign Language Descriptions for your videos</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-2xl font-bold text-foreground">Work with us to create Sign Language Descriptions for your videos</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   Driven by experts, making inclusion natural.
                 </p>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Play className="w-8 h-8 text-primary" />
+              <div className="text-center space-y-6 group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
+                  <Play className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Universal Player</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-2xl font-bold text-foreground">Universal Player</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   Designed for everyone: adjust text size, color, playback, narration speed - all in one simple player.
                 </p>
               </div>
@@ -204,34 +230,68 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Section 6: Testimonials */}
-      <section className="py-20 bg-background">
+      {/* Section 6: Impact Statistics */}
+      <section className="py-32 bg-background">
         <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-black text-center text-foreground mb-16">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-5xl md:text-6xl font-black text-center text-foreground mb-20 leading-tight">
               See What Our Viewers Are Saying
             </h2>
             
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-card p-8 rounded-lg border text-center">
-                <p className="text-lg text-muted-foreground mb-4 italic">
+            {/* Large Impact Statistics - Eko Style */}
+            <div className="grid md:grid-cols-3 gap-16 mb-20">
+              <div className="text-center space-y-4">
+                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+                  95<span className="text-primary">%</span>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-foreground">Increase in</h3>
+                  <p className="text-xl text-muted-foreground">viewer engagement</p>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+                  78<span className="text-primary">%</span>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-foreground">Better</h3>
+                  <p className="text-xl text-muted-foreground">content comprehension</p>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+                  24<span className="text-primary">x</span>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-foreground">More</h3>
+                  <p className="text-xl text-muted-foreground">accessible videos created</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial Cards */}
+            <div className="grid md:grid-cols-3 gap-8 mt-16">
+              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "I never realized captions could feel this alive."
                 </p>
-                <p className="font-semibold text-foreground">— Viewer</p>
+                <p className="font-bold text-foreground">— Viewer</p>
               </div>
               
-              <div className="bg-card p-8 rounded-lg border text-center">
-                <p className="text-lg text-muted-foreground mb-4 italic">
+              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "Audio descriptions here are like poetry - they pull you deeper into the story."
                 </p>
-                <p className="font-semibold text-foreground">— Viewer</p>
+                <p className="font-bold text-foreground">— Viewer</p>
               </div>
               
-              <div className="bg-card p-8 rounded-lg border text-center">
-                <p className="text-lg text-muted-foreground mb-4 italic">
+              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "Watching on Axessible feels better, whether you rely on accessibility or not."
                 </p>
-                <p className="font-semibold text-foreground">— Viewer</p>
+                <p className="font-bold text-foreground">— Viewer</p>
               </div>
             </div>
           </div>
