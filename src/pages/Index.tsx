@@ -239,34 +239,34 @@ const Index = () => {
             </h2>
             
             {/* Large Impact Statistics - Eko Style */}
-            <div className="grid md:grid-cols-3 gap-16 mb-20">
-              <div className="text-center space-y-4">
-                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+            <div className="grid md:grid-cols-3 gap-12 mb-20">
+              <div className="text-center space-y-3">
+                <div className="text-6xl md:text-8xl font-black text-foreground leading-none tracking-tight">
                   95<span className="text-primary">%</span>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-foreground">Increase in</h3>
-                  <p className="text-xl text-muted-foreground">viewer engagement</p>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-medium text-foreground">Increase in</h3>
+                  <p className="text-lg text-slate-500 font-light">viewer engagement</p>
                 </div>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+              <div className="text-center space-y-3">
+                <div className="text-6xl md:text-8xl font-black text-foreground leading-none tracking-tight">
                   78<span className="text-primary">%</span>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-foreground">Better</h3>
-                  <p className="text-xl text-muted-foreground">content comprehension</p>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-medium text-foreground">Better</h3>
+                  <p className="text-lg text-slate-500 font-light">content comprehension</p>
                 </div>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="text-9xl md:text-[12rem] font-black text-foreground leading-none tracking-tight">
+              <div className="text-center space-y-3">
+                <div className="text-6xl md:text-8xl font-black text-foreground leading-none tracking-tight">
                   24<span className="text-primary">x</span>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-foreground">More</h3>
-                  <p className="text-xl text-muted-foreground">accessible videos created</p>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-medium text-foreground">More</h3>
+                  <p className="text-lg text-slate-500 font-light">accessible videos created</p>
                 </div>
               </div>
             </div>
