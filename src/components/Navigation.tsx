@@ -109,13 +109,6 @@ export const Navigation: React.FC = () => {
           
           {/* Mobile menu */}
           <div className="md:hidden flex items-center space-x-2">
-            {!user && (
-              <Button asChild variant="default" size="sm" className="font-medium rounded-full px-3 py-1 text-xs">
-                <Link to="/auth">
-                  {t('nav.start')}
-                </Link>
-              </Button>
-            )}
             <LanguageSwitcher />
             <AuthButton />
           </div>
