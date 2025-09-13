@@ -671,10 +671,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       {/* Content Generation and Management Controls */}
       <Tabs defaultValue="transcript" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
           <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
-          <TabsTrigger value="characters">Speaker & Character Management</TabsTrigger>
         </TabsList>
         
         <TabsContent value="transcript" className="space-y-4">
@@ -696,6 +695,24 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               onContentGenerated={handleContentGenerated}
             />
           </div>
+
+          {/* Integrated Speaker & Character Management inside Transcript tab */}
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
+            </p>
+            <CharacterManager
+              videoId={videoId || 'default'}
+              onCharactersUpdate={handleCharactersUpdate}
+              existingCharacters={characters}
+              language={currentLanguage}
+              existingSpeakers={[...new Set([
+                ...transcriptSegments.map(s => s.speaker).filter(Boolean),
+                ...captions.map(c => c.speaker).filter(Boolean)
+              ])]}
+            />
+          </div>
         </TabsContent>
         
         <TabsContent value="audio-description" className="space-y-4">
@@ -714,29 +731,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           </div>
         </TabsContent>
         
-        <TabsContent value="characters" className="space-y-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Speaker & Character Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Speakers are automatically identified and colored during transcript generation. Use this panel to manually adjust speaker names, colors, and assignments following the Captions with Intention protocol.
-            </p>
-            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
-              <p className="text-sm text-green-800 dark:text-green-200">
-                <strong>Tip:</strong> Speaker identification happens automatically, but you can override any assignments here. Changes will immediately update the captions.
-              </p>
-            </div>
-            <CharacterManager
-              videoId={videoId || 'default'}
-              onCharactersUpdate={handleCharactersUpdate}
-              existingCharacters={characters}
-              language={currentLanguage} // Pass current video language for voice filtering
-              existingSpeakers={[...new Set([
-                ...transcriptSegments.map(s => s.speaker).filter(Boolean),
-                ...captions.map(c => c.speaker).filter(Boolean)
-              ])]}
-            />
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
