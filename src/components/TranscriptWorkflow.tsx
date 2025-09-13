@@ -881,6 +881,127 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                     Your saved transcript is ready for editing. Click "Re-extract" to use {extractionMethod === 'twelvelabs' ? 'advanced analysis for full video processing' : 'fast transcription for quick results'}.
                   </p>
                 </div>
+
+                {/* Character Color Attribution Section */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <h3 className="text-sm font-medium text-purple-700 mb-3 flex items-center gap-2">
+                    🎨 Character Color Attribution
+                  </h3>
+                  <p className="text-xs text-purple-600 mb-3">
+                    Assign colors to characters following the Captions with Intention protocol
+                  </p>
+                  
+                  {/* Speaker Assignment */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-2">
+                      🔗 Speaker Assignment
+                    </h4>
+                    <p className="text-xs text-purple-600 mb-2">
+                      Connect your transcript speakers to characters. This updates the video captions immediately.
+                    </p>
+                    
+                    {(() => {
+                      const uniqueSpeakers = [...new Set(segments.map(s => s.speaker).filter(Boolean))];
+                      return uniqueSpeakers.length > 0 ? (
+                        <div className="grid gap-2">
+                          {uniqueSpeakers.map(speaker => (
+                            <div key={speaker} className="flex items-center gap-3 p-2 bg-white rounded border">
+                              <Badge 
+                                className="min-w-20 justify-center"
+                                style={{ 
+                                  backgroundColor: segments.find(s => s.speaker === speaker)?.speakerColor || '#999',
+                                  color: '#000'
+                                }}
+                              >
+                                {speaker}
+                              </Badge>
+                              <span className="text-muted-foreground">→</span>
+                              <Select 
+                                value={segments.find(s => s.speaker === speaker)?.speaker || "unassigned"}
+                                onValueChange={(characterName) => {
+                                  // Update all segments with this speaker
+                                  if (characterName !== "unassigned") {
+                                    const updatedSegments = segments.map(seg => 
+                                      seg.speaker === speaker 
+                                        ? { ...seg, speaker: characterName }
+                                        : seg
+                                    );
+                                    setSegments(updatedSegments);
+                                    
+                                    // Save the changes immediately
+                                    saveTranscript(false);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-7 w-32">
+                                  <SelectValue placeholder="Assign to..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {characters.map(char => (
+                                    <SelectItem key={char.id} value={char.name}>
+                                      <div className="flex items-center gap-2">
+                                        <div 
+                                          className="w-3 h-3 rounded-full border"
+                                          style={{ backgroundColor: char.color }}
+                                        />
+                                        {char.name}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No speakers detected in transcript</p>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Color Guidelines */}
+                  <div className="bg-white rounded border p-3">
+                    <h4 className="text-sm font-medium mb-2">Color Guidelines:</h4>
+                    <div className="text-xs space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        </div>
+                        <span>• Main characters use the 6 primary spectrum colors</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
+                          <div className="w-3 h-3 bg-teal-400 rounded-full"></div>
+                          <div className="w-3 h-3 bg-indigo-400 rounded-full"></div>
+                        </div>
+                        <span>• Supporting characters use colors between main character colors</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                          <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
+                          <div className="w-3 h-3 bg-neutral-300 rounded-full"></div>
+                        </div>
+                        <span>• Minor characters use pastel tones from the center of the color wheel</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                        </div>
+                        <span>• Hero and Villain should be positioned opposite on the spectrum</span>
+                      </div>
+                      <div>• <em>Off-camera dialogue is displayed in italic</em></div>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Transcript Analysis Summary */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
@@ -1127,30 +1248,112 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-xs text-muted-foreground">Color (Lock for consistency)</label>
-                                    <div className="flex gap-1">
-                                      <input
-                                        type="color"
-                                        value={segment.speakerColor}
-                                        onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
-                                        className="w-16 h-8 rounded border"
-                                      />
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          // Lock this color to all segments with same speaker
-                                          const updatedSegments = segments.map(s => 
-                                            s.speaker === segment.speaker 
-                                              ? { ...s, speakerColor: segment.speakerColor }
-                                              : s
-                                          );
-                                          setSegments(updatedSegments);
-                                        }}
-                                        className="text-xs px-2"
-                                      >
-                                        🔒 Lock
-                                      </Button>
+                                    <label className="text-xs text-muted-foreground">Character Color (Captions with Intention Protocol)</label>
+                                    <div className="space-y-2">
+                                      {/* Primary Spectrum Colors - Main Characters */}
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Main Characters (Primary Spectrum):</div>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            { color: '#EF4444', name: 'Red (Hero/Leader)' },
+                                            { color: '#F97316', name: 'Orange (Energy)' },
+                                            { color: '#EAB308', name: 'Yellow (Joy/Wisdom)' },
+                                            { color: '#22C55E', name: 'Green (Growth/Nature)' },
+                                            { color: '#3B82F6', name: 'Blue (Calm/Trust)' },
+                                            { color: '#8B5CF6', name: 'Purple (Mystery/Magic)' }
+                                          ].map(({ color, name }) => (
+                                            <button
+                                              key={color}
+                                              type="button"
+                                              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                                                segment.speakerColor === color ? 'border-gray-800 ring-2 ring-offset-1' : 'border-gray-300'
+                                              }`}
+                                              style={{ backgroundColor: color }}
+                                              onClick={() => updateSegment(segment.id, 'speakerColor', color)}
+                                              title={name}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Supporting Character Colors */}
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Supporting Characters (Intermediate Colors):</div>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            { color: '#EC4899', name: 'Pink (Between Red/Purple)' },
+                                            { color: '#14B8A6', name: 'Teal (Between Blue/Green)' },
+                                            { color: '#6366F1', name: 'Indigo (Between Blue/Purple)' },
+                                            { color: '#F59E0B', name: 'Amber (Between Orange/Yellow)' },
+                                            { color: '#10B981', name: 'Emerald (Between Green/Blue)' },
+                                            { color: '#DC2626', name: 'Dark Red (Villain - Opposite)' }
+                                          ].map(({ color, name }) => (
+                                            <button
+                                              key={color}
+                                              type="button"
+                                              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                                                segment.speakerColor === color ? 'border-gray-800 ring-2 ring-offset-1' : 'border-gray-300'
+                                              }`}
+                                              style={{ backgroundColor: color }}
+                                              onClick={() => updateSegment(segment.id, 'speakerColor', color)}
+                                              title={name}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Minor Character Colors - Pastels */}
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Minor Characters (Pastel Tones):</div>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            { color: '#D1D5DB', name: 'Light Gray' },
+                                            { color: '#CBD5E1', name: 'Slate Gray' },
+                                            { color: '#D4D4D8', name: 'Neutral Gray' },
+                                            { color: '#E5E7EB', name: 'Cool Gray' },
+                                            { color: '#F3F4F6', name: 'Warm Gray' },
+                                            { color: '#9CA3AF', name: 'Medium Gray' }
+                                          ].map(({ color, name }) => (
+                                            <button
+                                              key={color}
+                                              type="button"
+                                              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                                                segment.speakerColor === color ? 'border-gray-800 ring-2 ring-offset-1' : 'border-gray-300'
+                                              }`}
+                                              style={{ backgroundColor: color }}
+                                              onClick={() => updateSegment(segment.id, 'speakerColor', color)}
+                                              title={name}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Custom Color Picker and Lock Button */}
+                                      <div className="flex gap-2 items-center pt-2 border-t">
+                                        <input
+                                          type="color"
+                                          value={segment.speakerColor}
+                                          onChange={(e) => updateSegment(segment.id, 'speakerColor', e.target.value)}
+                                          className="w-12 h-8 rounded border"
+                                          title="Custom color picker"
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            // Lock this color to all segments with same speaker
+                                            const updatedSegments = segments.map(s => 
+                                              s.speaker === segment.speaker 
+                                                ? { ...s, speakerColor: segment.speakerColor }
+                                                : s
+                                            );
+                                            setSegments(updatedSegments);
+                                          }}
+                                          className="text-xs px-2"
+                                        >
+                                          🔒 Lock to All {segment.speaker}
+                                        </Button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
