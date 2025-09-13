@@ -702,6 +702,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymize_ip_address: {
+        Args: { ip_addr: unknown }
+        Returns: unknown
+      }
+      anonymize_user_agent: {
+        Args: { user_agent_str: string }
+        Returns: string
+      }
       check_channel_subscription: {
         Args: { channel_uuid: string }
         Returns: {
@@ -716,6 +724,10 @@ export type Database = {
           subscription_end: string
           subscription_tier: string
         }[]
+      }
+      cleanup_old_analytics_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       generate_embed_token: {
         Args: { video_uuid: string }
