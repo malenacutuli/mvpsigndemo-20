@@ -278,37 +278,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   };
 
-  const handleCharactersUpdate = (updatedCharacters: any[]) => {
+  const handleCharactersUpdate = async (updatedCharacters: any[]) => {
     setCharacters(updatedCharacters);
     console.log('🎨 Characters updated:', updatedCharacters);
     
-    // Immediately apply character colors to existing captions AND transcript segments
-    if (captions.length > 0 || transcriptSegments.length > 0) {
+    // Re-load transcript segments from DB in case speaker names/colors were remapped
+    try {
+      const refreshed = await loadTranscriptSegments(currentLanguage);
+      if (refreshed && refreshed.length > 0) {
+        setTranscriptSegments(refreshed);
+        handleTranscriptUpdate(refreshed, currentLanguage);
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to refresh transcript after character update, falling back to local updates', e);
+    }
+    
+    // Also immediately apply character colors to current in-memory captions for instant feedback
+    if (captions.length > 0) {
       const characterColorMap: Record<string, string> = {};
-      updatedCharacters.forEach(char => {
-        characterColorMap[char.name] = char.color;
-      });
-      
-      // Update captions with new colors
-      if (captions.length > 0) {
-        const updatedCaptions = captions.map(caption => ({
-          ...caption,
-          speakerColor: characterColorMap[caption.speaker] || caption.speakerColor
-        }));
-        setCaptions([...updatedCaptions]);
-      }
-      
-      // Update transcript segments with new colors and re-trigger caption generation
-      if (transcriptSegments.length > 0) {
-        const updatedTranscriptSegments = transcriptSegments.map(segment => ({
-          ...segment,
-          speakerColor: characterColorMap[segment.speaker] || segment.speakerColor
-        }));
-        setTranscriptSegments([...updatedTranscriptSegments]);
-        
-        // Re-trigger transcript update to regenerate captions with new colors
-        handleTranscriptUpdate(updatedTranscriptSegments, currentLanguage);
-      }
+      updatedCharacters.forEach(char => { characterColorMap[char.name] = char.color; });
+      const updatedCaptions = captions.map(caption => ({
+        ...caption,
+        speakerColor: characterColorMap[caption.speaker] || caption.speakerColor
+      }));
+      setCaptions([...updatedCaptions]);
     }
   };
 
@@ -737,6 +730,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               onCharactersUpdate={handleCharactersUpdate}
               existingCharacters={characters}
               language={currentLanguage} // Pass current video language for voice filtering
+              existingSpeakers={[...new Set([
+                ...transcriptSegments.map(s => s.speaker).filter(Boolean),
+                ...captions.map(c => c.speaker).filter(Boolean)
+              ])]}
             />
           </div>
         </TabsContent>

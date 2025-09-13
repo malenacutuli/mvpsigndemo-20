@@ -1277,6 +1277,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 onCharactersUpdate={handleCharactersUpdate}
                 existingCharacters={characters}
                 language={videoLanguage} // Pass video language for voice filtering
+                existingSpeakers={[...new Set(segments.map(s => s.speaker).filter(Boolean))]}
               />
             </TabsContent>
 

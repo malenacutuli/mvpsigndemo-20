@@ -86,13 +86,15 @@ interface CharacterManagerProps {
   onCharactersUpdate?: (characters: Character[]) => void;
   existingCharacters?: Character[];
   language?: string; // Add language prop for multilingual support
+  existingSpeakers?: string[]; // Optional list of detected speakers to map
 }
 
 export const CharacterManager: React.FC<CharacterManagerProps> = ({ 
   videoId, 
   onCharactersUpdate, 
   existingCharacters = [],
-  language = 'en' // Default to English
+  language = 'en', // Default to English
+  existingSpeakers
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
@@ -120,6 +122,23 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     loadExistingCharacters();
   }, [videoId]);
   const { toast } = useToast();
+
+  // Keep available speakers in sync with props
+  useEffect(() => {
+    if (existingSpeakers && existingSpeakers.length > 0) {
+      const unique = Array.from(new Set(existingSpeakers.filter(Boolean)));
+      setAvailableSpeakers(unique);
+      console.log('🧩 Available speakers (from props):', unique);
+    }
+  }, [existingSpeakers]);
+
+  // Load saved mappings
+  useEffect(() => {
+    const mappings = localStorage.getItem(`speaker-mappings-${videoId}`);
+    if (mappings) {
+      try { setSpeakerMappings(JSON.parse(mappings)); } catch {}
+    }
+  }, [videoId]);
 
   // Get available colors based on character type
   const getAvailableColors = (type: Character['type']) => {
