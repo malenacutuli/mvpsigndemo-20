@@ -13,7 +13,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-charcoal leading-[0.9] tracking-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-black leading-[0.9] tracking-tight">
                 Where Every Story is{" "}
                 <span className="text-primary block">Truly Seen,</span>{" "}
                 <span className="block">Heard, and Felt.</span>
@@ -47,7 +47,7 @@ const Index = () => {
       <section className="py-32 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-extralight text-charcoal mb-12 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-extralight text-black mb-12 leading-tight">
               Because most videos leave someone out.
             </h2>
             <div className="space-y-8 text-lg text-slate-700 max-w-4xl mx-auto">
@@ -75,7 +75,7 @@ const Index = () => {
       <section className="py-32 bg-background">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-extralight text-center text-charcoal mb-20 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-extralight text-center text-black mb-20 leading-tight">
               Video without barriers.
             </h2>
             
