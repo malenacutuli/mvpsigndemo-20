@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, LogIn, Gift } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const Auth = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +26,7 @@ export const Auth = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const selectedPlan = searchParams.get('plan');
+  const { t } = useTranslation();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -54,13 +56,13 @@ export const Auth = () => {
     setMessage('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsDoNotMatch'));
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('auth.passwordMinLength'));
       setLoading(false);
       return;
     }
@@ -80,20 +82,20 @@ export const Auth = () => {
       if (signUpError) throw signUpError;
 
       if (data.user && !data.user.email_confirmed_at) {
-        setMessage('Please check your email for a confirmation link to complete your registration.');
+        setMessage(t('auth.checkEmailConfirmation'));
       } else if (data.user) {
         toast({
-          title: "Account created successfully!",
-          description: "You can now start using Axessible."
+          title: t('auth.accountCreatedSuccess'),
+          description: t('auth.canStartUsing')
         });
         window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
       if (error.message?.includes('User already registered')) {
-        setError('An account with this email already exists. Please sign in instead.');
+        setError(t('auth.userAlreadyExists'));
       } else {
-        setError(error.message || 'An error occurred during sign up');
+        setError(error.message || t('auth.signUpError'));
       }
     } finally {
       setLoading(false);
@@ -124,19 +126,19 @@ export const Auth = () => {
 
       if (data.user) {
         toast({
-          title: "Welcome back!",
-          description: "You've been successfully signed in."
+          title: t('auth.welcomeBack'),
+          description: t('auth.signInSuccess')
         });
         window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
       if (error.message?.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Please check your credentials and try again.');
+        setError(t('auth.invalidCredentials'));
       } else if (error.message?.includes('Email not confirmed')) {
-        setError('Please check your email and click the confirmation link before signing in.');
+        setError(t('auth.emailNotConfirmed'));
       } else {
-        setError(error.message || 'An error occurred during sign in');
+        setError(error.message || t('auth.signInError'));
       }
     } finally {
       setLoading(false);
@@ -151,9 +153,9 @@ export const Auth = () => {
     } catch (error: any) {
       console.error('Google sign in error:', error);
       if (error.message?.includes('provider is not enabled')) {
-        setError('Google authentication is not configured. Please use email and password to sign in.');
+        setError(t('auth.googleNotConfigured'));
       } else {
-        setError(error.message || 'Google sign in failed');
+        setError(error.message || t('auth.googleSignInFailed'));
       }
     } finally {
       setLoading(false);
@@ -165,19 +167,19 @@ export const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome to Axessible
+            {t('auth.welcomeToAxessible')}
           </CardTitle>
           <CardDescription className="text-center">
-            Sign in to your account or create a new one to get started
+            {t('auth.signInDescription')}
           </CardDescription>
           {selectedPlan === 'starter' && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
               <div className="flex items-center gap-2 text-green-800">
                 <Gift className="w-4 h-4" />
-                <span className="text-sm font-medium">Free Starter Plan</span>
+                <span className="text-sm font-medium">{t('auth.freeStarterPlan')}</span>
               </div>
               <p className="text-xs text-green-700 mt-1">
-                Sign up now and get 100GB of storage absolutely free!
+                {t('auth.starterPlanDescription')}
               </p>
             </div>
           )}
@@ -189,7 +191,7 @@ export const Auth = () => {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Create your account to proceed with the {selectedPlan} plan
+                {t('auth.createAccountForPlan', { plan: selectedPlan })}
               </p>
             </div>
           )}
@@ -197,20 +199,20 @@ export const Auth = () => {
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+              <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">{t('auth.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signin-email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder={t('auth.enterEmail')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -220,13 +222,13 @@ export const Auth = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">{t('auth.password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signin-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
+                      placeholder={t('auth.enterPassword')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -250,7 +252,7 @@ export const Auth = () => {
 
                 <Button type="submit" className="w-full" disabled={loading}>
                   <LogIn className="w-4 h-4 mr-2" />
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading ? t('auth.signingIn') : t('auth.signIn')}
                 </Button>
               </form>
             </TabsContent>
@@ -258,13 +260,13 @@ export const Auth = () => {
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">{t('auth.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder={t('auth.enterEmail')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -274,13 +276,13 @@ export const Auth = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">{t('auth.password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a password (min 6 characters)"
+                      placeholder={t('auth.createPassword')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -304,13 +306,13 @@ export const Auth = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Label htmlFor="confirm-password">{t('auth.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirm-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Confirm your password"
+                      placeholder={t('auth.confirmPasswordPlaceholder')}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
@@ -321,7 +323,7 @@ export const Auth = () => {
 
                 <Button type="submit" className="w-full" disabled={loading}>
                   <User className="w-4 h-4 mr-2" />
-                  {loading ? 'Creating account...' : 'Create Account'}
+                  {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                 </Button>
               </form>
             </TabsContent>
@@ -336,7 +338,7 @@ export const Auth = () => {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
+                    {t('auth.orContinueWith')}
                   </span>
                 </div>
               </div>
@@ -365,7 +367,7 @@ export const Auth = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continue with Google
+                {t('auth.continueWithGoogle')}
               </Button>
             </>
           )}

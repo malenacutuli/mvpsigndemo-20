@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { LogIn, LogOut, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
 export const AuthButton: React.FC = () => {
   const { user, signInWithGoogle, signOut, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
+  const { t } = useTranslation();
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
@@ -27,7 +29,7 @@ export const AuthButton: React.FC = () => {
     return (
       <Button variant="outline" size="sm" disabled>
         <User className="w-4 h-4 mr-2" />
-        Loading...
+        {t('common.loading')}
       </Button>
     );
   }
@@ -37,7 +39,7 @@ export const AuthButton: React.FC = () => {
       <Button asChild size="sm">
         <Link to="/auth">
           <LogIn className="w-4 h-4 mr-2" />
-          Sign In
+          {t('auth.signIn')}
         </Link>
       </Button>
     );
@@ -54,7 +56,7 @@ export const AuthButton: React.FC = () => {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={signOut}>
           <LogOut className="w-4 h-4 mr-2" />
-          Sign out
+          {t('auth.signOut')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
