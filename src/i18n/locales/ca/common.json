@@ -549,6 +549,16 @@
   },
   "videos": {
     "title": "Els Meus Vídeos",
+    "subtitle": "Gestiona els teus vídeos, publica'ls a Explora i organitza'ls amb canals",
+    "tabs": {
+      "myVideos": "Els Meus Vídeos",
+      "channels": "Canals"
+    },
+    "actions": {
+      "uploadNew": "Puja un vídeo nou",
+      "uploadFirst": "Puja el teu primer vídeo",
+      "view": "Veure"
+    },
     "search": "Cercar vídeos...",
     "filters": {
       "language": "Idioma",

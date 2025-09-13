@@ -549,6 +549,16 @@
   },
   "videos": {
     "title": "Meus Vídeos",
+    "subtitle": "Gerencie seus vídeos, publique em Explorar e organize com canais",
+    "tabs": {
+      "myVideos": "Meus Vídeos",
+      "channels": "Canais"
+    },
+    "actions": {
+      "uploadNew": "Enviar Novo Vídeo",
+      "uploadFirst": "Envie seu Primeiro Vídeo",
+      "view": "Ver"
+    },
     "search": "Pesquisar vídeos...",
     "filters": {
       "language": "Idioma",

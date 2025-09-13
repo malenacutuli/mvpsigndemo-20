@@ -523,6 +523,16 @@
   },
   "videos": {
     "title": "Meine Videos",
+    "subtitle": "Verwalten Sie Ihre Videos, veröffentlichen Sie sie in Entdecken und organisieren Sie sie mit Kanälen",
+    "tabs": {
+      "myVideos": "Meine Videos",
+      "channels": "Kanäle"
+    },
+    "actions": {
+      "uploadNew": "Neues Video hochladen",
+      "uploadFirst": "Laden Sie Ihr erstes Video hoch",
+      "view": "Ansehen"
+    },
     "search": "Videos suchen...",
     "filters": {
       "language": "Sprache",

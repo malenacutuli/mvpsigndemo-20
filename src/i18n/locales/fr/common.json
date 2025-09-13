@@ -549,6 +549,16 @@
   },
   "videos": {
     "title": "Mes Vidéos",
+    "subtitle": "Gérez vos vidéos, publiez-les dans Explorer et organisez-les avec des chaînes",
+    "tabs": {
+      "myVideos": "Mes Vidéos",
+      "channels": "Chaînes"
+    },
+    "actions": {
+      "uploadNew": "Télécharger une nouvelle vidéo",
+      "uploadFirst": "Télécharger votre première vidéo",
+      "view": "Voir"
+    },
     "search": "Rechercher des vidéos...",
     "filters": {
       "language": "Langue",

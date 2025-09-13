@@ -549,6 +549,16 @@
   },
   "videos": {
     "title": "I Miei Video",
+    "subtitle": "Gestisci i tuoi video, pubblicali su Esplora e organizzali con i canali",
+    "tabs": {
+      "myVideos": "I Miei Video",
+      "channels": "Canali"
+    },
+    "actions": {
+      "uploadNew": "Carica Nuovo Video",
+      "uploadFirst": "Carica il tuo Primo Video",
+      "view": "Vedi"
+    },
     "search": "Cerca video...",
     "filters": {
       "language": "Lingua",
