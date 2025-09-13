@@ -666,17 +666,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div>
-              <Label className="text-sm font-medium">Model</Label>
-              <div className="mt-2 text-sm">OpenAI GPT-4o mini (text-based)</div>
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                We analyze the transcript to find silence windows and generate concise, creative descriptions. Vision and Hugging Face modes have been removed.
-              </p>
-            </div>
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              We analyze the transcript to find silence windows and generate concise, creative descriptions for your video.
+            </p>
           </div>
 
           <Button 
