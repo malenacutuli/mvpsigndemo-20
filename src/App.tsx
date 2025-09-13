@@ -21,6 +21,7 @@ import PublicVideo from "./pages/PublicVideo";
 import PublicBoard from "./pages/PublicBoard";
 import Enterprise from "./pages/Enterprise";
 import AccessibilityStatement from "./pages/AccessibilityStatement";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/embed/:id" element={<Embed />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/accessibility-statement" element={<AccessibilityStatement />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
