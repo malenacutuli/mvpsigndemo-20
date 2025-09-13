@@ -112,7 +112,8 @@
     "download": "Télécharger",
     "share": "Partager",
     "copy": "Copier",
-    "language": "Langue"
+    "language": "Langue",
+    "feature": "Fonctionnalité"
   },
   "auth": {
     "signIn": "Se Connecter",
@@ -184,7 +185,98 @@
     "talkToUs": "Parlez-nous",
     "featureComparison": "Comparaison des fonctionnalités",
     "questionsAboutPricing": "Questions sur les prix ?",
-    "teamHelpChoose": "Notre équipe est là pour vous aider à choisir le bon plan pour vos besoins."
+    "teamHelpChoose": "Notre équipe est là pour vous aider à choisir le bon plan pour vos besoins.",
+    "plans": {
+      "starter": {
+        "name": "Débutant",
+        "price": "26 €",
+        "cadence": "par mois",
+        "users": "1 utilisateur",
+        "storage": "Stockage de 100GB",
+        "cta": "Commencer gratuitement",
+        "features": [
+          "Lecteur Axessible personnalisable",
+          "Confidentialité par mot de passe et liens non répertoriés",
+          "Outils de révision et collaboration",
+          "Liens vidéo intégrés",
+          "Analytics d'engagement",
+          "Sous-titres CWI avec étiquetage émotionnel",
+          "Descriptions Audio de Base"
+        ]
+      },
+      "standard": {
+        "name": "Standard",
+        "price": "65 €",
+        "cadence": "par mois",
+        "users": "5 utilisateurs",
+        "storage": "Stockage de 2TB",
+        "cta": "Essayer Standard",
+        "features": [
+          "Tout ce qui est dans Débutant",
+          "Support de lecteurs tiers",
+          "Support Human in the Loop pour Description Audio jusqu'à 3 vidéos par mois",
+          "Intégration personnalisée Texte vers Transcription"
+        ]
+      },
+      "advanced": {
+        "name": "Avancé",
+        "price": "250 €",
+        "cadence": "par mois",
+        "users": "10 utilisateurs",
+        "storage": "Stockage de 7TB",
+        "cta": "Aller Avancé",
+        "features": [
+          "Tout ce qui est dans Standard",
+          "Doublage en plus de 15 langues",
+          "Intégrations d'automatisation marketing",
+          "Rapports de conformité WCAG/ADA",
+          "Audit d'accessibilité dirigé par des experts pour vos vidéos",
+          "Support Human in the Loop pour Description Audio de Narration Créative avec synchronisation manuelle de timing pour jusqu'à 10 vidéos par mois"
+        ]
+      },
+      "enterprise": {
+        "name": "Entreprise",
+        "price": "Parlez-nous",
+        "cadence": "",
+        "users": "Illimité",
+        "storage": "Personnalisé",
+        "cta": "Contacter les ventes",
+        "features": [
+          "SSO et gouvernance",
+          "Support Prioritaire",
+          "Budgets IA personnalisés",
+          "Révisions de sécurité",
+          "Intégrations personnalisées",
+          "Gestionnaire de compte dédié",
+          "Avatars ASL personnalisés",
+          "Formation et support personnalisés pour vos équipes",
+          "Doublage multilingue, incluant la synchronisation labiale"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Fonctionnalités d'Accessibilité",
+        "contentStorage": "Contenu et Stockage"
+      },
+      "features": {
+        "axessiblePlayer": "Lecteur Axessible (CWI, AD, ASL)",
+        "emotionTaggedCaptions": "Sous-titres avec Étiquettes Émotionnelles",
+        "aiAudioDescriptions": "Descriptions Audio avec IA",
+        "aslAvatarSupport": "Support d'Avatar ASL",
+        "storage": "Stockage",
+        "videoProcessing": "Traitement Vidéo"
+      },
+      "values": {
+        "basic": "De Base",
+        "advanced": "Avancé",
+        "custom": "Personnalisé",
+        "standard": "Standard",
+        "priority": "Priorité",
+        "fastTrack": "Voie Rapide",
+        "dedicated": "Dédié"
+      }
+    }
   },
   "dashboard": {
     "title": "Tableau de Bord",

@@ -112,7 +112,8 @@
     "download": "Download",
     "share": "Share",
     "copy": "Copy",
-    "language": "Language"
+    "language": "Language",
+    "feature": "Feature"
   },
   "auth": {
     "signIn": "Sign In",
@@ -164,10 +165,10 @@
   "pricing": {
     "title": "Plans that make every video Axessible",
     "subtitle": "Choose the perfect plan for your accessibility needs",
-    "disclaimer": "Prices exclude tax. Cancel anytime.",
+    "disclaimer": "Prices exclude taxes. Cancel anytime.",
     "free": "Free",
     "starter": "Starter",
-    "standard": "Standard",
+    "standard": "Standard", 
     "advanced": "Advanced",
     "enterprise": "Enterprise",
     "monthly": "per month",
@@ -184,7 +185,98 @@
     "talkToUs": "Talk to us",
     "featureComparison": "Feature comparison",
     "questionsAboutPricing": "Questions about pricing?",
-    "teamHelpChoose": "Our team is here to help you choose the right plan for your needs."
+    "teamHelpChoose": "Our team is here to help you choose the right plan for your needs.",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "26 €",
+        "cadence": "per month",
+        "users": "1 user",
+        "storage": "100GB storage",
+        "cta": "Start free",
+        "features": [
+          "Customizable Axessible Player",
+          "Password privacy & unlisted links",
+          "Review & collaboration tools",
+          "Embed video links",
+          "Engagement analytics",
+          "CWI Captions with emotion tagging",
+          "Basic Audio Descriptions"
+        ]
+      },
+      "standard": {
+        "name": "Standard",
+        "price": "65 €",
+        "cadence": "per month",
+        "users": "5 users",
+        "storage": "2TB storage",
+        "cta": "Try Standard",
+        "features": [
+          "Everything in Starter",
+          "Third-party player support",
+          "Human in the Loop support for Audio Description up to 3 videos a month",
+          "Custom Text to Transcript Integration"
+        ]
+      },
+      "advanced": {
+        "name": "Advanced",
+        "price": "250 €",
+        "cadence": "per month",
+        "users": "10 users",
+        "storage": "7TB storage",
+        "cta": "Go Advanced",
+        "features": [
+          "Everything in Standard",
+          "Dubbing in 15+ Languages",
+          "Marketing automation integrations",
+          "WCAG/ADA compliance reporting",
+          "Expert-led accessibility audit for your videos",
+          "Human in the Loop support for Creative Storytelling Audio Description with manual timing-synchronization for up to 10 videos a month"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Talk to us",
+        "cadence": "",
+        "users": "Unlimited",
+        "storage": "Custom",
+        "cta": "Contact sales",
+        "features": [
+          "SSO & governance",
+          "Priority Support",
+          "Custom AI budgets",
+          "Security reviews",
+          "Custom integrations",
+          "Dedicated account manager",
+          "Custom ASL avatars",
+          "Custom training and support for your teams",
+          "Multi-Language dubbing, including lip-sync"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Accessibility Features",
+        "contentStorage": "Content & Storage"
+      },
+      "features": {
+        "axessiblePlayer": "Axessible Player (CWI, AD, ASL)",
+        "emotionTaggedCaptions": "Emotion-tagged Captions",
+        "aiAudioDescriptions": "AI Audio Descriptions",
+        "aslAvatarSupport": "ASL Avatar Support",
+        "storage": "Storage",
+        "videoProcessing": "Video Processing"
+      },
+      "values": {
+        "basic": "Basic",
+        "advanced": "Advanced",
+        "custom": "Custom",
+        "standard": "Standard",
+        "priority": "Priority",
+        "fastTrack": "Fast Track",
+        "dedicated": "Dedicated"
+      }
+    }
   },
   "dashboard": {
     "title": "Dashboard",

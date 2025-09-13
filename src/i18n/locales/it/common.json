@@ -112,7 +112,8 @@
     "download": "Scarica",
     "share": "Condividi",
     "copy": "Copia",
-    "language": "Lingua"
+    "language": "Lingua",
+    "feature": "Funzionalità"
   },
   "auth": {
     "signIn": "Accedi",
@@ -162,7 +163,7 @@
     "comingSoonDesc": "Questa funzionalità è in sviluppo e sarà disponibile presto."
   },
   "pricing": {
-    "title": "Piani che rendono ogni video Axessibile",
+    "title": "Piani che rendono ogni video Axessible",
     "subtitle": "Scegli il piano perfetto per le tue esigenze di accessibilità",
     "disclaimer": "I prezzi escludono le tasse. Annulla in qualsiasi momento.",
     "free": "Gratuito",
@@ -184,7 +185,98 @@
     "talkToUs": "Parlaci",
     "featureComparison": "Confronto funzionalità",
     "questionsAboutPricing": "Domande sui prezzi?",
-    "teamHelpChoose": "Il nostro team è qui per aiutarti a scegliere il piano giusto per le tue esigenze."
+    "teamHelpChoose": "Il nostro team è qui per aiutarti a scegliere il piano giusto per le tue esigenze.",
+    "plans": {
+      "starter": {
+        "name": "Base",
+        "price": "26 €",
+        "cadence": "al mese",
+        "users": "1 utente",
+        "storage": "Archiviazione 100GB",
+        "cta": "Inizia gratis",
+        "features": [
+          "Player Axessible personalizzabile",
+          "Privacy con password e link non elencati",
+          "Strumenti di revisione e collaborazione",
+          "Link video incorporati",
+          "Analytics di coinvolgimento",
+          "Sottotitoli CWI con etichettatura emotiva",
+          "Descrizioni Audio di Base"
+        ]
+      },
+      "standard": {
+        "name": "Standard",
+        "price": "65 €",
+        "cadence": "al mese",
+        "users": "5 utenti",
+        "storage": "Archiviazione 2TB",
+        "cta": "Prova Standard",
+        "features": [
+          "Tutto quello in Base",
+          "Supporto player di terze parti",
+          "Supporto Human in the Loop per Descrizione Audio fino a 3 video al mese",
+          "Integrazione personalizzata Testo a Trascrizione"
+        ]
+      },
+      "advanced": {
+        "name": "Avanzato",
+        "price": "250 €",
+        "cadence": "al mese",
+        "users": "10 utenti",
+        "storage": "Archiviazione 7TB",
+        "cta": "Vai Avanzato",
+        "features": [
+          "Tutto quello in Standard",
+          "Doppiaggio in oltre 15 lingue",
+          "Integrazioni di automazione marketing",
+          "Report di conformità WCAG/ADA",
+          "Audit di accessibilità guidato da esperti per i tuoi video",
+          "Supporto Human in the Loop per Descrizione Audio di Narrazione Creativa con sincronizzazione manuale dei tempi per fino a 10 video al mese"
+        ]
+      },
+      "enterprise": {
+        "name": "Aziendale",
+        "price": "Parlaci",
+        "cadence": "",
+        "users": "Illimitato",
+        "storage": "Personalizzato",
+        "cta": "Contatta le vendite",
+        "features": [
+          "SSO e governance",
+          "Supporto Prioritario",
+          "Budget AI personalizzati",
+          "Revisioni di sicurezza",
+          "Integrazioni personalizzate",
+          "Account manager dedicato",
+          "Avatar ASL personalizzati",
+          "Formazione e supporto personalizzati per i tuoi team",
+          "Doppiaggio multilingue, inclusa sincronizzazione labiale"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Funzionalità di Accessibilità",
+        "contentStorage": "Contenuto e Archiviazione"
+      },
+      "features": {
+        "axessiblePlayer": "Player Axessible (CWI, AD, ASL)",
+        "emotionTaggedCaptions": "Sottotitoli con Etichette Emotive",
+        "aiAudioDescriptions": "Descrizioni Audio con IA",
+        "aslAvatarSupport": "Supporto Avatar ASL",
+        "storage": "Archiviazione",
+        "videoProcessing": "Elaborazione Video"
+      },
+      "values": {
+        "basic": "Base",
+        "advanced": "Avanzato",
+        "custom": "Personalizzato",
+        "standard": "Standard",
+        "priority": "Prioritario",
+        "fastTrack": "Corsia Veloce",
+        "dedicated": "Dedicato"
+      }
+    }
   },
   "dashboard": {
     "title": "Dashboard",

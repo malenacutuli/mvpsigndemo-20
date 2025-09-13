@@ -112,7 +112,8 @@
     "download": "Herunterladen",
     "share": "Teilen",
     "copy": "Kopieren",
-    "language": "Sprache"
+    "language": "Sprache",
+    "feature": "Funktion"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -184,7 +185,98 @@
     "talkToUs": "Sprechen Sie mit uns",
     "featureComparison": "Feature-Vergleich",
     "questionsAboutPricing": "Fragen zu den Preisen?",
-    "teamHelpChoose": "Unser Team hilft Ihnen bei der Auswahl des richtigen Plans für Ihre Bedürfnisse."
+    "teamHelpChoose": "Unser Team hilft Ihnen bei der Auswahl des richtigen Plans für Ihre Bedürfnisse.",
+    "plans": {
+      "starter": {
+        "name": "Einsteiger",
+        "price": "26 €",
+        "cadence": "pro Monat",
+        "users": "1 Benutzer",
+        "storage": "100GB Speicher",
+        "cta": "Kostenlos starten",
+        "features": [
+          "Anpassbarer Axessible Player",
+          "Passwort-Privatsphäre & nicht gelistete Links",
+          "Überprüfungs- und Kollaborationstools",
+          "Video-Einbettungslinks",
+          "Engagement-Analytik",
+          "CWI-Untertitel mit emotionaler Kennzeichnung",
+          "Grundlegende Audiobeschreibungen"
+        ]
+      },
+      "standard": {
+        "name": "Standard",
+        "price": "65 €",
+        "cadence": "pro Monat",
+        "users": "5 Benutzer",
+        "storage": "2TB Speicher",
+        "cta": "Standard testen",
+        "features": [
+          "Alles aus Einsteiger",
+          "Unterstützung für Drittanbieter-Player",
+          "Human in the Loop-Unterstützung für Audiobeschreibung bis zu 3 Videos pro Monat",
+          "Benutzerdefinierte Text-zu-Transkript-Integration"
+        ]
+      },
+      "advanced": {
+        "name": "Erweitert",
+        "price": "250 €",
+        "cadence": "pro Monat",
+        "users": "10 Benutzer",
+        "storage": "7TB Speicher",
+        "cta": "Erweitert wählen",
+        "features": [
+          "Alles aus Standard",
+          "Synchronisation in über 15 Sprachen",
+          "Marketing-Automatisierungs-Integrationen",
+          "WCAG/ADA-Compliance-Berichterstattung",
+          "Expertengeführte Barrierefreiheitsprüfung für Ihre Videos",
+          "Human in the Loop-Unterstützung für kreative Audiobeschreibung mit manueller Zeitsynchronisation für bis zu 10 Videos pro Monat"
+        ]
+      },
+      "enterprise": {
+        "name": "Unternehmen",
+        "price": "Sprechen Sie mit uns",
+        "cadence": "",
+        "users": "Unbegrenzt",
+        "storage": "Individuell",
+        "cta": "Vertrieb kontaktieren",
+        "features": [
+          "SSO & Governance",
+          "Prioritätssupport",
+          "Individuelle KI-Budgets",
+          "Sicherheitsüberprüfungen",
+          "Individuelle Integrationen",
+          "Dedizierter Kundenbetreuer",
+          "Individuelle ASL-Avatare",
+          "Individuelle Schulungen und Support für Ihre Teams",
+          "Mehrsprachige Synchronisation, einschließlich Lippensynchronisation"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Barrierefreiheits-Features",
+        "contentStorage": "Inhalt & Speicher"
+      },
+      "features": {
+        "axessiblePlayer": "Axessible Player (CWI, AD, ASL)",
+        "emotionTaggedCaptions": "Emotional getaggte Untertitel",
+        "aiAudioDescriptions": "KI-Audiobeschreibungen",
+        "aslAvatarSupport": "ASL-Avatar-Unterstützung",
+        "storage": "Speicher",
+        "videoProcessing": "Videoverarbeitung"
+      },
+      "values": {
+        "basic": "Grundlegend",
+        "advanced": "Erweitert",
+        "custom": "Individuell",
+        "standard": "Standard",
+        "priority": "Priorität",
+        "fastTrack": "Schnellspur",
+        "dedicated": "Dediziert"
+      }
+    }
   },
   "dashboard": {
     "title": "Dashboard",

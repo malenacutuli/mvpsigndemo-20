@@ -112,7 +112,8 @@
     "download": "Descarregar",
     "share": "Compartir",
     "copy": "Copiar",
-    "language": "Idioma"
+    "language": "Idioma",
+    "feature": "Funcionalitat"
   },
   "auth": {
     "signIn": "Iniciar Sessió",
@@ -184,7 +185,98 @@
     "talkToUs": "Parla amb nosaltres",
     "featureComparison": "Comparació de característiques",
     "questionsAboutPricing": "Preguntes sobre preus?",
-    "teamHelpChoose": "El nostre equip està aquí per ajudar-te a triar el pla adequat per a les teves necessitats."
+    "teamHelpChoose": "El nostre equip està aquí per ajudar-te a triar el pla adequat per a les teves necessitats.",
+    "plans": {
+      "starter": {
+        "name": "Inicial",
+        "price": "26 €",
+        "cadence": "per mes",
+        "users": "1 usuari",
+        "storage": "Emmagatzematge de 100GB",
+        "cta": "Començar gratuït",
+        "features": [
+          "Reproductor Axessible personalitzable",
+          "Privacitat amb contrasenya i enllaços no llistats",
+          "Eines de revisió i col·laboració",
+          "Enllaços de vídeo incrustats",
+          "Analítiques de compromís",
+          "Subtítols CWI amb etiquetatge emocional",
+          "Descripcions d'Àudio Bàsiques"
+        ]
+      },
+      "standard": {
+        "name": "Estàndard",
+        "price": "65 €",
+        "cadence": "per mes",
+        "users": "5 usuaris",
+        "storage": "Emmagatzematge de 2TB",
+        "cta": "Provar Estàndard",
+        "features": [
+          "Tot el d'Inicial",
+          "Suport per reproductors de tercers",
+          "Suport Human in the Loop per Descripció d'Àudio fins a 3 vídeos al mes",
+          "Integració personalitzada de Text a Transcripció"
+        ]
+      },
+      "advanced": {
+        "name": "Avançat",
+        "price": "250 €",
+        "cadence": "per mes",
+        "users": "10 usuaris",
+        "storage": "Emmagatzematge de 7TB",
+        "cta": "Anar Avançat",
+        "features": [
+          "Tot el d'Estàndard",
+          "Doblatge en més de 15 idiomes",
+          "Integracions d'automatització de màrqueting",
+          "Informes de compliment WCAG/ADA",
+          "Auditoria d'accessibilitat dirigida per experts per als teus vídeos",
+          "Suport Human in the Loop per Descripció d'Àudio de Narrativa Creativa amb sincronització manual de temps per fins a 10 vídeos al mes"
+        ]
+      },
+      "enterprise": {
+        "name": "Empresarial",
+        "price": "Parla amb nosaltres",
+        "cadence": "",
+        "users": "Il·limitat",
+        "storage": "Personalitzat",
+        "cta": "Contactar vendes",
+        "features": [
+          "SSO i governança",
+          "Suport Prioritari",
+          "Pressupostos d'IA personalitzats",
+          "Revisions de seguretat",
+          "Integracions personalitzades",
+          "Gestor de compte dedicat",
+          "Avatars ASL personalitzats",
+          "Formació i suport personalitzats per als teus equips",
+          "Doblatge multiidioma, incloent sincronització labial"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Característiques d'Accessibilitat",
+        "contentStorage": "Contingut i Emmagatzematge"
+      },
+      "features": {
+        "axessiblePlayer": "Reproductor Axessible (CWI, AD, ASL)",
+        "emotionTaggedCaptions": "Subtítols amb Etiquetes Emocionals",
+        "aiAudioDescriptions": "Descripcions d'Àudio amb IA",
+        "aslAvatarSupport": "Suport d'Avatar ASL",
+        "storage": "Emmagatzematge",
+        "videoProcessing": "Processament de Vídeo"
+      },
+      "values": {
+        "basic": "Bàsic",
+        "advanced": "Avançat",
+        "custom": "Personalitzat",
+        "standard": "Estàndard",
+        "priority": "Prioritari",
+        "fastTrack": "Via Ràpida",
+        "dedicated": "Dedicat"
+      }
+    }
   },
   "dashboard": {
     "title": "Tauler",

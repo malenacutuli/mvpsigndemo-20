@@ -9,129 +9,103 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 
-const plans = [
+const getPlanData = (t: any) => [
   {
-    name: "Starter",
-    price: "26 €",
-    cadence: "per month",
-    users: "1 user",
-    storage: "100GB storage",
-    features: [
-      "Customizable Axessible Player",
-      "Password privacy & unlisted links",
-      "Review & collaboration tools",
-      "Embed video links",
-      "Engagement analytics",
-      "CWI Captions with emotion tagging",
-      "Basic Audio Descriptions"
-    ],
-    cta: "Start free",
+    key: "starter",
+    name: t('pricing.plans.starter.name'),
+    price: t('pricing.plans.starter.price'),
+    cadence: t('pricing.plans.starter.cadence'),
+    users: t('pricing.plans.starter.users'),
+    storage: t('pricing.plans.starter.storage'),
+    features: t('pricing.plans.starter.features', { returnObjects: true }),
+    cta: t('pricing.plans.starter.cta'),
     highlight: false
   },
   {
-    name: "Standard",
-    price: "65 €",
-    cadence: "per month",
-    users: "5 users",
-    storage: "2TB storage",
-    features: [
-      "Everything in Starter",
-      "Third-party player support",
-      "Human in the Loop support for Audio Description up to 3 videos a month",
-      "Custom Text to Transcript Integration"
-    ],
-    cta: "Try Standard",
+    key: "standard",
+    name: t('pricing.plans.standard.name'),
+    price: t('pricing.plans.standard.price'),
+    cadence: t('pricing.plans.standard.cadence'),
+    users: t('pricing.plans.standard.users'),
+    storage: t('pricing.plans.standard.storage'),
+    features: t('pricing.plans.standard.features', { returnObjects: true }),
+    cta: t('pricing.plans.standard.cta'),
     highlight: false
   },
   {
-    name: "Advanced",
-    price: "250 €",
-    cadence: "per month",
-    users: "10 users",
-    storage: "7TB storage",
-    features: [
-      "Everything in Standard",
-      "Dubbing in 15+ Languages",
-      "Marketing automation integrations",
-      "WCAG/ADA compliance reporting",
-      "Expert-led accessibility audit for your videos",
-      "Human in the Loop support for Creative Storytelling Audio Description with manual timing-synchronization for up to 10 videos a month"
-    ],
-    cta: "Go Advanced",
+    key: "advanced",
+    name: t('pricing.plans.advanced.name'),
+    price: t('pricing.plans.advanced.price'),
+    cadence: t('pricing.plans.advanced.cadence'),
+    users: t('pricing.plans.advanced.users'),
+    storage: t('pricing.plans.advanced.storage'),
+    features: t('pricing.plans.advanced.features', { returnObjects: true }),
+    cta: t('pricing.plans.advanced.cta'),
     highlight: true
   },
   {
-    name: "Enterprise",
-    price: "Talk to us",
-    cadence: "",
-    users: "Unlimited",
-    storage: "Custom",
-    features: [
-      "SSO & governance",
-      "Priority Support",
-      "Custom AI budgets",
-      "Security reviews",
-      "Custom integrations",
-      "Dedicated account manager",
-      "Custom ASL avatars",
-      "Custom training and support for your teams",
-      "Multi-Language dubbing, including lip-sync"
-    ],
-    cta: "Contact sales",
+    key: "enterprise",
+    name: t('pricing.plans.enterprise.name'),
+    price: t('pricing.plans.enterprise.price'),
+    cadence: t('pricing.plans.enterprise.cadence'),
+    users: t('pricing.plans.enterprise.users'),
+    storage: t('pricing.plans.enterprise.storage'),
+    features: t('pricing.plans.enterprise.features', { returnObjects: true }),
+    cta: t('pricing.plans.enterprise.cta'),
     highlight: false
   }
 ];
 
-const comparisonFeatures = [
+const getComparisonFeatures = (t: any) => [
   {
-    category: "Accessibility Features",
+    category: t('pricing.comparison.categories.accessibilityFeatures'),
     features: [
       {
-        name: "Axessible Player (CWI, AD, ASL)",
+        name: t('pricing.comparison.features.axessiblePlayer'),
         starter: true,
         standard: true,
         advanced: true,
         enterprise: true
       },
       {
-        name: "Emotion-tagged Captions",
+        name: t('pricing.comparison.features.emotionTaggedCaptions'),
         starter: true,
         standard: true,
         advanced: true,
         enterprise: true
       },
       {
-        name: "AI Audio Descriptions",
-        starter: "Basic",
-        standard: "Advanced",
-        advanced: "Advanced",
-        enterprise: "Custom"
+        name: t('pricing.comparison.features.aiAudioDescriptions'),
+        starter: t('pricing.comparison.values.basic'),
+        standard: t('pricing.comparison.values.advanced'),
+        advanced: t('pricing.comparison.values.advanced'),
+        enterprise: t('pricing.comparison.values.custom')
       },
       {
-        name: "ASL Avatar Support",
+        name: t('pricing.comparison.features.aslAvatarSupport'),
         starter: false,
         standard: false,
         advanced: false,
-        enterprise: "Custom"
+        enterprise: t('pricing.comparison.values.custom')
       }
     ]
   },
   {
-    category: "Content & Storage",
+    category: t('pricing.comparison.categories.contentStorage'),
     features: [
       {
-        name: "Storage",
+        name: t('pricing.comparison.features.storage'),
         starter: "100GB",
         standard: "2TB",
         advanced: "7TB",
-        enterprise: "Custom"
+        enterprise: t('pricing.comparison.values.custom')
       },
       {
-        name: "Video Processing",
-        starter: "Standard",
-        standard: "Priority",
-        advanced: "Fast Track",
-        enterprise: "Dedicated"
+        name: t('pricing.comparison.features.videoProcessing'),
+        starter: t('pricing.comparison.values.standard'),
+        standard: t('pricing.comparison.values.priority'),
+        advanced: t('pricing.comparison.values.fastTrack'),
+        enterprise: t('pricing.comparison.values.dedicated')
       }
     ]
   }
@@ -143,22 +117,25 @@ export default function Pricing() {
   const { createCheckout, subscribed, subscription_tier, loading } = useSubscription();
   const navigate = useNavigate();
 
-  const handlePlanAction = async (planName: string) => {
-    if (planName === 'Starter') {
+  const plans = getPlanData(t);
+  const comparisonFeatures = getComparisonFeatures(t);
+
+  const handlePlanAction = async (planKey: string, planName: string) => {
+    if (planKey === 'starter') {
       if (user) {
         await createCheckout('starter');
       } else {
         navigate('/auth?plan=starter');
       }
-    } else if (planName === 'Enterprise') {
+    } else if (planKey === 'enterprise') {
       // Contact sales for enterprise
       window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
     } else {
       // For other paid plans
       if (user) {
-        await createCheckout(planName.toLowerCase());
+        await createCheckout(planKey);
       } else {
-        navigate(`/auth?plan=${planName.toLowerCase()}`);
+        navigate(`/auth?plan=${planKey}`);
       }
     }
   };
@@ -192,7 +169,7 @@ export default function Pricing() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {plans.map((plan) => (
             <Card 
-              key={plan.name} 
+              key={plan.key} 
               className={`relative ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
                 subscribed && subscription_tier === plan.name ? 'ring-2 ring-green-500' : ''
               }`}
@@ -225,7 +202,7 @@ export default function Pricing() {
 
               <CardContent>
                 <ul className="space-y-2 mb-6">
-                  {plan.features.map((feature, index) => (
+                  {plan.features.map((feature: string, index: number) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
@@ -236,7 +213,7 @@ export default function Pricing() {
                 <Button 
                   className="w-full" 
                   variant={plan.highlight ? "default" : "outline"}
-                  onClick={() => handlePlanAction(plan.name)}
+                  onClick={() => handlePlanAction(plan.key, plan.name)}
                   disabled={loading || (subscribed && subscription_tier === plan.name)}
                 >
                   {loading 
@@ -259,11 +236,11 @@ export default function Pricing() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Feature</th>
-                  <th className="text-center p-3 font-medium">Starter</th>
-                  <th className="text-center p-3 font-medium">Standard</th>
-                  <th className="text-center p-3 font-medium">Advanced</th>
-                  <th className="text-center p-3 font-medium">Enterprise</th>
+                  <th className="text-left p-3 font-medium">{t('common.feature')}</th>
+                  <th className="text-center p-3 font-medium">{t('pricing.plans.starter.name')}</th>
+                  <th className="text-center p-3 font-medium">{t('pricing.plans.standard.name')}</th>
+                  <th className="text-center p-3 font-medium">{t('pricing.plans.advanced.name')}</th>
+                  <th className="text-center p-3 font-medium">{t('pricing.plans.enterprise.name')}</th>
                 </tr>
               </thead>
               <tbody>
