@@ -15,6 +15,7 @@ import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { VideoPublishingControls } from '@/components/VideoPublishingControls';
 import { ChannelManager } from '@/components/ChannelManager';
+import { useTranslation } from 'react-i18next';
 
 interface Video {
   id: string;
@@ -40,6 +41,7 @@ export default function Videos() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [deletingVideo, setDeletingVideo] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchVideos();
@@ -85,7 +87,7 @@ export default function Videos() {
   });
 
   const formatDuration = (seconds: number | null) => {
-    if (!seconds) return 'Unknown';
+    if (!seconds) return t('common.na');
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -102,13 +104,9 @@ export default function Videos() {
   };
 
   const getLanguageDisplay = (lang: string) => {
-    const languages: Record<string, string> = {
-      'en': 'English',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German'
-    };
-    return languages[lang] || lang;
+    const key = `languages.${lang}`;
+    const translated = t(key);
+    return translated === key ? lang : translated;
   };
 
   const deleteVideo = async (videoId: string) => {
@@ -156,14 +154,14 @@ export default function Videos() {
       setVideos(videos.filter(v => v.id !== videoId));
       
       toast({
-        title: "Video deleted",
-        description: "The video has been successfully deleted.",
+        title: t('videos.toast.deletedTitle'),
+        description: t('videos.toast.deletedDesc'),
       });
     } catch (error) {
       console.error('Error deleting video:', error);
       toast({
-        title: "Error deleting video",
-        description: "There was an error deleting the video. Please try again.",
+        title: t('videos.toast.deleteErrorTitle'),
+        description: t('videos.toast.deleteErrorDesc'),
         variant: "destructive"
       });
     } finally {
@@ -176,7 +174,7 @@ export default function Videos() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your videos...</p>
+          <p className="text-muted-foreground">{t('videos.loading')}</p>
         </div>
       </div>
     );
@@ -190,18 +188,18 @@ export default function Videos() {
           <Tabs defaultValue="videos" className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Video Management</h1>
+                <h1 className="text-3xl font-bold mb-2">{t('videos.title')}</h1>
                 <p className="text-muted-foreground">
-                  Manage your videos, publish them to Explore, and organize with channels
+                  {t('videos.subtitle')}
                 </p>
               </div>
               <div className="flex items-center gap-2 mt-4 md:mt-0">
                 <TabsList>
-                  <TabsTrigger value="videos">My Videos</TabsTrigger>
-                  <TabsTrigger value="channels">Channels</TabsTrigger>
+                  <TabsTrigger value="videos">{t('videos.tabs.myVideos')}</TabsTrigger>
+                  <TabsTrigger value="channels">{t('videos.tabs.channels')}</TabsTrigger>
                 </TabsList>
                 <Button asChild>
-                  <Link to="/upload">Upload New Video</Link>
+                  <Link to="/upload">{t('videos.actions.uploadNew')}</Link>
                 </Button>
               </div>
             </div>
@@ -211,7 +209,7 @@ export default function Videos() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <Input
-                    placeholder="Search videos..."
+                    placeholder={t('videos.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -219,27 +217,27 @@ export default function Videos() {
                 
                 <Select value={languageFilter} onValueChange={setLanguageFilter}>
                   <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="All languages" />
+                    <SelectValue placeholder={t('videos.filters.allLanguages')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All languages</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                    <SelectItem value="de">German</SelectItem>
+                    <SelectItem value="all">{t('videos.filters.allLanguages')}</SelectItem>
+                    <SelectItem value="en">{t('languages.en')}</SelectItem>
+                    <SelectItem value="es">{t('languages.es')}</SelectItem>
+                    <SelectItem value="fr">{t('languages.fr')}</SelectItem>
+                    <SelectItem value="de">{t('languages.de')}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="All statuses" />
+                    <SelectValue placeholder={t('videos.filters.allStatuses')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="ready">Ready</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="uploading">Uploading</SelectItem>
-                    <SelectItem value="error">Error</SelectItem>
+                    <SelectItem value="all">{t('videos.filters.allStatuses')}</SelectItem>
+                    <SelectItem value="ready">{t('videos.status.ready')}</SelectItem>
+                    <SelectItem value="processing">{t('videos.status.processing')}</SelectItem>
+                    <SelectItem value="uploading">{t('videos.status.uploading')}</SelectItem>
+                    <SelectItem value="error">{t('videos.status.error')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -256,15 +254,15 @@ export default function Videos() {
               {filteredVideos.length === 0 ? (
                 <div className="text-center py-12">
                   <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">No videos found</h3>
+                  <h3 className="text-xl font-semibold mb-2">{t('videos.empty.title')}</h3>
                   <p className="text-muted-foreground mb-4">
                     {videos.length === 0 
-                      ? "You haven't uploaded any videos yet." 
-                      : "No videos match your current filters."}
+                      ? t('videos.empty.description')
+                      : t('videos.empty.noMatch')}
                   </p>
                   {videos.length === 0 && (
                     <Button asChild>
-                      <Link to="/upload">Upload Your First Video</Link>
+                      <Link to="/upload">{t('videos.actions.uploadFirst')}</Link>
                     </Button>
                   )}
                 </div>
@@ -298,11 +296,11 @@ export default function Videos() {
                           
                           <div className="absolute top-2 left-2 flex gap-1">
                             <Badge className={getStatusColor(video.status)}>
-                              {video.status}
+                              {t(`videos.status.${video.status}`)}
                             </Badge>
                             {video.is_public && (
                               <Badge variant="outline" className="bg-green-50 text-green-700">
-                                Public
+                                {t('videos.badges.public')}
                               </Badge>
                             )}
                           </div>
@@ -339,7 +337,7 @@ export default function Videos() {
                           <Button asChild size="sm" className="flex-1">
                             <Link to={`/videos/${video.id}`}>
                               <Eye className="w-4 h-4 mr-1" />
-                              View
+                              {t('videos.actions.view')}
                             </Link>
                           </Button>
                           
