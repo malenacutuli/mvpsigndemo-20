@@ -195,10 +195,7 @@ const Index = () => {
               <p className="text-xl font-semibold text-primary">
                 Together, we're building a library of stories that everyone can truly experience.
               </p>
-              <div className="mt-8 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground">Meet the Pioneers of Inclusive Storytelling</h3>
-                <p>From global brands to indie creators, these are the visionaries who believe access isn't an afterthought - it's the future of video.</p>
-              </div>
+              <p>From global brands to indie creators, these are the visionaries who believe access isn't an afterthought - it's the future of video.</p>
             </div>
             <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold rounded-full">
               <Link to="/explore">Meet the Pioneers of Inclusive Storytelling</Link>
