@@ -209,29 +209,29 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-black text-center text-foreground mb-16">
-              What People Are Saying
+              See What Our Viewers Are Saying
             </h2>
             
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-card p-8 rounded-lg border text-center">
                 <p className="text-lg text-muted-foreground mb-4 italic">
-                  "I finally felt like captions matched the rhythm of my laughter."
+                  "I never realized captions could feel this alive."
                 </p>
                 <p className="font-semibold text-foreground">— Viewer</p>
               </div>
               
               <div className="bg-card p-8 rounded-lg border text-center">
                 <p className="text-lg text-muted-foreground mb-4 italic">
-                  "My students don't just watch lessons here. They feel them."
+                  "Audio descriptions here are like poetry - they pull you deeper into the story."
                 </p>
-                <p className="font-semibold text-foreground">— Teacher</p>
+                <p className="font-semibold text-foreground">— Viewer</p>
               </div>
               
               <div className="bg-card p-8 rounded-lg border text-center">
                 <p className="text-lg text-muted-foreground mb-4 italic">
-                  "For the first time, I could follow a film without asking for help."
+                  "Watching on Axessible feels better, whether you rely on accessibility or not."
                 </p>
-                <p className="font-semibold text-foreground">— Blind Creator</p>
+                <p className="font-semibold text-foreground">— Viewer</p>
               </div>
             </div>
           </div>
