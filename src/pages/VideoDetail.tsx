@@ -12,6 +12,7 @@ import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
+import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 
 interface Video {
@@ -51,6 +52,8 @@ const VideoDetail = () => {
   const [showEmbedSettings, setShowEmbedSettings] = useState(false);
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [characterColors, setCharacterColors] = useState<{ [key: string]: string }>({});
+  const [deletingVideo, setDeletingVideo] = useState(false);
+  const { toast } = useToast();
   
   // Voice and ASL Avatar options for accessibility
   const [selectedVoice] = useState<VoiceOption>({
@@ -144,6 +147,65 @@ const VideoDetail = () => {
     } finally {
       console.log('🏁 Fetch video completed, setting loading to false');
       setLoading(false);
+    }
+  };
+
+  const deleteVideo = async () => {
+    if (!video || !window.confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingVideo(true);
+    try {
+      // Delete associated storage files
+      if (video.storage_path) {
+        try {
+          await supabase.storage
+            .from('videos')
+            .remove([video.storage_path]);
+        } catch (storageError) {
+          console.warn('Error deleting video file from storage:', storageError);
+        }
+      }
+
+      // Delete thumbnail from storage
+      if (video.thumbnail_url) {
+        try {
+          const thumbnailPath = video.thumbnail_url.split('/').pop();
+          if (thumbnailPath) {
+            await supabase.storage
+              .from('thumbnails')
+              .remove([thumbnailPath]);
+          }
+        } catch (storageError) {
+          console.warn('Error deleting thumbnail from storage:', storageError);
+        }
+      }
+
+      // Delete the video record from database
+      const { error } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', video.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Video deleted",
+        description: "The video has been successfully deleted.",
+      });
+
+      // Navigate back to videos page
+      navigate('/videos');
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast({
+        title: "Error deleting video",
+        description: "There was an error deleting the video. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingVideo(false);
     }
   };
 
@@ -290,6 +352,8 @@ const VideoDetail = () => {
                 channelId={video.channel_id}
                 videoStatus={video.status}
                 onUpdate={fetchVideo}
+                onDelete={deleteVideo}
+                isDeleting={deletingVideo}
               />
               <Button 
                 variant="outline" 

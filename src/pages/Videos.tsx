@@ -351,36 +351,9 @@ export default function Videos() {
                 channelId={video.channel_id}
                 videoStatus={video.status}
                 onUpdate={fetchVideos}
+                onDelete={() => deleteVideo(video.id)}
+                isDeleting={deletingVideo === video.id}
               />
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                disabled={deletingVideo === video.id}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Video</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{video.title}"? This action cannot be undone and will permanently remove the video and all associated data.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteVideo(video.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete Video
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
                         </div>
                       </CardContent>
                     </Card>

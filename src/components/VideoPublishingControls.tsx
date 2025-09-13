@@ -27,6 +27,8 @@ interface VideoPublishingControlsProps {
   channelId: string | null;
   videoStatus: string;
   onUpdate: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
 }
 
 export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = ({
@@ -36,7 +38,9 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   description,
   channelId,
   videoStatus,
-  onUpdate
+  onUpdate,
+  onDelete,
+  isDeleting
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -243,34 +247,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     setLoading(false);
   };
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('videos')
-        .delete()
-        .eq('id', videoId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Video deleted",
-        description: "Your video has been permanently deleted."
-      });
-      
-      // Redirect to videos page
-      window.location.href = '/videos';
-    } catch (error: any) {
-      toast({
-        title: "Error deleting video",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-    setLoading(false);
+    onDelete();
   };
 
   // Check if video is ready for publishing - video is ready when uploaded successfully
@@ -311,11 +288,11 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               variant="outline"
               size="sm"
               onClick={handleDelete}
-              disabled={loading}
+              disabled={isDeleting}
               className="text-xs px-2"
             >
               <Trash2 className="w-3 h-3 mr-1" />
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </div>
@@ -332,123 +309,143 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
           <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
         </div>
       ) : !editingComplete ? (
-        <Button
-          variant="outline"
-          onClick={() => setEditingComplete(true)}
-        >
-          ✓ Done Editing
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            onClick={() => setEditingComplete(true)}
+          >
+            ✓ Done Editing
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </>
       ) : (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              Publish to Channel
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Publish to Channel</DialogTitle>
-            </DialogHeader>
+        <>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                Publish to Channel
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Publish to Channel</DialogTitle>
+              </DialogHeader>
 
-            <div className="space-y-4">
-              {/* Channel Selection */}
-              {channels.length === 0 && !showChannelCreation ? (
-                <div className="text-center p-4 border border-dashed rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Create a channel to publish your video.
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowChannelCreation(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Channel
-                  </Button>
-                </div>
-              ) : showChannelCreation ? (
-                <div className="space-y-3">
-                  <Label>Create New Channel</Label>
-                  <Input
-                    value={newChannel.name}
-                    onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Channel name"
-                  />
-                  <Textarea
-                    value={newChannel.description}
-                    onChange={(e) => setNewChannel(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Channel description (optional)"
-                    rows={2}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={createChannel}
-                      disabled={!newChannel.name.trim() || loading}
-                      size="sm"
-                    >
-                      {loading ? "Creating..." : "Create"}
-                    </Button>
+              <div className="space-y-4">
+                {/* Channel Selection */}
+                {channels.length === 0 && !showChannelCreation ? (
+                  <div className="text-center p-4 border border-dashed rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Create a channel to publish your video.
+                    </p>
                     <Button
                       variant="outline"
-                      onClick={() => setShowChannelCreation(false)}
-                      size="sm"
+                      onClick={() => setShowChannelCreation(true)}
                     >
-                      Cancel
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Channel
                     </Button>
                   </div>
-                </div>
-              ) : (
+                ) : showChannelCreation ? (
+                  <div className="space-y-3">
+                    <Label>Create New Channel</Label>
+                    <Input
+                      value={newChannel.name}
+                      onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Channel name"
+                    />
+                    <Textarea
+                      value={newChannel.description}
+                      onChange={(e) => setNewChannel(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Channel description (optional)"
+                      rows={2}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={createChannel}
+                        disabled={!newChannel.name.trim() || loading}
+                        size="sm"
+                      >
+                        {loading ? "Creating..." : "Create"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowChannelCreation(false)}
+                        size="sm"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Label>Channel</Label>
+                    <Select
+                      value={formData.channelId}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, channelId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select channel" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowChannelCreation(true)}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      New Channel
+                    </Button>
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  <Label>Channel</Label>
-                  <Select
-                    value={formData.channelId}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, channelId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select channel" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg z-50">
-                      {channels.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id}>
-                          {channel.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowChannelCreation(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    New Channel
-                  </Button>
+                  <Label>Description (optional)</Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe your video..."
+                    rows={2}
+                  />
                 </div>
-              )}
-
-              <div className="space-y-3">
-                <Label>Description (optional)</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your video..."
-                  rows={2}
-                />
               </div>
-            </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handlePublish}
-                disabled={loading || formData.channelId === 'none'}
-              >
-                {loading ? "Publishing..." : "Publish"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePublish}
+                  disabled={loading || formData.channelId === 'none'}
+                >
+                  {loading ? "Publishing..." : "Publish"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </>
       )}
     </div>
   );
