@@ -125,17 +125,6 @@
     "language": "Sprache",
     "feature": "Funktion"
   },
-  "hero": {
-    "subtitle": "VIDEO-BARRIEREFREIHEITSPLATTFORM FÜR IHR UNTERNEHMEN ENTWICKELT",
-    "headline": "Bauen Sie etwas Besseres.",
-    "headlineSecond": "Für alle.",
-    "description": "Erstellen Sie inklusive Erfahrungen, die WCAG- und EAA-Standards erfüllen, dank der führenden Plattform für digitale Barrierefreiheit und der Unterstützung durch Expertendienste.",
-    "cta": "Starten Sie Ihren Upload",
-    "inclusivity": {
-      "title": "Inklusion ist Standard",
-      "description": "Alles von anpassbaren Untertiteln bis hin zu kontrastreichen Farben ist in jedes Video eingebacken, das Sie mit Axessible hosten, sodass Barrierefreiheit nichts ist, worüber Sie nachdenken müssen. Es ist einfach die Art, wie Ihre Videos sind."
-    }
-  },
   "featureBoxes": {
     "compliance": {
       "title": "Compliance",

@@ -125,17 +125,6 @@
     "language": "Lingua",
     "feature": "Funzionalità"
   },
-  "hero": {
-    "subtitle": "PIATTAFORMA DI ACCESSIBILITÀ VIDEO PROGETTATA PER LA TUA AZIENDA",
-    "headline": "Costruisci qualcosa di meglio.",
-    "headlineSecond": "Per tutti.",
-    "description": "Crea esperienze inclusive che rispettano gli standard WCAG ed EAA, grazie alla piattaforma leader nell'accessibilità digitale e al supporto di servizi esperti.",
-    "cta": "Inizia il Tuo Caricamento",
-    "inclusivity": {
-      "title": "L'inclusività è standard",
-      "description": "Tutto, dai sottotitoli personalizzabili ai colori ad alto contrasto, è integrato in ogni video che ospiti con Axessible, quindi l'accessibilità non è qualcosa a cui devi pensare. È semplicemente come sono i tuoi video."
-    }
-  },
   "featureBoxes": {
     "compliance": {
       "title": "Conformità",
