@@ -364,7 +364,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-24 sm:bottom-28 left-2 right-2 sm:left-4 sm:right-4 flex items-center justify-center pointer-events-none z-50"
+      className="absolute bottom-24 sm:bottom-28 left-2 right-2 sm:left-4 sm:right-4 flex items-end justify-center pointer-events-none z-50"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box - Mobile Responsive */}
