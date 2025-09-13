@@ -50,6 +50,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<'passionate' | 'warm' | 'authoritative' | 'encouraging'>('warm');
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
+  const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface'>('openai');
 
   const language = currentLanguage || 'en';
 
@@ -362,6 +363,82 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return scheduled;
   };
 
+  // New open source video analysis function
+  const generateDescriptionsWithHuggingFace = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('🤗 Generating descriptions with Hugging Face open source models');
+
+    // 1) Compute safe non-dialogue gaps
+    const gaps = computeGaps(transcript);
+    if (gaps.length === 0) {
+      console.log('⚠️ No gaps available for Hugging Face analysis');
+      return [];
+    }
+
+    console.log('🎬 Extracting frames for Hugging Face analysis:', gaps.length, 'gaps');
+
+    // 2) Extract keyframes for each gap 
+    const analysisRequests = [];
+    
+    for (const gap of gaps.slice(0, 8)) { // Process more gaps since HF is faster
+      const midTime = gap.start + ((gap.end - gap.start) / 2);
+      const estimatedDuration = Math.min(gap.end - gap.start, estimateDurationForText("Scene description"));
+      
+      try {
+        // Extract a single representative frame for each gap
+        const video = document.createElement('video');
+        video.src = videoUrl;
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        
+        const frameDataUrl = await extractFrameAtTime(video, midTime);
+        
+        if (frameDataUrl) {
+          analysisRequests.push({
+            timestamp: midTime,
+            frameDataUrl,
+            duration: estimatedDuration,
+            context: getSurroundingTranscriptText(gap.start, gap.end, transcript)
+          });
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to extract frame for HF analysis at', midTime, ':', error);
+      }
+    }
+
+    if (analysisRequests.length === 0) {
+      console.log('⚠️ No frames extracted for Hugging Face analysis');
+      return [];
+    }
+
+    // 3) Send to Hugging Face analysis function
+    console.log('🤗 Sending', analysisRequests.length, 'requests to Hugging Face');
+    
+    try {
+      const hfResponse = await supabase.functions.invoke('huggingface-video-analysis', {
+        body: {
+          videoId,
+          analysisRequests,
+          language: currentLanguage,
+          contentType
+        }
+      });
+
+      if (hfResponse.error) {
+        throw new Error(hfResponse.error.message || 'Hugging Face analysis failed');
+      }
+
+      const descriptions = hfResponse.data?.descriptions || [];
+      console.log('✅ Hugging Face generated', descriptions.length, 'descriptions');
+      
+      return descriptions;
+
+    } catch (error) {
+      console.error('❌ Hugging Face analysis failed:', error);
+      throw error;
+    }
+  };
+
   const getSurroundingTranscriptText = (gapStart: number, gapEnd: number, transcript: any[]): string => {
     return transcript
       .filter(seg => Math.abs(seg.startTime - gapStart) < 30 || Math.abs(seg.endTime - gapEnd) < 30)
@@ -382,7 +459,17 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     setIsGenerating(true);
     try {
-      const scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
+      let scheduled: AudioDescriptionSegment[];
+      
+      if (selectedModel === 'huggingface') {
+        scheduled = await generateDescriptionsWithHuggingFace(videoId, transcriptSegments);
+        toast.success(`🤗 Open source descriptions generated! Placed ${scheduled.length} items using Hugging Face BLIP-2`, {
+          description: "Using Salesforce/blip-image-captioning-large model for scene analysis"
+        });
+      } else {
+        scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
+        toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
+      }
 
       if (scheduled.length === 0) {
         toast.error("No suitable silent gaps found to place audio descriptions");
@@ -392,12 +479,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       setDescriptions(scheduled);
       onDescriptionsUpdate?.(scheduled);
 
-      toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
-
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error("Generation failed - Please try again.");
+      toast.error(`Generation failed with ${selectedModel === 'huggingface' ? 'Hugging Face' : 'OpenAI'} - Please try again.`);
     } finally {
       setIsGenerating(false);
     }
@@ -447,10 +532,41 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Transcript-guided:</strong> We analyze the transcript to find silence windows and generate creative, on-screen descriptions that fit naturally into those gaps.
-            </p>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">AI Model Selection</Label>
+              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as 'openai' | 'huggingface')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">
+                    <div className="flex flex-col">
+                      <span>OpenAI GPT-4V (Premium)</span>
+                      <span className="text-xs text-muted-foreground">Advanced vision + reasoning</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="huggingface">
+                    <div className="flex flex-col">
+                      <span>🤗 Hugging Face BLIP-2 (Open Source)</span>
+                      <span className="text-xs text-muted-foreground">Fast scene captioning</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>
+                  {selectedModel === 'huggingface' ? '🤗 Open Source Mode:' : 'Premium Mode:'} 
+                </strong>{' '}
+                {selectedModel === 'huggingface' 
+                  ? 'Uses Salesforce BLIP-2 model for fast scene analysis and description generation. Free and open source!'
+                  : 'We analyze the transcript to find silence windows and generate creative, on-screen descriptions that fit naturally into those gaps.'
+                }
+              </p>
+            </div>
           </div>
 
           <Button 
@@ -461,12 +577,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing Video Content...
+                {selectedModel === 'huggingface' ? 'Analyzing with Open Source Models...' : 'Analyzing Video Content...'}
               </>
             ) : (
               <>
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate AI Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+                {selectedModel === 'huggingface' ? '🤗' : <Wand2 className="w-4 h-4 mr-2" />}
+                Generate {selectedModel === 'huggingface' ? 'Open Source' : 'AI'} Descriptions ({transcriptSegments?.length || 0} transcript segments available)
               </>
             )}
           </Button>
