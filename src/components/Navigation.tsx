@@ -19,7 +19,7 @@ export const Navigation: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center mr-4">
             <Link to="/" className="flex items-center space-x-3">
               <img
                 src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"

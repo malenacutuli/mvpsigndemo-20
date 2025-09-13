@@ -17,7 +17,7 @@ export const Hero: React.FC = () => {
           </p>
           
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8">
+          <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8">
             {t('hero.headline')}
             <span className="block">{t('hero.headlineSecond')}</span>
           </h1>
