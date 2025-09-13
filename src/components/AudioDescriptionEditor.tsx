@@ -594,44 +594,29 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🎬 Generate AI Descriptions clicked!');
     console.log('📝 transcriptSegments:', transcriptSegments);
     console.log('📊 transcriptSegments length:', transcriptSegments?.length || 0);
-    
+
+    if (!transcriptSegments || transcriptSegments.length === 0) {
+      toast.error('Please generate a transcript first to place audio descriptions.');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      let scheduled: AudioDescriptionSegment[];
-      
-      if (transcriptSegments && transcriptSegments.length > 0) {
-        if (selectedModel === 'enhanced') {
-          scheduled = await generateEnhancedDescriptions(videoUrl, transcriptSegments);
-          toast.success(`🎯 Enhanced GPT-5 Vision analysis complete! Generated ${scheduled.length} contextual descriptions`, {
-            description: "Using multi-frame analysis with dialogue context and scene understanding"
-          });
-        } else if (selectedModel === 'huggingface') {
-          scheduled = await generateDescriptionsWithHuggingFace(videoId, transcriptSegments);
-          toast.success(`🤗 Open source descriptions generated! Placed ${scheduled.length} items using Hugging Face BLIP-2`, {
-            description: "Using Salesforce/blip-image-captioning-large model for scene analysis"
-          });
-        } else {
-          scheduled = await generateDescriptionsFromTranscript(videoId, transcriptSegments);
-          toast.success(`Audio descriptions generated! Placed ${scheduled.length} items in silence windows`);
-        }
-      } else {
-        // Fallback: no transcript available, sample frames across timeline
-        scheduled = await generateDescriptionsWithoutTranscript();
-        toast.success(`Generated ${scheduled.length} descriptions by sampling the video timeline`);
-      }
+      const gaps = computeGaps(transcriptSegments);
+      const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
 
       if (scheduled.length === 0) {
-        toast.error("No suitable silent gaps found to place audio descriptions");
+        toast.error('No suitable silent gaps found to place audio descriptions');
         return;
       }
 
       setDescriptions(scheduled);
       onDescriptionsUpdate?.(scheduled);
-
+      toast.success(`OpenAI GPT-4o mini generated ${scheduled.length} descriptions`);
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error(`Generation failed with ${selectedModel === 'enhanced' ? 'Enhanced GPT-5 Vision' : selectedModel === 'huggingface' ? 'Hugging Face' : 'OpenAI'} - Please try again.`);
+      toast.error('OpenAI generation failed - please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -683,43 +668,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium">AI Model Selection</Label>
-              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as 'openai' | 'huggingface' | 'enhanced')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="enhanced">
-                    <div className="flex flex-col">
-                      <span>🎯 Enhanced GPT-5 Vision (Best)</span>
-                      <span className="text-xs text-muted-foreground">Multi-frame context analysis</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="openai">
-                    <div className="flex flex-col">
-                      <span>OpenAI GPT-4V (Premium)</span>
-                      <span className="text-xs text-muted-foreground">Advanced vision + reasoning</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="huggingface">
-                    <div className="flex flex-col">
-                      <span>🤗 Hugging Face BLIP-2 (Open Source)</span>
-                      <span className="text-xs text-muted-foreground">Fast scene captioning</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-sm font-medium">Model</Label>
+              <div className="mt-2 text-sm">OpenAI GPT-4o mini (text-based)</div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>
-                  {selectedModel === 'huggingface' ? '🤗 Open Source Mode:' : 'Premium Mode:'} 
-                </strong>{' '}
-                {selectedModel === 'huggingface' 
-                  ? 'Uses Salesforce BLIP-2 model for fast scene analysis and description generation. Free and open source!'
-                  : 'We analyze the transcript to find silence windows and generate creative, on-screen descriptions that fit naturally into those gaps.'
-                }
+                We analyze the transcript to find silence windows and generate concise, creative descriptions. Vision and Hugging Face modes have been removed.
               </p>
             </div>
           </div>
@@ -732,12 +687,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {selectedModel === 'enhanced' ? 'Analyzing with GPT-5 Vision Multi-Frame Context...' : selectedModel === 'huggingface' ? 'Analyzing with Open Source Models...' : 'Analyzing Video Content...'}
+                Generating with OpenAI GPT-4o mini...
               </>
             ) : (
               <>
-                {selectedModel === 'enhanced' ? '🎯' : selectedModel === 'huggingface' ? '🤗' : <Wand2 className="w-4 h-4 mr-2" />}
-                Generate {selectedModel === 'enhanced' ? 'Enhanced Vision' : selectedModel === 'huggingface' ? 'Open Source' : 'AI'} Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+                <Wand2 className="w-4 h-4 mr-2" />
+                Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
               </>
             )}
           </Button>
