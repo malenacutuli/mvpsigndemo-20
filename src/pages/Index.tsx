@@ -13,13 +13,13 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extralight text-charcoal leading-[0.9] tracking-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-charcoal leading-[0.9] tracking-tight">
                 Where Every Story is{" "}
                 <span className="text-primary block">Truly Seen,</span>{" "}
                 <span className="block">Heard, and Felt.</span>
               </h1>
               
-              <p className="text-lg md:text-xl text-slate-500 font-light leading-relaxed max-w-3xl mx-auto">
+              <p className="text-lg md:text-xl text-slate-700 font-light leading-relaxed max-w-3xl mx-auto">
                 The world's first video platform designed for everyone - powered by captions with intention, 
                 creative audio descriptions, and immersive accessibility tools.
               </p>
@@ -50,7 +50,7 @@ const Index = () => {
             <h2 className="text-4xl md:text-5xl font-extralight text-charcoal mb-12 leading-tight">
               Because most videos leave someone out.
             </h2>
-            <div className="space-y-8 text-lg text-slate-600 max-w-4xl mx-auto">
+            <div className="space-y-8 text-lg text-slate-700 max-w-4xl mx-auto">
               <p className="text-lg leading-relaxed">On other platforms, videos are easy to share - but not always easy to experience.</p>
               <div className="grid md:grid-cols-3 gap-8 my-16">
                 <div className="bg-card p-8 rounded-2xl border shadow-soft">

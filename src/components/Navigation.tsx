@@ -67,10 +67,10 @@ export const Navigation: React.FC = () => {
               <>
                 <Link 
                   to="/dashboard" 
-                  className={`text-base font-medium transition-colors hover:text-primary ${
+                  className={`text-base font-light transition-colors hover:text-primary ${
                     isActivePath('/dashboard') 
-                      ? 'text-primary font-semibold' 
-                      : 'text-muted-foreground'
+                      ? 'text-primary font-medium' 
+                      : 'text-slate-600'
                   }`}
                 >
                   Dashboard
@@ -78,10 +78,10 @@ export const Navigation: React.FC = () => {
                 
                 <Link 
                   to="/videos" 
-                  className={`text-base font-medium transition-colors hover:text-primary ${
+                  className={`text-base font-light transition-colors hover:text-primary ${
                     isActivePath('/videos') 
-                      ? 'text-primary font-semibold' 
-                      : 'text-muted-foreground'
+                      ? 'text-primary font-medium' 
+                      : 'text-slate-600'
                   }`}
                 >
                   My Videos
