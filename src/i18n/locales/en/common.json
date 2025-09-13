@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Your Accessibility Studio",
+    "subtitle": "Create, customize, and manage your accessible video content",
+    "uploadVideo": {
+      "title": "Upload Video",
+      "description": "Upload your video and let AI generate captions, audio descriptions, and ASL support"
+    },
+    "myVideos": {
+      "title": "My Videos",
+      "description": "Access your saved transcripts, audio descriptions, and character data"
+    }
+  },
   "patentClaims": {
     "badge": "Patent Validation",
     "title": "Protecting Revolutionary Innovation",

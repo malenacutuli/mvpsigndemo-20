@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "El Teu Estudi d'Accessibilitat",
+    "subtitle": "Crea, personalitza i gestiona el teu contingut de vídeo accessible",
+    "uploadVideo": {
+      "title": "Pujar Vídeo",
+      "description": "Puja el teu vídeo i deixa que la IA generi subtítols, descripcions d'àudio i suport ASL"
+    },
+    "myVideos": {
+      "title": "Els Meus Vídeos",
+      "description": "Accedeix a les teves transcripcions desades, descripcions d'àudio i dades de personatges"
+    }
+  },
   "patentClaims": {
     "badge": "Validació de Patent",
     "title": "Protegint la Innovació Revolucionària",

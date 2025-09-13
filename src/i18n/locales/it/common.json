@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Il Tuo Studio di Accessibilità",
+    "subtitle": "Crea, personalizza e gestisci i tuoi contenuti video accessibili",
+    "uploadVideo": {
+      "title": "Carica Video",
+      "description": "Carica il tuo video e lascia che l'IA generi sottotitoli, descrizioni audio e supporto ASL"
+    },
+    "myVideos": {
+      "title": "I Miei Video",
+      "description": "Accedi alle tue trascrizioni salvate, descrizioni audio e dati dei personaggi"
+    }
+  },
   "patentClaims": {
     "badge": "Validazione Brevetto",
     "title": "Proteggendo l'Innovazione Rivoluzionaria",

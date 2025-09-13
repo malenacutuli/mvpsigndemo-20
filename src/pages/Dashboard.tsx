@@ -6,8 +6,11 @@ import { SubscriptionManager } from '@/components/SubscriptionManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
+  const { t } = useTranslation();
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
@@ -21,10 +24,10 @@ const Dashboard = () => {
                 {/* Header */}
                 <div className="text-center">
                   <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
-                    Your Accessibility Studio
+                    {t('dashboard.title')}
                   </h1>
                   <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                    Create, customize, and manage your accessible video content
+                    {t('dashboard.subtitle')}
                   </p>
                 </div>
 
@@ -36,11 +39,11 @@ const Dashboard = () => {
                         <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                           <Upload className="w-6 h-6 text-primary" />
                         </div>
-                        <CardTitle className="text-xl">Upload Video</CardTitle>
+                        <CardTitle className="text-xl">{t('dashboard.uploadVideo.title')}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground text-center text-sm">
-                          Upload your video and let AI generate captions, audio descriptions, and ASL support
+                          {t('dashboard.uploadVideo.description')}
                         </p>
                       </CardContent>
                     </Card>
@@ -52,11 +55,11 @@ const Dashboard = () => {
                         <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                           <Video className="w-6 h-6 text-primary" />
                         </div>
-                        <CardTitle className="text-xl">My Videos</CardTitle>
+                        <CardTitle className="text-xl">{t('dashboard.myVideos.title')}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground text-center text-sm">
-                          Access your saved transcripts, audio descriptions, and character data
+                          {t('dashboard.myVideos.description')}
                         </p>
                       </CardContent>
                     </Card>

@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Seu Estúdio de Acessibilidade",
+    "subtitle": "Crie, personalize e gerencie seu conteúdo de vídeo acessível",
+    "uploadVideo": {
+      "title": "Enviar Vídeo",
+      "description": "Envie seu vídeo e deixe a IA gerar legendas, descrições de áudio e suporte ASL"
+    },
+    "myVideos": {
+      "title": "Meus Vídeos",
+      "description": "Acesse suas transcrições salvas, descrições de áudio e dados de personagens"
+    }
+  },
   "patentClaims": {
     "badge": "Validação de Patente",
     "title": "Protegendo Inovação Revolucionária",

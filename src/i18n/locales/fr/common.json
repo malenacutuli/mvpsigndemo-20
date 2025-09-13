@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Votre Studio d'Accessibilité",
+    "subtitle": "Créez, personnalisez et gérez votre contenu vidéo accessible",
+    "uploadVideo": {
+      "title": "Télécharger une Vidéo",
+      "description": "Téléchargez votre vidéo et laissez l'IA générer des sous-titres, des descriptions audio et un support ASL"
+    },
+    "myVideos": {
+      "title": "Mes Vidéos",
+      "description": "Accédez à vos transcriptions sauvegardées, descriptions audio et données de personnages"
+    }
+  },
   "patentClaims": {
     "badge": "Validation de Brevet",
     "title": "Protéger l'Innovation Révolutionnaire",

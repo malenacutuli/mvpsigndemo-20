@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Tu Estudio de Accesibilidad",
+    "subtitle": "Crea, personaliza y gestiona tu contenido de video accesible",
+    "uploadVideo": {
+      "title": "Subir Video",
+      "description": "Sube tu video y deja que la IA genere subtítulos, descripciones de audio y soporte ASL"
+    },
+    "myVideos": {
+      "title": "Mis Videos",
+      "description": "Accede a tus transcripciones guardadas, descripciones de audio y datos de personajes"
+    }
+  },
   "patentClaims": {
     "badge": "Validación de Patente",
     "title": "Protegiendo la Innovación Revolucionaria",

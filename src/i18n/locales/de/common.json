@@ -238,6 +238,18 @@
       }
     }
   },
+  "dashboard": {
+    "title": "Ihr Barrierefreiheits-Studio",
+    "subtitle": "Erstellen, anpassen und verwalten Sie Ihre barrierefreien Videoinhalte",
+    "uploadVideo": {
+      "title": "Video Hochladen",
+      "description": "Laden Sie Ihr Video hoch und lassen Sie KI Untertitel, Audiobeschreibungen und ASL-Unterstützung generieren"
+    },
+    "myVideos": {
+      "title": "Meine Videos",
+      "description": "Greifen Sie auf Ihre gespeicherten Transkriptionen, Audiobeschreibungen und Charakterdaten zu"
+    }
+  },
   "patentClaims": {
     "badge": "Patent-Validierung",
     "title": "Schutz Revolutionärer Innovation",
