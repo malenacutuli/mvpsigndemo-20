@@ -10,6 +10,7 @@ import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
+import { supabase } from '@/integrations/supabase/client';
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -96,6 +97,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
+  const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
+  const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
   const { saveCharacters, loadCharacters } = useVideoStorage(videoId);
 
   // Load existing characters on mount
@@ -188,18 +191,56 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const saveAllCharacters = async () => {
     try {
       await saveCharacters(characters);
+      
+      // Save speaker mappings
+      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(speakerMappings));
+      
+      // Apply character settings to mapped speakers in database
+      await applyCharacterMappings();
+      
+      // Save to localStorage for immediate access
+      localStorage.setItem('character-colors', JSON.stringify(
+        characters.reduce((acc, char) => ({ ...acc, [char.name]: char.color }), {})
+      ));
+      
       onCharactersUpdate?.(characters);
+      
       toast({
-        title: "Characters Saved",
-        description: "All character settings have been saved and applied to the video."
+        title: "Characters saved!",
+        description: `${characters.length} characters saved with speaker mappings`,
+        variant: "default"
       });
     } catch (error) {
       console.error('Failed to save characters:', error);
       toast({
-        title: "Save Failed",
+        title: "Save failed",
         description: "Failed to save characters. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const applyCharacterMappings = async () => {
+    try {
+      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
+        const character = characters.find(c => c.name === characterName);
+        if (character) {
+          // Update all transcript segments with this speaker name
+          await supabase
+            .from('transcript_segments')
+            .update({
+              speaker: characterName,
+              speaker_color: character.color
+            })
+            .eq('video_id', videoId)
+            .eq('language', language)
+            .eq('speaker', speakerName);
+          
+          console.log(`🔄 Mapped "${speakerName}" → "${characterName}" (${character.color})`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to apply character mappings:', error);
     }
   };
 
@@ -219,6 +260,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     updateCharacterProperty(characterId, 'voiceId', voiceId);
     updateCharacterProperty(characterId, 'voiceName', voiceName);
     updateCharacterProperty(characterId, 'voiceType', voiceType);
+  };
+
+  const updateSpeakerMapping = (speakerName: string, characterName: string) => {
+    setSpeakerMappings(prev => ({
+      ...prev,
+      [speakerName]: characterName
+    }));
   };
 
   const getCharacterTypeIcon = (type: Character['type']) => {
@@ -247,6 +295,48 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Save Changes Button */}
+        {/* Speaker Mapping Section */}
+        {availableSpeakers.length > 0 && (
+          <div className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h4 className="font-medium text-orange-800">🔗 Speaker Assignment</h4>
+            <p className="text-xs text-orange-700">
+              Connect your transcript speakers to characters. This updates the video captions immediately.
+            </p>
+            <div className="space-y-2">
+              {availableSpeakers.map(speaker => (
+                <div key={speaker} className="flex items-center gap-3 text-sm">
+                  <Badge variant="outline" className="min-w-0">
+                    {speaker}
+                  </Badge>
+                  <span className="text-muted-foreground">→</span>
+                  <Select 
+                    value={speakerMappings[speaker] || ""} 
+                    onValueChange={(value) => updateSpeakerMapping(speaker, value)}
+                  >
+                    <SelectTrigger className="h-7 w-32">
+                      <SelectValue placeholder="Assign to..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {characters.map(char => (
+                        <SelectItem key={char.id} value={char.name}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: char.color }}
+                            />
+                            {char.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center p-4 bg-accent/10 rounded-lg">
           <div>
             <h4 className="font-medium">Character Management</h4>
