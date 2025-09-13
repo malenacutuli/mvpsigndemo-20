@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +138,7 @@ const comparisonFeatures = [
 ];
 
 export default function Pricing() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { createCheckout, subscribed, subscription_tier, loading } = useSubscription();
   const navigate = useNavigate();
@@ -176,14 +178,13 @@ export default function Pricing() {
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">
-            Plans that make every video{' '}
-            <span className="text-primary">Axessible</span>
+            {t('pricing.title')}
           </h1>
           <p className="text-lg text-muted-foreground mb-2">
-            Choose the perfect plan for your accessibility needs
+            {t('pricing.subtitle')}
           </p>
           <p className="text-sm text-muted-foreground">
-            Prices exclude tax. Cancel anytime.
+            {t('pricing.disclaimer')}
           </p>
         </div>
 
@@ -198,13 +199,13 @@ export default function Pricing() {
             >
               {plan.highlight && (
                 <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
-                  Most Popular
+                  {t('pricing.mostPopular')}
                 </Badge>
               )}
               
               {subscribed && subscription_tier === plan.name && (
                 <Badge className="absolute -top-2 right-4 bg-green-600">
-                  Current Plan
+                  {t('pricing.currentPlan')}
                 </Badge>
               )}
               
@@ -239,9 +240,9 @@ export default function Pricing() {
                   disabled={loading || (subscribed && subscription_tier === plan.name)}
                 >
                   {loading 
-                    ? "Loading..." 
+                    ? t('pricing.loading')
                     : subscribed && subscription_tier === plan.name 
-                    ? "Current Plan" 
+                    ? t('pricing.currentPlan')
                     : plan.cta
                   }
                 </Button>
@@ -252,7 +253,7 @@ export default function Pricing() {
 
         {/* Feature Comparison Table */}
         <div className="bg-card rounded-lg border p-6">
-          <h3 className="text-2xl font-semibold mb-6">Feature comparison</h3>
+          <h3 className="text-2xl font-semibold mb-6">{t('pricing.featureComparison')}</h3>
           
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -291,15 +292,15 @@ export default function Pricing() {
 
         {/* FAQ Section */}
         <div className="mt-16 text-center">
-          <h3 className="text-2xl font-semibold mb-4">Questions about pricing?</h3>
+          <h3 className="text-2xl font-semibold mb-4">{t('pricing.questionsAboutPricing')}</h3>
           <p className="text-muted-foreground mb-6">
-            Our team is here to help you choose the right plan for your needs.
+            {t('pricing.teamHelpChoose')}
           </p>
           <Button 
             variant="outline"
             onClick={() => window.open('mailto:sales@axessible.com?subject=Pricing Questions', '_blank')}
           >
-            Contact Sales
+            {t('pricing.contactUs')}
           </Button>
         </div>
       </div>

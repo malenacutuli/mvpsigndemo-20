@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +60,7 @@ interface ChannelWithVideos extends Channel {
 }
 
 const Explore = () => {
+  const { t } = useTranslation();
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [channelsWithVideos, setChannelsWithVideos] = useState<ChannelWithVideos[]>([]);
@@ -75,11 +77,11 @@ const Explore = () => {
   ];
 
   const sidebarItems = [
-    { id: 'videos', label: 'Explore Videos', icon: Play },
-    { id: 'channels', label: 'Channels', icon: Users },
-    { id: 'subscribed', label: 'Subscribed', icon: Bell },
-    { id: 'trending', label: 'Trending', icon: TrendingUp },
-    { id: 'saved', label: 'Watch Later', icon: Bookmark },
+    { id: 'videos', label: t('explore.exploreVideos'), icon: Play },
+    { id: 'channels', label: t('explore.channels'), icon: Users },
+    { id: 'subscribed', label: t('explore.subscribed'), icon: Bell },
+    { id: 'trending', label: t('explore.trending'), icon: TrendingUp },
+    { id: 'saved', label: t('explore.saved'), icon: Bookmark },
   ];
 
   useEffect(() => {
@@ -141,7 +143,7 @@ const Explore = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
-        title: "Error loading content",
+        title: t('explore.error'),
         description: "Failed to load videos and channels",
         variant: "destructive",
       });
@@ -175,8 +177,8 @@ const Explore = () => {
       
       if (!user) {
         toast({
-          title: "Login required",
-          description: "Please log in to subscribe to channels",
+          title: t('explore.loginRequired'),
+          description: t('explore.loginToSubscribe'),
         });
         navigate('/auth');
         return;
@@ -200,8 +202,8 @@ const Explore = () => {
         });
         
         toast({
-          title: "Unsubscribed",
-          description: "You've unsubscribed from this channel",
+          title: t('explore.unsubscribed'),
+          description: t('explore.unsubscribedMessage'),
         });
       } else {
         const { error } = await supabase
@@ -216,15 +218,15 @@ const Explore = () => {
         setSubscriptions(prev => new Set([...prev, channelId]));
         
         toast({
-          title: "Subscribed!",
-          description: "You've subscribed to this channel",
+          title: t('explore.subscribed'),
+          description: t('explore.subscribedMessage'),
         });
       }
     } catch (error) {
       console.error('Error managing subscription:', error);
       toast({
-        title: "Error",
-        description: "Failed to update subscription",
+        title: t('explore.error'),
+        description: t('explore.subscriptionError'),
         variant: "destructive",
       });
     }
@@ -323,18 +325,18 @@ const Explore = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold">
-                  {activeTab === 'videos' && 'Discover'}
-                  {activeTab === 'channels' && 'Channels'}
-                  {activeTab === 'subscribed' && 'Subscribed Channels'}
-                  {activeTab === 'trending' && 'Trending Content'}
-                  {activeTab === 'saved' && 'Watch Later'}
+                  {activeTab === 'videos' && t('explore.title')}
+                  {activeTab === 'channels' && t('explore.channels')}
+                  {activeTab === 'subscribed' && t('explore.subscribed')}
+                  {activeTab === 'trending' && t('explore.trending')}
+                  {activeTab === 'saved' && t('explore.saved')}
                 </h1>
               </div>
 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search videos, channels..."
+                  placeholder={t('explore.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -348,7 +350,7 @@ const Explore = () => {
               <>
                 {featuredVideo && (
                   <div className="relative">
-                    <h2 className="text-xl font-semibold mb-4">Featured</h2>
+                    <h2 className="text-xl font-semibold mb-4">{t('explore.featured')}</h2>
                     <Link to={`/watch/${featuredVideo.id}`}>
                       <Card className="group cursor-pointer overflow-hidden hover:shadow-xl transition-all duration-300">
                         <div className="relative aspect-video md:aspect-[21/9] overflow-hidden">
@@ -379,11 +381,11 @@ const Explore = () => {
                           <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">
                             {featuredVideo.title}
                           </h3>
-                          <div className="flex items-center gap-4 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-4 h-4" />
-                              <span>{formatViewCount(featuredVideo.view_count)} views</span>
-                            </div>
+                            <div className="flex items-center gap-4 text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Eye className="w-4 h-4" />
+                                <span>{formatViewCount(featuredVideo.view_count)} {t('explore.views')}</span>
+                              </div>
                             <div className="flex items-center gap-2">
                               <Languages className="w-4 h-4" />
                               <span>{getLanguageDisplay(featuredVideo.language)}</span>
@@ -410,7 +412,7 @@ const Explore = () => {
                         <div>
                           <h3 className="text-xl font-semibold">{channel.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {formatViewCount(channel.subscriber_count)} subscribers • {channel.video_count} videos
+                            {formatViewCount(channel.subscriber_count)} {t('explore.subscribers')} • {channel.video_count} {t('explore.videos')}
                           </p>
                         </div>
                       </div>
@@ -422,12 +424,12 @@ const Explore = () => {
                         {subscriptions.has(channel.id) ? (
                           <>
                             <BellRing className="w-4 h-4 mr-2" />
-                            Subscribed
+                            {t('explore.subscribed')}
                           </>
                         ) : (
                           <>
                             <Bell className="w-4 h-4 mr-2" />
-                            Subscribe
+                            {t('explore.subscribe')}
                           </>
                         )}
                       </Button>
