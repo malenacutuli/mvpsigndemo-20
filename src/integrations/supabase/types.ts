@@ -672,6 +672,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_subscription_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          is_subscribed: boolean
+          subscription_end: string
+          subscription_tier: string
+        }[]
+      }
       generate_embed_token: {
         Args: { video_uuid: string }
         Returns: string
