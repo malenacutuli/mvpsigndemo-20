@@ -115,6 +115,219 @@
     "language": "Sprache",
     "feature": "Funktion"
   },
+  "hero": {
+    "subtitle": "VIDEO-BARRIEREFREIHEITSPLATTFORM FÜR IHR UNTERNEHMEN ENTWICKELT",
+    "headline": "Bauen Sie etwas Besseres.",
+    "headlineSecond": "Für alle.",
+    "description": "Erstellen Sie inklusive Erfahrungen, die WCAG- und EAA-Standards erfüllen, dank der führenden Plattform für digitale Barrierefreiheit und der Unterstützung durch Expertendienste.",
+    "cta": "Starten Sie Ihren Upload",
+    "inclusivity": {
+      "title": "Inklusion ist Standard",
+      "description": "Alles von anpassbaren Untertiteln bis hin zu kontrastreichen Farben ist in jedes Video eingebacken, das Sie mit Axessible hosten, sodass Barrierefreiheit nichts ist, worüber Sie nachdenken müssen. Es ist einfach die Art, wie Ihre Videos sind."
+    }
+  },
+  "featureBoxes": {
+    "compliance": {
+      "title": "Compliance",
+      "description": "WCAG 2.1 AA und UNE-EN 301549 basierte Sanierung für EAA-Compliance."
+    },
+    "solutions": {
+      "title": "Anpassbare Lösungen",
+      "description": "Pläne, die sich an alle Arten von Unternehmen anpassen."
+    },
+    "heavyWork": {
+      "title": "Wir Kümmern uns um das Schwere",
+      "description": "Schnelle Implementierung, mühelos. Wir machen die schwere Arbeit."
+    },
+    "contactUs": "Kontaktieren Sie uns"
+  },
+  "industryFirst": {
+    "badge": "BRANCHENNEUHEIT",
+    "title": "Multi-Modale Video-Barrierefreiheits-Engine",
+    "description": "Wo Konkurrenten Punktlösungen anbieten, liefert Axessible End-to-End-Automatisierung. Unsere patent-anhängige Plattform verwandelt Video-Barrierefreiheit von einer Compliance-Last zu einem Wettbewerbsvorteil.",
+    "features": {
+      "aiSync": {
+        "title": "Patent-anhängige KI-Synchronisation",
+        "description": "Fortgeschrittene neuronale Netzwerke gewährleisten perfekte Synchronisation zwischen visuellem Inhalt und Barrierefreiheitsfunktionen."
+      },
+      "emotionalCaptions": {
+        "title": "Emotional Intelligente Untertitel",
+        "description": "Kontextbewusste Untertitel mit Tonerkennung und visuellem Stil für verbesserte Verständlichkeit."
+      },
+      "enterprise": {
+        "title": "Enterprise-Funktionen",
+        "compliance": "Integrierte Compliance-Auditierung & Berichterstattung",
+        "whiteLabel": "White-Label einbettbarer Player",
+        "apiFirst": "API-first Architektur",
+        "sso": "Enterprise SSO & Benutzerverwaltung"
+      }
+    },
+    "quote": "\"Wir verbessern nicht nur Video—wir machen es zukunftssicher.\""
+  },
+  "implementation": {
+    "badge": "IMPLEMENTIERUNG",
+    "title": "Bereitstellung in Minuten, Nicht Monaten",
+    "description": "Drei einfache Schritte zur Enterprise-Grade Barrierefreiheits-Compliance",
+    "steps": {
+      "contentInput": {
+        "title": "Content-Eingabe",
+        "description": "Laden Sie bestehende Videos hoch oder generieren Sie aus Text-Prompts",
+        "features": ["Bulk-Video-Verarbeitung", "KI-Video-Generierung", "Live-Stream-Integration"]
+      },
+      "featureSelection": {
+        "title": "Feature-Auswahl",
+        "description": "Konfigurieren Sie Barrierefreiheitsfunktionen für Ihren Anwendungsfall",
+        "features": ["Emotionale Untertitel", "Audio-Beschreibungen", "Mehrsprachige ASL"]
+      },
+      "deployMonitor": {
+        "title": "Bereitstellen & Überwachen",
+        "description": "Enterprise-bereiter Player mit Compliance-Berichterstattung",
+        "features": ["Einbettbarer Player", "Echtzeit-Analytik", "Compliance-Audits"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "Zero-Code-Integration",
+      "userToggleable": "Benutzer-Umschaltbare Features",
+      "enterpriseSSO": "Enterprise SSO Bereit"
+    },
+    "deployMessage": "Bereitstellung für Millionen von Benutzern in unter 30 Minuten mit unserer Enterprise-Grade-Infrastruktur"
+  },
+  "techStack": {
+    "badge": "Technologie-Stack",
+    "title": "Hochmoderne KI-Infrastruktur",
+    "description": "Aufgebaut auf Enterprise-Grade Cloud-Services und fortgeschrittenen KI-Modellen, um unvergleichliche Video-Barrierefreiheit im großen Maßstab zu liefern.",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "Cloud-Infrastruktur",
+        "description": "Skalierbare, Enterprise-Grade Cloud-Services"
+      },
+      "aiMachineLearning": {
+        "title": "KI & Maschinelles Lernen",
+        "description": "Fortgeschrittene KI-Modelle für Barrierefreiheit",
+        "technologies": ["Vision-Language-Modelle", "Benutzerdefinierte ASL-Modelle", "LLM-Integration"]
+      },
+      "voiceAudio": {
+        "title": "Stimme & Audio",
+        "description": "Adaptive Sprachsynthese",
+        "technologies": ["Benutzerdefinierte Stimmmodelle", "Audio-Analyse"]
+      },
+      "computerVision": {
+        "title": "Computer Vision",
+        "description": "Szenenanalyse und visuelles Verständnis",
+        "technologies": ["Blender-Integration", "3D-Animation", "Pose-Schätzung"]
+      },
+      "complianceSecurity": {
+        "title": "Compliance & Sicherheit",
+        "description": "Einhaltung von Barrierefreiheitsstandards",
+        "technologies": ["WCAG 2.1 AA", "EAA-Compliance", "ADA-Standards", "Sicherheitsprotokolle"]
+      }
+    },
+    "architectureHighlights": {
+      "title": "Architektur-Highlights",
+      "gpu": {
+        "title": "GPU-Beschleunigtes Processing",
+        "description": "Hochleistungscompute für Echtzeit-KI-Inferenz und komplexe ASL-Generierung"
+      },
+      "eventDriven": {
+        "title": "Event-Driven Architektur",
+        "description": "Serverlose Workflows mit robuster Fehlerbehandlung und automatischen Retry-Mechanismen"
+      },
+      "complianceFirst": {
+        "title": "Compliance-First Design",
+        "description": "Integrierte Barrierefreiheitsvalidierung und automatische Compliance-Formatierung"
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "Patent-Validierung",
+    "title": "Schutz Revolutionärer Innovation",
+    "description": "Unser MVP validiert direkt wichtige Patent-Ansprüche und demonstriert einzigartiges geistiges Eigentum, das erhebliche Wettbewerbsvorteile im Barrierefreiheitsmarkt schafft.",
+    "validatedBy": "Validiert Durch:",
+    "claims": {
+      "dataProcessing": {
+        "number": "Anspruch 1",
+        "title": "Datenverarbeitungslogik",
+        "description": "Automatisierte multimodale Verarbeitungspipeline mit intelligentem Datenrouting",
+        "validatedBy": [
+          "ASR mit präzisen Wort-Level-Zeitstempeln",
+          "Ausgeklügelte Untertitel-Generierungsalgorithmen",
+          "Kontextuelle Szenenanalyse und Zusammenfassung",
+          "Modulare Verarbeitung mit Fehlerbehandlung"
+        ],
+        "implementation": "Komplette automatisierte Workflow-Orchestrierung"
+      },
+      "avatarGeneration": {
+        "number": "Anspruch 2",
+        "title": "Avatar-Generierung mit Timing-Sync",
+        "description": "KI-animierte ASL-Avatare mit präziser Sprach-Synchronisation",
+        "validatedBy": [
+          "Drei verschiedene kinderfreundliche ASL-Avatare",
+          "Sprach-Zeitstempel-Parsing und Gesten-Mapping",
+          "Timeline-abgestimmtes Animationsrendering",
+          "Echtzeit-Synchronisation mit gesprochenem Inhalt"
+        ],
+        "implementation": "Fortgeschrittene ASL-Generierung mit pixelgenauem Timing"
+      },
+      "complianceLayer": {
+        "number": "Anspruch 3",
+        "title": "Integrierte Compliance-Schicht",
+        "description": "Automatisierte Barrierefreiheits-Compliance-Validierung und -Formatierung",
+        "validatedBy": [
+          "WCAG 2.1 Level AA Compliance-Checks",
+          "EAA- und ADA-Standards-Einhaltung",
+          "Automatische visuelle Element-Reformatierung",
+          "Content-Auditierung und -Validierung"
+        ],
+        "implementation": "Integriertes Barrierefreiheits-Verifizierungssystem"
+      }
+    },
+    "strategicImportance": {
+      "title": "Strategische Bedeutung",
+      "subtitle": "Warum diese Patent-Ansprüche erheblichen Marktwert schaffen",
+      "differentiation": {
+        "title": "Marktdifferenzierung",
+        "description": "Einzigartige Features, die Konkurrenten nicht leicht replizieren können"
+      },
+      "protection": {
+        "title": "IP-Schutz",
+        "description": "Durchsetzbare geistige Eigentumsrechte für Kerntechnologie"
+      },
+      "investment": {
+        "title": "Investitionswert",
+        "description": "Bewiesene Innovation, die zukünftige Entwicklung und Skalierung unterstützt"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "MARKT-DRINGLICHKEIT",
+    "title": "Die $13B Barrierefreiheitslücke",
+    "description": "Mit über 215 Millionen Stunden Video, die jährlich hochgeladen werden, und sich global verschärfenden Barrierefreiheitsvorschriften waren die Kosten der Nicht-Compliance noch nie höher.",
+    "stats": {
+      "userIssues": {
+        "title": "Benutzer-Barrierefreiheitsprobleme",
+        "description": "Melden Barrieren beim Zugriff auf digitale Inhalte"
+      },
+      "brandAbandonment": {
+        "title": "Marken-Aufgabe",
+        "description": "Aufgrund unzugänglicher Benutzererfahrungen"
+      },
+      "eaaEnforcement": {
+        "date": "Juni 2025",
+        "title": "EAA-Durchsetzung",
+        "description": "Strafen des Europäischen Barrierefreiheitsgesetzes beginnen"
+      }
+    },
+    "solution": {
+      "title": "Verwandeln Sie Compliance vom Kostenzentrum zum Umsatzgenerator",
+      "description": "Axessible verwandelt Barrierefreiheit von einer regulatorischen Last zu einem Wettbewerbsvorteil—ermöglicht es Unternehmen, Regierungen und Bildungseinrichtungen, 100% ihrer Zielgruppe zu erreichen und gleichzeitig vollständige Compliance über alle wichtigen Standards zu gewährleisten."
+    },
+    "compliance": {
+      "wcag": "WCAG 2.1 AAA Konform",
+      "ada": "ADA Kompatibel",
+      "eaa": "EAA Bereit",
+      "section508": "Sektion 508 Zertifiziert"
+    }
+  },
   "enterprise": {
     "quickAccess": {
       "title": "Beginnen Sie mit Axessible Video",

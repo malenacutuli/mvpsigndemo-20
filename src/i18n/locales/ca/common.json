@@ -115,6 +115,219 @@
     "language": "Idioma",
     "feature": "Funcionalitat"
   },
+  "hero": {
+    "subtitle": "PLATAFORMA D'ACCESSIBILITAT DE VÍDEO DISSENYADA PER AL TEU NEGOCI",
+    "headline": "Construeix alguna cosa millor.",
+    "headlineSecond": "Per a tothom.",
+    "description": "Crea experiències inclusives que compleixen els estàndards WCAG i EAA, gràcies a la plataforma líder en accessibilitat digital i el suport de serveis experts.",
+    "cta": "Comença la Teva Pujada",
+    "inclusivity": {
+      "title": "La inclusivitat ve d'estàndard",
+      "description": "Tot, des de subtítols personalitzables fins a colors d'alt contrast, està integrat en cada vídeo que allotges amb Axessible, així que l'accessibilitat no és quelcom en què hagis de pensar. És simplement com són els teus vídeos."
+    }
+  },
+  "featureBoxes": {
+    "compliance": {
+      "title": "Compliment",
+      "description": "Remediació basada en WCAG 2.1 AA i UNE-EN 301549 per al compliment EAA."
+    },
+    "solutions": {
+      "title": "Solucions Personalitzables",
+      "description": "Plans dissenyats per adaptar-se a tots els tipus d'empreses."
+    },
+    "heavyWork": {
+      "title": "Nosaltres Gestionem la Feina Pesada",
+      "description": "Implementació ràpida, sense esforç. Nosaltres fem la feina pesada."
+    },
+    "contactUs": "Contacta'ns"
+  },
+  "industryFirst": {
+    "badge": "PRIMER EN LA INDÚSTRIA",
+    "title": "Motor d'Accessibilitat de Vídeo Multi-Modal",
+    "description": "On els competidors ofereixen solucions puntuals, Axessible ofereix automatització integral. La nostra plataforma amb patent pendent transforma l'accessibilitat de vídeo d'una càrrega de compliment a un avantatge competitiu.",
+    "features": {
+      "aiSync": {
+        "title": "Sincronització IA amb Patent Pendent",
+        "description": "Xarxes neuronals avançades asseguren una sincronització perfecta entre contingut visual i característiques d'accessibilitat."
+      },
+      "emotionalCaptions": {
+        "title": "Subtítols amb Intel·ligència Emocional",
+        "description": "Subtítols conscients del context amb detecció de to i estil visual per a una comprensió millorada."
+      },
+      "enterprise": {
+        "title": "Característiques d'Empresa",
+        "compliance": "Auditoria i informes de compliment integrats",
+        "whiteLabel": "Reproductor incorporable de marca blanca",
+        "apiFirst": "Arquitectura API-first",
+        "sso": "SSO d'empresa i gestió d'usuaris"
+      }
+    },
+    "quote": "\"No només millorem el vídeo—el preparem per al futur.\""
+  },
+  "implementation": {
+    "badge": "IMPLEMENTACIÓ",
+    "title": "Desplega en Minuts, No Mesos",
+    "description": "Tres passos simples cap al compliment d'accessibilitat de grau empresarial",
+    "steps": {
+      "contentInput": {
+        "title": "Entrada de Contingut",
+        "description": "Puja vídeos existents o genera a partir de prompts de text",
+        "features": ["Processament de vídeo en massa", "Generació de vídeo IA", "Integració de transmissió en directe"]
+      },
+      "featureSelection": {
+        "title": "Selecció de Característiques",
+        "description": "Configura característiques d'accessibilitat per al teu cas d'ús",
+        "features": ["Subtítols emocionals", "Descripcions d'àudio", "ASL multiidioma"]
+      },
+      "deployMonitor": {
+        "title": "Desplegà i Monitoritza",
+        "description": "Reproductor preparat per a empresa amb informes de compliment",
+        "features": ["Reproductor incorporable", "Anàlisis en temps real", "Auditories de compliment"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "Integració Zero Code",
+      "userToggleable": "Característiques Activables per l'Usuari",
+      "enterpriseSSO": "Preparat per SSO d'Empresa"
+    },
+    "deployMessage": "Desplega a milions d'usuaris en menys de 30 minuts amb la nostra infraestructura de grau empresarial"
+  },
+  "techStack": {
+    "badge": "Stack Tecnològic",
+    "title": "Infraestructura IA d'Avantguarda",
+    "description": "Construït sobre serveis cloud de grau empresarial i models IA avançats per oferir accessibilitat de vídeo sense precedents a escala.",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "Infraestructura Cloud",
+        "description": "Serveis cloud escalables de grau empresarial"
+      },
+      "aiMachineLearning": {
+        "title": "IA i Aprenentatge Automàtic",
+        "description": "Models IA avançats per a l'accessibilitat",
+        "technologies": ["Models Visió-Llenguatge", "Models ASL Personalitzats", "Integració LLM"]
+      },
+      "voiceAudio": {
+        "title": "Veu i Àudio",
+        "description": "Síntesi de veu adaptativa",
+        "technologies": ["Models de Veu Personalitzats", "Anàlisi d'Àudio"]
+      },
+      "computerVision": {
+        "title": "Visió per Ordinador",
+        "description": "Anàlisi d'escena i comprensió visual",
+        "technologies": ["Integració Blender", "Animació 3D", "Estimació de Postura"]
+      },
+      "complianceSecurity": {
+        "title": "Compliment i Seguretat",
+        "description": "Adherència als estàndards d'accessibilitat",
+        "technologies": ["WCAG 2.1 AA", "Compliment EAA", "Estàndards ADA", "Protocols de Seguretat"]
+      }
+    },
+    "architectureHighlights": {
+      "title": "Aspectes Destacats de l'Arquitectura",
+      "gpu": {
+        "title": "Processament Accelerat per GPU",
+        "description": "Computació d'alt rendiment per a inferència IA en temps real i generació ASL complexa"
+      },
+      "eventDriven": {
+        "title": "Arquitectura Dirigida per Esdeveniments",
+        "description": "Fluxos de treball serverless amb gestió d'errors robusta i mecanismes de retry automàtic"
+      },
+      "complianceFirst": {
+        "title": "Disseny Compliment-Primer",
+        "description": "Validació d'accessibilitat integrada i formatatge de compliment automàtic"
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "Validació de Patent",
+    "title": "Protegint la Innovació Revolucionària",
+    "description": "El nostre MVP valida directament les reivindicacions clau de patent, demostrant propietat intel·lectual única que crea avantatges competitius substancials en el mercat d'accessibilitat.",
+    "validatedBy": "Validat Per:",
+    "claims": {
+      "dataProcessing": {
+        "number": "Reivindicació 1",
+        "title": "Lògica de Processament de Dades",
+        "description": "Pipeline de processament multi-modal automatitzat amb enrutament intel·ligent de dades",
+        "validatedBy": [
+          "ASR amb timestamps precisos a nivell de paraula",
+          "Algoritmes sofisticats de generació de subtítols",
+          "Anàlisi contextual d'escena i resum",
+          "Processament modular amb gestió d'errors"
+        ],
+        "implementation": "Orquestració completa de flux de treball automatitzat"
+      },
+      "avatarGeneration": {
+        "number": "Reivindicació 2",
+        "title": "Generació d'Avatar amb Sincronització Temporal",
+        "description": "Avatars ASL animats per IA amb sincronització precisa de la parla",
+        "validatedBy": [
+          "Tres avatars ASL diferents adequats per a nens",
+          "Parsing de timestamp de parla i mapeig de gestos",
+          "Renderització d'animació combinada amb timeline",
+          "Sincronització en temps real amb contingut parlat"
+        ],
+        "implementation": "Generació ASL avançada amb timing perfecte de píxels"
+      },
+      "complianceLayer": {
+        "number": "Reivindicació 3",
+        "title": "Capa de Compliment Integrada",
+        "description": "Validació i formatatge automàtic de compliment d'accessibilitat",
+        "validatedBy": [
+          "Verificacions de compliment WCAG 2.1 Nivell AA",
+          "Adherència als estàndards EAA i ADA",
+          "Reformatatge automàtic d'elements visuals",
+          "Auditoria i validació de contingut"
+        ],
+        "implementation": "Sistema de verificació d'accessibilitat integrat"
+      }
+    },
+    "strategicImportance": {
+      "title": "Importància Estratègica",
+      "subtitle": "Per què aquestes reivindicacions de patent creen valor de mercat substancial",
+      "differentiation": {
+        "title": "Diferenciació del Mercat",
+        "description": "Característiques úniques que els competidors no poden replicar fàcilment"
+      },
+      "protection": {
+        "title": "Protecció IP",
+        "description": "Drets de propietat intel·lectual aplicables per a tecnologia central"
+      },
+      "investment": {
+        "title": "Valor de l'Inversió",
+        "description": "Innovació provada donant suport al desenvolupament futur i escalabilitat"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "URGÈNCIA DEL MERCAT",
+    "title": "La Bretxa d'Accessibilitat de $13B",
+    "description": "Amb més de 215 milions d'hores de vídeo pujades anualment i les regulacions d'accessibilitat endurint-se globalment, el cost del no-compliment mai ha estat tan alt.",
+    "stats": {
+      "userIssues": {
+        "title": "Problemes d'Accessibilitat de l'Usuari",
+        "description": "Reporten barreres en accedir contingut digital"
+      },
+      "brandAbandonment": {
+        "title": "Abandonament de Marca",
+        "description": "A causa d'experiències d'usuari inaccessibles"
+      },
+      "eaaEnforcement": {
+        "date": "Juny 2025",
+        "title": "Aplicació EAA",
+        "description": "Comencen les penalitats de l'Acta d'Accessibilitat Europea"
+      }
+    },
+    "solution": {
+      "title": "Transforma el Compliment de Centre de Cost a Generador d'Ingressos",
+      "description": "Axessible transforma l'accessibilitat de càrrega regulatòria a avantatge competitiu—permetent empreses, governs i educadors arribar al 100% de la seva audiència mentre asseguren compliment complet en tots els estàndards principals."
+    },
+    "compliance": {
+      "wcag": "Conforme WCAG 2.1 AAA",
+      "ada": "Compatible amb ADA",
+      "eaa": "Preparat per EAA",
+      "section508": "Certificat Secció 508"
+    }
+  },
   "enterprise": {
     "quickAccess": {
       "title": "Comença amb Axessible Video",

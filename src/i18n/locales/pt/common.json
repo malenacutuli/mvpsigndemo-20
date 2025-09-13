@@ -115,6 +115,219 @@
     "language": "Idioma",
     "feature": "Funcionalidade"
   },
+  "hero": {
+    "subtitle": "PLATAFORMA DE ACESSIBILIDADE DE VÍDEO PROJETADA PARA SUA EMPRESA",
+    "headline": "Construa algo melhor.",
+    "headlineSecond": "Para todos.",
+    "description": "Crie experiências inclusivas que atendem aos padrões WCAG e EAA, graças à plataforma líder em acessibilidade digital e ao suporte de serviços especializados.",
+    "cta": "Inicie Seu Upload",
+    "inclusivity": {
+      "title": "Inclusividade vem de padrão",
+      "description": "Tudo, desde legendas personalizáveis até cores de alto contraste, está integrado em cada vídeo que você hospeda com Axessible, então acessibilidade não é algo que você precisa pensar. É simplesmente como seus vídeos são."
+    }
+  },
+  "featureBoxes": {
+    "compliance": {
+      "title": "Conformidade",
+      "description": "Remediação baseada em WCAG 2.1 AA e UNE-EN 301549 para conformidade EAA."
+    },
+    "solutions": {
+      "title": "Soluções Personalizáveis",
+      "description": "Planos projetados para se adaptar a todos os tipos de empresas."
+    },
+    "heavyWork": {
+      "title": "Nós Cuidamos do Trabalho Pesado",
+      "description": "Implementação rápida, sem esforço. Nós fazemos o trabalho pesado."
+    },
+    "contactUs": "Entre em contato"
+  },
+  "industryFirst": {
+    "badge": "PRIMEIRO NA INDÚSTRIA",
+    "title": "Motor de Acessibilidade de Vídeo Multi-Modal",
+    "description": "Onde concorrentes oferecem soluções pontuais, Axessible entrega automação end-to-end. Nossa plataforma com patente pendente transforma acessibilidade de vídeo de fardo de conformidade para vantagem competitiva.",
+    "features": {
+      "aiSync": {
+        "title": "Sincronização IA com Patente Pendente",
+        "description": "Redes neurais avançadas garantem sincronização perfeita entre conteúdo visual e recursos de acessibilidade."
+      },
+      "emotionalCaptions": {
+        "title": "Legendas com Inteligência Emocional",
+        "description": "Legendas conscientes do contexto com detecção de tom e estilo visual para compreensão aprimorada."
+      },
+      "enterprise": {
+        "title": "Recursos Enterprise",
+        "compliance": "Auditoria e relatórios de conformidade integrados",
+        "whiteLabel": "Player incorporável white-label",
+        "apiFirst": "Arquitetura API-first",
+        "sso": "SSO enterprise e gerenciamento de usuários"
+      }
+    },
+    "quote": "\"Não apenas melhoramos o vídeo—nós o preparamos para o futuro.\""
+  },
+  "implementation": {
+    "badge": "IMPLEMENTAÇÃO",
+    "title": "Implante em Minutos, Não Meses",
+    "description": "Três passos simples para conformidade de acessibilidade de nível enterprise",
+    "steps": {
+      "contentInput": {
+        "title": "Entrada de Conteúdo",
+        "description": "Carregue vídeos existentes ou gere a partir de prompts de texto",
+        "features": ["Processamento de vídeo em massa", "Geração de vídeo IA", "Integração de transmissão ao vivo"]
+      },
+      "featureSelection": {
+        "title": "Seleção de Recursos",
+        "description": "Configure recursos de acessibilidade para seu caso de uso",
+        "features": ["Legendas emocionais", "Descrições de áudio", "ASL multilíngue"]
+      },
+      "deployMonitor": {
+        "title": "Implantar e Monitorar",
+        "description": "Player pronto para enterprise com relatórios de conformidade",
+        "features": ["Player incorporável", "Análises em tempo real", "Auditorias de conformidade"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "Integração Zero Code",
+      "userToggleable": "Recursos Alternáveis pelo Usuário",
+      "enterpriseSSO": "Pronto para SSO Enterprise"
+    },
+    "deployMessage": "Implante para milhões de usuários em menos de 30 minutos com nossa infraestrutura de nível enterprise"
+  },
+  "techStack": {
+    "badge": "Stack Tecnológico",
+    "title": "Infraestrutura IA de Ponta",
+    "description": "Construído sobre serviços cloud de nível enterprise e modelos IA avançados para entregar acessibilidade de vídeo incomparável em escala.",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "Infraestrutura Cloud",
+        "description": "Serviços cloud escaláveis de nível enterprise"
+      },
+      "aiMachineLearning": {
+        "title": "IA e Machine Learning",
+        "description": "Modelos IA avançados para acessibilidade",
+        "technologies": ["Modelos Visão-Linguagem", "Modelos ASL Personalizados", "Integração LLM"]
+      },
+      "voiceAudio": {
+        "title": "Voz e Áudio",
+        "description": "Síntese de voz adaptativa",
+        "technologies": ["Modelos de Voz Personalizados", "Análise de Áudio"]
+      },
+      "computerVision": {
+        "title": "Visão Computacional",
+        "description": "Análise de cena e compreensão visual",
+        "technologies": ["Integração Blender", "Animação 3D", "Estimativa de Pose"]
+      },
+      "complianceSecurity": {
+        "title": "Conformidade e Segurança",
+        "description": "Aderência aos padrões de acessibilidade",
+        "technologies": ["WCAG 2.1 AA", "Conformidade EAA", "Padrões ADA", "Protocolos de Segurança"]
+      }
+    },
+    "architectureHighlights": {
+      "title": "Destaques da Arquitetura",
+      "gpu": {
+        "title": "Processamento Acelerado por GPU",
+        "description": "Computação de alto desempenho para inferência IA em tempo real e geração ASL complexa"
+      },
+      "eventDriven": {
+        "title": "Arquitetura Orientada a Eventos",
+        "description": "Fluxos de trabalho serverless com tratamento de erro robusto e mecanismos de retry automático"
+      },
+      "complianceFirst": {
+        "title": "Design Compliance-First",
+        "description": "Validação de acessibilidade integrada e formatação de conformidade automática"
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "Validação de Patente",
+    "title": "Protegendo Inovação Revolucionária",
+    "description": "Nosso MVP valida diretamente reivindicações-chave de patente, demonstrando propriedade intelectual única que cria vantagens competitivas substanciais no mercado de acessibilidade.",
+    "validatedBy": "Validado Por:",
+    "claims": {
+      "dataProcessing": {
+        "number": "Reivindicação 1",
+        "title": "Lógica de Processamento de Dados",
+        "description": "Pipeline de processamento multi-modal automatizado com roteamento inteligente de dados",
+        "validatedBy": [
+          "ASR com timestamps precisos no nível da palavra",
+          "Algoritmos sofisticados de geração de legendas",
+          "Análise contextual de cena e resumo",
+          "Processamento modular com tratamento de erros"
+        ],
+        "implementation": "Orquestração completa de fluxo de trabalho automatizado"
+      },
+      "avatarGeneration": {
+        "number": "Reivindicação 2",
+        "title": "Geração de Avatar com Sincronização Temporal",
+        "description": "Avatares ASL animados por IA com sincronização precisa da fala",
+        "validatedBy": [
+          "Três avatares ASL distintos adequados para crianças",
+          "Parsing de timestamp de fala e mapeamento de gestos",
+          "Renderização de animação combinada com timeline",
+          "Sincronização em tempo real com conteúdo falado"
+        ],
+        "implementation": "Geração ASL avançada com timing perfeito em pixels"
+      },
+      "complianceLayer": {
+        "number": "Reivindicação 3",
+        "title": "Camada de Conformidade Integrada",
+        "description": "Validação e formatação automática de conformidade de acessibilidade",
+        "validatedBy": [
+          "Verificações de conformidade WCAG 2.1 Nível AA",
+          "Aderência aos padrões EAA e ADA",
+          "Reformatação automática de elementos visuais",
+          "Auditoria e validação de conteúdo"
+        ],
+        "implementation": "Sistema de verificação de acessibilidade integrado"
+      }
+    },
+    "strategicImportance": {
+      "title": "Importância Estratégica",
+      "subtitle": "Por que essas reivindicações de patente criam valor de mercado substancial",
+      "differentiation": {
+        "title": "Diferenciação de Mercado",
+        "description": "Recursos únicos que concorrentes não podem facilmente replicar"
+      },
+      "protection": {
+        "title": "Proteção IP",
+        "description": "Direitos de propriedade intelectual executáveis para tecnologia principal"
+      },
+      "investment": {
+        "title": "Valor do Investimento",
+        "description": "Inovação comprovada apoiando desenvolvimento futuro e escalabilidade"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "URGÊNCIA DO MERCADO",
+    "title": "A Lacuna de Acessibilidade de $13B",
+    "description": "Com mais de 215 milhões de horas de vídeo carregadas anualmente e regulamentações de acessibilidade se endurecendo globalmente, o custo da não conformidade nunca foi tão alto.",
+    "stats": {
+      "userIssues": {
+        "title": "Problemas de Acessibilidade do Usuário",
+        "description": "Relatam barreiras ao acessar conteúdo digital"
+      },
+      "brandAbandonment": {
+        "title": "Abandono de Marca",
+        "description": "Devido a experiências de usuário inacessíveis"
+      },
+      "eaaEnforcement": {
+        "date": "Junho 2025",
+        "title": "Aplicação EAA",
+        "description": "Penalidades do Ato de Acessibilidade Europeu começam"
+      }
+    },
+    "solution": {
+      "title": "Transforme Conformidade de Centro de Custo para Gerador de Receita",
+      "description": "Axessible transforma acessibilidade de fardo regulatório para vantagem competitiva—permitindo empresas, governos e educadores alcançarem 100% de sua audiência enquanto garantem conformidade completa em todos os principais padrões."
+    },
+    "compliance": {
+      "wcag": "Conforme WCAG 2.1 AAA",
+      "ada": "Compatível com ADA",
+      "eaa": "Pronto para EAA",
+      "section508": "Certificado Seção 508"
+    }
+  },
   "enterprise": {
     "quickAccess": {
       "title": "Comece com Axessível Video",

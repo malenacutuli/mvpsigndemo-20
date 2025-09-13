@@ -115,6 +115,219 @@
     "language": "Langue",
     "feature": "Fonctionnalité"
   },
+  "hero": {
+    "subtitle": "PLATEFORME D'ACCESSIBILITÉ VIDÉO CONÇUE POUR VOTRE ENTREPRISE",
+    "headline": "Construire quelque chose de mieux.",
+    "headlineSecond": "Pour tout le monde.",
+    "description": "Créez des expériences inclusives qui respectent les normes WCAG et EAA, grâce à la plateforme leader en accessibilité numérique et au soutien de services experts.",
+    "cta": "Commencer Votre Téléchargement",
+    "inclusivity": {
+      "title": "L'inclusivité est standard",
+      "description": "Tout, des sous-titres personnalisables aux couleurs à contraste élevé, est intégré dans chaque vidéo que vous hébergez avec Axessible, donc l'accessibilité n'est pas quelque chose à laquelle vous devez penser. C'est juste la façon dont vos vidéos sont."
+    }
+  },
+  "featureBoxes": {
+    "compliance": {
+      "title": "Conformité",
+      "description": "Remédiation basée sur WCAG 2.1 AA et UNE-EN 301549 pour la conformité EAA."
+    },
+    "solutions": {
+      "title": "Solutions Personnalisables",
+      "description": "Plans conçus pour s'adapter à tous types d'entreprises."
+    },
+    "heavyWork": {
+      "title": "Nous Gérons le Travail Lourd",
+      "description": "Implémentation rapide, sans effort. Nous faisons le gros du travail."
+    },
+    "contactUs": "Contactez-nous"
+  },
+  "industryFirst": {
+    "badge": "PREMIER DE L'INDUSTRIE",
+    "title": "Moteur d'Accessibilité Vidéo Multi-Modal",
+    "description": "Là où les concurrents offrent des solutions ponctuelles, Axessible offre une automatisation de bout en bout. Notre plateforme en instance de brevet transforme l'accessibilité vidéo d'un fardeau de conformité en avantage concurrentiel.",
+    "features": {
+      "aiSync": {
+        "title": "Synchronisation IA en Instance de Brevet",
+        "description": "Les réseaux de neurones avancés assurent une synchronisation parfaite entre le contenu visuel et les fonctionnalités d'accessibilité."
+      },
+      "emotionalCaptions": {
+        "title": "Sous-titres à Intelligence Émotionnelle",
+        "description": "Sous-titres contextuels avec détection de ton et style visuel pour une compréhension améliorée."
+      },
+      "enterprise": {
+        "title": "Fonctionnalités d'Entreprise",
+        "compliance": "Audit et reporting de conformité intégrés",
+        "whiteLabel": "Lecteur incorporable en marque blanche",
+        "apiFirst": "Architecture API-first",
+        "sso": "SSO d'entreprise et gestion des utilisateurs"
+      }
+    },
+    "quote": "\"Nous n'améliorons pas seulement la vidéo—nous la préparons pour l'avenir.\""
+  },
+  "implementation": {
+    "badge": "IMPLÉMENTATION",
+    "title": "Déployez en Minutes, Pas en Mois",
+    "description": "Trois étapes simples vers la conformité d'accessibilité de niveau entreprise",
+    "steps": {
+      "contentInput": {
+        "title": "Saisie de Contenu",
+        "description": "Téléchargez des vidéos existantes ou générez à partir de prompts texte",
+        "features": ["Traitement vidéo en masse", "Génération vidéo IA", "Intégration de flux en direct"]
+      },
+      "featureSelection": {
+        "title": "Sélection de Fonctionnalités",
+        "description": "Configurez les fonctionnalités d'accessibilité pour vos cas d'usage",
+        "features": ["Sous-titres émotionnels", "Descriptions audio", "ASL multilingue"]
+      },
+      "deployMonitor": {
+        "title": "Déployer et Surveiller",
+        "description": "Lecteur prêt pour l'entreprise avec reporting de conformité",
+        "features": ["Lecteur incorporable", "Analyses en temps réel", "Audits de conformité"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "Intégration Sans Code",
+      "userToggleable": "Fonctionnalités Activables par l'Utilisateur",
+      "enterpriseSSO": "Prêt pour SSO d'Entreprise"
+    },
+    "deployMessage": "Déployez vers des millions d'utilisateurs en moins de 30 minutes avec notre infrastructure de niveau entreprise"
+  },
+  "techStack": {
+    "badge": "Stack Technologique",
+    "title": "Infrastructure IA de Pointe",
+    "description": "Construit sur des services cloud de niveau entreprise et des modèles IA avancés pour offrir une accessibilité vidéo inégalée à l'échelle.",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "Infrastructure Cloud",
+        "description": "Services cloud évolutifs de niveau entreprise"
+      },
+      "aiMachineLearning": {
+        "title": "IA et Apprentissage Automatique",
+        "description": "Modèles IA avancés pour l'accessibilité",
+        "technologies": ["Modèles Vision-Langage", "Modèles ASL Personnalisés", "Intégration LLM"]
+      },
+      "voiceAudio": {
+        "title": "Voix et Audio",
+        "description": "Synthèse vocale adaptative",
+        "technologies": ["Modèles Vocaux Personnalisés", "Analyse Audio"]
+      },
+      "computerVision": {
+        "title": "Vision par Ordinateur",
+        "description": "Analyse de scène et compréhension visuelle",
+        "technologies": ["Intégration Blender", "Animation 3D", "Estimation de Pose"]
+      },
+      "complianceSecurity": {
+        "title": "Conformité et Sécurité",
+        "description": "Adhérence aux normes d'accessibilité",
+        "technologies": ["WCAG 2.1 AA", "Conformité EAA", "Normes ADA", "Protocoles de Sécurité"]
+      }
+    },
+    "architectureHighlights": {
+      "title": "Points Forts de l'Architecture",
+      "gpu": {
+        "title": "Traitement Accéléré par GPU",
+        "description": "Calcul haute performance pour l'inférence IA en temps réel et la génération ASL complexe"
+      },
+      "eventDriven": {
+        "title": "Architecture Pilotée par Événements",
+        "description": "Flux de travail serverless avec gestion d'erreur robuste et mécanismes de retry automatique"
+      },
+      "complianceFirst": {
+        "title": "Conception Conformité d'Abord",
+        "description": "Validation d'accessibilité intégrée et formatage de conformité automatique"
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "Validation de Brevet",
+    "title": "Protéger l'Innovation Révolutionnaire",
+    "description": "Notre MVP valide directement les revendications clés de brevet, démontrant une propriété intellectuelle unique qui crée des avantages concurrentiels substantiels sur le marché de l'accessibilité.",
+    "validatedBy": "Validé Par:",
+    "claims": {
+      "dataProcessing": {
+        "number": "Revendication 1",
+        "title": "Logique de Traitement de Données",
+        "description": "Pipeline de traitement multi-modal automatisé avec routage intelligent des données",
+        "validatedBy": [
+          "ASR avec horodatage précis au niveau des mots",
+          "Algorithmes sophistiqués de génération de sous-titres",
+          "Analyse contextuelle de scène et résumé",
+          "Traitement modulaire avec gestion d'erreurs"
+        ],
+        "implementation": "Orchestration complète de flux de travail automatisé"
+      },
+      "avatarGeneration": {
+        "number": "Revendication 2",
+        "title": "Génération d'Avatar avec Synchronisation Temporelle",
+        "description": "Avatars ASL animés par IA avec synchronisation précise de la parole",
+        "validatedBy": [
+          "Trois avatars ASL distincts adaptés aux enfants",
+          "Analyse d'horodatage de parole et mappage de gestes",
+          "Rendu d'animation correspondant à la timeline",
+          "Synchronisation en temps réel avec le contenu parlé"
+        ],
+        "implementation": "Génération ASL avancée avec synchronisation pixel-parfaite"
+      },
+      "complianceLayer": {
+        "number": "Revendication 3",
+        "title": "Couche de Conformité Intégrée",
+        "description": "Validation et formatage automatiques de conformité d'accessibilité",
+        "validatedBy": [
+          "Vérifications de conformité WCAG 2.1 Niveau AA",
+          "Adhérence aux normes EAA et ADA",
+          "Reformatage automatique des éléments visuels",
+          "Audit et validation de contenu"
+        ],
+        "implementation": "Système de vérification d'accessibilité intégré"
+      }
+    },
+    "strategicImportance": {
+      "title": "Importance Stratégique",
+      "subtitle": "Pourquoi ces revendications de brevet créent une valeur de marché substantielle",
+      "differentiation": {
+        "title": "Différenciation du Marché",
+        "description": "Fonctionnalités uniques que les concurrents ne peuvent pas facilement répliquer"
+      },
+      "protection": {
+        "title": "Protection IP",
+        "description": "Droits de propriété intellectuelle applicables pour la technologie de base"
+      },
+      "investment": {
+        "title": "Valeur d'Investissement",
+        "description": "Innovation prouvée soutenant le développement futur et la mise à l'échelle"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "URGENCE DU MARCHÉ",
+    "title": "L'Écart d'Accessibilité de 13B$",
+    "description": "Avec plus de 215 millions d'heures de vidéo téléchargées annuellement et les réglementations d'accessibilité se durcissant globalement, le coût de la non-conformité n'a jamais été aussi élevé.",
+    "stats": {
+      "userIssues": {
+        "title": "Problèmes d'Accessibilité Utilisateur",
+        "description": "Signalent des barrières lors de l'accès au contenu numérique"
+      },
+      "brandAbandonment": {
+        "title": "Abandon de Marque",
+        "description": "En raison d'expériences utilisateur inaccessibles"
+      },
+      "eaaEnforcement": {
+        "date": "Juin 2025",
+        "title": "Application EAA",
+        "description": "Les pénalités de l'Acte d'Accessibilité Européen commencent"
+      }
+    },
+    "solution": {
+      "title": "Transformer la Conformité de Centre de Coût en Générateur de Revenus",
+      "description": "Axessible transforme l'accessibilité d'un fardeau réglementaire en avantage concurrentiel—permettant aux entreprises, gouvernements et éducateurs d'atteindre 100% de leur audience tout en assurant une conformité complète à tous les standards majeurs."
+    },
+    "compliance": {
+      "wcag": "Conforme WCAG 2.1 AAA",
+      "ada": "Compatible ADA",
+      "eaa": "Prêt EAA",
+      "section508": "Certifié Section 508"
+    }
+  },
   "enterprise": {
     "quickAccess": {
       "title": "Commencez avec Axessible Video",
