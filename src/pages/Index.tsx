@@ -14,13 +14,13 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div className="space-y-8">
-                <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-foreground leading-[0.9] tracking-tight">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold text-slate-800 leading-[0.9] tracking-tight">
                   Where Every Story is{" "}
                   <span className="text-primary block">Truly Seen</span>,{" "}
                   <span className="block">Heard, and Felt.</span>
                 </h1>
                 
-                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-medium max-w-2xl">
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed font-normal max-w-2xl">
                   The world's first video platform designed for everyone - powered by captions with intention, 
                   creative audio descriptions, and immersive accessibility tools.
                 </p>
@@ -70,11 +70,11 @@ const Index = () => {
       <section className="py-32 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-5xl md:text-6xl font-black text-foreground mb-12 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-semibold text-slate-800 mb-12 leading-tight">
               Because most videos leave someone out.
             </h2>
-            <div className="space-y-8 text-lg text-muted-foreground max-w-4xl mx-auto">
-              <p className="text-xl leading-relaxed">On other platforms, videos are easy to share - but not always easy to experience.</p>
+            <div className="space-y-8 text-lg text-slate-600 max-w-4xl mx-auto">
+              <p className="text-lg leading-relaxed">On other platforms, videos are easy to share - but not always easy to experience.</p>
               <div className="grid md:grid-cols-3 gap-8 my-16">
                 <div className="bg-card p-8 rounded-2xl border shadow-soft">
                   <p className="font-bold text-foreground text-lg">Captions miss the nuance.</p>
@@ -98,7 +98,7 @@ const Index = () => {
       <section className="py-32 bg-background">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-5xl md:text-6xl font-black text-center text-foreground mb-20 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-semibold text-center text-slate-800 mb-20 leading-tight">
               Video without barriers.
             </h2>
             
@@ -234,7 +234,7 @@ const Index = () => {
       <section className="py-32 bg-background">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-5xl md:text-6xl font-black text-center text-foreground mb-20 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-semibold text-center text-slate-800 mb-20 leading-tight">
               See What Our Viewers Are Saying
             </h2>
             

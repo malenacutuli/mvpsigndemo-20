@@ -19,10 +19,10 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover: 0 0% 100%;
     --popover-foreground: 210 15% 8%;
 
-    /* Primary: Eko-inspired purple-blue for modern appeal */
-    --primary: 262 83% 58%;
+    /* Primary: Calmer blue inspired by Eko */
+    --primary: 214 100% 47%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 262 83% 68%;
+    --primary-glow: 214 100% 57%;
 
     /* Secondary: Warm neutral for supporting elements */
     --secondary: 210 30% 92%;
@@ -54,14 +54,14 @@ Focused on high contrast, readable typography, and inclusive design.
 
     --border: 210 30% 88%;
     --input: 210 30% 95%;
-    --ring: 262 83% 58%;
+    --ring: 214 100% 47%;
 
     --radius: 0.75rem;
 
-    /* Eko-inspired design tokens for modern appeal */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 83% 68%));
-    --shadow-elegant: 0 10px 30px -10px hsl(262 83% 58% / 0.2);
-    --shadow-soft: 0 4px 20px -4px hsl(220 13% 91% / 0.4);
+    /* Calmer design tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(214 100% 47%), hsl(214 100% 57%));
+    --shadow-elegant: 0 10px 30px -10px hsl(214 100% 47% / 0.15);
+    --shadow-soft: 0 4px 20px -4px hsl(220 13% 91% / 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --spacing-hero: 4rem;
     --font-size-hero: 3.5rem;
@@ -93,7 +93,7 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 262 83% 62%;
+    --primary: 214 100% 57%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -102,15 +102,15 @@ Focused on high contrast, readable typography, and inclusive design.
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 262 83% 25%;
-    --accent-foreground: 262 83% 82%;
+    --accent: 214 100% 25%;
+    --accent-foreground: 214 100% 82%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 262 83% 62%;
+    --ring: 214 100% 57%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
