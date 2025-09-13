@@ -841,11 +841,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           />
         )}
 
-      {/* Control Overlay - Positioned lower to avoid caption overlap with fullscreen/mobile adjustments */}
+      {/* Control Overlay - Always visible on mobile for accessibility */}
       <div 
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent ${
-          isMobile && (isFullscreen || isMobileFullscreen) ? 'pb-4 pt-12 px-4 z-50' : 'pb-2 pt-8 px-2'
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent ${
+          isMobile ? 'pb-safe-bottom pt-12 px-4 z-[60]' : 'pb-2 pt-8 px-2'
         } opacity-100 transition-all duration-300`}
+        style={{ 
+          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '8px'
+        }}
       >
         {/* Progress Bar - Extra space from captions */}
         <div className="mb-4">

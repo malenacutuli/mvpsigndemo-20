@@ -288,11 +288,20 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   // Enhanced word timing and highlighting logic
   const TIMING_TOLERANCE = 0.01; // 10ms tolerance for ultra-precise sync
   
+  // Truncate text for mobile portrait to prevent excessive screen coverage
+  const isMobilePortrait = window.innerWidth < 640 && window.innerHeight > window.innerWidth;
+  let captionText = activeCaption.text;
+  if (isMobilePortrait && captionText.length > 50) {
+    // Find a good break point (space or punctuation) within the limit
+    const truncateAt = captionText.lastIndexOf(' ', 50) || captionText.lastIndexOf(',', 50) || 50;
+    captionText = captionText.substring(0, truncateAt) + '...';
+  }
+  
   // Synthesize word-level timing if missing
-  let workingCaption = { ...activeCaption };
+  let workingCaption = { ...activeCaption, text: captionText };
   if (!workingCaption.words || workingCaption.words.length === 0) {
     console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
-    const words = workingCaption.text.trim().split(/\s+/).filter(Boolean);
+    const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
     const wordDuration = Math.max(0.15, duration / words.length); // Min 150ms per word
     
@@ -364,17 +373,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="relative bottom-0 left-0 right-0 flex items-end justify-center pointer-events-none"
+      className="absolute bottom-16 sm:bottom-24 left-2 right-2 sm:left-4 sm:right-4 flex items-end justify-center pointer-events-none z-50"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box - Mobile Responsive */}
       <div 
         className={`
-          relative w-full max-w-sm sm:max-w-2xl text-center
-          ${isLoudBurst ? '' : 'bg-black/85'} 
+          relative w-full max-w-xs sm:max-w-2xl text-center
+          ${isLoudBurst ? '' : 'bg-black/90'} 
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-3 py-2 sm:px-4 sm:py-3'}
-          ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
+          ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
+          ${isLoudBurst ? '' : 'mx-1 sm:mx-4'}
         `}
         style={{
           // For loud bursts, captions break out of the box
