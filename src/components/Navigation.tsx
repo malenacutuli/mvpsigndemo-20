@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Upload, Menu } from 'lucide-react';
 import { AuthButton } from '@/components/AuthButton';
 import { useAuth } from '@/hooks/useAuth';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   const isActivePath = (path: string) => location.pathname === path;
   
@@ -38,7 +41,7 @@ export const Navigation: React.FC = () => {
                   : 'text-slate-600'
               }`}
             >
-              Explore
+              {t('nav.explore')}
             </Link>
             
             <Link 
@@ -49,7 +52,7 @@ export const Navigation: React.FC = () => {
                   : 'text-slate-600'
               }`}
             >
-              Enterprise
+              {t('nav.enterprise')}
             </Link>
             
             <Link 
@@ -60,7 +63,7 @@ export const Navigation: React.FC = () => {
                   : 'text-slate-600'
               }`}
             >
-              Pricing
+              {t('nav.pricing')}
             </Link>
             
             {user && (
@@ -73,7 +76,7 @@ export const Navigation: React.FC = () => {
                       : 'text-slate-600'
                   }`}
                 >
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
                 
                 <Link 
@@ -84,7 +87,7 @@ export const Navigation: React.FC = () => {
                       : 'text-slate-600'
                   }`}
                 >
-                  My Videos
+                  {t('nav.myVideos')}
                 </Link>
               </>
             )}
@@ -95,11 +98,12 @@ export const Navigation: React.FC = () => {
             {!user && (
               <Button asChild variant="default" size="lg" className="font-semibold px-8 py-3 rounded-full">
                 <Link to="/auth">
-                  Get Started
+                  {t('nav.getStarted')}
                 </Link>
               </Button>
             )}
             
+            <LanguageSwitcher />
             <AuthButton />
           </div>
           
@@ -108,10 +112,11 @@ export const Navigation: React.FC = () => {
             {!user && (
               <Button asChild variant="default" size="sm" className="font-semibold rounded-full">
                 <Link to="/auth">
-                  Start
+                  {t('nav.start')}
                 </Link>
               </Button>
             )}
+            <LanguageSwitcher />
             <AuthButton />
           </div>
         </div>

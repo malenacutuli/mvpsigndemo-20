@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "explore": "Explore",
+    "enterprise": "Enterprise", 
+    "pricing": "Pricing",
+    "dashboard": "Dashboard",
+    "myVideos": "My Videos",
+    "getStarted": "Get Started",
+    "start": "Start"
+  },
+  "hero": {
+    "title": "Where Every Story is",
+    "titleAccent": "Truly Seen,",
+    "titleEnd": "Heard, and Felt.",
+    "subtitle": "The world's first video platform designed for everyone - powered by captions with intention, creative audio descriptions, and immersive accessibility tools.",
+    "startWatching": "Start Watching",
+    "shareContent": "Share Your Content"
+  },
+  "sections": {
+    "whyWeExist": {
+      "title": "Because most videos leave someone out.",
+      "description": "On other platforms, videos are easy to share - but not always easy to experience.",
+      "captionsMiss": "Captions miss the nuance.",
+      "audioDescriptionsRare": "Audio descriptions are rare or robotic.",
+      "signLanguageNever": "Sign language? Almost never.",
+      "belief": "We believe access isn't a feature. It's the future of storytelling."
+    },
+    "axessibleExperience": {
+      "title": "Video without barriers.",
+      "captionsTitle": "Captions with Intention",
+      "captionsDesc": "More than words. Dynamic, expressive captions that move, pause, and flow with emotion.",
+      "audioDescTitle": "Creative Audio Descriptions", 
+      "audioDescDesc": "Not robotic - but cinematic narration that paints the scene, so those who listen feel everything.",
+      "signLanguageTitle": "Work with us to create Sign Language Descriptions for your videos",
+      "signLanguageDesc": "Driven by experts, making inclusion natural.",
+      "playerTitle": "Universal Player",
+      "playerDesc": "Designed for everyone: adjust text size, color, playback, narration speed - all in one simple player."
+    },
+    "forViewers": {
+      "title": "Delight in a richer way to watch.",
+      "description": "Axessible isn't just for people with disabilities. It's for anyone who loves stories:",
+      "captionsDesign": "Captions that double as design.",
+      "narrationDimension": "Narration that adds dimension.",
+      "signLanguageArt": "Sign language as living art.",
+      "watchingFeels": "Watching here feels more human.",
+      "startWatching": "Start Watching"
+    },
+    "forCreators": {
+      "title": "Turn your videos into experiences everyone can share.",
+      "description": "Upload your content — and our platform transforms it with:",
+      "aiTools": "AI-driven accessibility tools",
+      "humanGuidance": "Human-guided refinement", 
+      "compliance": "Automatic compliance with global accessibility standards",
+      "storiesReach": "So your stories don't just reach more people…",
+      "storiesMove": "They move more people.",
+      "shareContent": "Share Your Content"
+    },
+    "community": {
+      "title": "A platform built with - not just for - the community.",
+      "collaborate": "We collaborate with deaf, blind, and disabled creators, educators, and advocates to design every feature.",
+      "everyVideo": "Every video added here helps make the internet more inclusive.",
+      "buildingLibrary": "Together, we're building a library of stories that everyone can truly experience.",
+      "visionaries": "From global brands to indie creators, these are the visionaries who believe access isn't an afterthought - it's the future of video.",
+      "meetPioneers": "Meet the Pioneers of Inclusive Storytelling"
+    },
+    "testimonials": {
+      "title": "See What Our Viewers Are Saying",
+      "engagementIncrease": "Increase in",
+      "viewerEngagement": "viewer engagement",
+      "betterComprehension": "Better", 
+      "contentComprehension": "content comprehension",
+      "moreVideos": "More",
+      "accessibleVideos": "accessible videos created",
+      "testimonial1": "I never realized captions could feel this alive.",
+      "testimonial2": "Audio descriptions here are like poetry - they pull you deeper into the story.",
+      "testimonial3": "Watching on Axessible feels better, whether you rely on accessibility or not."
+    },
+    "cta": {
+      "title": "Access isn't optional. It's storytelling reimagined.",
+      "subtitle": "Join the platform where every story belongs.",
+      "watchNow": "Watch Now",
+      "shareContent": "Share Your Content"
+    }
+  },
+  "footer": {
+    "tagline": "Hear the Unheard. See the Unseen.",
+    "about": "About",
+    "community": "Community", 
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "contact": "Contact",
+    "accessibilityStatement": "Accessibility Statement",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "copyright": "© 2025 Axessible Tech, INC. All rights reserved."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "upload": "Upload",
+    "download": "Download",
+    "share": "Share",
+    "copy": "Copy",
+    "language": "Language"
+  }
+}

@@ -2,8 +2,10 @@ import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Play, Upload, Eye, Ear, Hand } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Index = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -14,27 +16,26 @@ const Index = () => {
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium text-black leading-[0.9] tracking-tight">
-                Where Every Story is{" "}
-                <span className="text-primary block">Truly Seen,</span>{" "}
-                <span className="block">Heard, and Felt.</span>
+                {t('hero.title')}{" "}
+                <span className="text-primary block">{t('hero.titleAccent')}</span>{" "}
+                <span className="block">{t('hero.titleEnd')}</span>
               </h1>
               
               <p className="text-lg md:text-xl text-slate-700 font-light leading-relaxed max-w-3xl mx-auto">
-                The world's first video platform designed for everyone - powered by captions with intention, 
-                creative audio descriptions, and immersive accessibility tools.
+                {t('hero.subtitle')}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
                 <Button asChild size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
                   <Link to="/explore">
                     <Play className="w-5 h-5 mr-3" />
-                    Start Watching
+                    {t('hero.startWatching')}
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-semibold rounded-full h-auto">
                   <Link to="/upload">
                     <Upload className="w-5 h-5 mr-3" />
-                    Share Your Content
+                    {t('hero.shareContent')}
                   </Link>
                 </Button>
               </div>
@@ -47,24 +48,24 @@ const Index = () => {
       <section className="py-32 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-extralight text-black mb-12 leading-tight">
-              Because most videos leave someone out.
+            <h2 className="text-4xl md:text-5xl font-extralight text-center text-black mb-20 leading-tight">
+              {t('sections.whyWeExist.title')}
             </h2>
             <div className="space-y-8 text-lg text-slate-700 max-w-4xl mx-auto">
-              <p className="text-lg leading-relaxed">On other platforms, videos are easy to share - but not always easy to experience.</p>
+              <p className="text-lg leading-relaxed">{t('sections.whyWeExist.description')}</p>
               <div className="grid md:grid-cols-3 gap-8 my-16">
                 <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-bold text-foreground text-lg">Captions miss the nuance.</p>
+                  <p className="font-bold text-foreground text-lg">{t('sections.whyWeExist.captionsMiss')}</p>
                 </div>
                 <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-bold text-foreground text-lg">Audio descriptions are rare or robotic.</p>
+                  <p className="font-bold text-foreground text-lg">{t('sections.whyWeExist.audioDescriptionsRare')}</p>
                 </div>
                 <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-bold text-foreground text-lg">Sign language? Almost never.</p>
+                  <p className="font-bold text-foreground text-lg">{t('sections.whyWeExist.signLanguageNever')}</p>
                 </div>
               </div>
               <p className="text-2xl font-bold text-primary leading-relaxed">
-                We believe access isn't a feature. It's the future of storytelling.
+                {t('sections.whyWeExist.belief')}
               </p>
             </div>
           </div>

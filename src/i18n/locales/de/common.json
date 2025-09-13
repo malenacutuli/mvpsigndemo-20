@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "explore": "Entdecken",
+    "enterprise": "Unternehmen", 
+    "pricing": "Preise",
+    "dashboard": "Dashboard",
+    "myVideos": "Meine Videos",
+    "getStarted": "Loslegen",
+    "start": "Start"
+  },
+  "hero": {
+    "title": "Wo Jede Geschichte",
+    "titleAccent": "Wirklich Gesehen,",
+    "titleEnd": "Gehört und Gefühlt wird.",
+    "subtitle": "Die weltweit erste Videoplattform für alle - angetrieben von Untertiteln mit Absicht, kreativen Audiobeschreibungen und immersiven Barrierefreiheitstools.",
+    "startWatching": "Videos Ansehen",
+    "shareContent": "Inhalte Teilen"
+  },
+  "sections": {
+    "whyWeExist": {
+      "title": "Weil die meisten Videos jemanden ausschließen.",
+      "description": "Auf anderen Plattformen sind Videos einfach zu teilen - aber nicht immer einfach zu erleben.",
+      "captionsMiss": "Untertitel verpassen die Nuancen.",
+      "audioDescriptionsRare": "Audiobeschreibungen sind selten oder roboterhaft.",
+      "signLanguageNever": "Gebärdensprache? Fast nie.",
+      "belief": "Wir glauben, dass Zugang kein Feature ist. Es ist die Zukunft des Geschichtenerzählens."
+    },
+    "axessibleExperience": {
+      "title": "Video ohne Barrieren.",
+      "captionsTitle": "Untertitel mit Absicht",
+      "captionsDesc": "Mehr als Worte. Dynamische, ausdrucksstarke Untertitel, die sich bewegen, pausieren und mit Emotionen fließen.",
+      "audioDescTitle": "Kreative Audiobeschreibungen", 
+      "audioDescDesc": "Nicht roboterhaft - sondern kinematografische Erzählung, die die Szene malt, damit Zuhörer alles fühlen.",
+      "signLanguageTitle": "Arbeiten Sie mit uns zusammen, um Gebärdensprach-Beschreibungen für Ihre Videos zu erstellen",
+      "signLanguageDesc": "Von Experten geleitet, macht Inklusion natürlich.",
+      "playerTitle": "Universeller Player",
+      "playerDesc": "Für alle entwickelt: Textgröße, Farbe, Wiedergabe, Erzählgeschwindigkeit anpassen - alles in einem einfachen Player."
+    },
+    "forViewers": {
+      "title": "Erfreuen Sie sich an einer reicheren Art zu schauen.",
+      "description": "Axessible ist nicht nur für Menschen mit Behinderungen. Es ist für alle, die Geschichten lieben:",
+      "captionsDesign": "Untertitel, die als Design funktionieren.",
+      "narrationDimension": "Erzählung, die Dimension hinzufügt.",
+      "signLanguageArt": "Gebärdensprache als lebende Kunst.",
+      "watchingFeels": "Hier zu schauen fühlt sich menschlicher an.",
+      "startWatching": "Videos Ansehen"
+    },
+    "forCreators": {
+      "title": "Verwandeln Sie Ihre Videos in Erfahrungen, die alle teilen können.",
+      "description": "Laden Sie Ihre Inhalte hoch - und unsere Plattform verwandelt sie mit:",
+      "aiTools": "KI-getriebene Barrierefreiheitstools",
+      "humanGuidance": "Menschlich geführte Verfeinerung", 
+      "compliance": "Automatische Einhaltung globaler Barrierefreiheitsstandards",
+      "storiesReach": "Damit Ihre Geschichten nicht nur mehr Menschen erreichen…",
+      "storiesMove": "Sie bewegen mehr Menschen.",
+      "shareContent": "Inhalte Teilen"
+    },
+    "community": {
+      "title": "Eine Plattform, die mit - nicht nur für - die Gemeinschaft gebaut wurde.",
+      "collaborate": "Wir arbeiten mit tauben, blinden und behinderten Schöpfern, Pädagogen und Befürwortern zusammen, um jede Funktion zu gestalten.",
+      "everyVideo": "Jedes hier hinzugefügte Video hilft, das Internet inklusiver zu machen.",
+      "buildingLibrary": "Zusammen bauen wir eine Bibliothek von Geschichten auf, die jeder wirklich erleben kann.",
+      "visionaries": "Von globalen Marken bis hin zu unabhängigen Schöpfern - das sind die Visionäre, die glauben, dass Zugang kein nachträglicher Gedanke ist - es ist die Zukunft des Videos.",
+      "meetPioneers": "Treffen Sie die Pioniere des inklusiven Geschichtenerzählens"
+    },
+    "testimonials": {
+      "title": "Sehen Sie, was unsere Zuschauer sagen",
+      "engagementIncrease": "Steigerung des",
+      "viewerEngagement": "Zuschauer-Engagements",
+      "betterComprehension": "Besseres", 
+      "contentComprehension": "Inhaltsverständnis",
+      "moreVideos": "Mehr",
+      "accessibleVideos": "barrierefreie Videos erstellt",
+      "testimonial1": "Ich hätte nie gedacht, dass sich Untertitel so lebendig anfühlen können.",
+      "testimonial2": "Audiobeschreibungen hier sind wie Poesie - sie ziehen dich tiefer in die Geschichte.",
+      "testimonial3": "Auf Axessible zu schauen fühlt sich besser an, egal ob du auf Barrierefreiheit angewiesen bist oder nicht."
+    },
+    "cta": {
+      "title": "Zugang ist nicht optional. Es ist Geschichtenerzählen neu erfunden.",
+      "subtitle": "Treten Sie der Plattform bei, wo jede Geschichte hingehört.",
+      "watchNow": "Jetzt Ansehen",
+      "shareContent": "Inhalte Teilen"
+    }
+  },
+  "footer": {
+    "tagline": "Hören Sie das Ungehörte. Sehen Sie das Unsichtbare.",
+    "about": "Über uns",
+    "community": "Gemeinschaft", 
+    "pricing": "Preise",
+    "blog": "Blog",
+    "contact": "Kontakt",
+    "accessibilityStatement": "Barrierefreiheitserklärung",
+    "terms": "AGB",
+    "privacy": "Datenschutz",
+    "copyright": "© 2025 Axessible Tech, INC. Alle Rechte vorbehalten."
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Vorherige",
+    "search": "Suchen",
+    "filter": "Filter",
+    "upload": "Hochladen",
+    "download": "Herunterladen",
+    "share": "Teilen",
+    "copy": "Kopieren",
+    "language": "Sprache"
+  }
+}

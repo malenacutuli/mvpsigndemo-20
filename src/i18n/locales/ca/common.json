@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "explore": "Explorar",
+    "enterprise": "Empresa", 
+    "pricing": "Preus",
+    "dashboard": "Tauler",
+    "myVideos": "Els Meus Vídeos",
+    "getStarted": "Començar",
+    "start": "Inici"
+  },
+  "hero": {
+    "title": "On Cada Història és",
+    "titleAccent": "Veritablement Vista,",
+    "titleEnd": "Escoltada i Sentida.",
+    "subtitle": "La primera plataforma de vídeo del món dissenyada per a tothom - impulsada per subtítols amb intenció, descripcions d'àudio creatives i eines d'accessibilitat immersives.",
+    "startWatching": "Començar a Veure",
+    "shareContent": "Comparteix el teu Contingut"
+  },
+  "sections": {
+    "whyWeExist": {
+      "title": "Perquè la majoria de vídeos deixen algú fora.",
+      "description": "En altres plataformes, els vídeos són fàcils de compartir - però no sempre fàcils d'experimentar.",
+      "captionsMiss": "Els subtítols perden els matisos.",
+      "audioDescriptionsRare": "Les descripcions d'àudio són rares o robòtiques.",
+      "signLanguageNever": "Llengua de signes? Gairebé mai.",
+      "belief": "Creiem que l'accés no és una característica. És el futur de la narrativa."
+    },
+    "axessibleExperience": {
+      "title": "Vídeo sense barreres.",
+      "captionsTitle": "Subtítols amb Intenció",
+      "captionsDesc": "Més que paraules. Subtítols dinàmics i expressius que es mouen, pausen i flueixen amb emoció.",
+      "audioDescTitle": "Descripcions d'Àudio Creatives", 
+      "audioDescDesc": "No robòtiques - sinó narració cinematogràfica que pinta l'escena, perquè qui escolta senti tot.",
+      "signLanguageTitle": "Treballa amb nosaltres per crear Descripcions en Llengua de Signes per als teus vídeos",
+      "signLanguageDesc": "Dirigit per experts, fent la inclusió natural.",
+      "playerTitle": "Reproductor Universal",
+      "playerDesc": "Dissenyat per a tothom: ajusta mida del text, color, reproducció, velocitat de narració - tot en un reproductor simple."
+    },
+    "forViewers": {
+      "title": "Gaudeix d'una manera més rica de veure.",
+      "description": "Axessible no és només per a persones amb discapacitats. És per a qualsevol que estimi les històries:",
+      "captionsDesign": "Subtítols que funcionen com a disseny.",
+      "narrationDimension": "Narració que afegeix dimensió.",
+      "signLanguageArt": "Llengua de signes com art viu.",
+      "watchingFeels": "Veure aquí sembla més humà.",
+      "startWatching": "Començar a Veure"
+    },
+    "forCreators": {
+      "title": "Transforma els teus vídeos en experiències que tothom pot compartir.",
+      "description": "Puja el teu contingut — i la nostra plataforma el transforma amb:",
+      "aiTools": "Eines d'accessibilitat impulsades per IA",
+      "humanGuidance": "Refinament guiat per humans", 
+      "compliance": "Compliment automàtic amb estàndards globals d'accessibilitat",
+      "storiesReach": "Perquè les teves històries no només arribin a més persones…",
+      "storiesMove": "Sinó que commoguin més persones.",
+      "shareContent": "Comparteix el teu Contingut"
+    },
+    "community": {
+      "title": "Una plataforma construïda amb - no només per a - la comunitat.",
+      "collaborate": "Col·laborem amb creadors, educadors i defensors sords, cecs i discapacitats per dissenyar cada característica.",
+      "everyVideo": "Cada vídeo afegit aquí ajuda a fer internet més inclusiu.",
+      "buildingLibrary": "Junts, estem construint una biblioteca d'històries que tothom pot experimentar veritablement.",
+      "visionaries": "Des de marques globals fins a creadors independents, aquests són els visionaris que creuen que l'accés no és una reflexió tardana - és el futur del vídeo.",
+      "meetPioneers": "Coneix els Pioners de la Narrativa Inclusiva"
+    },
+    "testimonials": {
+      "title": "Mira el que Diuen els Nostres Espectadors",
+      "engagementIncrease": "Augment en",
+      "viewerEngagement": "compromís de l'espectador",
+      "betterComprehension": "Millor", 
+      "contentComprehension": "comprensió del contingut",
+      "moreVideos": "Més",
+      "accessibleVideos": "vídeos accessibles creats",
+      "testimonial1": "Mai vaig adonar-me que els subtítols podrien semblar tan vius.",
+      "testimonial2": "Les descripcions d'àudio aquí són com poesia - et submergeixen més profund en la història.",
+      "testimonial3": "Veure a Axessible sembla millor, tant si depens de l'accessibilitat com si no."
+    },
+    "cta": {
+      "title": "L'accés no és opcional. És narrativa reimaginada.",
+      "subtitle": "Uneix-te a la plataforma on cada història pertany.",
+      "watchNow": "Veure Ara",
+      "shareContent": "Comparteix el teu Contingut"
+    }
+  },
+  "footer": {
+    "tagline": "Escolta l'Inescoltable. Veu l'Invisible.",
+    "about": "Sobre",
+    "community": "Comunitat", 
+    "pricing": "Preus",
+    "blog": "Blog",
+    "contact": "Contacte",
+    "accessibilityStatement": "Declaració d'Accessibilitat",
+    "terms": "Condicions",
+    "privacy": "Privacitat",
+    "copyright": "© 2025 Axessible Tech, INC. Tots els drets reservats."
+  },
+  "common": {
+    "loading": "Carregant...",
+    "error": "Error",
+    "success": "Èxit",
+    "cancel": "Cancel·lar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Tancar",
+    "back": "Enrere",
+    "next": "Següent",
+    "previous": "Anterior",
+    "search": "Cercar",
+    "filter": "Filtrar",
+    "upload": "Pujar",
+    "download": "Descarregar",
+    "share": "Compartir",
+    "copy": "Copiar",
+    "language": "Idioma"
+  }
+}
