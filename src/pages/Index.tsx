@@ -254,21 +254,19 @@ const Index = () => {
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "I never realized captions could feel this alive."
                 </p>
-                <p className="font-bold text-foreground">— Viewer</p>
               </div>
               
               <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "Audio descriptions here are like poetry - they pull you deeper into the story."
                 </p>
-                <p className="font-bold text-foreground">— Viewer</p>
               </div>
               
               <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
                 <p className="text-lg text-muted-foreground mb-6 italic leading-relaxed">
                   "Watching on Axessible feels better, whether you rely on accessibility or not."
                 </p>
-                <p className="font-bold text-foreground">— Viewer</p>
+                
               </div>
             </div>
           </div>
