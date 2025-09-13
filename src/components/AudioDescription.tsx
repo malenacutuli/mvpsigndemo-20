@@ -218,6 +218,12 @@ useEffect(() => {
     }
   };
 
+  // Safely format times that may be null/undefined
+  const formatTime = (t: unknown) => {
+    const n = Number(t);
+    return Number.isFinite(n) ? n.toFixed(1) : '—';
+  };
+
   return (
     <div className="fixed bottom-4 right-4 max-w-md p-4 bg-black/90 border border-white/20 rounded-lg shadow-xl backdrop-blur-sm z-50">
       <div className="flex items-start gap-3">
@@ -258,7 +264,7 @@ useEffect(() => {
           
           <div className="flex items-center justify-between mt-2 text-xs text-white/60">
             <span>
-              {currentDescription.startTime.toFixed(1)}s - {currentDescription.endTime.toFixed(1)}s
+              {formatTime(currentDescription.startTime)}s - {formatTime(currentDescription.endTime)}s
             </span>
             <span>
               {isGenerating ? 'Generating...' : isDescriptionPlaying ? 'Playing' : 'Ready'}
