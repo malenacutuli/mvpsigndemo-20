@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
 import { 
@@ -21,7 +22,8 @@ import {
   TrendingUp,
   Bookmark,
   User,
-  ChevronRight
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -69,6 +71,7 @@ const Explore = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('videos');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -266,21 +269,48 @@ const Explore = () => {
     return languages[lang] || lang;
   };
 
+  const SidebarContent = () => (
+    <div className="p-4">
+      <div className="space-y-1">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === item.id 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="flex">
-          <div className="w-64 border-r bg-card p-4">
+          <div className="hidden lg:block w-64 border-r bg-card p-4">
             <div className="space-y-2">
               {[...Array(6)].map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
           </div>
-          <div className="flex-1 p-6">
-            <Skeleton className="h-10 w-96 mb-6" />
-            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="flex-1 p-4 sm:p-6">
+            <Skeleton className="h-10 w-full sm:w-96 mb-6" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(12)].map((_, i) => (
                 <Skeleton key={i} className="h-64 w-full" />
               ))}
@@ -296,41 +326,36 @@ const Explore = () => {
       <Navigation />
       
       <div className="flex">
-        <div className="w-64 border-r bg-card min-h-screen">
-          <div className="p-4">
-            <div className="space-y-1">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === item.id 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block w-64 border-r bg-card min-h-screen">
+          <SidebarContent />
         </div>
 
         <div className="flex-1">
           <div className="border-b bg-card">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-bold">
-                  {activeTab === 'videos' && t('explore.title')}
-                  {activeTab === 'channels' && t('explore.channels')}
-                  {activeTab === 'subscribed' && t('explore.subscribed')}
-                  {activeTab === 'trending' && t('explore.trending')}
-                  {activeTab === 'saved' && t('explore.saved')}
-                </h1>
+                <div className="flex items-center gap-3">
+                  {/* Mobile Menu Trigger */}
+                  <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="sm" className="lg:hidden">
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-64 p-0">
+                      <SidebarContent />
+                    </SheetContent>
+                  </Sheet>
+                  
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    {activeTab === 'videos' && t('explore.title')}
+                    {activeTab === 'channels' && t('explore.channels')}
+                    {activeTab === 'subscribed' && t('explore.subscribed')}
+                    {activeTab === 'trending' && t('explore.trending')}
+                    {activeTab === 'saved' && t('explore.saved')}
+                  </h1>
+                </div>
               </div>
 
               <div className="relative">
@@ -345,7 +370,7 @@ const Explore = () => {
             </div>
           </div>
 
-          <div className="p-6 space-y-8">
+          <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
             {activeTab === 'videos' && (
               <>
                 {featuredVideo && (
@@ -435,7 +460,7 @@ const Explore = () => {
                       </Button>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {channel.videos.slice(0, 4).map((video) => (
                         <Link key={video.id} to={`/watch/${video.id}`}>
                           <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300">
