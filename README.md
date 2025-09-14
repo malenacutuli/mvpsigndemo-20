@@ -1,73 +1,207 @@
-# Welcome to your Lovable project
+# Axessible - Universal Video Accessibility Platform
 
-## Project info
+![Axessible Logo](/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png)
 
-**URL**: https://lovable.dev/projects/60f5b9ac-592f-4e50-926d-8ee8852d3cdf
+## 🌟 Overview
 
-## How can I edit this code?
+Axessible is a revolutionary video platform that makes every story truly accessible to everyone. We're the world's first platform designed with accessibility as the foundation, not an afterthought, featuring "Captions with Intention," creative audio descriptions, and immersive accessibility tools.
 
-There are several ways of editing your application.
+### 🎯 Mission
+**"Where Every Story is Truly Seen, Heard, and Felt"**
 
-**Use Lovable**
+We believe access isn't a feature—it's the future of storytelling. Our platform ensures that videos aren't just shared but truly experienced by everyone, regardless of their abilities.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/60f5b9ac-592f-4e50-926d-8ee8852d3cdf) and start prompting.
+## ✨ Key Features
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🎬 Core Video Features
+- **Captions with Intention**: Dynamic, expressive captions that move, pause, and flow with emotion
+- **Creative Audio Descriptions**: Cinematic narration that paints the scene poetically
+- **ASL Support**: Professional sign language interpretation integration
+- **Universal Player**: Fully accessible video player with comprehensive controls
+- **Multi-language Support**: Built-in internationalization (7+ languages)
 
-**Use your preferred IDE**
+### 🔧 Creator Tools
+- **AI-Powered Transcription**: Automatic speech-to-text with speaker identification
+- **Visual Analysis**: AI-generated scene descriptions and content analysis
+- **Voice Cloning**: Custom voice synthesis for audio descriptions
+- **Synchronized Dubbing**: Multi-language audio track generation
+- **Accessibility Grading**: Automatic compliance checking (WCAG, ADA, EAA)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🏢 Enterprise Features
+- **Channel Management**: Organize content with public/private channels
+- **Analytics Dashboard**: Comprehensive viewing and engagement metrics
+- **Subscription Management**: Flexible pricing tiers with Stripe integration
+- **Embed Player**: Secure, customizable embeddable video player
+- **Storage Management**: Efficient video storage with usage tracking
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 🛡️ Security & Privacy
+- **Enhanced Security**: Row-level security with audit logging
+- **Data Protection**: Privacy-compliant analytics and data handling
+- **Secure Authentication**: Supabase Auth with role-based access
+- **Payment Security**: PCI-compliant Stripe integration
 
-Follow these steps:
+## 🏗️ Technical Architecture
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Frontend Stack
+- **React 18** with TypeScript
+- **Vite** for build tooling
+- **Tailwind CSS** with semantic design tokens
+- **shadcn/ui** component library
+- **React Router** for navigation
+- **React Query** for state management
+- **i18next** for internationalization
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Backend Stack
+- **Supabase** for database, auth, and storage
+- **Edge Functions** for serverless API endpoints
+- **PostgreSQL** with Row-Level Security (RLS)
+- **Stripe** for payment processing
+- **Multiple AI Integrations**: OpenAI, HuggingFace, ElevenLabs, Twelve Labs
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Key Integrations
+- **OpenAI**: GPT-4 for transcription, descriptions, and analysis
+- **AssemblyAI**: Advanced speech-to-text with speaker diarization
+- **ElevenLabs**: High-quality voice synthesis
+- **HuggingFace**: Video analysis and processing
+- **Twelve Labs**: Advanced video understanding
+- **FFmpeg**: Video processing and manipulation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 📊 Database Schema
 
-**Edit a file directly in GitHub**
+### Core Tables
+- **videos**: Video metadata, settings, and status
+- **transcript_segments**: Word-level caption data with timing
+- **audio_descriptions**: Visual scene descriptions
+- **characters**: Speaker/character information with colors and voices
+- **channels**: Content organization and branding
+- **subscribers**: User subscription and billing data
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Supporting Tables
+- **jobs**: Background task processing
+- **tracks**: Video subtitle/caption tracks
+- **emotion_spans**: Emotional analysis data
+- **content_generation_cache**: AI generation result caching
+- **analytics tables**: View tracking and engagement metrics
 
-**Use GitHub Codespaces**
+## 🚀 Getting Started
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Prerequisites
+- Node.js 18+ and npm
+- Supabase account and project
+- Various API keys (OpenAI, ElevenLabs, etc.)
 
-## What technologies are used for this project?
+### Installation
 
-This project is built with:
+1. **Clone the repository**
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## How can I deploy this project?
+3. **Environment Setup**
+   ```bash
+   # Configure Supabase project ID and keys in src/integrations/supabase/client.ts
+   # Add required API keys via Supabase Edge Function secrets
+   ```
 
-Simply open [Lovable](https://lovable.dev/projects/60f5b9ac-592f-4e50-926d-8ee8852d3cdf) and click on Share -> Publish.
+4. **Database Setup**
+   ```bash
+   # Database migrations are automatically applied
+   # See supabase/migrations/ for schema changes
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
 
-Yes, you can!
+## 📖 Documentation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [**ARCHITECTURE.md**](./ARCHITECTURE.md) - Detailed technical architecture
+- [**DATABASE.md**](./DATABASE.md) - Complete database schema and relationships
+- [**FEATURES.md**](./FEATURES.md) - Comprehensive feature documentation
+- [**API.md**](./API.md) - Edge Functions and API reference
+- [**DEPLOYMENT.md**](./DEPLOYMENT.md) - Deployment and configuration guide
+- [**CAPTIONS_WITH_INTENTION_REFERENCE.md**](./CAPTIONS_WITH_INTENTION_REFERENCE.md) - Core caption system documentation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🌍 Internationalization
+
+Supports 7+ languages with complete localization:
+- English (en)
+- Spanish (es)
+- French (fr)
+- German (de)
+- Italian (it)
+- Portuguese (pt)
+- Catalan (ca)
+
+## 💳 Subscription Tiers
+
+### Free Tier
+- 1GB storage
+- 1 video per month
+- Basic accessibility features
+
+### Starter ($9.99/month)
+- 100GB storage
+- 10 videos per month
+- Full accessibility suite
+
+### Standard ($29.99/month)
+- 2TB storage
+- 100 videos per month
+- Advanced AI features
+
+### Premium ($99.99/month)
+- Unlimited storage
+- Unlimited videos
+- Priority processing
+- Custom branding
+
+## 🤝 Contributing
+
+We collaborate with deaf, blind, and disabled creators, educators, and advocates to design every feature. Accessibility expertise is highly valued in our development process.
+
+### Development Guidelines
+- Follow semantic design tokens (no direct color usage)
+- Maintain WCAG 2.1 AA compliance
+- Test with screen readers and accessibility tools
+- Document accessibility features thoroughly
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 🌐 Links
+
+- **Live Platform**: [axessible.com](https://axessible.com)
+- **Documentation**: [docs.axessible.com](https://docs.axessible.com)
+- **Support**: [support@axessible.com](mailto:support@axessible.com)
+
+## 🎯 Roadmap
+
+### Current Version (v1.0)
+- ✅ Core video player with accessibility features
+- ✅ Captions with Intention system
+- ✅ Audio descriptions generation
+- ✅ Multi-language support
+- ✅ Channel management
+- ✅ Subscription system
+
+### Upcoming Features
+- 🔄 Advanced ASL avatar integration
+- 🔄 Real-time collaboration tools
+- 🔄 Mobile app development
+- 🔄 Advanced analytics dashboard
+- 🔄 API for third-party integrations
+
+---
+
+**"Access isn't optional. It's storytelling reimagined."**
+
+*Join the platform where every story belongs.*
