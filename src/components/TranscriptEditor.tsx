@@ -8,15 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type, Zap } from 'lucide-react';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type, Zap, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor, type WordData } from './WordLevelEditor';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 import { VocalIntensityIndicator } from './VocalIntensityIndicator';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
+import { TranscriptUploader } from './TranscriptUploader';
 
 interface TranscriptSegment {
   id: string;
@@ -27,23 +28,25 @@ interface TranscriptSegment {
   speakerColor?: string;
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
-  words?: WordData[]; // Add word-level data support
-  vocal_intensity?: 'whisper' | 'normal' | 'yell' | 'shout';
-  intensity_confidence?: number;
-  auto_styling?: any;
 }
 
 interface TranscriptEditorProps {
   videoUrl: string;
   videoId: string;
   initialLanguage?: string;
-  onTranscriptUpdate?: (segments: TranscriptSegment[], language: string) => void;
-  onContentGenerated?: (content: {
-    captions: any[];
-    audioDescription: any[];
-    dubbing: any;
-  }) => void;
+  onTranscriptUpdate?: (segments: TranscriptSegment[]) => void;
+  onContentGenerated?: (content: any) => void;
 }
+
+const languages = [
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'ca', name: 'Catalan' }
+];
 
 export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   videoUrl,
@@ -57,6 +60,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
+  const [showUploader, setShowUploader] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editStartTime, setEditStartTime] = useState('');
@@ -72,200 +76,77 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
-  // Load saved transcript on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+        const transcriptSegments = segments.map(seg => ({
+          id: seg.id,
+          text: seg.text,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          speaker: seg.speaker || 'Speaker 1',
+          speakerColor: seg.speakerColor || '#E5E517',
+          emphasis: (seg.emphasis as any) || 'normal',
+          pitch: (seg.pitch as any) || 'normal'
         }));
-        setEditingTranscript(convertedSegments);
-        setOriginalTranscript(convertedSegments);
-        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+        setOriginalTranscript(transcriptSegments);
+        setEditingTranscript([...transcriptSegments]);
+        console.log('✅ Loaded existing transcript:', transcriptSegments.length, 'segments');
       }
     };
-    loadTranscriptData();
-  }, [videoId]);
-
-  // Load saved transcript when language changes
-  useEffect(() => {
-    const loadTranscriptData = async () => {
-      const segments = await loadTranscriptSegments(selectedLanguage);
-      if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
-        }));
-        setEditingTranscript(convertedSegments);
-        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
-      }
-    };
-    loadTranscriptData();
-  }, [selectedLanguage]);
-
-  // Save transcript when it changes
-  const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
-    const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
-      text: segment.text,
-      startTime: segment.startTime,
-      endTime: segment.endTime,
-      speaker: segment.speaker,
-      speakerColor: segment.speakerColor,
-      emphasis: segment.emphasis,
-      pitch: segment.pitch,
-      words: segment.words,
-      isOffCamera: false,
-      segmentType: 'dialogue' as const,
-      confidence: 0.9
-    }));
     
-    await saveTranscriptSegments(storageSegments, language);
-  };
-
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-  ];
+    loadTranscriptData();
+  }, [videoId, selectedLanguage, loadTranscriptSegments]);
 
   const generateOriginalTranscript = async () => {
-      setIsGenerating(true);
-      try {
-        const response = await supabase.functions.invoke('transcribe', {
-          body: { 
-            videoUrl: videoUrl,
-            rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-            language: 'auto', // Auto-detect language
-            fullTranscript: true, // Request complete transcript
-            wordTimestamps: true // Request word-level timing
-          }
-        });
-
-      // Check for errors - the response might have error info in data even if no error object
-      if (response.error || response.data?.error) {
-        let errorMessage = 'Transcription failed';
-        let errorDetails = '';
-        
-        // If there's response data with error info, use that
-        if (response.data?.error) {
-          errorMessage = response.data.error;
-          errorDetails = response.data.details || '';
-          
-          // Add size info if available
-          if (response.data.sizeMB && response.data.maxSizeMB) {
-            errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
-          }
-        }
-        // Otherwise use the error object
-        else if (response.error?.message) {
-          try {
-            // Try parsing as JSON first
-            const parsed = JSON.parse(response.error.message);
-            errorMessage = parsed.error || response.error.message;
-            errorDetails = parsed.details || '';
-          } catch {
-            // If not JSON, use the message directly
-            errorMessage = response.error.message;
-            if (response.error.message.includes('413') || response.error.message.includes('too large')) {
-              errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
-            }
-          }
-        }
-        
-        throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
-      }
-
-      const { data, error } = response;
-
-      // Convert to segments format using actual timing from Whisper API
-      const segments: TranscriptSegment[] = [];
-      if (data?.words && Array.isArray(data.words)) {
-        // Group words into sentences for better readability
-        let currentSegment = '';
-        let segmentStart = 0;
-        let segmentIndex = 0;
-        
-        data.words.forEach((word: any, index: number) => {
-          if (index === 0) {
-            segmentStart = word.start || 0;
-          }
-          
-          currentSegment += (currentSegment ? ' ' : '') + word.word;
-          
-          // End segment on sentence boundaries or every 10-15 words
-          const isEndOfSentence = /[.!?]$/.test(word.word);
-          const isLongSegment = currentSegment.split(' ').length >= 12;
-          const isLastWord = index === data.words.length - 1;
-          
-          if (isEndOfSentence || isLongSegment || isLastWord) {
-            segments.push({
-              id: `segment-${segmentIndex}`,
-              text: currentSegment.trim(),
-              startTime: segmentStart,
-              endTime: word.end || (segmentStart + 3),
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: '#3B82F6',
-              emphasis: 'normal',
-              pitch: 'normal'
-            });
-            
-            currentSegment = '';
-            segmentIndex++;
-            // Next segment starts after current word
-            if (index < data.words.length - 1) {
-              segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
-            }
-          }
-        });
-      } else if (data?.text) {
-        // Fallback to basic segmentation if word-level timing isn't available
-        const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
-        const totalDuration = data.duration || 120; // Use actual duration or fallback
-        const segmentDuration = totalDuration / sentences.length;
-        
-        sentences.forEach((sentence, index) => {
-          if (sentence.trim()) {
-            segments.push({
-              id: `segment-${index}`,
-              text: sentence.trim(),
-              startTime: index * segmentDuration,
-              endTime: (index + 1) * segmentDuration,
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: '#3B82F6',
-              emphasis: 'normal',
-              pitch: 'normal'
-            });
-          }
-        });
-      }
-
-      setOriginalTranscript(segments);
-      setEditingTranscript([...segments]);
+    setIsGenerating(true);
+    try {
+      console.log('🚀 Starting transcript generation for video:', videoUrl);
       
-      // Detect language from response and update state
-      const detectedLanguage = data?.language || 'en';
-      setSelectedLanguage(detectedLanguage);
-      saveTranscriptData(segments, detectedLanguage); // Save to storage
-      onTranscriptUpdate?.(segments, detectedLanguage);
-
-      toast({
-        title: "Transcript Generated",
-        description: `Original transcript extracted in ${languages.find(l => l.code === detectedLanguage)?.name || detectedLanguage}`
+      const response = await supabase.functions.invoke('transcribe', {
+        body: { 
+          videoUrl,
+          videoId,
+          language: selectedLanguage === 'auto' ? undefined : selectedLanguage,
+          rangeBytes: 200000000,
+          fullTranscript: true
+        }
       });
-
+      
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to generate transcript');
+      }
+      
+      const data = response.data;
+      console.log('✅ Transcript generated:', data);
+      
+      if (data.segments) {
+        const segments = data.segments.map((seg: any, index: number) => ({
+          id: `segment-${index}`,
+          text: seg.text,
+          startTime: seg.start,
+          endTime: seg.end,
+          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          speakerColor: getSpeakerColor(index),
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const
+        }));
+        
+        setOriginalTranscript(segments);
+        setEditingTranscript([...segments]);
+        
+        toast({
+          title: "Transcript Generated",
+          description: `Generated ${segments.length} transcript segments`,
+        });
+      }
+      
     } catch (error) {
-      console.error('Transcript generation error:', error);
+      console.error('❌ Transcript generation failed:', error);
       toast({
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate transcript",
+        description: "Failed to generate transcript. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -273,100 +154,197 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
-  const generateTranslatedContent = async (targetLanguage: string) => {
-    if (originalTranscript.length === 0) {
-      toast({
-        title: "No Original Transcript",
-        description: "Generate the original transcript first",
-        variant: "destructive"
-      });
-      return;
+  const getSpeakerColor = (index: number) => {
+    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
+    return colors[index % colors.length];
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = (seconds % 60).toFixed(1);
+    return `${minutes}:${remainingSeconds.padStart(4, '0')}`;
+  };
+
+  const parseTimeString = (timeStr: string): number => {
+    const parts = timeStr.split(':');
+    if (parts.length === 2) {
+      const minutes = parseInt(parts[0]) || 0;
+      const seconds = parseFloat(parts[1]) || 0;
+      return minutes * 60 + seconds;
     }
+    return parseFloat(timeStr) || 0;
+  };
 
-    setIsTranslating(true);
+  const startEditing = (index: number) => {
+    const segment = editingTranscript[index];
+    setEditingIndex(index);
+    setEditText(segment.text);
+    setEditStartTime(formatTime(segment.startTime));
+    setEditEndTime(formatTime(segment.endTime));
+    setEditSpeaker(segment.speaker || '');
+    setEditSpeakerColor(segment.speakerColor || '#E5E517');
+    setEditEmphasis(segment.emphasis || 'normal');
+    setEditPitch(segment.pitch || 'normal');
+    
+    const words = segment.text.split(' ').map((word, i) => ({
+      text: word,
+      emphasis: segment.emphasis || 'normal',
+      pitch: segment.pitch || 'normal'
+    }));
+    setEditWords(words);
+  };
+
+  const saveEdit = async () => {
+    if (editingIndex === null) return;
+    
+    const updatedSegment = {
+      ...editingTranscript[editingIndex],
+      text: editText,
+      startTime: parseTimeString(editStartTime),
+      endTime: parseTimeString(editEndTime),
+      speaker: editSpeaker,
+      speakerColor: editSpeakerColor,
+      emphasis: editEmphasis,
+      pitch: editPitch
+    };
+    
+    const updatedTranscript = [...editingTranscript];
+    updatedTranscript[editingIndex] = updatedSegment;
+    setEditingTranscript(updatedTranscript);
+    setEditingIndex(null);
+    
+    // Auto-save to storage
+    await saveTranscriptSegments(updatedTranscript.map(seg => ({
+      id: seg.id,
+      text: seg.text,
+      startTime: seg.startTime,
+      endTime: seg.endTime,
+      speaker: seg.speaker || '',
+      speakerColor: seg.speakerColor || '#E5E517',
+      emphasis: seg.emphasis || 'normal',
+      pitch: seg.pitch || 'normal'
+    })), selectedLanguage);
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+  };
+
+  const addNewSegment = (afterIndex: number) => {
+    const newSegment: TranscriptSegment = {
+      id: `segment-${Date.now()}`,
+      text: '',
+      startTime: editingTranscript[afterIndex]?.endTime || 0,
+      endTime: (editingTranscript[afterIndex]?.endTime || 0) + 3,
+      speaker: 'Speaker 1',
+      speakerColor: '#E5E517',
+      emphasis: 'normal',
+      pitch: 'normal'
+    };
+    
+    const updatedTranscript = [...editingTranscript];
+    updatedTranscript.splice(afterIndex + 1, 0, newSegment);
+    setEditingTranscript(updatedTranscript);
+    
+    // Start editing the new segment immediately
+    setTimeout(() => startEditing(afterIndex + 1), 100);
+  };
+
+  const deleteSegment = (index: number) => {
+    const updatedTranscript = editingTranscript.filter((_, i) => i !== index);
+    setEditingTranscript(updatedTranscript);
+  };
+
+  const saveAllChanges = async () => {
     try {
-      // Translate transcript
-      const transcriptText = originalTranscript.map(s => s.text).join(' ');
+      console.log('💾 Saving all transcript changes to database...');
       
-      const { data: translationData, error: translationError } = await supabase.functions.invoke('generate-dubbing', {
+      // Save to video storage
+      await saveTranscriptSegments(editingTranscript.map(seg => ({
+        id: seg.id,
+        text: seg.text,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        speaker: seg.speaker || '',
+        speakerColor: seg.speakerColor || '#E5E517',
+        emphasis: seg.emphasis || 'normal',
+        pitch: seg.pitch || 'normal'
+      })), selectedLanguage);
+      
+      // Also save to database
+      const { error } = await supabase.functions.invoke('transcribe', {
         body: {
-          text: transcriptText,
-          targetLanguage: targetLanguage
-        }
-      });
-
-      if (translationError) throw new Error(translationError.message || 'Translation failed');
-
-      // Create translated segments by splitting the translated text
-      let translatedSegments = originalTranscript;
-      if (translationData.translatedText) {
-        // Split translated text proportionally to original segments
-        const translatedSentences = translationData.translatedText.split(/[.!?]+/).filter(s => s.trim());
-        const segmentRatio = translatedSentences.length / originalTranscript.length;
-        
-        translatedSegments = originalTranscript.map((segment, index) => {
-          const translatedIndex = Math.floor(index * segmentRatio);
-          const translatedText = translatedSentences[translatedIndex] || segment.text;
-          return {
-            ...segment,
-            text: translatedText.trim()
-          };
-        });
-      }
-
-      // Generate captions from translated segments
-      const captions = translatedSegments.map(segment => ({
-        text: segment.text,
-        speaker: segment.speaker || 'narrator',
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        words: segment.text.split(' ').map((word, wordIndex, wordArray) => {
-          const wordDuration = (segment.endTime - segment.startTime) / wordArray.length;
-          return {
-            text: word,
-            startTime: segment.startTime + (wordIndex * wordDuration),
-            endTime: segment.startTime + ((wordIndex + 1) * wordDuration),
-            emphasis: segment.emphasis || 'normal' as const,
-            pitch: segment.pitch || 'normal' as const,
-          };
-        })
-      }));
-
-      // Generate audio descriptions
-      const { data: adData, error: adError } = await supabase.functions.invoke('generate-ad', {
-        body: {
-          contentType: 'education',
-          segments: translatedSegments.map(s => ({
-            text: s.text,
-            startTime: s.startTime,
-            endTime: s.endTime
+          action: 'save_transcript',
+          videoId,
+          segments: editingTranscript.map(seg => ({
+            text: seg.text,
+            start_time: seg.startTime,
+            end_time: seg.endTime,
+            speaker: seg.speaker,
+            speaker_color: seg.speakerColor,
+            emphasis: seg.emphasis,
+            pitch: seg.pitch,
+            language: selectedLanguage
           }))
         }
       });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Changes Saved",
+        description: "All transcript changes have been saved successfully.",
+      });
+      
+      if (onTranscriptUpdate) {
+        onTranscriptUpdate(editingTranscript);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to save changes:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
-      const audioDescription = adError ? [] : (adData?.descriptions || []);
-
+  const generateTranslatedContent = async (targetLanguage: string) => {
+    if (originalTranscript.length === 0) return;
+    
+    setIsTranslating(true);
+    try {
+      console.log('🌍 Generating translated content for:', targetLanguage);
+      
+      const response = await supabase.functions.invoke('generate-dubbing', {
+        body: {
+          originalSegments: originalTranscript,
+          targetLanguage,
+          videoId
+        }
+      });
+      
+      if (response.error) throw response.error;
+      
+      const translatedSegments = response.data.segments || [];
       setEditingTranscript(translatedSegments);
       setSelectedLanguage(targetLanguage);
-      saveTranscriptData(translatedSegments, targetLanguage); // Save to storage
       
-      onTranscriptUpdate?.(translatedSegments, targetLanguage);
-      onContentGenerated?.({
-        captions,
-        audioDescription,
-        dubbing: translationData
-      });
-
+      if (onContentGenerated) {
+        onContentGenerated(response.data);
+      }
+      
       toast({
-        title: "Content Generated",
-        description: `Transcript, captions, and audio descriptions generated for ${languages.find(l => l.code === targetLanguage)?.name}`
+        title: "Translation Complete",
+        description: `Content translated to ${languages.find(l => l.code === targetLanguage)?.name}`,
       });
-
+      
     } catch (error) {
-      console.error('Translation error:', error);
+      console.error('❌ Translation failed:', error);
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate translated content",
+        title: "Translation Failed",
+        description: "Failed to generate translated content.",
         variant: "destructive"
       });
     } finally {
@@ -374,200 +352,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
-  const startEditing = (index: number) => {
-    const segment = editingTranscript[index];
-    setEditingIndex(index);
-    setEditText(segment.text);
-    setEditStartTime(segment.startTime.toString());
-    setEditEndTime(segment.endTime.toString());
-    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
-    setEditSpeakerColor(segment.speakerColor || '#3B82F6');
-    setEditEmphasis(segment.emphasis || 'normal');
-    setEditPitch(segment.pitch || 'normal');
-    setEditWords(segment.words || []);
-    setUseWordLevelEditing(false); // Reset to segment-level editing by default
-  };
-
-  const saveEdit = () => {
-    if (editingIndex === null) return;
+  const downloadTranscript = () => {
+    const content = editingTranscript
+      .map(segment => `${formatTime(segment.startTime)} - ${formatTime(segment.endTime)}: [${segment.speaker}] ${segment.text}`)
+      .join('\n');
     
-    const updated = [...editingTranscript];
-    updated[editingIndex] = {
-      ...updated[editingIndex],
-      text: editText,
-      startTime: parseTimeInput(editStartTime),
-      endTime: parseTimeInput(editEndTime),
-      speaker: editSpeaker,
-      speakerColor: editSpeakerColor,
-      emphasis: useWordLevelEditing ? 'normal' : editEmphasis, // Use word-level if enabled
-      pitch: useWordLevelEditing ? 'normal' : editPitch,
-      words: useWordLevelEditing ? editWords : undefined, // Save word-level data if enabled
-    };
-    
-    // Sort segments by time after editing timing
-    const sortedSegments = sortSegmentsByTime(updated);
-    setEditingTranscript(sortedSegments);
-    saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
-    onTranscriptUpdate?.(sortedSegments, selectedLanguage); // Immediately apply to video player
-    resetEditState();
-  };
-
-  const saveAllChanges = () => {
-    saveTranscriptData(editingTranscript, selectedLanguage);
-    
-    // Immediately update the video player with changes
-    console.log('💾 Saving all transcript changes and updating video player:', editingTranscript.length, 'segments');
-    console.log('📝 Transcript segments being saved with properties:', editingTranscript.map(s => ({
-      speaker: s.speaker,
-      text: s.text.substring(0, 30) + '...',
-      startTime: s.startTime,
-      endTime: s.endTime,
-      speakerColor: s.speakerColor,
-      emphasis: s.emphasis,
-      pitch: s.pitch
-    })));
-    
-    // Force update by creating new array with timestamp to ensure re-render
-    const updatedSegments = editingTranscript.map((segment, index) => ({
-      ...segment,
-      _lastModified: Date.now() + index // Add timestamp to force updates
-    }));
-    onTranscriptUpdate?.(updatedSegments, selectedLanguage);
-    
-    toast({
-      title: "All Changes Saved",
-      description: "Transcript edits have been saved and applied to the video player."
-    });
-  };
-
-  const cancelEdit = () => {
-    resetEditState();
-  };
-
-  const resetEditState = () => {
-    setEditingIndex(null);
-    setEditText('');
-    setEditStartTime('');
-    setEditEndTime('');
-    setEditSpeaker('');
-    setEditSpeakerColor('');
-    setEditEmphasis('normal');
-    setEditPitch('normal');
-    setEditWords([]);
-    setUseWordLevelEditing(false);
-  };
-
-  const findInsertPosition = (segments: TranscriptSegment[], newStartTime: number): number => {
-    for (let i = 0; i < segments.length; i++) {
-      if (segments[i].startTime > newStartTime) {
-        return i;
-      }
-    }
-    return segments.length;
-  };
-
-  const sortSegmentsByTime = (segments: TranscriptSegment[]): TranscriptSegment[] => {
-    return [...segments].sort((a, b) => a.startTime - b.startTime);
-  };
-
-  const addNewSegment = (insertAfterIndex?: number) => {
-    let newStartTime: number;
-    
-    if (insertAfterIndex !== undefined && editingTranscript[insertAfterIndex]) {
-      newStartTime = editingTranscript[insertAfterIndex].endTime + 0.5;
-    } else {
-      const lastSegment = editingTranscript[editingTranscript.length - 1];
-      newStartTime = lastSegment ? lastSegment.endTime : 0;
-    }
-    
-    const newSegment: TranscriptSegment = {
-      id: `segment-${Date.now()}`,
-      text: 'New segment text...',
-      startTime: newStartTime,
-      endTime: newStartTime + 3,
-      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
-      speakerColor: '#3B82F6',
-      emphasis: 'normal',
-      pitch: 'normal'
-    };
-    
-    const insertPosition = findInsertPosition(editingTranscript, newStartTime);
-    const updated = [...editingTranscript];
-    updated.splice(insertPosition, 0, newSegment);
-    
-    setEditingTranscript(updated);
-    onTranscriptUpdate?.(updated, selectedLanguage);
-    
-    // Start editing the new segment
-    startEditing(insertPosition);
-  };
-
-  const deleteSegment = (index: number) => {
-    const updated = editingTranscript.filter((_, i) => i !== index);
-    setEditingTranscript(updated);
-    saveTranscriptData(updated, selectedLanguage); // Save to storage
-    onTranscriptUpdate?.(updated, selectedLanguage);
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = (seconds % 60).toFixed(1);
-    return `${mins}:${secs.padStart(4, '0')}`;
-  };
-
-  const parseTimeInput = (timeStr: string): number => {
-    if (timeStr.includes(':')) {
-      const [mins, secs] = timeStr.split(':');
-      return parseInt(mins) * 60 + parseFloat(secs);
-    }
-    return parseFloat(timeStr) || 0;
-  };
-
-  const exportTranscript = () => {
-    const text = editingTranscript.map(segment => 
-      `[${Math.floor(segment.startTime / 60)}:${(segment.startTime % 60).toFixed(0).padStart(2, '0')}] ${segment.text}`
-    ).join('\n\n');
-    
-    const blob = new Blob([text], { type: 'text/plain' });
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `transcript-${selectedLanguage}-${videoId}.txt`;
-    document.body.appendChild(link);
+    link.download = `transcript-${videoId}-${selectedLanguage}.txt`;
     link.click();
-    document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  };
-
-  const handleVocalIntensityAnalysis = async () => {
-    if (!editingTranscript || editingTranscript.length === 0) return;
-    
-    try {
-      const analyzedSegments = await analyzeVocalIntensity(
-        videoId, // Use actual video ID
-        editingTranscript
-      );
-      
-      const updatedSegments = analyzedSegments.map((segment: any) => ({
-        id: segment.id || `segment-${Date.now()}-${Math.random()}`,
-        text: segment.text,
-        startTime: segment.start_time || segment.startTime,
-        endTime: segment.end_time || segment.endTime,
-        speaker: segment.speaker || 'Speaker',
-        speakerColor: segment.speakerColor || '#3B82F6',
-        emphasis: segment.emphasis || 'normal' as const,
-        pitch: segment.pitch || 'normal' as const,
-        vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,
-        intensity_confidence: segment.intensity_confidence,
-        auto_styling: segment.auto_styling,
-      }));
-      
-      setEditingTranscript(updatedSegments);
-      saveTranscriptData(updatedSegments, selectedLanguage);
-      onTranscriptUpdate?.(updatedSegments, selectedLanguage);
-    } catch (error) {
-      console.error('Failed to analyze vocal intensity:', error);
-    }
   };
 
   return (
@@ -583,316 +379,392 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         </CardHeader>
         
         <CardContent className="space-y-4">
-        {/* Generation Controls */}
-        <div className="flex gap-2 flex-wrap items-center">
-          <Button
-            onClick={generateOriginalTranscript}
-            disabled={isGenerating}
-            size="sm"
-            variant="outline"
-          >
-            <Mic className="w-4 h-4 mr-2" />
-            {isGenerating ? 'Extracting Full Transcript...' : 'Extract Complete Transcript'}
-          </Button>
-          
-          <Button
-            onClick={saveAllChanges}
-            disabled={editingTranscript.length === 0}
-            size="sm"
-            variant="default"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Changes to Video
-          </Button>
-          
-          <Select
-            value={selectedLanguage}
-            onValueChange={(value) => {
-              if (value !== selectedLanguage) {
-                generateTranslatedContent(value);
-              }
-            }}
-            disabled={isTranslating || originalTranscript.length === 0}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-sm">
-                    {isTranslating ? '...' : languages.find(l => l.code === selectedLanguage)?.name}
-                  </span>
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            onClick={() => addNewSegment()}
-            disabled={editingTranscript.length === 0}
-            size="sm"
-            variant="outline"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Segment
-          </Button>
-
-          <Button
-            onClick={exportTranscript}
-            disabled={editingTranscript.length === 0}
-            size="sm"
-            variant="ghost"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          
-          <Button
-            onClick={handleVocalIntensityAnalysis}
-            disabled={isAnalyzing || editingTranscript.length === 0}
-            size="sm"
-            variant="outline"
-          >
-            <Zap className="w-4 h-4 mr-2" />
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
-          </Button>
-        </div>
-
-        {/* Transcript Segments */}
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {editingTranscript.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>Generate transcript to start editing</p>
-            </div>
-          ) : (
-            editingTranscript.map((segment, index) => (
-              <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
-                    </span>
-                    {segment.speaker && (
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs px-2 py-0"
-                        style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                      >
-                        {segment.speaker}
-                      </Badge>
-                    )}
-                    {segment.emphasis !== 'normal' && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0">
-                        {segment.emphasis}
-                      </Badge>
-                    )}
-                    {segment.pitch !== 'normal' && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0">
-                        {segment.pitch}
-                      </Badge>
-                    )}
+          {/* Generation Controls */}
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose how to create your transcript with timestamps for editing intonation and captions with intention.
+            </p>
+            
+            {/* Two Options Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Option 1: Extract Transcript */}
+              <Card className="p-4 border-2 hover:border-primary/50 transition-colors">
+                <div className="text-center space-y-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <Mic className="w-5 h-5 text-primary" />
                   </div>
-                  {editingIndex !== index && (
-                   <div className="flex gap-1">
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => startEditing(index)}
-                       className="h-6 w-6 p-0"
-                       title="Edit segment"
-                     >
-                       <Edit className="w-3 h-3" />
-                     </Button>
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => addNewSegment(index)}
-                       className="h-6 w-6 p-0"
-                       title="Insert segment after this one"
-                     >
-                       <Plus className="w-3 h-3" />
-                     </Button>
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => deleteSegment(index)}
-                       className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                       title="Delete segment"
-                     >
-                       <X className="w-3 h-3" />
-                     </Button>
-                   </div>
-                  )}
-                </div>
-                
-                {editingIndex === index ? (
-                  <div className="space-y-4">
-                    {/* Text Editor - Switch between basic and word-level */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">Text</Label>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
-                          className="h-6 text-xs"
-                        >
-                          <Type className="w-3 h-3 mr-1" />
-                          {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
-                        </Button>
+                  <h4 className="font-medium">1. Extract Complete Transcript</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Connect to API function for automated transcription with speaker identification
+                  </p>
+                  <Button
+                    onClick={generateOriginalTranscript}
+                    disabled={isGenerating}
+                    size="sm"
+                    variant="default"
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        Extracting...
                       </div>
-                      
-                      {useWordLevelEditing ? (
-                        <WordLevelEditor
-                          initialText={editText}
-                          onWordsChange={setEditWords}
-                          className="border rounded-md"
-                        />
-                      ) : (
-                        <Textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          className="min-h-[60px]"
-                          autoFocus
-                        />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Mic className="w-4 h-4" />
+                        Extract Transcript
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Option 2: Upload Transcript */}
+              <Card className="p-4 border-2 hover:border-primary/50 transition-colors">
+                <div className="text-center space-y-3">
+                  <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center mx-auto">
+                    <Upload className="w-5 h-5 text-secondary" />
+                  </div>
+                  <h4 className="font-medium">2. Upload Your Own Transcript</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Upload transcript with timestamps (SRT, VTT, TXT formats)
+                  </p>
+                  <Button
+                    onClick={() => setShowUploader(!showUploader)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {showUploader ? 'Cancel Upload' : 'Choose File'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Upload Interface */}
+            {showUploader && (
+              <Card className="p-4 bg-blue-50 border-blue-200 mb-4">
+                <h4 className="font-medium mb-3 text-blue-800">Upload Your Transcript File</h4>
+                <TranscriptUploader
+                  onTranscriptUploaded={(segments, language) => {
+                    console.log('📁 Transcript uploaded to editor:', segments.length, 'segments');
+                    // Convert to the format expected by TranscriptEditor
+                    const editorSegments = segments.map(seg => ({
+                      id: seg.id,
+                      text: seg.text,
+                      startTime: seg.startTime,
+                      endTime: seg.endTime,
+                      speaker: seg.speaker || 'Speaker 1',
+                      speakerColor: seg.speakerColor || '#E5E517',
+                      emphasis: seg.emphasis || 'normal',
+                      pitch: seg.pitch || 'normal'
+                    }));
+                    
+                    setOriginalTranscript(editorSegments);
+                    setEditingTranscript([...editorSegments]);
+                    setSelectedLanguage(language);
+                    setShowUploader(false);
+                    
+                    toast({
+                      title: "Transcript Uploaded",
+                      description: `Successfully uploaded ${segments.length} segments`,
+                    });
+                  }}
+                  onCancel={() => setShowUploader(false)}
+                />
+              </Card>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2 flex-wrap items-center">
+              <Button
+                onClick={saveAllChanges}
+                disabled={editingTranscript.length === 0}
+                size="sm"
+                variant="default"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes to Video
+              </Button>
+              
+              <Select
+                value={selectedLanguage}
+                onValueChange={(value) => {
+                  if (value !== selectedLanguage) {
+                    generateTranslatedContent(value);
+                  }
+                }}
+                disabled={isTranslating || originalTranscript.length === 0}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      <span className="text-sm">
+                        {isTranslating ? '...' : languages.find(l => l.code === selectedLanguage)?.name}
+                      </span>
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                onClick={downloadTranscript}
+                disabled={editingTranscript.length === 0}
+                size="sm"
+                variant="outline"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+              
+              <Button
+                onClick={() => analyzeVocalIntensity(editingTranscript, videoId)}
+                disabled={isAnalyzing || editingTranscript.length === 0}
+                size="sm"
+                variant="outline"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Transcript Segments */}
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {editingTranscript.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>Generate transcript to start editing</p>
+              </div>
+            ) : (
+              editingTranscript.map((segment, index) => (
+                <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                      </span>
+                      {segment.speaker && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs px-2 py-0"
+                          style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                        >
+                          {segment.speaker}
+                        </Badge>
+                      )}
+                      {segment.emphasis !== 'normal' && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0">
+                          {segment.emphasis}
+                        </Badge>
+                      )}
+                      {segment.pitch !== 'normal' && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0">
+                          {segment.pitch}
+                        </Badge>
                       )}
                     </div>
-                    
-                    {/* Timing Controls */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Start Time
-                        </Label>
-                        <Input
-                          value={editStartTime}
-                          onChange={(e) => setEditStartTime(e.target.value)}
-                          placeholder="0:00.0"
-                          className="text-xs"
-                        />
+                    {editingIndex !== index && (
+                     <div className="flex gap-1">
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => startEditing(index)}
+                         className="h-6 w-6 p-0"
+                         title="Edit segment"
+                       >
+                         <Edit className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => addNewSegment(index)}
+                         className="h-6 w-6 p-0"
+                         title="Insert segment after this one"
+                       >
+                         <Plus className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => deleteSegment(index)}
+                         className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                         title="Delete segment"
+                       >
+                         <X className="w-3 h-3" />
+                       </Button>
+                     </div>
+                    )}
+                  </div>
+                  
+                  {editingIndex === index ? (
+                    <div className="space-y-4">
+                      {/* Text Editor */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Text</Label>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
+                            className="h-6 text-xs"
+                          >
+                            <Type className="w-3 h-3 mr-1" />
+                            {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
+                          </Button>
+                        </div>
+                        
+                        {useWordLevelEditing ? (
+                          <WordLevelEditor
+                            initialText={editText}
+                            onWordsChange={setEditWords}
+                            className="border rounded-md"
+                          />
+                        ) : (
+                          <Textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="min-h-[60px]"
+                            autoFocus
+                          />
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          End Time
-                        </Label>
-                        <Input
-                          value={editEndTime}
-                          onChange={(e) => setEditEndTime(e.target.value)}
-                          placeholder="0:03.0"
-                          className="text-xs"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Speaker & Styling */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          Speaker
-                        </Label>
-                        <Input
-                          value={editSpeaker}
-                          onChange={(e) => setEditSpeaker(e.target.value)}
-                          placeholder="Speaker name (e.g., Teacher, Chef, Host)"
-                          className="text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Palette className="w-3 h-3" />
-                          Color
-                        </Label>
-                        <Input
-                          type="color"
-                          value={editSpeakerColor}
-                          onChange={(e) => setEditSpeakerColor(e.target.value)}
-                          className="h-8 p-1"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Emphasis & Pitch - Only show if not using word-level editing */}
-                    {!useWordLevelEditing && (
+                      
+                      {/* Timing Controls */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs flex items-center gap-1">
-                            <Volume2 className="w-3 h-3" />
-                            Emphasis
+                            <Clock className="w-3 h-3" />
+                            Start Time
                           </Label>
-                          <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal' | 'yelling')}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="loud">Loud</SelectItem>
-                              <SelectItem value="quiet">Quiet</SelectItem>
-                              <SelectItem value="yelling">Yelling (Bold)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            value={editStartTime}
+                            onChange={(e) => setEditStartTime(e.target.value)}
+                            placeholder="0:00.0"
+                            className="text-xs"
+                          />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Pitch</Label>
-                          <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="high">High</SelectItem>
-                              <SelectItem value="low">Low</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-xs flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            End Time
+                          </Label>
+                          <Input
+                            value={editEndTime}
+                            onChange={(e) => setEditEndTime(e.target.value)}
+                            placeholder="0:03.0"
+                            className="text-xs"
+                          />
                         </div>
                       </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={saveEdit}>
-                        <Save className="w-3 h-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                        <X className="w-3 h-3 mr-1" />
-                        Cancel
-                      </Button>
+                      
+                      {/* Speaker & Styling */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            Speaker
+                          </Label>
+                          <Input
+                            value={editSpeaker}
+                            onChange={(e) => setEditSpeaker(e.target.value)}
+                            placeholder="Speaker name"
+                            className="text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1">
+                            <Palette className="w-3 h-3" />
+                            Color
+                          </Label>
+                          <Input
+                            type="color"
+                            value={editSpeakerColor}
+                            onChange={(e) => setEditSpeakerColor(e.target.value)}
+                            className="h-8 p-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Emphasis & Pitch */}
+                      {!useWordLevelEditing && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs flex items-center gap-1">
+                              <Volume2 className="w-3 h-3" />
+                              Emphasis
+                            </Label>
+                            <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal' | 'yelling')}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="loud">Loud</SelectItem>
+                                <SelectItem value="quiet">Quiet</SelectItem>
+                                <SelectItem value="yelling">Yelling (Bold)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Pitch</Label>
+                            <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="low">Low</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <p 
-                    className="text-sm" 
-                    style={{ color: segment.speakerColor }}
-                  >
-                    {segment.text}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Generation Info */}
-        {selectedLanguage !== 'en' && editingTranscript.length > 0 && (
-          <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded">
-            <p>✓ Transcript translated to {languages.find(l => l.code === selectedLanguage)?.name}</p>
-            <p>✓ Captions with intention generated</p>
-            <p>✓ Audio descriptions created</p>
-            <p>✓ Dubbing content prepared</p>
+                  ) : (
+                    <p 
+                      className="text-sm" 
+                      style={{ color: segment.speakerColor }}
+                    >
+                      {segment.text}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
 
+          {/* Generation Info */}
+          {selectedLanguage !== 'en' && editingTranscript.length > 0 && (
+            <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded">
+              <p>✓ Transcript translated to {languages.find(l => l.code === selectedLanguage)?.name}</p>
+              <p>✓ Captions with intention generated</p>
+              <p>✓ Audio descriptions created</p>
+              <p>✓ Dubbing content prepared</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
