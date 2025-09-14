@@ -834,138 +834,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
 
       {/* Captions with Intention - Enhanced mobile fullscreen positioning */}
-      {showCaptions && (
-        <div 
-          className={`absolute left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none px-2 ${
-            isMobileFullscreen 
-              ? isLandscape 
-                ? 'bottom-6' // Landscape fullscreen - closer to bottom
-                : 'bottom-16' // Portrait fullscreen - above virtual controls
-              : 'bottom-24' // Normal mode
-          }`}
-          style={{
-            // Enhanced safe area handling for mobile fullscreen
-            ...(isMobileFullscreen && {
-              paddingLeft: `max(0.5rem, ${safeAreaInsets.left}px)`,
-              paddingRight: `max(0.5rem, ${safeAreaInsets.right}px)`,
-              paddingBottom: isLandscape 
-                ? `max(0.375rem, ${safeAreaInsets.bottom}px)` 
-                : `max(1rem, ${safeAreaInsets.bottom + 8}px)`,
-              maxWidth: '95vw', // Prevent overflow on small screens
-              fontSize: isLandscape ? '0.95em' : '1em' // Slight size adjustment for landscape
-            })
-          }}
-        >
-          <CaptionsWithIntention 
-            captions={(() => {
-              // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
-              let finalCaptions = [] as any[];
-              
-              if (initialCaptions && initialCaptions.length > 0) {
-                finalCaptions = initialCaptions;
-                console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
-              } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
-                finalCaptions = translatedContent.captions;
-                console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
-              } else if (generatedCaptions && generatedCaptions.length > 0) {
-                finalCaptions = generatedCaptions;
-                console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
-              } else {
-                finalCaptions = [];
-                console.log('⚠️ No captions available from any source');
-              }
-              
-              // Sanitize to prevent runtime errors (ensure text and timings)
-              finalCaptions = (finalCaptions || []).filter((s: any) => s && typeof s.text === 'string' && isFinite(s.startTime) && isFinite(s.endTime));
-              
-              // FINAL MAPPING GATE: enforce Character Manager mappings just before render
-              try {
-                const vid = videoId || 'default';
-                const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
-                const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
-                const byName: Record<string, any> = {};
-                (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
-                
-                console.log('🔍 Final mapping gate debug:', {
-                  mapping,
-                  charactersCount: characters.length,
-                  byName: Object.keys(byName),
-                  sampleSpeakers: finalCaptions.slice(0, 5).map(c => c.speaker)
-                });
-                
-                finalCaptions = finalCaptions.map((s: any, index: number) => {
-                  try {
-                    const mappedName = mapping?.[s.speaker];
-                    const char = mappedName ? byName[mappedName] : byName[s.speaker];
-                    
-                    if (char) {
-                      console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
-                      return {
-                        ...s,
-                        speaker: char.name || s.speaker,  // Ensure speaker name exists
-                        speakerColor: char.color || s.speakerColor,
-                        isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
-                      };
-                    } else {
-                      console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
-                      // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
-                      const lowercaseSpeaker = s.speaker?.toLowerCase();
-                      const fallbackChar = Object.values(byName).find((c: any) => {
-                        if (!c?.name) return false;
-                        const charName = c.name.toLowerCase();
-                        return charName === lowercaseSpeaker || 
-                               charName.includes(lowercaseSpeaker.substring(0, 4)) ||
-                               lowercaseSpeaker.includes(charName.substring(0, 4));
-                      });
-                      
-                      if (fallbackChar) {
-                        console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
-                        return {
-                          ...s,
-                          speaker: fallbackChar.name || s.speaker,
-                          speakerColor: fallbackChar.color || s.speakerColor,
-                          isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
-                        };
-                      }
-                    }
-                    
-                    // Return original segment if no character mapping found
-                    return {
-                      ...s,
-                      speaker: s.speaker || 'Unknown',  // Ensure speaker exists
-                      speakerColor: s.speakerColor || '#FFFFFF'  // Default color
-                    };
-                  } catch (segmentError) {
-                    console.error('Error processing segment:', segmentError, s);
-                    return {
-                      ...s,
-                      speaker: s.speaker || 'Unknown',
-                      speakerColor: s.speakerColor || '#FFFFFF'
-                    };
-                  }
-                });
-              } catch (e) {
-                console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
-              }
-              
-              console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
-              console.log('🎯 First caption being passed:', finalCaptions[0] ? {
-                speaker: finalCaptions[0].speaker,
-                color: finalCaptions[0].speakerColor,
-                emphasis: finalCaptions[0].words?.[0]?.emphasis,
-                pitch: finalCaptions[0].words?.[0]?.pitch,
-                text: finalCaptions[0].text?.substring(0, 50) + '...',
-                source: 'database-priority'
-              } : 'No captions');
-              
-              return finalCaptions;
-            })()}
-            currentTime={currentTime}
-            isVisible={showCaptions}
-            screenHeight={window?.innerHeight || 1080}
-          />
-        </div>
-      )}
 
         {/* Audio Description */}
         {showAudioDescription && (
@@ -988,6 +856,118 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '8px'
         }}
       >
+        {showCaptions && (
+          <div className="pointer-events-none px-2 mb-1">
+            <CaptionsWithIntention 
+              captions={(() => {
+                // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
+                let finalCaptions = [] as any[];
+                
+                if (initialCaptions && initialCaptions.length > 0) {
+                  finalCaptions = initialCaptions;
+                  console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
+                } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
+                  finalCaptions = translatedContent.captions;
+                  console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
+                } else if (generatedCaptions && generatedCaptions.length > 0) {
+                  finalCaptions = generatedCaptions;
+                  console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
+                } else {
+                  finalCaptions = [];
+                  console.log('⚠️ No captions available from any source');
+                }
+                
+                // Sanitize to prevent runtime errors (ensure text and timings)
+                finalCaptions = (finalCaptions || []).filter((s: any) => s && typeof s.text === 'string' && isFinite(s.startTime) && isFinite(s.endTime));
+                
+                // FINAL MAPPING GATE: enforce Character Manager mappings just before render
+                try {
+                  const vid = videoId || 'default';
+                  const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
+                  const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
+                  const byName: Record<string, any> = {};
+                  (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
+                  
+                  console.log('🔍 Final mapping gate debug:', {
+                    mapping,
+                    charactersCount: characters.length,
+                    byName: Object.keys(byName),
+                    sampleSpeakers: finalCaptions.slice(0, 5).map(c => c.speaker)
+                  });
+                  
+                  finalCaptions = finalCaptions.map((s: any, index: number) => {
+                    try {
+                      const mappedName = mapping?.[s.speaker];
+                      const char = mappedName ? byName[mappedName] : byName[s.speaker];
+                      
+                      if (char) {
+                        console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
+                        return {
+                          ...s,
+                          speaker: char.name || s.speaker,  // Ensure speaker name exists
+                          speakerColor: char.color || s.speakerColor,
+                          isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
+                        };
+                      } else {
+                        console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
+                        // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
+                        const lowercaseSpeaker = s.speaker?.toLowerCase();
+                        const fallbackChar = Object.values(byName).find((c: any) => {
+                          if (!c?.name) return false;
+                          const charName = c.name.toLowerCase();
+                          return charName === lowercaseSpeaker || 
+                                 charName.includes(lowercaseSpeaker.substring(0, 4)) ||
+                                 lowercaseSpeaker.includes(charName.substring(0, 4));
+                        });
+                        
+                        if (fallbackChar) {
+                          console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
+                          return {
+                            ...s,
+                            speaker: fallbackChar.name || s.speaker,
+                            speakerColor: fallbackChar.color || s.speakerColor,
+                            isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
+                          };
+                        }
+                      }
+                      
+                      // Return original segment if no character mapping found
+                      return {
+                        ...s,
+                        speaker: s.speaker || 'Unknown',  // Ensure speaker exists
+                        speakerColor: s.speakerColor || '#FFFFFF'  // Default color
+                      };
+                    } catch (segmentError) {
+                      console.error('Error processing segment:', segmentError, s);
+                      return {
+                        ...s,
+                        speaker: s.speaker || 'Unknown',
+                        speakerColor: s.speakerColor || '#FFFFFF'
+                      };
+                    }
+                  });
+                } catch (e) {
+                  console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
+                }
+                
+                console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
+                console.log('🎯 First caption being passed:', finalCaptions[0] ? {
+                  speaker: finalCaptions[0].speaker,
+                  color: finalCaptions[0].speakerColor,
+                  emphasis: finalCaptions[0].words?.[0]?.emphasis,
+                  pitch: finalCaptions[0].words?.[0]?.pitch,
+                  text: finalCaptions[0].text?.substring(0, 50) + '...',
+                  source: 'database-priority'
+                } : 'No captions');
+                
+                return finalCaptions;
+              })()}
+              currentTime={currentTime}
+              isVisible={showCaptions}
+              screenHeight={window?.innerHeight || 1080}
+            />
+          </div>
+        )}
         {/* Progress Bar - Extra space from captions */}
         <div className="mb-4">
           <Slider
@@ -1076,29 +1056,31 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             
             
             {/* Audio Description */}
-            {/* Audio Description Toggle + Generate Button */}
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowAudioDescription(!showAudioDescription)}
-                title="Toggle audio descriptions"
+                onClick={async () => {
+                  const hasAD = Boolean((generatedAD && generatedAD.length) || (dynamicDescriptions && dynamicDescriptions.length));
+                  if (!hasAD) {
+                    await handleToggleDynamicAD();
+                    setShowAudioDescription(true);
+                  } else {
+                    setShowAudioDescription(!showAudioDescription);
+                  }
+                }}
+                title={(() => {
+                  const hasAD = Boolean((generatedAD && generatedAD.length) || (dynamicDescriptions && dynamicDescriptions.length));
+                  if (!hasAD) return 'Generate and enable audio descriptions';
+                  return showAudioDescription ? 'Disable audio descriptions' : 'Enable audio descriptions';
+                })()}
                 className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showAudioDescription ? 'bg-accent/20 text-accent-foreground' : ''}`}
-              >
-                <Volume2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleToggleDynamicAD}
-                title={dynamicADEnabled ? "Disable dynamic AD" : "Generate AI audio descriptions"}
-                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-green-500/20' : ''}`}
                 disabled={isGeneratingAD}
               >
                 {isGeneratingAD ? (
                   <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 ) : (
-                  <Sparkles className="w-4 h-4" />
+                  <Volume2 className="w-4 h-4" />
                 )}
               </Button>
             </div>
