@@ -400,8 +400,38 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
 
   console.log(`✅ AssemblyAI transcription completed. Utterances: ${resultData.utterances?.length || 0}, Words: ${resultData.words?.length || 0}`);
 
+  // Helper: Parse SRT into timestamped segments
+  const parseSRT = (srt: string) => {
+    const lines = srt.split(/\r?\n/);
+    const segs: any[] = [];
+    let i = 0;
+    const toSeconds = (h: string, m: string, s: string, ms: string) => (
+      Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(ms) / 1000
+    );
+    while (i < lines.length) {
+      // index line
+      while (i < lines.length && !lines[i].trim()) i++;
+      if (i >= lines.length) break;
+      i++; // skip index
+      if (i >= lines.length) break;
+      const timeLine = lines[i++].trim();
+      const match = timeLine.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/);
+      if (!match) continue;
+      const start = toSeconds(match[1], match[2], match[3], match[4]);
+      const end = toSeconds(match[5], match[6], match[7], match[8]);
+      const textLines: string[] = [];
+      while (i < lines.length && lines[i].trim() !== '') {
+        textLines.push(lines[i++]);
+      }
+      while (i < lines.length && lines[i].trim() === '') i++;
+      const text = textLines.join(' ').trim();
+      if (text) segs.push({ text, start, end, words: [] });
+    }
+    return segs;
+  };
+
   // Build segments from utterances when available
-  const segments: any[] = [];
+  let segments: any[] = [];
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
     for (const u of resultData.utterances) {
       segments.push({
@@ -439,6 +469,30 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     segments.push({ text: resultData.text || "", start: 0, end: (resultData.audio_duration || resultData.duration || 0) });
   }
 
+  // Fallback: if we still have 0/1 coarse segment or missing timings, try SRT export
+  if ((segments.length <= 1 || segments.some(s => !s.start && !s.end)) && transcriptId) {
+    try {
+      console.log("Attempting SRT fallback for detailed timestamps...");
+      const srtRes = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}/srt?chars_per_caption=48`, {
+        headers: { authorization: apiKey },
+      });
+      if (srtRes.ok) {
+        const srtText = await srtRes.text();
+        const srtSegments = parseSRT(srtText);
+        if (Array.isArray(srtSegments) && srtSegments.length > 0) {
+          segments = srtSegments;
+          console.log(`✅ SRT fallback produced ${segments.length} segments`);
+        } else {
+          console.log("SRT parsed but yielded no segments");
+        }
+      } else {
+        console.warn("SRT request failed:", srtRes.status, await srtRes.text());
+      }
+    } catch (e: any) {
+      console.warn("SRT fallback error:", e?.message || String(e));
+    }
+  }
+
   const fullText = (resultData.text as string) || segments.map((s) => s.text).join(" ");
   return {
     text: fullText,
@@ -446,7 +500,6 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     language: languageCode || resultData.language_code || "en",
     words: segments.flatMap((s: any) => s.words || []),
   };
-}
 
 // Use Twelve Labs for comprehensive video analysis
 async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, language?: string): Promise<any> {
