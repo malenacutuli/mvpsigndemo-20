@@ -826,34 +826,55 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 });
                 
                 finalCaptions = finalCaptions.map((s: any, index: number) => {
-                  const mappedName = mapping?.[s.speaker];
-                  const char = mappedName ? byName[mappedName] : byName[s.speaker];
-                  
-                  if (char) {
-                    console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
-                    return {
-                      ...s,
-                      speaker: char.name,
-                      speakerColor: char.color || s.speakerColor,
-                      isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
-                    };
-                  } else {
-                    console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
-                    // Try case-insensitive match as fallback
-                    const lowercaseSpeaker = s.speaker?.toLowerCase();
-                    const fallbackChar = Object.values(byName).find((c: any) => 
-                      c?.name?.toLowerCase() === lowercaseSpeaker
-                    );
-                    if (fallbackChar) {
-                      console.log(`✅ Found case-insensitive match: ${lowercaseSpeaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
+                  try {
+                    const mappedName = mapping?.[s.speaker];
+                    const char = mappedName ? byName[mappedName] : byName[s.speaker];
+                    
+                    if (char) {
+                      console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
                       return {
                         ...s,
-                        speakerColor: fallbackChar.color || s.speakerColor,
-                        isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
+                        speaker: char.name || s.speaker,  // Ensure speaker name exists
+                        speakerColor: char.color || s.speakerColor,
+                        isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
                       };
+                    } else {
+                      console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
+                      // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
+                      const lowercaseSpeaker = s.speaker?.toLowerCase();
+                      const fallbackChar = Object.values(byName).find((c: any) => {
+                        if (!c?.name) return false;
+                        const charName = c.name.toLowerCase();
+                        return charName === lowercaseSpeaker || 
+                               charName.includes(lowercaseSpeaker.substring(0, 4)) ||
+                               lowercaseSpeaker.includes(charName.substring(0, 4));
+                      });
+                      
+                      if (fallbackChar) {
+                        console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
+                        return {
+                          ...s,
+                          speaker: fallbackChar.name || s.speaker,
+                          speakerColor: fallbackChar.color || s.speakerColor,
+                          isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
+                        };
+                      }
                     }
+                    
+                    // Return original segment if no character mapping found
+                    return {
+                      ...s,
+                      speaker: s.speaker || 'Unknown',  // Ensure speaker exists
+                      speakerColor: s.speakerColor || '#FFFFFF'  // Default color
+                    };
+                  } catch (segmentError) {
+                    console.error('Error processing segment:', segmentError, s);
+                    return {
+                      ...s,
+                      speaker: s.speaker || 'Unknown',
+                      speakerColor: s.speakerColor || '#FFFFFF'
+                    };
                   }
-                  return s;
                 });
               } catch (e) {
                 console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
