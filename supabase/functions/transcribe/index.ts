@@ -57,74 +57,94 @@ serve(async (req) => {
       });
     }
 
-    // Get video size
+    // Get video size first to determine processing strategy
     const headResponse = await fetch(resolvedVideoUrl, { method: 'HEAD' });
     const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
     const sizeMB = Math.round(contentLength / 1024 / 1024);
     const contentType = headResponse.headers.get('content-type') || '';
     console.log(`Video size: ${sizeMB}MB, content-type: ${contentType}`);
 
-    // Download video
-    console.log("Downloading video...");
-    const videoResponse = await fetch(resolvedVideoUrl);
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to download video: ${videoResponse.status}`);
-    }
-    
-    const videoBuffer = await videoResponse.arrayBuffer();
-    console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
-
     let transcriptionResult;
 
-    // Strategy 1: Try Twelve Labs for comprehensive analysis (best quality)
-    console.log("Attempting Twelve Labs analysis first...");
-    try {
-      const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-      if (twelveLabsResult && !twelveLabsResult.error) {
-        console.log("✅ Twelve Labs analysis successful!");
-        transcriptionResult = twelveLabsResult;
-      } else {
-        console.log("Twelve Labs failed, falling back to OpenAI:", twelveLabsResult?.error);
-        throw new Error("Twelve Labs fallback");
-      }
-    } catch (error) {
-      console.log("Twelve Labs failed, falling back to AssemblyAI:", error.message);
+    // For large videos (>100MB), skip downloading and use direct URL processing to avoid memory issues
+    if (contentLength > 100 * 1024 * 1024) {
+      console.log(`Large video detected (${sizeMB}MB), using direct URL processing to avoid memory issues...`);
       
-      // Fallback to AssemblyAI for all file sizes
+      // Skip Twelve Labs for large videos and go directly to AssemblyAI
       const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
       if (ASSEMBLYAI_API_KEY) {
-        console.log(`Using AssemblyAI for transcription (${sizeMB}MB video)...`);
+        console.log(`Using AssemblyAI direct URL processing for ${sizeMB}MB video...`);
         try {
           transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-          console.log("✅ AssemblyAI transcription successful!");
+          console.log("✅ AssemblyAI direct URL processing successful!");
         } catch (assemblyError) {
           console.log("AssemblyAI failed:", (assemblyError as any).message);
-          // Final fallback to OpenAI for small files only
+          transcriptionResult = { error: 'large_video_failed', message: `Large video processing failed: ${(assemblyError as any).message}` };
+        }
+      } else {
+        transcriptionResult = { error: 'no_assemblyai_key', message: 'AssemblyAI API key required for large videos to avoid memory issues.' };
+      }
+    } else {
+      // For smaller videos, download and try comprehensive analysis
+      console.log("Downloading video...");
+      const videoResponse = await fetch(resolvedVideoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to download video: ${videoResponse.status}`);
+      }
+      
+      const videoBuffer = await videoResponse.arrayBuffer();
+      console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
+
+      // Strategy 1: Try Twelve Labs for comprehensive analysis (best quality)
+      console.log("Attempting Twelve Labs analysis first...");
+      try {
+        const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+        if (twelveLabsResult && !twelveLabsResult.error) {
+          console.log("✅ Twelve Labs analysis successful!");
+          transcriptionResult = twelveLabsResult;
+        } else {
+          console.log("Twelve Labs failed, falling back to AssemblyAI:", twelveLabsResult?.error);
+          throw new Error("Twelve Labs fallback");
+        }
+      } catch (error) {
+        console.log("Twelve Labs failed, falling back to AssemblyAI:", error.message);
+        
+        // Fallback to AssemblyAI for all file sizes
+        const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+        if (ASSEMBLYAI_API_KEY) {
+          console.log(`Using AssemblyAI for transcription (${sizeMB}MB video)...`);
+          try {
+            transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+            console.log("✅ AssemblyAI transcription successful!");
+          } catch (assemblyError) {
+            console.log("AssemblyAI failed:", (assemblyError as any).message);
+            // Final fallback to OpenAI for small files only
+            if (sizeMB <= 23) {
+              console.log("Trying OpenAI as final fallback...");
+              try {
+                transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+                console.log("✅ OpenAI direct processing successful!");
+              } catch (openaiError) {
+                console.log("OpenAI also failed:", (openaiError as any).message);
+                transcriptionResult = { error: 'all_providers_failed', message: 'All transcription providers failed. Please check video format and API keys.' };
+              }
+            } else {
+              transcriptionResult = { error: 'assembly_failed', message: 'AssemblyAI failed for large video. Please verify API key and video accessibility.' };
+            }
+          }
+        } else {
+          console.log("No AssemblyAI key configured, trying OpenAI for small files...");
           if (sizeMB <= 23) {
-            console.log("Trying OpenAI as final fallback...");
             try {
               transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
               console.log("✅ OpenAI direct processing successful!");
             } catch (openaiError) {
-              console.log("OpenAI also failed:", (openaiError as any).message);
-              transcriptionResult = { error: 'all_providers_failed', message: 'All transcription providers failed. Please check video format and API keys.' };
+              console.log("OpenAI failed:", (openaiError as any).message);
+              transcriptionResult = { error: 'openai_failed', message: 'OpenAI failed and no AssemblyAI key configured. Please add ASSEMBLYAI_API_KEY for large files.' };
             }
           } else {
-            transcriptionResult = { error: 'assembly_failed', message: 'AssemblyAI failed for large video. Please verify API key and video accessibility.' };
+            transcriptionResult = { error: 'no_provider', message: 'No suitable provider for large video. Please configure ASSEMBLYAI_API_KEY.' };
           }
-        }
-      } else {
-        console.log("No AssemblyAI key configured, trying OpenAI for small files...");
-        if (sizeMB <= 23) {
-          try {
-            transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-            console.log("✅ OpenAI direct processing successful!");
-          } catch (openaiError) {
-            console.log("OpenAI failed:", (openaiError as any).message);
-            transcriptionResult = { error: 'openai_failed', message: 'OpenAI failed and no AssemblyAI key configured. Please add ASSEMBLYAI_API_KEY for large files.' };
-          }
-        } else {
-          transcriptionResult = { error: 'no_provider', message: 'No suitable provider for large video. Please configure ASSEMBLYAI_API_KEY.' };
         }
       }
     }
@@ -486,7 +506,7 @@ async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, lang
   }
 }
 
-// Save transcript to database
+// Save transcript to database with improved error handling
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
   
@@ -501,51 +521,59 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Clear existing segments if force re-extract
-    if (forceReExtract) {
-      await supabase
-        .from('transcript_segments')
-        .delete()
-        .eq('video_id', videoId);
-      console.log("Cleared existing segments");
+    // Clear existing segments first (delete before insert to avoid constraint issues)
+    const { error: deleteError } = await supabase
+      .from('transcript_segments')
+      .delete()
+      .eq('video_id', videoId)
+      .eq('language', transcriptionResult.language || 'en');
+      
+    if (deleteError) {
+      console.warn("Delete existing segments warning:", deleteError);
     }
     
-    // Prepare segments for database
+    // Prepare segments with proper indexing
     const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
       video_id: videoId,
+      idx: index,
       text: segment.text || '',
       start_time: Number(segment.start) || (index * 3),
       end_time: Number(segment.end) || ((index + 1) * 3),
-      confidence: segment.confidence || null,
+      confidence: segment.confidence || 0.95,
       language: transcriptionResult.language || 'en',
       segment_type: 'dialogue',
-      speaker: `Speaker ${(index % 3) + 1}`,
-      speaker_color: '#3B82F6',
+      speaker: segment.speaker || `Speaker ${(index % 3) + 1}`,
+      speaker_color: segment.speakerColor || '#3B82F6',
       emphasis: 'normal',
       pitch: 'normal',
-      is_off_camera: false
+      is_off_camera: false,
+      words: segment.words || null
     }));
     
-    // Save in batches
-    const BATCH_SIZE = 50;
+    // Save in smaller batches to avoid memory issues
+    const BATCH_SIZE = 25;
+    let successCount = 0;
+    
     for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
       const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
       
-      const { error } = await supabase
-        .from('transcript_segments')
-        .upsert(batch, { 
-          onConflict: 'video_id,language,start_time',
-          ignoreDuplicates: false
-        });
-        
-      if (error) {
-        console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
-      } else {
-        console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
+      try {
+        const { error } = await supabase
+          .from('transcript_segments')
+          .insert(batch);
+          
+        if (error) {
+          console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
+        } else {
+          console.log(`✅ Batch ${Math.floor(i/BATCH_SIZE) + 1} saved successfully`);
+          successCount += batch.length;
+        }
+      } catch (batchError) {
+        console.error(`Batch ${Math.floor(i/BATCH_SIZE) + 1} processing error:`, batchError);
       }
     }
     
-    console.log(`✅ Database save complete: ${segmentsToSave.length} segments`);
+    console.log(`✅ Database save complete: ${successCount} segments`);
     
   } catch (error) {
     console.error("Database save failed:", error);
