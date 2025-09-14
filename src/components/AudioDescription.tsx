@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 // Using ElevenLabs via Supabase Edge Function proxy for secure TTS
+
 
 interface AudioDescriptionProps {
   currentTime: number;
@@ -126,20 +126,19 @@ useEffect(() => {
           contentType
         });
         
-        const { data, error } = await supabase.functions.invoke('tts', {
-          body: { 
+        const res = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/tts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
+          },
+          body: JSON.stringify({ 
             text: currentDescription.text, 
             voiceId, 
             modelId: language === 'es' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5',
             language: language
-          }
+          })
         });
-        
-        if (error) {
-          throw new Error(`TTS failed: ${error.message}`);
-        }
-        
-        const res = new Response(data);
         
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
