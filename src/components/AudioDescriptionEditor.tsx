@@ -643,7 +643,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     onDescriptionsUpdate?.(updatedDescriptions);
     setEditingIndex(null);
     setEditText('');
-    toast.success('Audio description updated successfully');
+    toast.success('Audio description saved successfully');
   };
 
   const cancelEdit = () => {
@@ -823,11 +823,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                             <Badge variant="secondary" className={`text-xs ${getVoiceStyleColor(desc.voiceStyle)}`}>
                               {desc.voiceStyle}
                             </Badge>
-                            {desc.timestamp && (
-                              <Badge variant="outline" className="text-xs">
-                                @{desc.timestamp.toFixed(1)}s
-                              </Badge>
-                            )}
+                            <Badge variant="outline" className="text-xs">
+                              @{desc.startTime.toFixed(1)}s
+                            </Badge>
                           </div>
                           <p className="text-sm text-foreground">{desc.text}</p>
                         </div>

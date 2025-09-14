@@ -418,7 +418,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="relative flex items-end justify-center pointer-events-none w-full"
+      className="absolute bottom-20 left-1/2 transform -translate-x-1/2 pointer-events-none w-full flex justify-center"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box - Expanded for Better Text Display */}
