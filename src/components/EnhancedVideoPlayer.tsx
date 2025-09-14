@@ -51,7 +51,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
-  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters } = useVideoStorage(videoId);
+  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
@@ -212,26 +212,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   // Watch for captions changes and convert them to transcript segments if no saved transcripts exist
   useEffect(() => {
-    if (captions.length > 0 && transcriptSegments.length === 0) {
-      console.log('🔄 Converting generated captions to transcript segments:', captions.length);
-      console.log('📋 First caption for conversion:', captions[0]);
-      
-      const detectedLang = detectLanguageFromCaptions(captions);
-      console.log('🌐 Auto-detected language from captions:', detectedLang);
-      
-      // Convert captions to transcript segment format
-      const convertedSegments = captions.map(caption => ({
-        ...caption,
-        startTime: caption.startTime || 0,
-        endTime: caption.endTime || 0,
-        text: caption.text || '',
-        speaker: caption.speaker || 'Speaker',
-        speakerColor: caption.speakerColor || '#3B82F6'
-      }));
-      
-      console.log('✅ Converted segments for AudioDescriptionEditor:', convertedSegments.length);
-      handleTranscriptUpdate(convertedSegments, detectedLang);
-    }
+    const convertCaptions = async () => {
+      if (captions.length > 0 && transcriptSegments.length === 0) {
+        console.log('🔄 Converting generated captions to transcript segments:', captions.length);
+        console.log('📋 First caption for conversion:', captions[0]);
+        
+        const detectedLang = detectLanguageFromCaptions(captions);
+        console.log('🌐 Auto-detected language from captions:', detectedLang);
+        
+        // Convert captions to transcript segment format
+        const convertedSegments = captions.map(caption => ({
+          ...caption,
+          startTime: caption.startTime || 0,
+          endTime: caption.endTime || 0,
+          text: caption.text || '',
+          speaker: caption.speaker || 'Speaker',
+          speakerColor: caption.speakerColor || '#3B82F6'
+        }));
+        
+        console.log('✅ Converted segments for AudioDescriptionEditor:', convertedSegments.length);
+        await handleTranscriptUpdate(convertedSegments, detectedLang);
+      }
+    };
+    
+    convertCaptions();
   }, [captions.length, transcriptSegments.length]);
 
   // Add immediate debugging and state change watchers
@@ -244,25 +248,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   // Re-apply character mappings once characters load/change
   useEffect(() => {
-    if (captions.length > 0) {
-      console.log('🎨 Re-applying character mappings due to characters update:', characters.length);
-      handleTranscriptUpdate(captions, currentLanguage);
-    }
-  }, [characters]);
-
-  // Re-apply when speaker mappings in localStorage change (e.g., saved from Character Manager in another tab)
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === `speaker-mappings-${videoId}`) {
-        console.log('🗂️ Detected external speaker-mapping change, re-applying');
-        if (captions.length > 0) handleTranscriptUpdate(captions, currentLanguage);
+    const applyMappings = async () => {
+      if (captions.length > 0) {
+        console.log('🎨 Re-applying character mappings due to characters update:', characters.length);
+        await handleTranscriptUpdate(captions, currentLanguage);
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [videoId, captions, currentLanguage]);
+    
+    applyMappings();
+  }, [characters]);
 
-  const handleTranscriptUpdate = (segments: any[], detectedLang?: string) => {
+  // Re-apply when speaker mappings in database change (e.g., saved from Character Manager)
+  useEffect(() => {
+    const handleMappingsUpdate = async () => {
+      if (captions.length > 0) {
+        console.log('🗂️ Detected potential speaker-mapping change, re-applying from database');
+        await handleTranscriptUpdate(captions, currentLanguage);
+      }
+    };
+    
+    // Listen for character updates that might affect mappings
+    handleMappingsUpdate();
+  }, [characters, videoId, currentLanguage]);
+
+  const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
     
   // Auto-detect language if not provided, but prefer explicit prop
@@ -287,8 +296,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     // Apply Character Manager mappings (names, colors, off-camera) as the single source of truth
     let applied = segments;
     try {
-      const mappingKey = `speaker-mappings-${videoId}`;
-      const savedMappings = JSON.parse(localStorage.getItem(mappingKey) || '{}');
+      const savedMappings = await loadSpeakerMappings(currentLanguage);
       const charByName: Record<string, any> = {};
       (characters || []).forEach(c => { charByName[c.name] = c; });
       
@@ -314,7 +322,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         };
       });
     } catch (e) {
-      console.warn('⚠️ ENHANCED PLAYER: Failed to apply character mappings from localStorage, using raw segments', e);
+      console.warn('⚠️ ENHANCED PLAYER: Failed to apply character mappings from database, using raw segments', e);
       applied = segments;
     }
 
@@ -350,7 +358,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const refreshed = await loadTranscriptSegments(currentLanguage);
       if (refreshed && refreshed.length > 0) {
         setTranscriptSegments(refreshed);
-        handleTranscriptUpdate(refreshed, currentLanguage);
+        await handleTranscriptUpdate(refreshed, currentLanguage);
       }
     } catch (e) {
       console.warn('⚠️ Failed to refresh transcript after character update, falling back to local updates', e);
@@ -662,7 +670,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           const detectedLang = detectLanguageFromCaptions(convertedSegments);
           console.log('🌐 Auto-detected language from transcript:', detectedLang);
           
-          handleTranscriptUpdate(convertedSegments, detectedLang);
+          await handleTranscriptUpdate(convertedSegments, detectedLang);
         } else {
           console.log('⚠️ ENHANCED PLAYER: No saved transcript found for language:', currentLanguage);
           
@@ -670,7 +678,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           if (captions.length > 0) {
             console.log('🔄 Converting existing captions to transcript segments:', captions.length);
             const detectedLang = detectLanguageFromCaptions(captions);
-            handleTranscriptUpdate(captions, detectedLang);
+            await handleTranscriptUpdate(captions, detectedLang);
           } else {
             setCaptions([]);
             setTranscriptSegments([]);

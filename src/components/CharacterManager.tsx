@@ -101,7 +101,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
-  const { saveCharacters, loadCharacters } = useVideoStorage(videoId);
+  const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
 
   // Load existing characters on mount
   useEffect(() => {
@@ -133,13 +133,19 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   }, [existingSpeakers]);
 
-  // Load saved mappings
+  // Load speaker mappings from database on mount
   useEffect(() => {
-    const mappings = localStorage.getItem(`speaker-mappings-${videoId}`);
-    if (mappings) {
-      try { setSpeakerMappings(JSON.parse(mappings)); } catch {}
-    }
-  }, [videoId]);
+    const loadMappingsFromDatabase = async () => {
+      try {
+        const mappings = await loadSpeakerMappings(language);
+        setSpeakerMappings(mappings);
+      } catch (error) {
+        console.error('Failed to load speaker mappings:', error);
+      }
+    };
+    
+    loadMappingsFromDatabase();
+  }, [videoId, language, loadSpeakerMappings]);
 
   // Get all available colors for character type (not filtered by usage)
   const getAllColorsForType = (type: Character['type']) => {
@@ -213,13 +219,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     try {
       await saveCharacters(characters);
       
-      // Save speaker mappings
-      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(speakerMappings));
+      // Save speaker mappings to database
+      await saveSpeakerMappings(speakerMappings, language);
       
       // Apply character settings to mapped speakers in database
       await applyCharacterMappings();
       
-      // Save to localStorage for immediate access
+      // Keep localStorage for backward compatibility and instant access
       localStorage.setItem('character-colors', JSON.stringify(
         characters.reduce((acc, char) => ({ ...acc, [char.name]: char.color }), {})
       ));

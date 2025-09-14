@@ -506,6 +506,81 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // Save speaker mappings to database
+  const saveSpeakerMappings = async (mappings: Record<string, string>, language: string = 'en') => {
+    if (!user) {
+      // Fallback to localStorage for unauthenticated users
+      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(mappings));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('speaker_mappings')
+        .upsert({
+          video_id: videoId,
+          language,
+          mappings,
+          created_by: user.id
+        }, {
+          onConflict: 'video_id,language,created_by'
+        });
+
+      if (error) throw error;
+
+      console.log('💾 Speaker mappings saved to database');
+    } catch (err) {
+      console.error('Failed to save speaker mappings:', err);
+      // Fallback to localStorage
+      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(mappings));
+    }
+  };
+
+  // Load speaker mappings from database
+  const loadSpeakerMappings = async (language: string = 'en'): Promise<Record<string, string>> => {
+    if (!user) {
+      // Fallback to localStorage for unauthenticated users
+      const saved = localStorage.getItem(`speaker-mappings-${videoId}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (error) {
+          console.error('Failed to parse localStorage speaker mappings:', error);
+        }
+      }
+      return {};
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('speaker_mappings')
+        .select('mappings')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .eq('created_by', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      const mappings = (data?.mappings as Record<string, string>) || {};
+      console.log('💿 Speaker mappings loaded from database:', mappings);
+      return mappings;
+    } catch (err) {
+      console.error('Failed to load speaker mappings:', err);
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem(`speaker-mappings-${videoId}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (error) {
+          console.error('Failed to parse localStorage speaker mappings:', error);
+        }
+      }
+      return {};
+    }
+  };
+
   return {
     loading,
     error,
@@ -515,6 +590,8 @@ export const useVideoStorage = (videoId: string) => {
     loadAudioDescriptions,
     saveCharacters,
     loadCharacters,
+    saveSpeakerMappings,
+    loadSpeakerMappings,
     saveToCache,
     loadFromCache
   };

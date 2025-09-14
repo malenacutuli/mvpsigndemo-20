@@ -407,6 +407,36 @@ export type Database = {
           },
         ]
       }
+      speaker_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          language: string
+          mappings: Json
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          language?: string
+          mappings?: Json
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          language?: string
+          mappings?: Json
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       subscriber_access_audit: {
         Row: {
           access_type: string
