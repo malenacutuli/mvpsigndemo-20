@@ -1306,11 +1306,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                     </div>
                     
                     <div className="p-4 border border-muted rounded-lg">
-                      <h4 className="font-medium mb-2">Accessibility Features</h4>
+                      <h4 className="font-medium mb-2">Immersive Features</h4>
                       <div className="text-sm space-y-1 text-muted-foreground">
                         <div>Captions: {showCaptions ? 'Enabled' : 'Disabled'}</div>
                         <div>Audio Description: {showAudioDescription ? 'Enabled' : 'Disabled'}</div>
-                        <div>ASL Avatar: {showASL ? 'Enabled' : 'Disabled'}</div>
+                        <div className="text-amber-600 dark:text-amber-400 font-medium">💡 Tip: Use the immersive controls instead of accessibility controls</div>
                         <div>Keyboard Navigation: {keyboardNavEnabled ? 'Enabled' : 'Disabled'}</div>
                       </div>
                     </div>
