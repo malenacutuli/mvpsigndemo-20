@@ -248,11 +248,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, []);
 
-  // Use small tolerance to avoid missing captions at segment edges
+  // Use small tolerance to avoid missing captions at segment edges and add read-ahead fallback
   const SEGMENT_TOLERANCE = 0.05; // 50ms
-  const activeCaption = captions.find(caption => 
+  const READAHEAD_WINDOW = 3.0; // always show upcoming caption up to 3s early (CI read-ahead)
+  const foundActive = captions.find(caption => 
     currentTime >= (caption.startTime - SEGMENT_TOLERANCE) && currentTime <= (caption.endTime + SEGMENT_TOLERANCE)
   );
+  const upcoming = !foundActive
+    ? captions.find(caption => caption.startTime >= currentTime && (caption.startTime - currentTime) <= READAHEAD_WINDOW)
+    : undefined;
+  const activeCaption = foundActive || upcoming || captions[0];
 
   // Debug caption rendering and character colors
   useEffect(() => {
