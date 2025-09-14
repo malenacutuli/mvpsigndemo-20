@@ -775,6 +775,12 @@ export const useVideoStorage = (videoId: string) => {
     error,
     saveTranscriptSegments,
     loadTranscriptSegments,
+    // Force a fresh DB load (bypasses in-memory cache)
+    loadTranscriptSegmentsFresh: async (language: string = 'en') => {
+      const cacheKey = `transcript_segments_${videoId}_${language}`;
+      loadingCache.current.delete(cacheKey);
+      return await loadTranscriptSegments(language);
+    },
     saveAudioDescriptions,
     loadAudioDescriptions,
     saveCharacters,

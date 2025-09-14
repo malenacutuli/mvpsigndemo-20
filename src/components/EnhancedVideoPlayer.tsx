@@ -51,7 +51,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
-  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
+  const { loadTranscriptSegments, loadTranscriptSegmentsFresh, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
@@ -320,7 +320,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     
     // Force reload from database
     try {
-      const freshSegments = await loadTranscriptSegments(currentLanguage);
+      const freshSegments = await loadTranscriptSegmentsFresh(currentLanguage);
       if (freshSegments.length > 0) {
         const finalCaptions = freshSegments.map(segment => ({
           ...segment,
@@ -355,9 +355,25 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         setTimeout(forceRefreshTranscript, 100); // Small delay to ensure save is complete
       }
     };
+
+    const handleTranscriptSaved = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent<any>).detail || {};
+        if (detail?.videoId !== videoId) return;
+        console.log('📢 Received transcript-saved event, refreshing...');
+        if (detail.language && detail.language !== currentLanguage) {
+          setCurrentLanguage(detail.language);
+        }
+        setTimeout(forceRefreshTranscript, 50);
+      } catch {}
+    };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('transcript-saved', handleTranscriptSaved as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('transcript-saved', handleTranscriptSaved as EventListener);
+    };
   }, [videoId, currentLanguage]);
 
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {

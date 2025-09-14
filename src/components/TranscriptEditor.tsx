@@ -312,11 +312,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         title: "Changes Saved",
         description: "All transcript changes have been saved successfully.",
       });
+
+      // Notify the player in this tab to refresh
+      try {
+        window.dispatchEvent(new CustomEvent('transcript-saved', { detail: { videoId, language: selectedLanguage } }));
+      } catch {}
       
       if (onTranscriptUpdate) {
         onTranscriptUpdate(editingTranscript);
       }
-      
     } catch (error) {
       console.error('❌ Failed to save changes:', error);
       toast({
