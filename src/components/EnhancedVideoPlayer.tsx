@@ -51,7 +51,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
-  const { loadTranscriptSegments, loadAudioDescriptions } = useVideoStorage(videoId);
+  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
 
@@ -257,14 +257,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleTranscriptUpdate = (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
     
-    // Auto-detect language if not provided
-    const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
-    
-    // Update current language if auto-detected language is different
-    if (autoDetectedLang !== currentLanguage) {
-      console.log('🌐 Language auto-detected:', autoDetectedLang, 'changing from:', currentLanguage);
-      setCurrentLanguage(autoDetectedLang);
-    }
+  // Auto-detect language if not provided, but prefer explicit prop
+  const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
+  const preferredLang = language || autoDetectedLang;
+  
+  // Update current language if preferred language is different
+  if (preferredLang !== currentLanguage) {
+    console.log('🌐 Language resolved:', preferredLang, 'changing from:', currentLanguage);
+    setCurrentLanguage(preferredLang);
+  }
     
     console.log('🔍 ENHANCED PLAYER: First segment in handleTranscriptUpdate:', segments[0] ? {
       speaker: segments[0].speaker,
@@ -313,10 +314,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     setCaptions([...applied]);
     setTranscriptSegments([...applied]);
     
-    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', applied.length, 'segments, detected language:', autoDetectedLang);
+    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', applied.length, 'segments, detected language:', preferredLang);
     
     if (onTranscriptUpdate) {
-      onTranscriptUpdate(applied, autoDetectedLang);
+      onTranscriptUpdate(applied, preferredLang);
     }
   };
 
@@ -683,15 +684,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           setAudioDescriptions([]);
         }
         
-        // Load saved characters
-        const savedCharacters = localStorage.getItem(`characters-${videoId}`);
-        if (savedCharacters) {
-          try {
-            const charactersData = JSON.parse(savedCharacters);
-            setCharacters(charactersData);
-          } catch (error) {
-            console.error('Failed to load saved characters:', error);
+        // Load saved characters from DB (fallback to localStorage if unauthenticated handled in hook)
+        try {
+          const chars = await loadCharacters();
+          if (chars && chars.length > 0) {
+            setCharacters(chars);
+            console.log('👥 Loaded characters from DB:', chars.length);
+          } else {
+            // Legacy/local fallback
+            const savedCharacters = localStorage.getItem(`characters-${videoId}`) || localStorage.getItem(`characters_${videoId}`);
+            if (savedCharacters) {
+              const charactersData = JSON.parse(savedCharacters);
+              setCharacters(charactersData);
+              console.log('👥 Loaded characters from localStorage:', charactersData.length);
+            }
           }
+        } catch (err) {
+          console.error('Failed to load characters:', err);
         }
         
       } catch (error) {

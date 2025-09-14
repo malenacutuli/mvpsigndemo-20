@@ -794,7 +794,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           <CaptionsWithIntention 
             captions={(() => {
               // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
-              let finalCaptions = [];
+              let finalCaptions = [] as any[];
               
               if (initialCaptions && initialCaptions.length > 0) {
                 finalCaptions = initialCaptions;
@@ -808,6 +808,31 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               } else {
                 finalCaptions = [];
                 console.log('⚠️ No captions available from any source');
+              }
+              
+              // FINAL MAPPING GATE: enforce Character Manager mappings just before render
+              try {
+                const vid = videoId || 'default';
+                const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
+                const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
+                const byName: Record<string, any> = {};
+                (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
+                
+                finalCaptions = finalCaptions.map((s: any) => {
+                  const mappedName = mapping?.[s.speaker];
+                  const char = mappedName ? byName[mappedName] : byName[s.speaker];
+                  if (char) {
+                    return {
+                      ...s,
+                      speaker: char.name,
+                      speakerColor: char.color || s.speakerColor,
+                      isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
+                    };
+                  }
+                  return s;
+                });
+              } catch (e) {
+                console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
               }
               
               console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
