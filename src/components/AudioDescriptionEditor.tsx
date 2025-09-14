@@ -678,7 +678,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     setEditVoiceStyle(newDescription.voiceStyle);
   };
 
-  const saveAllDescriptions = async () => {
+  async function saveAllDescriptions() {
     if (descriptions.length === 0) {
       toast.error('No descriptions to save');
       return;
@@ -708,7 +708,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     } finally {
       setIsSaving(false);
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
