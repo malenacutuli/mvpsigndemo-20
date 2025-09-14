@@ -818,16 +818,40 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 const byName: Record<string, any> = {};
                 (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
                 
-                finalCaptions = finalCaptions.map((s: any) => {
+                console.log('🔍 Final mapping gate debug:', {
+                  mapping,
+                  charactersCount: characters.length,
+                  byName: Object.keys(byName),
+                  sampleSpeakers: finalCaptions.slice(0, 5).map(c => c.speaker)
+                });
+                
+                finalCaptions = finalCaptions.map((s: any, index: number) => {
                   const mappedName = mapping?.[s.speaker];
                   const char = mappedName ? byName[mappedName] : byName[s.speaker];
+                  
                   if (char) {
+                    console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
                     return {
                       ...s,
                       speaker: char.name,
                       speakerColor: char.color || s.speakerColor,
                       isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
                     };
+                  } else {
+                    console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
+                    // Try case-insensitive match as fallback
+                    const lowercaseSpeaker = s.speaker?.toLowerCase();
+                    const fallbackChar = Object.values(byName).find((c: any) => 
+                      c?.name?.toLowerCase() === lowercaseSpeaker
+                    );
+                    if (fallbackChar) {
+                      console.log(`✅ Found case-insensitive match: ${lowercaseSpeaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
+                      return {
+                        ...s,
+                        speakerColor: fallbackChar.color || s.speakerColor,
+                        isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
+                      };
+                    }
                   }
                   return s;
                 });

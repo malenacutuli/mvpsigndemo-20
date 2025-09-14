@@ -253,7 +253,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     currentTime >= caption.startTime && currentTime <= caption.endTime
   );
 
-  // Debug caption rendering
+  // Debug caption rendering and character colors
   useEffect(() => {
     if (captions && captions.length > 0) {
       console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
@@ -261,8 +261,21 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       console.log('🔍 Caption time ranges:', captions.slice(0, 3).map(c => ({ 
         start: c.startTime, 
         end: c.endTime, 
-        text: c.text.substring(0, 20) + '...' 
+        text: c.text.substring(0, 20) + '...',
+        speaker: c.speaker,
+        speakerColor: c.speakerColor
       })));
+      
+      if (activeCaption) {
+        console.log('🎯 Active caption details:', {
+          startTime: activeCaption.startTime,
+          endTime: activeCaption.endTime,
+          text: activeCaption.text.substring(0, 30) + '...',
+          speaker: activeCaption.speaker,
+          speakerColor: activeCaption.speakerColor,
+          hasColor: !!activeCaption.speakerColor
+        });
+      }
     }
   }, [captions, currentTime, activeCaption]);
 
