@@ -544,6 +544,25 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 end = words[words.length - 1].endTime;
               }
 
+              // Normalize relative word timings to absolute timeline if needed
+              if (words && words.length > 0) {
+                const maxWordEnd = Math.max(...words.map((w: any) => Number(w.endTime) || 0));
+                const minWordStart = Math.min(...words.map((w: any) => (typeof w.startTime === 'number' ? w.startTime : Number(w.startTime) || 0)));
+                const segDur = end - start;
+                const looksRelative = maxWordEnd <= (segDur + 0.05) && minWordStart >= -0.05 && start >= 0;
+                if (looksRelative) {
+                  words = words.map((w: any) => ({
+                    ...w,
+                    startTime: start + ((typeof w.startTime === 'number' ? w.startTime : Number(w.startTime) || 0)),
+                    endTime: start + ((typeof w.endTime === 'number' ? w.endTime : Number(w.endTime) || 0)),
+                  }));
+                  end = Math.max(end, start + maxWordEnd);
+                  if (segIdx < 5) {
+                    console.log(`🛠️ ENHANCED PLAYER: Normalized relative word timings for segment ${segIdx} (offset ${start.toFixed(2)}s)`);
+                  }
+                }
+              }
+
               return {
                 text: segment.text,
                 speaker: segment.speaker || 'Speaker',
