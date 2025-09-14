@@ -13,6 +13,7 @@ import type { CaptionSegment } from './CaptionsWithIntention';
 import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor } from './WordLevelEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
+import { TranscriptUploader } from './TranscriptUploader';
 
 interface TranscriptSegment {
   id: string;
@@ -61,7 +62,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
-  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs'>('twelvelabs');
+  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('twelvelabs');
+  const [showUploader, setShowUploader] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -290,6 +292,23 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const getSpeakerColor = (index: number) => {
     const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
     return colors[index % colors.length];
+  };
+
+  const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
+    console.log('📁 Transcript uploaded:', uploadedSegments.length, 'segments in', language);
+    setSegments(uploadedSegments);
+    setDetectedLanguage(language);
+    setCurrentStep('edit');
+    setExtractionComplete(true);
+    setShowUploader(false);
+    
+    // Save to database immediately
+    saveTranscript(false);
+    
+    toast({
+      title: "Transcript Uploaded",
+      description: `Successfully uploaded ${uploadedSegments.length} segments`,
+    });
   };
 
   const extractTranscript = async () => {
@@ -782,48 +801,79 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Extraction Method
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button 
                     variant={extractionMethod === 'whisper' ? 'default' : 'outline'}
-                    onClick={() => setExtractionMethod('whisper')}
+                    onClick={() => {
+                      setExtractionMethod('whisper');
+                      setShowUploader(false);
+                    }}
                     className="text-sm"
                   >
                     Fast Transcription
                   </Button>
                   <Button 
                     variant={extractionMethod === 'twelvelabs' ? 'default' : 'outline'}
-                    onClick={() => setExtractionMethod('twelvelabs')}
+                    onClick={() => {
+                      setExtractionMethod('twelvelabs');
+                      setShowUploader(false);
+                    }}
                     className="text-sm"
                   >
                     Advanced Analysis
+                  </Button>
+                  <Button 
+                    variant={extractionMethod === 'upload' ? 'default' : 'outline'}
+                    onClick={() => {
+                      setExtractionMethod('upload');
+                      setShowUploader(true);
+                    }}
+                    className="text-sm"
+                  >
+                    Upload Transcript
                   </Button>
                 </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {extractionMethod === 'twelvelabs' 
                       ? 'Advanced AI analysis with speaker identification, visual descriptions & creative audio descriptions'
+                      : extractionMethod === 'upload'
+                      ? 'Upload your own transcript file (SRT, VTT, TXT) with timestamps for editing intonation'
                       : 'Fast transcription with basic speaker detection'
                     }
                   </p>
               </div>
               
-              <Button 
-                onClick={extractTranscript}
-                disabled={isExtracting || !videoUrl}
-                size="lg"
-                className="w-full"
-              >
-                {isExtracting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {extractionMethod === 'twelvelabs' ? 'Analyzing with AI...' : 'Extracting transcript...'}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Mic className="h-4 w-4" />
-                    {extractionMethod === 'twelvelabs' ? 'Start AI Analysis' : 'Extract Transcript'}
-                  </div>
-                )}
-              </Button>
+              {extractionMethod !== 'upload' ? (
+                <Button 
+                  onClick={extractTranscript}
+                  disabled={isExtracting || !videoUrl}
+                  size="lg"
+                  className="w-full"
+                >
+                  {isExtracting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      {extractionMethod === 'twelvelabs' ? 'Analyzing with AI...' : 'Extracting transcript...'}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Mic className="h-4 w-4" />
+                      {extractionMethod === 'twelvelabs' ? 'Start AI Analysis' : 'Extract Transcript'}
+                    </div>
+                  )}
+                </Button>
+              ) : null}
+
+              {showUploader && (
+                <TranscriptUploader
+                  onTranscriptUploaded={handleTranscriptUploaded}
+                  onCancel={() => {
+                    setShowUploader(false);
+                    setExtractionMethod('twelvelabs');
+                  }}
+                  className="mt-4"
+                />
+              )}
             </div>
           </div>
         )}

@@ -554,6 +554,18 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             />
           </div>
 
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h4 className="text-sm font-medium text-blue-700 mb-2">📝 Transcript Options</h4>
+            <p className="text-xs text-blue-600 mb-3">
+              After uploading, you can either extract the transcript automatically or upload your own transcript file for editing with Captions with Intention.
+            </p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• <strong>Auto-extract:</strong> AI will transcribe your video with timestamps</p>
+              <p>• <strong>Upload transcript:</strong> Use your existing SRT, VTT, or TXT files with timestamps</p>
+              <p>• <strong>Edit intonation:</strong> Adjust emphasis and pitch for better accessibility</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
