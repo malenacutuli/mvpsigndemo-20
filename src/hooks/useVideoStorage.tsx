@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -45,6 +45,7 @@ export const useVideoStorage = (videoId: string) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadingCache = useRef(new Map<string, any>());
 
   // Helper function to safely parse words data from database
   const parseWordsData = (wordsJson: any): WordData[] | undefined => {
@@ -126,13 +127,23 @@ export const useVideoStorage = (videoId: string) => {
 
   // Load transcript segments from database
   const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
+    const cacheKey = `transcript_segments_${videoId}_${language}`;
+    
+    // Check if we already have this data to prevent duplicates
+    if (loadingCache.current.has(cacheKey)) {
+      console.log(`🔄 Using cached transcript for ${videoId} in ${language}, avoiding duplicate load...`);
+      return loadingCache.current.get(cacheKey) || [];
+    }
+
     if (!user) {
       // Fallback to localStorage
       const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          return data.segments || [];
+          const segments = data.segments || [];
+          loadingCache.current.set(cacheKey, segments);
+          return segments;
         } catch (error) {
           console.error('Failed to parse localStorage transcript:', error);
         }
@@ -168,6 +179,9 @@ export const useVideoStorage = (videoId: string) => {
         confidence: row.confidence
       }));
 
+      // Cache the result to prevent duplicate loading
+      loadingCache.current.set(cacheKey, segments);
+      
       console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
       return segments;
     } catch (err) {

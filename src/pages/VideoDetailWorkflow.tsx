@@ -44,9 +44,12 @@ export default function VideoDetailWorkflow() {
   useEffect(() => {
     if (id) {
       fetchVideo(id);
-      loadExistingCaptions(id);
+      // Only load captions if workflow is not shown (avoid duplicate loading)
+      if (!showWorkflow) {
+        loadExistingCaptions(id);
+      }
     }
-  }, [id]);
+  }, [id, showWorkflow]);
 
   const loadExistingCaptions = async (videoId: string) => {
     try {
