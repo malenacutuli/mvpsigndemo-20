@@ -6,30 +6,30 @@ const CI_COLORS = {
   // Read-ahead text color (white at 90% opacity)
   readahead: 'rgba(255, 255, 255, 0.9)',
   
-  // Main Characters (6 primary colors)
+  // Main Characters - Using design system tokens
   main: {
-    yellow: '#E5E517',    // CI Main Yellow
-    blue: '#17E5E5',      // CI Main Blue
-    red: '#E51717',       // CI Main Red
-    orange: '#E58017',    // CI Main Orange
-    green: '#17E517',     // CI Main Green
-    pink: '#E517E5'       // CI Main Pink
+    yellow: 'hsl(var(--cwi-main-yellow))',    // CI Main Yellow
+    blue: 'hsl(var(--cwi-main-blue))',        // CI Main Blue
+    red: 'hsl(var(--cwi-main-red))',          // CI Main Red
+    orange: 'hsl(var(--cwi-main-orange))',    // CI Main Orange
+    green: 'hsl(var(--cwi-main-green))',      // CI Main Green
+    pink: 'hsl(var(--cwi-main-purple))'       // CI Main Pink/Purple
   },
   
-  // Supporting Characters (colors between main characters)
+  // Supporting Characters - Using design system tokens
   supporting: {
-    orange1: '#E85C2E',   // CI Support Orange
-    blue1: '#47C2EB',     // CI Support Blue I
-    yellow1: '#EBC247',   // CI Support Yellow
-    blue2: '#5E82ED',     // CI Support Blue II
-    green1: '#C2EB47',    // CI Support Green I
-    purple1: '#8C6BED',   // CI Support Purple I
-    green2: '#82ED5E',    // CI Support Green II
-    purple2: '#CC6BED',   // CI Support Purple II
-    green3: '#47EB70',    // CI Support Green III
-    pink1: '#EB47C2',     // CI Support Pink I
-    cyan: '#5EEDC9',      // CI Support Cyan
-    pink2: '#ED5E82'      // CI Support Pink II
+    orange1: 'hsl(var(--cwi-support-orange))',   // CI Support Orange
+    blue1: 'hsl(210 80% 60%)',     // CI Support Blue I
+    yellow1: 'hsl(45 85% 60%)',    // CI Support Yellow
+    blue2: 'hsl(225 75% 65%)',     // CI Support Blue II
+    green1: 'hsl(80 75% 60%)',     // CI Support Green I
+    purple1: 'hsl(260 70% 65%)',   // CI Support Purple I
+    green2: 'hsl(140 75% 65%)',    // CI Support Green II
+    purple2: 'hsl(300 70% 65%)',   // CI Support Purple II
+    green3: 'hsl(160 75% 60%)',    // CI Support Green III
+    pink1: 'hsl(var(--cwi-support-pink))',     // CI Support Pink I
+    cyan: 'hsl(var(--cwi-support-cyan))',      // CI Support Cyan
+    pink2: 'hsl(345 75% 65%)'      // CI Support Pink II
   },
   
   // Minor Characters (pastel tones from center of color wheel)
