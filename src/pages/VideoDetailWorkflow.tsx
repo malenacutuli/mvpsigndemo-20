@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from '@/components/CaptionsWithIntention';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
 
 interface Video {
   id: string;
@@ -40,46 +41,51 @@ export default function VideoDetailWorkflow() {
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [showWorkflow, setShowWorkflow] = useState(true);
+  const { loadTranscriptSegments, loadTranscriptSegmentsFresh } = useVideoStorage(id || '');
 
   useEffect(() => {
-    if (id) {
-      fetchVideo(id);
-      loadExistingCaptions(id);
-    }
+    if (!id) return;
+    fetchVideo(id);
+    // Initial load (may use cache)
+    loadExistingCaptions(id, false);
   }, [id]);
 
-  const loadExistingCaptions = async (videoId: string) => {
+  // When leaving workflow or after save, force a fresh DB load
+  useEffect(() => {
+    if (!id) return;
+    if (!showWorkflow) {
+      loadExistingCaptions(id, true);
+    }
+  }, [id, showWorkflow]);
+
+  const loadExistingCaptions = async (videoId: string, fresh: boolean = false) => {
     try {
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
+      const lang = video?.language || 'en';
+      const loader = fresh ? loadTranscriptSegmentsFresh : loadTranscriptSegments;
+      const segs = await loader(lang);
 
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const captionSegments: CaptionSegment[] = data.map((seg, index) => ({
+      if (segs && segs.length > 0) {
+        const captionSegments: CaptionSegment[] = segs.map((seg, index) => ({
           text: seg.text,
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          startTime: Number(seg.start_time),
-          endTime: Number(seg.end_time),
-          words: seg.text.split(' ').map((word, i) => ({
-            text: word,
-            startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal', // Load saved emphasis with proper typing
-            pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal', // Load saved pitch with proper typing
+          startTime: Number(seg.startTime),
+          endTime: Number(seg.endTime),
+          words: (seg.words || []).map((word, i) => ({
+            text: word.text,
+            startTime: Number(word.startTime ?? (Number(seg.startTime) + (i * (Number(seg.endTime) - Number(seg.startTime)) / Math.max(1, (seg.text || '').split(' ').length)))) ,
+            endTime: Number(word.endTime ?? (Number(seg.startTime) + ((i + 1) * (Number(seg.endTime) - Number(seg.startTime)) / Math.max(1, (seg.text || '').split(' ').length)))) ,
+            emphasis: (word.emphasis as any) || (seg.emphasis as any) || 'normal',
+            pitch: (word.pitch as any) || (seg.pitch as any) || 'normal',
           })),
           volume: seg.emphasis === 'loud' ? 80 : seg.emphasis === 'yelling' ? 100 : seg.emphasis === 'quiet' ? 30 : 50,
           pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
-          type: 'dialogue',
-          isOffCamera: seg.is_off_camera || false,
-          speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
+          type: (seg.segmentType as any) || 'dialogue',
+          isOffCamera: !!seg.isOffCamera,
+          speakerColor: seg.speakerColor || getSpeakerColor(index),
         }));
         setCaptions(captionSegments);
         setShowWorkflow(false); // Auto-proceed to player if captions exist
-        console.log('✅ Loaded existing captions for video player:', captionSegments.length, 'segments');
+        console.log('✅ Loaded transcript captions from DB:', captionSegments.length, 'segments');
       }
     } catch (error) {
       console.error('Error loading existing captions:', error);
@@ -124,6 +130,20 @@ export default function VideoDetailWorkflow() {
       setLoading(false);
     }
   };
+
+  // Listen for save events from the editor to immediately refresh captions
+  useEffect(() => {
+    const onSaved = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent<any>).detail || {};
+        if (detail?.videoId !== id) return;
+        console.log('📢 VideoDetailWorkflow received transcript-saved, refreshing captions...');
+        if (id) loadExistingCaptions(id, true);
+      } catch {}
+    };
+    window.addEventListener('transcript-saved', onSaved as EventListener);
+    return () => window.removeEventListener('transcript-saved', onSaved as EventListener);
+  }, [id]);
 
   const handleTranscriptReady = (segments: CaptionSegment[]) => {
     setCaptions(segments);

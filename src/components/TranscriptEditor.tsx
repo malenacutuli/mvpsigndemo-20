@@ -78,26 +78,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
   useEffect(() => {
     const loadTranscriptData = async () => {
-      const segments = await loadTranscriptSegments(selectedLanguage);
-      if (segments.length > 0) {
-        const transcriptSegments = segments.map(seg => ({
-          id: seg.id,
-          text: seg.text,
-          startTime: seg.startTime,
-          endTime: seg.endTime,
-          speaker: seg.speaker || 'Speaker 1',
-          speakerColor: seg.speakerColor || '#E5E517',
-          emphasis: (seg.emphasis as any) || 'normal',
-          pitch: (seg.pitch as any) || 'normal'
-        }));
-        setOriginalTranscript(transcriptSegments);
-        setEditingTranscript([...transcriptSegments]);
-        console.log('✅ Loaded existing transcript:', transcriptSegments.length, 'segments');
+      // Only load if we don't already have transcript data
+      if (originalTranscript.length === 0) {
+        const segments = await loadTranscriptSegments(selectedLanguage);
+        if (segments.length > 0) {
+          const transcriptSegments = segments.map(seg => ({
+            id: seg.id,
+            text: seg.text,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+            speaker: seg.speaker || 'Speaker 1',
+            speakerColor: seg.speakerColor || '#E5E517',
+            emphasis: (seg.emphasis as any) || 'normal',
+            pitch: (seg.pitch as any) || 'normal'
+          }));
+          setOriginalTranscript(transcriptSegments);
+          setEditingTranscript([...transcriptSegments]);
+          console.log('✅ Loaded existing transcript:', transcriptSegments.length, 'segments');
+        }
       }
     };
     
     loadTranscriptData();
-  }, [videoId, selectedLanguage, loadTranscriptSegments]);
+  }, [videoId, selectedLanguage, loadTranscriptSegments, originalTranscript.length]);
 
   const generateOriginalTranscript = async () => {
     setIsGenerating(true);
@@ -251,8 +254,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   const deleteSegment = (index: number) => {
+    if (editingTranscript.length <= 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You must have at least one transcript segment.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const updatedTranscript = editingTranscript.filter((_, i) => i !== index);
     setEditingTranscript(updatedTranscript);
+    
+    toast({
+      title: "Segment Deleted", 
+      description: "Transcript segment has been removed.",
+    });
   };
 
   const saveAllChanges = async () => {
@@ -271,35 +288,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         pitch: seg.pitch || 'normal'
       })), selectedLanguage);
       
-      // Also save to database
-      const { error } = await supabase.functions.invoke('transcribe', {
-        body: {
-          action: 'save_transcript',
-          videoId,
-          segments: editingTranscript.map(seg => ({
-            text: seg.text,
-            start_time: seg.startTime,
-            end_time: seg.endTime,
-            speaker: seg.speaker,
-            speaker_color: seg.speakerColor,
-            emphasis: seg.emphasis,
-            pitch: seg.pitch,
-            language: selectedLanguage
-          }))
-        }
-      });
-      
-      if (error) throw error;
+      // Database already updated via saveTranscriptSegments (RPC upsert)
+      // Removed legacy save call to prevent duplicate rows and crashes
       
       toast({
         title: "Changes Saved",
         description: "All transcript changes have been saved successfully.",
       });
+
+      // Notify the player in this tab to refresh
+      try {
+        window.dispatchEvent(new CustomEvent('transcript-saved', { detail: { videoId, language: selectedLanguage } }));
+      } catch {}
       
       if (onTranscriptUpdate) {
         onTranscriptUpdate(editingTranscript);
       }
-      
     } catch (error) {
       console.error('❌ Failed to save changes:', error);
       toast({
