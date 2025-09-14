@@ -911,22 +911,56 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                         Existing transcript loaded ({segments.length} segments)
                       </span>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        console.log('🔄 Re-extract button clicked, switching to extract mode');
-                        setCurrentStep('extract');
-                      }}
-                      className="text-xs"
-                    >
-                      Re-extract with {extractionMethod === 'twelvelabs' ? 'Advanced Analysis' : 'Fast Transcription'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          console.log('📁 Upload new transcript button clicked');
+                          setShowUploader(true);
+                          setExtractionMethod('upload');
+                        }}
+                        className="text-xs"
+                      >
+                        Upload New Transcript
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          console.log('🔄 Re-extract button clicked, switching to extract mode');
+                          setCurrentStep('extract');
+                        }}
+                        className="text-xs"
+                      >
+                        Re-extract with AI
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-green-600 text-xs mt-1">
-                    Your saved transcript is ready for editing. Click "Re-extract" to use {extractionMethod === 'twelvelabs' ? 'advanced analysis for full video processing' : 'fast transcription for quick results'}.
+                    Your saved transcript is ready for editing. Upload a new transcript file or re-extract with AI analysis.
                   </p>
                 </div>
+
+                {/* Upload transcript interface in edit mode */}
+                {showUploader && currentStep === 'edit' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h3 className="text-sm font-medium text-blue-700 mb-3">Upload New Transcript</h3>
+                    <TranscriptUploader
+                      onTranscriptUploaded={(uploadedSegments, language) => {
+                        handleTranscriptUploaded(uploadedSegments, language);
+                        toast({
+                          title: "Transcript Replaced",
+                          description: `Successfully replaced with ${uploadedSegments.length} segments`,
+                        });
+                      }}
+                      onCancel={() => {
+                        setShowUploader(false);
+                        setExtractionMethod('twelvelabs');
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Character Color Attribution Section */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
