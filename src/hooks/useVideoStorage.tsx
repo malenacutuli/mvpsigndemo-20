@@ -135,6 +135,13 @@ export const useVideoStorage = (videoId: string) => {
         segments.length,
         'segments'
       );
+
+      // Mirror to localStorage for robust fallback
+      try {
+        const fallbackData = { segments, language, timestamp: Date.now() };
+        localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
+      } catch {}
+
     } catch (err) {
       console.warn('RPC upsert failed, attempting direct save...', err);
       try {
@@ -188,6 +195,13 @@ export const useVideoStorage = (videoId: string) => {
           '✅ Transcript segments saved via direct table operations:',
           segments.length
         );
+
+        // Mirror to localStorage for robust fallback
+        try {
+          const fallbackData = { segments, language, timestamp: Date.now() };
+          localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
+        } catch {}
+
       } catch (innerErr) {
         console.error('Direct save also failed:', innerErr);
         setError(
@@ -278,11 +292,37 @@ export const useVideoStorage = (videoId: string) => {
         confidence: row.confidence
       }));
 
+      // Fallback to latest local backup if still empty
+      let finalSegments: TranscriptSegment[] = segments;
+      if (finalSegments.length === 0) {
+        try {
+          let latest: { segments: TranscriptSegment[]; timestamp: number } | null = null;
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(`transcript_${videoId}_`)) {
+              const raw = localStorage.getItem(k);
+              if (!raw) continue;
+              const parsed = JSON.parse(raw);
+              const ts = parsed.timestamp || 0;
+              if (!latest || ts > latest.timestamp) {
+                latest = { segments: parsed.segments || [], timestamp: ts };
+              }
+            }
+          }
+          if (latest && latest.segments && latest.segments.length > 0) {
+            finalSegments = latest.segments;
+            console.warn(`⚠️ Using localStorage transcript backup with ${finalSegments.length} segments`);
+          }
+        } catch (e) {
+          console.error('Local transcript fallback failed:', e);
+        }
+      }
+
       // Cache the result to prevent duplicate loading
-      loadingCache.current.set(cacheKey, segments);
+      loadingCache.current.set(cacheKey, finalSegments);
       
-      console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
-      return segments;
+      console.log('📖 Loaded transcript segments from database:', finalSegments.length, 'segments');
+      return finalSegments;
     } catch (err) {
       console.error('Failed to load transcript segments:', err);
       setError(err instanceof Error ? err.message : 'Failed to load transcript');
