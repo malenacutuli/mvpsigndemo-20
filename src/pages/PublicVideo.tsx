@@ -322,16 +322,16 @@ const PublicVideo = () => {
           )}
         </div>
 
-        {/* Accessibility Features Info */}
+        {/* Immersive Features Info */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
-              Accessibility Features
+              Immersive Features
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">
               <div className="text-center p-4 bg-muted/30 rounded-lg">
                 <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
                   <span className="text-primary font-bold text-sm">CC</span>
@@ -351,22 +351,12 @@ const PublicVideo = () => {
                   Describes visual elements for screen readers
                 </p>
               </div>
-              
-              <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-blue-600 font-bold text-sm">ASL</span>
-                </div>
-                <h3 className="font-semibold mb-1">ASL Interpretation</h3>
-                <p className="text-sm text-muted-foreground">
-                  American Sign Language video overlay
-                </p>
-              </div>
             </div>
             
             <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-sm text-muted-foreground">
-                <strong>Tip:</strong> Use the accessibility controls in the video player to toggle captions, 
-                audio descriptions, and ASL interpretation based on your needs.
+                <strong>Tip:</strong> Use the immersive controls in the video player to toggle captions, 
+                audio descriptions and interpretation based on your needs.
               </p>
             </div>
           </CardContent>
