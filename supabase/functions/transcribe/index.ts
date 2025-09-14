@@ -343,7 +343,18 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     punctuate: true,
     format_text: true,
     speaker_labels: true,
-    // enable_word_timestamps: true // (AssemblyAI words are included by default when available)
+    speaker_labels: true,
+    word_boost: ["um", "uh"],
+    boost_param: "high",
+    auto_highlights: true,
+    sentiment_analysis: true,
+    entity_detection: true,
+    iab_categories: true,
+    content_safety: true,
+    auto_chapters: true,
+    summarization: true,
+    summary_model: "informative",
+    summary_type: "bullets"
   };
   if (languageCode) {
     body.language_code = languageCode;
