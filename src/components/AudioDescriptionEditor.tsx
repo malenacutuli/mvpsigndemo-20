@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -50,7 +51,34 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
 
+  // Storage helpers
+  const { saveAudioDescriptions: saveAD } = useVideoStorage(videoId);
+
   const detectedLanguage = videoData?.transcript_language || 'en';
+
+  // Cache video duration so gaps never exceed real length
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const getVideoDuration = async (): Promise<number> => {
+    if (videoDuration && isFinite(videoDuration)) return videoDuration;
+    return await new Promise<number>((resolve) => {
+      const v = document.createElement('video');
+      v.src = videoUrl;
+      v.crossOrigin = 'anonymous';
+      v.muted = true;
+      const onLoaded = () => {
+        const dur = Math.max(0, v.duration || 0);
+        setVideoDuration(dur);
+        v.removeEventListener('loadedmetadata', onLoaded);
+        resolve(dur);
+      };
+      const onError = () => {
+        v.removeEventListener('loadedmetadata', onLoaded);
+        resolve(0);
+      };
+      v.addEventListener('loadedmetadata', onLoaded, { once: true });
+      v.addEventListener('error', onError, { once: true });
+    });
+  };
 
   // Get ElevenLabs native voice for detected language
   const getLanguageNativeVoice = (language: string): string => {
@@ -84,17 +112,27 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return 'text-orange-600'; // Default/English
   };
 
-  // Estimate duration needed to read a description (seconds)
-  const estimateDurationForText = (text: string): number => {
-    const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
-    const wps = 2.6; // ~2.6 words/sec for clarity
-    return Math.min(5.0, Math.max(1.2, words / wps));
+  // Clamp generated descriptions so they never exceed the real video duration
+  const clampDescriptionsToDuration = (items: AudioDescriptionSegment[], dur: number): AudioDescriptionSegment[] => {
+    if (!dur || !isFinite(dur)) return items;
+    return items
+      .map(d => {
+        const start = Math.max(0, Math.min(d.startTime, Math.max(0, dur - 0.2)));
+        const endRaw = Math.max(start + 0.2, Math.min(d.endTime, dur - 0.05));
+        const end = Math.max(start + 0.2, endRaw);
+        return { ...d, startTime: start, endTime: end };
+      })
+      .filter(d => d.startTime < dur - 0.1 && d.endTime > 0);
   };
 
-  // Compute non-dialogue gaps with enhanced precision and overlap prevention
-  const computeGaps = (segments: any[]): { start: number; end: number }[] => {
-    if (!segments || segments.length === 0) return [{ start: 0, end: 9999 }];
+  // Compute non-dialogue gaps with enhanced precision and overlap prevention, capped to video duration
+  const computeGaps = (segments: any[], maxDuration?: number): { start: number; end: number }[] => {
+    if (!segments || segments.length === 0) {
+      const end = typeof maxDuration === 'number' && isFinite(maxDuration) ? maxDuration : 0;
+      return end > 0 ? [{ start: 0, end }] : [];
+    }
     
+    const dur = typeof maxDuration === 'number' && isFinite(maxDuration) ? Math.max(0, maxDuration) : undefined;
     const sorted = [...segments]
       .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
       .sort((a, b) => a.startTime - b.startTime);
@@ -102,12 +140,14 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const gaps: { start: number; end: number }[] = [];
     const pad = 0.5; // Increased padding for better separation from dialogue
 
-    console.log('🔍 Computing gaps from', sorted.length, 'segments with', pad, 'second padding');
+    console.log('🔍 Computing gaps from', sorted.length, 'segments with', pad, 'second padding', 'dur=', dur);
 
     // Pre-roll gap with minimum duration check
-    if (sorted[0].startTime > 2.0) {
-      const preGap = { start: 0, end: Math.max(0, sorted[0].startTime - pad) };
-      if (preGap.end - preGap.start >= 2.0) { // Minimum 2 seconds for meaningful description
+    const firstStart = sorted[0].startTime;
+    const cappedFirstEnd = dur ? Math.min(firstStart - pad, dur) : firstStart - pad;
+    if (firstStart > 2.0) {
+      const preGap = { start: 0, end: Math.max(0, cappedFirstEnd) };
+      if (preGap.end - preGap.start >= 2.0) {
         gaps.push(preGap);
         console.log(`📍 Pre-roll gap: ${preGap.start.toFixed(1)}s-${preGap.end.toFixed(1)}s (${(preGap.end - preGap.start).toFixed(1)}s)`);
       }
@@ -117,37 +157,38 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     for (let i = 0; i < sorted.length - 1; i++) {
       const end = sorted[i].endTime + pad;
       const nextStart = sorted[i + 1].startTime - pad;
-      
-      // Require minimum gap of 2.0s for meaningful descriptions with better sync
-      if (nextStart - end >= 2.0) {
-        const gap = { start: end, end: nextStart };
+      const gapStart = end;
+      const gapEndRaw = nextStart;
+      const gapEnd = dur ? Math.min(gapEndRaw, dur) : gapEndRaw;
+      if (gapEnd - gapStart >= 2.0) {
+        const gap = { start: gapStart, end: gapEnd };
         gaps.push(gap);
         console.log(`📍 Inter-segment gap ${i}: ${gap.start.toFixed(1)}s-${gap.end.toFixed(1)}s (${(gap.end - gap.start).toFixed(1)}s)`);
       } else {
-        console.log(`⏭️ Gap ${i} too small: ${(nextStart - end).toFixed(1)}s (need 2.0s minimum)`);
+        console.log(`⏭️ Gap ${i} too small: ${(gapEnd - gapStart).toFixed(1)}s (need 2.0s minimum)`);
       }
     }
 
-    // Post-roll gap
+    // Post-roll gap, capped to video duration
     const lastSegment = sorted[sorted.length - 1];
-    if (lastSegment.endTime < 9999) {
-      const postGap = { start: lastSegment.endTime + pad, end: 9999 };
-      if (postGap.end - postGap.start >= 2.0) {
+    if (dur && lastSegment.endTime + pad < dur - 0.2) {
+      const postGap = { start: lastSegment.endTime + pad, end: dur };
+      if (postGap.end - postGap.start >= 1.0) {
         gaps.push(postGap);
         console.log(`📍 Post-roll gap: ${postGap.start.toFixed(1)}s-${postGap.end.toFixed(1)}s`);
       }
     }
 
-    console.log(`✅ Found ${gaps.length} suitable gaps for audio descriptions`);
+    console.log(`✅ Found ${gaps.length} suitable gaps for audio descriptions (capped at ${dur ?? 'unknown'}s)`);
     return gaps;
   };
-
   // Frame-grounded AD generation with visual analysis
   const generateDescriptionsFromTranscript = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
     console.log('📝 Generating frame-grounded AD for', transcript.length, 'segments');
 
-    // 1) Compute safe non-dialogue gaps
-    const gaps = computeGaps(transcript);
+    // 1) Compute safe non-dialogue gaps bounded to video duration
+    const dur = await getVideoDuration();
+    const gaps = computeGaps(transcript, dur);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available');
       return [];
@@ -366,7 +407,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🎯 Enhanced Analysis: Using GPT-5 Vision with multi-frame context');
 
     // 1) Compute safe non-dialogue gaps
-    const gaps = computeGaps(transcript);
+    const dur = await getVideoDuration();
+    const gaps = computeGaps(transcript, dur);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available for enhanced analysis');
       return [];
@@ -440,7 +482,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🤗 Generating descriptions with Hugging Face open source models');
 
     // 1) Compute safe non-dialogue gaps
-    const gaps = computeGaps(transcript);
+    const dur = await getVideoDuration();
+    const gaps = computeGaps(transcript, dur);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available for Hugging Face analysis');
       return [];
@@ -603,8 +646,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     setIsGenerating(true);
     try {
-      const gaps = computeGaps(transcriptSegments);
-      const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
+      const dur = await getVideoDuration();
+      const gaps = computeGaps(transcriptSegments, dur);
+      const scheduledRaw = await generateTextOnlyFallback(transcriptSegments, gaps);
+      const scheduled = clampDescriptionsToDuration(scheduledRaw, dur);
 
       if (scheduled.length === 0) {
         toast.error('No suitable silent gaps found to place audio descriptions');
@@ -686,22 +731,18 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     setIsSaving(true);
     try {
-      // Save all descriptions to database
-      for (let i = 0; i < descriptions.length; i++) {
-        const desc = descriptions[i];
-        await supabase
-          .from('audio_descriptions')
-          .upsert({
-            video_id: videoId,
-            description: desc.text,
-            start_time: desc.startTime,
-            end_time: desc.endTime,
-            voice_style: desc.voiceStyle,
-            language: detectedLanguage
-          });
-      }
-      
-      toast.success(`Successfully saved ${descriptions.length} audio descriptions`);
+      // Map local items to storage shape and clamp to video duration for safety
+      const dur = await getVideoDuration();
+      const clamped = clampDescriptionsToDuration(descriptions, dur);
+      const mapped = clamped.map(d => ({
+        startTime: d.startTime,
+        endTime: d.endTime,
+        description: d.text,
+        descriptionType: 'visual' as const
+      }));
+
+      await saveAD(mapped, detectedLanguage);
+      toast.success(`Successfully saved ${mapped.length} audio descriptions`);
     } catch (error) {
       console.error('Failed to save audio descriptions:', error);
       toast.error('Failed to save audio descriptions');
