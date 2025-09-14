@@ -729,7 +729,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      secure_subscription_view: {
+        Row: {
+          created_at: string | null
+          email_masked: string | null
+          stripe_id_masked: string | null
+          subscribed: boolean | null
+          subscription_end: string | null
+          subscription_tier: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_masked?: never
+          stripe_id_masked?: never
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_masked?: never
+          stripe_id_masked?: never
+          subscribed?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       anonymize_ip_address: {
@@ -757,6 +786,14 @@ export type Database = {
       }
       cleanup_old_analytics_data: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_subscription_audit_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      detect_suspicious_subscription_access: {
+        Args: { accessing_user_id: string }
         Returns: undefined
       }
       generate_embed_token: {
@@ -797,6 +834,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_secure_subscription_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          expires_at: string
+          features_available: Json
+          is_active: boolean
+          tier_name: string
+        }[]
+      }
       get_user_subscription_info: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -820,6 +866,14 @@ export type Database = {
       is_email_subscribed_to_channel: {
         Args: { channel_uuid: string; email_to_check: string }
         Returns: boolean
+      }
+      mask_stripe_customer_id: {
+        Args: { customer_id: string }
+        Returns: string
+      }
+      system_get_stripe_customer_for_webhook: {
+        Args: { user_email: string }
+        Returns: string
       }
       system_manage_subscription: {
         Args: {
