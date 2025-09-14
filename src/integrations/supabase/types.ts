@@ -506,6 +506,33 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_access_audit: {
+        Row: {
+          access_type: string
+          channel_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type: string
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          channel_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tracks: {
         Row: {
           created_at: string
@@ -752,7 +779,7 @@ export type Database = {
         Args: { user_agent_str: string }
         Returns: string
       }
-      check_channel_subscription: {
+      check_my_subscription_status: {
         Args: { channel_uuid: string }
         Returns: {
           is_subscribed: boolean
@@ -783,25 +810,9 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: string
       }
-      get_channel_stats: {
-        Args: { channel_uuid: string }
-        Returns: {
-          latest_subscription: string
-          subscriber_count: number
-        }[]
-      }
       get_channel_subscriber_count: {
         Args: { channel_uuid: string }
         Returns: number
-      }
-      get_channel_subscriber_stats: {
-        Args: { channel_uuid: string }
-        Returns: {
-          authenticated_subscribers: number
-          email_subscribers: number
-          latest_subscription: string
-          total_subscribers: number
-        }[]
       }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
@@ -815,6 +826,15 @@ export type Database = {
           masked_stripe_id: string
           tier: string
           user_id: string
+        }[]
+      }
+      get_secure_channel_subscriber_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          authenticated_subscriber_count: number
+          email_subscriber_count: number
+          latest_subscription_date: string
+          total_subscribers: number
         }[]
       }
       get_secure_subscription_info: {
