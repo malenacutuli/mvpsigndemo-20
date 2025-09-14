@@ -612,49 +612,42 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
                         switch (word.emphasis) {
                           case 'quiet':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 0.85}px`, 
-                              fontWeight: 300, 
-                              fontStyle: 'italic',
-                              opacity: 0.8,
-                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)'
-                            };
+                             return { 
+                               ...baseStyle, 
+                               fontSize: `${wordFontSize * 0.85}px`, 
+                               fontWeight: 300, 
+                               fontStyle: 'italic',
+                               opacity: 0.8
+                             };
                           case 'loud':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 1.3}px`, 
-                              fontWeight: 700,
-                              letterSpacing: '0.02em',
-                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
-                              ...(emotionalType && {
-                                textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
-                              })
-                            };
+                             return { 
+                               ...baseStyle, 
+                               fontSize: `${wordFontSize * 1.2}px`, 
+                               fontWeight: 700,
+                               letterSpacing: '0.02em',
+                               ...(emotionalType && {
+                                 textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
+                               })
+                             };
                           case 'yelling':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 1.35}px`, // Increased from 1.25x
-                              fontWeight: 800, 
-                              letterSpacing: '0.05em',
-                              textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none',
-                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)',
-                              // Keep original case - no uppercase transformation
-                              animation: wordState === 'active' && emotionalType ? 'pulse 0.8s ease-out' : undefined
-                            };
+                             return { 
+                               ...baseStyle, 
+                               fontSize: `${wordFontSize * 1.25}px`,
+                               fontWeight: 800, 
+                               letterSpacing: '0.05em',
+                               textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none'
+                             };
                           default:
-                            return {
-                              ...baseStyle,
-                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                            };
+                             return {
+                               ...baseStyle
+                             };
                         }
                       }
                       
-                      // Default state with subtle jump
-                      return {
-                        ...baseStyle,
-                        transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                      };
+                       // Default state
+                       return {
+                         ...baseStyle
+                       };
                     };
                    
                      return (
@@ -671,14 +664,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                          marginRight: '0.25em',
                          fontSize: `${wordFontSize}px`,
                          cursor: 'default',
-                         display: 'inline', // Ensure horizontal layout
+                         display: 'inline',
+                         transition: 'all 0.15s ease-out',
                          ...wordPitchStyle,
                          ...getWordIntensityStyle(),
-                         // Active word gets enhanced glow and jump
+                         // Active word gets subtle highlight without shaking
                          ...(wordState === 'active' && {
-                           textShadow: `0 0 10px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.2)`,
-                           zIndex: 10,
-                           position: 'relative'
+                           textShadow: `0 0 8px ${getWordColorByState()}50`,
+                           fontWeight: 'bold'
                          }),
                          // Spoken words get subtle persistence
                          ...(wordState === 'spoken' && {

@@ -213,54 +213,7 @@ useEffect(() => {
     return Number.isFinite(n) ? n.toFixed(1) : '—';
   };
 
-  return (
-    <div className="fixed bottom-4 right-4 max-w-md p-4 bg-black/90 border border-white/20 rounded-lg shadow-xl backdrop-blur-sm z-50">
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          {isGenerating ? (
-            <Volume2 className="w-5 h-5 animate-pulse text-cwi-main-blue" />
-          ) : isDescriptionPlaying ? (
-            <Volume2 className="w-5 h-5 text-cwi-main-green animate-pulse" />
-          ) : (
-            <Volume2 className="w-5 h-5 text-muted-foreground" />
-          )}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${getVoiceStyleColor(currentDescription.voiceStyle)}`}
-            >
-              {currentDescription.voiceStyle}
-            </Badge>
-            {language === 'es' && (
-              <Badge variant="secondary" className="text-xs">
-                Español
-              </Badge>
-            )}
-          </div>
-          
-          <p className="text-sm text-white leading-relaxed">
-            {currentDescription.text}
-          </p>
-          
-          {genError && (
-            <p className="text-xs text-red-400 mt-2">
-              {genError}
-            </p>
-          )}
-          
-          <div className="flex items-center justify-between mt-2 text-xs text-white/60">
-            <span>
-              {formatTime(currentDescription.startTime)}s - {formatTime(currentDescription.endTime)}s
-            </span>
-            <span>
-              {isGenerating ? 'Generating...' : isDescriptionPlaying ? 'Playing' : 'Ready'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Audio description plays in background without visual overlay
+  // This maintains all audio functionality while keeping UI clean
+  return null;
 };
