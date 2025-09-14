@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
+  const [showNoGapsDialog, setShowNoGapsDialog] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
 
@@ -368,6 +370,11 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
     if (!proposals.length) return [];
 
+    // If no gaps provided, create evenly spaced descriptions across video duration
+    if (!gaps.length) {
+      return await generateWithoutGaps(proposals, transcript);
+    }
+
     // Schedule proposals into gaps
     const scheduled: AudioDescriptionSegment[] = [];
     let gapIndex = 0;
@@ -406,6 +413,34 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }
 
     console.log(`✅ Fallback: Scheduled ${scheduled.length} descriptions`);
+    return scheduled;
+  };
+
+  // Generate descriptions without gap constraints (for continuous audio videos)
+  const generateWithoutGaps = async (proposals: Array<{ text: string; voiceStyle?: string }>, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
+    console.log('🎵 Generating descriptions without gap constraints for continuous audio video');
+    
+    const dur = await getVideoDuration();
+    if (!dur || dur <= 0) return [];
+
+    const scheduled: AudioDescriptionSegment[] = [];
+    const interval = dur / Math.max(1, proposals.length + 1); // Space evenly across video
+
+    for (let i = 0; i < proposals.length; i++) {
+      const startTime = Math.max(0.5, (i + 1) * interval - 2); // Start a bit before the interval
+      const estimatedDur = estimateDurationForText(proposals[i].text);
+      const endTime = Math.min(dur - 0.5, startTime + estimatedDur);
+
+      scheduled.push({
+        text: proposals[i].text,
+        startTime,
+        endTime,
+        voiceStyle: getLanguageNativeVoice(detectedLanguage),
+        timestamp: (startTime + endTime) / 2,
+      });
+    }
+
+    console.log(`✅ Generated ${scheduled.length} descriptions without gap constraints`);
     return scheduled;
   };
 
@@ -655,6 +690,14 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     try {
       const dur = await getVideoDuration();
       const gaps = computeGaps(transcriptSegments, dur);
+      
+      // Check if no gaps but transcripts available - ask user for permission
+      if (gaps.length === 0) {
+        setIsGenerating(false);
+        setShowNoGapsDialog(true);
+        return;
+      }
+
       const scheduledRaw = await generateTextOnlyFallback(transcriptSegments, gaps);
       const scheduled = clampDescriptionsToDuration(scheduledRaw, dur);
 
@@ -665,11 +708,35 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
       setDescriptions(scheduled);
       onDescriptionsUpdate?.(scheduled);
-      toast.success(`OpenAI GPT-4o mini generated ${scheduled.length} descriptions`);
+      toast.success(`Generated ${scheduled.length} descriptions`);
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error('OpenAI generation failed - please try again.');
+      toast.error('Generation failed - please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateWithoutGapsConfirmed = async () => {
+    console.log('🎵 User confirmed: Generate descriptions without gaps');
+    setShowNoGapsDialog(false);
+    setIsGenerating(true);
+    
+    try {
+      const dur = await getVideoDuration();
+      const scheduledRaw = await generateTextOnlyFallback(transcriptSegments, []); // Empty gaps array
+      const scheduled = clampDescriptionsToDuration(scheduledRaw, dur);
+
+      setDescriptions(scheduled);
+      onDescriptionsUpdate?.(scheduled);
+      toast.success(`Generated ${scheduled.length} descriptions (may overlap with audio)`, {
+        description: 'Descriptions were placed without considering audio gaps'
+      });
+      console.log('✅ Generated AD without gaps:', scheduled);
+    } catch (error) {
+      console.error('❌ Failed to generate descriptions without gaps:', error);
+      toast.error('Generation failed - please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -956,6 +1023,29 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           )}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={showNoGapsDialog} onOpenChange={setShowNoGapsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No Audio Gaps Available</AlertDialogTitle>
+            <AlertDialogDescription>
+              This video appears to have continuous audio with no suitable silent gaps for audio descriptions. 
+              However, {transcriptSegments?.length || 0} transcript segments are available.
+              <br /><br />
+              Do you want to generate audio descriptions anyway? They may overlap with the existing audio, 
+              but will still be valuable for accessibility purposes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowNoGapsDialog(false)}>
+              No, Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={generateWithoutGapsConfirmed}>
+              Yes, Generate Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
