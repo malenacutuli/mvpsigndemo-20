@@ -476,19 +476,20 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                    if (wordHasBeenSpoken) wordState = 'spoken';
                    else if (isWordActive) wordState = 'active';
                    
-                   // Color system based on word state
-                   const getWordColorByState = () => {
-                     switch (wordState) {
-                       case 'active':
-                         return activeCaption.speakerColor || speakerColor; // Full bright color
-                       case 'spoken':
-                         return `color-mix(in srgb, ${activeCaption.speakerColor || speakerColor} 70%, hsl(var(--muted-foreground)))`; // Slightly dimmed
-                       case 'upcoming':
-                         return 'hsl(var(--muted-foreground))'; // Gray for unspoken words
-                       default:
-                         return CI_COLORS.readahead;
-                     }
-                   };
+                    // Color system based on word state — always tint by speaker color so it "follows" every word
+                    const getWordColorByState = () => {
+                      const base = activeCaption.speakerColor || speakerColor;
+                      switch (wordState) {
+                        case 'active':
+                          return base; // full color
+                        case 'spoken':
+                          return base; // keep same hue; dim via opacity below
+                        case 'upcoming':
+                          return base; // preview uses same hue; dim via opacity below
+                        default:
+                          return base;
+                      }
+                    };
                    
                     // Enhanced vocal intensity styling with word-level precision and emotional expressions
                     const getWordIntensityStyle = (): React.CSSProperties => {
