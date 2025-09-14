@@ -255,11 +255,22 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       text: segments[0].text.substring(0, 30) + '...'
     } : 'No segments');
     
+    // Apply character color mapping if available so colors always reflect Character Manager
+    let recolored = segments;
+    if (characters && characters.length > 0) {
+      const colorMap: Record<string, string> = {};
+      characters.forEach(c => { colorMap[c.name] = c.color; });
+      recolored = segments.map(s => ({
+        ...s,
+        speakerColor: colorMap[s.speaker] || s.speakerColor
+      }));
+    }
+
     // Keep captions for the player UI and also persist raw segments for AD scheduler
-    setCaptions([...segments]); // Force array recreation
-    setTranscriptSegments([...segments]);
+    setCaptions([...recolored]); // Force array recreation
+    setTranscriptSegments([...recolored]);
     
-    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', segments.length, 'segments, detected language:', autoDetectedLang);
+    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', recolored.length, 'segments, detected language:', autoDetectedLang);
     
     if (onTranscriptUpdate) {
       onTranscriptUpdate(segments, autoDetectedLang);

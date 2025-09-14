@@ -287,11 +287,32 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     setSpeakerMappings(prev => {
       const updated = { ...prev };
       if (characterName === "unassigned") {
-        delete updated[speakerName]; // Remove mapping
+        delete updated[speakerName];
       } else {
         updated[speakerName] = characterName;
       }
       return updated;
+    });
+  };
+
+  // Helper: get which detected speaker is currently mapped to a character
+  const getMappedSpeakerForCharacter = (characterName: string): string => {
+    return Object.keys(speakerMappings).find(sp => speakerMappings[sp] === characterName) || 'unassigned';
+  };
+
+  // Helper: update mapping by selecting a detected speaker for a character
+  const updateMappingForCharacter = (characterName: string, selectedSpeaker: string) => {
+    setSpeakerMappings(prev => {
+      const next: Record<string, string> = {};
+      // Remove any previous mapping to this character
+      for (const [sp, ch] of Object.entries(prev)) {
+        if (ch !== characterName) next[sp] = ch;
+      }
+      // Set new mapping if not unassigned
+      if (selectedSpeaker !== 'unassigned') {
+        next[selectedSpeaker] = characterName;
+      }
+      return next;
     });
   };
 
@@ -321,102 +342,56 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Speaker Mapping Section */}
-        {availableSpeakers.length > 0 && (
+        {characters.length > 0 && (
           <div className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <h4 className="font-medium text-orange-800">🔗 Speaker Assignment</h4>
             <p className="text-xs text-orange-700">
-              Connect your transcript speakers to characters. This updates the video captions immediately.<br/>
-              <strong>📝 Note:</strong> Transcript editing (colors, intensity, word emphasis) controls the final Caption with Intention display, not content generation.
+              Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
             </p>
+            <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded border">
+              <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
+            </div>
             <div className="space-y-2">
-              <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded border flex justify-between items-center">
-                <span><strong>Debug Info:</strong> Found {availableSpeakers.length} unique speakers: {availableSpeakers.join(', ')}</span>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="h-6 text-xs"
-                  onClick={() => window.location.reload()}
-                >
-                  Refresh
-                </Button>
-              </div>
-              {availableSpeakers.map(speaker => (
-                <div key={speaker} className="flex items-center gap-3 text-sm">
-                  <Badge variant="outline" className="min-w-0">
-                    {speaker}
-                  </Badge>
-                  <span className="text-muted-foreground">→</span>
-                  <div className="flex items-center gap-2">
-                    <Select 
-                      value={speakerMappings[speaker] || "unassigned"} 
-                      onValueChange={(value) => {
-                        if (value.startsWith("create-")) {
-                          // Quick create character for this speaker
-                          const type = value.replace("create-", "") as Character['type'];
-                          const availableColors = getAvailableColorsForNewCharacter(type);
-                          if (availableColors.length > 0) {
-                            const newCharacter: Character = {
-                              id: `char-${Date.now()}`,
-                              name: speaker,
-                              type: type,
-                              color: availableColors[0].color,
-                              isOffCamera: false,
-                              emphasis: 'normal',
-                              pitch: 'normal'
-                            };
-                            const updatedCharacters = [...characters, newCharacter];
-                            setCharacters(updatedCharacters);
-                            updateSpeakerMapping(speaker, speaker);
-                            toast({
-                              title: "Character Created",
-                              description: `${speaker} created as ${type} character with ${availableColors[0].name}`,
-                            });
-                          } else {
-                            toast({
-                              title: "No Colors Available",
-                              description: `No colors available for ${type} characters`,
-                              variant: "destructive"
-                            });
-                          }
-                        } else {
-                          updateSpeakerMapping(speaker, value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-7 w-40">
-                        <SelectValue placeholder="Assign to..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {characters.length > 0 && (
-                          <>
-                            {characters.map(char => (
-                              <SelectItem key={char.id} value={char.name}>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: char.color }}
-                                  />
-                                  {char.name} ({char.type})
-                                </div>
-                              </SelectItem>
-                            ))}
-                            <div className="h-px bg-border my-1" />
-                          </>
-                        )}
-                        <div className="text-xs text-muted-foreground px-2 py-1 font-medium">
-                          Create New Character:
-                        </div>
-                        <SelectItem value="create-hero">+ Hero Character</SelectItem>
-                        <SelectItem value="create-villain">+ Villain Character</SelectItem>
-                        <SelectItem value="create-main">+ Main Character</SelectItem>
-                        <SelectItem value="create-supporting">+ Supporting Character</SelectItem>
-                        <SelectItem value="create-minor">+ Minor Character</SelectItem>
-                      </SelectContent>
-                    </Select>
+              {characters.map((char) => {
+                const mappedSpeaker = Object.keys(speakerMappings).find(sp => speakerMappings[sp] === char.name) || 'unassigned';
+                return (
+                  <div key={char.id} className="flex items-center gap-3 text-sm">
+                    <Badge variant="outline" className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: char.color }} />
+                        {char.name} ({char.type})
+                      </div>
+                    </Badge>
+                    <span className="text-muted-foreground">→</span>
+                    <div className="flex items-center gap-2">
+                      <Select 
+                        value={mappedSpeaker}
+                        onValueChange={(value) => {
+                          // Remove any existing mapping pointing to this character, then (optionally) set the new one
+                          setSpeakerMappings(prev => {
+                            const next: Record<string, string> = {};
+                            for (const [sp, ch] of Object.entries(prev)) {
+                              if (ch !== char.name) next[sp] = ch;
+                            }
+                            if (value !== 'unassigned') next[value] = char.name;
+                            return next;
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-56">
+                          <SelectValue placeholder="Select detected speaker..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {availableSpeakers.map(sp => (
+                            <SelectItem key={sp} value={sp}>{sp}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
