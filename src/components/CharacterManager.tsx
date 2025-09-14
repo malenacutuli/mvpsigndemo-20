@@ -106,12 +106,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   // Load existing characters on mount
   useEffect(() => {
     const loadExistingCharacters = async () => {
-      if (existingCharacters.length === 0) {
+      if (existingCharacters.length > 0) {
+        setCharacters(existingCharacters);
+      } else {
         try {
           const savedCharacters = await loadCharacters();
           if (savedCharacters.length > 0) {
             setCharacters(savedCharacters);
-            onCharactersUpdate(savedCharacters);
+            onCharactersUpdate?.(savedCharacters);
           }
         } catch (error) {
           console.error('Failed to load characters:', error);
@@ -120,7 +122,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     };
 
     loadExistingCharacters();
-  }, [videoId]);
+  }, [videoId, existingCharacters.length]);
+  // Sync with existingCharacters prop changes
+  useEffect(() => {
+    if (existingCharacters.length > 0) {
+      setCharacters(existingCharacters);
+    }
+  }, [existingCharacters]);
+
   const { toast } = useToast();
 
   // Keep available speakers in sync with props
@@ -132,8 +141,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       const changed = unique.length !== prev.length || unique.some((v, i) => v !== prev[i]);
       if (changed) {
         setAvailableSpeakers(unique);
-        console.log('🧩 Available speakers (from props):', unique);
-        console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
       }
     }
   }, [existingSpeakers]);
@@ -276,7 +283,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             .eq('language', language)
             .eq('speaker', speakerName);
           
-          console.log(`🔄 Mapped "${speakerName}" → "${characterName}" (${character.color}) [off-camera: ${character.isOffCamera || false}]`);
+          
         }
       }
     } catch (error) {
