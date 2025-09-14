@@ -636,7 +636,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${isMobile && isMobileFullscreen ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' : ''} ${className}`}
+      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${
+        isMobile && isMobileFullscreen 
+          ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' 
+          : isMobileFullscreen && isLandscape && window.innerWidth < 1024
+            ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' // Handle landscape tablets/large phones
+            : ''
+      } ${className}`}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
     >
@@ -1118,30 +1124,49 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <Settings className="w-4 h-4" />
             </Button>
             
-            {/* Fullscreen - Enhanced for mobile landscape */}
+            {/* Fullscreen - Enhanced debugging for mobile landscape */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (isMobile) {
-                  // Enable fullscreen regardless of orientation
-                  setIsMobileFullscreen((v) => !v);
+                console.log('🔄 Fullscreen button clicked:', {
+                  isMobile,
+                  isLandscape,
+                  isMobileFullscreen,
+                  windowWidth: window.innerWidth,
+                  windowHeight: window.innerHeight,
+                  userAgent: navigator.userAgent.includes('Mobile'),
+                  touchDevice: 'ontouchstart' in window
+                });
+                
+                // Enhanced mobile detection for landscape devices
+                const isMobileDevice = isMobile || window.innerWidth < 1024 || 'ontouchstart' in window;
+                console.log('📱 Enhanced mobile detection:', isMobileDevice);
+                
+                if (isMobileDevice) {
+                  // Toggle mobile fullscreen state
+                  const newFullscreenState = !isMobileFullscreen;
+                  console.log('📱 Setting mobile fullscreen to:', newFullscreenState);
+                  setIsMobileFullscreen(newFullscreenState);
                   
                   // For landscape, also try native fullscreen for better experience
                   if (isLandscape && document.fullscreenEnabled) {
                     const container = containerRef.current;
                     if (container) {
-                      if (!document.fullscreenElement && !isMobileFullscreen) {
-                        container.requestFullscreen().catch(() => {
-                          // Fallback to mobile simulation if native fails
-                          console.log('Native fullscreen failed, using mobile simulation');
+                      if (!document.fullscreenElement && newFullscreenState) {
+                        console.log('🖥️ Attempting native fullscreen...');
+                        container.requestFullscreen().catch((err) => {
+                          console.log('❌ Native fullscreen failed:', err);
+                          console.log('✅ Using mobile simulation instead');
                         });
-                      } else if (document.fullscreenElement) {
+                      } else if (document.fullscreenElement && !newFullscreenState) {
+                        console.log('🖥️ Exiting native fullscreen...');
                         document.exitFullscreen().catch(console.error);
                       }
                     }
                   }
                 } else {
+                  // Desktop fullscreen
                   const container = containerRef.current;
                   if (container && document.fullscreenEnabled) {
                     if (!document.fullscreenElement) {
