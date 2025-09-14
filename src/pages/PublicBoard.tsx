@@ -112,7 +112,6 @@ export default function PublicBoard() {
         {/* Hero Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Globe className="w-8 h-8 text-primary" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Immersive Video Board
             </h1>
@@ -126,7 +125,7 @@ export default function PublicBoard() {
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1">
             <Input
-              placeholder="Search accessible videos..."
+              placeholder="Search immersive videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -244,7 +243,7 @@ export default function PublicBoard() {
                   <Button asChild className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <Link to={`/watch/${video.id}`}>
                       <Play className="w-4 h-4 mr-2" />
-                      Watch Accessible Video
+                      Watch Video
                     </Link>
                   </Button>
                 </CardContent>
