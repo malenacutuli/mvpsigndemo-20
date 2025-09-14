@@ -253,18 +253,44 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
+      // Load only the latest saved transcript segments to prevent duplicates
+      const { data: transcriptRow, error: transcriptErr } = await supabase
+        .from('transcripts')
+        .select('id, updated_at')
         .eq('video_id', videoId)
         .eq('language', language)
-        .order('start_time');
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (transcriptErr && transcriptErr.code !== 'PGRST116') throw transcriptErr;
 
-      let rows = data || [];
+      let rows: any[] = [];
 
-      // Fallback: if no rows for requested language, load any available language to avoid empty state
+      if (transcriptRow?.id) {
+        // Prefer segments tied to the latest transcript_id
+        const { data, error } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('transcript_id', transcriptRow.id)
+          .order('idx', { ascending: true });
+        if (error) throw error;
+        rows = data || [];
+      }
+
+      // Fallback: if no transcript_id-based rows, load legacy rows by video_id/language (may lack transcript_id)
+      if (rows.length === 0) {
+        const { data, error } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .order('start_time');
+        if (error) throw error;
+        rows = data || [];
+      }
+
+      // Fallback: if still empty for requested language, load any available language to avoid empty state
       if (rows.length === 0) {
         const { data: anyLangData, error: anyLangError } = await supabase
           .from('transcript_segments')

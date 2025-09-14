@@ -288,25 +288,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         pitch: seg.pitch || 'normal'
       })), selectedLanguage);
       
-      // Also save to database
-      const { error } = await supabase.functions.invoke('transcribe', {
-        body: {
-          action: 'save_transcript',
-          videoId,
-          segments: editingTranscript.map(seg => ({
-            text: seg.text,
-            start_time: seg.startTime,
-            end_time: seg.endTime,
-            speaker: seg.speaker,
-            speaker_color: seg.speakerColor,
-            emphasis: seg.emphasis,
-            pitch: seg.pitch,
-            language: selectedLanguage
-          }))
-        }
-      });
-      
-      if (error) throw error;
+      // Database already updated via saveTranscriptSegments (RPC upsert)
+      // Removed legacy save call to prevent duplicate rows and crashes
       
       toast({
         title: "Changes Saved",
