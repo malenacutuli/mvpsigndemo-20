@@ -305,7 +305,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   if (!activeCaption) return null;
 
   // Enhanced word timing and highlighting logic with better early-video sync
-  const TIMING_TOLERANCE = 0.005; // 5ms tolerance for ultra-precise sync, especially at video start
+  const TIMING_TOLERANCE = 0.06; // 60ms tolerance for reliable sync across browsers
   
   // Truncate text for mobile portrait to prevent excessive screen coverage
   const isMobilePortrait = window.innerWidth < 640 && window.innerHeight > window.innerWidth;
@@ -355,10 +355,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     console.log('✅ CAPTIONS: Synthesized', words.length, 'words with natural timing for segment', workingCaption.startTime.toFixed(2) + 's');
   }
   
-  const activeWordIndex = workingCaption.words?.findIndex(word => 
+  let activeWordIndex = workingCaption.words?.findIndex(word => 
     currentTime >= (word.startTime - TIMING_TOLERANCE) && 
     currentTime <= (word.endTime + TIMING_TOLERANCE)
   ) ?? -1;
+  
+  // Fallback: if within segment but no word matches, pick by proportional progress
+  if (activeWordIndex < 0 && currentTime >= workingCaption.startTime - TIMING_TOLERANCE && currentTime <= workingCaption.endTime + TIMING_TOLERANCE) {
+    const progress = (currentTime - workingCaption.startTime) / Math.max(0.001, (workingCaption.endTime - workingCaption.startTime));
+    activeWordIndex = Math.min(workingCaption.words.length - 1, Math.max(0, Math.floor(progress * workingCaption.words.length)));
+  }
   const activeWord = activeWordIndex >= 0 ? workingCaption.words?.[activeWordIndex] : undefined;
 
   // Debug word timing for development
@@ -493,10 +499,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      word.emphasis
                    );
                    
-                    // Ultra-precise word timing with hyper-accurate sync for spoken language following
-                    const WORD_PRECISION = 0.003; // 3ms precision for perfect word-by-word sync
-                    const isWordActive = currentTime >= (word.startTime - WORD_PRECISION) && 
-                                        currentTime <= (word.endTime + WORD_PRECISION);
+                    // Ultra-precise word timing with robust tolerance for reliable activation
+                    const WORD_PRECISION = 0.06; // 60ms precision window
+                    const isActiveByTime = (currentTime >= (word.startTime - WORD_PRECISION) && 
+                                           currentTime <= (word.endTime + WORD_PRECISION));
+                    const isActiveByIndex = index === activeWordIndex;
+                    const isWordActive = isActiveByTime || isActiveByIndex;
                     const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
                     const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
                     

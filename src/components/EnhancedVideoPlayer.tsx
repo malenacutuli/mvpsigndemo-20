@@ -51,7 +51,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
-  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings } = useVideoStorage(videoId);
+  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
@@ -706,6 +706,19 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             vocalIntensity: s.vocal_intensity,
             text: s.text.substring(0, 30) + '...'
           })));
+          
+          // Persist synthesized/normalized word timings to DB once so all devices get word-by-word
+          try {
+            const persistKey = `words_persisted_${videoId}_${currentLanguage}`;
+            const missingWords = captionSegments.some(seg => !seg.words || seg.words.length === 0 || !seg.words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number'));
+            if (missingWords && !sessionStorage.getItem(persistKey)) {
+              console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
+              await saveTranscriptSegments(convertedSegments as any, currentLanguage);
+              sessionStorage.setItem(persistKey, 'true');
+            }
+          } catch (e) {
+            console.warn('⚠️ ENHANCED PLAYER: Could not persist word timings (possibly offline/anon):', e);
+          }
           
           // Auto-detect language and update transcript
           const detectedLang = detectLanguageFromCaptions(convertedSegments);
