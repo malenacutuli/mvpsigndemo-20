@@ -407,6 +407,45 @@ export type Database = {
           },
         ]
       }
+      security_audit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          success: boolean | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       speaker_mappings: {
         Row: {
           created_at: string
@@ -786,6 +825,13 @@ export type Database = {
           subscribed_at: string
         }[]
       }
+      check_user_subscription: {
+        Args: { channel_uuid: string }
+        Returns: {
+          subscribed: boolean
+          subscription_date: string
+        }[]
+      }
       check_user_subscription_status: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -828,6 +874,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_secure_channel_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          auth_subscriber_count: number
+          email_subscriber_count: number
+          latest_subscription: string
+          total_subscribers: number
+        }[]
+      }
       get_secure_channel_subscriber_stats: {
         Args: { channel_uuid: string }
         Returns: {
@@ -853,13 +908,6 @@ export type Database = {
           features_available: Json
           is_active: boolean
           tier_name: string
-        }[]
-      }
-      get_user_subscription_status: {
-        Args: { channel_uuid: string }
-        Returns: {
-          is_subscribed: boolean
-          subscribed_at: string
         }[]
       }
       increment_video_views: {
