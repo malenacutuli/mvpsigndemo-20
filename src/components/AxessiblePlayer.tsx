@@ -842,7 +842,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {showCaptions && (
         <div 
           className={`absolute left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none px-2 ${
-            isMobile && (isFullscreen || isMobileFullscreen) 
+            isMobileFullscreen 
               ? isLandscape 
                 ? 'bottom-6' // Landscape fullscreen - closer to bottom
                 : 'bottom-16' // Portrait fullscreen - above virtual controls
@@ -850,7 +850,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           }`}
           style={{
             // Enhanced safe area handling for mobile fullscreen
-            ...(isMobile && (isFullscreen || isMobileFullscreen) && {
+            ...(isMobileFullscreen && {
               paddingLeft: `max(0.5rem, ${safeAreaInsets.left}px)`,
               paddingRight: `max(0.5rem, ${safeAreaInsets.right}px)`,
               paddingBottom: isLandscape 
