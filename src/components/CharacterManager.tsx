@@ -334,28 +334,75 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                     {speaker}
                   </Badge>
                   <span className="text-muted-foreground">→</span>
-                  <Select 
-                    value={speakerMappings[speaker] || "unassigned"} 
-                    onValueChange={(value) => updateSpeakerMapping(speaker, value)}
-                  >
-                    <SelectTrigger className="h-7 w-32">
-                      <SelectValue placeholder="Assign to..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {characters.map(char => (
-                        <SelectItem key={char.id} value={char.name}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: char.color }}
-                            />
-                            {char.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select 
+                      value={speakerMappings[speaker] || "unassigned"} 
+                      onValueChange={(value) => {
+                        if (value.startsWith("create-")) {
+                          // Quick create character for this speaker
+                          const type = value.replace("create-", "") as Character['type'];
+                          const availableColors = getAvailableColorsForNewCharacter(type);
+                          if (availableColors.length > 0) {
+                            const newCharacter: Character = {
+                              id: `char-${Date.now()}`,
+                              name: speaker,
+                              type: type,
+                              color: availableColors[0].color,
+                              isOffCamera: false,
+                              emphasis: 'normal',
+                              pitch: 'normal'
+                            };
+                            const updatedCharacters = [...characters, newCharacter];
+                            setCharacters(updatedCharacters);
+                            updateSpeakerMapping(speaker, speaker);
+                            toast({
+                              title: "Character Created",
+                              description: `${speaker} created as ${type} character with ${availableColors[0].name}`,
+                            });
+                          } else {
+                            toast({
+                              title: "No Colors Available",
+                              description: `No colors available for ${type} characters`,
+                              variant: "destructive"
+                            });
+                          }
+                        } else {
+                          updateSpeakerMapping(speaker, value);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-40">
+                        <SelectValue placeholder="Assign to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {characters.length > 0 && (
+                          <>
+                            {characters.map(char => (
+                              <SelectItem key={char.id} value={char.name}>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: char.color }}
+                                  />
+                                  {char.name} ({char.type})
+                                </div>
+                              </SelectItem>
+                            ))}
+                            <div className="h-px bg-border my-1" />
+                          </>
+                        )}
+                        <div className="text-xs text-muted-foreground px-2 py-1 font-medium">
+                          Create New Character:
+                        </div>
+                        <SelectItem value="create-hero">+ Hero Character</SelectItem>
+                        <SelectItem value="create-villain">+ Villain Character</SelectItem>
+                        <SelectItem value="create-main">+ Main Character</SelectItem>
+                        <SelectItem value="create-supporting">+ Supporting Character</SelectItem>
+                        <SelectItem value="create-minor">+ Minor Character</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               ))}
             </div>
