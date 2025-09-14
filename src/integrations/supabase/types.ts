@@ -729,38 +729,21 @@ export type Database = {
       }
     }
     Views: {
-      secure_subscription_view: {
-        Row: {
-          created_at: string | null
-          email_masked: string | null
-          stripe_id_masked: string | null
-          subscribed: boolean | null
-          subscription_end: string | null
-          subscription_tier: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email_masked?: never
-          stripe_id_masked?: never
-          subscribed?: boolean | null
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email_masked?: never
-          stripe_id_masked?: never
-          subscribed?: boolean | null
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      admin_get_masked_subscription_data: {
+        Args: { target_user_id?: string }
+        Returns: {
+          created_at: string
+          email_masked: string
+          stripe_id_masked: string
+          subscribed: boolean
+          subscription_end: string
+          subscription_tier: string
+          user_id: string
+        }[]
+      }
       anonymize_ip_address: {
         Args: { ip_addr: unknown }
         Returns: unknown

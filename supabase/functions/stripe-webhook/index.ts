@@ -129,19 +129,14 @@ async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: 
   // Calculate subscription end date
   const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
-  // Update subscriber record
-  const { error } = await supabaseClient
-    .from('subscribers')
-    .upsert({
-      email: customerEmail,
-      stripe_customer_id: subscription.customer,
-      subscribed: subscription.status === 'active',
-      subscription_tier: subscriptionTier,
-      subscription_end: subscriptionEnd,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'email'
-    });
+  // Use secure system function to manage subscription data
+  const { error } = await supabaseClient.rpc('system_manage_subscription', {
+    target_user_id: null, // User ID unknown in webhook context, will be linked when user signs up
+    stripe_customer: subscription.customer,
+    tier: subscriptionTier,
+    is_active: subscription.status === 'active',
+    end_date: subscriptionEnd
+  });
 
   if (error) {
     logStep("Database update failed", { error: error.message });
@@ -182,16 +177,14 @@ async function handleSubscriptionCancellation(event: any, supabaseClient: any, s
 
   const customerEmail = (customer as any).email;
   
-  // Update subscriber to inactive
-  const { error } = await supabaseClient
-    .from('subscribers')
-    .update({
-      subscribed: false,
-      subscription_tier: null,
-      subscription_end: null,
-      updated_at: new Date().toISOString()
-    })
-    .eq('email', customerEmail);
+  // Use secure system function to cancel subscription
+  const { error } = await supabaseClient.rpc('system_manage_subscription', {
+    target_user_id: null, // User ID unknown in webhook context
+    stripe_customer: subscription.customer,
+    tier: null,
+    is_active: false,
+    end_date: new Date().toISOString()
+  });
 
   if (error) {
     logStep("Cancellation update failed", { error: error.message });

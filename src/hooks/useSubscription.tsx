@@ -53,7 +53,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     setLoading(true);
     try {
-      // Use the new secure edge function
+      // Use the secure edge function
       const { data, error } = await supabase.functions.invoke('get-subscription-info', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
