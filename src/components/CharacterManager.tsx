@@ -140,31 +140,32 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   }, [videoId]);
 
-  // Get available colors based on character type
-  const getAvailableColors = (type: Character['type']) => {
-    const usedColors = characters.map(c => c.color);
-    
+  // Get all available colors for character type (not filtered by usage)
+  const getAllColorsForType = (type: Character['type']) => {
     switch (type) {
       case 'hero':
       case 'villain':
       case 'main':
         return Object.entries(CI_COLORS.main)
-          .map(([name, color]) => ({ name, color }))
-          .filter(({ color }) => !usedColors.includes(color));
+          .map(([name, color]) => ({ name: `${name} (Main)`, color }));
       
       case 'supporting':
         return Object.entries(CI_COLORS.supporting)
-          .map(([name, color]) => ({ name, color }))
-          .filter(({ color }) => !usedColors.includes(color));
+          .map(([name, color]) => ({ name: `${name} (Supporting)`, color }));
       
       case 'minor':
         return CI_COLORS.minor
-          .map((color, index) => ({ name: `minor-${index + 1}`, color }))
-          .filter(({ color }) => !usedColors.includes(color));
+          .map((color, index) => ({ name: `Pastel ${index + 1} (Minor)`, color }));
       
       default:
         return [];
     }
+  };
+
+  // Get available colors for adding new character (filtered by usage)
+  const getAvailableColorsForNewCharacter = (type: Character['type']) => {
+    const usedColors = characters.map(c => c.color);
+    return getAllColorsForType(type).filter(({ color }) => !usedColors.includes(color));
   };
 
   const addCharacter = () => {
@@ -177,7 +178,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       return;
     }
 
-    const availableColors = getAvailableColors(newCharacterType);
+    const availableColors = getAvailableColorsForNewCharacter(newCharacterType);
     if (availableColors.length === 0) {
       toast({
         title: "No Colors Available",
@@ -426,7 +427,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               </h4>
               <div className="space-y-4">
                 {typeCharacters.map(character => {
-                  const availableColors = getAvailableColors(character.type);
                   return (
                     <div key={character.id} className="p-4 bg-accent/5 rounded border space-y-4">
                       {/* Character Header */}
@@ -464,83 +464,113 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         </Button>
                       </div>
 
-                      {/* Character Properties Grid */}
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Color Selection */}
-                        <div className="space-y-2">
-                          <Label className="text-xs">Color</Label>
-                          <Select
-                            value={character.color}
-                            onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableColors.concat([{ name: 'current', color: character.color }]).map(({ name, color }) => (
-                                <SelectItem key={color} value={color}>
-                                  <div className="flex items-center gap-2">
-                                    <div 
-                                      className="w-4 h-4 rounded border"
-                                      style={{ backgroundColor: color }}
-                                    />
-                                    {name}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                       {/* Character Properties Grid */}
+                       <div className="grid grid-cols-3 gap-4">
+                         {/* Character Type */}
+                         <div className="space-y-2">
+                           <Label className="text-xs">Character Type</Label>
+                           <Select
+                             value={character.type}
+                             onValueChange={(type) => {
+                               updateCharacterProperty(character.id, 'type', type);
+                               // Auto-assign first available color for new type
+                               const colorsForType = getAllColorsForType(type as Character['type']);
+                               if (colorsForType.length > 0) {
+                                 updateCharacterProperty(character.id, 'color', colorsForType[0].color);
+                               }
+                             }}
+                           >
+                             <SelectTrigger className="h-8">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="hero">Hero</SelectItem>
+                               <SelectItem value="villain">Villain</SelectItem>
+                               <SelectItem value="main">Main Character</SelectItem>
+                               <SelectItem value="supporting">Supporting</SelectItem>
+                               <SelectItem value="minor">Minor</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
 
-                        {/* Emphasis */}
-                        <div className="space-y-2">
-                          <Label className="text-xs">Emphasis</Label>
-                          <Select
-                            value={character.emphasis || 'normal'}
-                            onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="quiet">Quiet</SelectItem>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="loud">Loud</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                         {/* Color Selection */}
+                         <div className="space-y-2">
+                           <Label className="text-xs">Color</Label>
+                           <Select
+                             value={character.color}
+                             onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
+                           >
+                             <SelectTrigger className="h-8">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent className="max-h-60">
+                               {getAllColorsForType(character.type).map(({ name, color }) => (
+                                 <SelectItem key={color} value={color}>
+                                   <div className="flex items-center gap-2">
+                                     <div 
+                                       className="w-4 h-4 rounded border"
+                                       style={{ backgroundColor: color }}
+                                     />
+                                     {name}
+                                   </div>
+                                 </SelectItem>
+                               ))}
+                             </SelectContent>
+                           </Select>
+                         </div>
 
-                        {/* Pitch */}
-                        <div className="space-y-2">
-                          <Label className="text-xs">Pitch</Label>
-                          <Select
-                            value={character.pitch || 'normal'}
-                            onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="low">Low</SelectItem>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="high">High</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                         {/* Off-Camera Toggle */}
+                         <div className="space-y-2">
+                           <Label className="text-xs">Camera Status</Label>
+                           <Button
+                             size="sm"
+                             variant={character.isOffCamera ? "default" : "outline"}
+                             onClick={() => updateCharacterProperty(character.id, 'isOffCamera', !character.isOffCamera)}
+                             className="h-8 w-full"
+                           >
+                             {character.isOffCamera ? 'Off-Camera' : 'On-Camera'}
+                           </Button>
+                         </div>
+                       </div>
 
-                        {/* Off-Camera Toggle */}
-                        <div className="space-y-2">
-                          <Label className="text-xs">Camera Status</Label>
-                          <Button
-                            size="sm"
-                            variant={character.isOffCamera ? "default" : "outline"}
-                            onClick={() => updateCharacterProperty(character.id, 'isOffCamera', !character.isOffCamera)}
-                            className="h-8 w-full"
-                          >
-                            {character.isOffCamera ? 'Off-Camera' : 'On-Camera'}
-                          </Button>
-                        </div>
-                      </div>
+                       {/* Speech Properties */}
+                       <div className="grid grid-cols-2 gap-4">
+                         {/* Emphasis */}
+                         <div className="space-y-2">
+                           <Label className="text-xs">Emphasis</Label>
+                           <Select
+                             value={character.emphasis || 'normal'}
+                             onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
+                           >
+                             <SelectTrigger className="h-8">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="quiet">Quiet</SelectItem>
+                               <SelectItem value="normal">Normal</SelectItem>
+                               <SelectItem value="loud">Loud</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
+
+                         {/* Pitch */}
+                         <div className="space-y-2">
+                           <Label className="text-xs">Pitch</Label>
+                           <Select
+                             value={character.pitch || 'normal'}
+                             onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
+                           >
+                             <SelectTrigger className="h-8">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="low">Low</SelectItem>
+                               <SelectItem value="normal">Normal</SelectItem>
+                               <SelectItem value="high">High</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
+                       </div>
 
                       {/* Voice Selection */}
                       <div className="space-y-2">
