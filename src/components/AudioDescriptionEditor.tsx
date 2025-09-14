@@ -112,6 +112,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return 'text-orange-600'; // Default/English
   };
 
+  // Estimate duration needed to read a description (seconds)
+  const estimateDurationForText = (text: string): number => {
+    const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+    const wps = 2.6; // ~2.6 words/sec for clarity
+    return Math.min(5.0, Math.max(1.2, words / wps));
+  };
+
   // Clamp generated descriptions so they never exceed the real video duration
   const clampDescriptionsToDuration = (items: AudioDescriptionSegment[], dur: number): AudioDescriptionSegment[] => {
     if (!dur || !isFinite(dur)) return items;
