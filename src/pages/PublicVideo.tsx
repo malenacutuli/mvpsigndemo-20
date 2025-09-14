@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ interface PublicVideo {
 const PublicVideo = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [video, setVideo] = useState<PublicVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -327,7 +329,7 @@ const PublicVideo = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
-              Immersive Features
+              {t('videoDetail.immersiveFeatures')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -355,8 +357,7 @@ const PublicVideo = () => {
             
             <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-sm text-muted-foreground">
-                <strong>Tip:</strong> Use the immersive controls in the video player to toggle captions, 
-                audio descriptions and interpretation based on your needs.
+                {t('videoDetail.immersiveTip')}
               </p>
             </div>
           </CardContent>
