@@ -500,6 +500,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     language: languageCode || resultData.language_code || "en",
     words: segments.flatMap((s: any) => s.words || []),
   };
+}
 
 // Use Twelve Labs for comprehensive video analysis
 async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, language?: string): Promise<any> {
