@@ -343,18 +343,8 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     punctuate: true,
     format_text: true,
     speaker_labels: true,
-    speaker_labels: true,
-    word_boost: ["um", "uh"],
-    boost_param: "high",
-    auto_highlights: true,
-    sentiment_analysis: true,
-    entity_detection: true,
-    iab_categories: true,
-    content_safety: true,
-    auto_chapters: true,
-    summarization: true,
-    summary_model: "informative",
-    summary_type: "bullets"
+    word_boost: [],
+    auto_highlights: false
   };
   if (languageCode) {
     body.language_code = languageCode;
@@ -407,6 +397,8 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
   if (status !== "completed") {
     throw new Error("AssemblyAI transcription timeout");
   }
+
+  console.log(`✅ AssemblyAI transcription completed. Utterances: ${resultData.utterances?.length || 0}, Words: ${resultData.words?.length || 0}`);
 
   // Build segments from utterances when available
   const segments: any[] = [];
