@@ -843,7 +843,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             isPlaying={isPlaying}
             contentType={contentType}
             selectedVoice={selectedVoice}
-            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
+            dynamicDescriptions={generatedAD && generatedAD.length > 0 ? generatedAD : dynamicDescriptions}
             language={currentLanguage}
             onADStart={() => {
               const video = videoRef.current;
