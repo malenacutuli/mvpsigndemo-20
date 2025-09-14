@@ -1118,13 +1118,29 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <Settings className="w-4 h-4" />
             </Button>
             
-            {/* Expand Screen */}
+            {/* Fullscreen - Enhanced for mobile landscape */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 if (isMobile) {
+                  // Enable fullscreen regardless of orientation
                   setIsMobileFullscreen((v) => !v);
+                  
+                  // For landscape, also try native fullscreen for better experience
+                  if (isLandscape && document.fullscreenEnabled) {
+                    const container = containerRef.current;
+                    if (container) {
+                      if (!document.fullscreenElement && !isMobileFullscreen) {
+                        container.requestFullscreen().catch(() => {
+                          // Fallback to mobile simulation if native fails
+                          console.log('Native fullscreen failed, using mobile simulation');
+                        });
+                      } else if (document.fullscreenElement) {
+                        document.exitFullscreen().catch(console.error);
+                      }
+                    }
+                  }
                 } else {
                   const container = containerRef.current;
                   if (container && document.fullscreenEnabled) {
@@ -1136,7 +1152,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   }
                 }
               }}
-              title="Toggle fullscreen"
+              title={`${isMobile && isMobileFullscreen ? 'Exit' : 'Enter'} fullscreen`}
               className="text-primary-foreground hover:text-primary hover:bg-primary/20"
             >
               <Maximize className="w-4 h-4" />
