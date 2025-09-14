@@ -710,7 +710,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               existingSpeakers={[...new Set([
                 ...transcriptSegments.map(s => s.speaker).filter(Boolean),
                 ...captions.map(c => c.speaker).filter(Boolean)
-              ])]}
+              ])].sort()}
             />
           </div>
         </TabsContent>

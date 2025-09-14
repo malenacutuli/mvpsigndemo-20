@@ -126,9 +126,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   // Keep available speakers in sync with props
   useEffect(() => {
     if (existingSpeakers && existingSpeakers.length > 0) {
-      const unique = Array.from(new Set(existingSpeakers.filter(Boolean)));
+      const unique = Array.from(new Set(existingSpeakers.filter(Boolean))).sort();
       setAvailableSpeakers(unique);
       console.log('🧩 Available speakers (from props):', unique);
+      console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
     }
   }, [existingSpeakers]);
 
@@ -319,15 +320,26 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Save Changes Button */}
         {/* Speaker Mapping Section */}
         {availableSpeakers.length > 0 && (
           <div className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <h4 className="font-medium text-orange-800">🔗 Speaker Assignment</h4>
             <p className="text-xs text-orange-700">
-              Connect your transcript speakers to characters. This updates the video captions immediately.
+              Connect your transcript speakers to characters. This updates the video captions immediately.<br/>
+              <strong>📝 Note:</strong> Transcript editing (colors, intensity, word emphasis) controls the final Caption with Intention display, not content generation.
             </p>
             <div className="space-y-2">
+              <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded border flex justify-between items-center">
+                <span><strong>Debug Info:</strong> Found {availableSpeakers.length} unique speakers: {availableSpeakers.join(', ')}</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-6 text-xs"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh
+                </Button>
+              </div>
               {availableSpeakers.map(speaker => (
                 <div key={speaker} className="flex items-center gap-3 text-sm">
                   <Badge variant="outline" className="min-w-0">
