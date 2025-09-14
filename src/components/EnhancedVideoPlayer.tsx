@@ -302,8 +302,25 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     let applied = segments;
     try {
       const savedMappings = await loadSpeakerMappings(currentLanguage);
+      // Ensure characters are available on first render
+      let availableChars = characters;
+      if (!availableChars || availableChars.length === 0) {
+        try {
+          const loaded = await loadCharacters();
+          if (loaded && loaded.length > 0) {
+            availableChars = loaded;
+            setCharacters(loaded);
+            // Keep localStorage in sync for AxessiblePlayer's final mapping gate
+            const vid = videoId || 'default';
+            localStorage.setItem(`characters-${vid}`, JSON.stringify(loaded));
+            localStorage.setItem(`characters_${vid}`, JSON.stringify(loaded));
+          }
+        } catch (e) {
+          console.warn('⚠️ ENHANCED PLAYER: loadCharacters failed inside handleTranscriptUpdate', e);
+        }
+      }
       const charByName: Record<string, any> = {};
-      (characters || []).forEach(c => { charByName[c.name] = c; });
+      (availableChars || []).forEach((c: any) => { if (c?.name) charByName[c.name] = c; });
       
       applied = segments.map(s => {
         // If the segment speaker maps to a character, apply name, color, and off-camera

@@ -248,9 +248,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, []);
 
-  // Find active caption based on current time
+  // Use small tolerance to avoid missing captions at segment edges
+  const SEGMENT_TOLERANCE = 0.05; // 50ms
   const activeCaption = captions.find(caption => 
-    currentTime >= caption.startTime && currentTime <= caption.endTime
+    currentTime >= (caption.startTime - SEGMENT_TOLERANCE) && currentTime <= (caption.endTime + SEGMENT_TOLERANCE)
   );
 
   // Debug caption rendering and character colors
