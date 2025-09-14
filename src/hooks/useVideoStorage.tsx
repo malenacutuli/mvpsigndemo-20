@@ -248,7 +248,22 @@ export const useVideoStorage = (videoId: string) => {
 
       if (error) throw error;
 
-      const segments: TranscriptSegment[] = (data || []).map(row => ({
+      let rows = data || [];
+
+      // Fallback: if no rows for requested language, load any available language to avoid empty state
+      if (rows.length === 0) {
+        const { data: anyLangData, error: anyLangError } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .order('start_time');
+        if (!anyLangError && anyLangData && anyLangData.length > 0) {
+          rows = anyLangData;
+          console.warn(`⚠️ No transcript for language "${language}". Loaded ${anyLangData.length} segments from available language instead.`);
+        }
+      }
+
+      const segments: TranscriptSegment[] = (rows || []).map(row => ({
         id: row.id,
         text: row.text,
         startTime: row.start_time,
@@ -654,6 +669,11 @@ export const useVideoStorage = (videoId: string) => {
       }
 
       if (opError) throw opError;
+
+      // Mirror to localStorage so the AxessiblePlayer final mapping gate can use it instantly
+      try {
+        localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(mappings));
+      } catch {}
 
       console.log('💾 Speaker mappings saved to database');
     } catch (err) {

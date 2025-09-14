@@ -238,8 +238,17 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     try {
       await saveCharacters(characters);
       
-      // Save speaker mappings to database
+      // Mirror characters to localStorage for AxessiblePlayer final mapping gate
+      try {
+        localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
+        localStorage.setItem(`characters_${videoId}`, JSON.stringify(characters));
+      } catch {}
+      
+      // Save speaker mappings to database and mirror to localStorage
       await saveSpeakerMappings(speakerMappings, language);
+      try {
+        localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(speakerMappings));
+      } catch {}
       
       // Apply character settings to mapped speakers in database
       await applyCharacterMappings();
