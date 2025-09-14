@@ -446,6 +446,36 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       speaker_mappings: {
         Row: {
           created_at: string
@@ -856,10 +886,6 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: string
       }
-      get_channel_subscriber_count: {
-        Args: { channel_uuid: string }
-        Returns: number
-      }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -914,13 +940,20 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: undefined
       }
-      is_email_subscribed_to_channel: {
-        Args: { channel_uuid: string; email_to_check: string }
-        Returns: boolean
-      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string
+      }
+      secure_check_subscription_status_v2: {
+        Args: { channel_uuid: string }
+        Returns: boolean
+      }
+      secure_get_channel_stats_v2: {
+        Args: { channel_uuid: string }
+        Returns: {
+          latest_subscription_date: string
+          total_subscribers: number
+        }[]
       }
       system_get_stripe_customer_for_webhook: {
         Args: { user_email: string }

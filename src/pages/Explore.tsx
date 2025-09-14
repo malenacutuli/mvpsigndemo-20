@@ -160,15 +160,26 @@ const Explore = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('channel_subscriptions')
-        .select('channel_id')
-        .eq('subscriber_user_id', user.id);
-
-      if (error) throw error;
+      // Use secure function to check subscription status for each channel
+      // Note: This is now done per-channel basis for security
+      const channelSubscriptions = new Set<string>();
       
-      const subscribedChannels = new Set(data?.map(sub => sub.channel_id) || []);
-      setSubscriptions(subscribedChannels);
+      // For each channel, check if user is subscribed using secure function
+      for (const channel of channels) {
+        try {
+          const { data: isSubscribed } = await supabase.rpc('secure_check_subscription_status_v2', {
+            channel_uuid: channel.id
+          });
+          
+          if (isSubscribed) {
+            channelSubscriptions.add(channel.id);
+          }
+        } catch (error) {
+          console.error(`Error checking subscription for channel ${channel.id}:`, error);
+        }
+      }
+      
+      setSubscriptions(channelSubscriptions);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
     }
@@ -190,11 +201,14 @@ const Explore = () => {
       const isSubscribed = subscriptions.has(channelId);
       
       if (isSubscribed) {
-        const { error } = await supabase
-          .from('channel_subscriptions')
-          .delete()
-          .eq('channel_id', channelId)
-          .eq('subscriber_user_id', user.id);
+        // Unsubscribe using system/service operations through edge function
+        const { error } = await supabase.functions.invoke('manage-subscription', {
+          body: {
+            action: 'unsubscribe',
+            channel_id: channelId,
+            subscriber_user_id: user.id
+          }
+        });
 
         if (error) throw error;
         
@@ -209,12 +223,14 @@ const Explore = () => {
           description: t('explore.unsubscribedMessage'),
         });
       } else {
-        const { error } = await supabase
-          .from('channel_subscriptions')
-          .insert({
+        // Subscribe using system/service operations through edge function
+        const { error } = await supabase.functions.invoke('manage-subscription', {
+          body: {
+            action: 'subscribe',
             channel_id: channelId,
-            subscriber_user_id: user.id,
-          });
+            subscriber_user_id: user.id
+          }
+        });
 
         if (error) throw error;
         
