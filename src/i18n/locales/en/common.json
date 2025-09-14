@@ -438,6 +438,24 @@
     "signInWithGoogle": "Sign in with Google",
     "signUpWithGoogle": "Sign up with Google"
   },
+  "publicBoard": {
+    "title": "Immersive Video Library",
+    "subtitle": "See more, hear more, understand more. Your way of watching, upgraded.",
+    "searchPlaceholder": "Search immersive videos...",
+    "watchVideo": "Watch Video",
+    "ctaTitle": "Make your content unforgettable.",
+    "ctaDescription": "Turn on features that help more people connect- and help everyone enjoy more.",
+    "getStarted": "Get Started Today",
+    "loadingVideos": "Loading accessible videos...",
+    "noVideosFound": "No public videos found",
+    "noVideosYet": "No accessible videos have been published yet.",
+    "noMatchingVideos": "No videos match your current filters.",
+    "joinCommunity": "Join the Community",
+    "allLanguages": "All languages",
+    "allContent": "All content",
+    "published": "Published",
+    "public": "Public"
+  },
   "explore": {
     "title": "Immersive Video Library",
     "subtitle": "Experience stories with captions, audio descriptions, and sign language",

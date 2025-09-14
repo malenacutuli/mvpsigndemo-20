@@ -427,6 +427,24 @@
     "signInWithGoogle": "Iniciar sesión con Google",
     "signUpWithGoogle": "Registrarse con Google"
   },
+  "publicBoard": {
+    "title": "Biblioteca de Video Inmersiva",
+    "subtitle": "Ve más, escucha más, entiende más. Tu forma de ver, mejorada.",
+    "searchPlaceholder": "Buscar videos inmersivos...",
+    "watchVideo": "Ver Video",
+    "ctaTitle": "Haz tu contenido inolvidable.",
+    "ctaDescription": "Activa funciones que ayuden a más personas a conectarse y que todos disfruten más.",
+    "getStarted": "Comenzar Hoy",
+    "loadingVideos": "Cargando videos accesibles...",
+    "noVideosFound": "No se encontraron videos públicos",
+    "noVideosYet": "Aún no se han publicado videos accesibles.",
+    "noMatchingVideos": "Ningún video coincide con tus filtros actuales.",
+    "joinCommunity": "Únete a la Comunidad",
+    "allLanguages": "Todos los idiomas",
+    "allContent": "Todo el contenido",
+    "published": "Publicado",
+    "public": "Público"
+  },
   "explore": {
     "title": "Biblioteca de Video Inmersiva",
     "subtitle": "Experimenta historias con subtítulos, descripciones de audio y lenguaje de señas",

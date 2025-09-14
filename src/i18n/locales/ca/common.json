@@ -425,6 +425,24 @@
     "signInWithGoogle": "Iniciar sessió amb Google",
     "signUpWithGoogle": "Registrar-se amb Google"
   },
+  "publicBoard": {
+    "title": "Biblioteca de Vídeo Immersiva",
+    "subtitle": "Veure més, sentir més, entendre més. La teva manera de veure, millorada.",
+    "searchPlaceholder": "Cercar vídeos immersius...",
+    "watchVideo": "Veure Vídeo",
+    "ctaTitle": "Fes el teu contingut inoblidable.",
+    "ctaDescription": "Activa funcions que ajuden més persones a connectar-se i que fan que tothom gaudeixi més.",
+    "getStarted": "Començar Avui",
+    "loadingVideos": "Carregant vídeos accessibles...",
+    "noVideosFound": "No s'han trobat vídeos públics",
+    "noVideosYet": "Encara no s'han publicat vídeos accessibles.",
+    "noMatchingVideos": "Cap vídeo coincideix amb els teus filtres actuals.",
+    "joinCommunity": "Uneix-te a la Comunitat",
+    "allLanguages": "Tots els idiomes",
+    "allContent": "Tot el contingut",
+    "published": "Publicat",
+    "public": "Públic"
+  },
   "explore": {
     "title": "Biblioteca de Vídeo Immersiva",
     "subtitle": "Viu històries amb subtítols, descripcions d'àudio i llengua de signes",

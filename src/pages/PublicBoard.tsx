@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Play, Calendar, Clock, Languages, Eye, Globe } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ interface PublicVideo {
 }
 
 export default function PublicBoard() {
+  const { t } = useTranslation();
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,7 +101,7 @@ export default function PublicBoard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading accessible videos...</p>
+          <p className="text-muted-foreground">{t('publicBoard.loadingVideos')}</p>
         </div>
       </div>
     );
@@ -113,11 +115,11 @@ export default function PublicBoard() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Immersive Video Board
+              {t('publicBoard.title')}
             </h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            See more, hear more, understand more. Your way of watching, upgraded.
+            {t('publicBoard.subtitle')}
           </p>
         </div>
 
@@ -125,7 +127,7 @@ export default function PublicBoard() {
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1">
             <Input
-              placeholder="Search immersive videos..."
+              placeholder={t('publicBoard.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -133,10 +135,10 @@ export default function PublicBoard() {
           
           <Select value={languageFilter} onValueChange={setLanguageFilter}>
             <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All languages" />
+              <SelectValue placeholder={t('publicBoard.allLanguages')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All languages</SelectItem>
+              <SelectItem value="all">{t('publicBoard.allLanguages')}</SelectItem>
               <SelectItem value="en">English</SelectItem>
               <SelectItem value="es">Spanish</SelectItem>
               <SelectItem value="fr">French</SelectItem>
@@ -146,10 +148,10 @@ export default function PublicBoard() {
 
           <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
             <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All content" />
+              <SelectValue placeholder={t('publicBoard.allContent')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All content</SelectItem>
+              <SelectItem value="all">{t('publicBoard.allContent')}</SelectItem>
               <SelectItem value="education">Educational</SelectItem>
               <SelectItem value="recipe">Recipe</SelectItem>
               <SelectItem value="tutorial">Tutorial</SelectItem>
@@ -162,14 +164,14 @@ export default function PublicBoard() {
         {filteredVideos.length === 0 ? (
           <div className="text-center py-12">
             <Globe className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">No public videos found</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('publicBoard.noVideosFound')}</h3>
             <p className="text-muted-foreground mb-4">
               {videos.length === 0 
-                ? "No accessible videos have been published yet." 
-                : "No videos match your current filters."}
+                ? t('publicBoard.noVideosYet')
+                : t('publicBoard.noMatchingVideos')}
             </p>
             <Button asChild variant="outline">
-              <Link to="/auth">Join the Community</Link>
+              <Link to="/auth">{t('publicBoard.joinCommunity')}</Link>
             </Button>
           </div>
         ) : (
@@ -195,7 +197,7 @@ export default function PublicBoard() {
                     <div className="absolute top-2 left-2">
                       <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
                         <Globe className="w-3 h-3 mr-1" />
-                        Public
+                        {t('publicBoard.public')}
                       </Badge>
                     </div>
                     
@@ -235,17 +237,17 @@ export default function PublicBoard() {
                     </div>
                   </div>
 
-                  <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Published {new Date(video.published_at).toLocaleDateString()}
-                  </div>
+                    <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {t('publicBoard.published')} {new Date(video.published_at).toLocaleDateString()}
+                    </div>
                   
-                  <Button asChild className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <Link to={`/watch/${video.id}`}>
-                      <Play className="w-4 h-4 mr-2" />
-                      Watch Video
-                    </Link>
-                  </Button>
+                    <Button asChild className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Link to={`/watch/${video.id}`}>
+                        <Play className="w-4 h-4 mr-2" />
+                        {t('publicBoard.watchVideo')}
+                      </Link>
+                    </Button>
                 </CardContent>
               </Card>
             ))}
@@ -255,12 +257,12 @@ export default function PublicBoard() {
         {/* Call to Action */}
         {videos.length > 0 && (
           <div className="text-center mt-16 py-12 bg-muted/30 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Make your content unforgettable.</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('publicBoard.ctaTitle')}</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Turn on features that help more people connect- and help everyone enjoy more.
+              {t('publicBoard.ctaDescription')}
             </p>
             <Button asChild size="lg">
-              <Link to="/auth">Get Started Today</Link>
+              <Link to="/auth">{t('publicBoard.getStarted')}</Link>
             </Button>
           </div>
         )}
