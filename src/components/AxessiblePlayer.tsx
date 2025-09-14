@@ -106,8 +106,48 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [isMobileFullscreen, setIsMobileFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Enhanced mobile fullscreen states
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [safeAreaInsets, setSafeAreaInsets] = useState({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  });
+  
   // Hooks
   const isMobile = useIsMobile();
+
+  // Detect orientation changes for mobile fullscreen
+  useEffect(() => {
+    const updateOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    const updateSafeAreaInsets = () => {
+      // Get CSS environment variables for safe area insets
+      const style = getComputedStyle(document.documentElement);
+      setSafeAreaInsets({
+        top: parseInt(style.getPropertyValue('env(safe-area-inset-top)') || '0'),
+        right: parseInt(style.getPropertyValue('env(safe-area-inset-right)') || '0'),
+        bottom: parseInt(style.getPropertyValue('env(safe-area-inset-bottom)') || '0'),
+        left: parseInt(style.getPropertyValue('env(safe-area-inset-left)') || '0')
+      });
+    };
+
+    updateOrientation();
+    updateSafeAreaInsets();
+
+    window.addEventListener('orientationchange', updateOrientation);
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('resize', updateSafeAreaInsets);
+
+    return () => {
+      window.removeEventListener('orientationchange', updateOrientation);
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('resize', updateSafeAreaInsets);
+    };
+  }, []);
 
   // Lock scroll when simulating fullscreen on mobile
   useEffect(() => {
@@ -788,9 +828,29 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       )}
 
 
-      {/* Captions with Intention - Positioned above control area */}
+      {/* Captions with Intention - Enhanced mobile fullscreen positioning */}
       {showCaptions && (
-        <div className={`absolute ${isMobile && (isFullscreen || isMobileFullscreen) ? 'bottom-20' : 'bottom-24'} left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none`}>
+        <div 
+          className={`absolute left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none px-2 ${
+            isMobile && (isFullscreen || isMobileFullscreen) 
+              ? isLandscape 
+                ? 'bottom-6' // Landscape fullscreen - closer to bottom
+                : 'bottom-16' // Portrait fullscreen - above virtual controls
+              : 'bottom-24' // Normal mode
+          }`}
+          style={{
+            // Enhanced safe area handling for mobile fullscreen
+            ...(isMobile && (isFullscreen || isMobileFullscreen) && {
+              paddingLeft: `max(0.5rem, ${safeAreaInsets.left}px)`,
+              paddingRight: `max(0.5rem, ${safeAreaInsets.right}px)`,
+              paddingBottom: isLandscape 
+                ? `max(0.375rem, ${safeAreaInsets.bottom}px)` 
+                : `max(1rem, ${safeAreaInsets.bottom + 8}px)`,
+              maxWidth: '95vw', // Prevent overflow on small screens
+              fontSize: isLandscape ? '0.95em' : '1em' // Slight size adjustment for landscape
+            })
+          }}
+        >
           <CaptionsWithIntention 
             captions={(() => {
               // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
