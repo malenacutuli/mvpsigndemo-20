@@ -43,6 +43,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   });
   const [descriptions, setDescriptions] = useState<AudioDescriptionSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
@@ -675,6 +676,38 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     setEditingIndex(updatedDescriptions.length - 1);
     setEditText('');
     setEditVoiceStyle(newDescription.voiceStyle);
+  };
+
+  const saveAllDescriptions = async () => {
+    if (descriptions.length === 0) {
+      toast.error('No descriptions to save');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Save all descriptions to database
+      for (let i = 0; i < descriptions.length; i++) {
+        const desc = descriptions[i];
+        await supabase
+          .from('audio_descriptions')
+          .upsert({
+            video_id: videoId,
+            description: desc.text,
+            start_time: desc.startTime,
+            end_time: desc.endTime,
+            voice_style: desc.voiceStyle,
+            language: detectedLanguage
+          });
+      }
+      
+      toast.success(`Successfully saved ${descriptions.length} audio descriptions`);
+    } catch (error) {
+      console.error('Failed to save audio descriptions:', error);
+      toast.error('Failed to save audio descriptions');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
