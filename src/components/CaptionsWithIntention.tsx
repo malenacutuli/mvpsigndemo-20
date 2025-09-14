@@ -299,8 +299,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   if (!activeCaption) return null;
 
-  // Enhanced word timing and highlighting logic
-  const TIMING_TOLERANCE = 0.01; // 10ms tolerance for ultra-precise sync
+  // Enhanced word timing and highlighting logic with better early-video sync
+  const TIMING_TOLERANCE = 0.005; // 5ms tolerance for ultra-precise sync, especially at video start
   
   // Truncate text for mobile portrait to prevent excessive screen coverage
   const isMobilePortrait = window.innerWidth < 640 && window.innerHeight > window.innerWidth;
@@ -311,23 +311,43 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     captionText = captionText.substring(0, truncateAt) + '...';
   }
   
-  // Synthesize word-level timing if missing
+  // Synthesize word-level timing if missing with improved accuracy
   let workingCaption = { ...activeCaption, text: captionText };
   if (!workingCaption.words || workingCaption.words.length === 0) {
     console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
     const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
-    const wordDuration = Math.max(0.15, duration / words.length); // Min 150ms per word
     
-    workingCaption.words = words.map((word, index) => ({
-      text: word,
-      startTime: workingCaption.startTime + (index * wordDuration),
-      endTime: workingCaption.startTime + ((index + 1) * wordDuration),
-      emphasis: 'normal' as const,
-      pitch: 'normal' as const
-    }));
+    // More natural word timing based on word length and common speech patterns
+    const baseWPM = 150; // Average words per minute for clear speech
+    const wordsPerSecond = baseWPM / 60;
+    const naturalDuration = words.length / wordsPerSecond;
     
-    console.log('✅ CAPTIONS: Synthesized', words.length, 'words for current segment');
+    // Use actual segment duration but respect natural speech timing
+    const effectiveDuration = Math.max(duration, naturalDuration * 0.8);
+    const avgWordDuration = effectiveDuration / words.length;
+    
+    workingCaption.words = words.map((word, index) => {
+      // Vary word duration slightly based on word length for realism
+      const lengthFactor = Math.max(0.7, Math.min(1.5, word.length / 5));
+      const wordDuration = Math.max(0.12, avgWordDuration * lengthFactor); // Min 120ms per word
+      
+      const startTime = workingCaption.startTime + (index * avgWordDuration);
+      const endTime = Math.min(
+        workingCaption.endTime, 
+        startTime + wordDuration
+      );
+      
+      return {
+        text: word,
+        startTime: startTime,
+        endTime: endTime,
+        emphasis: 'normal' as const,
+        pitch: 'normal' as const
+      };
+    });
+    
+    console.log('✅ CAPTIONS: Synthesized', words.length, 'words with natural timing for segment', workingCaption.startTime.toFixed(2) + 's');
   }
   
   const activeWordIndex = workingCaption.words?.findIndex(word => 
@@ -464,12 +484,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      word.emphasis
                    );
                    
-                   // Ultra-precise word timing with smaller tolerance (like axs.so)
-                   const WORD_PRECISION = 0.01; // 10ms precision for perfect sync
-                   const isWordActive = currentTime >= (word.startTime - WORD_PRECISION) && 
-                                       currentTime <= (word.endTime + WORD_PRECISION);
-                   const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
-                   const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
+                    // Ultra-precise word timing with hyper-accurate sync for spoken language following
+                    const WORD_PRECISION = 0.003; // 3ms precision for perfect word-by-word sync
+                    const isWordActive = currentTime >= (word.startTime - WORD_PRECISION) && 
+                                        currentTime <= (word.endTime + WORD_PRECISION);
+                    const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
+                    const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
+                    
+                    // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
+                    if (currentTime <= 3.0 && index < 5) {
+                      console.log(`⏱️ Word ${index} "${word.text}" timing: current=${currentTime.toFixed(3)}s, word=${word.startTime?.toFixed(3)}-${word.endTime?.toFixed(3)}s, active=${isWordActive}`);
+                    }
                    
                    // Progressive word state system (inspired by axs.so approach)
                    let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
