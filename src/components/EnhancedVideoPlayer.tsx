@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
@@ -51,13 +51,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
-  const { loadTranscriptSegments, loadTranscriptSegmentsFresh, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
+  const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
-  
-  // Add loading cache ref for managing duplicate loads
-  const loadingCacheRef = useRef(new Map<string, any>());
   
   // Stable list of detected speakers from transcript segments only (avoid flicker)
   const stableDetectedSpeakers = useMemo(() => {
@@ -279,103 +276,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     handleMappingsUpdate();
   }, [characters, videoId, currentLanguage]);
 
-  // Force clear all cached data and refresh on mount
-  useEffect(() => {
-    const clearCacheAndRefresh = () => {
-      console.log('🔄 Clearing all cached transcript data on component mount...');
-      
-      // Clear all transcript-related session storage
-      const keys = Object.keys(sessionStorage);
-      keys.forEach(key => {
-        if (key.includes(videoId) && (key.includes('transcript') || key.includes('loading') || key.includes('intensity') || key.includes('words'))) {
-          sessionStorage.removeItem(key);
-          console.log('🗑️ Cleared cached key:', key);
-        }
-      });
-      
-      // Clear loading cache
-      loadingCacheRef.current.clear();
-      
-      console.log('✅ Cache cleared for fresh transcript load');
-    };
-    
-    clearCacheAndRefresh();
-  }, [videoId]);
-
-  // Clear cache and reload transcript when user saves changes
-  const forceRefreshTranscript = async () => {
-    console.log('🔄 Force refreshing transcript data...');
-    
-    // Clear all caches
-    const keysToRemove = [
-      `transcript_segments_${videoId}_${currentLanguage}`,
-      `loading_${videoId}_${currentLanguage}`,
-      `words_persisted_${videoId}_${currentLanguage}`,
-      `intensity_analyzed_${videoId}_${currentLanguage}`
-    ];
-    keysToRemove.forEach(key => {
-      sessionStorage.removeItem(key);
-      loadingCacheRef.current.delete(key);
-    });
-    
-    // Force reload from database
-    try {
-      const freshSegments = await loadTranscriptSegmentsFresh(currentLanguage);
-      if (freshSegments.length > 0) {
-        const finalCaptions = freshSegments.map(segment => ({
-          ...segment,
-          startTime: Number(segment.startTime) || 0,
-          endTime: Number(segment.endTime) || 0,
-          text: segment.text || '',
-          speaker: segment.speaker || 'Speaker',
-          speakerColor: segment.speakerColor || '#3B82F6',
-          words: (segment.words || []).map(word => ({
-            text: word.text || '',
-            startTime: Number(word.startTime) || 0,
-            endTime: Number(word.endTime) || 0,
-            emphasis: word.emphasis as 'loud' | 'quiet' | 'normal' | undefined,
-            pitch: word.pitch as 'high' | 'low' | 'normal' | undefined
-          }))
-        })) as any[];
-        
-        setCaptions(finalCaptions);
-        setTranscriptSegments(finalCaptions);
-        console.log('✅ Force refresh completed with', finalCaptions.length, 'segments');
-      }
-    } catch (error) {
-      console.error('❌ Force refresh failed:', error);
-    }
-  };
-
-  // Listen for storage events to detect when transcript is saved
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && (e.key.includes(`transcript_${videoId}`) || e.key.includes(`characters_${videoId}`))) {
-        console.log('📢 Detected transcript/character changes, refreshing...');
-        setTimeout(forceRefreshTranscript, 100); // Small delay to ensure save is complete
-      }
-    };
-
-    const handleTranscriptSaved = (e: Event) => {
-      try {
-        const detail = (e as CustomEvent<any>).detail || {};
-        if (detail?.videoId !== videoId) return;
-        console.log('📢 Received transcript-saved event, refreshing...');
-        if (detail.language && detail.language !== currentLanguage) {
-          setCurrentLanguage(detail.language);
-        }
-        setTimeout(forceRefreshTranscript, 50);
-      } catch {}
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('transcript-saved', handleTranscriptSaved as EventListener);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('transcript-saved', handleTranscriptSaved as EventListener);
-    };
-  }, [videoId, currentLanguage]);
-
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
     
@@ -548,68 +448,295 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const loadSavedData = async () => {
       console.log('🔄 ENHANCED PLAYER: Loading database content for video:', videoId, 'language:', currentLanguage);
       
-      // Clear any stale session storage that might prevent fresh loads
-      const keysToRemove = [
-        `loading_${videoId}_${currentLanguage}`,
-        `words_persisted_${videoId}_${currentLanguage}`,
-        `intensity_analyzed_${videoId}_${currentLanguage}`
-      ];
-      keysToRemove.forEach(key => sessionStorage.removeItem(key));
+      // Prevent multiple simultaneous loads
+      const loadingKey = `loading_${videoId}_${currentLanguage}`;
+      if (sessionStorage.getItem(loadingKey)) {
+        console.log('⚠️ Already loading data for this video/language combination');
+        return;
+      }
+      sessionStorage.setItem(loadingKey, 'true');
       
       try {
         // Try to load saved transcript from database with current language first
         let segments = await loadTranscriptSegments(currentLanguage);
         console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments for language:', currentLanguage);
         
-        if (segments.length === 0) {
-          console.log('⚠️ ENHANCED PLAYER: No segments found, clearing captions to prevent stale display');
-          setCaptions([]);
-          setTranscriptSegments([]);
-          return;
+        // If no segments found and currentLanguage is not 'en', try loading with 'en'
+        if (segments.length === 0 && currentLanguage !== 'en') {
+          console.log('🔄 ENHANCED PLAYER: No segments found for', currentLanguage, ', trying fallback to "en"');
+          segments = await loadTranscriptSegments('en');
+          console.log('📖 ENHANCED PLAYER: Fallback loaded:', segments.length, 'segments for language: en');
+          
+          // If we found segments with 'en', update the current language
+          if (segments.length > 0) {
+            console.log('✅ ENHANCED PLAYER: Found transcript in English, updating current language');
+            setCurrentLanguage('en');
+          }
         }
-        
         setTranscriptSegments(segments);
         
         if (segments.length > 0) {
-          console.log('🎯 ENHANCED PLAYER: Processing', segments.length, 'segments for video player');
-          console.log('🔍 First segment check:', segments[0] ? { 
+          console.log('🎯 ENHANCED PLAYER: First segment timing check:', segments[0] ? { 
             startTime: segments[0].startTime, 
             endTime: segments[0].endTime,
-            speaker: segments[0].speaker,
-            color: segments[0].speakerColor,
             text: segments[0].text.substring(0, 30) + '...'
           } : 'No segments');
 
-          // Apply character mappings directly without complex processing
-          const finalCaptions = segments.map(segment => ({
-            ...segment,
-            // Ensure all required caption properties exist
-            startTime: Number(segment.startTime) || 0,
-            endTime: Number(segment.endTime) || 0,
-            text: segment.text || '',
-            speaker: segment.speaker || 'Speaker',
-            speakerColor: segment.speakerColor || '#3B82F6',
-            words: (segment.words || []).map(word => ({
-              text: word.text || '',
-              startTime: Number(word.startTime) || 0,
-              endTime: Number(word.endTime) || 0,
-              emphasis: word.emphasis as 'loud' | 'quiet' | 'normal' | undefined,
-              pitch: word.pitch as 'high' | 'low' | 'normal' | undefined
-            }))
-          })) as any[];
+          let captionSegments: CaptionSegment[] = [];
           
-          console.log('✅ ENHANCED PLAYER: Final captions ready:', finalCaptions.length, 'segments');
-          console.log('🎨 Sample caption colors:', finalCaptions.slice(0, 3).map(c => ({ 
-            speaker: c.speaker, 
-            color: c.speakerColor 
+          try {
+            // Convert database segments to caption format first, fixing missing timings and word timestamps
+            captionSegments = segments.map((segment, segIdx) => {
+              const rawWords = (segment.words || []).filter((w: any) => w && typeof w.text === 'string');
+              // Compute segment-level times with robust fallbacks
+              let start = Number(segment.startTime) || 0;
+              let end = Number(segment.endTime) || 0;
+
+              const firstWordWithTime = rawWords.find((w: any) => typeof w.startTime === 'number');
+              const lastWordWithTime = [...rawWords].reverse().find((w: any) => typeof w.endTime === 'number');
+
+              if ((start === 0 || !isFinite(start)) && firstWordWithTime) start = firstWordWithTime.startTime;
+              if ((end === 0 || !isFinite(end)) && lastWordWithTime) end = lastWordWithTime.endTime;
+
+              // If end still invalid or <= start, assign a minimal duration (will be refined below)
+              if (!isFinite(end) || end <= start) {
+                end = start + Math.max(1, rawWords.length * 0.3);
+              }
+
+              // Build words with guaranteed timings
+              let words = rawWords.map((word: any) => ({ ...word }));
+
+              // Fallback: if no word array present, synthesize it by splitting the text
+              if ((!words || words.length === 0) && typeof segment.text === 'string' && segment.text.trim().length > 0) {
+                const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
+                const tokenCount = tokens.length;
+                // Ensure duration is enough; if invalid or too short, expand proportionally
+                const minPerWord = 0.18; // ~180ms per word baseline
+                const minDuration = Math.max(1, tokenCount * minPerWord);
+                if (!isFinite(end) || end <= start || (end - start) < minDuration) {
+                  end = start + minDuration;
+                }
+                const step = (end - start) / Math.max(1, tokenCount);
+                words = tokens.map((t, i) => ({
+                  text: t,
+                  startTime: start + i * step,
+                  endTime: start + (i + 1) * step,
+                }));
+                // Debug once per synthesized segment
+                if (segIdx < 5) {
+                  console.log(`🧩 ENHANCED PLAYER: Synthesized ${tokenCount} words for segment ${segIdx}`);
+                }
+              }
+
+              // If words exist but missing timings, distribute uniformly
+              const needsDistribution = words.length > 0 && !words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+              if (words.length > 0 && needsDistribution) {
+                const total = Math.max(end - start, Math.max(1, words.length * 0.3));
+                const step = total / words.length;
+                words = words.map((w: any, i: number) => ({
+                  text: w.text,
+                  startTime: typeof w.startTime === 'number' ? w.startTime : start + i * step,
+                  endTime: typeof w.endTime === 'number' ? w.endTime : start + (i + 1) * step,
+                  emphasis: w.emphasis,
+                  pitch: w.pitch
+                }));
+                // Ensure segment end matches last word end
+                end = words[words.length - 1].endTime;
+              }
+
+              // Normalize relative word timings to absolute timeline if needed
+              if (words && words.length > 0) {
+                const maxWordEnd = Math.max(...words.map((w: any) => Number(w.endTime) || 0));
+                const minWordStart = Math.min(...words.map((w: any) => (typeof w.startTime === 'number' ? w.startTime : Number(w.startTime) || 0)));
+                const segDur = end - start;
+                const looksRelative = maxWordEnd <= (segDur + 0.05) && minWordStart >= -0.05 && start >= 0;
+                if (looksRelative) {
+                  words = words.map((w: any) => ({
+                    ...w,
+                    startTime: start + ((typeof w.startTime === 'number' ? w.startTime : Number(w.startTime) || 0)),
+                    endTime: start + ((typeof w.endTime === 'number' ? w.endTime : Number(w.endTime) || 0)),
+                  }));
+                  end = Math.max(end, start + maxWordEnd);
+                  if (segIdx < 5) {
+                    console.log(`🛠️ ENHANCED PLAYER: Normalized relative word timings for segment ${segIdx} (offset ${start.toFixed(2)}s)`);
+                  }
+                }
+              }
+
+              return {
+                text: segment.text,
+                speaker: segment.speaker || 'Speaker',
+                startTime: start,
+                endTime: end,
+                words,
+                speakerColor: segment.speakerColor || '#3B82F6',
+                pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+                volume: 50,
+                type: 'dialogue' as const,
+                isOffCamera: segment.isOffCamera || false,
+                vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+                intensity_confidence: (segment as any).intensity_confidence,
+                auto_styling: (segment as any).auto_styling
+              };
+            });
+            
+            console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
+            
+            // 1. Advanced speaker identification - use AssemblyAI if possible
+            console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification...');
+            try {
+              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
+              console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+            } catch (error) {
+              console.warn('⚠️ Advanced speaker analysis failed, falling back to color stabilization:', error);
+              captionSegments = stabilizeSpeakerColors(captionSegments);
+            }
+            
+            // 2. Analyze vocal intensity ONCE if needed with improved audio handling
+            const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
+            const hasIntensityKey = `intensity_analyzed_${videoId}_${currentLanguage}`;
+            const alreadyAnalyzed = sessionStorage.getItem(hasIntensityKey);
+            
+            console.log('🔊 ENHANCED PLAYER: Needs intensity analysis:', needsIntensityAnalysis, 'Already analyzed:', !!alreadyAnalyzed);
+            
+            if (needsIntensityAnalysis && !isAnalyzingIntensity && !alreadyAnalyzed) {
+              console.log('🔊 ENHANCED PLAYER: Starting enhanced vocal intensity analysis with audio extraction...');
+              sessionStorage.setItem(hasIntensityKey, 'true'); // Prevent duplicate calls
+              try {
+                // Enhanced analysis with video URL for better audio processing
+                const { data, error } = await supabase.functions.invoke('analyze-vocal-intensity', {
+                  body: {
+                    video_id: videoId,
+                    video_url: videoSrc, // Provide video URL for audio extraction
+                    segments: captionSegments.map(seg => ({
+                      text: seg.text,
+                      start_time: seg.startTime,
+                      end_time: seg.endTime,
+                      speaker: seg.speaker
+                    }))
+                  }
+                });
+
+                if (error) throw error;
+
+                if (data?.success && data?.analyzed_segments) {
+                  captionSegments = captionSegments.map((segment, idx) => {
+                    const analyzedSegment = data.analyzed_segments[idx];
+                    if (analyzedSegment) {
+                      return {
+                        ...segment,
+                        vocal_intensity: analyzedSegment.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+                        intensity_confidence: analyzedSegment.intensity_confidence || 0.5,
+                        auto_styling: analyzedSegment.auto_styling
+                      };
+                    }
+                    return segment;
+                  });
+                  console.log('🔊 ENHANCED PLAYER: Enhanced vocal intensity analysis completed for', data.analyzed_segments.length, 'segments');
+                } else {
+                  console.warn('⚠️ Vocal intensity analysis returned no data');
+                }
+              } catch (error) {
+                console.error('❌ ENHANCED PLAYER: Enhanced vocal intensity analysis failed:', error);
+                sessionStorage.removeItem(hasIntensityKey); // Allow retry on failure
+                
+                // Fallback: basic text-based analysis
+                captionSegments = captionSegments.map(segment => {
+                  const text = segment.text.toLowerCase();
+                  let intensity: 'whisper' | 'normal' | 'yell' | 'shout' = 'normal';
+                  let confidence = 0.3;
+                  
+                  if (text.includes('!!!') || text === text.toUpperCase()) {
+                    intensity = 'shout';
+                    confidence = 0.7;
+                  } else if (text.includes('!!') || /[!?]{2,}/.test(text)) {
+                    intensity = 'yell';
+                    confidence = 0.6;
+                  } else if (text.includes('...') || text.includes('*whisper')) {
+                    intensity = 'whisper';
+                    confidence = 0.5;
+                  }
+                  
+                  return {
+                    ...segment,
+                    vocal_intensity: intensity,
+                    intensity_confidence: confidence,
+                    auto_styling: {}
+                  };
+                });
+              }
+            }
+            
+          } catch (error) {
+            console.error('❌ ENHANCED PLAYER: Failed to process segments:', error);
+            // Fallback: convert with basic speaker colors
+            captionSegments = applyFallbackSpeakerColors(segments.map(segment => ({
+              text: segment.text,
+              speaker: segment.speaker || 'Speaker',
+              startTime: segment.startTime,
+              endTime: segment.endTime,
+              words: (segment.words || []).map(word => ({
+                text: word.text,
+                startTime: word.startTime || 0,
+                endTime: word.endTime || 0,
+                emphasis: word.emphasis,
+                pitch: word.pitch
+              })),
+              speakerColor: segment.speakerColor,
+              pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
+              volume: 50,
+              type: 'dialogue' as const,
+              isOffCamera: segment.isOffCamera || false
+            })));
+          }
+
+          // Convert processed segments for player
+          const convertedSegments = captionSegments.map((seg, index) => ({
+            ...seg,
+            id: `segment-${Date.now()}-${index}`,
+            _updateKey: `${Date.now()}-${Math.random()}`
+          }));
+          
+          console.log('🎯 ENHANCED PLAYER: Final converted segments:', convertedSegments.length);
+          console.log('🎯 ENHANCED PLAYER: Sample caption data:', convertedSegments.slice(0, 2).map(s => ({
+            speaker: s.speaker,
+            color: s.speakerColor,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            vocalIntensity: s.vocal_intensity,
+            text: s.text.substring(0, 30) + '...'
           })));
           
-          // Set captions for the player
-          setCaptions(finalCaptions);
+          // Persist synthesized/normalized word timings to DB once so all devices get word-by-word
+          try {
+            const persistKey = `words_persisted_${videoId}_${currentLanguage}`;
+            const missingWords = captionSegments.some(seg => !seg.words || seg.words.length === 0 || !seg.words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number'));
+            if (missingWords && !sessionStorage.getItem(persistKey)) {
+              console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
+              await saveTranscriptSegments(convertedSegments as any, currentLanguage);
+              sessionStorage.setItem(persistKey, 'true');
+            }
+          } catch (e) {
+            console.warn('⚠️ ENHANCED PLAYER: Could not persist word timings (possibly offline/anon):', e);
+          }
           
           // Auto-detect language and update transcript
-          const detectedLang = detectLanguageFromCaptions(finalCaptions);
-          await handleTranscriptUpdate(finalCaptions, detectedLang);
+          const detectedLang = detectLanguageFromCaptions(convertedSegments);
+          console.log('🌐 Auto-detected language from transcript:', detectedLang);
+          
+          await handleTranscriptUpdate(convertedSegments, detectedLang);
+        } else {
+          console.log('⚠️ ENHANCED PLAYER: No saved transcript found for language:', currentLanguage);
+          
+          // Check if there are generated captions available and convert them to transcripts
+          if (captions.length > 0) {
+            console.log('🔄 Converting existing captions to transcript segments:', captions.length);
+            const detectedLang = detectLanguageFromCaptions(captions);
+            await handleTranscriptUpdate(captions, detectedLang);
+          } else {
+            setCaptions([]);
+            setTranscriptSegments([]);
+          }
         }
         
         // Load saved audio descriptions
@@ -627,12 +754,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           setAudioDescriptions([]);
         }
         
-        // Load saved characters
+        // Load saved characters from DB (fallback to localStorage if unauthenticated handled in hook)
         try {
           const chars = await loadCharacters();
           if (chars && chars.length > 0) {
             setCharacters(chars);
             console.log('👥 Loaded characters from DB:', chars.length);
+          } else {
+            // Legacy/local fallback
+            const savedCharacters = localStorage.getItem(`characters-${videoId}`) || localStorage.getItem(`characters_${videoId}`);
+            if (savedCharacters) {
+              const charactersData = JSON.parse(savedCharacters);
+              setCharacters(charactersData);
+              console.log('👥 Loaded characters from localStorage:', charactersData.length);
+            }
           }
         } catch (err) {
           console.error('Failed to load characters:', err);
@@ -641,13 +776,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       } catch (error) {
         console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
         setCaptions([]);
+      } finally {
+        sessionStorage.removeItem(loadingKey); // Allow future loads
       }
     };
 
     if (videoId && currentLanguage) {
       loadSavedData();
     }
-  }, [videoId, currentLanguage, loadTranscriptSegments, loadAudioDescriptions, loadCharacters]);
+  }, [videoId, currentLanguage, loadTranscriptSegments, analyzeVocalIntensity, isAnalyzingIntensity]);
 
   return (
     <div className="space-y-6">
