@@ -295,16 +295,6 @@ const PublicVideo = () => {
               </div>
             </div>
           </div>
-          
-          {video.description && (
-            <Card>
-              <CardContent className="pt-4">
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {video.description}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Video Player */}
@@ -324,12 +314,25 @@ const PublicVideo = () => {
           )}
         </div>
 
+        {/* Video Description */}
+        {video.description && (
+          <div className="mb-8">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {video.description}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Immersive Features Info */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
-              {t('videoDetail.immersiveFeatures')}
+              Immersive Features
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -357,7 +360,7 @@ const PublicVideo = () => {
             
             <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
               <p className="text-sm text-muted-foreground">
-                {t('videoDetail.immersiveTip')}
+                Use the accessibility controls in the video player to toggle these features on or off based on your preferences.
               </p>
             </div>
           </CardContent>
