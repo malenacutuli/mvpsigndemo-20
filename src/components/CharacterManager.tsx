@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,18 +134,25 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   }, [existingSpeakers]);
 
   // Load speaker mappings from database on mount
+  // Track if we've loaded mappings for this video/language once to avoid overwriting user selections on re-renders
+  const loadedMappingsKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
+    const key = `${videoId}:${language}`;
+    if (loadedMappingsKeyRef.current === key) return;
+    loadedMappingsKeyRef.current = key;
+
     const loadMappingsFromDatabase = async () => {
       try {
         const mappings = await loadSpeakerMappings(language);
-        setSpeakerMappings(mappings);
+        setSpeakerMappings(mappings || {});
       } catch (error) {
         console.error('Failed to load speaker mappings:', error);
       }
     };
     
     loadMappingsFromDatabase();
-  }, [videoId, language, loadSpeakerMappings]);
+  }, [videoId, language]);
 
   // Get all available colors for character type (not filtered by usage)
   const getAllColorsForType = (type: Character['type']) => {
