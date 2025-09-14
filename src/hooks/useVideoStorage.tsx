@@ -79,52 +79,136 @@ export const useVideoStorage = (videoId: string) => {
     setLoading(true);
     setError(null);
 
-    try {
-      // Use the new upsert function that handles word-level data
-      console.log('💾 Saving transcript segments with word-level data:', segments.length, 'segments');
-      
-      // Convert segments to the format expected by the database function
-      const dbSegments = segments.map((segment, index) => ({
+    // Sanitize values to satisfy DB constraints
+    const sanitizeEmphasis = (
+      e: TranscriptSegment['emphasis']
+    ): 'normal' | 'loud' | 'quiet' => {
+      if (e === 'loud' || e === 'quiet' || e === 'normal') return e;
+      if (e === 'yelling') return 'loud';
+      return 'normal';
+    };
+    const sanitizePitch = (
+      p: TranscriptSegment['pitch']
+    ): 'normal' | 'high' | 'low' => (p === 'high' || p === 'low' ? p : 'normal');
+    const sanitizeSegmentType = (
+      t: TranscriptSegment['segmentType']
+    ): 'dialogue' | 'soundeffect' | 'music' =>
+      t === 'soundeffect' || t === 'music' ? t : 'dialogue';
+
+    const buildDbSegments = () =>
+      segments.map((segment, index) => ({
         idx: index,
         text: segment.text,
         startTime: segment.startTime,
         endTime: segment.endTime,
         speaker: segment.speaker || 'Speaker',
         speakerColor: segment.speakerColor || '#3B82F6',
-        emphasis: segment.emphasis || 'normal',
-        pitch: segment.pitch || 'normal',
+        emphasis: sanitizeEmphasis(segment.emphasis || 'normal'),
+        pitch: sanitizePitch(segment.pitch || 'normal'),
         words: segment.words ? JSON.parse(JSON.stringify(segment.words)) : null,
-        isOffCamera: segment.isOffCamera || false,
-        segmentType: segment.segmentType || 'dialogue',
-        confidence: segment.confidence || 0.95
+        isOffCamera: !!segment.isOffCamera,
+        segmentType: sanitizeSegmentType(segment.segmentType || 'dialogue'),
+        confidence: segment.confidence ?? 0.95,
       }));
+
+    try {
+      // Prefer RPC upsert if available
+      console.log(
+        '💾 Saving transcript segments with word-level data:',
+        segments.length,
+        'segments'
+      );
+
+      const dbSegments = buildDbSegments();
 
       const { error } = await supabase.rpc('upsert_transcript_segments', {
         p_video_id: videoId,
         p_language: language,
         p_created_by: user.id,
-        p_segments: dbSegments
+        p_segments: dbSegments,
       });
 
       if (error) throw error;
 
-      console.log('✅ Transcript segments with word-level data saved to database:', segments.length, 'segments');
+      console.log(
+        '✅ Transcript segments with word-level data saved to database:',
+        segments.length,
+        'segments'
+      );
     } catch (err) {
-      console.error('Failed to save transcript segments:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save transcript');
-      
-      // Fallback to localStorage
-      const fallbackData = { segments, language, timestamp: Date.now() };
-      localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
-      console.log('📁 Transcript segments saved to localStorage as fallback');
-      
-      // Re-throw the error so the calling code knows it failed
-      throw err;
+      console.warn('RPC upsert failed, attempting direct save...', err);
+      try {
+        // Verify ownership
+        const { data: videoData, error: videoError } = await supabase
+          .from('videos')
+          .select('user_id, title')
+          .eq('id', videoId)
+          .maybeSingle();
+
+        if (videoError || !videoData || videoData.user_id !== user.id) {
+          throw videoError || new Error('Video not found or access denied');
+        }
+
+        // Delete existing segments for this video/language
+        const { error: deleteError } = await supabase
+          .from('transcript_segments')
+          .delete()
+          .eq('video_id', videoId)
+          .eq('language', language);
+        if (deleteError) throw deleteError;
+
+        // Insert new segments in batches
+        const BATCH_SIZE = 100;
+        const rows = segments.map((segment, index) => ({
+          video_id: videoId,
+          language,
+          start_time: segment.startTime,
+          end_time: segment.endTime,
+          text: segment.text,
+          idx: index,
+          speaker: segment.speaker || 'Speaker',
+          speaker_color: segment.speakerColor || '#3B82F6',
+          emphasis: sanitizeEmphasis(segment.emphasis || 'normal'),
+          pitch: sanitizePitch(segment.pitch || 'normal'),
+          words: segment.words ? JSON.parse(JSON.stringify(segment.words)) : null,
+          is_off_camera: !!segment.isOffCamera,
+          segment_type: sanitizeSegmentType(segment.segmentType || 'dialogue'),
+          confidence: segment.confidence ?? 0.95,
+        }));
+
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const batch = rows.slice(i, i + BATCH_SIZE);
+          const { error: insertError } = await supabase
+            .from('transcript_segments')
+            .insert(batch);
+          if (insertError) throw insertError;
+        }
+
+        console.log(
+          '✅ Transcript segments saved via direct table operations:',
+          segments.length
+        );
+      } catch (innerErr) {
+        console.error('Direct save also failed:', innerErr);
+        setError(
+          innerErr instanceof Error ? innerErr.message : 'Failed to save transcript'
+        );
+
+        // Fallback to localStorage
+        const fallbackData = { segments, language, timestamp: Date.now() };
+        localStorage.setItem(
+          `transcript_${videoId}_${language}`,
+          JSON.stringify(fallbackData)
+        );
+        console.log('📁 Transcript segments saved to localStorage as fallback');
+
+        // Re-throw the error so the calling code knows it failed
+        throw innerErr;
+      }
     } finally {
       setLoading(false);
     }
   };
-
   // Load transcript segments from database
   const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
     const cacheKey = `transcript_segments_${videoId}_${language}`;
