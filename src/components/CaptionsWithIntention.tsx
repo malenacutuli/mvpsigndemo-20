@@ -418,16 +418,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-20 left-1/2 transform -translate-x-1/2 pointer-events-none w-full flex justify-center"
+      className="absolute bottom-16 left-1/2 transform -translate-x-1/2 pointer-events-none w-full flex justify-center"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
-      {/* Captions Container Box - Expanded for Better Text Display */}
+      {/* Captions Container Box - Horizontal Layout */}
       <div 
         className={`
-          relative inline-block max-w-[96vw] sm:max-w-4xl lg:max-w-5xl text-center
-          ${isLoudBurst ? '' : 'bg-black/90'} 
-          ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-3 py-2 sm:px-6 sm:py-4'}
+          relative inline-block max-w-[90vw] sm:max-w-4xl lg:max-w-5xl text-center
+          ${isLoudBurst ? '' : 'bg-black/75'} 
+          ${isLoudBurst ? '' : 'rounded-lg'} 
+          ${isLoudBurst ? '' : 'px-4 py-2 sm:px-6 sm:py-3'}
           ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
         `}
         style={{
@@ -457,9 +457,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         
         {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-tight break-words px-1"
+          className="relative text-center leading-normal break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.8 : 0.9), screenHeight * 0.035)}px`, // Smaller, more compact size
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
@@ -468,7 +468,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
+            lineHeight: window.innerWidth < 640 ? '1.2' : '1.25', // Compact line height
+            whiteSpace: 'normal' // Allow horizontal text wrapping
           }}
         >
           {/* Sound effects and music formatting */}
@@ -667,9 +668,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         data-end={word.endTime}
                         style={{
                          color: getWordColorByState(),
-                         marginRight: '0.3em',
+                         marginRight: '0.25em',
                          fontSize: `${wordFontSize}px`,
                          cursor: 'default',
+                         display: 'inline', // Ensure horizontal layout
                          ...wordPitchStyle,
                          ...getWordIntensityStyle(),
                          // Active word gets enhanced glow and jump
