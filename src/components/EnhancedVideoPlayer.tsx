@@ -226,13 +226,33 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   }, [captions.length, transcriptSegments.length]);
 
-  // Add immediate debugging
+  // Add immediate debugging and state change watchers
   useEffect(() => {
     console.log('🚨 EnhancedVideoPlayer component mounted/updated');
     console.log('📹 Current videoId:', videoId);
     console.log('🌐 Current language:', currentLanguage);
     console.log('💾 loadTranscriptSegments available:', typeof loadTranscriptSegments);
   }, [videoId, currentLanguage, loadTranscriptSegments]);
+
+  // Re-apply character mappings once characters load/change
+  useEffect(() => {
+    if (captions.length > 0) {
+      console.log('🎨 Re-applying character mappings due to characters update:', characters.length);
+      handleTranscriptUpdate(captions, currentLanguage);
+    }
+  }, [characters]);
+
+  // Re-apply when speaker mappings in localStorage change (e.g., saved from Character Manager in another tab)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === `speaker-mappings-${videoId}`) {
+        console.log('🗂️ Detected external speaker-mapping change, re-applying');
+        if (captions.length > 0) handleTranscriptUpdate(captions, currentLanguage);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [videoId, captions, currentLanguage]);
 
   const handleTranscriptUpdate = (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
