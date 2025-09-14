@@ -151,15 +151,21 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   // Lock scroll when simulating fullscreen on mobile
   useEffect(() => {
-    if (isMobile && isMobileFullscreen) {
+    if (isMobileFullscreen) {
+      document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
     } else {
+      document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
     }
     return () => {
+      document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
     };
-  }, [isMobile, isMobileFullscreen]);
+  }, [isMobileFullscreen]);
 
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
@@ -637,11 +643,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     <div 
       ref={containerRef}
       className={`relative bg-black rounded-lg overflow-hidden shadow-2xl ${
-        isMobile && isMobileFullscreen 
-          ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' 
-          : isMobileFullscreen && isLandscape && window.innerWidth < 1024
-            ? 'fixed inset-0 w-screen h-screen z-[9999] rounded-none' // Handle landscape tablets/large phones
-            : ''
+        isMobileFullscreen 
+          ? 'fixed inset-0 w-[100dvw] h-[100dvh] z-[9999] rounded-none'
+          : ''
       } ${className}`}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
