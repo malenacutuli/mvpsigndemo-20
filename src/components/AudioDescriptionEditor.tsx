@@ -733,10 +733,11 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-xs">Start Time (seconds)</Label>
+                            <Label className="text-xs font-medium">Start Time (seconds)</Label>
                             <Input
                               type="number"
                               step="0.1"
+                              min="0"
                               value={descriptions[index].startTime}
                               onChange={(e) => {
                                 const newStartTime = parseFloat(e.target.value) || 0;
@@ -746,15 +747,18 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                                   startTime: newStartTime
                                 };
                                 setDescriptions(updatedDescriptions);
+                                onDescriptionsUpdate?.(updatedDescriptions);
                               }}
                               className="h-8"
+                              placeholder="0.0"
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">End Time (seconds)</Label>
+                            <Label className="text-xs font-medium">End Time (seconds)</Label>
                             <Input
                               type="number"
                               step="0.1"
+                              min="0"
                               value={descriptions[index].endTime}
                               onChange={(e) => {
                                 const newEndTime = parseFloat(e.target.value) || 0;
@@ -764,8 +768,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                                   endTime: newEndTime
                                 };
                                 setDescriptions(updatedDescriptions);
+                                onDescriptionsUpdate?.(updatedDescriptions);
                               }}
                               className="h-8"
+                              placeholder="2.0"
                             />
                           </div>
                         </div>
