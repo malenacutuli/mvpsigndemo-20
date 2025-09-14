@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mic, Save, Edit, Play, Download, CheckCircle, Users, Volume2, Info, Upload } from 'lucide-react';
+import { Mic, Save, Edit, Play, Download, CheckCircle, Users, Volume2, Info, Upload, Languages } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -14,6 +14,7 @@ import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor } from './WordLevelEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { TranscriptUploader } from './TranscriptUploader';
+import { TranslationManager } from './TranslationManager';
 
 interface TranscriptSegment {
   id: string;
@@ -39,6 +40,7 @@ interface TranscriptWorkflowProps {
   onWorkflowComplete: () => void;
   onCharactersUpdate?: (characters: any[]) => void;
   onAudioDescriptionsUpdate?: (descriptions: any[]) => void;
+  onTranslationsUpdate?: (translations: Record<string, { captions: CaptionSegment[]; audioDescriptions: any[] }>) => void;
 }
 
 export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
@@ -48,7 +50,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   onTranscriptReady,
   onWorkflowComplete,
   onCharactersUpdate,
-  onAudioDescriptionsUpdate
+  onAudioDescriptionsUpdate,
+  onTranslationsUpdate
 }) => {
   const [currentStep, setCurrentStep] = useState<'loading' | 'extract' | 'edit' | 'save' | 'complete'>('loading');
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
@@ -1586,6 +1589,27 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 videoData={{ transcript_language: detectedLanguage }}
                 transcriptSegments={segments}
                 onDescriptionsUpdate={handleAudioDescriptionsUpdate}
+              />
+            </TabsContent>
+
+            <TabsContent value="translations" className="space-y-4">
+              <TranslationManager
+                videoId={videoId}
+                originalLanguage={detectedLanguage}
+                originalCaptions={segments.map(seg => ({
+                  text: seg.text,
+                  speaker: seg.speaker,
+                  startTime: seg.startTime,
+                  endTime: seg.endTime,
+                  words: [],
+                  volume: 50,
+                  pitch: 160,
+                  type: 'dialogue' as const,
+                  isOffCamera: false,
+                  speakerColor: seg.speakerColor
+                }))}
+                originalAudioDescriptions={audioDescriptions}
+                onTranslationsUpdate={onTranslationsUpdate}
               />
             </TabsContent>
           </Tabs>
