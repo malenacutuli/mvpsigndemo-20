@@ -98,6 +98,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
+  const adDuckPrevVolume = useRef<number | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -844,6 +845,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             selectedVoice={selectedVoice}
             dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
             language={currentLanguage}
+            onADStart={() => {
+              const video = videoRef.current;
+              if (!video) return;
+              if (adDuckPrevVolume.current === null) {
+                adDuckPrevVolume.current = video.volume;
+              }
+              video.volume = Math.min(video.volume, 0.35);
+            }}
+            onADEnd={() => {
+              const video = videoRef.current;
+              if (!video) return;
+              if (adDuckPrevVolume.current !== null && !isMuted) {
+                video.volume = adDuckPrevVolume.current;
+              }
+              adDuckPrevVolume.current = null;
+            }}
           />
         )}
 

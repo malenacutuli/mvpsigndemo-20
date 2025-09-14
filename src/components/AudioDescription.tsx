@@ -17,6 +17,9 @@ interface AudioDescriptionProps {
   dynamicDescriptions?: AudioDescription[];
   // Language for TTS optimization
   language?: string;
+  // Callbacks to coordinate with video player (for ducking, etc.)
+  onADStart?: () => void;
+  onADEnd?: () => void;
 }
 
 interface AudioDescription {
@@ -52,6 +55,8 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   selectedVoice,
   dynamicDescriptions,
   language = 'en',
+  onADStart,
+  onADEnd,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
@@ -72,50 +77,29 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-// Enhanced synchronization: Track which segment is active with overlap prevention
+// Enhanced synchronization: Track which segment is active
 useEffect(() => {
   const descriptions = dynamicDescriptions || [];
   
-  console.log('🎬 AudioDescription sync check:', {
-    currentTime,
-    language,
-    contentType,
-    totalDescriptions: descriptions.length,
-    isPlaying
-  });
+  if (!isPlaying || descriptions.length === 0) {
+    setCurrentDescription(null);
+    return;
+  }
   
-  // Find description that matches current time with strict non-overlap checking
-  const potentialDescription = descriptions.find(desc => {
-    const isInTimeRange = currentTime >= desc.startTime && currentTime <= desc.endTime;
-    
-    if (isInTimeRange) {
-      console.log('🎯 Found matching description:', {
-        text: desc.text.substring(0, 50) + '...',
-        startTime: desc.startTime,
-        endTime: desc.endTime,
-        currentTime,
-        language,
-        timestamp: desc.timestamp || 'not specified'
-      });
-      
-      // Verify this is actually a gap in dialogue by checking if we're not overlapping with speech
-      const hasOverlap = descriptions.some(otherDesc => 
-        otherDesc !== desc && 
-        desc.startTime < otherDesc.endTime && 
-        desc.endTime > otherDesc.startTime
-      );
-      
-      if (hasOverlap) {
-        console.log('⚠️ Description overlaps with other content, skipping');
-        return false;
-      }
-    }
-    
-    return isInTimeRange;
-  });
+  // Simply pick the segment that contains the current time
+  const active = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime);
   
-  setCurrentDescription(potentialDescription || null);
-}, [currentTime, contentType, dynamicDescriptions, isPlaying, language]);
+  if (active) {
+    console.log('🎯 AD segment active:', {
+      text: active.text.substring(0, 50) + '...',
+      startTime: active.startTime,
+      endTime: active.endTime,
+      currentTime,
+    });
+  }
+  
+  setCurrentDescription(active || null);
+}, [currentTime, isPlaying, dynamicDescriptions, language, contentType]);
 
   // Enhanced TTS generation with language-optimized voices
   useEffect(() => {
@@ -176,10 +160,15 @@ useEffect(() => {
         audio.onended = () => {
           setIsDescriptionPlaying(false);
           URL.revokeObjectURL(url);
+          try { onADEnd?.(); } catch {}
         };
         audio.volume = 0.85; // Slightly reduced for better balance
         setDescriptionAudio(audio);
         setIsDescriptionPlaying(true);
+        
+        try {
+          onADStart?.();
+        } catch {}
         
         await audio.play().catch((error) => {
           console.error('Audio playback failed:', error);
