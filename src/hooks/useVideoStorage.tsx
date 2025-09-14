@@ -515,18 +515,37 @@ export const useVideoStorage = (videoId: string) => {
     }
 
     try {
-      const { error } = await supabase
+      // Ensure idempotent save without relying on a DB unique constraint
+      const { data: existing, error: selectError } = await supabase
         .from('speaker_mappings')
-        .upsert({
-          video_id: videoId,
-          language,
-          mappings,
-          created_by: user.id
-        }, {
-          onConflict: 'video_id,language,created_by'
-        });
+        .select('id')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .eq('created_by', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (selectError && selectError.code !== 'PGRST116') throw selectError;
+
+      let opError = null as any;
+      if (existing?.id) {
+        const { error } = await supabase
+          .from('speaker_mappings')
+          .update({ mappings })
+          .eq('id', existing.id);
+        opError = error;
+      } else {
+        const { error } = await supabase
+          .from('speaker_mappings')
+          .insert({
+            video_id: videoId,
+            language,
+            mappings,
+            created_by: user.id,
+          });
+        opError = error;
+      }
+
+      if (opError) throw opError;
 
       console.log('💾 Speaker mappings saved to database');
     } catch (err) {
@@ -554,11 +573,13 @@ export const useVideoStorage = (videoId: string) => {
     try {
       const { data, error } = await supabase
         .from('speaker_mappings')
-        .select('mappings')
+        .select('mappings, updated_at')
         .eq('video_id', videoId)
         .eq('language', language)
         .eq('created_by', user.id)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
 
