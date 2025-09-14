@@ -267,7 +267,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
                       <Gauge className="w-3 h-3 text-muted-foreground" />
                       <span className="min-w-0 flex-1">Speed: {playbackRate.toFixed(1)}x</span>
                       <div className="flex gap-1">
-                        {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(speed => (
+                        {[0.70, 0.80, 1.0, 1.05, 1.10, 1.2, 1.25].map(speed => (
                           <Button
                             key={speed}
                             variant={playbackRate === speed ? "secondary" : "ghost"}
