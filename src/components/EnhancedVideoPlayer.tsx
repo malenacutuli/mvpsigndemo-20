@@ -54,6 +54,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
+  const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
 
   // Stable speaker color assignment function
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
@@ -124,6 +125,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (!videoUrl || !videoId) return stabilizeSpeakerColors(segments);
 
     console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
+
+    // Prevent repeated diarization runs in a single session to avoid UI flicker
+    const diarKey = `diarized_${videoId}_${currentLanguage}`;
+    if (sessionStorage.getItem(diarKey) === 'done') {
+      console.log('🛑 Skipping diarization (already done this session)');
+      return stabilizeSpeakerColors(segments);
+    }
 
     try {
       // Use the speaker-diarization edge function directly
