@@ -114,26 +114,12 @@ export default function PublicBoard() {
           <div className="flex items-center justify-center gap-2 mb-4">
             <Globe className="w-8 h-8 text-primary" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Accessible Video Board
+              Immersive Video Board
             </h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover accessible videos with captions, audio descriptions, and ASL interpretation created by our community
+            See more, hear more, understand more. Your way of watching, upgraded.
           </p>
-          <div className="flex items-center justify-center gap-6 mt-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              Captions with Intention
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Audio Descriptions
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              ASL Interpretation
-            </div>
-          </div>
         </div>
 
         {/* Filters */}
@@ -270,9 +256,9 @@ export default function PublicBoard() {
         {/* Call to Action */}
         {videos.length > 0 && (
           <div className="text-center mt-16 py-12 bg-muted/30 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Want to Share Your Accessible Videos?</h2>
+            <h2 className="text-2xl font-bold mb-4">Make your content unforgettable.</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Join our community of creators making the web more accessible. Upload your videos and enhance them with captions, audio descriptions, and ASL interpretation.
+              Turn on features that help more people connect- and help everyone enjoy more.
             </p>
             <Button asChild size="lg">
               <Link to="/auth">Get Started Today</Link>
