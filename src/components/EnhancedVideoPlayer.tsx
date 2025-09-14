@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
@@ -55,7 +55,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
-
+  
+  // Stable list of detected speakers from transcript segments only (avoid flicker)
+  const stableDetectedSpeakers = useMemo(() => {
+    const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
+    return unique;
+  }, [transcriptSegments]);
   // Stable speaker color assignment function
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
     // Create consistent speaker color mapping based on speaker names
@@ -786,10 +791,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               onCharactersUpdate={handleCharactersUpdate}
               existingCharacters={characters}
               language={currentLanguage}
-              existingSpeakers={[...new Set([
-                ...transcriptSegments.map(s => s.speaker).filter(Boolean),
-                ...captions.map(c => c.speaker).filter(Boolean)
-              ])].sort()}
+              existingSpeakers={stableDetectedSpeakers}
             />
           </div>
         </TabsContent>

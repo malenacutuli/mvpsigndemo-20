@@ -471,11 +471,13 @@ export const useVideoStorage = (videoId: string) => {
         .from('characters')
         .select('*')
         .eq('video_id', videoId)
-        .order('created_at');
+        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const characters = data?.map(char => ({
+      // Map rows to app shape
+      const raw = (data || []).map(char => ({
         id: char.id,
         name: char.name,
         type: char.type,
@@ -486,7 +488,15 @@ export const useVideoStorage = (videoId: string) => {
         voiceType: char.voice_type,
         emphasis: char.emphasis,
         pitch: char.pitch
-      })) || [];
+      }));
+
+      // Deduplicate by name+type (case-insensitive) keeping the latest
+      const dedupMap = new Map<string, any>();
+      for (const c of raw) {
+        const key = `${(c.name || '').toLowerCase()}|${c.type}`;
+        if (!dedupMap.has(key)) dedupMap.set(key, c);
+      }
+      const characters = Array.from(dedupMap.values());
 
       console.log('💿 Characters loaded from database:', characters.length);
       return characters;

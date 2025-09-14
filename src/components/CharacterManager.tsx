@@ -127,9 +127,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   useEffect(() => {
     if (existingSpeakers && existingSpeakers.length > 0) {
       const unique = Array.from(new Set(existingSpeakers.filter(Boolean))).sort();
-      setAvailableSpeakers(unique);
-      console.log('🧩 Available speakers (from props):', unique);
-      console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
+      // Only update if changed to avoid flicker/reset
+      const prev = availableSpeakers;
+      const changed = unique.length !== prev.length || unique.some((v, i) => v !== prev[i]);
+      if (changed) {
+        setAvailableSpeakers(unique);
+        console.log('🧩 Available speakers (from props):', unique);
+        console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
+      }
     }
   }, [existingSpeakers]);
 
@@ -397,7 +402,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {availableSpeakers.map(sp => (
+                          {Array.from(new Set([...availableSpeakers, ...Object.keys(speakerMappings)])).sort().map(sp => (
                             <SelectItem key={sp} value={sp}>{sp}</SelectItem>
                           ))}
                         </SelectContent>
