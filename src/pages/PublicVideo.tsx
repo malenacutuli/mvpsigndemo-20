@@ -99,14 +99,21 @@ const PublicVideo = () => {
         setVideoUrl(publicUrl);
       }
 
-      // Fetch transcript segments (these are already accessible for public videos via RLS)
-      const { data: segments } = await supabase
+      // Fetch transcript segments (accessible for public videos via RLS)
+      console.log('🔍 Fetching transcript segments for public video:', id);
+      const { data: segments, error: segmentsError } = await supabase
         .from('transcript_segments')
         .select('*')
         .eq('video_id', id)
         .order('start_time', { ascending: true });
 
-      if (segments) {
+      if (segmentsError) {
+        console.error('❌ Error fetching transcript segments:', segmentsError);
+      } else {
+        console.log('✅ Successfully fetched transcript segments:', segments?.length || 0, 'segments');
+      }
+
+      if (segments && segments.length > 0) {
         const formattedCaptions: CaptionSegment[] = segments.map(segment => ({
           text: segment.text,
           speaker: segment.speaker || 'Speaker',
@@ -125,17 +132,47 @@ const PublicVideo = () => {
           isOffCamera: segment.is_off_camera || false
         }));
         setCaptions(formattedCaptions);
+        console.log('✅ Captions set successfully:', formattedCaptions.length, 'formatted captions');
+      } else {
+        console.log('⚠️ No transcript segments found for video:', id);
       }
 
-      // Fetch audio descriptions (need to update RLS policy to allow public access)
-      const { data: audioDesc } = await supabase
+      // Fetch audio descriptions (accessible for public videos via RLS)
+      console.log('🔍 Fetching audio descriptions for public video:', id);
+      const { data: audioDesc, error: audioDescError } = await supabase
         .from('audio_descriptions')
         .select('*')
         .eq('video_id', id)
         .order('start_time', { ascending: true });
 
-      if (audioDesc) {
+      if (audioDescError) {
+        console.error('❌ Error fetching audio descriptions:', audioDescError);
+      } else {
+        console.log('✅ Successfully fetched audio descriptions:', audioDesc?.length || 0, 'descriptions');
+      }
+
+      if (audioDesc && audioDesc.length > 0) {
         setAudioDescriptions(audioDesc);
+        console.log('✅ Audio descriptions set successfully:', audioDesc.length, 'descriptions');
+      } else {
+        console.log('⚠️ No audio descriptions found for video:', id);
+      }
+
+      // Fetch tracks (subtitle files) - now accessible for public videos via RLS
+      console.log('🔍 Fetching tracks for public video:', id);
+      const { data: tracks, error: tracksError } = await supabase
+        .from('tracks')
+        .select('*')
+        .eq('video_id', id)
+        .order('language', { ascending: true });
+
+      if (tracksError) {
+        console.error('❌ Error fetching tracks:', tracksError);
+      } else {
+        console.log('✅ Successfully fetched tracks:', tracks?.length || 0, 'tracks');
+        if (tracks && tracks.length > 0) {
+          console.log('📝 Available tracks:', tracks.map(t => `${t.language} (${t.kind})`).join(', '));
+        }
       }
 
       // Track view after successful load
