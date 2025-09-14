@@ -472,7 +472,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           ) : (
             <span 
               className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
-              style={{ fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal' }}
+              style={{ 
+                fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal',
+                // Fallback color to ensure tint from t=0 even if per-word style is overridden
+                color: activeCaption.speakerColor || speakerColor
+              }}
             >
               {workingCaption.words && workingCaption.words.length > 0 ? (
                  workingCaption.words.map((word, index) => {
