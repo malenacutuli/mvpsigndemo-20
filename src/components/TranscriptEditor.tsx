@@ -526,7 +526,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               </Button>
               
               <Button
-                onClick={() => analyzeVocalIntensity(editingTranscript, videoId)}
+                onClick={() => analyzeVocalIntensity(videoId, editingTranscript)}
                 disabled={isAnalyzing || editingTranscript.length === 0}
                 size="sm"
                 variant="outline"

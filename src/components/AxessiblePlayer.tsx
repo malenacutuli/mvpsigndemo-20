@@ -384,18 +384,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         source: 'database'
       } : 'No caption');
       
-      // Only update generatedCaptions if we don't have database captions already
-      // This prevents overriding database captions with generated ones
-      if (!generatedCaptions || generatedCaptions.length === 0 || 
-          (initialCaptions[0] as any)._updateKey) {
-        console.log('✅ Setting generatedCaptions from database initialCaptions');
-        setGeneratedCaptions(initialCaptions);
-      } else {
-        console.log('🚫 Keeping existing generatedCaptions, not overriding with initialCaptions');
-      }
+      // Always prefer database-provided captions when available
+      console.log('✅ Setting generatedCaptions from database initialCaptions (always prefer DB)');
+      setGeneratedCaptions(initialCaptions);
       
       // Generate transcript text for dubbing from initial captions
       const transcriptText = initialCaptions
+        .filter(seg => seg && typeof seg.text === 'string')
         .sort((a, b) => a.startTime - b.startTime)
         .map(segment => segment.text)
         .join(' ');
@@ -879,6 +874,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 finalCaptions = [];
                 console.log('⚠️ No captions available from any source');
               }
+              
+              // Sanitize to prevent runtime errors (ensure text and timings)
+              finalCaptions = (finalCaptions || []).filter((s: any) => s && typeof s.text === 'string' && isFinite(s.startTime) && isFinite(s.endTime));
               
               // FINAL MAPPING GATE: enforce Character Manager mappings just before render
               try {
