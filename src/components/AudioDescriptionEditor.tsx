@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Save, Edit, X, Clock, Trash2 } from 'lucide-react';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AudioDescriptionSegment {
@@ -635,14 +635,15 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     updatedDescriptions[editingIndex] = {
       ...updatedDescriptions[editingIndex],
       text: editText,
-      voiceStyle: editVoiceStyle,
-      endTime: updatedDescriptions[editingIndex].startTime + estimateDurationForText(editText)
+      voiceStyle: editVoiceStyle
+      // Note: startTime and endTime are updated directly in the component above
     };
 
     setDescriptions(updatedDescriptions);
     onDescriptionsUpdate?.(updatedDescriptions);
     setEditingIndex(null);
     setEditText('');
+    toast.success('Audio description updated successfully');
   };
 
   const cancelEdit = () => {
@@ -654,6 +655,26 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const updatedDescriptions = descriptions.filter((_, i) => i !== index);
     setDescriptions(updatedDescriptions);
     onDescriptionsUpdate?.(updatedDescriptions);
+    toast.success('Audio description deleted');
+  };
+
+  const addNewDescription = () => {
+    const newDescription: AudioDescriptionSegment = {
+      text: '',
+      startTime: 0,
+      endTime: 2,
+      voiceStyle: getLanguageNativeVoice(detectedLanguage),
+      timestamp: 0
+    };
+    
+    const updatedDescriptions = [...descriptions, newDescription];
+    setDescriptions(updatedDescriptions);
+    onDescriptionsUpdate?.(updatedDescriptions);
+    
+    // Start editing the new description immediately
+    setEditingIndex(updatedDescriptions.length - 1);
+    setEditText('');
+    setEditVoiceStyle(newDescription.voiceStyle);
   };
 
   return (
@@ -672,23 +693,34 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             </p>
           </div>
 
-          <Button 
-            onClick={generateAIDescriptions} 
-            className="w-full" 
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating with OpenAI GPT-4o mini...
-              </>
-            ) : (
-              <>
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={generateAIDescriptions} 
+              className="flex-1" 
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating with OpenAI GPT-4o mini...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={addNewDescription}
+              variant="outline"
+              disabled={isGenerating}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Manual
+            </Button>
+          </div>
 
           {descriptions.length > 0 && (
             <>
@@ -699,6 +731,45 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   <div key={index} className="border rounded-lg p-3">
                     {editingIndex === index ? (
                       <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Start Time (seconds)</Label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={descriptions[index].startTime}
+                              onChange={(e) => {
+                                const newStartTime = parseFloat(e.target.value) || 0;
+                                const updatedDescriptions = [...descriptions];
+                                updatedDescriptions[index] = {
+                                  ...updatedDescriptions[index],
+                                  startTime: newStartTime
+                                };
+                                setDescriptions(updatedDescriptions);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">End Time (seconds)</Label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={descriptions[index].endTime}
+                              onChange={(e) => {
+                                const newEndTime = parseFloat(e.target.value) || 0;
+                                const updatedDescriptions = [...descriptions];
+                                updatedDescriptions[index] = {
+                                  ...updatedDescriptions[index],
+                                  endTime: newEndTime
+                                };
+                                setDescriptions(updatedDescriptions);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                        
                         <div>
                           <Label className="text-xs">Voice Style</Label>
                           <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>

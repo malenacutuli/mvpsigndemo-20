@@ -421,13 +421,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       className="relative flex items-end justify-center pointer-events-none w-full"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
-      {/* Captions Container Box - Mobile Responsive */}
+      {/* Captions Container Box - Expanded for Better Text Display */}
       <div 
         className={`
-          relative inline-block max-w-[92vw] sm:max-w-2xl text-center
+          relative inline-block max-w-[96vw] sm:max-w-4xl lg:max-w-5xl text-center
           ${isLoudBurst ? '' : 'bg-black/90'} 
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
+          ${isLoudBurst ? '' : 'px-3 py-2 sm:px-6 sm:py-4'}
           ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
         `}
         style={{
