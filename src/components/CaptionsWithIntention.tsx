@@ -418,7 +418,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="absolute bottom-16 left-1/2 transform -translate-x-1/2 pointer-events-none w-full flex justify-center"
+      className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none w-full flex justify-center"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
       {/* Captions Container Box - Horizontal Layout */}

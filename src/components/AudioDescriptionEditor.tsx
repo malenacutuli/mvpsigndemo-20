@@ -720,6 +720,24 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               <Plus className="w-4 h-4 mr-2" />
               Add Manual
             </Button>
+            
+            <Button
+              onClick={saveAllDescriptions}
+              variant="default"
+              disabled={isGenerating || isSaving || descriptions.length === 0}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save All Changes
+                </>
+              )}
+            </Button>
           </div>
 
           {descriptions.length > 0 && (
