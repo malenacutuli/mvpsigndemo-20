@@ -255,25 +255,48 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       text: segments[0].text.substring(0, 30) + '...'
     } : 'No segments');
     
-    // Apply character color mapping if available so colors always reflect Character Manager
-    let recolored = segments;
-    if (characters && characters.length > 0) {
-      const colorMap: Record<string, string> = {};
-      characters.forEach(c => { colorMap[c.name] = c.color; });
-      recolored = segments.map(s => ({
-        ...s,
-        speakerColor: colorMap[s.speaker] || s.speakerColor
-      }));
+    // Apply Character Manager mappings (names, colors, off-camera) as the single source of truth
+    let applied = segments;
+    try {
+      const mappingKey = `speaker-mappings-${videoId}`;
+      const savedMappings = JSON.parse(localStorage.getItem(mappingKey) || '{}');
+      const charByName: Record<string, any> = {};
+      (characters || []).forEach(c => { charByName[c.name] = c; });
+      
+      applied = segments.map(s => {
+        // If the segment speaker maps to a character, apply name, color, and off-camera
+        const mappedCharacterName = savedMappings?.[s.speaker];
+        const directCharacter = charByName[s.speaker]; // if already renamed previously
+        const targetChar = mappedCharacterName ? charByName[mappedCharacterName] : directCharacter;
+        
+        if (targetChar) {
+          return {
+            ...s,
+            speaker: targetChar.name,
+            speakerColor: targetChar.color || s.speakerColor,
+            isOffCamera: (typeof targetChar.isOffCamera === 'boolean' ? targetChar.isOffCamera : s.isOffCamera)
+          };
+        }
+        
+        // Otherwise keep original but still try to honor Character Manager color if names already match
+        return {
+          ...s,
+          speakerColor: (charByName[s.speaker]?.color) || s.speakerColor
+        };
+      });
+    } catch (e) {
+      console.warn('⚠️ ENHANCED PLAYER: Failed to apply character mappings from localStorage, using raw segments', e);
+      applied = segments;
     }
 
     // Keep captions for the player UI and also persist raw segments for AD scheduler
-    setCaptions([...recolored]); // Force array recreation
-    setTranscriptSegments([...recolored]);
+    setCaptions([...applied]);
+    setTranscriptSegments([...applied]);
     
-    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', recolored.length, 'segments, detected language:', autoDetectedLang);
+    console.log('✅ ENHANCED PLAYER: Updated captions and transcriptSegments with', applied.length, 'segments, detected language:', autoDetectedLang);
     
     if (onTranscriptUpdate) {
-      onTranscriptUpdate(segments, autoDetectedLang);
+      onTranscriptUpdate(applied, autoDetectedLang);
     }
   };
 

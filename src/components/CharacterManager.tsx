@@ -251,13 +251,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             .from('transcript_segments')
             .update({
               speaker: characterName,
-              speaker_color: character.color
+              speaker_color: character.color,
+              is_off_camera: character.isOffCamera || false
             })
             .eq('video_id', videoId)
             .eq('language', language)
             .eq('speaker', speakerName);
           
-          console.log(`🔄 Mapped "${speakerName}" → "${characterName}" (${character.color})`);
+          console.log(`🔄 Mapped "${speakerName}" → "${characterName}" (${character.color}) [off-camera: ${character.isOffCamera || false}]`);
         }
       }
     } catch (error) {
