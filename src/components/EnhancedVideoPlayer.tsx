@@ -58,6 +58,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   
   // Add loading cache ref for managing duplicate loads
   const loadingCacheRef = useRef(new Map<string, any>());
+  const isRefreshingRef = useRef(false);
+  const refreshTimeoutRef = useRef<number | null>(null);
   
   // Stable list of detected speakers from transcript segments only (avoid flicker)
   const stableDetectedSpeakers = useMemo(() => {
