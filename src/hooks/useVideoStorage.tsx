@@ -144,14 +144,47 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
+      // 1) Look for a user-edited transcript for this video/language
+      const { data: transcripts, error: txError } = await supabase
+        .from('transcripts')
+        .select('id, updated_at')
         .eq('video_id', videoId)
         .eq('language', language)
-        .order('start_time');
+        .eq('created_by', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (error) throw error;
+      if (txError) throw txError;
+
+      let data: any[] | null = null;
+
+      if (transcripts && transcripts.length > 0) {
+        // Use ONLY the saved edited transcript's segments
+        const transcriptId = transcripts[0].id;
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('transcript_id', transcriptId)
+          .order('idx', { ascending: true })
+          .order('start_time', { ascending: true });
+
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🎯 Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+      } else {
+        // No edited transcript found; fall back to base video-level segments only (exclude other transcripts)
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .is('transcript_id', null)
+          .order('start_time', { ascending: true });
+
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🗄️ Using base video-level transcript segments (no edited transcript found). Count:', data.length);
+      }
 
       const segments: TranscriptSegment[] = (data || []).map(row => ({
         id: row.id,
@@ -168,12 +201,11 @@ export const useVideoStorage = (videoId: string) => {
         confidence: row.confidence
       }));
 
-      console.log('📖 Loaded transcript segments from database:', segments.length, 'segments');
+      console.log('📖 Loaded transcript segments (final source enforced):', segments.length, 'segments');
       return segments;
     } catch (err) {
       console.error('Failed to load transcript segments:', err);
       setError(err instanceof Error ? err.message : 'Failed to load transcript');
-      
       // Fallback to localStorage
       const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
       if (saved) {
