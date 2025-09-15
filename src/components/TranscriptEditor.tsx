@@ -68,6 +68,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editWords, setEditWords] = useState<WordData[]>([]);
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const [showIntensity, setShowIntensity] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
@@ -587,6 +588,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
+  // Filter segments based on search query
+  const filteredSegments = editingTranscript.filter(segment => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      segment.text.toLowerCase().includes(query) ||
+      segment.speaker?.toLowerCase().includes(query) ||
+      formatTime(segment.startTime).includes(query)
+    );
+  });
+
   return (
     <div className="space-y-4">
       <Card>
@@ -688,68 +701,78 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p>Generate transcript to start editing</p>
             </div>
+          ) : filteredSegments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No segments found matching "{searchQuery}"</p>
+              <Button size="sm" variant="ghost" onClick={() => setSearchQuery('')}>
+                Clear search
+              </Button>
+            </div>
           ) : (
-            editingTranscript.map((segment, index) => (
-              <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
-                    </span>
-                    {segment.speaker && (
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs px-2 py-0"
-                        style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                      >
-                        {segment.speaker}
-                      </Badge>
-                    )}
-                    {segment.emphasis !== 'normal' && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0">
-                        {segment.emphasis}
-                      </Badge>
-                    )}
-                    {segment.pitch !== 'normal' && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0">
-                        {segment.pitch}
-                      </Badge>
-                    )}
-                  </div>
-                  {editingIndex !== index && (
-                   <div className="flex gap-1">
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => startEditing(index)}
-                       className="h-6 w-6 p-0"
-                       title="Edit segment"
-                     >
-                       <Edit className="w-3 h-3" />
-                     </Button>
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => addNewSegment(index)}
-                       className="h-6 w-6 p-0"
-                       title="Insert segment after this one"
-                     >
-                       <Plus className="w-3 h-3" />
-                     </Button>
-                     <Button
-                       size="sm"
-                       variant="ghost"
-                       onClick={() => deleteSegment(index)}
-                       className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                       title="Delete segment"
-                     >
-                       <X className="w-3 h-3" />
-                     </Button>
+            filteredSegments.map((segment, filteredIndex) => {
+              // Find the real index in the original array for proper editing
+              const realIndex = editingTranscript.findIndex(s => s.id === segment.id);
+              return (
+               <div key={segment.id} className={`p-3 border rounded-lg ${searchQuery && (segment.text.toLowerCase().includes(searchQuery.toLowerCase()) || segment.speaker?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bg-yellow-100 border-yellow-300' : 'bg-muted/20'}`}>
+                 <div className="flex items-start justify-between mb-2">
+                   <div className="flex items-center gap-2">
+                     <span className="text-xs text-muted-foreground font-mono">
+                       {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                     </span>
+                     {segment.speaker && (
+                       <Badge 
+                         variant="outline" 
+                         className="text-xs px-2 py-0"
+                         style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                       >
+                         {segment.speaker}
+                       </Badge>
+                     )}
+                     {segment.emphasis !== 'normal' && (
+                       <Badge variant="secondary" className="text-xs px-1 py-0">
+                         {segment.emphasis}
+                       </Badge>
+                     )}
+                     {segment.pitch !== 'normal' && (
+                       <Badge variant="secondary" className="text-xs px-1 py-0">
+                         {segment.pitch}
+                       </Badge>
+                     )}
                    </div>
-                  )}
-                </div>
-                
-                {editingIndex === index ? (
+                   {editingIndex !== realIndex && (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing(realIndex)}
+                        className="h-6 w-6 p-0"
+                        title="Edit segment"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => addNewSegment(realIndex)}
+                        className="h-6 w-6 p-0"
+                        title="Insert segment after this one"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSegment(realIndex)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        title="Delete segment"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                   )}
+                 </div>
+                 
+                 {editingIndex === realIndex ? (
                   <div className="space-y-4">
                     {/* Text Editor - Switch between basic and word-level */}
                     <div className="space-y-2">
@@ -885,16 +908,24 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                       </Button>
                     </div>
                   </div>
-                ) : (
-                  <p 
-                    className="text-sm" 
-                    style={{ color: segment.speakerColor }}
-                  >
-                    {segment.text}
-                  </p>
-                )}
-              </div>
-            ))
+                 ) : (
+                   <p className="text-sm whitespace-pre-wrap break-words">
+                     {searchQuery ? (
+                       segment.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) =>
+                         part.toLowerCase() === searchQuery.toLowerCase() ? (
+                           <mark key={i} className="bg-yellow-200 px-1 rounded">{part}</mark>
+                         ) : (
+                           part
+                         )
+                       )
+                     ) : (
+                       segment.text
+                     )}
+                   </p>
+                 )}
+               </div>
+            );
+            })
           )}
         </div>
 
