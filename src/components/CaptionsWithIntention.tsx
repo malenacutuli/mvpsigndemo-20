@@ -257,7 +257,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const upcoming = !foundActive
     ? captions.find(caption => caption.startTime >= currentTime && (caption.startTime - currentTime) <= READAHEAD_WINDOW)
     : undefined;
-  const activeCaption = foundActive || upcoming || captions[0];
+  const activeCaption = foundActive || upcoming || null;
 
   // Debug caption rendering and character colors
   useEffect(() => {
