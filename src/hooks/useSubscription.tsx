@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -39,7 +39,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     features: { storage_gb: 1, videos_per_month: 1 },
   });
   const [loading, setLoading] = useState(false);
-  const hasNotifiedRef = useRef(false);
+
   const checkSubscription = async () => {
     if (!user || !session) {
       setSubscriptionData({
@@ -77,13 +77,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_end: null,
         features: { storage_gb: 1, videos_per_month: 1 },
       });
-      if (!hasNotifiedRef.current) {
-        toast({
-          title: "Limited features",
-          description: "Unable to verify subscription. Continuing with free limits.",
-        });
-        hasNotifiedRef.current = true;
-      }
+      toast({
+        title: "Error",
+        description: "Failed to check subscription status",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

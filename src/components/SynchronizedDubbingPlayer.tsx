@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { VolumeX, Volume2, Globe, Loader2, Settings, Gauge, Timer } from 'lucide-react';
+import { VolumeX, Volume2, Globe, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface DubbedAudio {
@@ -45,23 +45,17 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1.0);
-  const [timeOffset, setTimeOffset] = useState(0);
-  const [showControls, setShowControls] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Synchronize audio with video playback with enhanced controls
+  // Synchronize audio with video playback
   useEffect(() => {
     if (currentAudio && isEnabled) {
-      // Apply playback rate and time offset
-      currentAudio.playbackRate = playbackRate;
-      const adjustedTime = Math.max(0, currentTime + timeOffset);
-      const timeDiff = Math.abs(currentAudio.currentTime - adjustedTime);
+      const timeDiff = Math.abs(currentAudio.currentTime - currentTime);
       
       // Sync if there's a significant difference (>0.5 seconds)
       if (timeDiff > 0.5) {
-        currentAudio.currentTime = adjustedTime;
+        currentAudio.currentTime = currentTime;
       }
       
       if (isPlaying && currentAudio.paused) {
@@ -70,15 +64,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         currentAudio.pause();
       }
     }
-  }, [currentTime, isPlaying, currentAudio, isEnabled, playbackRate, timeOffset]);
-
-  // Apply settings when audio changes
-  useEffect(() => {
-    if (currentAudio) {
-      currentAudio.playbackRate = playbackRate;
-      currentAudio.muted = isMuted;
-    }
-  }, [currentAudio, playbackRate, isMuted]);
+  }, [currentTime, isPlaying, currentAudio, isEnabled]);
 
   const getVoiceForLanguage = (lang: string): string => {
     const voiceMap: { [key: string]: string } = {
@@ -185,25 +171,6 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     }
   };
 
-  const handleSpeedChange = (speed: number) => {
-    setPlaybackRate(speed);
-    if (currentAudio) {
-      currentAudio.playbackRate = speed;
-    }
-  };
-
-  const handleOffsetChange = (offset: number) => {
-    setTimeOffset(offset);
-  };
-
-  const resetControls = () => {
-    setPlaybackRate(1.0);
-    setTimeOffset(0);
-    if (currentAudio) {
-      currentAudio.playbackRate = 1.0;
-    }
-  };
-
   const getLanguageDisplay = (code: string) => {
     return LANGUAGES.find(lang => lang.code === code)?.name || code.toUpperCase();
   };
@@ -242,79 +209,9 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && (
         <div className="flex items-center gap-1">
           {isEnabled && (
-            <>
-              <Badge variant="secondary" className="text-xs px-2 py-0">
-                Dubbed
-              </Badge>
-              
-              {/* Speed and Offset Controls Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowControls(!showControls)}
-                className="w-6 h-6 p-0 text-primary-foreground hover:text-primary hover:bg-primary/20"
-                title="Sync Controls"
-              >
-                <Settings className="w-3 h-3" />
-              </Button>
-              
-              {/* Enhanced Controls Panel */}
-              {showControls && (
-                <div className="absolute top-8 left-0 z-50 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg min-w-64">
-                  <div className="space-y-3 text-xs">
-                    {/* Speed Control */}
-                    <div className="flex items-center gap-2">
-                      <Gauge className="w-3 h-3 text-muted-foreground" />
-                      <span className="min-w-0 flex-1">Speed: {playbackRate.toFixed(1)}x</span>
-                      <div className="flex gap-1">
-                        {[0.70, 0.80, 1.0, 1.05, 1.10, 1.2, 1.25].map(speed => (
-                          <Button
-                            key={speed}
-                            variant={playbackRate === speed ? "secondary" : "ghost"}
-                            size="sm"
-                            onClick={() => handleSpeedChange(speed)}
-                            className="h-6 px-2 text-xs"
-                          >
-                            {speed}x
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Time Offset Control */}
-                    <div className="flex items-center gap-2">
-                      <Timer className="w-3 h-3 text-muted-foreground" />
-                      <span className="min-w-0 flex-1">Offset: {timeOffset > 0 ? '+' : ''}{timeOffset}s</span>
-                      <div className="flex gap-1">
-                        {[-5, -2, -1, 0, +1, +2, +5].map(offset => (
-                          <Button
-                            key={offset}
-                            variant={timeOffset === offset ? "secondary" : "ghost"}
-                            size="sm"
-                            onClick={() => handleOffsetChange(offset)}
-                            className="h-6 px-2 text-xs"
-                          >
-                            {offset > 0 ? '+' : ''}{offset}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Reset Button */}
-                    <div className="flex justify-end pt-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetControls}
-                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Reset
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
+            <Badge variant="secondary" className="text-xs px-2 py-0">
+              Dubbed
+            </Badge>
           )}
           
           {currentAudio && (

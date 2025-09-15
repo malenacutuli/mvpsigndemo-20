@@ -7,11 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useVideoStorage } from '@/hooks/useVideoStorage';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -45,42 +43,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   });
   const [descriptions, setDescriptions] = useState<AudioDescriptionSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
-  const [showNoGapsDialog, setShowNoGapsDialog] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
 
-  // Storage helpers
-  const { saveAudioDescriptions: saveAD } = useVideoStorage(videoId);
-
   const detectedLanguage = videoData?.transcript_language || 'en';
-
-  // Cache video duration so gaps never exceed real length
-  const [videoDuration, setVideoDuration] = useState<number | null>(null);
-  const getVideoDuration = async (): Promise<number> => {
-    if (videoDuration && isFinite(videoDuration)) return videoDuration;
-    return await new Promise<number>((resolve) => {
-      const v = document.createElement('video');
-      v.src = videoUrl;
-      v.crossOrigin = 'anonymous';
-      v.muted = true;
-      const onLoaded = () => {
-        const dur = Math.max(0, v.duration || 0);
-        setVideoDuration(dur);
-        v.removeEventListener('loadedmetadata', onLoaded);
-        resolve(dur);
-      };
-      const onError = () => {
-        v.removeEventListener('loadedmetadata', onLoaded);
-        resolve(0);
-      };
-      v.addEventListener('loadedmetadata', onLoaded, { once: true });
-      v.addEventListener('error', onError, { once: true });
-    });
-  };
 
   // Get ElevenLabs native voice for detected language
   const getLanguageNativeVoice = (language: string): string => {
@@ -121,27 +90,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return Math.min(5.0, Math.max(1.2, words / wps));
   };
 
-  // Clamp generated descriptions so they never exceed the real video duration
-  const clampDescriptionsToDuration = (items: AudioDescriptionSegment[], dur: number): AudioDescriptionSegment[] => {
-    if (!dur || !isFinite(dur)) return items;
-    return items
-      .map(d => {
-        const start = Math.max(0, Math.min(d.startTime, Math.max(0, dur - 0.2)));
-        const endRaw = Math.max(start + 0.2, Math.min(d.endTime, dur - 0.05));
-        const end = Math.max(start + 0.2, endRaw);
-        return { ...d, startTime: start, endTime: end };
-      })
-      .filter(d => d.startTime < dur - 0.1 && d.endTime > 0);
-  };
-
-  // Compute non-dialogue gaps with enhanced precision and overlap prevention, capped to video duration
-  const computeGaps = (segments: any[], maxDuration?: number): { start: number; end: number }[] => {
-    if (!segments || segments.length === 0) {
-      const end = typeof maxDuration === 'number' && isFinite(maxDuration) ? maxDuration : 0;
-      return end > 0 ? [{ start: 0, end }] : [];
-    }
+  // Compute non-dialogue gaps with enhanced precision and overlap prevention
+  const computeGaps = (segments: any[]): { start: number; end: number }[] => {
+    if (!segments || segments.length === 0) return [{ start: 0, end: 9999 }];
     
-    const dur = typeof maxDuration === 'number' && isFinite(maxDuration) ? Math.max(0, maxDuration) : undefined;
     const sorted = [...segments]
       .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
       .sort((a, b) => a.startTime - b.startTime);
@@ -149,14 +101,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const gaps: { start: number; end: number }[] = [];
     const pad = 0.5; // Increased padding for better separation from dialogue
 
-    console.log('🔍 Computing gaps from', sorted.length, 'segments with', pad, 'second padding', 'dur=', dur);
+    console.log('🔍 Computing gaps from', sorted.length, 'segments with', pad, 'second padding');
 
     // Pre-roll gap with minimum duration check
-    const firstStart = sorted[0].startTime;
-    const cappedFirstEnd = dur ? Math.min(firstStart - pad, dur) : firstStart - pad;
-    if (firstStart > 2.0) {
-      const preGap = { start: 0, end: Math.max(0, cappedFirstEnd) };
-      if (preGap.end - preGap.start >= 2.0) {
+    if (sorted[0].startTime > 2.0) {
+      const preGap = { start: 0, end: Math.max(0, sorted[0].startTime - pad) };
+      if (preGap.end - preGap.start >= 2.0) { // Minimum 2 seconds for meaningful description
         gaps.push(preGap);
         console.log(`📍 Pre-roll gap: ${preGap.start.toFixed(1)}s-${preGap.end.toFixed(1)}s (${(preGap.end - preGap.start).toFixed(1)}s)`);
       }
@@ -166,38 +116,37 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     for (let i = 0; i < sorted.length - 1; i++) {
       const end = sorted[i].endTime + pad;
       const nextStart = sorted[i + 1].startTime - pad;
-      const gapStart = end;
-      const gapEndRaw = nextStart;
-      const gapEnd = dur ? Math.min(gapEndRaw, dur) : gapEndRaw;
-      if (gapEnd - gapStart >= 2.0) {
-        const gap = { start: gapStart, end: gapEnd };
+      
+      // Require minimum gap of 2.0s for meaningful descriptions with better sync
+      if (nextStart - end >= 2.0) {
+        const gap = { start: end, end: nextStart };
         gaps.push(gap);
         console.log(`📍 Inter-segment gap ${i}: ${gap.start.toFixed(1)}s-${gap.end.toFixed(1)}s (${(gap.end - gap.start).toFixed(1)}s)`);
       } else {
-        console.log(`⏭️ Gap ${i} too small: ${(gapEnd - gapStart).toFixed(1)}s (need 2.0s minimum)`);
+        console.log(`⏭️ Gap ${i} too small: ${(nextStart - end).toFixed(1)}s (need 2.0s minimum)`);
       }
     }
 
-    // Post-roll gap, capped to video duration
+    // Post-roll gap
     const lastSegment = sorted[sorted.length - 1];
-    if (dur && lastSegment.endTime + pad < dur - 0.2) {
-      const postGap = { start: lastSegment.endTime + pad, end: dur };
-      if (postGap.end - postGap.start >= 1.0) {
+    if (lastSegment.endTime < 9999) {
+      const postGap = { start: lastSegment.endTime + pad, end: 9999 };
+      if (postGap.end - postGap.start >= 2.0) {
         gaps.push(postGap);
         console.log(`📍 Post-roll gap: ${postGap.start.toFixed(1)}s-${postGap.end.toFixed(1)}s`);
       }
     }
 
-    console.log(`✅ Found ${gaps.length} suitable gaps for audio descriptions (capped at ${dur ?? 'unknown'}s)`);
+    console.log(`✅ Found ${gaps.length} suitable gaps for audio descriptions`);
     return gaps;
   };
+
   // Frame-grounded AD generation with visual analysis
   const generateDescriptionsFromTranscript = async (videoId: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
     console.log('📝 Generating frame-grounded AD for', transcript.length, 'segments');
 
-    // 1) Compute safe non-dialogue gaps bounded to video duration
-    const dur = await getVideoDuration();
-    const gaps = computeGaps(transcript, dur);
+    // 1) Compute safe non-dialogue gaps
+    const gaps = computeGaps(transcript);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available');
       return [];
@@ -370,11 +319,6 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const proposals: Array<{ text: string; voiceStyle?: AudioDescriptionSegment['voiceStyle'] }> = (data as any)?.descriptions || [];
     if (!proposals.length) return [];
 
-    // If no gaps provided, create evenly spaced descriptions across video duration
-    if (!gaps.length) {
-      return await generateWithoutGaps(proposals, transcript);
-    }
-
     // Schedule proposals into gaps
     const scheduled: AudioDescriptionSegment[] = [];
     let gapIndex = 0;
@@ -416,41 +360,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return scheduled;
   };
 
-  // Generate descriptions without gap constraints (for continuous audio videos)
-  const generateWithoutGaps = async (proposals: Array<{ text: string; voiceStyle?: string }>, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
-    console.log('🎵 Generating descriptions without gap constraints for continuous audio video');
-    
-    const dur = await getVideoDuration();
-    if (!dur || dur <= 0) return [];
-
-    const scheduled: AudioDescriptionSegment[] = [];
-    const interval = dur / Math.max(1, proposals.length + 1); // Space evenly across video
-
-    for (let i = 0; i < proposals.length; i++) {
-      const startTime = Math.max(0.5, (i + 1) * interval - 2); // Start a bit before the interval
-      const estimatedDur = estimateDurationForText(proposals[i].text);
-      const endTime = Math.min(dur - 0.5, startTime + estimatedDur);
-
-      scheduled.push({
-        text: proposals[i].text,
-        startTime,
-        endTime,
-        voiceStyle: getLanguageNativeVoice(detectedLanguage),
-        timestamp: (startTime + endTime) / 2,
-      });
-    }
-
-    console.log(`✅ Generated ${scheduled.length} descriptions without gap constraints`);
-    return scheduled;
-  };
-
   // Enhanced multi-frame analysis using GPT-5 Vision
   const generateEnhancedDescriptions = async (videoUrl: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
     console.log('🎯 Enhanced Analysis: Using GPT-5 Vision with multi-frame context');
 
     // 1) Compute safe non-dialogue gaps
-    const dur = await getVideoDuration();
-    const gaps = computeGaps(transcript, dur);
+    const gaps = computeGaps(transcript);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available for enhanced analysis');
       return [];
@@ -524,8 +439,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     console.log('🤗 Generating descriptions with Hugging Face open source models');
 
     // 1) Compute safe non-dialogue gaps
-    const dur = await getVideoDuration();
-    const gaps = computeGaps(transcript, dur);
+    const gaps = computeGaps(transcript);
     if (gaps.length === 0) {
       console.log('⚠️ No gaps available for Hugging Face analysis');
       return [];
@@ -660,7 +574,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             contentType: 'general'
           }
         });
-        if (visualResponse.error) throw new Error(visualResponse.error.message || 'Analysis failed');
+        if (visualResponse.error) throw new Error(visualResponse.error.message || 'OpenAI analysis failed');
         return visualResponse.data?.descriptions || [];
       }
     } catch (e) {
@@ -688,18 +602,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
     setIsGenerating(true);
     try {
-      const dur = await getVideoDuration();
-      const gaps = computeGaps(transcriptSegments, dur);
-      
-      // Check if no gaps but transcripts available - ask user for permission
-      if (gaps.length === 0) {
-        setIsGenerating(false);
-        setShowNoGapsDialog(true);
-        return;
-      }
-
-      const scheduledRaw = await generateTextOnlyFallback(transcriptSegments, gaps);
-      const scheduled = clampDescriptionsToDuration(scheduledRaw, dur);
+      const gaps = computeGaps(transcriptSegments);
+      const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
 
       if (scheduled.length === 0) {
         toast.error('No suitable silent gaps found to place audio descriptions');
@@ -708,35 +612,11 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
       setDescriptions(scheduled);
       onDescriptionsUpdate?.(scheduled);
-      toast.success(`Generated ${scheduled.length} descriptions`);
+      toast.success(`OpenAI GPT-4o mini generated ${scheduled.length} descriptions`);
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error('Generation failed - please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const generateWithoutGapsConfirmed = async () => {
-    console.log('🎵 User confirmed: Generate descriptions without gaps');
-    setShowNoGapsDialog(false);
-    setIsGenerating(true);
-    
-    try {
-      const dur = await getVideoDuration();
-      const scheduledRaw = await generateTextOnlyFallback(transcriptSegments, []); // Empty gaps array
-      const scheduled = clampDescriptionsToDuration(scheduledRaw, dur);
-
-      setDescriptions(scheduled);
-      onDescriptionsUpdate?.(scheduled);
-      toast.success(`Generated ${scheduled.length} descriptions (may overlap with audio)`, {
-        description: 'Descriptions were placed without considering audio gaps'
-      });
-      console.log('✅ Generated AD without gaps:', scheduled);
-    } catch (error) {
-      console.error('❌ Failed to generate descriptions without gaps:', error);
-      toast.error('Generation failed - please try again.');
+      toast.error('OpenAI generation failed - please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -755,15 +635,14 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     updatedDescriptions[editingIndex] = {
       ...updatedDescriptions[editingIndex],
       text: editText,
-      voiceStyle: editVoiceStyle
-      // Note: startTime and endTime are updated directly in the component above
+      voiceStyle: editVoiceStyle,
+      endTime: updatedDescriptions[editingIndex].startTime + estimateDurationForText(editText)
     };
 
     setDescriptions(updatedDescriptions);
     onDescriptionsUpdate?.(updatedDescriptions);
     setEditingIndex(null);
     setEditText('');
-    toast.success('Audio description saved successfully');
   };
 
   const cancelEdit = () => {
@@ -775,55 +654,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     const updatedDescriptions = descriptions.filter((_, i) => i !== index);
     setDescriptions(updatedDescriptions);
     onDescriptionsUpdate?.(updatedDescriptions);
-    toast.success('Audio description deleted');
   };
-
-  const addNewDescription = () => {
-    const newDescription: AudioDescriptionSegment = {
-      text: '',
-      startTime: 0,
-      endTime: 2,
-      voiceStyle: getLanguageNativeVoice(detectedLanguage),
-      timestamp: 0
-    };
-    
-    const updatedDescriptions = [...descriptions, newDescription];
-    setDescriptions(updatedDescriptions);
-    onDescriptionsUpdate?.(updatedDescriptions);
-    
-    // Start editing the new description immediately
-    setEditingIndex(updatedDescriptions.length - 1);
-    setEditText('');
-    setEditVoiceStyle(newDescription.voiceStyle);
-  };
-
-  async function saveAllDescriptions() {
-    if (descriptions.length === 0) {
-      toast.error('No descriptions to save');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Map local items to storage shape and clamp to video duration for safety
-      const dur = await getVideoDuration();
-      const clamped = clampDescriptionsToDuration(descriptions, dur);
-      const mapped = clamped.map(d => ({
-        startTime: d.startTime,
-        endTime: d.endTime,
-        description: d.text,
-        descriptionType: 'visual' as const
-      }));
-
-      await saveAD(mapped, detectedLanguage);
-      toast.success(`Successfully saved ${mapped.length} audio descriptions`);
-    } catch (error) {
-      console.error('Failed to save audio descriptions:', error);
-      toast.error('Failed to save audio descriptions');
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -841,52 +672,23 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <Button 
-              onClick={generateAIDescriptions} 
-              className="flex-1" 
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating Creative Audio...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              onClick={addNewDescription}
-              variant="outline"
-              disabled={isGenerating}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Manual
-            </Button>
-            
-            <Button
-              onClick={saveAllDescriptions}
-              variant="default"
-              disabled={isGenerating || isSaving || descriptions.length === 0}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save All Changes
-                </>
-              )}
-            </Button>
-          </div>
+          <Button 
+            onClick={generateAIDescriptions} 
+            className="w-full" 
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating with OpenAI GPT-4o mini...
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4 mr-2" />
+                Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
+              </>
+            )}
+          </Button>
 
           {descriptions.length > 0 && (
             <>
@@ -897,51 +699,6 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   <div key={index} className="border rounded-lg p-3">
                     {editingIndex === index ? (
                       <div className="space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs font-medium">Start Time (seconds)</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={descriptions[index].startTime}
-                              onChange={(e) => {
-                                const newStartTime = parseFloat(e.target.value) || 0;
-                                const updatedDescriptions = [...descriptions];
-                                updatedDescriptions[index] = {
-                                  ...updatedDescriptions[index],
-                                  startTime: newStartTime
-                                };
-                                setDescriptions(updatedDescriptions);
-                                onDescriptionsUpdate?.(updatedDescriptions);
-                              }}
-                              className="h-8"
-                              placeholder="0.0"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium">End Time (seconds)</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={descriptions[index].endTime}
-                              onChange={(e) => {
-                                const newEndTime = parseFloat(e.target.value) || 0;
-                                const updatedDescriptions = [...descriptions];
-                                updatedDescriptions[index] = {
-                                  ...updatedDescriptions[index],
-                                  endTime: newEndTime
-                                };
-                                setDescriptions(updatedDescriptions);
-                                onDescriptionsUpdate?.(updatedDescriptions);
-                              }}
-                              className="h-8"
-                              placeholder="2.0"
-                            />
-                          </div>
-                        </div>
-                        
                         <div>
                           <Label className="text-xs">Voice Style</Label>
                           <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>
@@ -989,9 +746,11 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                             <Badge variant="secondary" className={`text-xs ${getVoiceStyleColor(desc.voiceStyle)}`}>
                               {desc.voiceStyle}
                             </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              @{desc.startTime.toFixed(1)}s
-                            </Badge>
+                            {desc.timestamp && (
+                              <Badge variant="outline" className="text-xs">
+                                @{desc.timestamp.toFixed(1)}s
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-foreground">{desc.text}</p>
                         </div>
@@ -1023,29 +782,6 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           )}
         </CardContent>
       </Card>
-      
-      <AlertDialog open={showNoGapsDialog} onOpenChange={setShowNoGapsDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>No Audio Gaps Available</AlertDialogTitle>
-            <AlertDialogDescription>
-              This video appears to have continuous audio with no suitable silent gaps for audio descriptions. 
-              However, {transcriptSegments?.length || 0} transcript segments are available.
-              <br /><br />
-              Do you want to generate audio descriptions anyway? They may overlap with the existing audio, 
-              but will still be valuable for accessibility purposes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowNoGapsDialog(false)}>
-              No, Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={generateWithoutGapsConfirmed}>
-              Yes, Generate Anyway
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

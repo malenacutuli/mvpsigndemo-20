@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 // Using ElevenLabs via Supabase Edge Function proxy for secure TTS
 
-
 interface AudioDescriptionProps {
   currentTime: number;
   isPlaying: boolean;
@@ -18,9 +17,6 @@ interface AudioDescriptionProps {
   dynamicDescriptions?: AudioDescription[];
   // Language for TTS optimization
   language?: string;
-  // Callbacks to coordinate with video player (for ducking, etc.)
-  onADStart?: () => void;
-  onADEnd?: () => void;
 }
 
 interface AudioDescription {
@@ -56,8 +52,6 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   selectedVoice,
   dynamicDescriptions,
   language = 'en',
-  onADStart,
-  onADEnd,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
@@ -78,29 +72,50 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
     return defaultVoiceByContent[contentType];
   };
 
-// Enhanced synchronization: Track which segment is active
+// Enhanced synchronization: Track which segment is active with overlap prevention
 useEffect(() => {
   const descriptions = dynamicDescriptions || [];
   
-  if (!isPlaying || descriptions.length === 0) {
-    setCurrentDescription(null);
-    return;
-  }
+  console.log('🎬 AudioDescription sync check:', {
+    currentTime,
+    language,
+    contentType,
+    totalDescriptions: descriptions.length,
+    isPlaying
+  });
   
-  // Simply pick the segment that contains the current time
-  const active = descriptions.find(desc => currentTime >= desc.startTime && currentTime <= desc.endTime);
+  // Find description that matches current time with strict non-overlap checking
+  const potentialDescription = descriptions.find(desc => {
+    const isInTimeRange = currentTime >= desc.startTime && currentTime <= desc.endTime;
+    
+    if (isInTimeRange) {
+      console.log('🎯 Found matching description:', {
+        text: desc.text.substring(0, 50) + '...',
+        startTime: desc.startTime,
+        endTime: desc.endTime,
+        currentTime,
+        language,
+        timestamp: desc.timestamp || 'not specified'
+      });
+      
+      // Verify this is actually a gap in dialogue by checking if we're not overlapping with speech
+      const hasOverlap = descriptions.some(otherDesc => 
+        otherDesc !== desc && 
+        desc.startTime < otherDesc.endTime && 
+        desc.endTime > otherDesc.startTime
+      );
+      
+      if (hasOverlap) {
+        console.log('⚠️ Description overlaps with other content, skipping');
+        return false;
+      }
+    }
+    
+    return isInTimeRange;
+  });
   
-  if (active) {
-    console.log('🎯 AD segment active:', {
-      text: active.text.substring(0, 50) + '...',
-      startTime: active.startTime,
-      endTime: active.endTime,
-      currentTime,
-    });
-  }
-  
-  setCurrentDescription(active || null);
-}, [currentTime, isPlaying, dynamicDescriptions, language, contentType]);
+  setCurrentDescription(potentialDescription || null);
+}, [currentTime, contentType, dynamicDescriptions, isPlaying, language]);
 
   // Enhanced TTS generation with language-optimized voices
   useEffect(() => {
@@ -130,7 +145,8 @@ useEffect(() => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
           },
           body: JSON.stringify({ 
             text: currentDescription.text, 
@@ -160,15 +176,10 @@ useEffect(() => {
         audio.onended = () => {
           setIsDescriptionPlaying(false);
           URL.revokeObjectURL(url);
-          try { onADEnd?.(); } catch {}
         };
         audio.volume = 0.85; // Slightly reduced for better balance
         setDescriptionAudio(audio);
         setIsDescriptionPlaying(true);
-        
-        try {
-          onADStart?.();
-        } catch {}
         
         await audio.play().catch((error) => {
           console.error('Audio playback failed:', error);
@@ -213,7 +224,54 @@ useEffect(() => {
     return Number.isFinite(n) ? n.toFixed(1) : '—';
   };
 
-  // Audio description plays in background without visual overlay
-  // This maintains all audio functionality while keeping UI clean
-  return null;
+  return (
+    <div className="fixed bottom-4 right-4 max-w-md p-4 bg-black/90 border border-white/20 rounded-lg shadow-xl backdrop-blur-sm z-50">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-1">
+          {isGenerating ? (
+            <Volume2 className="w-5 h-5 animate-pulse text-cwi-main-blue" />
+          ) : isDescriptionPlaying ? (
+            <Volume2 className="w-5 h-5 text-cwi-main-green animate-pulse" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-muted-foreground" />
+          )}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${getVoiceStyleColor(currentDescription.voiceStyle)}`}
+            >
+              {currentDescription.voiceStyle}
+            </Badge>
+            {language === 'es' && (
+              <Badge variant="secondary" className="text-xs">
+                Español
+              </Badge>
+            )}
+          </div>
+          
+          <p className="text-sm text-white leading-relaxed">
+            {currentDescription.text}
+          </p>
+          
+          {genError && (
+            <p className="text-xs text-red-400 mt-2">
+              {genError}
+            </p>
+          )}
+          
+          <div className="flex items-center justify-between mt-2 text-xs text-white/60">
+            <span>
+              {formatTime(currentDescription.startTime)}s - {formatTime(currentDescription.endTime)}s
+            </span>
+            <span>
+              {isGenerating ? 'Generating...' : isDescriptionPlaying ? 'Playing' : 'Ready'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };

@@ -67,31 +67,18 @@ serve(async (req) => {
     const indexId = indexData._id;
     console.log('✅ Created Twelve Labs index:', indexId);
 
-    // Step 2: Create video indexing task using multipart/form-data
-    // First, fetch the video to create a proper blob
-    const videoResponse = await fetch(videoUrl);
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to fetch video: ${videoResponse.status}`);
-    }
-    
-    const videoBuffer = await videoResponse.arrayBuffer();
-    const videoBlob = new Blob([videoBuffer], { type: 'video/mp4' });
-    
-    // Create proper multipart/form-data request
-    const formData = new FormData();
-    formData.append('index_id', indexId);
-    formData.append('video_file', videoBlob, 'video.mp4');
-    formData.append('language', language || 'en');
-
-    console.log("Creating Twelve Labs indexing task with multipart/form-data...");
-
+    // Step 2: Create video indexing task
     const taskCreateResponse = await fetch(`${baseUrl}/tasks`, {
       method: 'POST',
       headers: {
         'x-api-key': twelveLabsApiKey,
-        // Don't set Content-Type - let the browser set it with boundary for multipart/form-data
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        index_id: indexId,
+        video_url: videoUrl,
+        enable_video_stream: false
+      }),
     });
 
     if (!taskCreateResponse.ok) {

@@ -38,6 +38,3 @@ verify_jwt = true
 
 [functions.enhanced-video-analysis]
 verify_jwt = false
-
-[functions.tts]
-verify_jwt = false

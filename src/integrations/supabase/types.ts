@@ -407,75 +407,6 @@ export type Database = {
           },
         ]
       }
-      security_audit_log: {
-        Row: {
-          action_type: string
-          created_at: string
-          error_message: string | null
-          id: string
-          ip_address: unknown | null
-          resource_id: string | null
-          resource_type: string
-          success: boolean | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action_type: string
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          resource_type: string
-          success?: boolean | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action_type?: string
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          resource_type?: string
-          success?: boolean | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      security_events: {
-        Row: {
-          details: Json | null
-          event_type: string
-          id: string
-          ip_address: unknown | null
-          resource_id: string | null
-          timestamp: string | null
-          user_id: string | null
-        }
-        Insert: {
-          details?: Json | null
-          event_type: string
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          timestamp?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          details?: Json | null
-          event_type?: string
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          timestamp?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       speaker_mappings: {
         Row: {
           created_at: string
@@ -572,33 +503,6 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      subscription_access_audit: {
-        Row: {
-          access_type: string
-          channel_id: string | null
-          created_at: string
-          id: string
-          ip_address: unknown | null
-          user_id: string | null
-        }
-        Insert: {
-          access_type: string
-          channel_id?: string | null
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          user_id?: string | null
-        }
-        Update: {
-          access_type?: string
-          channel_id?: string | null
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -848,18 +752,11 @@ export type Database = {
         Args: { user_agent_str: string }
         Returns: string
       }
-      check_my_subscription_status: {
+      check_channel_subscription: {
         Args: { channel_uuid: string }
         Returns: {
           is_subscribed: boolean
           subscribed_at: string
-        }[]
-      }
-      check_user_subscription: {
-        Args: { channel_uuid: string }
-        Returns: {
-          subscribed: boolean
-          subscription_date: string
         }[]
       }
       check_user_subscription_status: {
@@ -886,6 +783,26 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: string
       }
+      get_channel_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          latest_subscription: string
+          subscriber_count: number
+        }[]
+      }
+      get_channel_subscriber_count: {
+        Args: { channel_uuid: string }
+        Returns: number
+      }
+      get_channel_subscriber_stats: {
+        Args: { channel_uuid: string }
+        Returns: {
+          authenticated_subscribers: number
+          email_subscribers: number
+          latest_subscription: string
+          total_subscribers: number
+        }[]
+      }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -898,24 +815,6 @@ export type Database = {
           masked_stripe_id: string
           tier: string
           user_id: string
-        }[]
-      }
-      get_secure_channel_stats: {
-        Args: { channel_uuid: string }
-        Returns: {
-          auth_subscriber_count: number
-          email_subscriber_count: number
-          latest_subscription: string
-          total_subscribers: number
-        }[]
-      }
-      get_secure_channel_subscriber_stats: {
-        Args: { channel_uuid: string }
-        Returns: {
-          authenticated_subscriber_count: number
-          email_subscriber_count: number
-          latest_subscription_date: string
-          total_subscribers: number
         }[]
       }
       get_secure_subscription_info: {
@@ -936,24 +835,24 @@ export type Database = {
           tier_name: string
         }[]
       }
+      get_user_subscription_status: {
+        Args: { channel_uuid: string }
+        Returns: {
+          is_subscribed: boolean
+          subscribed_at: string
+        }[]
+      }
       increment_video_views: {
         Args: { video_uuid: string }
         Returns: undefined
       }
+      is_email_subscribed_to_channel: {
+        Args: { channel_uuid: string; email_to_check: string }
+        Returns: boolean
+      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string
-      }
-      secure_check_subscription_status_v2: {
-        Args: { channel_uuid: string }
-        Returns: boolean
-      }
-      secure_get_channel_stats_v2: {
-        Args: { channel_uuid: string }
-        Returns: {
-          latest_subscription_date: string
-          total_subscribers: number
-        }[]
       }
       system_get_stripe_customer_for_webhook: {
         Args: { user_email: string }

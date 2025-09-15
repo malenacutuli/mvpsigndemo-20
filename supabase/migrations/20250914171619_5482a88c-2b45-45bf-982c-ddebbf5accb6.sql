@@ -1,2 +1,0 @@
--- Update generate-dubbing function to support translation-only mode
--- This allows the function to return just translated text without audio generation

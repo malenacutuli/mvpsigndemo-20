@@ -6,30 +6,30 @@ const CI_COLORS = {
   // Read-ahead text color (white at 90% opacity)
   readahead: 'rgba(255, 255, 255, 0.9)',
   
-  // Main Characters - Using design system tokens
+  // Main Characters (6 primary colors)
   main: {
-    yellow: 'hsl(var(--cwi-main-yellow))',    // CI Main Yellow
-    blue: 'hsl(var(--cwi-main-blue))',        // CI Main Blue
-    red: 'hsl(var(--cwi-main-red))',          // CI Main Red
-    orange: 'hsl(var(--cwi-main-orange))',    // CI Main Orange
-    green: 'hsl(var(--cwi-main-green))',      // CI Main Green
-    pink: 'hsl(var(--cwi-main-purple))'       // CI Main Pink/Purple
+    yellow: '#E5E517',    // CI Main Yellow
+    blue: '#17E5E5',      // CI Main Blue
+    red: '#E51717',       // CI Main Red
+    orange: '#E58017',    // CI Main Orange
+    green: '#17E517',     // CI Main Green
+    pink: '#E517E5'       // CI Main Pink
   },
   
-  // Supporting Characters - Using design system tokens
+  // Supporting Characters (colors between main characters)
   supporting: {
-    orange1: 'hsl(var(--cwi-support-orange))',   // CI Support Orange
-    blue1: 'hsl(210 80% 60%)',     // CI Support Blue I
-    yellow1: 'hsl(45 85% 60%)',    // CI Support Yellow
-    blue2: 'hsl(225 75% 65%)',     // CI Support Blue II
-    green1: 'hsl(80 75% 60%)',     // CI Support Green I
-    purple1: 'hsl(260 70% 65%)',   // CI Support Purple I
-    green2: 'hsl(140 75% 65%)',    // CI Support Green II
-    purple2: 'hsl(300 70% 65%)',   // CI Support Purple II
-    green3: 'hsl(160 75% 60%)',    // CI Support Green III
-    pink1: 'hsl(var(--cwi-support-pink))',     // CI Support Pink I
-    cyan: 'hsl(var(--cwi-support-cyan))',      // CI Support Cyan
-    pink2: 'hsl(345 75% 65%)'      // CI Support Pink II
+    orange1: '#E85C2E',   // CI Support Orange
+    blue1: '#47C2EB',     // CI Support Blue I
+    yellow1: '#EBC247',   // CI Support Yellow
+    blue2: '#5E82ED',     // CI Support Blue II
+    green1: '#C2EB47',    // CI Support Green I
+    purple1: '#8C6BED',   // CI Support Purple I
+    green2: '#82ED5E',    // CI Support Green II
+    purple2: '#CC6BED',   // CI Support Purple II
+    green3: '#47EB70',    // CI Support Green III
+    pink1: '#EB47C2',     // CI Support Pink I
+    cyan: '#5EEDC9',      // CI Support Cyan
+    pink2: '#ED5E82'      // CI Support Pink II
   },
   
   // Minor Characters (pastel tones from center of color wheel)
@@ -259,12 +259,48 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     : undefined;
   const activeCaption = foundActive || upcoming || captions[0];
 
-  // Debug caption rendering and character colors (simplified)
+  // Debug caption rendering and character colors
   useEffect(() => {
-    if (activeCaption && activeCaption.speaker) {
-      console.log('🎯 Active caption:', activeCaption.speaker, 'Color:', activeCaption.speakerColor);
+    if (captions && captions.length > 0) {
+      console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
+      console.log('📊 Available captions count:', captions.length);
+      console.log('🔍 Caption time ranges:', captions.slice(0, 3).map(c => ({ 
+        start: c.startTime, 
+        end: c.endTime, 
+        text: c.text.substring(0, 20) + '...',
+        speaker: c.speaker,
+        speakerColor: c.speakerColor
+      })));
+      
+      if (activeCaption) {
+        console.log('🎯 Active caption details:', {
+          startTime: activeCaption.startTime,
+          endTime: activeCaption.endTime,
+          text: activeCaption.text.substring(0, 30) + '...',
+          speaker: activeCaption.speaker,
+          speakerColor: activeCaption.speakerColor,
+          hasColor: !!activeCaption.speakerColor
+        });
+      }
     }
-  }, [activeCaption]);
+  }, [captions, currentTime, activeCaption]);
+
+  console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
+  console.log('📊 Available captions count:', captions.length);
+  console.log('🔍 Caption time ranges:', captions.slice(0, 3).map(c => ({ 
+    start: c.startTime, 
+    end: c.endTime, 
+    text: c.text.substring(0, 20) + '...' 
+  })));
+  
+  if (activeCaption) {
+    console.log('🎯 Active caption details:', {
+      startTime: activeCaption.startTime,
+      endTime: activeCaption.endTime,
+      text: activeCaption.text.substring(0, 30) + '...',
+      speaker: activeCaption.speaker
+    });
+  }
 
   if (!activeCaption) return null;
 
@@ -382,16 +418,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="pointer-events-none w-full flex justify-center"
+      className="relative flex items-end justify-center pointer-events-none w-full"
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
     >
-      {/* Captions Container Box - Horizontal Layout */}
+      {/* Captions Container Box - Mobile Responsive */}
       <div 
         className={`
-          relative inline-block max-w-[90vw] sm:max-w-4xl lg:max-w-5xl text-center
-          ${isLoudBurst ? '' : 'bg-black/75'} 
-          ${isLoudBurst ? '' : 'rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-4 py-2 sm:px-6 sm:py-3'}
+          relative inline-block max-w-[92vw] sm:max-w-2xl text-center
+          ${isLoudBurst ? '' : 'bg-black/90'} 
+          ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
+          ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
           ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
         `}
         style={{
@@ -421,9 +457,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         
         {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-normal break-words px-1"
+          className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.8 : 0.9), screenHeight * 0.035)}px`, // Smaller, more compact size
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
             ...pitchStyle,
             ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
@@ -432,8 +468,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.2' : '1.25', // Compact line height
-            whiteSpace: 'normal' // Allow horizontal text wrapping
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
           }}
         >
           {/* Sound effects and music formatting */}
@@ -473,6 +508,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
                     const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
                     
+                    // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
+                    if (currentTime <= 3.0 && index < 5) {
+                      console.log(`⏱️ Word ${index} "${word.text}" timing: current=${currentTime.toFixed(3)}s, word=${word.startTime?.toFixed(3)}-${word.endTime?.toFixed(3)}s, active=${isWordActive}`);
+                    }
                    
                    // Progressive word state system (inspired by axs.so approach)
                    let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
@@ -572,42 +611,49 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
                         switch (word.emphasis) {
                           case 'quiet':
-                             return { 
-                               ...baseStyle, 
-                               fontSize: `${wordFontSize * 0.85}px`, 
-                               fontWeight: 300, 
-                               fontStyle: 'italic',
-                               opacity: 0.8
-                             };
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 0.85}px`, 
+                              fontWeight: 300, 
+                              fontStyle: 'italic',
+                              opacity: 0.8,
+                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)'
+                            };
                           case 'loud':
-                             return { 
-                               ...baseStyle, 
-                               fontSize: `${wordFontSize * 1.2}px`, 
-                               fontWeight: 700,
-                               letterSpacing: '0.02em',
-                               ...(emotionalType && {
-                                 textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
-                               })
-                             };
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 1.3}px`, 
+                              fontWeight: 700,
+                              letterSpacing: '0.02em',
+                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
+                              ...(emotionalType && {
+                                textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
+                              })
+                            };
                           case 'yelling':
-                             return { 
-                               ...baseStyle, 
-                               fontSize: `${wordFontSize * 1.25}px`,
-                               fontWeight: 800, 
-                               letterSpacing: '0.05em',
-                               textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none'
-                             };
+                            return { 
+                              ...baseStyle, 
+                              fontSize: `${wordFontSize * 1.35}px`, // Increased from 1.25x
+                              fontWeight: 800, 
+                              letterSpacing: '0.05em',
+                              textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none',
+                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)',
+                              // Keep original case - no uppercase transformation
+                              animation: wordState === 'active' && emotionalType ? 'pulse 0.8s ease-out' : undefined
+                            };
                           default:
-                             return {
-                               ...baseStyle
-                             };
+                            return {
+                              ...baseStyle,
+                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                            };
                         }
                       }
                       
-                       // Default state
-                       return {
-                         ...baseStyle
-                       };
+                      // Default state with subtle jump
+                      return {
+                        ...baseStyle,
+                        transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
+                      };
                     };
                    
                      return (
@@ -621,17 +667,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         data-end={word.endTime}
                         style={{
                          color: getWordColorByState(),
-                         marginRight: '0.25em',
+                         marginRight: '0.3em',
                          fontSize: `${wordFontSize}px`,
                          cursor: 'default',
-                         display: 'inline',
-                         transition: 'all 0.15s ease-out',
                          ...wordPitchStyle,
                          ...getWordIntensityStyle(),
-                         // Active word gets subtle highlight without shaking
+                         // Active word gets enhanced glow and jump
                          ...(wordState === 'active' && {
-                           textShadow: `0 0 8px ${getWordColorByState()}50`,
-                           fontWeight: 'bold'
+                           textShadow: `0 0 10px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.2)`,
+                           zIndex: 10,
+                           position: 'relative'
                          }),
                          // Spoken words get subtle persistence
                          ...(wordState === 'spoken' && {
