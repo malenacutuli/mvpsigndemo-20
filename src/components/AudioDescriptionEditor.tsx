@@ -660,7 +660,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             contentType: 'general'
           }
         });
-        if (visualResponse.error) throw new Error(visualResponse.error.message || 'OpenAI analysis failed');
+        if (visualResponse.error) throw new Error(visualResponse.error.message || 'Analysis failed');
         return visualResponse.data?.descriptions || [];
       }
     } catch (e) {
@@ -850,7 +850,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating with OpenAI GPT-4o mini...
+                  Generating Creative Audio...
                 </>
               ) : (
                 <>
