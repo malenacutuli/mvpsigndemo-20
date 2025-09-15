@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,9 +73,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editWords, setEditWords] = useState<WordData[]>([]);
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const [showIntensity, setShowIntensity] = useState(true);
+  const [showAllSegments, setShowAllSegments] = useState(false);
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
+
+  // Window and defer large transcript lists to avoid UI freezes on big videos
+  const displayedSegmentsRaw = useMemo(() => (
+    showAllSegments ? editingTranscript : editingTranscript.slice(-200)
+  ), [editingTranscript, showAllSegments]);
+  const displayedSegments = useDeferredValue(displayedSegmentsRaw);
 
   useEffect(() => {
     const loadTranscriptData = async () => {
@@ -540,6 +547,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                 <Zap className="w-4 h-4 mr-2" />
                 {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
               </Button>
+
+              <Button
+                onClick={() => setShowAllSegments((v) => !v)}
+                size="sm"
+                variant="outline"
+              >
+                {showAllSegments ? 'Show recent 200' : 'Show all segments'}
+              </Button>
             </div>
           </div>
 
@@ -551,215 +566,226 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                 <p>Generate transcript to start editing</p>
               </div>
             ) : (
-              editingTranscript.map((segment, index) => (
-                <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
-                      </span>
-                      {segment.speaker && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs px-2 py-0"
-                          style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                        >
-                          {segment.speaker}
-                        </Badge>
-                      )}
-                      {segment.emphasis !== 'normal' && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          {segment.emphasis}
-                        </Badge>
-                      )}
-                      {segment.pitch !== 'normal' && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          {segment.pitch}
-                        </Badge>
-                      )}
-                    </div>
-                    {editingIndex !== index && (
-                     <div className="flex gap-1">
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => startEditing(index)}
-                         className="h-6 w-6 p-0"
-                         title="Edit segment"
-                       >
-                         <Edit className="w-3 h-3" />
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => addNewSegment(index)}
-                         className="h-6 w-6 p-0"
-                         title="Insert segment after this one"
-                       >
-                         <Plus className="w-3 h-3" />
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => deleteSegment(index)}
-                         className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                         title="Delete segment"
-                       >
-                         <X className="w-3 h-3" />
-                       </Button>
-                     </div>
-                    )}
+              <>
+                {!showAllSegments && editingTranscript.length > 200 && (
+                  <div className="text-xs text-muted-foreground">
+                    Showing the most recent 200 of {editingTranscript.length} segments. Use "Show all segments" if needed.
                   </div>
-                  
-                  {editingIndex === index ? (
-                    <div className="space-y-4">
-                      {/* Text Editor */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs">Text</Label>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
-                            className="h-6 text-xs"
-                          >
-                            <Type className="w-3 h-3 mr-1" />
-                            {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
-                          </Button>
+                )}
+                {displayedSegments.map((segment, localIndex) => {
+                  const baseIndex = editingTranscript.length - displayedSegments.length;
+                  const index = baseIndex + localIndex;
+                  return (
+                    <div key={segment.id} className="p-3 border rounded-lg bg-muted/20">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                          </span>
+                          {segment.speaker && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs px-2 py-0"
+                              style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                            >
+                              {segment.speaker}
+                            </Badge>
+                          )}
+                          {segment.emphasis !== 'normal' && (
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              {segment.emphasis}
+                            </Badge>
+                          )}
+                          {segment.pitch !== 'normal' && (
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              {segment.pitch}
+                            </Badge>
+                          )}
                         </div>
-                        
-                        {useWordLevelEditing ? (
-                          <WordLevelEditor
-                            initialText={editText}
-                            onWordsChange={setEditWords}
-                            className="border rounded-md"
-                          />
-                        ) : (
-                          <Textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className="min-h-[60px]"
-                            autoFocus
-                          />
+                        {editingIndex !== index && (
+                         <div className="flex gap-1">
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => startEditing(index)}
+                             className="h-6 w-6 p-0"
+                             title="Edit segment"
+                           >
+                             <Edit className="w-3 h-3" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => addNewSegment(index)}
+                             className="h-6 w-6 p-0"
+                             title="Insert segment after this one"
+                           >
+                             <Plus className="w-3 h-3" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => deleteSegment(index)}
+                             className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                             title="Delete segment"
+                           >
+                             <X className="w-3 h-3" />
+                           </Button>
+                         </div>
                         )}
                       </div>
                       
-                      {/* Timing Controls */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Start Time
-                          </Label>
-                          <Input
-                            value={editStartTime}
-                            onChange={(e) => setEditStartTime(e.target.value)}
-                            placeholder="0:00.0"
-                            className="text-xs"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            End Time
-                          </Label>
-                          <Input
-                            value={editEndTime}
-                            onChange={(e) => setEditEndTime(e.target.value)}
-                            placeholder="0:03.0"
-                            className="text-xs"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Speaker & Styling */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            Speaker
-                          </Label>
-                          <Input
-                            value={editSpeaker}
-                            onChange={(e) => setEditSpeaker(e.target.value)}
-                            placeholder="Speaker name"
-                            className="text-xs"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Palette className="w-3 h-3" />
-                            Color
-                          </Label>
-                          <Input
-                            type="color"
-                            value={editSpeakerColor}
-                            onChange={(e) => setEditSpeakerColor(e.target.value)}
-                            className="h-8 p-1"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Emphasis & Pitch */}
-                      {!useWordLevelEditing && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs flex items-center gap-1">
-                              <Volume2 className="w-3 h-3" />
-                              Emphasis
-                            </Label>
-                            <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal' | 'yelling')}>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="loud">Loud</SelectItem>
-                                <SelectItem value="quiet">Quiet</SelectItem>
-                                <SelectItem value="yelling">Yelling (Bold)</SelectItem>
-                              </SelectContent>
-                            </Select>
+                      {editingIndex === index ? (
+                        <div className="space-y-4">
+                          {/* Text Editor */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs">Text</Label>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
+                                className="h-6 text-xs"
+                              >
+                                <Type className="w-3 h-3 mr-1" />
+                                {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
+                              </Button>
+                            </div>
+                            
+                            {useWordLevelEditing ? (
+                              <WordLevelEditor
+                                initialText={editText}
+                                onWordsChange={setEditWords}
+                                className="border rounded-md"
+                              />
+                            ) : (
+                              <Textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                className="min-h-[60px]"
+                                autoFocus
+                              />
+                            )}
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Pitch</Label>
-                            <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="low">Low</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          
+                          {/* Timing Controls */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Start Time
+                              </Label>
+                              <Input
+                                value={editStartTime}
+                                onChange={(e) => setEditStartTime(e.target.value)}
+                                placeholder="0:00.0"
+                                className="text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                End Time
+                              </Label>
+                              <Input
+                                value={editEndTime}
+                                onChange={(e) => setEditEndTime(e.target.value)}
+                                placeholder="0:03.0"
+                                className="text-xs"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Speaker & Styling */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                Speaker
+                              </Label>
+                              <Input
+                                value={editSpeaker}
+                                onChange={(e) => setEditSpeaker(e.target.value)}
+                                placeholder="Speaker name"
+                                className="text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs flex items-center gap-1">
+                                <Palette className="w-3 h-3" />
+                                Color
+                              </Label>
+                              <Input
+                                type="color"
+                                value={editSpeakerColor}
+                                onChange={(e) => setEditSpeakerColor(e.target.value)}
+                                className="h-8 p-1"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Emphasis & Pitch */}
+                          {!useWordLevelEditing && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs flex items-center gap-1">
+                                  <Volume2 className="w-3 h-3" />
+                                  Emphasis
+                                </Label>
+                                <Select value={editEmphasis} onValueChange={(value) => setEditEmphasis(value as 'loud' | 'quiet' | 'normal' | 'yelling')}>
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="loud">Loud</SelectItem>
+                                    <SelectItem value="quiet">Quiet</SelectItem>
+                                    <SelectItem value="yelling">Yelling (Bold)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Pitch</Label>
+                                <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit}>
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                              <X className="w-3 h-3 mr-1" />
+                              Cancel
+                            </Button>
                           </div>
                         </div>
+                      ) : (
+                        <p 
+                          className="text-sm" 
+                          style={{ color: segment.speakerColor }}
+                        >
+                          {segment.text}
+                        </p>
                       )}
-                      
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
                     </div>
-                  ) : (
-                    <p 
-                      className="text-sm" 
-                      style={{ color: segment.speakerColor }}
-                    >
-                      {segment.text}
-                    </p>
-                  )}
-                </div>
-              ))
+                  );
+                })}
+              </>
             )}
           </div>
-
+ 
           {/* Generation Info */}
           {selectedLanguage !== 'en' && editingTranscript.length > 0 && (
             <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded">
