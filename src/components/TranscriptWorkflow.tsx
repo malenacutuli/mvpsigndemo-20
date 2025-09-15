@@ -688,18 +688,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       const checksum = btoa(JSON.stringify(segmentData));
 
-      // Save to single localStorage key
-      const localKey = `transcript:${videoId}:${detectedLanguage}`;
-      localStorage.setItem(localKey, JSON.stringify({
-        segments: segmentData,
-        language: detectedLanguage,
-        videoId,
-        ts: Date.now()
-      }));
-      console.log(`✅ Saved to localStorage: ${localKey}`);
-
-      // Atomic database save using RPC
-      console.log('🔄 Attempting atomic database save...');
+      // Database-first save: always create proper transcript records
+      console.log('🔄 Attempting database-first transcript save...');
       
       const { error } = await supabase.rpc('upsert_transcript_segments', {
         p_video_id: videoId,
@@ -712,15 +702,22 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       if (error) {
         console.error('❌ Database save failed:', error);
         toast({
-          title: "Save partially completed",
-          description: "Database save failed, but transcript saved locally",
+          title: "Save failed",
+          description: "Failed to save transcript to database. Please try again.",
           variant: "destructive"
         });
+        throw error; // Don't use localStorage for authenticated users
       } else {
-        console.log('✅ Successfully saved to database via atomic RPC');
+        console.log('✅ Successfully saved to database with proper transcript record');
+        // Clear localStorage since we have database record
+        const localKey = `transcript:${videoId}:${detectedLanguage}`;
+        localStorage.removeItem(localKey);
+        localStorage.removeItem(`transcript_${videoId}_${detectedLanguage}`);
+        
         toast({
-          title: "✅ Transcript saved!",
-          description: `${segmentData.length} segments saved successfully`
+          title: complete ? "Transcript saved and completed" : "Transcript saved",
+          description: `${segments.length} segments saved to database`,
+          variant: "default"
         });
       }
 

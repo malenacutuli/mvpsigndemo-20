@@ -105,8 +105,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     loadTranscriptData();
   }, [selectedLanguage]);
 
-  // Save transcript when it changes
+  // Save transcript when it changes - database-first approach
   const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
+    console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
+    
     const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
       text: segment.text,
       startTime: segment.startTime,
@@ -121,7 +123,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       confidence: 0.9
     }));
     
-    await saveTranscriptSegments(storageSegments, language);
+    try {
+      await saveTranscriptSegments(storageSegments, language);
+      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
+    } catch (error) {
+      console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
+      throw error; // Re-throw to show user the error
+    }
   };
 
   const languages = [
@@ -136,6 +144,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     { code: 'ko', name: 'Korean' },
   ];
 
+  // Generate original transcript and save to database with proper transcript record
   const generateOriginalTranscript = async () => {
       setIsGenerating(true);
       try {
@@ -253,12 +262,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       // Detect language from response and update state
       const detectedLanguage = data?.language || 'en';
       setSelectedLanguage(detectedLanguage);
-      saveTranscriptData(segments, detectedLanguage); // Save to storage
+      
+      // Save to database with proper transcript record (not just localStorage)
+      await saveTranscriptData(segments, detectedLanguage);
       onTranscriptUpdate?.(segments, detectedLanguage);
 
       toast({
         title: "Transcript Generated",
-        description: `Original transcript extracted in ${languages.find(l => l.code === detectedLanguage)?.name || detectedLanguage}`
+        description: `Generated ${segments.length} segments and saved to database`
       });
 
     } catch (error) {
@@ -346,11 +357,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       const audioDescription = adError ? [] : (adData?.descriptions || []);
 
-      setEditingTranscript(translatedSegments);
-      setSelectedLanguage(targetLanguage);
-      saveTranscriptData(translatedSegments, targetLanguage); // Save to storage
-      
-      onTranscriptUpdate?.(translatedSegments, targetLanguage);
+        setEditingTranscript(translatedSegments);
+        setSelectedLanguage(targetLanguage);
+        
+        // Save translated transcript to database with proper transcript record
+        await saveTranscriptData(translatedSegments, targetLanguage);
+        
+        onTranscriptUpdate?.(translatedSegments, targetLanguage);
       onContentGenerated?.({
         captions,
         audioDescription,
@@ -388,7 +401,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setUseWordLevelEditing(false); // Reset to segment-level editing by default
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingIndex === null) return;
     
     const updated = [...editingTranscript];
@@ -407,7 +420,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(updated);
     setEditingTranscript(sortedSegments);
-    saveTranscriptData(sortedSegments, selectedLanguage); // Save to storage
+    
+    // Save immediately to database with proper transcript record
+    await saveTranscriptData(sortedSegments, selectedLanguage);
     onTranscriptUpdate?.(sortedSegments, selectedLanguage); // Immediately apply to video player
     resetEditState();
   };
@@ -502,10 +517,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     startEditing(insertPosition);
   };
 
-  const deleteSegment = (index: number) => {
+  const deleteSegment = async (index: number) => {
     const updated = editingTranscript.filter((_, i) => i !== index);
     setEditingTranscript(updated);
-    saveTranscriptData(updated, selectedLanguage); // Save to storage
+    
+    // Save to database with proper transcript record
+    await saveTranscriptData(updated, selectedLanguage);
     onTranscriptUpdate?.(updated, selectedLanguage);
   };
 

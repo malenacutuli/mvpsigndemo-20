@@ -69,7 +69,7 @@ export const useVideoStorage = (videoId: string) => {
   // Save transcript segments to database with proper transaction handling
   const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
     if (!user) {
-      console.warn('User not authenticated, falling back to localStorage');
+      console.warn('⚠️ User not authenticated - transcript changes will be lost on page refresh');
       const fallbackData = { segments, language, timestamp: Date.now() };
       localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
       return;
@@ -79,8 +79,8 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      // Use the new upsert function that handles word-level data
-      console.log('💾 Saving transcript segments with word-level data:', segments.length, 'segments');
+      // Use the RPC function that creates proper transcript records
+      console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
       
       // Convert segments to the format expected by the database function
       const dbSegments = segments.map((segment, index) => ({
@@ -98,123 +98,127 @@ export const useVideoStorage = (videoId: string) => {
         confidence: segment.confidence || 0.95
       }));
 
+      // Create checksum for change detection
+      const checksum = btoa(JSON.stringify(dbSegments));
+
       const { error } = await supabase.rpc('upsert_transcript_segments', {
         p_video_id: videoId,
         p_language: language,
         p_created_by: user.id,
-        p_segments: dbSegments
+        p_segments: dbSegments,
+        p_checksum: checksum
       });
 
       if (error) throw error;
 
-      console.log('✅ Transcript segments with word-level data saved to database:', segments.length, 'segments');
+      console.log('✅ Transcript saved to database with proper transcript record:', segments.length, 'segments');
+      
+      // Clear any localStorage fallback since we have database record
+      localStorage.removeItem(`transcript_${videoId}_${language}`);
+      
     } catch (err) {
-      console.error('Failed to save transcript segments:', err);
+      console.error('❌ Failed to save transcript to database:', err);
       setError(err instanceof Error ? err.message : 'Failed to save transcript');
-      
-      // Fallback to localStorage
-      const fallbackData = { segments, language, timestamp: Date.now() };
-      localStorage.setItem(`transcript_${videoId}_${language}`, JSON.stringify(fallbackData));
-      console.log('📁 Transcript segments saved to localStorage as fallback');
-      
-      // Re-throw the error so the calling code knows it failed
-      throw err;
+      throw err; // Don't use localStorage fallback for authenticated users
     } finally {
       setLoading(false);
     }
   };
 
-  // Load transcript segments from database
+  // Load transcript segments from database (database-first approach)
   const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
-    if (!user) {
-      // Fallback to localStorage
-      const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          return data.segments || [];
-        } catch (error) {
-          console.error('Failed to parse localStorage transcript:', error);
-        }
-      }
-      return [];
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // 1) Look for a user-edited transcript for this video/language
-      const { data: transcripts, error: txError } = await supabase
-        .from('transcripts')
-        .select('id, updated_at')
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
-      if (txError) throw txError;
-
-      let data: any[] | null = null;
-
-      if (transcripts && transcripts.length > 0) {
-        // Use ONLY the saved edited transcript's segments
-        const transcriptId = transcripts[0].id;
-        const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
-          .select('*')
-          .eq('transcript_id', transcriptId)
-          .order('idx', { ascending: true })
-          .order('start_time', { ascending: true });
-
-        if (segErr) throw segErr;
-        data = segs || [];
-        console.log('🎯 Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
-      } else {
-        // No edited transcript found; fall back to base video-level segments only (exclude other transcripts)
-        const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
-          .select('*')
+      // For authenticated users, always prioritize database
+      if (user) {
+        // 1) Look for user-edited transcript for this video/language
+        const { data: transcripts, error: txError } = await supabase
+          .from('transcripts')
+          .select('id, updated_at')
           .eq('video_id', videoId)
           .eq('language', language)
-          .is('transcript_id', null)
-          .order('start_time', { ascending: true });
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
-        if (segErr) throw segErr;
-        data = segs || [];
-        console.log('🗄️ Using base video-level transcript segments (no edited transcript found). Count:', data.length);
+        if (txError) throw txError;
+
+        let data: any[] | null = null;
+
+        if (transcripts && transcripts.length > 0) {
+          // Use ONLY the latest edited transcript's segments
+          const transcriptId = transcripts[0].id;
+          const { data: segs, error: segErr } = await supabase
+            .from('transcript_segments')
+            .select('*')
+            .eq('transcript_id', transcriptId)
+            .order('idx', { ascending: true })
+            .order('start_time', { ascending: true });
+
+          if (segErr) throw segErr;
+          data = segs || [];
+          console.log('🎯 DATABASE: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+        } else {
+          // No edited transcript found; fall back to base video-level segments only
+          const { data: segs, error: segErr } = await supabase
+            .from('transcript_segments')
+            .select('*')
+            .eq('video_id', videoId)
+            .eq('language', language)
+            .is('transcript_id', null)
+            .order('start_time', { ascending: true });
+
+          if (segErr) throw segErr;
+          data = segs || [];
+          console.log('🗄️ DATABASE: Using base video-level transcript segments. Count:', data.length);
+        }
+
+        if (data && data.length > 0) {
+          const segments: TranscriptSegment[] = data.map(row => ({
+            id: row.id,
+            text: row.text,
+            startTime: row.start_time,
+            endTime: row.end_time,
+            speaker: row.speaker,
+            speakerColor: row.speaker_color,
+            emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
+            pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
+            words: row.words ? parseWordsData(row.words) : undefined,
+            isOffCamera: row.is_off_camera,
+            segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
+            confidence: row.confidence
+          }));
+
+          console.log('✅ DATABASE: Loaded transcript segments:', segments.length, 'segments');
+          // Clear localStorage since we have database data
+          localStorage.removeItem(`transcript_${videoId}_${language}`);
+          return segments;
+        }
       }
 
-      const segments: TranscriptSegment[] = (data || []).map(row => ({
-        id: row.id,
-        text: row.text,
-        startTime: row.start_time,
-        endTime: row.end_time,
-        speaker: row.speaker,
-        speakerColor: row.speaker_color,
-        emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-        pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
-        words: row.words ? parseWordsData(row.words) : undefined,
-        isOffCamera: row.is_off_camera,
-        segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
-        confidence: row.confidence
-      }));
-
-      console.log('📖 Loaded transcript segments (final source enforced):', segments.length, 'segments');
-      return segments;
-    } catch (err) {
-      console.error('Failed to load transcript segments:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load transcript');
-      // Fallback to localStorage
+      // Fallback to localStorage only for unauthenticated users or when no database data exists
+      console.log('📁 FALLBACK: Checking localStorage for transcript data');
       const saved = localStorage.getItem(`transcript_${videoId}_${language}`);
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          return data.segments || [];
+          const segments = (data.segments || []).map((seg: any) => ({
+            ...seg,
+            id: seg.id || `temp-${Date.now()}-${Math.random()}`
+          }));
+          console.log('📁 FALLBACK: Loaded from localStorage:', segments.length, 'segments');
+          return segments;
         } catch (error) {
           console.error('Failed to parse localStorage transcript:', error);
         }
       }
+      
+      console.log('📭 No transcript data found for video:', videoId, 'language:', language);
+      return [];
+    } catch (err) {
+      console.error('Failed to load transcript segments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load transcript');
       return [];
     } finally {
       setLoading(false);
