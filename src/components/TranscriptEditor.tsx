@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -221,7 +221,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     const updatedTranscript = [...editingTranscript];
     updatedTranscript[editingIndex] = updatedSegment;
-    setEditingTranscript(updatedTranscript);
+    startTransition(() => setEditingTranscript(updatedTranscript));
     setEditingIndex(null);
     
     // Removed auto-save to prevent UI freezes from frequent full saves.
@@ -257,7 +257,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     const updatedTranscript = [...editingTranscript];
     updatedTranscript.splice(afterIndex + 1, 0, newSegment);
-    setEditingTranscript(updatedTranscript);
+    startTransition(() => setEditingTranscript(updatedTranscript));
     
     // Start editing the new segment immediately
     setTimeout(() => startEditing(afterIndex + 1), 100);
@@ -274,7 +274,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
     
     const updatedTranscript = editingTranscript.filter((_, i) => i !== index);
-    setEditingTranscript(updatedTranscript);
+    startTransition(() => setEditingTranscript(updatedTranscript));
     
     toast({
       title: "Segment Deleted", 
