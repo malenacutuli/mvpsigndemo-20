@@ -656,7 +656,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
         playsInline
-        preload="auto"
+        preload="metadata"
         onError={(e) => {
           console.error('Video loading error:', e);
           console.log('Video src:', videoSrc);

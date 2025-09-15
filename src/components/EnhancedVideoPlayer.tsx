@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { AxessiblePlayer } from './AxessiblePlayer';
+import { CleanAxessiblePlayer } from './CleanAxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
@@ -644,18 +644,16 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   return (
     <div className="space-y-6">
-      <AxessiblePlayer
+      <CleanAxessiblePlayer
         videoSrc={videoSrc}
         posterSrc={posterSrc}
         title={title}
         videoId={videoId}
-        selectedVoice={selectedVoice}
-        selectedASLAvatar={selectedASLAvatar}
         contentType={contentType}
         className={className}
-        initialCaptions={captions}
-        dynamicDescriptions={audioDescriptions}
-        onTranscriptUpdate={handleTranscriptUpdate}
+        captions={captions}
+        audioDescriptions={audioDescriptions}
+        characters={characters}
       />
       
       {/* Content Generation and Management Controls */}
