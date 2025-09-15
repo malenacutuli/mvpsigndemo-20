@@ -59,6 +59,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [editingTranscript, setEditingTranscript] = useState<TranscriptSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
   const [showUploader, setShowUploader] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -273,6 +274,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   const saveAllChanges = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       console.log('💾 Saving all transcript changes to database...');
       
@@ -288,22 +291,17 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         pitch: seg.pitch || 'normal'
       })), selectedLanguage);
       
-      // Database already updated via saveTranscriptSegments (RPC upsert)
-      // Removed legacy save call to prevent duplicate rows and crashes
-      
       toast({
         title: "Changes Saved",
         description: "All transcript changes have been saved successfully.",
       });
 
-      // Notify the player in this tab to refresh
+      // Notify the player in this tab to refresh (single source of truth)
       try {
         window.dispatchEvent(new CustomEvent('transcript-saved', { detail: { videoId, language: selectedLanguage } }));
       } catch {}
       
-      if (onTranscriptUpdate) {
-        onTranscriptUpdate(editingTranscript);
-      }
+      // Avoid calling onTranscriptUpdate here to prevent double refresh/work
     } catch (error) {
       console.error('❌ Failed to save changes:', error);
       toast({
@@ -311,6 +309,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         description: "Failed to save changes. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -483,12 +483,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             <div className="flex gap-2 flex-wrap items-center">
               <Button
                 onClick={saveAllChanges}
-                disabled={editingTranscript.length === 0}
+                disabled={editingTranscript.length === 0 || isSaving}
                 size="sm"
                 variant="default"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Save Changes to Video
+                {isSaving ? 'Saving…' : 'Save Changes to Video'}
               </Button>
               
               <Select

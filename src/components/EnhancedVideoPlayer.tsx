@@ -536,6 +536,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   // Load saved data on component mount and language changes
   useEffect(() => {
+    let aborted = false;
     const loadSavedData = async () => {
       console.log('🔄 ENHANCED PLAYER: Loading database content for video:', videoId, 'language:', currentLanguage);
       
@@ -550,6 +551,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       try {
         // Try to load saved transcript from database with current language first
         let segments = await loadTranscriptSegments(currentLanguage);
+        if (aborted) return;
         console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments for language:', currentLanguage);
         
         if (segments.length === 0) {
@@ -563,13 +565,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         
         if (segments.length > 0) {
           console.log('🎯 ENHANCED PLAYER: Processing', segments.length, 'segments for video player');
-          console.log('🔍 First segment check:', segments[0] ? { 
-            startTime: segments[0].startTime, 
-            endTime: segments[0].endTime,
-            speaker: segments[0].speaker,
-            color: segments[0].speakerColor,
-            text: segments[0].text.substring(0, 30) + '...'
-          } : 'No segments');
 
           // Apply character mappings directly without complex processing
           const finalCaptions = segments.map(segment => ({
@@ -590,38 +585,37 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           })) as any[];
           
           console.log('✅ ENHANCED PLAYER: Final captions ready:', finalCaptions.length, 'segments');
-          console.log('🎨 Sample caption colors:', finalCaptions.slice(0, 3).map(c => ({ 
-            speaker: c.speaker, 
-            color: c.speakerColor 
-          })));
           
           // Set captions for the player
           setCaptions(finalCaptions);
+          if (aborted) return;
           
-          // Auto-detect language and update transcript
+          // Auto-detect language and update transcript (lightweight)
           const detectedLang = detectLanguageFromCaptions(finalCaptions);
           await handleTranscriptUpdate(finalCaptions, detectedLang);
         }
         
         // Load saved audio descriptions
         const descriptions = await loadAudioDescriptions(currentLanguage);
-        if (descriptions.length > 0) {
-          const convertedDescriptions = descriptions.map(desc => ({
-            id: desc.id || `ad-${Date.now()}-${Math.random()}`,
-            text: desc.description,
-            startTime: desc.startTime,
-            endTime: desc.endTime,
-            voiceStyle: 'warm' as const
-          }));
-          setAudioDescriptions(convertedDescriptions);
-        } else {
-          setAudioDescriptions([]);
+        if (!aborted) {
+          if (descriptions.length > 0) {
+            const convertedDescriptions = descriptions.map(desc => ({
+              id: desc.id || `ad-${Date.now()}-${Math.random()}`,
+              text: desc.description,
+              startTime: desc.startTime,
+              endTime: desc.endTime,
+              voiceStyle: 'warm' as const
+            }));
+            setAudioDescriptions(convertedDescriptions);
+          } else {
+            setAudioDescriptions([]);
+          }
         }
         
         // Load saved characters
         try {
           const chars = await loadCharacters();
-          if (chars && chars.length > 0) {
+          if (!aborted && chars && chars.length > 0) {
             setCharacters(chars);
             console.log('👥 Loaded characters from DB:', chars.length);
           }
@@ -630,14 +624,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         }
         
       } catch (error) {
-        console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
-        setCaptions([]);
+        if (!aborted) {
+          console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
+          setCaptions([]);
+        }
       }
     };
 
     if (videoId && currentLanguage) {
       loadSavedData();
     }
+
+    return () => {
+      aborted = true;
+    };
   }, [videoId, currentLanguage, loadTranscriptSegments, loadAudioDescriptions, loadCharacters]);
 
   return (
