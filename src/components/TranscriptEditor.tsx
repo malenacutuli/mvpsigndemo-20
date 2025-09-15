@@ -217,17 +217,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditingTranscript(updatedTranscript);
     setEditingIndex(null);
     
-    // Auto-save to storage
-    await saveTranscriptSegments(updatedTranscript.map(seg => ({
-      id: seg.id,
-      text: seg.text,
-      startTime: seg.startTime,
-      endTime: seg.endTime,
-      speaker: seg.speaker || '',
-      speakerColor: seg.speakerColor || '#E5E517',
-      emphasis: seg.emphasis || 'normal',
-      pitch: seg.pitch || 'normal'
-    })), selectedLanguage);
+    // Removed auto-save to prevent UI freezes from frequent full saves.
+    // Changes are kept locally until you click "Save Changes to Video" above.
+    // If needed, we can add an optional toggle to re-enable auto-save later.
+    // await saveTranscriptSegments(updatedTranscript.map(seg => ({
+    //   id: seg.id,
+    //   text: seg.text,
+    //   startTime: seg.startTime,
+    //   endTime: seg.endTime,
+    //   speaker: seg.speaker || '',
+    //   speakerColor: seg.speakerColor || '#E5E517',
+    //   emphasis: seg.emphasis || 'normal',
+    //   pitch: seg.pitch || 'normal'
+    // })), selectedLanguage);
   };
 
   const cancelEdit = () => {
