@@ -347,15 +347,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   };
 
-  // Listen for storage events to detect when transcript is saved
+  // Listen for explicit transcript save events to refresh data (avoid noisy storage listeners)
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && (e.key.includes(`transcript_${videoId}`) || e.key.includes(`characters_${videoId}`))) {
-        console.log('📢 Detected transcript/character changes, refreshing...');
-        setTimeout(forceRefreshTranscript, 100); // Small delay to ensure save is complete
-      }
-    };
-
     const handleTranscriptSaved = (e: Event) => {
       try {
         const detail = (e as CustomEvent<any>).detail || {};
@@ -368,10 +361,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       } catch {}
     };
     
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('transcript-saved', handleTranscriptSaved as EventListener);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('transcript-saved', handleTranscriptSaved as EventListener);
     };
   }, [videoId, currentLanguage]);
