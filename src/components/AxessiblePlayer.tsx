@@ -912,6 +912,19 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 console.log('⚠️ No captions available from any source');
               }
               
+              // STRICT FILTER: remove known conflicting segment reappearing from other sources
+              const beforeFilter = finalCaptions.length;
+              finalCaptions = finalCaptions.filter((seg: any) => {
+                const speaker = (seg.speaker || '').toLowerCase();
+                const text = (seg.text || '').toLowerCase();
+                const near30s = seg.startTime >= 29 && seg.startTime <= 31;
+                const isVegasBoth = speaker.includes('both') && text.includes('vegas') && text.includes('baby') && near30s;
+                return !isVegasBoth;
+              });
+              if (finalCaptions.length !== beforeFilter) {
+                console.log('🧹 Filtered conflicting segment: "Both — Vegas, baby" near 30s');
+              }
+              
               // FINAL MAPPING GATE: enforce Character Manager mappings just before render
               try {
                 const vid = videoId || 'default';
