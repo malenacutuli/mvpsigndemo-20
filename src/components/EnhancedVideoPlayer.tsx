@@ -860,7 +860,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           <div className="border rounded-lg p-4">
             <h3 className="text-lg font-semibold mb-4">Audio Description Generation</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Generate AI-powered audio descriptions for visual elements in the video.
+              Enable audio descriptions for visual elements in the video.
             </p>
             <AudioDescriptionEditor
               videoUrl={videoSrc}

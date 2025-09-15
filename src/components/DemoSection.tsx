@@ -23,7 +23,7 @@ export const DemoSection: React.FC = () => {
         "Complete 7-step pasta tutorial with detailed cooking instructions",
         "45+ seconds of comprehensive step-by-step cooking process", 
         "Programmatically generated Captions with Intention (CWI) for each cooking stage",
-        "AI-generated audio descriptions for visual cooking techniques",
+        "Professional audio descriptions for visual cooking techniques",
         "Dynamic color coding for ingredient preparation, cooking, and plating phases",
         "Synchronized ASL interpretation for culinary terminology and techniques"
       ],

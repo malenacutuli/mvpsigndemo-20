@@ -46,7 +46,7 @@ export default function Upload() {
                 </div>
                 <h3 className="font-semibold mb-2">Audio Descriptions</h3>
                 <p className="text-sm text-muted-foreground">
-                  Automatically generated audio descriptions timed perfectly with your content
+                  Professional audio descriptions timed perfectly with your content
                 </p>
               </div>
 

@@ -662,7 +662,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
-            AI Audio Description Generator ({detectedLanguage === 'es' ? 'Spanish' : 'English'})
+            Audio Description Editor ({detectedLanguage === 'es' ? 'Spanish' : 'English'})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

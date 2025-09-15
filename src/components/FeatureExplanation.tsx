@@ -22,7 +22,7 @@ export const FeatureExplanation: React.FC = () => {
           <h3 className="font-medium text-purple-400">Dynamic AD (Audio Description)</h3>
         </div>
         <p className="text-sm text-purple-200">
-          AI-generated audio descriptions of visual content for visually impaired users. 
+          Professional audio descriptions of visual content for visually impaired users. 
           Describes actions, scenes, and visual elements not covered by dialogue.
         </p>
       </Card>

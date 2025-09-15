@@ -1138,7 +1138,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleToggleDynamicAD}
-                title={dynamicADEnabled ? "Disable dynamic AD" : "Generate AI audio descriptions"}
+                title={dynamicADEnabled ? "Disable audio descriptions" : "Enable audio descriptions"}
                 className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-green-500/20' : ''}`}
                 disabled={isGeneratingAD}
               >

@@ -255,7 +255,7 @@
     "subtitle": "Create, customize, and manage your accessible video content",
     "uploadVideo": {
       "title": "Upload Video",
-      "description": "Upload your video and let AI generate captions, audio descriptions, and ASL support"
+      "description": "Upload your video and get professional captions, audio descriptions, and ASL support"
     },
     "myVideos": {
       "title": "My Videos",
@@ -388,7 +388,7 @@
       },
       "uploadVideo": {
         "title": "Upload Video", 
-        "description": "Upload your video and let AI generate captions, audio descriptions, and ASL support"
+        "description": "Upload your video and get professional captions, audio descriptions, and ASL support"
       },
       "manageVideos": {
         "title": "Manage Videos",
@@ -589,7 +589,7 @@
       "features": {
         "axessiblePlayer": "Axessible Player (CWI, AD, ASL)",
         "emotionTaggedCaptions": "Emotion-tagged Captions",
-        "aiAudioDescriptions": "AI Audio Descriptions",
+        "aiAudioDescriptions": "Audio Descriptions",
         "aslAvatarSupport": "ASL Avatar Support",
         "storage": "Storage",
         "videoProcessing": "Video Processing"
