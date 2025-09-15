@@ -150,7 +150,6 @@ export const useVideoStorage = (videoId: string) => {
         .select('id, updated_at')
         .eq('video_id', videoId)
         .eq('language', language)
-        .eq('created_by', user.id)
         .order('updated_at', { ascending: false })
         .limit(1);
 

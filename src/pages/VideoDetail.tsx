@@ -215,13 +215,48 @@ const VideoDetail = () => {
     if (!id) return;
     
     try {
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
-        .eq('video_id', id)
-        .order('start_time', { ascending: true });
+      const lang = video?.language || 'en';
 
-      if (error) throw error;
+      // First, fetch the latest edited transcript for this video/language
+      const { data: transcripts, error: txError } = await supabase
+        .from('transcripts')
+        .select('id, updated_at')
+        .eq('video_id', id)
+        .eq('language', lang)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (txError) throw txError;
+
+      let data: any[] | null = null;
+
+      if (transcripts && transcripts.length > 0) {
+        // Use ONLY the edited transcript's segments
+        const transcriptId = transcripts[0].id;
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('transcript_id', transcriptId)
+          .order('idx', { ascending: true })
+          .order('start_time', { ascending: true });
+
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🎯 VIDEO DETAIL: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+      } else {
+        // Fallback: base video-level segments only (exclude other transcripts)
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', id)
+          .eq('language', lang)
+          .is('transcript_id', null)
+          .order('start_time', { ascending: true });
+
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🗄️ VIDEO DETAIL: Using base video-level transcript segments. Count:', data.length);
+      }
 
       if (data && data.length > 0) {
         const captionSegments = data.map((seg, index) => ({
@@ -230,13 +265,15 @@ const VideoDetail = () => {
           startTime: Number(seg.start_time),
           endTime: Number(seg.end_time),
           speakerColor: seg.speaker_color || getSpeakerColor(index),
-          words: seg.text.split(' ').map((word, i) => ({
-            text: word,
-            startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
-            emphasis: 'normal' as const,
-            pitch: 'normal' as const,
-          })),
+          words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
+            ? seg.words
+            : seg.text.split(' ').map((word: string, i: number) => ({
+                text: word,
+                startTime: Number(seg.start_time) + (i * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+                endTime: Number(seg.start_time) + ((i + 1) * (Number(seg.end_time) - Number(seg.start_time)) / seg.text.split(' ').length),
+                emphasis: 'normal' as const,
+                pitch: 'normal' as const,
+              })),
           volume: 50,
           pitch: 160,
           type: 'dialogue' as const,
@@ -246,7 +283,7 @@ const VideoDetail = () => {
         setCaptions(captionSegments);
         
         // Build character colors map
-        const colors = data.reduce((acc, seg) => {
+        const colors = data.reduce((acc: { [key: string]: string }, seg: any) => {
           if (seg.speaker && seg.speaker_color) {
             acc[seg.speaker] = seg.speaker_color;
           }
@@ -254,7 +291,7 @@ const VideoDetail = () => {
         }, {} as { [key: string]: string });
         setCharacterColors(colors);
         
-        console.log('✅ Loaded captions for export:', captionSegments.length, 'segments');
+        console.log('✅ VIDEO DETAIL: Loaded captions for export:', captionSegments.length, 'segments');
       }
     } catch (error) {
       console.error('Error loading captions:', error);
