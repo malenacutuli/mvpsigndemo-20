@@ -721,10 +721,21 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           }
           
           // Auto-detect language and update transcript
-          const detectedLang = detectLanguageFromCaptions(convertedSegments);
-          console.log('🌐 Auto-detected language from transcript:', detectedLang);
-          
-          await handleTranscriptUpdate(convertedSegments, detectedLang);
+           const detectedLang = detectLanguageFromCaptions(convertedSegments);
+           console.log('🌐 Auto-detected language from transcript:', detectedLang);
+           
+           // Remove conflicting erroneous segment: ~30s, speaker "Both", text contains "Vegas" and "baby"
+           const filteredSegments = convertedSegments.filter(seg => {
+             const startsNear30 = seg.startTime >= 29 && seg.startTime <= 31;
+             const textMatch = /vegas.*baby/i.test(seg.text || '');
+             const speakerMatch = (seg.speaker || '').toLowerCase() === 'both';
+             return !(startsNear30 && textMatch && speakerMatch);
+           });
+           if (filteredSegments.length !== convertedSegments.length) {
+             console.log('🧹 Removed conflicting "Vegas, Baby" segment near 30s (speaker: Both)');
+           }
+           
+           await handleTranscriptUpdate(filteredSegments, detectedLang);
         } else {
           console.log('⚠️ ENHANCED PLAYER: No saved transcript found for language:', currentLanguage);
           
