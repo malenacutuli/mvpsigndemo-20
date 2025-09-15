@@ -582,14 +582,26 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Advanced speaker identification - use AssemblyAI if possible
-            console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification...');
-            try {
-              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
-              console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
-            } catch (error) {
-              console.warn('⚠️ Advanced speaker analysis failed, falling back to color stabilization:', error);
-              captionSegments = stabilizeSpeakerColors(captionSegments);
+            // 1. Advanced speaker identification - only if we don't already have trusted speakers from DB
+            const isGenericSpeaker = (name?: string) => {
+              if (!name) return true;
+              const n = name.toLowerCase().trim();
+              return n === 'speaker' || /^speaker\s*\d+$/.test(n) || n === 'unknown';
+            };
+            const trustedCount = captionSegments.filter(s => !isGenericSpeaker(s.speaker)).length;
+            const hasTrustedSpeakers = trustedCount >= Math.max(1, Math.floor(captionSegments.length * 0.5));
+
+            if (!hasTrustedSpeakers) {
+              console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification (no trusted speakers detected)...');
+              try {
+                captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
+                console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+              } catch (error) {
+                console.warn('⚠️ Advanced speaker analysis failed, keeping original speakers/colors:', error);
+                // On failure, do NOT override with generic colors; keep DB-derived values
+              }
+            } else {
+              console.log('🛑 Skipping diarization: using saved transcript speakers/colors');
             }
             
             // 2. Analyze vocal intensity ONCE if needed with improved audio handling
