@@ -101,19 +101,59 @@ const PublicVideo = () => {
         setVideoUrl(publicUrl);
       }
 
-      // Fetch transcript segments (accessible for public videos via RLS)
+      // Fetch transcript segments with edited transcript priority
       console.log('🔍 Fetching transcript segments for public video:', id);
-      const { data: segments, error: segmentsError } = await supabase
-        .from('transcript_segments')
-        .select('*')
+      
+      let segments: any[] | null = null;
+      
+      // First, look for the most recent edited transcript for this video/language
+      const { data: transcripts, error: txError } = await supabase
+        .from('transcripts')
+        .select('id, updated_at')
         .eq('video_id', id)
-        .order('start_time', { ascending: true });
+        .eq('language', video?.language || 'en')
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (segmentsError) {
-        console.error('❌ Error fetching transcript segments:', segmentsError);
-      } else {
-        console.log('✅ Successfully fetched transcript segments:', segments?.length || 0, 'segments');
+      if (txError) {
+        console.error('❌ Error fetching transcripts:', txError);
       }
+
+      if (transcripts && transcripts.length > 0) {
+        // Use ONLY the edited transcript's segments
+        const transcriptId = transcripts[0].id;
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('transcript_id', transcriptId)
+          .order('idx', { ascending: true })
+          .order('start_time', { ascending: true });
+
+        if (segErr) {
+          console.error('❌ Error fetching edited transcript segments:', segErr);
+        } else {
+          segments = segs || [];
+          console.log('🎯 Using edited transcript segments by transcript_id:', transcriptId, 'count:', segments.length);
+        }
+      } else {
+        // No edited transcript found; fall back to base video-level segments only
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', id)
+          .eq('language', video?.language || 'en')
+          .is('transcript_id', null)
+          .order('start_time', { ascending: true });
+
+        if (segErr) {
+          console.error('❌ Error fetching base transcript segments:', segErr);
+        } else {
+          segments = segs || [];
+          console.log('🗄️ Using base video-level transcript segments (no edited transcript found). Count:', segments.length);
+        }
+      }
+
+      console.log('✅ Successfully fetched transcript segments with source priority:', segments?.length || 0, 'segments');
 
       if (segments && segments.length > 0) {
         const formattedCaptions: CaptionSegment[] = segments.map(segment => ({
