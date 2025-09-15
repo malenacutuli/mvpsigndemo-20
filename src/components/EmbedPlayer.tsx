@@ -51,6 +51,31 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [showASL, setShowASL] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // Disable any native text tracks so only overlay captions are shown
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const disableTracks = () => {
+      try {
+        const list = v.textTracks;
+        if (list && list.length) {
+          for (let i = 0; i < list.length; i++) list[i].mode = 'disabled';
+        }
+        const tracks = v.querySelectorAll('track');
+        tracks.forEach(t => t.removeAttribute('default'));
+      } catch (e) {
+        console.warn('EMBED: Could not disable native text tracks:', e);
+      }
+    };
+    disableTracks();
+    v.addEventListener('loadedmetadata', disableTracks);
+    v.addEventListener('loadeddata', disableTracks);
+    return () => {
+      v.removeEventListener('loadedmetadata', disableTracks);
+      v.removeEventListener('loadeddata', disableTracks);
+    };
+  }, [videoSrc]);
+
   // Analytics tracking
   const [viewStartTime, setViewStartTime] = useState<number | null>(null);
   const [totalWatchTime, setTotalWatchTime] = useState(0);

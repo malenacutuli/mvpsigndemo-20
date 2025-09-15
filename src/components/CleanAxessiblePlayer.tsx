@@ -38,6 +38,31 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   
+  // Ensure only overlay captions are visible by disabling native tracks
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const disableTracks = () => {
+      try {
+        const list = v.textTracks;
+        if (list && list.length) {
+          for (let i = 0; i < list.length; i++) list[i].mode = 'disabled';
+        }
+        const tracks = v.querySelectorAll('track');
+        tracks.forEach(t => t.removeAttribute('default'));
+      } catch (e) {
+        console.warn('CLEAN PLAYER: Could not disable native text tracks:', e);
+      }
+    };
+    disableTracks();
+    v.addEventListener('loadedmetadata', disableTracks);
+    v.addEventListener('loadeddata', disableTracks);
+    return () => {
+      v.removeEventListener('loadedmetadata', disableTracks);
+      v.removeEventListener('loadeddata', disableTracks);
+    };
+  }, [videoSrc]);
+  
   // Accessibility toggles
   const [showCaptions, setShowCaptions] = useState(true);
   const [showAudioDescription, setShowAudioDescription] = useState(false);

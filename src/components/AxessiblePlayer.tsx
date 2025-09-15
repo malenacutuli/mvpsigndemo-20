@@ -116,7 +116,39 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   });
   
   // Hooks
+  // Hooks
   const isMobile = useIsMobile();
+
+  // Force-disable any native text tracks (in-band or <track>) so only our overlay captions show
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const disableTracks = () => {
+      try {
+        const list = v.textTracks;
+        if (list && list.length) {
+          for (let i = 0; i < list.length; i++) {
+            list[i].mode = 'disabled';
+          }
+        }
+        // Also disable any <track> default attributes if present
+        const tracks = v.querySelectorAll('track');
+        tracks.forEach(t => t.removeAttribute('default'));
+      } catch (e) {
+        console.warn('Could not disable native text tracks:', e);
+      }
+    };
+
+    disableTracks();
+    v.addEventListener('loadedmetadata', disableTracks);
+    v.addEventListener('loadeddata', disableTracks);
+
+    return () => {
+      v.removeEventListener('loadedmetadata', disableTracks);
+      v.removeEventListener('loadeddata', disableTracks);
+    };
+  }, [videoSrc]);
 
   // Detect orientation changes for mobile fullscreen
   useEffect(() => {
