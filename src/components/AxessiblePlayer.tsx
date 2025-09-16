@@ -1018,18 +1018,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-        {/* Audio Description - Overlay hidden on public pages; audio still plays */}
-        {showAudioDescription && (
-          <AudioDescription
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            contentType={contentType}
-            selectedVoice={selectedVoice}
-            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
-            language={currentLanguage}
-            showOverlay={false}
-          />
-        )}
+        {/* Audio Description - Overlay hidden; audio still plays */}
+        <AudioDescription
+          currentTime={currentTime}
+          isPlaying={isPlaying}
+          contentType={contentType}
+          selectedVoice={selectedVoice}
+          dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
+          language={currentLanguage}
+          showOverlay={false}
+        />
 
       {/* Control Overlay - Always visible on mobile for accessibility */}
       <div 
@@ -1127,33 +1125,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </Button>
             
             
-            {/* Audio Description */}
-            {/* Audio Description Toggle + Generate Button */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAudioDescription(!showAudioDescription)}
-                title="Toggle audio descriptions"
-                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showAudioDescription ? 'bg-accent/20 text-accent-foreground' : ''}`}
-              >
-                <Volume2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleToggleDynamicAD}
-                title={dynamicADEnabled ? "Disable audio descriptions" : "Enable audio descriptions"}
-                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${dynamicADEnabled ? 'bg-green-500/20' : ''}`}
-                disabled={isGeneratingAD}
-              >
-                {isGeneratingAD ? (
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
+            {/* Dubbing speed selection moved into SynchronizedDubbingPlayer */}
             
             {/* Sign Language Avatar */}
             <Button

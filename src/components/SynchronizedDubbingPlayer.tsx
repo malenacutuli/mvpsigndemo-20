@@ -13,6 +13,7 @@ interface DubbedAudio {
 
 interface SynchronizedDubbingPlayerProps {
   transcriptText?: string;
+  audioDescriptions?: Array<{ text: string; startTime: number; endTime: number; voiceStyle?: string }>;
   currentTime: number;
   isPlaying: boolean;
   onLanguageChange?: (language: string) => void;
@@ -34,6 +35,7 @@ const LANGUAGES = [
 
 export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps> = ({
   transcriptText = '',
+  audioDescriptions = [],
   currentTime,
   isPlaying,
   onLanguageChange,
@@ -45,19 +47,27 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const getSourceText = () => {
+    const t = (transcriptText || '').trim();
+    if (t) return t;
+    if (audioDescriptions && audioDescriptions.length) {
+      return audioDescriptions.map(s => s.text).join(' ');
+    }
+    return '';
+  };
 
   // Synchronize audio with video playback
   useEffect(() => {
     if (currentAudio && isEnabled) {
       const timeDiff = Math.abs(currentAudio.currentTime - currentTime);
-      
       // Sync if there's a significant difference (>0.5 seconds)
       if (timeDiff > 0.5) {
         currentAudio.currentTime = currentTime;
       }
-      
       if (isPlaying && currentAudio.paused) {
         currentAudio.play().catch(console.error);
       } else if (!isPlaying && !currentAudio.paused) {
@@ -65,6 +75,13 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       }
     }
   }, [currentTime, isPlaying, currentAudio, isEnabled]);
+
+  // Apply playback speed changes
+  useEffect(() => {
+    if (currentAudio) {
+      currentAudio.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, currentAudio]);
 
   const getVoiceForLanguage = (lang: string): string => {
     const voiceMap: { [key: string]: string } = {
@@ -83,7 +100,8 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   };
 
   const generateDubbing = async (language: string) => {
-    if (!transcriptText.trim()) return;
+    const source = getSourceText();
+    if (!source) return;
     
     setIsGenerating(true);
     try {
