@@ -1094,6 +1094,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             <div className="flex items-center gap-1">
               <SynchronizedDubbingPlayer
                 transcriptText={generatedTranscript}
+                audioDescriptions={dynamicDescriptions?.length ? dynamicDescriptions : (generatedAD || [])}
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onLanguageChange={handleLanguageChange}

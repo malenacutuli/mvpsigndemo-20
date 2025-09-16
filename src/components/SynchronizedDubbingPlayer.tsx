@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { VolumeX, Volume2, Globe, Loader2 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { VolumeX, Volume2, Globe, Loader2, Gauge } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface DubbedAudio {
@@ -107,7 +108,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     try {
       const { data, error } = await supabase.functions.invoke('generate-dubbing', {
         body: {
-          text: transcriptText,
+          text: source,
           targetLanguage: language,
           voiceId: getVoiceForLanguage(language)
         }
@@ -124,7 +125,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       const newDubbedAudio: DubbedAudio = {
         language,
         audioUrl,
-        translatedText: data.translatedText || transcriptText
+        translatedText: data.translatedText || source
       };
 
       setDubbedAudios(prev => {
@@ -158,6 +159,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       const audio = new Audio(existingAudio.audioUrl);
       audio.currentTime = currentTime;
       audio.muted = isMuted;
+      audio.playbackRate = playbackSpeed;
       setCurrentAudio(audio);
       setIsEnabled(true);
       audioRef.current = audio;
@@ -175,6 +177,7 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         const audio = new Audio(newAudio.audioUrl);
         audio.currentTime = currentTime;
         audio.muted = isMuted;
+        audio.playbackRate = playbackSpeed;
         setCurrentAudio(audio);
         setIsEnabled(true);
         audioRef.current = audio;
@@ -193,11 +196,11 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     return LANGUAGES.find(lang => lang.code === code)?.name || code.toUpperCase();
   };
 
-  if (!transcriptText.trim()) {
+  if (!getSourceText().trim()) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <Globe className="w-4 h-4 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Generate transcript first for dubbing</span>
+        <span className="text-xs text-muted-foreground">No content available for dubbing</span>
       </div>
     );
   }
@@ -226,6 +229,24 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
 
       {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && (
         <div className="flex items-center gap-1">
+          {/* Speed Control */}
+          {currentAudio && (
+            <div className="flex items-center gap-1">
+              <Gauge className="w-3 h-3 text-primary-foreground" />
+              <div className="w-16">
+                <Slider
+                  value={[playbackSpeed]}
+                  onValueChange={(value) => setPlaybackSpeed(value[0])}
+                  min={0.7}
+                  max={1.25}
+                  step={0.05}
+                  className="h-1"
+                />
+              </div>
+              <span className="text-xs text-primary-foreground min-w-[2rem]">{playbackSpeed.toFixed(2)}x</span>
+            </div>
+          )}
+          
           {isEnabled && (
             <Badge variant="secondary" className="text-xs px-2 py-0">
               Dubbed
