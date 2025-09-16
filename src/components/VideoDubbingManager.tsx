@@ -11,13 +11,20 @@ interface VideoDubbingManagerProps {
   videoUrl?: string;
   originalLanguage?: string;
   transcriptText?: string;
+  audioDescriptions?: Array<{
+    text: string;
+    startTime: number;
+    endTime: number;
+    voiceStyle?: string;
+  }>;
 }
 
 export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
   videoId,
   videoUrl,
   originalLanguage,
-  transcriptText
+  transcriptText,
+  audioDescriptions
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -25,8 +32,9 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const generateDubbing = async () => {
-    if (!selectedLanguage || !transcriptText) {
-      toast.error('Please select a language and ensure transcript is available');
+    const sourceText = getSourceText();
+    if (!selectedLanguage || !sourceText) {
+      toast.error('Please select a language and ensure content is available for dubbing');
       return;
     }
 
@@ -34,7 +42,7 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
     try {
       const { data, error } = await supabase.functions.invoke('generate-dubbing', {
         body: {
-          text: transcriptText,
+          text: sourceText,
           targetLanguage: selectedLanguage,
           voiceId: getVoiceForLanguage(selectedLanguage)
         }
@@ -59,6 +67,19 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const getSourceText = () => {
+    if (transcriptText) {
+      return transcriptText;
+    }
+    
+    if (audioDescriptions && audioDescriptions.length > 0) {
+      // Combine all audio descriptions into a single text
+      return audioDescriptions.map(ad => ad.text).join(' ');
+    }
+    
+    return null;
   };
 
   const getVoiceForLanguage = (lang: string) => {
@@ -112,7 +133,7 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
             <SelectItem value="de">🇩🇪 German</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage || !transcriptText}>
+        <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage || !getSourceText()}>
           <Wand2 className="w-4 h-4 mr-2" />
           {isGenerating ? 'Generating...' : 'Generate Dubbing'}
         </Button>
@@ -136,10 +157,22 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
           </div>
         )}
 
-        {!transcriptText && (
+        {!getSourceText() && (
           <p className="text-sm text-muted-foreground">
-            Generate a transcript first to enable dubbing
+            Generate a transcript or audio descriptions to enable dubbing
           </p>
+        )}
+
+        {transcriptText && (
+          <div className="text-xs text-muted-foreground">
+            Source: Video Transcript
+          </div>
+        )}
+
+        {!transcriptText && audioDescriptions && audioDescriptions.length > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Source: Audio Descriptions ({audioDescriptions.length} segments)
+          </div>
         )}
       </div>
     </Card>

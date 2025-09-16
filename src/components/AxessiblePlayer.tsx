@@ -1330,6 +1330,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   videoUrl={videoSrc}
                   originalLanguage={contentType === 'education' ? 'es' : 'en'}
                   transcriptText={generatedCaptions?.map(c => c.text).join(' ') || ''}
+                  audioDescriptions={dynamicDescriptions?.length ? dynamicDescriptions : (generatedAD || undefined)}
                 />
               </TabsContent>
               
