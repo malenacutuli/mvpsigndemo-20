@@ -138,8 +138,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         const resultData = data.result_data as any;
         if (resultData.speakers && Array.isArray(resultData.speakers)) {
           const cachedSpeakers = resultData.speakers.map((s: any) => s.name);
-          setAvailableSpeakers(cachedSpeakers);
-          console.log('📋 Loaded cached speakers:', cachedSpeakers);
+          // Merge into stable list
+          const merged = Array.from(new Set([...
+            (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []),
+            ...cachedSpeakers,
+          ].filter(Boolean))).sort();
+          setAvailableSpeakers(merged);
+          sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
+          console.log('📋 Loaded cached speakers:', merged);
         }
       }
     } catch (error) {
@@ -147,31 +153,72 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
+  // Load speakers from DB (transcript + mappings) and stabilize the list
+  const loadSpeakersFromDB = async () => {
+    try {
+      const speakersSet = new Set<string>();
+      // From transcript segments
+      const { data: segs } = await supabase
+        .from('transcript_segments')
+        .select('speaker')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .order('start_time');
+      (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
+
+      // From latest speaker mappings (keys)
+      const { data: mapRow } = await supabase
+        .from('speaker_mappings')
+        .select('mappings, updated_at')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const mappings = (mapRow?.mappings as Record<string, string>) || {};
+      Object.keys(mappings).forEach(k => speakersSet.add(k));
+
+      // Merge with cache and any previous stable list
+      const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
+      stable.forEach(s => speakersSet.add(s));
+
+      const merged = Array.from(speakersSet).filter(Boolean).sort();
+      if (merged.length > 0) {
+        setAvailableSpeakers(merged);
+        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
+        console.log('💿 Loaded speakers from DB/cache:', merged);
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed loading speakers from DB:', e);
+    }
+  };
+
   // Keep available speakers in sync with props
   useEffect(() => {
-    if (existingSpeakers && existingSpeakers.length > 0) {
-      const unique = Array.from(new Set(existingSpeakers.filter(Boolean))).sort();
-      // Only update if changed to avoid flicker/reset
-      const prev = availableSpeakers;
-      const changed = unique.length !== prev.length || unique.some((v, i) => v !== prev[i]);
-      if (changed) {
-        setAvailableSpeakers(unique);
-        console.log('🧩 Available speakers (from props):', unique);
+    const initOrMergeSpeakers = async () => {
+      if (existingSpeakers && existingSpeakers.length > 0) {
+        const unique = Array.from(new Set(existingSpeakers.filter(Boolean))).sort();
+        // Merge with any previously stabilized list to avoid flicker
+        const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
+        const merged = Array.from(new Set([...stable, ...unique])).sort();
+        setAvailableSpeakers(merged);
+        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
+        console.log('🧩 Available speakers (from props, stabilized):', merged);
         console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
-        
-        // Debug: Show full mapping details
         console.log('🔍 Final mapping gate debug:', {
           mapping: speakerMappings,
           charactersCount: characters.length,
           byName: characters.map(c => c.name),
-          sampleSpeakers: existingSpeakers.slice(0, 5)
+          sampleSpeakers: merged.slice(0, 5)
         });
+      } else {
+        // No speakers provided – load from cache and DB to build a stable list
+        await loadCachedSpeakerData();
+        await loadSpeakersFromDB();
       }
-    } else if (existingSpeakers && existingSpeakers.length === 0) {
-      // Handle case where no speakers are detected - load from speaker diarization cache
-      loadCachedSpeakerData();
-    }
-  }, [existingSpeakers]);
+    };
+    initOrMergeSpeakers();
+  }, [existingSpeakers, videoId, language]);
 
   // Load speaker mappings from database on mount
   // Track if we've loaded mappings for this video/language once to avoid overwriting user selections on re-renders

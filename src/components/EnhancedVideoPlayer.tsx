@@ -323,6 +323,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           console.warn('⚠️ ENHANCED PLAYER: loadCharacters failed inside handleTranscriptUpdate', e);
         }
       }
+
+      // Fallback: synthesize ephemeral characters from savedMappings if DB has none
+      if ((!availableChars || availableChars.length === 0) && savedMappings && Object.keys(savedMappings).length > 0) {
+        const targetNames = Array.from(new Set(Object.values(savedMappings).filter(Boolean)));
+        const palette = ['#E5E517','#17E5E5','#E51717','#E58017','#17E517','#E517E5','#E85C2E','#47C2EB','#EBC247','#5E82ED','#C2EB47','#8C6BED'];
+        const ephemeral = targetNames.map((name, idx) => ({ name, color: palette[idx % palette.length], type: 'main' }));
+        availableChars = ephemeral as any[];
+        setCharacters(ephemeral);
+        const colorMap: Record<string,string> = {};
+        ephemeral.forEach(c => { colorMap[c.name] = c.color; });
+        localStorage.setItem('character-colors', JSON.stringify(colorMap));
+        console.log('🧪 ENHANCED PLAYER: Using ephemeral characters from speaker_mappings:', ephemeral);
+      }
+
       const charByName: Record<string, any> = {};
       (availableChars || []).forEach((c: any) => { if (c?.name) charByName[c.name] = c; });
       

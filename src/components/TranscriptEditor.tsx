@@ -69,8 +69,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const [showIntensity, setShowIntensity] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [availableCharacters, setAvailableCharacters] = useState<{ name: string; color: string }[]>([]);
+  const [editApplyToAll, setEditApplyToAll] = useState(false);
   const { toast } = useToast();
-  const { saveTranscriptSegments, loadTranscriptSegments } = useVideoStorage(videoId);
+  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // Load saved transcript on component mount
