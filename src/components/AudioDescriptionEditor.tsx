@@ -362,9 +362,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     return scheduled;
   };
 
-  // Enhanced multi-frame analysis using GPT-5 Vision
+  // Enhanced multi-frame analysis using advanced vision models
   const generateEnhancedDescriptions = async (videoUrl: string, transcript: any[]): Promise<AudioDescriptionSegment[]> => {
-    console.log('🎯 Enhanced Analysis: Using GPT-5 Vision with multi-frame context');
+    console.log('🎯 Enhanced Analysis: Using advanced vision models with multi-frame context');
 
     // 1) Compute safe non-dialogue gaps
     const gaps = computeGaps(transcript);
@@ -426,7 +426,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       }
 
       const descriptions = enhancedResponse.data?.descriptions || [];
-      console.log('✅ Enhanced GPT-5 Vision generated', descriptions.length, 'contextual descriptions');
+      console.log('✅ Enhanced vision analysis generated', descriptions.length, 'contextual descriptions');
       
       return descriptions;
 
@@ -576,7 +576,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             contentType: 'general'
           }
         });
-        if (visualResponse.error) throw new Error(visualResponse.error.message || 'OpenAI analysis failed');
+        if (visualResponse.error) throw new Error(visualResponse.error.message || 'Analysis failed');
         return visualResponse.data?.descriptions || [];
       }
     } catch (e) {
@@ -614,11 +614,11 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
       setDescriptions(scheduled);
       onDescriptionsUpdate?.(scheduled);
-      toast.success(`OpenAI GPT-4o mini generated ${scheduled.length} descriptions`);
+      toast.success(`Generated ${scheduled.length} audio descriptions`);
       console.log('✅ Generated AD (scheduled):', scheduled);
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
-      toast.error('OpenAI generation failed - please try again.');
+      toast.error('Generation failed - please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -685,7 +685,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating with OpenAI GPT-4o mini...
+                Thinking...
               </>
             ) : (
               <>

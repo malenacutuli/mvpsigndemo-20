@@ -216,7 +216,7 @@
       "aiMachineLearning": {
         "title": "AI & Machine Learning",
         "description": "Advanced AI models for accessibility",
-        "technologies": ["Vision-Language Models", "Custom ASL Models", "LLM Integration"]
+        "technologies": ["Vision-Language Models", "Custom ASL Models", "AI Integration"]
       },
       "voiceAudio": {
         "title": "Voice & Audio",
