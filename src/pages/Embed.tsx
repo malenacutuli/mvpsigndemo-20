@@ -96,6 +96,8 @@ const Embed = () => {
 
       // Load captions
       await loadCaptions(videoData.id);
+      // Load audio descriptions
+      await loadAudioDescriptions(videoData.id);
 
     } catch (error) {
       console.error('Error loading embed video:', error);
@@ -145,6 +147,41 @@ const Embed = () => {
       }
     } catch (error) {
       console.error('Error loading captions:', error);
+    }
+  };
+
+  const loadAudioDescriptions = async (videoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('updated_at', { ascending: false })
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('Error loading audio descriptions:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const latestByWindow = new Map<string, any>();
+        for (const row of data) {
+          const key = `${Number(row.start_time).toFixed(2)}-${Number(row.end_time).toFixed(2)}`;
+          if (!latestByWindow.has(key)) latestByWindow.set(key, row);
+        }
+        const deduped = Array.from(latestByWindow.values()).sort((a, b) => Number(a.start_time) - Number(b.start_time));
+        const formatted = deduped.map(d => ({
+          text: d.description,
+          startTime: Number(d.start_time),
+          endTime: Number(d.end_time),
+          voiceStyle: 'warm' as const,
+          timestamp: Number(d.start_time)
+        }));
+        setAudioDescriptions(formatted);
+      }
+    } catch (e) {
+      console.error('Error loading audio descriptions:', e);
     }
   };
 

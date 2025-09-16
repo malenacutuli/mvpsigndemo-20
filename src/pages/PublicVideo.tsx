@@ -185,6 +185,7 @@ const PublicVideo = () => {
         .from('audio_descriptions')
         .select('*')
         .eq('video_id', id)
+        .order('updated_at', { ascending: false })
         .order('start_time', { ascending: true });
 
       if (audioDescError) {
@@ -194,8 +195,18 @@ const PublicVideo = () => {
       }
 
       if (audioDesc && audioDesc.length > 0) {
+        // Keep only the latest description per time window based on updated_at
+        const latestByWindow = new Map<string, any>();
+        for (const row of audioDesc) {
+          const key = `${Number(row.start_time).toFixed(2)}-${Number(row.end_time).toFixed(2)}`;
+          if (!latestByWindow.has(key)) {
+            latestByWindow.set(key, row);
+          }
+        }
+        const deduped = Array.from(latestByWindow.values()).sort((a, b) => Number(a.start_time) - Number(b.start_time));
+
         // Map DB rows to player format expected by AudioDescription component
-        const formatted = audioDesc.map(d => ({
+        const formatted = deduped.map(d => ({
           text: d.description,
           startTime: Number(d.start_time),
           endTime: Number(d.end_time),
@@ -203,7 +214,7 @@ const PublicVideo = () => {
           timestamp: Number(d.start_time),
         }));
         setAudioDescriptions(formatted);
-        console.log('✅ Audio descriptions set successfully:', formatted.length, 'descriptions');
+        console.log('✅ Audio descriptions set (deduped to latest):', formatted.length, 'descriptions');
       } else {
         console.log('⚠️ No audio descriptions found for video:', id);
       }
