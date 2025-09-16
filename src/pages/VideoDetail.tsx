@@ -422,9 +422,6 @@ const VideoDetail = () => {
                   </div>
                 </div>
               </div>
-              {video.description && (
-                <p className="text-muted-foreground">{video.description}</p>
-              )}
             </CardHeader>
             <CardContent>
               {videoUrl ? (
@@ -441,6 +438,13 @@ const VideoDetail = () => {
                     className="w-full"
                   />
                   
+                  {/* Video Description - Now below the video */}
+                  {video.description && (
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <h3 className="font-semibold mb-2">{t('videoDetail.description')}</h3>
+                      <p className="text-muted-foreground">{video.description}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
@@ -454,29 +458,37 @@ const VideoDetail = () => {
                 </div>
               )}
               
-              {/* Accessibility Information */}
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  {t('videoDetail.accessibility.title')}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{t('videoDetail.accessibility.captions')}</Badge>
-                    <span className="text-muted-foreground">AI-powered with emotional context</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{t('videoDetail.accessibility.audioDescription')}</Badge>
-                    <span className="text-muted-foreground">Celebrity-style narration</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{t('videoDetail.accessibility.signLanguage')}</Badge>
-                    <span className="text-muted-foreground">AI-animated sign language</span>
-                  </div>
+              {/* Immersive Features Section */}
+              <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Play className="w-5 h-5" />
+                  {t('videoDetail.immersiveFeatures')}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">CC</span>
+                      </div>
+                      <h3 className="font-semibold">Captions with Intention</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Emotional context and speaker identification</p>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 font-semibold text-sm">AD</span>
+                      </div>
+                      <h3 className="font-semibold">Audio Descriptions</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Describes visual elements for screen readers</p>
+                  </Card>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Use the accessibility controls in the video player to toggle these features on or off based on your preferences.
-                </p>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    {t('videoDetail.immersiveTip')}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

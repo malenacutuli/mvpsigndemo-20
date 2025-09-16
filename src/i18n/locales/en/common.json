@@ -660,6 +660,11 @@
     "language": "Language",
     "duration": "Duration",
     "createdAt": "Created",
+    "immersiveFeatures": "Immersive Features",
+    "immersiveTip": "Use the accessibility controls in the video player to toggle these features on or off based on your preferences.",
+    "unavailableTitle": "Video not available",
+    "unavailableGenerating": "The video is being processed and will be available shortly.",
+    "unavailableNoFile": "No video file found.",
     "accessibility": {
       "title": "Accessibility Features",
       "captions": "Smart Captions",
