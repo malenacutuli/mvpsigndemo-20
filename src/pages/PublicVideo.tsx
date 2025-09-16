@@ -194,8 +194,16 @@ const PublicVideo = () => {
       }
 
       if (audioDesc && audioDesc.length > 0) {
-        setAudioDescriptions(audioDesc);
-        console.log('✅ Audio descriptions set successfully:', audioDesc.length, 'descriptions');
+        // Map DB rows to player format expected by AudioDescription component
+        const formatted = audioDesc.map(d => ({
+          text: d.description,
+          startTime: Number(d.start_time),
+          endTime: Number(d.end_time),
+          voiceStyle: 'warm' as const,
+          timestamp: Number(d.start_time),
+        }));
+        setAudioDescriptions(formatted);
+        console.log('✅ Audio descriptions set successfully:', formatted.length, 'descriptions');
       } else {
         console.log('⚠️ No audio descriptions found for video:', id);
       }
