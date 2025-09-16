@@ -675,6 +675,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     if (onTranscriptUpdate) {
       onTranscriptUpdate(segments, language);
     }
+  };
+
   // Compute final captions with all mappings applied
   const finalCaptions = useMemo(() => {
     // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
