@@ -436,6 +436,8 @@ const VideoDetail = () => {
                     selectedASLAvatar={selectedASLAvatar}
                     contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                     className="w-full"
+                    isPublic={video.is_public}
+                    videoStatus={video.status}
                   />
                   
                   {/* Video Description - Now below the video */}

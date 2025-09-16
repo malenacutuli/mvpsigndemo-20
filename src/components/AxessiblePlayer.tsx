@@ -44,6 +44,8 @@ interface AxessiblePlayerProps {
   dynamicDescriptions?: any[];
   videoId?: string; // Add video ID for database operations
   onTranscriptUpdate?: (segments: any[], language: string) => void;
+  isPublic?: boolean;
+  videoStatus?: string;
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -58,6 +60,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   dynamicDescriptions,
   videoId,
   onTranscriptUpdate,
+  isPublic,
+  videoStatus,
 }) => {
   // Update captions when initialCaptions changes (from database)
   useEffect(() => {
@@ -1014,8 +1018,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-        {/* Audio Description */}
-        {showAudioDescription && (
+        {/* Audio Description - Hidden when video is published to prevent screen coverage */}
+        {showAudioDescription && !isPublic && (
           <AudioDescription
             currentTime={currentTime}
             isPlaying={isPlaying}

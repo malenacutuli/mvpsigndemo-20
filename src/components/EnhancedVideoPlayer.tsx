@@ -29,6 +29,8 @@ interface EnhancedVideoPlayerProps {
   contentType?: 'recipe' | 'education';
   className?: string;
   onTranscriptUpdate?: (segments: CaptionSegment[], language: string) => void;
+  isPublic?: boolean;
+  videoStatus?: string;
 }
 
 export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
@@ -41,7 +43,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   selectedASLAvatar,
   contentType = 'education',
   className = "",
-  onTranscriptUpdate
+  onTranscriptUpdate,
+  isPublic,
+  videoStatus
 }) => {
   console.log('🚨 ENHANCED VIDEO PLAYER LOADED - videoId:', videoId, 'language:', language);
   
@@ -848,6 +852,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         initialCaptions={captions}
         dynamicDescriptions={audioDescriptions}
         onTranscriptUpdate={handleTranscriptUpdate}
+        isPublic={isPublic}
+        videoStatus={videoStatus}
       />
       
       {/* Content Generation and Management Controls */}
