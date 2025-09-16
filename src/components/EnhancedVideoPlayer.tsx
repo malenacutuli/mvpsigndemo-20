@@ -409,16 +409,18 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
     const loadAudioDescriptions = async () => {
       try {
-        // Query for both 'es' and 'spanish' language values to handle inconsistency
+        console.log('🔄 Loading audio descriptions for video:', videoId, 'language:', currentLanguage);
+        
+        // Query for audio descriptions with broader language matching
         const { data, error } = await supabase
           .from('audio_descriptions')
           .select('*')
           .eq('video_id', videoId)
-          .in('language', [currentLanguage || 'en', 'spanish', 'es'])
+          .in('language', [currentLanguage || 'en', 'spanish', 'es', 'en']) // Always include 'en' as fallback
           .order('start_time');
 
         if (error) {
-          console.error('Error loading audio descriptions:', error);
+          console.error('❌ Error loading audio descriptions:', error);
           return;
         }
 
@@ -431,12 +433,35 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             timestamp: desc.start_time
           }));
           setAudioDescriptions(formattedDescriptions);
-          console.log('📢 Loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions');
+          console.log('✅ Loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions for published video');
         } else {
           console.log('📢 No audio descriptions found for video:', videoId, 'language:', currentLanguage);
+          // Try loading any audio descriptions regardless of language as fallback
+          try {
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('audio_descriptions')
+              .select('*')
+              .eq('video_id', videoId)
+              .order('start_time')
+              .limit(50);
+              
+            if (!fallbackError && fallbackData && fallbackData.length > 0) {
+              const fallbackDescriptions = fallbackData.map(desc => ({
+                text: desc.description,
+                startTime: desc.start_time,
+                endTime: desc.end_time,  
+                voiceStyle: 'warm' as const,
+                timestamp: desc.start_time
+              }));
+              setAudioDescriptions(fallbackDescriptions);
+              console.log('✅ Loaded fallback audio descriptions:', fallbackDescriptions.length, 'descriptions');
+            }
+          } catch (fallbackError) {
+            console.error('❌ Fallback audio description loading failed:', fallbackError);
+          }
         }
       } catch (error) {
-        console.error('Failed to load audio descriptions:', error);
+        console.error('❌ Failed to load audio descriptions:', error);
       }
     };
 
