@@ -304,7 +304,7 @@ const Index = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8">
               <div className="flex items-center space-x-3 mb-4 md:mb-0">
                 <img
-                  src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
+                  src="/assets/axessible-logo.png"
                   alt="Axessible"
                   className="h-8 w-auto"
                 />

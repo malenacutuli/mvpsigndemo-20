@@ -22,7 +22,7 @@ export const Navigation: React.FC = () => {
           <div className="flex items-center mr-4">
             <Link to="/" className="flex items-center space-x-3">
               <img
-                src="/lovable-uploads/69bee058-9d55-465d-bec0-0156468ba560.png"
+                src="/assets/axessible-logo.png"
                 alt="Axessible"
                 className="h-10 sm:h-12 w-auto object-contain flex-shrink-0 drop-shadow-sm"
                 loading="lazy"
