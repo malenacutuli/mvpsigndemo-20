@@ -194,12 +194,13 @@ const Embed = () => {
     }
   };
 
-  const loadAudioDescriptions = async (videoId: string) => {
+  const loadAudioDescriptions = async (videoId: string, lang: string) => {
     try {
       const { data, error } = await supabase
         .from('audio_descriptions')
         .select('*')
         .eq('video_id', videoId)
+        .eq('language', lang)
         .order('updated_at', { ascending: false })
         .order('start_time', { ascending: true });
 
@@ -293,6 +294,7 @@ const Embed = () => {
         audioDescriptions={audioDescriptions}
         characters={characters}
         contentType={video.content_type === 'recipe' ? 'recipe' : 'education'}
+        selectedVoice={selectedVoice}
         settings={video.embed_settings || {}}
       />
     </div>

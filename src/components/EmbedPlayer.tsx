@@ -18,6 +18,7 @@ interface EmbedPlayerProps {
   audioDescriptions?: any[];
   characters?: any[];
   contentType?: 'recipe' | 'education';
+  selectedVoice?: { id: string; name: string; description: string };
   settings?: {
     autoplay?: boolean;
     controls?: boolean;
@@ -36,6 +37,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   audioDescriptions = [],
   characters = [],
   contentType = 'education',
+  selectedVoice,
   settings = { autoplay: false, controls: true }
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -270,7 +272,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           currentTime={currentTime}
           isPlaying={isPlaying}
           contentType={contentType}
-          selectedVoice={{ id: 'Laura', name: 'Laura', description: 'Default voice' }}
+          selectedVoice={selectedVoice}
           dynamicDescriptions={audioDescriptions}
         />
       )}
