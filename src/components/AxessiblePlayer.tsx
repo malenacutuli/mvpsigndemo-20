@@ -13,7 +13,7 @@ import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
 import { LanguageSelector } from './LanguageSelector';
 import { VoiceCloningControls } from './VoiceCloningControls';
-import { SynchronizedDubbingPlayer } from './SynchronizedDubbingPlayer';
+import { SegmentBasedDubbingPlayer } from './SegmentBasedDubbingPlayer';
 import { FeatureExplanation } from './FeatureExplanation';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -675,7 +675,120 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     if (onTranscriptUpdate) {
       onTranscriptUpdate(segments, language);
     }
-  };
+  // Compute final captions with all mappings applied
+  const finalCaptions = useMemo(() => {
+    // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
+    let captions = [] as any[];
+    
+    if (initialCaptions && initialCaptions.length > 0) {
+      captions = initialCaptions;
+      console.log('🎯 Using DATABASE captions from initialCaptions:', captions.length, 'segments');
+    } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
+      captions = translatedContent.captions;
+      console.log('🌐 Using TRANSLATED captions:', captions.length, 'segments');
+    } else if (generatedCaptions && generatedCaptions.length > 0) {
+      captions = generatedCaptions;
+      console.log('🤖 Using GENERATED captions:', captions.length, 'segments');
+    } else {
+      captions = [];
+      console.log('⚠️ No captions available from any source');
+    }
+    
+    // STRICT FILTER: remove known conflicting segment reappearing from other sources
+    const beforeFilter = captions.length;
+    captions = captions.filter((seg: any) => {
+      const speaker = (seg.speaker || '').toLowerCase();
+      const text = (seg.text || '').toLowerCase();
+      const near30s = seg.startTime >= 29 && seg.startTime <= 31;
+      const isVegasBoth = speaker.includes('both') && text.includes('vegas') && text.includes('baby') && near30s;
+      return !isVegasBoth;
+    });
+    if (captions.length !== beforeFilter) {
+      console.log('🧹 Filtered conflicting segment: "Both — Vegas, baby" near 30s');
+    }
+    
+    // FINAL MAPPING GATE: enforce Character Manager mappings just before render
+    try {
+      const vid = videoId || 'default';
+      const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
+      const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
+      const byName: Record<string, any> = {};
+      (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
+      
+      console.log('🔍 Final mapping gate debug:', {
+        mapping,
+        charactersCount: characters.length,
+        byName: Object.keys(byName),
+        sampleSpeakers: captions.slice(0, 5).map(c => c.speaker)
+      });
+      
+      captions = captions.map((s: any, index: number) => {
+        try {
+          const mappedName = mapping?.[s.speaker];
+          const char = mappedName ? byName[mappedName] : byName[s.speaker];
+          
+          if (char) {
+            console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
+            return {
+              ...s,
+              speaker: char.name || s.speaker,  // Ensure speaker name exists
+              speakerColor: char.color || s.speakerColor,
+              isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
+            };
+          } else {
+            console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
+            // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
+            const lowercaseSpeaker = s.speaker?.toLowerCase();
+            const fallbackChar = Object.values(byName).find((c: any) => {
+              if (!c?.name) return false;
+              const charName = c.name.toLowerCase();
+              return charName === lowercaseSpeaker || 
+                     charName.includes(lowercaseSpeaker.substring(0, 4)) ||
+                     lowercaseSpeaker.includes(charName.substring(0, 4));
+            });
+            
+            if (fallbackChar) {
+              console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
+              return {
+                ...s,
+                speaker: fallbackChar.name || s.speaker,
+                speakerColor: fallbackChar.color || s.speakerColor,
+                isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
+              };
+            }
+          }
+          
+          // Return original segment if no character mapping found
+          return {
+            ...s,
+            speaker: s.speaker || 'Unknown',  // Ensure speaker exists
+            speakerColor: s.speakerColor || '#FFFFFF'  // Default color
+          };
+        } catch (segmentError) {
+          console.error('Error processing segment:', segmentError, s);
+          return {
+            ...s,
+            speaker: s.speaker || 'Unknown',
+            speakerColor: s.speakerColor || '#FFFFFF'
+          };
+        }
+      });
+    } catch (e) {
+      console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
+    }
+    
+    console.log('🎬 AxessiblePlayer computed final captions:', captions.length, 'segments');
+    console.log('🎯 First caption:', captions[0] ? {
+      speaker: captions[0].speaker,
+      color: captions[0].speakerColor,
+      emphasis: captions[0].words?.[0]?.emphasis,
+      pitch: captions[0].words?.[0]?.pitch,
+      text: captions[0].text?.substring(0, 50) + '...',
+      source: 'database-priority'
+    } : 'No captions');
+    
+    return captions;
+  }, [initialCaptions, translatedContent, generatedCaptions, videoId]);
 
   return (
     <div 
@@ -878,7 +991,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
       {/* Captions with Intention - Enhanced mobile fullscreen positioning */}
       {showCaptions && (
-        <div 
+        <div
           className={`absolute left-1/2 transform -translate-x-1/2 z-[60] pointer-events-none px-2 ${
             isMobileFullscreen 
               ? isLandscape 
@@ -900,119 +1013,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           }}
         >
           <CaptionsWithIntention 
-            captions={(() => {
-              // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
-              let finalCaptions = [] as any[];
-              
-              if (initialCaptions && initialCaptions.length > 0) {
-                finalCaptions = initialCaptions;
-                console.log('🎯 Using DATABASE captions from initialCaptions:', finalCaptions.length, 'segments');
-              } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
-                finalCaptions = translatedContent.captions;
-                console.log('🌐 Using TRANSLATED captions:', finalCaptions.length, 'segments');
-              } else if (generatedCaptions && generatedCaptions.length > 0) {
-                finalCaptions = generatedCaptions;
-                console.log('🤖 Using GENERATED captions:', finalCaptions.length, 'segments');
-              } else {
-                finalCaptions = [];
-                console.log('⚠️ No captions available from any source');
-              }
-              
-              // STRICT FILTER: remove known conflicting segment reappearing from other sources
-              const beforeFilter = finalCaptions.length;
-              finalCaptions = finalCaptions.filter((seg: any) => {
-                const speaker = (seg.speaker || '').toLowerCase();
-                const text = (seg.text || '').toLowerCase();
-                const near30s = seg.startTime >= 29 && seg.startTime <= 31;
-                const isVegasBoth = speaker.includes('both') && text.includes('vegas') && text.includes('baby') && near30s;
-                return !isVegasBoth;
-              });
-              if (finalCaptions.length !== beforeFilter) {
-                console.log('🧹 Filtered conflicting segment: "Both — Vegas, baby" near 30s');
-              }
-              
-              // FINAL MAPPING GATE: enforce Character Manager mappings just before render
-              try {
-                const vid = videoId || 'default';
-                const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
-                const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
-                const byName: Record<string, any> = {};
-                (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
-                
-                console.log('🔍 Final mapping gate debug:', {
-                  mapping,
-                  charactersCount: characters.length,
-                  byName: Object.keys(byName),
-                  sampleSpeakers: finalCaptions.slice(0, 5).map(c => c.speaker)
-                });
-                
-                finalCaptions = finalCaptions.map((s: any, index: number) => {
-                  try {
-                    const mappedName = mapping?.[s.speaker];
-                    const char = mappedName ? byName[mappedName] : byName[s.speaker];
-                    
-                    if (char) {
-                      console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
-                      return {
-                        ...s,
-                        speaker: char.name || s.speaker,  // Ensure speaker name exists
-                        speakerColor: char.color || s.speakerColor,
-                        isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
-                      };
-                    } else {
-                      console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
-                      // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
-                      const lowercaseSpeaker = s.speaker?.toLowerCase();
-                      const fallbackChar = Object.values(byName).find((c: any) => {
-                        if (!c?.name) return false;
-                        const charName = c.name.toLowerCase();
-                        return charName === lowercaseSpeaker || 
-                               charName.includes(lowercaseSpeaker.substring(0, 4)) ||
-                               lowercaseSpeaker.includes(charName.substring(0, 4));
-                      });
-                      
-                      if (fallbackChar) {
-                        console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
-                        return {
-                          ...s,
-                          speaker: fallbackChar.name || s.speaker,
-                          speakerColor: fallbackChar.color || s.speakerColor,
-                          isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
-                        };
-                      }
-                    }
-                    
-                    // Return original segment if no character mapping found
-                    return {
-                      ...s,
-                      speaker: s.speaker || 'Unknown',  // Ensure speaker exists
-                      speakerColor: s.speakerColor || '#FFFFFF'  // Default color
-                    };
-                  } catch (segmentError) {
-                    console.error('Error processing segment:', segmentError, s);
-                    return {
-                      ...s,
-                      speaker: s.speaker || 'Unknown',
-                      speakerColor: s.speakerColor || '#FFFFFF'
-                    };
-                  }
-                });
-              } catch (e) {
-                console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
-              }
-              
-              console.log('🎬 AxessiblePlayer passing captions to CaptionsWithIntention:', finalCaptions.length, 'segments');
-              console.log('🎯 First caption being passed:', finalCaptions[0] ? {
-                speaker: finalCaptions[0].speaker,
-                color: finalCaptions[0].speakerColor,
-                emphasis: finalCaptions[0].words?.[0]?.emphasis,
-                pitch: finalCaptions[0].words?.[0]?.pitch,
-                text: finalCaptions[0].text?.substring(0, 50) + '...',
-                source: 'database-priority'
-              } : 'No captions');
-              
-              return finalCaptions;
-            })()}
+            captions={finalCaptions}
             currentTime={currentTime}
             isVisible={showCaptions}
             screenHeight={window?.innerHeight || 1080}
@@ -1096,9 +1097,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           <div className="flex items-center gap-2">
             {/* Language & Dubbing */}
             <div className="flex items-center gap-1">
-              <SynchronizedDubbingPlayer
-                transcriptText={generatedTranscript}
-                audioDescriptions={dynamicDescriptions?.length ? dynamicDescriptions : (generatedAD || [])}
+              <SegmentBasedDubbingPlayer
+                segments={finalCaptions}
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onLanguageChange={handleLanguageChange}
