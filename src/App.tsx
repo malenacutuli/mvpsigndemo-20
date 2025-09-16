@@ -15,6 +15,7 @@ import VideoDetailWorkflow from "./pages/VideoDetailWorkflow";
 import Embed from "./pages/Embed";
 import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
+import Channel from "./pages/Channel";
 import { Auth } from "./pages/Auth";
 import Explore from "./pages/Explore";
 import PublicVideo from "./pages/PublicVideo";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/enterprise" element={<Enterprise />} />
             <Route path="/public" element={<PublicBoard />} />
             <Route path="/watch/:id" element={<PublicVideo />} />
+            <Route path="/channel/:id" element={<Channel />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />

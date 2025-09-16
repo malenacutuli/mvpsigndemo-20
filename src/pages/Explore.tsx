@@ -435,7 +435,9 @@ const Explore = () => {
                           )}
                         </div>
                         <div>
-                          <h3 className="text-xl font-semibold">{channel.name}</h3>
+                          <Link to={`/channel/${channel.id}`} className="hover:text-primary transition-colors">
+                            <h3 className="text-xl font-semibold cursor-pointer">{channel.name}</h3>
+                          </Link>
                           <p className="text-sm text-muted-foreground">
                             {formatViewCount(channel.subscriber_count)} {t('explore.subscribers')} • {channel.video_count} {t('explore.videos')}
                           </p>
@@ -519,7 +521,9 @@ const Explore = () => {
                           <User className="w-8 h-8 text-muted-foreground" />
                         </div>
                       )}
-                      <h3 className="text-xl font-semibold">{channel.name}</h3>
+                      <Link to={`/channel/${channel.id}`} className="hover:text-primary transition-colors">
+                        <h3 className="text-xl font-semibold cursor-pointer">{channel.name}</h3>
+                      </Link>
                       {channel.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {channel.description}
