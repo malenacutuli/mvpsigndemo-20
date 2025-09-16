@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Wand2, Download, Play } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Globe, Wand2, Download, Play, Gauge } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -30,6 +31,7 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [dubbingResult, setDubbingResult] = useState<any>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   const generateDubbing = async () => {
     const sourceText = getSourceText();
@@ -103,6 +105,7 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
   const playDubbing = () => {
     if (audioUrl) {
       const audio = new Audio(audioUrl);
+      audio.playbackRate = playbackSpeed;
       audio.play();
     }
   };
@@ -133,6 +136,28 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
             <SelectItem value="de">🇩🇪 German</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Speed Control */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Gauge className="w-4 h-4" />
+            <label className="text-sm font-medium">Playback Speed: {playbackSpeed}x</label>
+          </div>
+          <Slider
+            value={[playbackSpeed]}
+            onValueChange={(value) => setPlaybackSpeed(value[0])}
+            min={0.7}
+            max={1.25}
+            step={0.05}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>0.7x</span>
+            <span>1.0x (Normal)</span>
+            <span>1.25x</span>
+          </div>
+        </div>
+
         <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage || !getSourceText()}>
           <Wand2 className="w-4 h-4 mr-2" />
           {isGenerating ? 'Generating...' : 'Generate Dubbing'}

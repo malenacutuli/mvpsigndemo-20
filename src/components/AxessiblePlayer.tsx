@@ -1027,7 +1027,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             selectedVoice={selectedVoice}
             dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
             language={currentLanguage}
-            showOverlay={!isPublic}
+            showOverlay={false}
           />
         )}
 

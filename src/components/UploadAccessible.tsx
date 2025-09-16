@@ -303,6 +303,7 @@ export const UploadAccessible: React.FC = () => {
                     videoUrl={videoUrl || ""}
                     originalLanguage="en"
                     transcriptText={initialCaptions?.map(c => c.text).join(' ') || ""}
+                    audioDescriptions={[]} // No audio descriptions available in upload component yet
                   />
                 </TabsContent>
                 
