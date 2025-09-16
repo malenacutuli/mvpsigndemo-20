@@ -50,6 +50,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editStartTime, setEditStartTime] = useState<number>(0);
   const [editEndTime, setEditEndTime] = useState<number>(0);
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
+  const voiceOptions = [
+    { id: 'gordon-ramsay', name: 'Male (Gordon Ramsay style)', description: 'Authoritative, energetic' },
+    { id: 'anthony-bourdain', name: 'Male (Anthony Bourdain style)', description: 'Calm, sophisticated' },
+    { id: 'spanish-narrator-male', name: 'Male (Spanish narrator)', description: 'Neutral, clear Spanish' },
+    { id: 'julia-child', name: 'Female (Julia Child style)', description: 'Warm, encouraging' },
+    { id: 'spanish-narrator-female', name: 'Female (Spanish narrator)', description: 'Neutral, clear Spanish' },
+  ];
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
   const [showManualForm, setShowManualForm] = useState(false);
   const [manualStartTime, setManualStartTime] = useState<number>(0);
@@ -134,8 +141,23 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         }
       }
 
+      // Persist AD voice preference in videos.metadata
+      try {
+        const existingMeta = (videoData?.metadata as any) || {};
+        const updatedMeta = {
+          ...existingMeta,
+          ...(selectedVoice ? { ad_voice_id: selectedVoice.id, ad_voice_name: selectedVoice.name } : {})
+        };
+        await supabase
+          .from('videos')
+          .update({ metadata: updatedMeta })
+          .eq('id', videoId);
+      } catch (metaErr) {
+        console.warn('Could not update video metadata with AD voice preference:', metaErr);
+      }
+
       toast.success('Audio descriptions saved successfully');
-      console.log('✅ Saved', descriptionsToSave.length, 'audio descriptions to database');
+      console.log('✅ Saved', descriptionsToSave.length, 'audio descriptions to database with voice:', selectedVoice?.id);
     } catch (error) {
       console.error('Failed to save audio descriptions:', error);
       toast.error('Failed to save audio descriptions');
@@ -144,9 +166,21 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     }
   };
 
-  // Load descriptions on component mount
+  // Load descriptions on component mount and initialize voice selection
   useEffect(() => {
     loadExistingDescriptions();
+    // Initialize voice based on metadata or language
+    const meta = videoData?.metadata as any | undefined;
+    if (meta?.ad_voice_id && meta?.ad_voice_name) {
+      setSelectedVoice({ id: meta.ad_voice_id, name: meta.ad_voice_name, description: 'Preferred AD voice' });
+    } else {
+      // Sensible defaults by language
+      if (detectedLanguage === 'es') {
+        setSelectedVoice(voiceOptions.find(v => v.id === 'spanish-narrator-male') || voiceOptions[0]);
+      } else {
+        setSelectedVoice(voiceOptions.find(v => v.id === 'gordon-ramsay') || voiceOptions[0]);
+      }
+    }
   }, [videoId, detectedLanguage]);
 
   const formatTime = (seconds: number): string => {
@@ -355,6 +389,29 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             <p className="text-sm text-blue-800 dark:text-blue-200">
               We analyze the transcript to find silence windows and generate concise, creative descriptions for your video.
             </p>
+          </div>
+
+          {/* Audio Description Voice */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Audio Description Voice</Label>
+              <Select
+                value={selectedVoice?.id || ''}
+                onValueChange={(val) => {
+                  const v = voiceOptions.find(o => o.id === val) || null;
+                  setSelectedVoice(v);
+                }}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Choose voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {voiceOptions.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Button 
