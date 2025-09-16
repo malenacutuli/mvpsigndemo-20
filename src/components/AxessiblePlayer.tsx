@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles, Gauge, AudioLines } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -106,6 +106,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
+  const [adEnabled, setAdEnabled] = useState(false);
+  const [dubbingSpeed, setDubbingSpeed] = useState(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobileFullscreen, setIsMobileFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1018,16 +1020,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-        {/* Audio Description - Overlay hidden; audio still plays */}
-        <AudioDescription
-          currentTime={currentTime}
-          isPlaying={isPlaying}
-          contentType={contentType}
-          selectedVoice={selectedVoice}
-          dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
-          language={currentLanguage}
-          showOverlay={false}
-        />
+        {/* Audio Description - Controlled by adEnabled state */}
+        {adEnabled && (
+          <AudioDescription
+            currentTime={currentTime}
+            isPlaying={isPlaying}
+            contentType={contentType}
+            selectedVoice={selectedVoice}
+            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
+            language={currentLanguage}
+            showOverlay={false}
+          />
+        )}
 
       {/* Control Overlay - Always visible on mobile for accessibility */}
       <div 
@@ -1098,7 +1102,27 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onLanguageChange={handleLanguageChange}
+                playbackSpeed={dubbingSpeed}
+                onSpeedChange={setDubbingSpeed}
               />
+              
+              {/* Dubbing Speed Control - Next to Language Selection */}
+              {isDubbing && (
+                <div className="flex items-center gap-1 ml-1">
+                  <Gauge className="w-3 h-3 text-primary-foreground" />
+                  <div className="w-12">
+                    <Slider
+                      value={[dubbingSpeed]}
+                      onValueChange={(value) => setDubbingSpeed(value[0])}
+                      min={0.7}
+                      max={1.25}
+                      step={0.05}
+                      className="h-1"
+                    />
+                  </div>
+                  <span className="text-xs text-primary-foreground min-w-[2rem]">{dubbingSpeed.toFixed(2)}x</span>
+                </div>
+              )}
               
               {/* Original Audio Toggle (only show when dubbing is active) */}
               {isDubbing && (
@@ -1113,6 +1137,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 </Button>
               )}
             </div>
+            
+            {/* Audio Description */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAdEnabled(!adEnabled)}
+              title="Toggle audio description"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${adEnabled ? 'bg-accent/20 text-accent-foreground' : ''}`}
+            >
+              <AudioLines className="w-4 h-4" />
+            </Button>
             
             {/* Captions with Intention */}
             <Button

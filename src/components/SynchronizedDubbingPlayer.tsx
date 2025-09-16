@@ -19,6 +19,8 @@ interface SynchronizedDubbingPlayerProps {
   isPlaying: boolean;
   onLanguageChange?: (language: string) => void;
   className?: string;
+  playbackSpeed?: number;
+  onSpeedChange?: (speed: number) => void;
 }
 
 const LANGUAGES = [
@@ -229,24 +231,6 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
 
       {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && (
         <div className="flex items-center gap-1">
-          {/* Speed Control */}
-          {currentAudio && (
-            <div className="flex items-center gap-1">
-              <Gauge className="w-3 h-3 text-primary-foreground" />
-              <div className="w-16">
-                <Slider
-                  value={[playbackSpeed]}
-                  onValueChange={(value) => setPlaybackSpeed(value[0])}
-                  min={0.7}
-                  max={1.25}
-                  step={0.05}
-                  className="h-1"
-                />
-              </div>
-              <span className="text-xs text-primary-foreground min-w-[2rem]">{playbackSpeed.toFixed(2)}x</span>
-            </div>
-          )}
-          
           {isEnabled && (
             <Badge variant="secondary" className="text-xs px-2 py-0">
               Dubbed
