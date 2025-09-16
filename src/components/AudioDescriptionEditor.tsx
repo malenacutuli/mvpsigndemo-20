@@ -46,6 +46,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Default to Sarah (English)
+  const [editStartTime, setEditStartTime] = useState<number>(0);
+  const [editEndTime, setEditEndTime] = useState<number>(0);
   const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
 
@@ -626,6 +628,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     setEditingIndex(index);
     setEditText(descriptions[index].text);
     setEditVoiceStyle(descriptions[index].voiceStyle);
+    setEditStartTime(descriptions[index].startTime);
+    setEditEndTime(descriptions[index].endTime);
   };
 
   const saveEdit = () => {
@@ -636,7 +640,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       ...updatedDescriptions[editingIndex],
       text: editText,
       voiceStyle: editVoiceStyle,
-      endTime: updatedDescriptions[editingIndex].startTime + estimateDurationForText(editText)
+      startTime: editStartTime,
+      endTime: editEndTime
     };
 
     setDescriptions(updatedDescriptions);
@@ -699,6 +704,31 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   <div key={index} className="border rounded-lg p-3">
                     {editingIndex === index ? (
                       <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Start Time (seconds)</Label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={editStartTime}
+                              onChange={(e) => setEditStartTime(parseFloat(e.target.value) || 0)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">End Time (seconds)</Label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={editEndTime}
+                              onChange={(e) => setEditEndTime(parseFloat(e.target.value) || 0)}
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                        
                         <div>
                           <Label className="text-xs">Voice Style</Label>
                           <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>
