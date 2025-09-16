@@ -228,13 +228,14 @@ serve(async (req) => {
     console.log(`✅ Speaker diarization complete: ${speakerCounter} speakers identified, ${speakerSegments.length} segments`);
     console.log('🎨 Speaker metadata:', speakerMetadata);
 
-    // Step 5: Store results in Supabase for caching
+    // Step 5: Store results in Supabase and update transcript segments
     try {
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
+      // First, cache the results
       await supabase
         .from('content_generation_cache')
         .upsert({
@@ -257,8 +258,42 @@ serve(async (req) => {
         });
 
       console.log('💾 Results cached to database');
+
+      // Step 6: Apply speaker labels to existing transcript segments
+      console.log('🔄 Applying speaker labels to transcript segments...');
+      
+      for (const segment of speakerSegments) {
+        // Find matching transcript segments by time overlap
+        const { data: matchingSegments } = await supabase
+          .from('transcript_segments')
+          .select('id, start_time, end_time')
+          .eq('video_id', videoId)
+          .gte('start_time', segment.startTime - 0.5) // Allow 0.5s tolerance
+          .lte('end_time', segment.endTime + 0.5);
+
+        if (matchingSegments && matchingSegments.length > 0) {
+          // Update all matching segments with speaker info
+          const speakerIndex = parseInt(segment.speaker.split(' ')[1]) - 1;
+          const speakerColor = speakerColors[speakerIndex % speakerColors.length];
+          
+          for (const matchingSegment of matchingSegments) {
+            await supabase
+              .from('transcript_segments')
+              .update({
+                speaker: segment.speaker,
+                speaker_color: speakerColor
+              })
+              .eq('id', matchingSegment.id);
+          }
+          
+          console.log(`✅ Updated ${matchingSegments.length} segments for ${segment.speaker}`);
+        }
+      }
+
+      console.log('🎯 Speaker diarization and segment updates complete');
+      
     } catch (dbError) {
-      console.warn('⚠️ Failed to cache results:', dbError);
+      console.warn('⚠️ Failed to cache results or update segments:', dbError);
       // Continue anyway - caching is optional
     }
 

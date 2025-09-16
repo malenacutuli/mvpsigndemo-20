@@ -123,6 +123,30 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   }, [videoId]);
   const { toast } = useToast();
 
+  // Load cached speaker data when no speakers are provided from transcript
+  const loadCachedSpeakerData = async () => {
+    try {
+      const { data } = await supabase
+        .from('content_generation_cache')
+        .select('result_data')
+        .eq('video_id', videoId)
+        .eq('content_type', 'speaker_diarization')
+        .eq('language', language)
+        .single();
+
+      if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
+        const resultData = data.result_data as any;
+        if (resultData.speakers && Array.isArray(resultData.speakers)) {
+          const cachedSpeakers = resultData.speakers.map((s: any) => s.name);
+          setAvailableSpeakers(cachedSpeakers);
+          console.log('📋 Loaded cached speakers:', cachedSpeakers);
+        }
+      }
+    } catch (error) {
+      console.log('📋 No cached speaker data found');
+    }
+  };
+
   // Keep available speakers in sync with props
   useEffect(() => {
     if (existingSpeakers && existingSpeakers.length > 0) {
@@ -134,7 +158,18 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         setAvailableSpeakers(unique);
         console.log('🧩 Available speakers (from props):', unique);
         console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
+        
+        // Debug: Show full mapping details
+        console.log('🔍 Final mapping gate debug:', {
+          mapping: speakerMappings,
+          charactersCount: characters.length,
+          byName: characters.map(c => c.name),
+          sampleSpeakers: existingSpeakers.slice(0, 5)
+        });
       }
+    } else if (existingSpeakers && existingSpeakers.length === 0) {
+      // Handle case where no speakers are detected - load from speaker diarization cache
+      loadCachedSpeakerData();
     }
   }, [existingSpeakers]);
 
