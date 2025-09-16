@@ -16,6 +16,7 @@ interface Video {
   embed_domains: string[] | null;
   embed_token: string | null;
   embed_settings: any;
+  metadata?: any | null;
 }
 
 const Embed = () => {
@@ -28,6 +29,7 @@ const Embed = () => {
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | undefined>(undefined);
 
   const embedToken = searchParams.get('token');
 
@@ -82,6 +84,10 @@ const Embed = () => {
       }
 
       setVideo(videoData);
+      const meta = (videoData as any)?.metadata;
+      if (meta?.ad_voice_id && meta?.ad_voice_name) {
+        setSelectedVoice({ id: meta.ad_voice_id, name: meta.ad_voice_name, description: 'Preferred AD voice' });
+      }
 
       // Get video URL
       if (videoData.storage_path) {
@@ -95,9 +101,9 @@ const Embed = () => {
       }
 
       // Load captions
-      await loadCaptions(videoData.id);
+      await loadCaptions(videoData.id, videoData.language);
       // Load audio descriptions
-      await loadAudioDescriptions(videoData.id);
+      await loadAudioDescriptions(videoData.id, videoData.language);
 
     } catch (error) {
       console.error('Error loading embed video:', error);
@@ -107,39 +113,77 @@ const Embed = () => {
     }
   };
 
-  const loadCaptions = async (videoId: string) => {
+  const loadCaptions = async (videoId: string, lang: string) => {
     try {
-      const { data: segments, error } = await supabase
-        .from('transcript_segments')
-        .select('*')
+      // Prefer the latest edited transcript for the given language
+      const { data: transcripts, error: txError } = await supabase
+        .from('transcripts')
+        .select('id, updated_at')
         .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
+        .eq('language', lang)
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (error) {
-        console.error('Error loading captions:', error);
-        return;
+      if (txError) {
+        console.error('Error loading transcripts:', txError);
+      }
+
+      let segments: any[] | null = null;
+
+      if (transcripts && transcripts.length > 0) {
+        const transcriptId = transcripts[0].id;
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('transcript_id', transcriptId)
+          .order('idx', { ascending: true })
+          .order('start_time', { ascending: true });
+        if (segErr) {
+          console.error('Error loading edited transcript segments:', segErr);
+        } else {
+          segments = segs || [];
+        }
+      } else {
+        // Fallback to base video-level segments for the language
+        const { data: segs, error: segErr } = await supabase
+          .from('transcript_segments')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', lang)
+          .is('transcript_id', null)
+          .order('start_time', { ascending: true });
+        if (segErr) {
+          console.error('Error loading base transcript segments:', segErr);
+        } else {
+          segments = segs || [];
+        }
       }
 
       if (segments && segments.length > 0) {
         const captionSegments: CaptionSegment[] = segments.map(segment => {
-          const words = segment.text.split(' ').map((word, index, arr) => {
-            const duration = segment.end_time - segment.start_time;
-            const wordDuration = duration / arr.length;
-            return {
-              text: word,
-              startTime: segment.start_time + (index * wordDuration),
-              endTime: segment.start_time + ((index + 1) * wordDuration),
-              emphasis: 'normal' as const,
-              pitch: 'normal' as const,
-            };
-          });
+          const words: any[] = Array.isArray(segment.words) && segment.words.length > 0
+            ? segment.words
+            : String(segment.text || '')
+                .split(' ')
+                .map((word: string, index: number, arr: string[]) => {
+                  const duration = Number(segment.end_time) - Number(segment.start_time);
+                  const wordDuration = duration / Math.max(arr.length, 1);
+                  return {
+                    text: word,
+                    startTime: Number(segment.start_time) + (index * wordDuration),
+                    endTime: Number(segment.start_time) + ((index + 1) * wordDuration),
+                    emphasis: 'normal' as const,
+                    pitch: 'normal' as const,
+                  };
+                });
 
           return {
             text: segment.text,
             speaker: (segment.speaker || 'narrator') as any,
-            startTime: segment.start_time,
-            endTime: segment.end_time,
+            startTime: Number(segment.start_time),
+            endTime: Number(segment.end_time),
             words,
+            speakerColor: segment.speaker_color || '#3B82F6',
           };
         });
 

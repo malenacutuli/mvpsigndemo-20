@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
@@ -23,6 +23,7 @@ interface PublicVideo {
   view_count: number;
   published_at: string;
   created_at: string;
+  metadata?: any | null;
 }
 
 const PublicVideo = () => {
@@ -35,6 +36,14 @@ const PublicVideo = () => {
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [viewTracked, setViewTracked] = useState(false);
+
+  const selectedVoicePreference = useMemo(() => {
+    const meta = (video as any)?.metadata;
+    if (meta?.ad_voice_id && meta?.ad_voice_name) {
+      return { id: meta.ad_voice_id, name: meta.ad_voice_name, description: 'Preferred AD voice' } as const;
+    }
+    return undefined;
+  }, [video]);
 
   useEffect(() => {
     if (id) {
@@ -111,7 +120,7 @@ const PublicVideo = () => {
         .from('transcripts')
         .select('id, updated_at')
         .eq('video_id', id)
-        .eq('language', video?.language || 'en')
+        .eq('language', data.language || 'en')
         .order('updated_at', { ascending: false })
         .limit(1);
 
@@ -141,7 +150,7 @@ const PublicVideo = () => {
           .from('transcript_segments')
           .select('*')
           .eq('video_id', id)
-          .eq('language', video?.language || 'en')
+          .eq('language', data.language || 'en')
           .is('transcript_id', null)
           .order('start_time', { ascending: true });
 
@@ -185,6 +194,7 @@ const PublicVideo = () => {
         .from('audio_descriptions')
         .select('*')
         .eq('video_id', id)
+        .eq('language', data.language)
         .order('updated_at', { ascending: false })
         .order('start_time', { ascending: true });
 
@@ -374,7 +384,7 @@ const PublicVideo = () => {
               posterSrc={video.thumbnail_url || undefined}
               title={video.title}
               videoId={video.id}
-              selectedVoice={undefined}
+              selectedVoice={selectedVoicePreference}
               selectedASLAvatar={undefined}
               contentType={video.content_type as 'recipe' | 'education'}
               initialCaptions={captions}
