@@ -42,7 +42,9 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   currentTime,
   isPlaying,
   onLanguageChange,
-  className = ''
+  className = '',
+  playbackSpeed = 1.0,
+  onSpeedChange
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('original');
   const [dubbedAudios, setDubbedAudios] = useState<DubbedAudio[]>([]);
@@ -50,7 +52,6 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -79,9 +80,8 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     }
   }, [currentTime, isPlaying, currentAudio, isEnabled]);
 
-  // Apply playback speed changes
   useEffect(() => {
-    if (currentAudio) {
+    if (currentAudio && typeof playbackSpeed === 'number') {
       currentAudio.playbackRate = playbackSpeed;
     }
   }, [playbackSpeed, currentAudio]);
@@ -148,7 +148,10 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     
     if (language === 'en' || language === 'original') {
       // Original language or no selection
-      setCurrentAudio(null);
+      if (currentAudio) {
+        currentAudio.pause();
+        setCurrentAudio(null);
+      }
       setIsEnabled(false);
       return;
     }
@@ -157,11 +160,16 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     const existingAudio = dubbedAudios.find(audio => audio.language === language);
     
     if (existingAudio) {
+      // Stop previous
+      if (currentAudio) {
+        currentAudio.pause();
+        setCurrentAudio(null);
+      }
       // Load existing dubbed audio
       const audio = new Audio(existingAudio.audioUrl);
       audio.currentTime = currentTime;
       audio.muted = isMuted;
-      audio.playbackRate = playbackSpeed;
+      if (typeof playbackSpeed === 'number') audio.playbackRate = playbackSpeed;
       setCurrentAudio(audio);
       setIsEnabled(true);
       audioRef.current = audio;
@@ -176,10 +184,14 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
     if (selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original') {
       const newAudio = dubbedAudios.find(audio => audio.language === selectedLanguage);
       if (newAudio && !currentAudio) {
+        // Stop previous just in case
+        if (currentAudio) {
+          currentAudio.pause();
+        }
         const audio = new Audio(newAudio.audioUrl);
         audio.currentTime = currentTime;
         audio.muted = isMuted;
-        audio.playbackRate = playbackSpeed;
+        if (typeof playbackSpeed === 'number') audio.playbackRate = playbackSpeed;
         setCurrentAudio(audio);
         setIsEnabled(true);
         audioRef.current = audio;
@@ -224,6 +236,24 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
           ))}
         </SelectContent>
       </Select>
+
+      {/* Dubbing Speed Control */}
+      {selectedLanguage && selectedLanguage !== 'en' && selectedLanguage !== 'original' && (
+        <div className="flex items-center gap-1 ml-1">
+          <Gauge className="w-3 h-3 text-primary-foreground" />
+          <div className="w-12">
+            <Slider
+              value={[typeof playbackSpeed === 'number' ? playbackSpeed : 1.0]}
+              onValueChange={(value) => onSpeedChange?.(value[0])}
+              min={0.7}
+              max={1.25}
+              step={0.05}
+              className="h-1"
+            />
+          </div>
+          <span className="text-xs text-primary-foreground min-w-[2rem]">{(typeof playbackSpeed === 'number' ? playbackSpeed : 1.0).toFixed(2)}x</span>
+        </div>
+      )}
 
       {isGenerating && (
         <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" />

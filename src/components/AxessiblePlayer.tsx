@@ -13,7 +13,7 @@ import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
 import { LanguageSelector } from './LanguageSelector';
 import { VoiceCloningControls } from './VoiceCloningControls';
-import { SegmentBasedDubbingPlayer } from './SegmentBasedDubbingPlayer';
+import { SynchronizedDubbingPlayer } from './SynchronizedDubbingPlayer';
 import { FeatureExplanation } from './FeatureExplanation';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -1099,8 +1099,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           <div className="flex items-center gap-2">
             {/* Language & Dubbing */}
             <div className="flex items-center gap-1">
-              <SegmentBasedDubbingPlayer
-                segments={finalCaptions}
+              <SynchronizedDubbingPlayer
+                transcriptText={generatedTranscript}
+                audioDescriptions={dynamicDescriptions?.length ? dynamicDescriptions : (generatedAD || [])}
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onLanguageChange={handleLanguageChange}
@@ -1108,23 +1109,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 onSpeedChange={setDubbingSpeed}
               />
               
-              {/* Dubbing Speed Control - Next to Language Selection */}
-              {isDubbing && (
-                <div className="flex items-center gap-1 ml-1">
-                  <Gauge className="w-3 h-3 text-primary-foreground" />
-                  <div className="w-12">
-                    <Slider
-                      value={[dubbingSpeed]}
-                      onValueChange={(value) => setDubbingSpeed(value[0])}
-                      min={0.7}
-                      max={1.25}
-                      step={0.05}
-                      className="h-1"
-                    />
-                  </div>
-                  <span className="text-xs text-primary-foreground min-w-[2rem]">{dubbingSpeed.toFixed(2)}x</span>
-                </div>
-              )}
+              {/* Dubbing speed selection handled in SynchronizedDubbingPlayer */}
               
               {/* Original Audio Toggle (only show when dubbing is active) */}
               {isDubbing && (
