@@ -1018,8 +1018,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-        {/* Audio Description - Hidden when video is published to prevent screen coverage */}
-        {showAudioDescription && !isPublic && (
+        {/* Audio Description - Overlay hidden on public pages; audio still plays */}
+        {showAudioDescription && (
           <AudioDescription
             currentTime={currentTime}
             isPlaying={isPlaying}
@@ -1027,6 +1027,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             selectedVoice={selectedVoice}
             dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
             language={currentLanguage}
+            showOverlay={!isPublic}
           />
         )}
 

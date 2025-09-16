@@ -337,7 +337,6 @@ const PublicVideo = () => {
           Back to Public Board
         </Button>
 
-        {/* Video Header */}
         <div className="mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -364,16 +363,6 @@ const PublicVideo = () => {
               </div>
             </div>
           </div>
-          
-          {video.description && (
-            <Card>
-              <CardContent className="pt-4">
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {video.description}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Video Player */}
@@ -389,9 +378,21 @@ const PublicVideo = () => {
               contentType={video.content_type as 'recipe' | 'education'}
               initialCaptions={captions}
               dynamicDescriptions={audioDescriptions}
+              isPublic={true}
             />
           )}
         </div>
+
+        {/* Description Below Video */}
+        {video.description && (
+          <Card className="mb-8">
+            <CardContent className="pt-4">
+              <p className="text-muted-foreground whitespace-pre-wrap">
+                {video.description}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Immersive Features Info */}
         <Card>

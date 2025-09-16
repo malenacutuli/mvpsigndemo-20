@@ -17,6 +17,8 @@ interface AudioDescriptionProps {
   dynamicDescriptions?: AudioDescription[];
   // Language for TTS optimization
   language?: string;
+  // Control whether to render the on-screen overlay (audio still plays if false)
+  showOverlay?: boolean;
 }
 
 interface AudioDescription {
@@ -52,6 +54,7 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   selectedVoice,
   dynamicDescriptions,
   language = 'en',
+  showOverlay = true,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
@@ -61,14 +64,18 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
 
   // Helper to resolve ElevenLabs voice id based on content and language
   const resolveVoiceId = () => {
-    // Prioritize Spanish voices for Spanish content
-    if (language === 'es' || language === 'spanish') {
-      if (selectedVoice?.id && elevenVoices[selectedVoice.id]) return elevenVoices[selectedVoice.id];
-      return elevenVoices['spanish-narrator-female']; // Default Spanish voice
+    // If a specific voice ID is provided (e.g., ElevenLabs voice id), prefer it
+    if (selectedVoice?.id) {
+      // Use mapped friendly key if present, otherwise assume it's a direct ElevenLabs voice ID
+      return elevenVoices[selectedVoice.id] || selectedVoice.id;
     }
-    
-    // English content
-    if (selectedVoice?.id && elevenVoices[selectedVoice.id]) return elevenVoices[selectedVoice.id];
+
+    // Prioritize Spanish default for Spanish content when no explicit voice selected
+    if (language === 'es' || language === 'spanish') {
+      return elevenVoices['spanish-narrator-female'];
+    }
+
+    // Fallback to content defaults
     return defaultVoiceByContent[contentType];
   };
 
@@ -201,7 +208,7 @@ useEffect(() => {
     };
   }, [currentDescription, isPlaying, selectedVoice, contentType, language]);
 
-  if (!currentDescription) return null;
+  if (!showOverlay || !currentDescription) return null;
 
   const getVoiceStyleColor = (style: string) => {
     switch (style) {
