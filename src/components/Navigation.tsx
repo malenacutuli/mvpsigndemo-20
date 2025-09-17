@@ -66,6 +66,17 @@ export const Navigation: React.FC = () => {
               {t('nav.pricing')}
             </Link>
             
+            <Link 
+              to="/about" 
+              className={`text-base font-light transition-colors hover:text-primary ${
+                isActivePath('/about') 
+                  ? 'text-primary font-medium' 
+                  : 'text-slate-600'
+              }`}
+            >
+              {t('footer.about')}
+            </Link>
+            
             {user && (
               <>
                 <Link 
