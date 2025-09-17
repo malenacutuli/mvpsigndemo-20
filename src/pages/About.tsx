@@ -10,18 +10,6 @@ export const About: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      {/* Hero Section */}
-      <div className="container mx-auto px-6 pt-20 pb-16">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-tight mb-6">
-            Our AI research lab
-          </h1>
-          <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl">
-            Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
-          </p>
-        </div>
-      </div>
-
       {/* Mission Section */}
       <div className="container mx-auto px-6 py-16">
         <div className="max-w-6xl mx-auto">
@@ -51,6 +39,18 @@ export const About: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="container mx-auto px-6 pt-20 pb-16">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-tight mb-6">
+            Our AI research lab
+          </h1>
+          <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl">
+            Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
+          </p>
         </div>
       </div>
 
