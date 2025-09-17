@@ -35,18 +35,6 @@ export const About: React.FC = () => {
         </div>
       </div>
 
-      {/* Hero Section */}
-      <div className="container mx-auto px-6 pt-20 pb-16">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-tight mb-6">
-            Our AI research lab
-          </h1>
-          <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl">
-            Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
-          </p>
-        </div>
-      </div>
-
       {/* Data Quality Section */}
       <div className="py-20">
         <div className="container mx-auto px-6">
