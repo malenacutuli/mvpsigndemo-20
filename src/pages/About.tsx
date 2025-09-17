@@ -90,6 +90,13 @@ export const About: React.FC = () => {
       <div className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
+            {/* Description before image */}
+            <div className="text-center mb-16">
+              <p className="text-lg text-foreground font-light leading-relaxed max-w-4xl mx-auto">
+                We're developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
+              </p>
+            </div>
+            
             {/* Image Section */}
             <div className="mb-16">
               <img 
