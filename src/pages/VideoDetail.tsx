@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
+import { VoiceOption, findVoiceById } from "@/types/voice";
 
 interface Video {
   id: string;
@@ -31,12 +32,6 @@ interface Video {
   updated_at: string;
   is_public: boolean;
   channel_id: string | null;
-}
-
-interface VoiceOption {
-  id: string;
-  name: string;
-  description: string;
 }
 
 interface ASLOption {
@@ -59,11 +54,7 @@ const VideoDetail = () => {
   const { toast } = useToast();
   
   // Voice and ASL Avatar options for accessibility
-  const [selectedVoice, setSelectedVoice] = useState<VoiceOption>({
-    id: 'gordon-ramsay',
-    name: 'Gordon Ramsay Style',
-    description: 'Passionate cooking voice'
-  });
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>('gordon-ramsay');
   
   const [selectedASLAvatar] = useState<ASLOption>({
     id: 'chef-avatar',
@@ -434,7 +425,7 @@ const VideoDetail = () => {
                     title={video.title}
                     videoId={video.id}
                     language={video.language}
-                    selectedVoice={selectedVoice}
+                    selectedVoice={findVoiceById(selectedVoiceId) || { id: selectedVoiceId, name: selectedVoiceId, description: '' }}
                     selectedASLAvatar={selectedASLAvatar}
                     contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                     className="w-full"
@@ -491,11 +482,8 @@ const VideoDetail = () => {
                 
                 {/* Audio Description Voice Selector */}
                 <AudioDescriptionVoiceSelector
-                  selectedVoiceId={selectedVoice.id}
-                  onVoiceSelect={(voiceId) => {
-                    const newVoice = { id: voiceId, name: voiceId, description: '' };
-                    setSelectedVoice(newVoice);
-                  }}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceSelect={setSelectedVoiceId}
                   language={video.language}
                   contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                   className="mb-4"

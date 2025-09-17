@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { VoiceOption, getFilteredVoices, getCategoryColor, findVoiceById } from "@/types/voice";
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -49,24 +50,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('warm');
   const [editStartTime, setEditStartTime] = useState<number>(0);
   const [editEndTime, setEditEndTime] = useState<number>(0);
-  const [selectedVoice, setSelectedVoice] = useState<{ id: string; name: string; description: string } | null>(null);
-  const voiceOptions = [
-    { id: 'gordon-ramsay', name: 'Male (Gordon Ramsay style)', description: 'Authoritative, energetic' },
-    { id: 'anthony-bourdain', name: 'Male (Anthony Bourdain style)', description: 'Calm, sophisticated' },
-    { id: 'spanish-narrator-male', name: 'Male (Spanish narrator)', description: 'Neutral, clear Spanish' },
-    { id: 'julia-child', name: 'Female (Julia Child style)', description: 'Warm, encouraging' },
-    { id: 'spanish-narrator-female', name: 'Female (Spanish narrator)', description: 'Neutral, clear Spanish' },
-  ];
-  const [selectedModel, setSelectedModel] = useState<'openai' | 'huggingface' | 'enhanced'>('enhanced');
-  const [showManualForm, setShowManualForm] = useState(false);
-  const [manualStartTime, setManualStartTime] = useState<number>(0);
-  const [manualEndTime, setManualEndTime] = useState<number>(5);
-  const [manualText, setManualText] = useState('');
-  const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
   const detectedLanguage = videoData?.transcript_language || 'en';
+  const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
@@ -176,9 +162,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
     } else {
       // Sensible defaults by language
       if (detectedLanguage === 'es') {
-        setSelectedVoice(voiceOptions.find(v => v.id === 'spanish-narrator-male') || voiceOptions[0]);
+        setSelectedVoice(filteredVoices.find(v => v.accent === 'Spanish') || filteredVoices[0]);
       } else {
-        setSelectedVoice(voiceOptions.find(v => v.id === 'gordon-ramsay') || voiceOptions[0]);
+        setSelectedVoice(filteredVoices.find(v => v.id === 'gordon-ramsay') || filteredVoices[0]);
       }
     }
   }, [videoId, detectedLanguage]);
@@ -395,22 +381,31 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Audio Description Voice</Label>
-              <Select
-                value={selectedVoice?.id || ''}
-                onValueChange={(val) => {
-                  const v = voiceOptions.find(o => o.id === val) || null;
-                  setSelectedVoice(v);
-                }}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Choose voice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {voiceOptions.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select
+                  value={selectedVoice?.id || ''}
+                  onValueChange={(val) => {
+                    const v = filteredVoices.find(o => o.id === val) || null;
+                    setSelectedVoice(v);
+                  }}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Choose voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredVoices.map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{v.name}</span>
+                          {v.category && (
+                            <Badge variant="outline" className={getCategoryColor(v.category)}>
+                              {v.category}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
           </div>
 

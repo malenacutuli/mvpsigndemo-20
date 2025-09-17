@@ -20,11 +20,7 @@ import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-interface VoiceOption {
-  id: string;
-  name: string;
-  description: string;
-}
+import { VoiceOption } from "@/types/voice";
 
 interface ASLOption {
   id: string;

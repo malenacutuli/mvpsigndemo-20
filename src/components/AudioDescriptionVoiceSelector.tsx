@@ -4,16 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Play, Volume2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-interface VoiceOption {
-  id: string;
-  name: string;
-  description: string;
-  accent?: string;
-  gender: 'male' | 'female';
-  category: 'chef' | 'narrator' | 'education' | 'premium';
-  elevenLabsId: string;
-}
+import { VoiceOption, getFilteredVoices, getCategoryColor, findVoiceById } from "@/types/voice";
 
 interface AudioDescriptionVoiceSelectorProps {
   selectedVoiceId?: string;
@@ -23,49 +14,6 @@ interface AudioDescriptionVoiceSelectorProps {
   className?: string;
 }
 
-// Expanded voice options with more choices
-const VOICE_OPTIONS: VoiceOption[] = [
-  // Chef/Recipe Voices
-  { id: 'gordon-ramsay', name: 'Gordon Ramsay Style', description: 'Passionate, authoritative cooking voice', gender: 'male', category: 'chef', elevenLabsId: 'nPczCjzI2devNBz1zQrb' },
-  { id: 'julia-child', name: 'Julia Child Style', description: 'Warm, encouraging culinary guide', gender: 'female', category: 'chef', elevenLabsId: '9BWtsMINqrJLrRacOk9x' },
-  { id: 'anthony-bourdain', name: 'Anthony Bourdain Style', description: 'Sophisticated, worldly food narrator', gender: 'male', category: 'chef', elevenLabsId: 'JBFqnCBsd6RMkjVDRZzb' },
-  { id: 'jamie-oliver', name: 'Jamie Oliver Style', description: 'Enthusiastic, approachable chef', gender: 'male', category: 'chef', elevenLabsId: 'CwhRBWXzGAHq8TQ4Fs17' },
-  { id: 'ina-garten', name: 'Ina Garten Style', description: 'Calm, reassuring cooking mentor', gender: 'female', category: 'chef', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
-  
-  // Professional Narrators
-  { id: 'professional-male', name: 'Professional Male', description: 'Clear, authoritative narrator', gender: 'male', category: 'narrator', elevenLabsId: 'onwK4e9ZLuTAKqWW03F9' },
-  { id: 'professional-female', name: 'Professional Female', description: 'Warm, engaging narrator', gender: 'female', category: 'narrator', elevenLabsId: 'pFZP5JQG7iQjIQuC4Bku' },
-  { id: 'documentary-male', name: 'Documentary Style Male', description: 'David Attenborough inspired', gender: 'male', category: 'narrator', elevenLabsId: 'IKne3meq5aSn9XLyUdCD' },
-  { id: 'documentary-female', name: 'Documentary Style Female', description: 'Engaging documentary narrator', gender: 'female', category: 'narrator', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
-  
-  // Education Focused
-  { id: 'teacher-female', name: 'Teacher (Female)', description: 'Patient, educational tone', gender: 'female', category: 'education', elevenLabsId: 'cgSgspJ2msm6clMCkdW9' },
-  { id: 'teacher-male', name: 'Teacher (Male)', description: 'Encouraging, instructional voice', gender: 'male', category: 'education', elevenLabsId: 'TX3LPaxmHKxFdv7VOQHJ' },
-  { id: 'storyteller-female', name: 'Storyteller (Female)', description: 'Expressive, engaging storyteller', gender: 'female', category: 'education', elevenLabsId: 'XrExE9yKIg1WjnnlVkGX' },
-  { id: 'storyteller-male', name: 'Storyteller (Male)', description: 'Captivating story narrator', gender: 'male', category: 'education', elevenLabsId: 'bIHbv24MWmeRgasZH58o' },
-  
-  // Spanish Voices
-  { id: 'spanish-narrator-female', name: 'Spanish Narrator (Female)', description: 'Clear Spanish pronunciation', accent: 'Spanish', gender: 'female', category: 'education', elevenLabsId: 'pFZP5JQG7iQjIQuC4Bku' },
-  { id: 'spanish-narrator-male', name: 'Spanish Narrator (Male)', description: 'Professional Spanish voice', accent: 'Spanish', gender: 'male', category: 'education', elevenLabsId: 'JBFqnCBsd6RMkjVDRZzb' },
-  { id: 'spanish-warm-female', name: 'Spanish Warm (Female)', description: 'Warm, motherly Spanish voice', accent: 'Spanish', gender: 'female', category: 'education', elevenLabsId: 'cgSgspJ2msm6clMCkdW9' },
-  { id: 'spanish-energetic', name: 'Spanish Energetic', description: 'Energetic Spanish for children', accent: 'Spanish', gender: 'female', category: 'education', elevenLabsId: 'XrExE9yKIg1WjnnlVkGX' },
-  
-  // Premium Voices
-  { id: 'premium-aria', name: 'Aria (Premium)', description: 'Ultra-realistic female voice', gender: 'female', category: 'premium', elevenLabsId: '9BWtsMINqrJLrRacOk9x' },
-  { id: 'premium-roger', name: 'Roger (Premium)', description: 'Deep, resonant male voice', gender: 'male', category: 'premium', elevenLabsId: 'CwhRBWXzGAHq8TQ4Fs17' },
-  { id: 'premium-sarah', name: 'Sarah (Premium)', description: 'Sophisticated female narrator', gender: 'female', category: 'premium', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
-  { id: 'premium-charlie', name: 'Charlie (Premium)', description: 'Versatile male voice', gender: 'male', category: 'premium', elevenLabsId: 'IKne3meq5aSn9XLyUdCD' },
-];
-
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'chef': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'narrator': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'education': return 'bg-green-100 text-green-800 border-green-200';
-    case 'premium': return 'bg-purple-100 text-purple-800 border-purple-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
 
 export const AudioDescriptionVoiceSelector: React.FC<AudioDescriptionVoiceSelectorProps> = ({
   selectedVoiceId = 'gordon-ramsay',
@@ -74,30 +22,8 @@ export const AudioDescriptionVoiceSelector: React.FC<AudioDescriptionVoiceSelect
   contentType = 'recipe',
   className = '',
 }) => {
-  const selectedVoice = VOICE_OPTIONS.find(v => v.id === selectedVoiceId) || VOICE_OPTIONS[0];
-
-  // Filter voices based on language and content type
-  const getFilteredVoices = () => {
-    let voices = VOICE_OPTIONS;
-    
-    // Filter by language
-    if (language === 'es') {
-      voices = voices.filter(v => v.accent === 'Spanish' || v.category === 'premium');
-    } else {
-      voices = voices.filter(v => !v.accent || v.accent !== 'Spanish');
-    }
-    
-    // Prioritize by content type
-    voices.sort((a, b) => {
-      if (contentType === 'recipe' && a.category === 'chef' && b.category !== 'chef') return -1;
-      if (contentType === 'recipe' && b.category === 'chef' && a.category !== 'chef') return 1;
-      if (contentType === 'education' && a.category === 'education' && b.category !== 'education') return -1;
-      if (contentType === 'education' && b.category === 'education' && a.category !== 'education') return 1;
-      return 0;
-    });
-    
-    return voices;
-  };
+  const selectedVoice = findVoiceById(selectedVoiceId) || getFilteredVoices(language, contentType)[0];
+  const filteredVoices = getFilteredVoices(language, contentType);
 
   const testVoice = (voice: VoiceOption) => {
     const sampleText = contentType === 'recipe' 
@@ -112,7 +38,7 @@ export const AudioDescriptionVoiceSelector: React.FC<AudioDescriptionVoiceSelect
     }
   };
 
-  const filteredVoices = getFilteredVoices();
+  
 
   return (
     <Card className={className}>
