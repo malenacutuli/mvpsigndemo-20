@@ -52,7 +52,16 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editEndTime, setEditEndTime] = useState<number>(0);
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
   const detectedLanguage = videoData?.transcript_language || 'en';
-  const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
+const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
+
+  // Local UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualStartTime, setManualStartTime] = useState<number>(0);
+  const [manualEndTime, setManualEndTime] = useState<number>(5);
+  const [manualText, setManualText] = useState('');
+  const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
