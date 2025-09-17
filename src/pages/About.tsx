@@ -59,7 +59,7 @@ export const About: React.FC = () => {
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">The Power of Intentionality</h3>
                 <p className="text-foreground font-light leading-relaxed">
-                  Scraped internet content captures what people watch, but not why they created it. Our data, contributed by filmmakers, advertisers, and artists, is rich with creative purpose. This intentionality is the secret ingredient that allows our AVLM to go beyond a basic emotional fingerprint and understand the narrative beats, creative tropes, and emotional arcs that make content truly great.
+                  Scraped internet content captures what people watch, but not why they created it. Our data, contributed by filmmakers, advertisers, and artists, is rich with creative purpose. Our AVLM goes beyond a basic emotional fingerprint and understands the narrative beats, creative tropes, and emotional arcs that make content truly great.
                 </p>
               </div>
 
