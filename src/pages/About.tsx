@@ -66,7 +66,7 @@ export const About: React.FC = () => {
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">Built on Trust</h3>
                 <p className="text-foreground font-light leading-relaxed">
-                  By building our data set in collaboration with the creative community, we are creating a defensible moat that cannot be replicated by web scraping. Our data is not just a collection of pixels and audio waves; it is a repository of human creativity and emotion, annotated by the creators themselves. This proprietary dataset, combined with our strategic partnership with the Barcelona Supercomputing Center, will allow us to train a model with a level of depth and nuance no other company can achieve.
+                  Our data is not just a collection of pixels and audio waves; it is a repository of human creativity and emotion, annotated by the creators themselves. This proprietary dataset, combined with our strategic partnership with the Barcelona Supercomputing Center, will allow us to train a model with a level of depth and nuance no other company can achieve.
                 </p>
               </div>
             </div>
