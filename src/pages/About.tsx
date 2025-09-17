@@ -102,7 +102,7 @@ export const About: React.FC = () => {
                 Broader Use Cases & IP Strategy
               </h2>
               <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed mb-8">
-                The applications of an AVLM trained on a high-quality, creative-led dataset extend far beyond our initial product, Axessible. Our technology powers a new class of tools across diverse industries.
+                The applications of an AVLM trained on a high-quality, creative-led dataset extend far beyond our initial product, Axessvideo Platform. Our technology powers a new class of tools across diverse industries.
               </p>
             </div>
 
