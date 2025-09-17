@@ -153,11 +153,11 @@ export default function Pricing() {
       
       {/* Header */}
       <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">
+        <div className="text-center mb-12 max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             {t('pricing.title')}
           </h1>
-          <p className="text-lg text-muted-foreground mb-2">
+          <p className="text-lg md:text-xl text-muted-foreground mb-2 leading-relaxed">
             {t('pricing.subtitle')}
           </p>
           <p className="text-sm text-muted-foreground">
@@ -186,26 +186,26 @@ export default function Pricing() {
                 </Badge>
               )}
               
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center gap-2">
                   <span>{plan.name}</span>
                   {plan.highlight && <Star className="w-5 h-5 text-primary" />}
                 </CardTitle>
-                <div className="mt-2">
-                  <div className="text-3xl font-bold">{plan.price}</div>
-                  <div className="text-sm text-muted-foreground">{plan.cadence}</div>
+                <div className="mt-4">
+                  <div className="text-3xl md:text-4xl font-bold text-center">{plan.price}</div>
+                  <div className="text-sm text-muted-foreground text-center mt-1">{plan.cadence}</div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground text-center mt-2">
                   {plan.storage}
                 </div>
               </CardHeader>
 
-              <CardContent>
-                <ul className="space-y-2 mb-6">
+              <CardContent className="text-center">
+                <ul className="space-y-3 mb-6 text-left">
                   {plan.features.map((feature: string, index: number) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
+                      <span className="leading-relaxed">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -230,34 +230,34 @@ export default function Pricing() {
 
         {/* Feature Comparison Table */}
         <div className="bg-card rounded-lg border p-6">
-          <h3 className="text-2xl font-semibold mb-6">{t('pricing.featureComparison')}</h3>
+          <h3 className="text-2xl md:text-3xl font-semibold mb-6 text-center">{t('pricing.featureComparison')}</h3>
           
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium">{t('common.feature')}</th>
-                  <th className="text-center p-3 font-medium">{t('pricing.plans.starter.name')}</th>
-                  <th className="text-center p-3 font-medium">{t('pricing.plans.standard.name')}</th>
-                  <th className="text-center p-3 font-medium">{t('pricing.plans.advanced.name')}</th>
-                  <th className="text-center p-3 font-medium">{t('pricing.plans.enterprise.name')}</th>
+                  <th className="text-left p-4 font-semibold">{t('common.feature')}</th>
+                  <th className="text-center p-4 font-semibold">{t('pricing.plans.starter.name')}</th>
+                  <th className="text-center p-4 font-semibold">{t('pricing.plans.standard.name')}</th>
+                  <th className="text-center p-4 font-semibold">{t('pricing.plans.advanced.name')}</th>
+                  <th className="text-center p-4 font-semibold">{t('pricing.plans.enterprise.name')}</th>
                 </tr>
               </thead>
               <tbody>
                 {comparisonFeatures.map((category) => (
                   <tbody key={category.category}>
                     <tr>
-                      <td colSpan={5} className="p-3 font-medium text-primary bg-muted/50">
+                      <td colSpan={5} className="p-4 font-semibold text-primary bg-muted/50">
                         {category.category}
                       </td>
                     </tr>
                     {category.features.map((feature, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="p-3 text-sm">{feature.name}</td>
-                        <td className="p-3 text-center">{renderFeatureValue(feature.starter)}</td>
-                        <td className="p-3 text-center">{renderFeatureValue(feature.standard)}</td>
-                        <td className="p-3 text-center">{renderFeatureValue(feature.advanced)}</td>
-                        <td className="p-3 text-center">{renderFeatureValue(feature.enterprise)}</td>
+                      <tr key={index} className="border-b hover:bg-muted/20">
+                        <td className="p-4 text-sm font-medium">{feature.name}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.starter)}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.standard)}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.advanced)}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.enterprise)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -268,13 +268,14 @@ export default function Pricing() {
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-16 text-center">
-          <h3 className="text-2xl font-semibold mb-4">{t('pricing.questionsAboutPricing')}</h3>
-          <p className="text-muted-foreground mb-6">
+        <div className="mt-16 text-center max-w-2xl mx-auto">
+          <h3 className="text-2xl md:text-3xl font-semibold mb-4">{t('pricing.questionsAboutPricing')}</h3>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
             {t('pricing.teamHelpChoose')}
           </p>
           <Button 
             variant="outline"
+            size="lg"
             onClick={() => window.open('mailto:sales@axessible.com?subject=Pricing Questions', '_blank')}
           >
             {t('pricing.contactUs')}
