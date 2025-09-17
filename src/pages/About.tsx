@@ -19,7 +19,7 @@ export const About: React.FC = () => {
               <p className="text-lg text-foreground font-light leading-relaxed mb-8">
                 We are a technology company and a research lab developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 justify-center">
                 <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full">
                   Ethical AI
                 </div>
