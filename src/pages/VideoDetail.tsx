@@ -15,6 +15,7 @@ import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
+import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 
 interface Video {
   id: string;
@@ -58,7 +59,7 @@ const VideoDetail = () => {
   const { toast } = useToast();
   
   // Voice and ASL Avatar options for accessibility
-  const [selectedVoice] = useState<VoiceOption>({
+  const [selectedVoice, setSelectedVoice] = useState<VoiceOption>({
     id: 'gordon-ramsay',
     name: 'Gordon Ramsay Style',
     description: 'Passionate cooking voice'
@@ -487,6 +488,19 @@ const VideoDetail = () => {
                     <p className="text-sm text-muted-foreground">Describes visual elements for screen readers</p>
                   </Card>
                 </div>
+                
+                {/* Audio Description Voice Selector */}
+                <AudioDescriptionVoiceSelector
+                  selectedVoiceId={selectedVoice.id}
+                  onVoiceSelect={(voiceId) => {
+                    const newVoice = { id: voiceId, name: voiceId, description: '' };
+                    setSelectedVoice(newVoice);
+                  }}
+                  language={video.language}
+                  contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
+                  className="mb-4"
+                />
+                
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
                     {t('videoDetail.immersiveTip')}
