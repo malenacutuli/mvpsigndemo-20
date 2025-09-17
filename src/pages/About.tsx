@@ -17,11 +17,8 @@ export const About: React.FC = () => {
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
               The Human-Centric AI Lab
             </div>
-            <h1 className="text-6xl md:text-8xl font-bold mb-8 text-foreground leading-tight animate-fade-in">
-              About{' '}
-              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Axessible Labs
-              </span>
+            <h1 className="text-5xl md:text-7xl font-semibold mb-8 text-foreground leading-tight animate-fade-in">
+              About Axessible Labs
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed animate-fade-in">
               Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
@@ -43,7 +40,7 @@ export const About: React.FC = () => {
             <div className="relative p-12 md:p-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">Our Mission</h2>
+                  <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground">Our Mission</h2>
                   <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mb-8 rounded-full"></div>
                   <p className="text-lg text-muted-foreground leading-relaxed mb-8">
                     We're developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
@@ -78,7 +75,7 @@ export const About: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">Our Vision</h2>
+              <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground">Our Vision</h2>
               <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto mb-8 rounded-full"></div>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 AI systems as creative partners, not just automation tools
@@ -124,7 +121,7 @@ export const About: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground">
                 The Power of High-Quality Data
               </h2>
               <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto mb-8 rounded-full"></div>
@@ -142,7 +139,7 @@ export const About: React.FC = () => {
                   <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
                     <div className="w-6 h-6 bg-emerald-500 rounded-lg"></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-foreground">Ethical Data</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-foreground">Ethical Data</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Rights-first, voluntarily contributed dataset from creators using our platform. 
                     Clean, consented, and imbued with creative professional intentionality.
@@ -157,7 +154,7 @@ export const About: React.FC = () => {
                   <div className="w-12 h-12 bg-violet-500/20 rounded-2xl flex items-center justify-center mb-6">
                     <div className="w-6 h-6 bg-violet-500 rounded-lg"></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-foreground">Creative Intent</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-foreground">Creative Intent</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Data rich with creative purpose from filmmakers, advertisers, and artists. 
                     Understanding not just what people watch, but why creators made it.
@@ -172,7 +169,7 @@ export const About: React.FC = () => {
                   <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6">
                     <div className="w-6 h-6 bg-amber-500 rounded-lg"></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-foreground">Trust-Built Moat</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-foreground">Trust-Built Moat</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Defensible advantage through community collaboration. 
                     A repository of human creativity annotated by creators themselves.
@@ -189,7 +186,7 @@ export const About: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground">
                 Transforming Industries
               </h2>
               <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto mb-8 rounded-full"></div>
@@ -240,7 +237,7 @@ export const About: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+              <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground">
                 Intellectual Property Portfolio
               </h2>
               <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto mb-8 rounded-full"></div>
@@ -251,7 +248,7 @@ export const About: React.FC = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
                   <div className="w-8 h-8 bg-primary/50 rounded-lg"></div>
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-foreground">Emotion-Narrative Fusion</h3>
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Emotion-Narrative Fusion</h3>
                 <p className="text-muted-foreground">
                   Novel methods fusing emotional data with narrative structures beyond simple recognition.
                 </p>
@@ -261,7 +258,7 @@ export const About: React.FC = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
                   <div className="w-8 h-8 bg-secondary/50 rounded-lg"></div>
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-foreground">Explainable AI</h3>
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Explainable AI</h3>
                 <p className="text-muted-foreground">
                   Transparent analysis with real-time saliency maps and narrative critiques.
                 </p>
@@ -271,7 +268,7 @@ export const About: React.FC = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-accent/20 to-secondary/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
                   <div className="w-8 h-8 bg-accent/50 rounded-lg"></div>
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-foreground">Interactive Critique</h3>
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Interactive Critique</h3>
                 <p className="text-muted-foreground">
                   Two-way creator-AI conversation systems for collaborative iterative feedback.
                 </p>
@@ -286,11 +283,8 @@ export const About: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10"></div>
         <div className="relative container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-5xl md:text-6xl font-bold mb-8 text-foreground leading-tight">
-              Ready to Shape the Future of{' '}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Creative AI?
-              </span>
+            <h2 className="text-4xl md:text-5xl font-semibold mb-8 text-foreground leading-tight">
+              Ready to Shape the Future of Creative AI?
             </h2>
             <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-2xl mx-auto">
               Join us in revolutionizing how artificial intelligence understands and enhances human creativity.
