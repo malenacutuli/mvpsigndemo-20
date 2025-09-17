@@ -464,36 +464,40 @@ const Explore = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {channel.videos.slice(0, 4).map((video) => (
-                        <Link key={video.id} to={`/watch/${video.id}`}>
-                          <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                        <Link key={video.id} to={`/watch/${video.id}`} className="block">
+                          <Card className="group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-border hover:border-primary/20">
                             <div className="relative aspect-video overflow-hidden rounded-t-lg">
                               {video.thumbnail_url ? (
-                                <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <img 
+                                  src={video.thumbnail_url} 
+                                  alt={video.title} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                />
                               ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center">
-                                  <Video className="w-8 h-8 text-muted-foreground" />
+                                <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                                  <Video className="w-8 h-8 text-primary/40" />
                                 </div>
                               )}
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="bg-primary text-primary-foreground rounded-full p-2">
+                                <div className="bg-primary text-primary-foreground rounded-full p-3 shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
                                   <Play className="w-6 h-6 fill-current" />
                                 </div>
                               </div>
                               {video.duration_seconds && (
-                                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
                                   {formatDuration(video.duration_seconds)}
                                 </div>
                               )}
                             </div>
                             <CardContent className="p-4">
-                              <h4 className="font-medium line-clamp-2 mb-2 group-hover:text-primary transition-colors text-sm">
+                              <h4 className="font-medium line-clamp-2 mb-2 group-hover:text-primary transition-colors text-sm leading-tight">
                                 {video.title}
                               </h4>
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <div className="flex items-center gap-2">
                                   <Eye className="w-3 h-3" />
-                                  <span>{formatViewCount(video.view_count)}</span>
+                                  <span>{formatViewCount(video.view_count)} views</span>
                                 </div>
                                 <Badge variant="secondary" className="text-xs">
                                   {video.content_type}
