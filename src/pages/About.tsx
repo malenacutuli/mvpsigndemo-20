@@ -52,7 +52,7 @@ export const About: React.FC = () => {
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">Ethical Data</h3>
                 <p className="text-foreground font-light leading-relaxed">
-                  We are building our foundation on a rights-first, voluntarily contributed dataset. Through our flagship product, Axessible, we've created a virtuous cycle. Creators who use our platform to make their content compliant with new regulations are also giving us permission to learn from their work. This is the Trojan source of a dataset that is not only massive but is also clean, consented, and imbued with the intentionality of creative professionals.
+                  We are building our foundation on a rights-first, voluntarily contributed dataset. Through our flagship product, Axessible, we've created a virtuous cycle. Creators who use our platform to make their content compliant with new regulations are also giving us permission to learn from their work.
                 </p>
               </div>
 
