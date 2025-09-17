@@ -227,26 +227,15 @@ export const About: React.FC = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:200ms]">
-                <h3 className="text-lg font-bold mb-4 text-foreground">Emotion-Narrative Fusion</h3>
-                <p className="text-foreground font-light leading-relaxed">
-                  Our models that fuse emotional data with narrative structures in audiovisual content. This goes beyond simple emotion recognition and focuses on the system's ability to identify and analyze complex relationships, such as how emotional beats contribute to a story's overall plot.
-                </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default">
+                Emotion-Narrative Fusion
               </div>
-              
-              <div className="text-center p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:400ms]">
-                <h3 className="text-lg font-bold mb-4 text-foreground">Explainable AV-LM</h3>
-                <p className="text-foreground font-light leading-relaxed">
-                  A core component of our technology is its explainability. Our methods that make the AVLM's analysis transparent and understandable for human creators. This includes techniques for generating real-time saliency maps and narrative critiques that show why the model made a specific analysis, a capability that is crucial for creative professionals.
-                </p>
+              <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default">
+                Explainable AV-LM
               </div>
-              
-              <div className="text-center p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:600ms]">
-                <h3 className="text-lg font-bold mb-4 text-foreground">Interactive Creative Critique</h3>
-                <p className="text-foreground font-light leading-relaxed">
-                  We will also pursue patents for our user-facing systems that allow for a two-way conversation between the creator and the AI. This includes novel user interfaces and algorithms that turn the critique process into a collaborative, iterative loop, where the AI can suggest edits and the creator can provide feedback on the AI's analysis.
-                </p>
+              <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default">
+                Interactive Creative Critique
               </div>
             </div>
           </div>
