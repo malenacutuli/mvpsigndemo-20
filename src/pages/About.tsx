@@ -231,7 +231,7 @@ export const About: React.FC = () => {
               <div className="text-center p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:200ms]">
                 <h3 className="text-lg font-bold mb-4 text-foreground">Emotion-Narrative Fusion</h3>
                 <p className="text-foreground font-light leading-relaxed">
-                  models that fuse emotional data with narrative structures in audiovisual content. This goes beyond simple emotion recognition and focuses on the system's ability to identify and analyze complex relationships, such as how emotional beats contribute to a story's overall plot.
+                  Our models that fuse emotional data with narrative structures in audiovisual content. This goes beyond simple emotion recognition and focuses on the system's ability to identify and analyze complex relationships, such as how emotional beats contribute to a story's overall plot.
                 </p>
               </div>
               
