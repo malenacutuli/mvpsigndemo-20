@@ -31,13 +31,6 @@ export const About: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div>
-              <img 
-                src={aiNeuralNetwork} 
-                alt="AI Neural Network Visualization" 
-                className="rounded-xl w-full"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -101,6 +94,15 @@ export const About: React.FC = () => {
       <div className="bg-slate-50 py-20">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
+            {/* Image Section */}
+            <div className="mb-16">
+              <img 
+                src={aiNeuralNetwork} 
+                alt="AI Neural Network Visualization" 
+                className="rounded-xl w-full max-w-4xl mx-auto"
+              />
+            </div>
+            
             <div className="text-center mb-16">
               <h2 className="text-3xl font-light text-foreground mb-6">
                 Transforming Industries
