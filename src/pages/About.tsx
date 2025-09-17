@@ -48,7 +48,7 @@ export const About: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-4xl font-light text-foreground mb-8 animate-fade-in [animation-delay:200ms]">About</h2>
+              <h2 className="text-4xl font-light text-foreground mb-8 animate-fade-in [animation-delay:200ms] text-center">About</h2>
               <p className="text-lg text-foreground font-light leading-relaxed mb-8 animate-fade-in [animation-delay:400ms]">
                 We are a technology company and a research lab developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
               </p>
