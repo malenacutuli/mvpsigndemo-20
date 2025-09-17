@@ -107,7 +107,7 @@ export const Navigation: React.FC = () => {
           {/* CTA and Auth */}
           <div className="hidden md:flex items-center space-x-4">
             {!user && (
-              <Button asChild variant="default" size="lg" className="font-semibold px-8 py-3 rounded-full">
+              <Button asChild variant="default" size="sm" className="font-semibold px-4 py-2 rounded-full">
                 <Link to="/auth">
                   {t('nav.getStarted')}
                 </Link>
