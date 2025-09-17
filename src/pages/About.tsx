@@ -16,7 +16,7 @@ export const About: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-light text-foreground leading-tight mb-6">
             Our AI research lab
           </h1>
-          <p className="text-xl text-slate-700 font-light leading-relaxed max-w-3xl">
+          <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl">
             Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
           </p>
         </div>
@@ -28,17 +28,17 @@ export const About: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl font-light text-foreground mb-8">Our Mission</h2>
-              <p className="text-lg text-slate-700 font-light leading-relaxed mb-8">
+              <p className="text-lg text-foreground font-light leading-relaxed mb-8">
                 We're developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
               </p>
               <div className="flex flex-wrap gap-3">
-                <div className="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-light rounded-full">
+                <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full">
                   Ethical AI
                 </div>
-                <div className="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-light rounded-full">
+                <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full">
                   Creative Intelligence
                 </div>
-                <div className="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-light rounded-full">
+                <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full">
                   Human-Centric
                 </div>
               </div>
@@ -60,7 +60,7 @@ export const About: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-light text-foreground mb-6">Our Vision</h2>
-              <p className="text-xl text-slate-700 font-light max-w-3xl mx-auto">
+              <p className="text-xl text-foreground font-light max-w-3xl mx-auto">
                 AI systems as creative partners, not just automation tools
               </p>
             </div>
@@ -76,19 +76,19 @@ export const About: React.FC = () => {
               <div className="space-y-8">
                 <div className="p-8 bg-white rounded-xl border border-slate-200">
                   <h3 className="text-xl font-light mb-4 text-foreground">Beyond Simple Labels</h3>
-                  <p className="text-slate-700 font-light leading-relaxed">
+                  <p className="text-foreground font-light leading-relaxed">
                     Moving past basic happy/sad recognition to understand the rich emotional tapestry that makes content resonate.
                   </p>
                 </div>
                 <div className="p-8 bg-white rounded-xl border border-slate-200">
                   <h3 className="text-xl font-light mb-4 text-foreground">Explaining the Why</h3>
-                  <p className="text-slate-700 font-light leading-relaxed">
+                  <p className="text-foreground font-light leading-relaxed">
                     Our AI doesn't just identify patterns—it explains why content works, empowering better creative decisions.
                   </p>
                 </div>
                 <div className="p-8 bg-white rounded-xl border border-slate-200">
                   <h3 className="text-xl font-light mb-4 text-foreground">Creative Partnership</h3>
-                  <p className="text-slate-700 font-light leading-relaxed">
+                  <p className="text-foreground font-light leading-relaxed">
                     Enabling creators to make more impactful work and forge deeper audience connections.
                   </p>
                 </div>
@@ -106,7 +106,7 @@ export const About: React.FC = () => {
               <h2 className="text-3xl font-light text-foreground mb-6">
                 The Power of High-Quality Data
               </h2>
-              <p className="text-xl text-slate-700 font-light max-w-4xl mx-auto leading-relaxed">
+              <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed">
                 AI model quality is directly linked to training data quality. While others use scraped internet data, 
                 we're building on ethically-sourced, creator-contributed content rich with intentionality.
               </p>
@@ -115,7 +115,7 @@ export const About: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">Ethical Data</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Rights-first, voluntarily contributed dataset from creators using our platform. 
                   Clean, consented, and imbued with creative professional intentionality.
                 </p>
@@ -123,7 +123,7 @@ export const About: React.FC = () => {
 
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">Creative Intent</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Data rich with creative purpose from filmmakers, advertisers, and artists. 
                   Understanding not just what people watch, but why creators made it.
                 </p>
@@ -131,7 +131,7 @@ export const About: React.FC = () => {
 
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-xl font-light mb-4 text-foreground">Trust-Built Moat</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Defensible advantage through community collaboration. 
                   A repository of human creativity annotated by creators themselves.
                 </p>
@@ -154,22 +154,22 @@ export const About: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h4 className="font-light text-foreground mb-4 text-lg">Advertising & Marketing</h4>
-                <p className="text-slate-700 font-light leading-relaxed">Emotional resonance testing and cross-cultural insights</p>
+                <p className="text-foreground font-light leading-relaxed">Emotional resonance testing and cross-cultural insights</p>
               </div>
               
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h4 className="font-light text-foreground mb-4 text-lg">Film & TV Studios</h4>
-                <p className="text-slate-700 font-light leading-relaxed">Script analysis and character development insights</p>
+                <p className="text-foreground font-light leading-relaxed">Script analysis and character development insights</p>
               </div>
               
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h4 className="font-light text-foreground mb-4 text-lg">Generative Tools</h4>
-                <p className="text-slate-700 font-light leading-relaxed">Emotionally-aware video and dynamic sound design</p>
+                <p className="text-foreground font-light leading-relaxed">Emotionally-aware video and dynamic sound design</p>
               </div>
               
               <div className="p-8 bg-white rounded-xl border border-slate-200">
                 <h4 className="font-light text-foreground mb-4 text-lg">Media Platforms</h4>
-                <p className="text-slate-700 font-light leading-relaxed">Emotion-based content curation and recommendations</p>
+                <p className="text-foreground font-light leading-relaxed">Emotion-based content curation and recommendations</p>
               </div>
             </div>
           </div>
@@ -189,21 +189,21 @@ export const About: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-lg font-light mb-4 text-foreground">Emotion-Narrative Fusion</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Novel methods fusing emotional data with narrative structures beyond simple recognition.
                 </p>
               </div>
               
               <div className="text-center p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-lg font-light mb-4 text-foreground">Explainable AI</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Transparent analysis with real-time saliency maps and narrative critiques.
                 </p>
               </div>
               
               <div className="text-center p-8 bg-white rounded-xl border border-slate-200">
                 <h3 className="text-lg font-light mb-4 text-foreground">Interactive Critique</h3>
-                <p className="text-slate-700 font-light leading-relaxed">
+                <p className="text-foreground font-light leading-relaxed">
                   Two-way creator-AI conversation systems for collaborative iterative feedback.
                 </p>
               </div>
@@ -219,7 +219,7 @@ export const About: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-light mb-8 text-foreground leading-tight">
               Ready to Shape the Future of Creative AI?
             </h2>
-            <p className="text-xl text-slate-700 font-light mb-12 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-xl text-foreground font-light mb-12 leading-relaxed max-w-2xl mx-auto">
               Join us in revolutionizing how artificial intelligence understands and enhances human creativity.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
