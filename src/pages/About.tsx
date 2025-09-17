@@ -54,50 +54,6 @@ export const About: React.FC = () => {
         </div>
       </div>
 
-      {/* Vision Section */}
-      <div className="bg-slate-50 py-20">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-light text-foreground mb-6">Our Vision</h2>
-              <p className="text-xl text-foreground font-light max-w-3xl mx-auto">
-                AI systems as creative partners, not just automation tools
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <img 
-                  src={humanAiCollaboration} 
-                  alt="Human AI Collaboration" 
-                  className="rounded-xl w-full"
-                />
-              </div>
-              <div className="space-y-8">
-                <div className="p-8 bg-white rounded-xl border border-slate-200">
-                  <h3 className="text-xl font-light mb-4 text-foreground">Beyond Simple Labels</h3>
-                  <p className="text-foreground font-light leading-relaxed">
-                    Moving past basic happy/sad recognition to understand the rich emotional tapestry that makes content resonate.
-                  </p>
-                </div>
-                <div className="p-8 bg-white rounded-xl border border-slate-200">
-                  <h3 className="text-xl font-light mb-4 text-foreground">Explaining the Why</h3>
-                  <p className="text-foreground font-light leading-relaxed">
-                    Our AI doesn't just identify patterns—it explains why content works, empowering better creative decisions.
-                  </p>
-                </div>
-                <div className="p-8 bg-white rounded-xl border border-slate-200">
-                  <h3 className="text-xl font-light mb-4 text-foreground">Creative Partnership</h3>
-                  <p className="text-foreground font-light leading-relaxed">
-                    Enabling creators to make more impactful work and forge deeper audience connections.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Data Quality Section */}
       <div className="py-20">
         <div className="container mx-auto px-6">
