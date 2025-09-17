@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Plus, Globe, Eye, EyeOff, AlertCircle, Trash2, Replace, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DubbingConfiguration } from '@/components/DubbingConfiguration';
 
 interface Channel {
   id: string;
@@ -27,6 +28,7 @@ interface VideoPublishingControlsProps {
   description: string | null;
   channelId: string | null;
   videoStatus: string;
+  videoLanguage: string;
   onUpdate: () => void;
   onDelete: () => void;
   isDeleting: boolean;
@@ -39,6 +41,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   description,
   channelId,
   videoStatus,
+  videoLanguage,
   onUpdate,
   onDelete,
   isDeleting
@@ -51,6 +54,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [replacing, setReplacing] = useState(false);
+  const [dubbingConfig, setDubbingConfig] = useState<{ targetLanguage: string; voiceId: string } | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -59,6 +63,10 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     channelId: channelId || 'none',
     keywords: ''
   });
+
+  const handleDubbingConfigChange = (config: { targetLanguage: string; voiceId: string }) => {
+    setDubbingConfig(config);
+  };
   
   // New channel form
   const [newChannel, setNewChannel] = useState({
@@ -504,6 +512,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                         rows={2}
                       />
                     </div>
+
+                    {/* Dubbing Configuration */}
+                    <DubbingConfiguration
+                      videoId={videoId}
+                      originalLanguage={videoLanguage}
+                      onConfigurationChange={handleDubbingConfigChange}
+                    />
                   </div>
 
                   <DialogFooter>

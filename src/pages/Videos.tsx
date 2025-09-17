@@ -347,17 +347,18 @@ export default function Videos() {
                             </Link>
                           </Button>
                           
-              <VideoPublishingControls
-                videoId={video.id}
-                isPublic={video.is_public}
-                contentType={video.content_type}
-                description={video.description}
-                channelId={video.channel_id}
-                videoStatus={video.status}
-                onUpdate={fetchVideos}
-                onDelete={() => deleteVideo(video.id)}
-                isDeleting={deletingVideo === video.id}
-              />
+               <VideoPublishingControls
+                 videoId={video.id}
+                 isPublic={video.is_public}
+                 contentType={video.content_type}
+                 description={video.description}
+                 channelId={video.channel_id}
+                 videoStatus={video.status}
+                 videoLanguage={video.language}
+                 onUpdate={fetchVideos}
+                 onDelete={() => deleteVideo(video.id)}
+                 isDeleting={deletingVideo === video.id}
+               />
                         </div>
                       </CardContent>
                     </Card>

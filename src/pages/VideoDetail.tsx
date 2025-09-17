@@ -390,6 +390,7 @@ const VideoDetail = () => {
                 description={video.description}
                 channelId={video.channel_id}
                 videoStatus={video.status}
+                videoLanguage={video.language}
                 onUpdate={fetchVideo}
                 onDelete={deleteVideo}
                 isDeleting={deletingVideo}
