@@ -15,7 +15,7 @@ export const About: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl font-light text-foreground mb-8">Our Mission</h2>
+              <h2 className="text-4xl font-light text-foreground mb-8">Our Mission</h2>
               <p className="text-lg text-foreground font-light leading-relaxed mb-8">
                 We're developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
               </p>
@@ -38,7 +38,7 @@ export const About: React.FC = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-6 pt-20 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-light text-foreground leading-tight mb-6">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground leading-tight mb-6">
             Our AI research lab
           </h1>
           <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl">
