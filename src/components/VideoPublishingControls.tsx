@@ -384,11 +384,31 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
       <TooltipProvider>
         <div className="flex items-center gap-2 w-full">
           {!isVideoReady ? (
-            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md flex-1">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-blue-700">Processing...</span>
-              <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
-            </div>
+            <>
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md flex-1">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-700">
+                  {videoStatus === 'uploading' ? 'Uploading...' : 'Processing...'}
+                </span>
+                <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="px-3"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete video</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
           ) : !editingComplete ? (
             <>
               <Button
