@@ -51,7 +51,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        index_name: `video_analysis_${inputVideoId || Date.now()}`,
+        index_name: `video_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         models: [
           { model_name: 'marengo2.7', model_options: ['audio', 'visual'] }
         ]
