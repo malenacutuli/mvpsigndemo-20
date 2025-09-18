@@ -82,6 +82,18 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
         return;
       }
 
+      // Get speaker mappings for this video
+      const { data: mappingData, error: mappingError } = await supabase
+        .from('speaker_mappings')
+        .select('mappings')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .maybeSingle();
+
+      if (mappingError && mappingError.code !== 'PGRST116') {
+        console.error('❌ CI Character Sync: Failed to fetch speaker mappings', mappingError);
+      }
+
       // Get all unique speakers from transcript segments
       const { data: segments, error: segError } = await supabase
         .from('transcript_segments')
@@ -118,9 +130,27 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
       // Update localStorage for instant access across components
       localStorage.setItem('character-colors', JSON.stringify(colorMapping));
       
+      // CRITICAL: Also save speaker mappings to localStorage for video player
+      if (mappingData?.mappings) {
+        localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(mappingData.mappings));
+        console.log('💾 CI Character Sync: Speaker mappings saved to localStorage', mappingData.mappings);
+      }
+
+      // CRITICAL: Save character definitions to localStorage for video player
+      if (characters && characters.length > 0) {
+        localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
+        console.log('💾 CI Character Sync: Character definitions saved to localStorage');
+      }
+      
       // Dispatch event to notify all components
       window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: colorMapping, videoId, language } 
+        detail: { 
+          colors: colorMapping, 
+          videoId, 
+          language,
+          mappings: mappingData?.mappings || {},
+          characters: characters || []
+        } 
       }));
 
       console.log('✅ CI Character Sync: Color mapping updated', colorMapping);
