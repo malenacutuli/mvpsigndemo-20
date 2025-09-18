@@ -425,18 +425,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           (initialCaptions[0] as any)._updateKey) {
         console.log('✅ Setting generatedCaptions from database initialCaptions');
         setGeneratedCaptions(initialCaptions);
+        
+        // Generate transcript text for dubbing from initial captions
+        const transcriptText = initialCaptions
+          .sort((a, b) => a.startTime - b.startTime)
+          .map(segment => segment.text)
+          .join(' ');
+        setGeneratedTranscript(transcriptText);
       } else {
         console.log('🚫 Keeping existing generatedCaptions, not overriding with initialCaptions');
       }
-      
-      // Generate transcript text for dubbing from initial captions
-      const transcriptText = initialCaptions
-        .sort((a, b) => a.startTime - b.startTime)
-        .map(segment => segment.text)
-        .join(' ');
-      setGeneratedTranscript(transcriptText);
     }
-  }, [initialCaptions]);
+  }, [initialCaptions?.length, (initialCaptions?.[0] as any)?._updateKey]);
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {
