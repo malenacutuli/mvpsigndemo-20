@@ -81,34 +81,57 @@ interface CaptionsWithIntentionProps {
  * Get speaker color with proper fallback to segment's assigned color
  */
 const getSpeakerColor = (speaker: string, customColors?: Record<string, string>, segmentColor?: string): string => {
-  // Priority 1: Use segment's assigned color from character management (most important)
+  // CRITICAL: This is the final mapping gate - ensure all sources are checked in order
+  
+  // 1. FIRST PRIORITY: Direct segment color from database (speaker_color column)
   if (segmentColor) {
-    console.log('🎨 Using segment assigned color for', speaker, ':', segmentColor);
+    console.log('🎨 Using database speaker_color for', speaker, ':', segmentColor);
     return segmentColor;
   }
   
-  // Priority 2: Use custom assigned color from character manager
+  // 2. SECOND PRIORITY: Character Manager mapping from localStorage
   if (customColors && customColors[speaker]) {
-    console.log('🎨 Using custom character color for', speaker, ':', customColors[speaker]);
+    console.log('🎨 Using Character Manager color for', speaker, ':', customColors[speaker]);
     return customColors[speaker];
   }
   
-  // Priority 3: Default color assignments for common speakers
-  const defaultColors: Record<string, string> = {
-    narrator: CI_COLORS.main.blue,
-    chef: CI_COLORS.main.orange,
-    host: CI_COLORS.main.green,
-    guest: CI_COLORS.supporting.yellow1,
-    child: CI_COLORS.supporting.pink1,
-    teacher: CI_COLORS.main.yellow,
-    student: CI_COLORS.supporting.blue1,
-    soundeffect: '#FFFFFF',
-    music: '#FFFFFF'
-  };
+  // 3. THIRD PRIORITY: Check localStorage for direct character-colors mapping  
+  const characterColors = localStorage.getItem('character-colors');
+  if (characterColors) {
+    try {
+      const colors = JSON.parse(characterColors);
+      if (colors[speaker]) {
+        console.log('🎨 Using localStorage character-colors for', speaker, ':', colors[speaker]);
+        return colors[speaker];
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to parse character-colors from localStorage');
+    }
+  }
   
-  const defaultColor = defaultColors[speaker.toLowerCase()] || CI_COLORS.main.blue;
-  console.log('🎨 Using default color for', speaker, ':', defaultColor);
-  return defaultColor;
+  // 4. FINAL FALLBACK: Consistent color based on speaker name using CI colors
+  const CI_MAIN_COLORS = [
+    '#E5E517', // Yellow (Main)
+    '#17E5E5', // Cyan (Main) 
+    '#E51717', // Red (Main)
+    '#17E517', // Green (Main)
+    '#E517E5', // Magenta (Main)
+    '#E58017', // Orange (Main)
+  ];
+  
+  // Create consistent hash from speaker name
+  let hash = 0;
+  for (let i = 0; i < speaker.length; i++) {
+    const char = speaker.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  const colorIndex = Math.abs(hash) % CI_MAIN_COLORS.length;
+  const fallbackColor = CI_MAIN_COLORS[colorIndex];
+  
+  console.log('🎨 Using CI fallback color for', speaker, ':', fallbackColor, '(index:', colorIndex, ')');
+  return fallbackColor;
 };
 
 /**
@@ -238,14 +261,35 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Load custom character colors from localStorage as fallback only
+  // Listen for character color updates from Character Manager
   useEffect(() => {
-    const savedColors = localStorage.getItem('character-colors');
-    if (savedColors) {
-      const parsedColors = JSON.parse(savedColors);
-      setCustomSpeakerColors(parsedColors);
-      console.log('🎨 Loaded character colors from localStorage:', parsedColors);
-    }
+    const loadCharacterColors = () => {
+      const characterColorString = localStorage.getItem('character-colors');
+      if (characterColorString) {
+        try {
+          const parsedColors = JSON.parse(characterColorString);
+          setCustomSpeakerColors(parsedColors);
+          console.log('🔄 CAPTION COLORS: Loaded character colors from localStorage:', parsedColors);
+        } catch (e) {
+          console.warn('⚠️ Failed to parse character colors from localStorage');
+        }
+      }
+    };
+    
+    // Load on mount
+    loadCharacterColors();
+    
+    // Listen for character color updates
+    const handleCharacterColorsUpdate = (event: CustomEvent) => {
+      console.log('🔄 CAPTION COLORS: Received character colors update event');
+      loadCharacterColors();
+    };
+    
+    window.addEventListener('character-colors-updated', handleCharacterColorsUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('character-colors-updated', handleCharacterColorsUpdate as EventListener);
+    };
   }, []);
 
   // Use small tolerance to avoid missing captions at segment edges and add read-ahead fallback

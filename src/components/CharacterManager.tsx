@@ -311,28 +311,38 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const saveAllCharacters = async () => {
     try {
+      // 1. Save characters to database
       await saveCharacters(characters);
       
-      // Save speaker mappings to database
+      // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // Apply character settings to mapped speakers in database
+      // 3. CRITICAL: Apply character settings to all segments in database
       await applyCharacterMappings();
       
-      // Keep localStorage for backward compatibility and instant access
-      localStorage.setItem('character-colors', JSON.stringify(
-        characters.reduce((acc, char) => ({ ...acc, [char.name]: char.color }), {})
-      ));
+      // 4. Update localStorage for instant access (critical for video player)
+      const characterColorMap = characters.reduce((acc, char) => ({ 
+        ...acc, 
+        [char.name]: char.color 
+      }), {});
       
+      localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
+      
+      // 5. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
+      // 6. Trigger window event so other components can sync immediately
+      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+        detail: { colors: characterColorMap, characters } 
+      }));
+      
       toast({
-        title: "Characters saved!",
-        description: `${characters.length} characters saved with speaker mappings`,
+        title: "Colors synchronized!",
+        description: `${characters.length} characters saved and colors synced across video player and transcript`,
         variant: "default"
       });
     } catch (error) {
-      console.error('Failed to save characters:', error);
+      console.error('❌ Failed to save characters:', error);
       toast({
         title: "Save failed",
         description: "Failed to save characters. Please try again.",
@@ -343,11 +353,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
+      // Update both speaker mappings AND unmapped segments
       for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
         const character = characters.find(c => c.name === characterName);
         if (character) {
-          // Update all transcript segments with this speaker name
-          await supabase
+          // Update all transcript segments with this original speaker name to new character
+          const { data, error } = await supabase
             .from('transcript_segments')
             .update({
               speaker: characterName,
@@ -358,11 +369,35 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             .eq('language', language)
             .eq('speaker', speakerName);
           
-          console.log(`🔄 Mapped "${speakerName}" → "${characterName}" (${character.color}) [off-camera: ${character.isOffCamera || false}]`);
+          if (error) {
+            console.error(`❌ Failed to update segments for speaker "${speakerName}":`, error);
+          } else {
+            console.log(`🔄 CRITICAL COLOR SYNC: Mapped "${speakerName}" → "${characterName}" (${character.color}) in database`);
+          }
         }
       }
+      
+      // CRITICAL: Also update any segments that already have the character name but wrong color
+      for (const character of characters) {
+        const { data, error } = await supabase
+          .from('transcript_segments')
+          .update({
+            speaker_color: character.color,
+            is_off_camera: character.isOffCamera || false
+          })
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .eq('speaker', character.name);
+          
+        if (error) {
+          console.error(`❌ Failed to sync color for character "${character.name}":`, error);
+        } else {
+          console.log(`🎨 CRITICAL COLOR SYNC: Updated color for "${character.name}" → ${character.color} in database`);
+        }
+      }
+      
     } catch (error) {
-      console.error('Failed to apply character mappings:', error);
+      console.error('❌ Failed to apply character mappings:', error);
     }
   };
 
