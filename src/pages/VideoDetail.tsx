@@ -17,6 +17,7 @@ import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
+import { SpeakerMappingSync } from "@/components/SpeakerMappingSync";
 
 interface Video {
   id: string;
@@ -366,6 +367,24 @@ const VideoDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Sync speaker mappings for this specific video */}
+      {id === '2f9a71a2-0c14-44e7-b0c8-499eb996e28f' && (
+        <SpeakerMappingSync 
+          videoId={id}
+          mappings={{
+            "Speaker 1": "David",
+            "Speaker 2": "Rick", 
+            "Speaker 3": "Kevin",
+            "Speaker 4": "Photographer"
+          }}
+          characters={[
+            { name: 'David', color: '#3B82F6' },
+            { name: 'Rick', color: '#10B981' },
+            { name: 'Kevin', color: '#F59E0B' },
+            { name: 'Photographer', color: '#8B5CF6' }
+          ]}
+        />
+      )}
       <Navigation />
       <main className="container mx-auto px-4 py-8">
           <div className="space-y-6">
