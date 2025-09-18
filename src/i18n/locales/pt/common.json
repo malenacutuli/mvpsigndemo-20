@@ -1,6 +1,6 @@
 {
   "nav": {
-    "explore": "Explorar",
+    "showcase": "Showcase",
     "enterprise": "Empresa", 
     "pricing": "Preços",
     "dashboard": "Painel",
@@ -88,6 +88,98 @@
       "subtitle": "Junte-se à plataforma onde cada história pertence.",
       "watchNow": "Assistir Agora",
       "shareContent": "Compartilhe seu Conteúdo"
+    }
+  },
+  "about": {
+    "title": "Sobre",
+    "mission": "Somos uma empresa de tecnologia e um laboratório de pesquisa desenvolvendo um Modelo de Linguagem Audiovisual Emocional (AVLM), treinado em conteúdo criativo obtido eticamente. Ao ensinar IA a entender emoção, narrativa e intenção em mídia audiovisual, desbloqueamos ferramentas sem precedentes para criadores, marcas e plataformas.",
+    "values": {
+      "ethicalAI": "IA Ética",
+      "creativeIntelligence": "Inteligência Criativa",
+      "humanCentric": "Centrado no Humano"
+    },
+    "dataQuality": {
+      "title": "Por Que Dados de Alta Qualidade são a Chave para Desbloquear Emoção",
+      "description": "A qualidade de um modelo de IA é uma função direta dos dados nos quais é treinado. Os modelos atuais em larga escala são construídos sobre bilhões de horas de dados de internet extraídos, de baixa qualidade e frequentemente eticamente questionáveis. Isso leva a modelos que podem reconhecer padrões básicos mas falham em captar a rica e sutil tapeçaria da emoção humana.",
+      "ethicalData": {
+        "title": "Dados Éticos",
+        "description": "Estamos construindo nossa fundação sobre um conjunto de dados voluntariamente contribuído, com direitos em primeiro lugar. Através do nosso produto principal, Axessible, criamos um ciclo virtuoso. Criadores que usam nossa plataforma para tornar seu conteúdo compatível com novas regulamentações também estão nos dando permissão para aprender com seu trabalho."
+      },
+      "powerOfIntentionality": {
+        "title": "O Poder da Intencionalidade",
+        "description": "Conteúdo extraído da internet captura o que as pessoas assistem, mas não por que o criaram. Nossos dados, contribuídos por cineastas, publicitários e artistas, são ricos em propósito criativo. Nosso AVLM vai além de uma impressão digital emocional básica e entende os ritmos narrativos, tropos criativos e arcos emocionais que tornam o conteúdo verdadeiramente grandioso."
+      },
+      "builtOnTrust": {
+        "title": "Construído na Confiança",
+        "description": "Nossos dados não são apenas uma coleção de pixels e ondas de áudio; é um repositório de criatividade e emoção humana, anotado pelos próprios criadores. Este conjunto de dados proprietário nos permitirá treinar um modelo com um nível de profundidade e nuance que nenhuma outra empresa pode alcançar."
+      }
+    },
+    "useCases": {
+      "title": "Nosso laboratório de pesquisa de IA",
+      "subtitle": "Construindo a próxima geração de IA que compreende e aprimora a criatividade humana através do nosso Modelo de Linguagem Audiovisual Emocional.",
+      "broaderTitle": "Casos de Uso Mais Amplos e Estratégia de PI",
+      "broaderDescription": "As aplicações de um AVLM treinado em um conjunto de dados de alta qualidade, liderado por criativos, se estendem muito além do nosso produto inicial, a Plataforma de Vídeo Axess. Nossa tecnologia alimenta uma nova classe de ferramentas em diversas indústrias.",
+      "creativeAnalytics": {
+        "title": "Análise Criativa para Publicidade e Marketing:",
+        "emotionalResonance": {
+          "title": "Testes de Ressonância Emocional",
+          "description": "Analisa como uma audiência se conecta emocionalmente com um anúncio em nível granular, identificando momentos de admiração, frustração ou prazer."
+        },
+        "narrativeOptimization": {
+          "title": "Otimização Narrativa",
+          "description": "Identifica quais cenas ou ritmos narrativos em uma campanha são mais eficazes em impulsionar o engajamento emocional e recordação de marca."
+        },
+        "crossCulturalInsights": {
+          "title": "Insights Interculturais",
+          "description": "Detecta automaticamente nuances emocionais culturalmente específicas e tropos criativos para otimizar conteúdo para mercados globais."
+        }
+      },
+      "filmTV": {
+        "title": "Feedback Narrativo para Estúdios de Cinema e TV:",
+        "editingPostProduction": {
+          "title": "Edição e Pós-Produção",
+          "description": "Fornece feedback emocional em tempo real para editores, ajudando-os a criar cenas que atingem o impacto emocional pretendido."
+        },
+        "scriptAnalysis": {
+          "title": "Análise de Roteiro",
+          "description": "Analisa o arco narrativo e fluxo emocional de um roteiro antes do início da produção, identificando fraquezas potenciais ou oportunidades."
+        },
+        "characterDevelopment": {
+          "title": "Desenvolvimento de Personagens",
+          "description": "Estuda como audiências respondem à jornada emocional de um personagem ao longo de um filme ou série."
+        }
+      },
+      "generativeAI": {
+        "title": "IA Generativa para Ferramentas Criativas:",
+        "emotionallyAware": {
+          "title": "Vídeo Generativo Emocionalmente Consciente",
+          "description": "Usa nosso AVLM para guiar modelos texto-para-vídeo para criar conteúdo com tons emocionais específicos e estruturas narrativas."
+        },
+        "dynamicMusic": {
+          "title": "Música Dinâmica e Design de Som",
+          "description": "Gera música ou paisagens sonoras que se adaptam ao arco emocional de um vídeo em tempo real."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Plataformas de Mídia Personalizadas:",
+        "emotionBased": {
+          "title": "Curadoria Baseada em Emoção",
+          "description": "Recomenda conteúdo não apenas por gênero, mas pela jornada emocional que proporciona. Por exemplo, uma playlist 'reconfortante' de curtas-metragens ou um feed 'inspirador' de documentários."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Propriedade Intelectual e Áreas de Patentes",
+      "description": "Estamos construindo um portfólio robusto de propriedade intelectual em torno de nossa tecnologia única. Nossa estratégia de patentes foca em três áreas principais:",
+      "emotionNarrative": "Fusão Emoção-Narrativa",
+      "explainableAVLM": "AVLM Explicável",
+      "interactiveCreative": "Crítica Criativa Interativa"
+    },
+    "cta": {
+      "title": "Pronto para Moldar o Futuro da IA Criativa?",
+      "description": "Junte-se a nós para revolucionar como a inteligência artificial compreende e aprimora a criatividade humana.",
+      "exploreTechnology": "Explore Nossa Tecnologia",
+      "contactTeam": "Entre em Contato com Nossa Equipe"
     }
   },
   "footer": {

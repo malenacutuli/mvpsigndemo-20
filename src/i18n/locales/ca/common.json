@@ -1,6 +1,6 @@
 {
   "nav": {
-    "explore": "Explorar",
+    "showcase": "Showcase",
     "enterprise": "Empresa", 
     "pricing": "Preus",
     "dashboard": "Tauler",
@@ -88,6 +88,98 @@
       "subtitle": "Uneix-te a la plataforma on cada història pertany.",
       "watchNow": "Veure Ara",
       "shareContent": "Comparteix el teu Contingut"
+    }
+  },
+  "about": {
+    "title": "Sobre",
+    "mission": "Som una empresa tecnològica i un laboratori de recerca que desenvolupa un Model de Llenguatge Audiovisual Emocional (AVLM), entrenat amb contingut creatiu obtingut èticament. Ensenyant a l'IA a entendre l'emoció, la narrativa i la intenció en mitjans audiovisuals, desbloquejem eines sense precedents per a creadors, marques i plataformes.",
+    "values": {
+      "ethicalAI": "IA Ètica",
+      "creativeIntelligence": "Intel·ligència Creativa",
+      "humanCentric": "Centrat en l'Humà"
+    },
+    "dataQuality": {
+      "title": "Per Què les Dades d'Alta Qualitat són la Clau per Desbloquejar l'Emoció",
+      "description": "La qualitat d'un model d'IA és una funció directa de les dades amb les quals s'entrena. Els models actuals a gran escala es construeixen sobre miliards d'hores de dades d'internet extretes, de baixa qualitat i sovint èticament qüestionables. Això porta a models que poden reconèixer patrons bàsics però fallen a captar el ric i subtil tapís de l'emoció humana.",
+      "ethicalData": {
+        "title": "Dades Ètiques",
+        "description": "Estem construint els nostres fonaments sobre un conjunt de dades voluntàriament contribuït, amb els drets com a prioritat. A través del nostre producte estrella, Axessible, hem creat un cicle virtuós. Els creadors que utilitzen la nostra plataforma per fer el seu contingut conforme amb les noves regulacions també ens estan donant permís per aprendre del seu treball."
+      },
+      "powerOfIntentionality": {
+        "title": "El Poder de la Intencionalitat",
+        "description": "El contingut extret d'internet captura el que la gent mira, però no per què ho van crear. Les nostres dades, contribuïdes per cineastes, publicistes i artistes, són riques en propòsit creatiu. El nostre AVLM va més enllà d'una empremta emocional bàsica i entén els ritmes narratius, tòpics creatius i arcs emocionals que fan que el contingut sigui veritablement grandiós."
+      },
+      "builtOnTrust": {
+        "title": "Construït sobre la Confiança",
+        "description": "Les nostres dades no són només una col·lecció de píxels i ones d'àudio; és un repositori de creativitat i emoció humana, anotat pels mateixos creadors. Aquest conjunt de dades propietari ens permetrà entrenar un model amb un nivell de profunditat i matís que cap altra empresa pot assolir."
+      }
+    },
+    "useCases": {
+      "title": "El nostre laboratori de recerca d'IA",
+      "subtitle": "Construint la propera generació d'IA que comprèn i millora la creativitat humana a través del nostre Model de Llenguatge Audiovisual Emocional.",
+      "broaderTitle": "Casos d'Ús Més Amplis i Estratègia de PI",
+      "broaderDescription": "Les aplicacions d'un AVLM entrenat en un conjunt de dades d'alta qualitat, dirigit per creatius, s'estenen molt més enllà del nostre producte inicial, la Plataforma de Vídeo Axess. La nostra tecnologia alimenta una nova classe d'eines en diverses indústries.",
+      "creativeAnalytics": {
+        "title": "Analítica Creativa per a Publicitat i Màrqueting:",
+        "emotionalResonance": {
+          "title": "Proves de Ressonància Emocional",
+          "description": "Analitza com una audiència es connecta emocionalment amb un anunci a nivell granular, identificant moments d'admiració, frustració o plaer."
+        },
+        "narrativeOptimization": {
+          "title": "Optimització Narrativa",
+          "description": "Identifica quines escenes o ritmes narratius en una campanya són més eficaços per impulsar el compromís emocional i el record de marca."
+        },
+        "crossCulturalInsights": {
+          "title": "Perspectives Interculturals",
+          "description": "Detecta automàticament matisos emocionals culturalment específics i tòpics creatius per optimitzar contingut per a mercats globals."
+        }
+      },
+      "filmTV": {
+        "title": "Retroalimentació Narrativa per a Estudis de Cinema i TV:",
+        "editingPostProduction": {
+          "title": "Edició i Post-Producció",
+          "description": "Proporciona retroalimentació emocional en temps real als editors, ajudant-los a crear escenes que arriben amb l'impacte emocional desitjat."
+        },
+        "scriptAnalysis": {
+          "title": "Anàlisi de Guió",
+          "description": "Analitza l'arc narratiu i flux emocional d'un guió abans que comenci la producció, identificant febleses potencials o oportunitats."
+        },
+        "characterDevelopment": {
+          "title": "Desenvolupament de Personatges",
+          "description": "Estudia com les audiències responen al viatge emocional d'un personatge al llarg d'una pel·lícula o sèrie."
+        }
+      },
+      "generativeAI": {
+        "title": "IA Generativa per a Eines Creatives:",
+        "emotionallyAware": {
+          "title": "Vídeo Generatiu Emocionalment Conscient",
+          "description": "Utilitza el nostre AVLM per guiar models text-a-vídeo per crear contingut amb tons emocionals específics i estructures narratives."
+        },
+        "dynamicMusic": {
+          "title": "Música Dinàmica i Disseny de So",
+          "description": "Genera música o paisatges sonors que s'adapten a l'arc emocional d'un vídeo en temps real."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Plataformes de Mitjans Personalitzats:",
+        "emotionBased": {
+          "title": "Curació Basada en l'Emoció",
+          "description": "Recomana contingut no només per gènere, sinó pel viatge emocional que proporciona. Per exemple, una playlist 'reconfortant' de curtmetratges o un feed 'inspirador' de documentals."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Propietat Intel·lectual i Àrees de Patents",
+      "description": "Estem construint un portafoli robust de propietat intel·lectual al voltant de la nostra tecnologia única. La nostra estratègia de patents se centra en tres àrees clau:",
+      "emotionNarrative": "Fusió Emoció-Narrativa",
+      "explainableAVLM": "AVLM Explicable",
+      "interactiveCreative": "Crítica Creativa Interactiva"
+    },
+    "cta": {
+      "title": "Llest per Donar Forma al Futur de l'IA Creativa?",
+      "description": "Uneix-te a nosaltres per revolucionar com la intel·ligència artificial comprèn i millora la creativitat humana.",
+      "exploreTechnology": "Explora la Nostra Tecnologia",
+      "contactTeam": "Contacta el Nostre Equip"
     }
   },
   "footer": {
