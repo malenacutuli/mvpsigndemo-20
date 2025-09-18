@@ -104,11 +104,73 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				// Caption with Intention animations
+				'caption-enter': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px) scale(0.95)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0) scale(1)'
+					}
+				},
+				'caption-exit': {
+					'0%': {
+						opacity: '1',
+						transform: 'translateY(0) scale(1)'
+					},
+					'100%': {
+						opacity: '0',
+						transform: 'translateY(-10px) scale(0.95)'
+					}
+				},
+				'word-highlight': {
+					'0%': {
+						transform: 'scale(1)',
+						filter: 'brightness(1)'
+					},
+					'50%': {
+						transform: 'scale(1.05)',
+						filter: 'brightness(1.2)'
+					},
+					'100%': {
+						transform: 'scale(1)',
+						filter: 'brightness(1)'
+					}
+				},
+				'emphasis-bounce': {
+					'0%, 20%, 50%, 80%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'40%': {
+						transform: 'translateY(-3px)'
+					},
+					'60%': {
+						transform: 'translateY(-2px)'
+					}
+				},
+				'box-resize': {
+					'0%': {
+						width: '0',
+						opacity: '0'
+					},
+					'100%': {
+						width: 'var(--box-width)',
+						opacity: '1'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				// Caption with Intention animations
+				'caption-enter': 'caption-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+				'caption-exit': 'caption-exit 0.3s ease-in-out',
+				'word-highlight': 'word-highlight 0.2s ease-out',
+				'emphasis-bounce': 'emphasis-bounce 0.6s ease-in-out',
+				'box-resize': 'box-resize 0.3s ease-out'
 			}
 		}
 	},

@@ -418,10 +418,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div 
-      className="relative flex items-end justify-center pointer-events-none w-full"
+      className={`
+        relative flex items-end justify-center pointer-events-none w-full
+        ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
+      `}
       style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
+      key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`} // Force re-render for animations
     >
-      {/* Captions Container Box - Mobile Responsive */}
+      {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
           relative inline-block max-w-[92vw] sm:max-w-2xl text-center
@@ -429,6 +433,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
           ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
           ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
+          ${isLoudBurst ? 'animate-emphasis-bounce' : 'animate-box-resize'}
         `}
         style={{
           // For loud bursts, captions break out of the box
@@ -439,7 +444,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           }),
           // Enhanced layout containment for smooth animations
           contain: 'layout style paint',
-          willChange: 'contents'
+          willChange: 'contents, transform'
         }}
       >
         {/* Speaker name label - only show for dialogue, not sound effects or music */}
@@ -657,11 +662,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     };
                    
                      return (
-                       <span
-                         key={`${workingCaption.startTime}-${index}`}
-                         className={`inline-block caption-word word-${wordState} ${
-                           activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''
-                         }`}
+                        <span
+                          key={`${workingCaption.startTime}-${index}`}
+                          className={`
+                            inline-block caption-word word-${wordState} 
+                            ${activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''}
+                            ${wordState === 'active' ? 'animate-word-highlight' : ''}
+                            ${word.emphasis === 'yelling' || activeCaption.vocal_intensity === 'shout' ? 'animate-emphasis-bounce' : ''}
+                            transition-all duration-200 ease-out
+                          `}
                         data-wid={index}
                         data-start={word.startTime}
                         data-end={word.endTime}
