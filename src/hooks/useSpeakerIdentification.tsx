@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import { CaptionSegment } from '@/components/CaptionsWithIntention';
 
-// Captions with Intention speaker color assignments
+// Captions with Intention speaker color assignments - Official CI Palette
 const CI_SPEAKER_COLORS = [
-  '#E5E517', // CI Main Yellow
-  '#17E5E5', // CI Main Blue  
-  '#E51717', // CI Main Red
-  '#E58017', // CI Main Orange
-  '#17E517', // CI Main Green
-  '#E517E5', // CI Main Pink
-  '#E85C2E', // CI Support Orange
-  '#47C2EB', // CI Support Blue I
-  '#EBC247', // CI Support Yellow
-  '#5E82ED', // CI Support Blue II
-  '#C2EB47', // CI Support Green I
-  '#8C6BED'  // CI Support Purple I
+  // Main Characters (6 primary colors) - Highest Priority
+  '#E5E517', // Yellow (Main)
+  '#17E5E5', // Cyan (Main) 
+  '#E51717', // Red (Main)
+  '#17E517', // Green (Main)
+  '#E517E5', // Magenta (Main)
+  '#E58017', // Orange (Main)
+  // Supporting Characters (12 between colors) - Medium Priority  
+  '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
+  '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
 ];
 
 interface SpeakerProfile {
@@ -279,13 +277,30 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
    * Assign colors to existing speakers without full identification
    */
   const assignSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
+    // Check for existing character colors from Character Manager first
+    const existingColors = localStorage.getItem('character-colors');
+    const characterColors: Record<string, string> = existingColors ? JSON.parse(existingColors) : {};
+    
     const uniqueSpeakers = [...new Set(segments.map(s => s.speaker || 'Speaker'))];
     
-    return segments.map(segment => ({
-      ...segment,
-      speakerColor: segment.speakerColor || 
-        CI_SPEAKER_COLORS[uniqueSpeakers.indexOf(segment.speaker || 'Speaker') % CI_SPEAKER_COLORS.length]
-    }));
+    return segments.map(segment => {
+      const speaker = segment.speaker || 'Speaker';
+      
+      // Priority 1: Use existing character color if available
+      if (characterColors[speaker]) {
+        return {
+          ...segment,
+          speakerColor: characterColors[speaker]
+        };
+      }
+      
+      // Priority 2: Assign CI color based on speaker index
+      const speakerIndex = uniqueSpeakers.indexOf(speaker);
+      return {
+        ...segment,
+        speakerColor: segment.speakerColor || CI_SPEAKER_COLORS[speakerIndex % CI_SPEAKER_COLORS.length]
+      };
+    });
   };
 
   return {

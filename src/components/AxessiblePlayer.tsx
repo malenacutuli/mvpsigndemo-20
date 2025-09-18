@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CICharacterSync } from './CICharacterSync';
 
 import { VoiceOption } from "@/types/voice";
 
@@ -799,6 +800,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
     >
+      {/* CI Character Synchronization - Headless component for real-time sync */}
+      <CICharacterSync videoId={videoId} language={currentLanguage} />
+      
       {/* Video Element */}
       <video
         ref={videoRef}

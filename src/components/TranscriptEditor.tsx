@@ -18,6 +18,28 @@ import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } f
 import { VocalIntensityIndicator } from './VocalIntensityIndicator';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 
+// Captions with Intention - Official Color Palette
+const CI_MAIN_COLORS = [
+  '#E5E517', // Yellow (Main)
+  '#17E5E5', // Cyan (Main) 
+  '#E51717', // Red (Main)
+  '#17E517', // Green (Main)
+  '#E517E5', // Magenta (Main)
+  '#E58017', // Orange (Main)
+];
+
+const CI_SUPPORTING_COLORS = [
+  '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
+  '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
+];
+
+const PRIORITY_COLORS = [...CI_MAIN_COLORS, ...CI_SUPPORTING_COLORS];
+
+// Get next CI color for speaker assignment
+const getNextCISpeakerColor = (index: number): string => {
+  return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
+};
+
 interface TranscriptSegment {
   id: string;
   text: string;
@@ -224,7 +246,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
               speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: '#3B82F6',
+              speakerColor: getNextCISpeakerColor(segmentIndex),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -251,7 +273,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
               speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: '#3B82F6',
+              speakerColor: getNextCISpeakerColor(index),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -397,7 +419,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditStartTime(segment.startTime.toString());
     setEditEndTime(segment.endTime.toString());
     setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
-    setEditSpeakerColor(segment.speakerColor || '#3B82F6');
+    setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -504,7 +526,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       startTime: newStartTime,
       endTime: newStartTime + 3,
       speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
-      speakerColor: '#3B82F6',
+      speakerColor: getNextCISpeakerColor(editingTranscript.length),
       emphasis: 'normal',
       pitch: 'normal'
     };
@@ -568,13 +590,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         editingTranscript
       );
       
-      const updatedSegments = analyzedSegments.map((segment: any) => ({
+      const updatedSegments = analyzedSegments.map((segment: any, index: number) => ({
         id: segment.id || `segment-${Date.now()}-${Math.random()}`,
         text: segment.text,
         startTime: segment.start_time || segment.startTime,
         endTime: segment.end_time || segment.endTime,
         speaker: segment.speaker || 'Speaker',
-        speakerColor: segment.speakerColor || '#3B82F6',
+        speakerColor: segment.speakerColor || PRIORITY_COLORS[index % PRIORITY_COLORS.length],
         emphasis: segment.emphasis || 'normal' as const,
         pitch: segment.pitch || 'normal' as const,
         vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,
