@@ -20,6 +20,7 @@ export default {
 		extend: {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
+        'roboto-flex': ['Roboto Flex', 'sans-serif'],
       },
       fontWeight: {
         'extralight': '200',
