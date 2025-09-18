@@ -317,10 +317,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // 3. CRITICAL: Apply character settings to all segments in database
+      // 3. CRITICAL: Save speaker mappings to localStorage for instant video player access
+      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(speakerMappings));
+      console.log('💾 CRITICAL: Speaker mappings saved to localStorage for video player:', speakerMappings);
+      
+      // 4. CRITICAL: Apply character settings to all segments in database
       await applyCharacterMappings();
       
-      // 4. Update localStorage for instant access (critical for video player)
+      // 5. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
         ...acc, 
         [char.name]: char.color 
@@ -328,17 +332,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
       
-      // 5. Trigger parent component update 
+      // 6. CRITICAL: Save character definitions to localStorage for video player
+      localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
+      console.log('💾 CRITICAL: Character definitions saved to localStorage for video player');
+      
+      // 7. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
-      // 6. Trigger window event so other components can sync immediately
+      // 8. Trigger window event so other components can sync immediately
       window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, characters } 
+        detail: { colors: characterColorMap, characters, mappings: speakerMappings } 
       }));
       
       toast({
-        title: "Colors synchronized!",
-        description: `${characters.length} characters saved and colors synced across video player and transcript`,
+        title: "Characters & Mappings Synchronized!",
+        description: `${characters.length} characters and ${Object.keys(speakerMappings).length} speaker mappings saved and synced everywhere`,
         variant: "default"
       });
     } catch (error) {
