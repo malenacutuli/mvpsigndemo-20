@@ -184,6 +184,8 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           
           onTranscriptUpdate?.(segments);
           onTranscriptionComplete?.(segments, data.language || 'en');
+        } catch (error) {
+          console.error('Failed to save transcript:', error);
         }
       }
     } catch (error) {
