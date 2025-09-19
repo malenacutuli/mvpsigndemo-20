@@ -97,9 +97,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
-  // Load saved transcript on component mount
+  // Load saved transcript and character data on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
+      // Load character definitions first
+      const characters = await loadCharacters();
+      if (characters.length > 0) {
+        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        
+        // Create character color mapping for localStorage
+        const colorMapping = characters.reduce((acc, char) => ({
+          ...acc,
+          [char.name]: char.color
+        }), {});
+        localStorage.setItem('character-colors', JSON.stringify(colorMapping));
+        console.log('🎭 TRANSCRIPT EDITOR: Loaded character definitions:', colorMapping);
+      }
+      
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
@@ -112,11 +126,31 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       }
     };
     loadTranscriptData();
+    
+    // Listen for character updates from Character Manager
+    const handleCharacterUpdate = (event: CustomEvent) => {
+      const { characters } = event.detail;
+      if (characters && Array.isArray(characters)) {
+        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
+      }
+    };
+    
+    window.addEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
+    return () => {
+      window.removeEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
+    };
   }, [videoId]);
 
   // Load saved transcript when language changes
   useEffect(() => {
     const loadTranscriptData = async () => {
+      // Reload characters when language changes
+      const characters = await loadCharacters();
+      if (characters.length > 0) {
+        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+      }
+      
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
@@ -418,8 +452,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditText(segment.text);
     setEditStartTime(segment.startTime.toString());
     setEditEndTime(segment.endTime.toString());
-    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
-    setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
+    
+    // Use existing speaker if available, otherwise use first available character or 'Speaker'
+    const currentSpeaker = segment.speaker || (availableCharacters.length > 0 ? availableCharacters[0].name : 'Speaker');
+    setEditSpeaker(currentSpeaker);
+    
+    // Use character color if speaker matches a character, otherwise use segment color or default
+    const characterMatch = availableCharacters.find(c => c.name === currentSpeaker);
+    const currentColor = characterMatch?.color || segment.speakerColor || getNextCISpeakerColor(index);
+    setEditSpeakerColor(currentColor);
+    
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -864,12 +906,44 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                           <User className="w-3 h-3" />
                           Speaker
                         </Label>
-                        <Input
-                          value={editSpeaker}
-                          onChange={(e) => setEditSpeaker(e.target.value)}
-                          placeholder="Speaker name (e.g., Teacher, Chef, Host)"
-                          className="text-xs"
-                        />
+                        {availableCharacters.length > 0 ? (
+                          <Select 
+                            value={editSpeaker} 
+                            onValueChange={(value) => {
+                              setEditSpeaker(value);
+                              // Auto-update color when character is selected
+                              const character = availableCharacters.find(c => c.name === value);
+                              if (character) {
+                                setEditSpeakerColor(character.color);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select character" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableCharacters.map(character => (
+                                <SelectItem key={character.name} value={character.name}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded-full border" 
+                                      style={{ backgroundColor: character.color }}
+                                    />
+                                    {character.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="Custom">Custom Speaker</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            value={editSpeaker}
+                            onChange={(e) => setEditSpeaker(e.target.value)}
+                            placeholder="Speaker name (e.g., Teacher, Chef, Host)"
+                            className="text-xs"
+                          />
+                        )}
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs flex items-center gap-1">
