@@ -27,6 +27,57 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
   const { loadTranscriptSegments, saveTranscriptSegments } = useVideoStorage(videoId || '');
   const { toast } = useToast();
 
+  // Helper: run diarization then apply saved speaker mappings to update names/colors
+  const runDiarizationAndApplyMappings = async () => {
+    if (!videoId || !videoUrl) return;
+
+    // 1) Run diarization to label segments as Speaker 1..N by time overlap
+    const diarize = await supabase.functions.invoke('speaker-diarization', {
+      body: {
+        videoId,
+        videoUrl,
+        analysisDepth: 'advanced',
+        minSpeakerDuration: 1.5,
+        confidenceThreshold: 0.65
+      }
+    });
+    if (diarize.error) {
+      console.warn('Speaker diarization failed:', diarize.error.message);
+    }
+
+    // 2) Load mappings and characters
+    const [{ data: mappingRow }, { data: chars }] = await Promise.all([
+      supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
+      supabase.from('characters').select('name,color').eq('video_id', videoId)
+    ]);
+
+    const mappings: Record<string, string> = (mappingRow?.mappings as any) || {};
+    const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
+
+    // 3) Apply mapping Speaker N -> Character name + color
+    const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
+    for (const key of genericKeys) {
+      const characterName = mappings[key];
+      const color = colorMap[characterName] || '#3B82F6';
+      const { error } = await supabase
+        .from('transcript_segments')
+        .update({ speaker: characterName, speaker_color: color })
+        .eq('video_id', videoId)
+        .eq('speaker', key);
+      if (error) console.warn(`Failed to apply mapping for ${key} -> ${characterName}`, error.message);
+    }
+
+    // 4) Refresh local cache and UI
+    const refreshed = await loadTranscriptSegments();
+    setTranscripts(refreshed.map(seg => ({
+      text: seg.text,
+      start_time: seg.startTime,
+      end_time: seg.endTime,
+      speaker: seg.speaker
+    })));
+    onTranscriptUpdate?.(refreshed);
+  };
+
   // Load existing transcripts on mount
   useEffect(() => {
     if (videoId) {
@@ -123,21 +174,17 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           
           await saveTranscriptSegments(transcriptSegments, data.language || 'en');
           
+          // Immediately run diarization and apply character mappings so UI shows real names/colors
+          await runDiarizationAndApplyMappings();
+          
           toast({
-            title: "Transcript saved successfully!",
-            description: `Successfully extracted and saved ${segments.length} segments to database`
+            title: "Transcript saved",
+            description: `Saved ${segments.length} segments and applied speaker mappings`
           });
-        } catch (saveError) {
-          console.error('Failed to save transcript:', saveError);
-          // Don't show error toast since it falls back to localStorage
-          toast({
-            title: "Transcript extracted",
-            description: `${segments.length} segments extracted (saved locally due to sync issue)`
-          });
+          
+          onTranscriptUpdate?.(segments);
+          onTranscriptionComplete?.(segments, data.language || 'en');
         }
-        
-        onTranscriptUpdate?.(segments);
-        onTranscriptionComplete?.(segments, data.language || 'en');
       }
     } catch (error) {
       console.error('Transcription error:', error);

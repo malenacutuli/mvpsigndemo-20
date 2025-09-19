@@ -134,8 +134,62 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
         console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
       }
-    };
-    
+  };
+
+  // Run diarization then apply stored speaker mappings to update names/colors
+  const diarizeAndApplyMappings = async () => {
+    try {
+      if (!videoId || !videoUrl) return;
+      // Run diarization to label segments as Speaker 1..N
+      const resp = await supabase.functions.invoke('speaker-diarization', {
+        body: {
+          videoId,
+          videoUrl,
+          analysisDepth: 'advanced',
+          minSpeakerDuration: 1.5,
+          confidenceThreshold: 0.65
+        }
+      });
+      if (resp.error) console.warn('Diarization failed:', resp.error.message);
+
+      // Load mapping and characters
+      const [{ data: mappingRow }, { data: chars }] = await Promise.all([
+        supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
+        supabase.from('characters').select('name,color').eq('video_id', videoId)
+      ]);
+      const mappings: Record<string,string> = (mappingRow?.mappings as any) || {};
+      const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
+
+      // Apply mapping Speaker N -> Character name
+      const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
+      for (const key of genericKeys) {
+        const name = mappings[key];
+        const color = colorMap[name] || '#3B82F6';
+        const { error } = await supabase
+          .from('transcript_segments')
+          .update({ speaker: name, speaker_color: color })
+          .eq('video_id', videoId)
+          .eq('speaker', key);
+        if (error) console.warn('Mapping update failed for', key, '->', name, error.message);
+      }
+
+      // Refresh local editor state
+      const refreshed = await loadTranscriptSegments(selectedLanguage);
+      const converted = refreshed.map(seg => ({
+        ...seg,
+        id: seg.id || `segment-${Date.now()}-${Math.random()}`
+      }));
+      setEditingTranscript(converted);
+      setOriginalTranscript(converted);
+      onTranscriptUpdate?.(converted, selectedLanguage);
+
+      // Notify color listeners
+      const colors = colorMap;
+      window.dispatchEvent(new CustomEvent('character-colors-updated', { detail: { colors, characters: (chars||[]), mappings } }));
+    } catch (e) {
+      console.warn('diarizeAndApplyMappings error', e);
+    }
+  };
     window.addEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
     return () => {
       window.removeEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
