@@ -21,43 +21,60 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId } = await req.json();
+    const { videoUrl, videoId, analysisDepth = 'standard', minSpeakerDuration = 1, confidenceThreshold = 0.6 } = await req.json();
 
     if (!videoUrl || !videoId) {
       throw new Error('Video URL and video ID are required');
     }
 
     console.log('🎤 Starting speaker diarization for video:', videoId);
+    console.log('⚙️ Analysis depth:', analysisDepth, 'Min duration:', minSpeakerDuration, 'Confidence:', confidenceThreshold);
     
     const assemblyAIKey = Deno.env.get('ASSEMBLYAI_API_KEY');
     if (!assemblyAIKey) {
       throw new Error('AssemblyAI API key not configured');
     }
 
-    // Step 1: Submit audio for transcription with speaker diarization
+    // Step 1: Submit audio for transcription with enhanced speaker diarization
     console.log('📤 Submitting audio to AssemblyAI...');
+    
+    // Configure analysis parameters based on depth
+    const baseConfig = {
+      audio_url: videoUrl,
+      speaker_labels: true,
+      speakers_expected: analysisDepth === 'advanced' ? 6 : 4, // Allow for up to 6 speakers in advanced mode
+      auto_chapters: false,
+      sentiment_analysis: analysisDepth === 'advanced',
+      entity_detection: false,
+      iab_categories: false,
+      content_safety: false,
+      auto_highlights: false,
+      language_detection: true,
+      punctuate: true,
+      format_text: true,
+      dual_channel: false,
+      speech_model: 'best' // Use the most accurate model
+    };
+    
+    // Add advanced features if requested
+    if (analysisDepth === 'advanced') {
+      Object.assign(baseConfig, {
+        filter_profanity: false,
+        redact_pii: false,
+        redact_pii_audio: false,
+        redact_pii_audio_quality: 'mp3',
+        redact_pii_policies: [],
+        redact_pii_sub: 'hash'
+      });
+    }
+
     const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
       method: 'POST',
       headers: {
         'Authorization': assemblyAIKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        audio_url: videoUrl,
-        speaker_labels: true, // Enable speaker diarization
-        speakers_expected: 4, // Expect up to 4 speakers (adjustable)
-        auto_chapters: false,
-        sentiment_analysis: false,
-        entity_detection: false,
-        iab_categories: false,
-        content_safety: false,
-        auto_highlights: false,
-        language_detection: false,
-        punctuate: true,
-        format_text: true,
-        dual_channel: false,
-        speech_model: 'best' // Use the most accurate model
-      }),
+      body: JSON.stringify(baseConfig),
     });
 
     if (!transcriptResponse.ok) {
@@ -213,19 +230,32 @@ serve(async (req) => {
       }
     }
 
-    // Step 4: Generate speaker metadata
-    const speakerMetadata = Array.from(speakerMap.entries()).map(([originalLabel, index]) => ({
-      id: `speaker_${index + 1}`,
-      name: `Speaker ${index + 1}`,
-      originalLabel,
-      color: speakerColors[index % speakerColors.length],
-      segmentCount: speakerSegments.filter(s => s.speaker === `Speaker ${index + 1}`).length,
-      totalTimeSeconds: speakerSegments
-        .filter(s => s.speaker === `Speaker ${index + 1}`)
-        .reduce((total, segment) => total + (segment.endTime - segment.startTime), 0)
-    }));
+    // Step 4: Generate enhanced speaker metadata with pattern analysis
+    const speakerMetadata = Array.from(speakerMap.entries()).map(([originalLabel, index]) => {
+      const speakerSegments_filtered = speakerSegments.filter(s => s.speaker === `Speaker ${index + 1}`);
+      const totalTime = speakerSegments_filtered.reduce((total, segment) => total + (segment.endTime - segment.startTime), 0);
+      const avgDuration = totalTime / speakerSegments_filtered.length || 0;
+      const avgConfidence = speakerSegments_filtered.reduce((sum, s) => sum + s.confidence, 0) / speakerSegments_filtered.length || 0;
+      
+      // Filter out very short segments that might be noise
+      const validSegments = speakerSegments_filtered.filter(s => (s.endTime - s.startTime) >= minSpeakerDuration);
+      
+      return {
+        id: `Speaker ${index + 1}`,
+        name: `Speaker ${index + 1}`,
+        originalLabel,
+        color: speakerColors[index % speakerColors.length],
+        segmentCount: validSegments.length,
+        totalTimeSeconds: totalTime,
+        averageDuration: avgDuration,
+        confidence: avgConfidence,
+        // Add speaker pattern analysis
+        speakingStyle: avgDuration > 10 ? 'narrative' : avgDuration > 5 ? 'conversational' : 'responsive',
+        likelihood: validSegments.length >= 3 && avgConfidence >= confidenceThreshold ? 'high' : validSegments.length >= 2 ? 'medium' : 'low'
+      };
+    }).filter(speaker => speaker.likelihood !== 'low' && speaker.segmentCount >= 2); // Filter out unlikely speakers
 
-    console.log(`✅ Speaker diarization complete: ${speakerCounter} speakers identified, ${speakerSegments.length} segments`);
+    console.log(`✅ Enhanced speaker analysis complete: ${speakerMetadata.length} confirmed speakers, ${speakerSegments.length} segments`);
     console.log('🎨 Speaker metadata:', speakerMetadata);
 
     // Step 5: Store results in Supabase and update transcript segments
@@ -297,19 +327,29 @@ serve(async (req) => {
       // Continue anyway - caching is optional
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        speakers: speakerMetadata,
-        segments: speakerSegments,
-        totalSpeakers: speakerCounter,
-        transcriptId,
-        processingTimeMs: Date.now()
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          speakers: speakerMetadata,
+          segments: speakerSegments,
+          totalSpeakers: speakerMetadata.length,
+          speakerMappings: Object.fromEntries(
+            speakerMetadata.map(speaker => [speaker.id, speaker.name])
+          ),
+          analysisMetadata: {
+            analysisDepth,
+            minSpeakerDuration,
+            confidenceThreshold,
+            originalSpeakerCount: speakerCounter,
+            filteredSpeakerCount: speakerMetadata.length
+          },
+          transcriptId,
+          processingTimeMs: Date.now()
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
 
   } catch (error: any) {
     console.error('❌ Speaker diarization error:', error);

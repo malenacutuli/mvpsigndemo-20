@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
 import { SpeakerMappingSync } from "@/components/SpeakerMappingSync";
+import { ImprovedSpeakerDetection } from "@/components/ImprovedSpeakerDetection";
 
 interface Video {
   id: string;
@@ -381,7 +382,8 @@ const VideoDetail = () => {
             { name: 'David', color: '#3B82F6' },
             { name: 'Rick', color: '#10B981' },
             { name: 'Kevin', color: '#F59E0B' },
-            { name: 'Photographer', color: '#8B5CF6' }
+            { name: 'Photographer', color: '#8B5CF6' },
+            { name: 'Housekeeper', color: '#EC4899' }
           ]}
         />
       )}
@@ -513,6 +515,25 @@ const VideoDetail = () => {
                     {t('videoDetail.immersiveTip')}
                   </p>
                 </div>
+              </div>
+              
+              {/* Improved Speaker Detection Section */}
+              <div className="mt-6">
+                <ImprovedSpeakerDetection 
+                  videoId={video.id}
+                  videoUrl={videoUrl || ''}
+                  onCharactersUpdated={(characters) => {
+                    console.log('Characters updated:', characters);
+                    // Trigger a refresh of the video player to use new character mappings
+                    window.dispatchEvent(new CustomEvent('character-colors-updated', {
+                      detail: { 
+                        colors: characters.reduce((acc, char) => ({ ...acc, [char.name]: char.color }), {}),
+                        characters,
+                        mappings: {}
+                      }
+                    }));
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
