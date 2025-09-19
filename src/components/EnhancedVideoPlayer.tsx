@@ -65,9 +65,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
     return unique;
   }, [transcriptSegments]);
-  // Stable speaker color assignment function
+  // Stable speaker color assignment function - respects Character Manager colors
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
-    // Create consistent speaker color mapping based on speaker names
+    // Load character colors from localStorage (set by Character Manager)
+    let characterColors: Record<string, string> = {};
+    try {
+      const characterColorString = localStorage.getItem('character-colors');
+      if (characterColorString) {
+        characterColors = JSON.parse(characterColorString);
+      }
+    } catch (e) {
+      console.warn('Failed to parse character colors from localStorage');
+    }
+    
+    // Create consistent speaker color mapping based on character definitions first
     const speakerColorMap = new Map<string, string>();
     const availableColors = [
       '#E5E517', // CI Main Yellow
@@ -90,8 +101,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     segments.forEach(segment => {
       const speakerName = segment.speaker || 'Speaker';
       if (!speakerColorMap.has(speakerName)) {
-        speakerColorMap.set(speakerName, availableColors[colorIndex % availableColors.length]);
-        colorIndex++;
+        // Priority 1: Use Character Manager color if available
+        if (characterColors[speakerName]) {
+          speakerColorMap.set(speakerName, characterColors[speakerName]);
+        } else {
+          // Priority 2: Use consistent CI color based on speaker name hash
+          let hash = 0;
+          for (let i = 0; i < speakerName.length; i++) {
+            const char = speakerName.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+          }
+          const consistentColorIndex = Math.abs(hash) % availableColors.length;
+          speakerColorMap.set(speakerName, availableColors[consistentColorIndex]);
+        }
       }
     });
     

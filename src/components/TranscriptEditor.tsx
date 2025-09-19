@@ -35,10 +35,37 @@ const CI_SUPPORTING_COLORS = [
 
 const PRIORITY_COLORS = [...CI_MAIN_COLORS, ...CI_SUPPORTING_COLORS];
 
-// Get next CI color for speaker assignment
-const getNextCISpeakerColor = (index: number): string => {
-  return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
-};
+  // Get character color from Character Manager or fallback to CI colors
+  const getCharacterColor = (speakerName: string, availableCharacters: { name: string; color: string }[]): string => {
+    // First, try to find the color from defined characters
+    const character = availableCharacters.find(char => char.name === speakerName);
+    if (character?.color) {
+      return character.color;
+    }
+    
+    // Fallback to localStorage character-colors mapping
+    const characterColors = localStorage.getItem('character-colors');
+    if (characterColors) {
+      try {
+        const colors = JSON.parse(characterColors);
+        if (colors[speakerName]) {
+          return colors[speakerName];
+        }
+      } catch (e) {
+        console.warn('Failed to parse character-colors from localStorage');
+      }
+    }
+    
+    // Final fallback: use CI colors with consistent assignment based on speaker name
+    let hash = 0;
+    for (let i = 0; i < speakerName.length; i++) {
+      const char = speakerName.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const colorIndex = Math.abs(hash) % PRIORITY_COLORS.length;
+    return PRIORITY_COLORS[colorIndex];
+  };
 
 interface TranscriptSegment {
   id: string;
@@ -133,8 +160,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       if (characters && Array.isArray(characters)) {
         setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
         console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
+        
+        // Update all existing segments with new character colors
+        const updatedTranscript = editingTranscript.map(segment => ({
+          ...segment,
+          speakerColor: getCharacterColor(segment.speaker || 'Speaker', characters.map(c => ({ name: c.name, color: c.color })))
+        }));
+        setEditingTranscript(updatedTranscript);
       }
-  };
+    };
 
   // Run diarization then apply stored speaker mappings to update names/colors
   const diarizeAndApplyMappings = async () => {
@@ -173,19 +207,24 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         if (error) console.warn('Mapping update failed for', key, '->', name, error.message);
       }
 
-      // Refresh local editor state
-      const refreshed = await loadTranscriptSegments(selectedLanguage);
-      const converted = refreshed.map(seg => ({
-        ...seg,
-        id: seg.id || `segment-${Date.now()}-${Math.random()}`
-      }));
-      setEditingTranscript(converted);
-      setOriginalTranscript(converted);
-      onTranscriptUpdate?.(converted, selectedLanguage);
+    // Refresh local editor state and apply current character colors
+    const refreshed = await loadTranscriptSegments(selectedLanguage);
+    const converted = refreshed.map(seg => ({
+      ...seg,
+      id: seg.id || `segment-${Date.now()}-${Math.random()}`,
+      speakerColor: getCharacterColor(seg.speaker || 'Speaker', availableCharacters)
+    }));
+    setEditingTranscript(converted);
+    setOriginalTranscript(converted);
+    onTranscriptUpdate?.(converted, selectedLanguage);
 
-      // Notify color listeners
-      const colors = colorMap;
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { detail: { colors, characters: (chars||[]), mappings } }));
+    // Update localStorage with current character colors
+    localStorage.setItem('character-colors', JSON.stringify(colorMap));
+    
+    // Notify all components about the color update
+    window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+      detail: { colors: colorMap, characters: (chars||[]), mappings } 
+    }));
     } catch (e) {
       console.warn('diarizeAndApplyMappings error', e);
     }
@@ -328,13 +367,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           const isLastWord = index === data.words.length - 1;
           
           if (isEndOfSentence || isLongSegment || isLastWord) {
+            const speakerName = `Speaker ${(segmentIndex % 4) + 1}`;
             segments.push({
               id: `segment-${segmentIndex}`,
               text: currentSegment.trim(),
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(segmentIndex),
+              speaker: speakerName,
+              speakerColor: getCharacterColor(speakerName, availableCharacters),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -355,13 +395,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         
         sentences.forEach((sentence, index) => {
           if (sentence.trim()) {
+            const speakerName = `Speaker ${(index % 4) + 1}`;
             segments.push({
               id: `segment-${index}`,
               text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(index),
+              speaker: speakerName,
+              speakerColor: getCharacterColor(speakerName, availableCharacters),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -513,7 +554,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     // Use character color if speaker matches a character, otherwise use segment color or default
     const characterMatch = availableCharacters.find(c => c.name === currentSpeaker);
-    const currentColor = characterMatch?.color || segment.speakerColor || getNextCISpeakerColor(index);
+    const currentColor = characterMatch?.color || segment.speakerColor || getCharacterColor(currentSpeaker, availableCharacters);
     setEditSpeakerColor(currentColor);
     
     setEditEmphasis(segment.emphasis || 'normal');
@@ -616,13 +657,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       newStartTime = lastSegment ? lastSegment.endTime : 0;
     }
     
+    const defaultSpeaker = 'Speaker 1';
     const newSegment: TranscriptSegment = {
       id: `segment-${Date.now()}`,
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
-      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
-      speakerColor: getNextCISpeakerColor(editingTranscript.length),
+      speaker: defaultSpeaker,
+      speakerColor: getCharacterColor(defaultSpeaker, availableCharacters),
       emphasis: 'normal',
       pitch: 'normal'
     };
