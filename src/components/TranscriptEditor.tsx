@@ -418,8 +418,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     const segment = editingTranscript[index];
     setEditingIndex(index);
     setEditText(segment.text);
-    setEditStartTime(segment.startTime.toString());
-    setEditEndTime(segment.endTime.toString());
+    setEditStartTime(formatTime(segment.startTime));
+    setEditEndTime(formatTime(segment.endTime));
     setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
     setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
     setOriginalSpeaker(segment.speaker || 'Speaker');
