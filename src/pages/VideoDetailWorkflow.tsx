@@ -78,7 +78,7 @@ export default function VideoDetailWorkflow() {
           speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
         }));
         setCaptions(captionSegments);
-        setShowWorkflow(false); // Auto-proceed to player if captions exist
+        // setShowWorkflow(false); // Keep editor visible for manual edits
         console.log('✅ Loaded existing captions for video player:', captionSegments.length, 'segments');
       }
     } catch (error) {

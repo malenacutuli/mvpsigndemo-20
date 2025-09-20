@@ -62,7 +62,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
-  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('twelvelabs');
+  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('whisper');
   const [showUploader, setShowUploader] = useState(false);
   const { toast } = useToast();
 
@@ -256,12 +256,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       });
 
       if (loadedSegments.length > 0) {
-        setSegments(loadedSegments);
+        const normalized = await normalizeSpeakersAndColors(loadedSegments, detectedLanguage);
+        setSegments(normalized);
         setCurrentStep('edit');
         setExtractionComplete(true);
         setIsLoadingExisting(false);
         
-        console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', loadedSegments.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', normalized.length, 'segments');
         console.log('✅ TranscriptWorkflow - Current step set to: edit');
         
         // If loaded from localStorage but not in database, try to save to database
@@ -294,6 +295,48 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     return colors[index % colors.length];
   };
 
+  // Normalize speakers and colors using saved mappings and characters
+  const normalizeSpeakersAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
+    try {
+      const [{ data: mappingRow }, { data: chars }] = await Promise.all([
+        supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
+        supabase.from('characters').select('name,color').eq('video_id', videoId)
+      ]);
+
+      const mappings: Record<string, string> = (mappingRow?.mappings as any) || {};
+      const colorMap = (chars || []).reduce((acc: Record<string, string>, c: any) => {
+        acc[c.name] = c.color; return acc;
+      }, {} as Record<string, string>);
+
+      const normalized = segs.map((s, idx) => {
+        let name = (s.speaker || `Speaker ${((idx % 4) + 1)}`).trim();
+        if (mappings[name]) name = mappings[name];
+        const color = colorMap[name] || s.speakerColor || getSpeakerColor(idx);
+        return { ...s, speaker: name, speakerColor: color };
+      });
+
+      // Best-effort DB sync so future loads are consistent
+      try {
+        for (const s of normalized) {
+          const original = segs.find(x => x.id === s.id);
+          if (!original) continue;
+          if (original.speaker !== s.speaker || original.speakerColor !== s.speakerColor) {
+            await supabase
+              .from('transcript_segments')
+              .update({ speaker: s.speaker, speaker_color: s.speakerColor })
+              .eq('id', s.id);
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Speaker normalization DB sync skipped:', syncErr);
+      }
+
+      return normalized;
+    } catch (e) {
+      console.warn('normalizeSpeakersAndColors error', e);
+      return segs;
+    }
+  };
   const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
     console.log('📁 Transcript uploaded:', uploadedSegments.length, 'segments in', language);
     setSegments(uploadedSegments);
