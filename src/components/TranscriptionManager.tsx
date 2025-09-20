@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Download } from 'lucide-react';
+import { Mic, Download, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useToast } from '@/hooks/use-toast';
+import { SpeakerCorrectionInterface } from './SpeakerCorrectionInterface';
 
 interface TranscriptionManagerProps {
   videoId?: string;
@@ -24,6 +25,9 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcripts, setTranscripts] = useState<any[]>([]);
   const [hasExistingTranscript, setHasExistingTranscript] = useState(false);
+  const [showSpeakerCorrection, setShowSpeakerCorrection] = useState(false);
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [segments, setSegments] = useState<any[]>([]);
   const { loadTranscriptSegments, saveTranscriptSegments } = useVideoStorage(videoId || '');
   const { toast } = useToast();
 
@@ -84,12 +88,31 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
     }
   };
 
-  // Load existing transcripts on mount
+  // Load existing transcripts and characters on mount
   useEffect(() => {
     if (videoId) {
       loadExistingTranscripts();
+      loadCharacters();
     }
   }, [videoId]);
+
+  const loadCharacters = async () => {
+    if (!videoId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('updated_at', { ascending: false });
+      
+      if (!error && data) {
+        setCharacters(data);
+      }
+    } catch (error) {
+      console.error('Failed to load characters:', error);
+    }
+  };
 
   const loadExistingTranscripts = async () => {
     if (!videoId) return;
@@ -105,6 +128,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           speaker: seg.speaker || 'narrator'
         }));
         setTranscripts(segments);
+        setSegments(existingSegments); // Keep full segment data for corrections
         setHasExistingTranscript(true);
         onTranscriptUpdate?.(segments);
         onTranscriptionComplete?.(segments, 'en');
@@ -253,12 +277,41 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           Export Transcript
         </Button>
         
+        {transcripts.length > 0 && characters.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => setShowSpeakerCorrection(!showSpeakerCorrection)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {showSpeakerCorrection ? 'Hide' : 'Review'} Speaker Assignments
+          </Button>
+        )}
+        
+        {showSpeakerCorrection && segments.length > 0 && (
+          <div className="mt-4">
+            <SpeakerCorrectionInterface
+              videoId={videoId || ''}
+              segments={segments}
+              characters={characters}
+              onCorrection={(corrections) => {
+                // Refresh transcripts after corrections
+                loadExistingTranscripts();
+                setShowSpeakerCorrection(false);
+              }}
+            />
+          </div>
+        )}
+        
         {transcripts.length > 0 && (
           <div className="mt-4 p-3 bg-muted rounded-md">
             <h4 className="font-medium mb-2">Generated Transcript:</h4>
             <div className="text-sm text-muted-foreground max-h-32 overflow-y-auto">
               {transcripts.map((segment, index) => (
-                <p key={index}>{segment.text}</p>
+                <p key={index} className="mb-1">
+                  <span className="font-medium" style={{ color: segment.speaker_color || '#666' }}>
+                    {segment.speaker}:
+                  </span> {segment.text}
+                </p>
               ))}
             </div>
           </div>

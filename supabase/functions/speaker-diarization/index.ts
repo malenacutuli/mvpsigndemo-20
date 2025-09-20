@@ -42,7 +42,11 @@ serve(async (req) => {
     const baseConfig = {
       audio_url: videoUrl,
       speaker_labels: true,
-      speakers_expected: analysisDepth === 'advanced' ? 6 : 4, // Allow for up to 6 speakers in advanced mode
+      speakers_expected: analysisDepth === 'advanced' ? 6 : 4,
+      
+      // Enhanced speaker diarization settings
+      speaker_labels_threshold: confidenceThreshold || 0.65, // Higher threshold for more confident assignments
+      speech_threshold: 0.5, // Minimum speech confidence
       auto_chapters: false,
       sentiment_analysis: analysisDepth === 'advanced',
       entity_detection: false,
@@ -53,7 +57,13 @@ serve(async (req) => {
       punctuate: true,
       format_text: true,
       dual_channel: false,
-      speech_model: 'best' // Use the most accurate model
+      speech_model: 'best', // Use the most accurate model
+      
+      // Audio preprocessing for better speaker separation
+      filter_profanity: false,
+      boost_param: 'low', // Boost low frequencies which help distinguish voices
+      redact_pii: false,
+      speed_boost: false // Prioritize accuracy over speed
     };
     
     // Add advanced features if requested
