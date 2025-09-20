@@ -10,7 +10,11 @@ import { RefreshCw, Settings, Play, Pause, Database, FileText } from 'lucide-rea
 import { supabase } from '@/integrations/supabase/client';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { AxessiblePlayer } from '@/components/AxessiblePlayer';
+import { SpeakerIdentificationPanel } from '@/components/SpeakerIdentificationPanel';
 import { SpeakerCorrectionInterface } from '@/components/SpeakerCorrectionInterface';
+import { CharacterManager } from '@/components/CharacterManager';
+import { TranscriptionManager } from '@/components/TranscriptionManager';
+import { VideoAnalysisWorkflow } from '@/components/VideoAnalysisWorkflow';
 
 // Test video ID from route - hardcoded for now
 const TEST_VIDEO_ID = '2f9a71a2-0c14-44e7-b0c8-499eb996e28f';
@@ -143,6 +147,31 @@ export const SpeakerSandbox: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Video Analysis Workflow */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Play className="w-5 h-5" />
+              Complete Analysis Workflow
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Full pipeline: Analysis → Characters → Intonation
+            </p>
+          </CardHeader>
+          <CardContent>
+            <VideoAnalysisWorkflow
+              videoId={TEST_VIDEO_ID}
+              videoUrl={TEST_VIDEO_URL}
+              language="en"
+              onWorkflowComplete={(data) => {
+                console.log('Workflow completed:', data);
+                addLog('Full workflow completed successfully');
+                loadAllData();
+              }}
+            />
+          </CardContent>
+        </Card>
+
         {/* Header */}
         <Card>
           <CardHeader>
