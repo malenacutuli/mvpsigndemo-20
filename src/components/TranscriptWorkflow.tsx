@@ -368,7 +368,32 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     try {
       console.log('💾 Saving transcript to database:', segments.length, 'segments');
       
-      const segmentsData = segments.map((segment, idx) => ({
+      // Harmonize speaker names before saving: if a color group has a non-generic name
+      // (e.g., "David") and other segments still have generic names (e.g., "Speaker 1"),
+      // propagate the non-generic name to the whole color group.
+      const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
+      const colorPreferred = new Map<string, string>();
+      segments.forEach(seg => {
+        if (!isGeneric(seg.speaker) && seg.speaker && seg.speakerColor) {
+          if (!colorPreferred.has(seg.speakerColor)) colorPreferred.set(seg.speakerColor, seg.speaker);
+        }
+      });
+      let changedCount = 0;
+      const normalized = segments.map(seg => {
+        const preferred = colorPreferred.get(seg.speakerColor);
+        if (preferred && isGeneric(seg.speaker)) {
+          changedCount++;
+          return { ...seg, speaker: preferred };
+        }
+        return seg;
+      });
+      if (changedCount > 0) {
+        console.log(`🔄 Auto-propagation before save: updated ${changedCount} segments by color groups`);
+        setSegments(normalized);
+      }
+      const toSave = changedCount > 0 ? normalized : segments;
+      
+      const segmentsData = toSave.map((segment, idx) => ({
         idx,
         startTime: segment.startTime,
         endTime: segment.endTime,
