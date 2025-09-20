@@ -428,6 +428,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     const character = characters.find(char => char.name === newSpeaker);
     
     if (character) {
+      // Count how many segments will be updated
+      const matchingSegments = segments.filter(seg => seg.speaker === originalSpeaker);
+      
       // Update ALL segments with the same original speaker
       updatedSegments.forEach((segment, index) => {
         if (segment.speaker === originalSpeaker) {
@@ -452,6 +455,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       window.dispatchEvent(new CustomEvent('character-colors-updated', { 
         detail: { colors: characterColorMap, updatedSpeaker: newSpeaker, originalSpeaker } 
       }));
+      
+      // Show confirmation toast
+      toast({
+        title: "Speaker Updated",
+        description: `Changed ${matchingSegments.length} segment(s) from "${originalSpeaker}" to "${newSpeaker}"`,
+        variant: "default",
+      });
       
       saveTranscript();
     }
@@ -649,19 +659,27 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                         {/* Speaker and timing info */}
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-2">
+                            <span>{segment.startTime.toFixed(1)} - {segment.endTime.toFixed(1)}</span>
+                            <Badge 
+                              variant="secondary" 
+                              className="text-black px-2 py-1 text-xs font-medium"
+                              style={{ backgroundColor: segment.speakerColor }}
+                            >
+                              {segment.speaker}
+                            </Badge>
                             <Select 
                               value={segment.speaker}
                               onValueChange={(newSpeaker) => handleSpeakerChange(index, newSpeaker)}
                             >
-                              <SelectTrigger className="h-6 w-24 text-xs">
-                                <SelectValue />
+                              <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent hover:bg-muted">
+                                <Edit className="w-3 h-3" />
                               </SelectTrigger>
                               <SelectContent>
                                 {characters.map(char => (
                                   <SelectItem key={char.id} value={char.name}>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                       <div 
-                                        className="w-2 h-2 rounded-full"
+                                        className="w-3 h-3 rounded-full"
                                         style={{ backgroundColor: char.color }}
                                       />
                                       {char.name}
@@ -671,7 +689,16 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
-                          <span>{segment.startTime.toFixed(1)}s - {segment.endTime.toFixed(1)}s</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setEditingId(segment.id)}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                         
                         {/* Segment text */}
