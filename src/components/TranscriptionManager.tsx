@@ -69,13 +69,19 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
 
     // 4) Refresh local cache and UI
     const refreshed = await loadTranscriptSegments();
-    setTranscripts(refreshed.map(seg => ({
-      text: seg.text,
-      start_time: seg.startTime,
-      end_time: seg.endTime,
-      speaker: seg.speaker
-    })));
-    onTranscriptUpdate?.(refreshed);
+    if (refreshed && refreshed.length > 0) {
+      const mappedTranscripts = refreshed.map(seg => ({
+        text: seg.text,
+        start_time: seg.startTime,
+        end_time: seg.endTime,
+        speaker: seg.speaker
+      }));
+      setTranscripts(mappedTranscripts);
+      onTranscriptUpdate?.(refreshed);
+      console.log('✅ Updated UI with mapped transcripts:', mappedTranscripts.length);
+    } else {
+      console.warn('⚠️ No refreshed segments found, keeping existing transcripts');
+    }
   };
 
   // Load existing transcripts on mount
@@ -174,13 +180,28 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           
           await saveTranscriptSegments(transcriptSegments, data.language || 'en');
           
-          // Immediately run diarization and apply character mappings so UI shows real names/colors
-          await runDiarizationAndApplyMappings();
-          
           toast({
-            title: "Transcript saved",
-            description: `Saved ${segments.length} segments and applied speaker mappings`
+            title: "Transcript generated",
+            description: `Generated ${segments.length} segments. Running speaker analysis...`
           });
+          
+          // Run diarization in background to avoid clearing current display
+          setTimeout(async () => {
+            try {
+              await runDiarizationAndApplyMappings();
+              toast({
+                title: "Speaker analysis complete",  
+                description: "Applied character mappings and colors"
+              });
+            } catch (error) {
+              console.error('Speaker analysis failed:', error);
+              toast({
+                title: "Speaker analysis failed",
+                description: "Using generic speaker labels",
+                variant: "destructive"
+              });
+            }
+          }, 500);
           
           onTranscriptUpdate?.(segments);
           onTranscriptionComplete?.(segments, data.language || 'en');
