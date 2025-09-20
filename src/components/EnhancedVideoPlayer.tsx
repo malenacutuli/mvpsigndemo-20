@@ -391,9 +391,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         setCaptions(captionSegments);
         setTranscriptSegments(segments);
         console.log('✅ Updated captions with fresh database data');
+
+        // Kick off Twelve Labs diarization + mappings pipeline on initial load
+        try {
+          // Ensure diarization runs at least once per video/language session
+          sessionStorage.removeItem(`diarized_${videoId}_${currentLanguage}`);
+          await handleTranscriptUpdate(captionSegments, currentLanguage);
+        } catch (e) {
+          console.warn('⚠️ Failed to run advanced speaker analysis on initial load:', e);
+        }
       }
     } catch (error) {
-      console.error('❌ Failed to load fresh captions:', error);
     }
   };
 
