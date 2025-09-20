@@ -879,8 +879,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             const detectedLang = detectLanguageFromCaptions(captions);
             await handleTranscriptUpdate(captions, detectedLang);
           } else {
-            setCaptions([]);
-            setTranscriptSegments([]);
+            // Do not clear captions; preserve last non-empty state to avoid flicker/disappear
+            console.warn('🚫 Skipping clear: preserving existing captions until data is available');
           }
         }
         
