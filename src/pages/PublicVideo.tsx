@@ -115,50 +115,28 @@ const PublicVideo = () => {
       
       let segments: any[] | null = null;
       
-      // First, look for the most recent edited transcript for this video/language
-      const { data: transcripts, error: txError } = await supabase
-        .from('transcripts')
-        .select('id, updated_at')
+      // First, try to get segments from any transcript for this video
+      const { data: segs, error: segErr } = await supabase
+        .from('transcript_segments')
+        .select('*')
         .eq('video_id', id)
-        .eq('language', data.language || 'en')
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .order('start_time', { ascending: true });
 
-      if (txError) {
-        console.error('❌ Error fetching transcripts:', txError);
-      }
-
-      if (transcripts && transcripts.length > 0) {
-        // Use ONLY the edited transcript's segments
-        const transcriptId = transcripts[0].id;
-        const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
-          .select('*')
-          .eq('transcript_id', transcriptId)
-          .order('idx', { ascending: true })
-          .order('start_time', { ascending: true });
-
-        if (segErr) {
-          console.error('❌ Error fetching edited transcript segments:', segErr);
-        } else {
-          segments = segs || [];
-          console.log('🎯 Using edited transcript segments by transcript_id:', transcriptId, 'count:', segments.length);
-        }
+      if (segErr) {
+        console.error('❌ Error fetching transcript segments:', segErr);
       } else {
-        // No edited transcript found; fall back to base video-level segments only
-        const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
-          .select('*')
-          .eq('video_id', id)
-          .eq('language', data.language || 'en')
-          .is('transcript_id', null)
-          .order('start_time', { ascending: true });
-
-        if (segErr) {
-          console.error('❌ Error fetching base transcript segments:', segErr);
+        segments = segs || [];
+        console.log('🎯 Found transcript segments for public video:', segments.length, 'segments');
+        
+        if (segments.length === 0) {
+          console.log('⚠️ No transcript segments found for video:', id);
         } else {
-          segments = segs || [];
-          console.log('🗄️ Using base video-level transcript segments (no edited transcript found). Count:', segments.length);
+          console.log('✅ First segment sample:', {
+            speaker: segments[0]?.speaker,
+            text: segments[0]?.text?.substring(0, 50) + '...',
+            startTime: segments[0]?.start_time,
+            transcriptId: segments[0]?.transcript_id
+          });
         }
       }
 
