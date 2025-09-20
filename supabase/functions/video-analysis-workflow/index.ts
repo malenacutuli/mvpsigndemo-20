@@ -21,10 +21,17 @@ serve(async (req) => {
   }
 
   try {
-    const { videoId, videoUrl, action, payload } = await req.json();
+    const body = await req.json();
+    console.log('📥 Received request body:', JSON.stringify(body));
+    
+    const { videoId, videoUrl, action, payload } = body;
 
     if (!videoId) {
       throw new Error('Video ID is required');
+    }
+
+    if (action === 'start_full_analysis' && !videoUrl) {
+      throw new Error('Video URL is required for analysis');
     }
 
     const supabase = createClient(
@@ -33,6 +40,7 @@ serve(async (req) => {
     );
 
     console.log(`🎬 Video Analysis Workflow: ${action} for video ${videoId}`);
+    console.log(`🔗 Video URL provided: ${videoUrl ? 'Yes' : 'No'}`);
 
     switch (action) {
       case 'start_full_analysis':
@@ -53,14 +61,22 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ Workflow error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      cause: error.cause
+    }));
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Workflow failed'
+        error: error.message || 'Workflow failed',
+        errorType: 'workflow_error',
+        details: error.toString()
       }),
       {
-        status: 500,
+        status: 400, // Use 400 instead of 500 for client errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
@@ -86,12 +102,12 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
       result_data: { steps, current_step: 'speaker_analysis' }
     });
 
-  // Step 1: Enhanced Speaker Analysis with Twelve Labs
-  console.log('🎭 Starting enhanced speaker analysis with Twelve Labs...');
+  // Step 1: Enhanced Speaker Analysis
+  console.log('🎭 Starting enhanced speaker analysis...');
   updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 10);
 
-  // Primary: Use Twelve Labs for superior speaker diarization
-  const twelveLabsResponse = await supabase.functions.invoke('twelve-labs-analysis', {
+  // Primary: Use advanced AI analysis for superior speaker diarization
+  const primaryResponse = await supabase.functions.invoke('twelve-labs-analysis', {
     body: {
       videoUrl,
       videoId,
@@ -101,12 +117,12 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
 
   let speakerData;
   
-  if (twelveLabsResponse.error || !twelveLabsResponse.data || twelveLabsResponse.data.error) {
-    console.warn('⚠️ Twelve Labs analysis failed, falling back to basic diarization:', twelveLabsResponse.error);
+  if (primaryResponse.error || !primaryResponse.data || primaryResponse.data.error) {
+    console.warn('⚠️ Primary analysis failed, falling back to secondary method:', primaryResponse.error);
     await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 20);
     
-    // Fallback: Use basic speaker diarization
-    const diarizationResponse = await supabase.functions.invoke('speaker-diarization', {
+    // Fallback: Use secondary speaker diarization
+    const fallbackResponse = await supabase.functions.invoke('speaker-diarization', {
       body: {
         videoUrl,
         videoId,
@@ -115,27 +131,27 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
       }
     });
 
-    if (diarizationResponse.error) {
-      await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'error', 0, diarizationResponse.error.message);
-      throw new Error(`Both enhanced and basic speaker analysis failed: ${diarizationResponse.error.message}`);
+    if (fallbackResponse.error) {
+      await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'error', 0, fallbackResponse.error.message);
+      throw new Error(`Both primary and fallback speaker analysis failed: ${fallbackResponse.error.message}`);
     }
 
-    speakerData = diarizationResponse.data;
+    speakerData = fallbackResponse.data;
     console.log('✅ Fallback speaker analysis completed');
   } else {
-    speakerData = twelveLabsResponse.data;
+    speakerData = primaryResponse.data;
     console.log(`✅ Enhanced speaker analysis completed: ${speakerData.segments?.length || 0} segments, ${speakerData.speakers?.length || 0} unique speakers identified`);
   }
 
   await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'completed', 100, speakerData);
 
-  // Step 2: Save Enhanced Transcript (if we have segments from Twelve Labs)
+  // Step 2: Save Enhanced Transcript (if we have segments from AI analysis)
   console.log('📝 Processing enhanced transcript data...');
   await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'running', 25);
 
-  // If Twelve Labs provided segments, save them directly
+  // If AI analysis provided segments, save them directly
   if (speakerData.segments && speakerData.segments.length > 0) {
-    console.log(`💾 Saving ${speakerData.segments.length} enhanced segments from Twelve Labs...`);
+    console.log(`💾 Saving ${speakerData.segments.length} enhanced segments from AI analysis...`);
     
     // Transform segments to match our database format
     const transformedSegments = speakerData.segments.map((segment: any, idx: number) => ({
@@ -202,7 +218,7 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
   let characterSuggestions = [];
   
   if (speakerData.speakers && speakerData.speakers.length > 0) {
-    // Use Twelve Labs speaker data with better naming
+    // Use AI analysis speaker data with better naming
     characterSuggestions = speakerData.speakers.map((speaker: any, index: number) => ({
       suggested_name: speaker.name || `Speaker ${index + 1}`,
       speaker_id: speaker.id || speaker.name,

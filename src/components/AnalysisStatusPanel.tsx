@@ -222,7 +222,7 @@ export const AnalysisStatusPanel: React.FC<AnalysisStatusPanelProps> = ({
         {!isAnalysisAvailable && !isAnalyzing && (
           <div className="text-center py-4">
             <p className="text-muted-foreground mb-4">
-              Run advanced analysis to identify speakers with Twelve Labs (Pegasus 1.2) + AssemblyAI fallback
+              Run advanced AI analysis to identify speakers with enhanced audio processing and fallback systems
             </p>
             <Button onClick={startAnalysis} disabled={isAnalyzing}>
               Start Full Analysis
@@ -267,13 +267,11 @@ export const AnalysisStatusPanel: React.FC<AnalysisStatusPanelProps> = ({
           </div>
         )}
 
-        {isCompleted && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-md">
             <p className="text-green-800 text-sm font-medium">
               ✅ Analysis Complete! Speaker mappings and characters are ready.
             </p>
           </div>
-        )}
       </CardContent>
     </Card>
   );
