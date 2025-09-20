@@ -55,6 +55,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingOriginalSpeaker, setEditingOriginalSpeaker] = useState<string>('');
+  const [editingOriginalColor, setEditingOriginalColor] = useState<string>('');
   const [wordEditingId, setWordEditingId] = useState<string | null>(null);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
@@ -406,36 +407,31 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   // Add function to handle speaker propagation when editing segments
-  const handleSegmentSave = (segmentIndex: number, originalSpeaker: string) => {
-    console.log('🚨 handleSegmentSave called:', { segmentIndex, originalSpeaker });
+  const handleSegmentSave = (segmentIndex: number, originalSpeaker: string, originalColor?: string) => {
+    console.log('🚨 handleSegmentSave called:', { segmentIndex, originalSpeaker, originalColor });
     const currentSegment = segments[segmentIndex];
     const newSpeaker = currentSegment.speaker;
-    console.log('🚨 Current vs New speaker:', { originalSpeaker, newSpeaker });
     
     // If speaker name changed, propagate to all matching segments
     if (originalSpeaker !== newSpeaker) {
       console.log('🚨 Speaker changed, starting propagation...');
-      const updatedSegments = [...segments];
-      let updateCount = 0;
       
       // Find character color for new speaker
       const character = characters.find(char => char.name === newSpeaker);
       const newColor = character?.color || getSpeakerColor(segmentIndex);
       console.log('🚨 New speaker color:', newColor, 'from character:', character);
+      const colorToMatch = originalColor || segments[segmentIndex].speakerColor;
       
-      // Update ALL segments with the same original speaker
-      updatedSegments.forEach((segment, index) => {
-        if (segment.speaker === originalSpeaker) {
-          console.log(`🚨 Updating segment ${index}: "${segment.speaker}" -> "${newSpeaker}"`);
-          updatedSegments[index] = {
-            ...segment,
-            speaker: newSpeaker,
-            speakerColor: newColor
-          };
-          updateCount++;
+      // Update ALL segments that match original speaker OR original color
+      const updatedSegments = segments.map((segment, idx) => {
+        if (segment.speaker === originalSpeaker || segment.speakerColor === colorToMatch) {
+          console.log(`🚨 Updating segment ${idx}: "${segment.speaker}"/${segment.speakerColor} -> "${newSpeaker}"/${newColor}`);
+          return { ...segment, speaker: newSpeaker, speakerColor: newColor };
         }
+        return segment;
       });
       
+      const updateCount = updatedSegments.filter(s => s.speaker === newSpeaker && s.speakerColor === newColor).length;
       console.log('🚨 Updated', updateCount, 'segments');
       setSegments(updatedSegments);
       
@@ -755,8 +751,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               size="sm"
                               className="h-6 w-6 p-0"
                               onClick={() => {
-                                console.log('🚨 Edit button clicked, setting original speaker:', segment.speaker);
+                                console.log('🚨 Edit button clicked, setting original speaker/color:', { speaker: segment.speaker, color: segment.speakerColor });
                                 setEditingOriginalSpeaker(segment.speaker);
+                                setEditingOriginalColor(segment.speakerColor);
                                 setEditingId(segment.id);
                               }}
                             >
@@ -790,9 +787,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                className="text-sm"
                              />
                              <div className="flex gap-2">
-                               <Button
+                              <Button
                                  size="sm"
-                                 onClick={() => handleSegmentSave(index, editingOriginalSpeaker)}
+                                 onClick={() => handleSegmentSave(index, editingOriginalSpeaker, editingOriginalColor)}
                                >
                                  Save
                                </Button>
@@ -811,6 +808,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                className="text-sm flex-1 cursor-pointer hover:bg-muted/50 p-2 rounded"
                                onClick={() => {
                                  setEditingOriginalSpeaker(segment.speaker);
+                                 setEditingOriginalColor(segment.speakerColor);
                                  setEditingId(segment.id);
                                }}
                                style={{ color: segment.speakerColor }}
