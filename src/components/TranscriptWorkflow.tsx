@@ -509,91 +509,89 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
               </div>
             </div>
 
-            {/* Step 2: Character and Speaker Management (Show BEFORE transcript editor) */}
-            {hasTranscript && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Speaker & Character Management</CardTitle>
-                  <div className="text-sm text-muted-foreground">Status: {characters.length} characters • {detectedSpeakers.length} detected speakers</div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Character Management */}
+            {/* Speaker & Character Management Section (always shown) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Speaker & Character Management</CardTitle>
+                <div className="text-sm text-muted-foreground">Status: {characters.length} characters • {detectedSpeakers.length} detected speakers</div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Character Management */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="text-sm font-medium mb-3">Create Characters</h4>
+                  <CharacterManager
+                    videoId={videoId}
+                    onCharactersUpdate={handleCharactersUpdate}
+                    existingCharacters={characters}
+                    language={videoLanguage}
+                    existingSpeakers={detectedSpeakers.map(s => s.name)}
+                  />
+                </div>
+
+                {/* Speaker Assignment */}
+                {characters.length > 0 && detectedSpeakers.length > 0 && (
                   <div className="border rounded-lg p-4">
-                    <h4 className="text-sm font-medium mb-3">Create Characters</h4>
-                    <CharacterManager
-                      videoId={videoId}
-                      onCharactersUpdate={handleCharactersUpdate}
-                      existingCharacters={characters}
-                      language={videoLanguage}
-                      existingSpeakers={detectedSpeakers.map(s => s.name)}
-                    />
-                  </div>
-
-                  {/* Speaker Assignment */}
-                  {characters.length > 0 && detectedSpeakers.length > 0 && (
-                    <div className="border rounded-lg p-4">
-                      <h4 className="text-sm font-medium mb-3">3. Identify Speaker Assignment</h4>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Map each character to a detected transcript speaker. Colors come from Character Management.
-                      </p>
-                      
-                      <div className="grid gap-2">
-                        {detectedSpeakers.map(speaker => (
-                          <div key={speaker.name} className="flex items-center gap-3 p-2 bg-muted rounded border">
-                            <Badge 
-                              className="min-w-20 justify-center"
-                              style={{ 
-                                backgroundColor: speaker.color,
-                                color: '#000'
-                              }}
-                            >
-                              {speaker.name}
-                            </Badge>
-                            <span className="text-muted-foreground">→</span>
-                            <Select 
-                              value={speaker.name}
-                              onValueChange={(characterName) => {
-                                // Update all segments with this speaker
-                                const character = characters.find(char => char.name === characterName);
-                                if (character) {
-                                  const updatedSegments = segments.map(seg => 
-                                    seg.speaker === speaker.name 
-                                      ? { ...seg, speaker: characterName, speakerColor: character.color }
-                                      : seg
-                                  );
-                                  setSegments(updatedSegments);
-                                  saveTranscript();
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-7 w-32">
-                                <SelectValue placeholder="Assign to..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {characters.map(char => (
-                                  <SelectItem key={char.id} value={char.name}>
-                                    <div className="flex items-center gap-2">
-                                      <div 
-                                        className="w-3 h-3 rounded-full border"
-                                        style={{ backgroundColor: char.color }}
-                                      />
-                                      {char.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
+                    <h4 className="text-sm font-medium mb-3">Identify Speaker Assignment</h4>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Map each character to a detected transcript speaker. Colors come from Character Management.
+                    </p>
+                    
+                    <div className="grid gap-2">
+                      {detectedSpeakers.map(speaker => (
+                        <div key={speaker.name} className="flex items-center gap-3 p-2 bg-muted rounded border">
+                          <Badge 
+                            className="min-w-20 justify-center"
+                            style={{ 
+                              backgroundColor: speaker.color,
+                              color: '#000'
+                            }}
+                          >
+                            {speaker.name}
+                          </Badge>
+                          <span className="text-muted-foreground">→</span>
+                          <Select 
+                            value={speaker.name}
+                            onValueChange={(characterName) => {
+                              // Update all segments with this speaker
+                              const character = characters.find(char => char.name === characterName);
+                              if (character) {
+                                const updatedSegments = segments.map(seg => 
+                                  seg.speaker === speaker.name 
+                                    ? { ...seg, speaker: characterName, speakerColor: character.color }
+                                    : seg
+                                );
+                                setSegments(updatedSegments);
+                                saveTranscript();
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-7 w-32">
+                              <SelectValue placeholder="Assign to..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {characters.map(char => (
+                                <SelectItem key={char.id} value={char.name}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded-full border"
+                                      style={{ backgroundColor: char.color }}
+                                    />
+                                    {char.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            {/* Step 3: Editable Full Transcript (Show AFTER character assignment) */}
-            {hasTranscript && hasCharacterMapping && (
+            {/* Transcript & Content Generation (show when transcript exists) */}
+            {hasTranscript && (
               <Card>
                 <CardHeader>
                   <CardTitle>Transcript & Content Generation</CardTitle>
