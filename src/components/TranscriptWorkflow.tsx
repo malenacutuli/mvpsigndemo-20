@@ -476,108 +476,45 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           </TabsList>
 
           <TabsContent value="transcript" className="space-y-6">
-            {/* Step 1: Extract Complete Transcript */}
-            {!hasTranscript && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>1. Extract Complete Transcript</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Extract transcript from your video with detailed timing information.
-                  </p>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      Extraction Method
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button 
-                        variant={extractionMethod === 'whisper' ? 'default' : 'outline'}
-                        onClick={() => {
-                          setExtractionMethod('whisper');
-                          setShowUploader(false);
-                        }}
-                        className="text-sm"
-                      >
-                        Fast Transcription
-                      </Button>
-                      <Button 
-                        variant={extractionMethod === 'twelvelabs' ? 'default' : 'outline'}
-                        onClick={() => {
-                          setExtractionMethod('twelvelabs');
-                          setShowUploader(false);
-                        }}
-                        className="text-sm"
-                      >
-                        Advanced Analysis
-                      </Button>
-                      <Button 
-                        variant={extractionMethod === 'upload' ? 'default' : 'outline'}
-                        onClick={() => {
-                          setExtractionMethod('upload');
-                          setShowUploader(true);
-                        }}
-                        className="text-sm"
-                      >
-                        Upload Transcript
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {extractionMethod === 'twelvelabs' 
-                        ? 'Advanced analysis with speaker identification, visual descriptions & audio descriptions'
-                        : extractionMethod === 'upload'
-                        ? 'Upload your own transcript file (SRT, VTT, TXT) with timestamps for editing intonation'
-                        : 'Fast transcription with basic speaker detection'
-                      }
-                    </p>
-                  </div>
-                  
-                  {extractionMethod !== 'upload' ? (
-                    <Button 
-                      onClick={extractTranscript}
-                      disabled={isExtracting || !videoUrl}
-                      size="lg"
-                      className="w-full"
-                    >
-                      {isExtracting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          {extractionMethod === 'twelvelabs' ? 'Analyzing with AI...' : 'Extracting transcript...'}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Mic className="h-4 w-4" />
-                          {extractionMethod === 'twelvelabs' ? 'Start AI Analysis' : 'Extract Complete Transcript'}
-                        </div>
-                      )}
-                    </Button>
-                  ) : null}
-
-                  {showUploader && (
-                    <TranscriptUploader
-                      onTranscriptUploaded={handleTranscriptUploaded}
-                      onCancel={() => {
-                        setShowUploader(false);
-                        setExtractionMethod('whisper');
-                      }}
-                      className="mt-4"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            {/* Toolbar: Language + Primary Actions */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Language</span>
+                <Select value={detectedLanguage} onValueChange={setDetectedLanguage}>
+                  <SelectTrigger className="h-8 w-36">
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Spanish</SelectItem>
+                    <SelectItem value="fr">French</SelectItem>
+                    <SelectItem value="de">German</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={extractTranscript}
+                  disabled={isExtracting || !videoUrl}
+                >
+                  {isExtracting ? 'Extracting…' : 'Extract Complete Transcript'}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={saveTranscript}
+                  disabled={isSaving || segments.length === 0}
+                >
+                  Save Changes to Video
+                </Button>
+              </div>
+            </div>
 
             {/* Step 2: Character and Speaker Management (Show BEFORE transcript editor) */}
             {hasTranscript && (
               <Card>
                 <CardHeader>
-                  <CardTitle>2. Character & Speaker Management</CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{characters.length} characters</span>
-                    <span>•</span>
-                    <span>{detectedSpeakers.length} detected speakers</span>
-                  </div>
+                  <CardTitle>Speaker & Character Management</CardTitle>
+                  <div className="text-sm text-muted-foreground">Status: {characters.length} characters • {detectedSpeakers.length} detected speakers</div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Character Management */}
@@ -659,10 +596,34 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             {hasTranscript && hasCharacterMapping && (
               <Card>
                 <CardHeader>
-                  <CardTitle>3. Editable Full Transcript</CardTitle>
+                  <CardTitle>Transcript & Content Generation</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Edit text and intonation word-by-word. Change speakers using the dropdown if needed.
                   </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Select value={detectedLanguage} onValueChange={setDetectedLanguage}>
+                      <SelectTrigger className="h-8 w-36">
+                        <SelectValue placeholder="Language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {}}>
+                        Add Segment
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {}}>
+                        Export
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {}}>
+                        Analyze Intensity
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
