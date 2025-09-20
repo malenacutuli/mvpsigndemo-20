@@ -362,6 +362,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
     
+    // Do not clear existing captions on empty updates
+    if (!segments || segments.length === 0) {
+      console.warn('⏭️ handleTranscriptUpdate called with empty segments; preserving existing captions');
+      return;
+    }
+    
   // Auto-detect language if not provided, but prefer explicit prop
   const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
   const preferredLang = language || autoDetectedLang;
@@ -460,10 +466,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     captions: any[];
     audioDescription: any[];
   }) => {
-    if (content.captions) {
+    if (content.captions && content.captions.length > 0) {
       setCaptions(content.captions);
+    } else if (content.captions && content.captions.length === 0) {
+      console.warn('⏭️ Skipping empty captions update to preserve current display');
     }
-    if (content.audioDescription) {
+    if (content.audioDescription && content.audioDescription.length > 0) {
       setAudioDescriptions(content.audioDescription);
     }
   };

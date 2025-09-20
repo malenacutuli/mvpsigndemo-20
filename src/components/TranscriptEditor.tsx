@@ -154,274 +154,274 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     };
     loadTranscriptData();
     
-    // Listen for character updates from Character Manager
-    const handleCharacterUpdate = (event: CustomEvent) => {
-      const { characters } = event.detail;
-      if (characters && Array.isArray(characters)) {
-        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
-        console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
-        
-        // Update all existing segments with new character colors
-        const updatedTranscript = editingTranscript.map(segment => ({
-          ...segment,
-          speakerColor: getCharacterColor(segment.speaker || 'Speaker', characters.map(c => ({ name: c.name, color: c.color })))
-        }));
-        setEditingTranscript(updatedTranscript);
-      }
-    };
-
-  // Run diarization then apply stored speaker mappings to update names/colors
-  const diarizeAndApplyMappings = async () => {
-    try {
-      if (!videoId || !videoUrl) return;
-      // Run diarization to label segments as Speaker 1..N
-      const resp = await supabase.functions.invoke('speaker-diarization', {
-        body: {
-          videoId,
-          videoUrl,
-          analysisDepth: 'advanced',
-          minSpeakerDuration: 1.5,
-          confidenceThreshold: 0.65
+      // Listen for character updates from Character Manager
+      const handleCharacterUpdate = (event: CustomEvent) => {
+        const { characters } = event.detail;
+        if (characters && Array.isArray(characters)) {
+          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+          console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
+          
+          // Update all existing segments with new character colors
+          const updatedTranscript = editingTranscript.map(segment => ({
+            ...segment,
+            speakerColor: getCharacterColor(segment.speaker || 'Speaker', characters.map(c => ({ name: c.name, color: c.color })))
+          }));
+          setEditingTranscript(updatedTranscript);
         }
-      });
-      if (resp.error) console.warn('Diarization failed:', resp.error.message);
+      };
 
-      // Load mapping and characters
-      const [{ data: mappingRow }, { data: chars }] = await Promise.all([
-        supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
-        supabase.from('characters').select('name,color').eq('video_id', videoId)
-      ]);
-      const mappings: Record<string,string> = (mappingRow?.mappings as any) || {};
-      const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
+      // Run diarization then apply stored speaker mappings to update names/colors
+      const diarizeAndApplyMappings = async () => {
+        try {
+          if (!videoId || !videoUrl) return;
+          // Run diarization to label segments as Speaker 1..N
+          const resp = await supabase.functions.invoke('speaker-diarization', {
+            body: {
+              videoId,
+              videoUrl,
+              analysisDepth: 'advanced',
+              minSpeakerDuration: 1.5,
+              confidenceThreshold: 0.65
+            }
+          });
+          if (resp.error) console.warn('Diarization failed:', resp.error.message);
 
-      // Apply mapping Speaker N -> Character name
-      const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
-      for (const key of genericKeys) {
-        const name = mappings[key];
-        const color = colorMap[name] || '#3B82F6';
-        const { error } = await supabase
-          .from('transcript_segments')
-          .update({ speaker: name, speaker_color: color })
-          .eq('video_id', videoId)
-          .eq('speaker', key);
-        if (error) console.warn('Mapping update failed for', key, '->', name, error.message);
-      }
+          // Load mapping and characters
+          const [{ data: mappingRow }, { data: chars }] = await Promise.all([
+            supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
+            supabase.from('characters').select('name,color').eq('video_id', videoId)
+          ]);
+          const mappings: Record<string,string> = (mappingRow?.mappings as any) || {};
+          const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
 
-    // Refresh local editor state and apply current character colors
-    const refreshed = await loadTranscriptSegments(selectedLanguage);
-    const converted = refreshed.map(seg => ({
-      ...seg,
-      id: seg.id || `segment-${Date.now()}-${Math.random()}`,
-      speakerColor: getCharacterColor(seg.speaker || 'Speaker', availableCharacters)
-    }));
-    setEditingTranscript(converted);
-    setOriginalTranscript(converted);
-    onTranscriptUpdate?.(converted, selectedLanguage);
+          // Apply mapping Speaker N -> Character name
+          const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
+          for (const key of genericKeys) {
+            const name = mappings[key];
+            const color = colorMap[name] || '#3B82F6';
+            const { error } = await supabase
+              .from('transcript_segments')
+              .update({ speaker: name, speaker_color: color })
+              .eq('video_id', videoId)
+              .eq('speaker', key);
+            if (error) console.warn('Mapping update failed for', key, '->', name, error.message);
+          }
 
-    // Update localStorage with current character colors
-    localStorage.setItem('character-colors', JSON.stringify(colorMap));
-    
-    // Notify all components about the color update
-    window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-      detail: { colors: colorMap, characters: (chars||[]), mappings } 
-    }));
-    } catch (e) {
-      console.warn('diarizeAndApplyMappings error', e);
-    }
-  };
-    window.addEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
-    return () => {
-      window.removeEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
-    };
-  }, [videoId]);
+        // Refresh local editor state and apply current character colors
+        const refreshed = await loadTranscriptSegments(selectedLanguage);
+        const converted = refreshed.map(seg => ({
+          ...seg,
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`,
+          speakerColor: getCharacterColor(seg.speaker || 'Speaker', availableCharacters)
+        }));
+        setEditingTranscript(converted);
+        setOriginalTranscript(converted);
+        onTranscriptUpdate?.(converted, selectedLanguage);
 
-  // Load saved transcript when language changes
-  useEffect(() => {
-    const loadTranscriptData = async () => {
-      // Reload characters when language changes
-      const characters = await loadCharacters();
-      if (characters.length > 0) {
-        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
-      }
+        // Update localStorage with current character colors
+        localStorage.setItem('character-colors', JSON.stringify(colorMap));
+        
+        // Notify all components about the color update
+        window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+          detail: { colors: colorMap, characters: (chars||[]), mappings } 
+        }));
+        } catch (e) {
+          console.warn('diarizeAndApplyMappings error', e);
+        }
+      };
+      window.addEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
+      return () => {
+        window.removeEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
+      };
+    }, [videoId]);
+
+    // Load saved transcript when language changes
+    useEffect(() => {
+      const loadTranscriptData = async () => {
+        // Reload characters when language changes
+        const characters = await loadCharacters();
+        if (characters.length > 0) {
+          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        }
+        
+        const segments = await loadTranscriptSegments(selectedLanguage);
+        if (segments.length > 0) {
+          const convertedSegments = segments.map(seg => ({
+            ...seg,
+            id: seg.id || `segment-${Date.now()}-${Math.random()}`
+          }));
+          setEditingTranscript(convertedSegments);
+          onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+        }
+      };
+      loadTranscriptData();
+    }, [selectedLanguage]);
+
+    // Save transcript when it changes - database-first approach
+    const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
+      console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
       
-      const segments = await loadTranscriptSegments(selectedLanguage);
-      if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
-        }));
-        setEditingTranscript(convertedSegments);
-        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+      const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
+        text: segment.text,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        speaker: segment.speaker,
+        speakerColor: segment.speakerColor,
+        emphasis: segment.emphasis,
+        pitch: segment.pitch,
+        words: segment.words,
+        isOffCamera: false,
+        segmentType: 'dialogue' as const,
+        confidence: 0.9
+      }));
+      
+      try {
+        await saveTranscriptSegments(storageSegments, language);
+        console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
+      } catch (error) {
+        console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
+        throw error; // Re-throw to show user the error
       }
     };
-    loadTranscriptData();
-  }, [selectedLanguage]);
 
-  // Save transcript when it changes - database-first approach
-  const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
-    console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
-    
-    const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
-      text: segment.text,
-      startTime: segment.startTime,
-      endTime: segment.endTime,
-      speaker: segment.speaker,
-      speakerColor: segment.speakerColor,
-      emphasis: segment.emphasis,
-      pitch: segment.pitch,
-      words: segment.words,
-      isOffCamera: false,
-      segmentType: 'dialogue' as const,
-      confidence: 0.9
-    }));
-    
-    try {
-      await saveTranscriptSegments(storageSegments, language);
-      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
-    } catch (error) {
-      console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
-      throw error; // Re-throw to show user the error
-    }
-  };
+    const languages = [
+      { code: 'en', name: 'English' },
+      { code: 'es', name: 'Spanish' },
+      { code: 'fr', name: 'French' },
+      { code: 'de', name: 'German' },
+      { code: 'it', name: 'Italian' },
+      { code: 'pt', name: 'Portuguese' },
+      { code: 'zh', name: 'Chinese' },
+      { code: 'ja', name: 'Japanese' },
+      { code: 'ko', name: 'Korean' },
+    ];
 
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-  ];
-
-  // Map extracted segments to Character Manager names/colors
-  const applyMappingsAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
-    try {
-      const mappings = await loadSpeakerMappings(lang);
-      const chars = await loadCharacters();
-      const simple = chars.map((c: any) => ({ name: c.name, color: c.color }));
-      const colorMap = simple.reduce((acc: Record<string,string>, ch) => ({ ...acc, [ch.name]: ch.color }), {});
-      localStorage.setItem('character-colors', JSON.stringify(colorMap));
-      return segs.map((seg, i) => {
-        const orig = seg.speaker || `Speaker ${((i % 4) + 1)}`;
-        const mapped = mappings[orig] || orig;
-        return {
-          ...seg,
-          speaker: mapped,
-          speakerColor: getCharacterColor(mapped, simple)
-        };
-      });
-    } catch (e) {
-      console.warn('applyMappingsAndColors fallback', e);
-      return segs;
-    }
-  };
-
-  // Generate original transcript and save to database with proper transcript record
-  const generateOriginalTranscript = async () => {
-      setIsGenerating(true);
+    // Map extracted segments to Character Manager names/colors
+    const applyMappingsAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
       try {
-        const response = await supabase.functions.invoke('transcribe', {
-          body: { 
-            videoUrl: videoUrl,
-            rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-            language: 'auto', // Auto-detect language
-            fullTranscript: true, // Request complete transcript
-            wordTimestamps: true // Request word-level timing
-          }
+        const mappings = await loadSpeakerMappings(lang);
+        const chars = await loadCharacters();
+        const simple = chars.map((c: any) => ({ name: c.name, color: c.color }));
+        const colorMap = simple.reduce((acc: Record<string,string>, ch) => ({ ...acc, [ch.name]: ch.color }), {});
+        localStorage.setItem('character-colors', JSON.stringify(colorMap));
+        return segs.map((seg, i) => {
+          const orig = seg.speaker || `Speaker ${((i % 4) + 1)}`;
+          const mapped = mappings[orig] || orig;
+          return {
+            ...seg,
+            speaker: mapped,
+            speakerColor: getCharacterColor(mapped, simple)
+          };
         });
-
-      // Check for errors - the response might have error info in data even if no error object
-      if (response.error || response.data?.error) {
-        let errorMessage = 'Transcription failed';
-        let errorDetails = '';
-        
-        // If there's response data with error info, use that
-        if (response.data?.error) {
-          errorMessage = response.data.error;
-          errorDetails = response.data.details || '';
-          
-          // Add size info if available
-          if (response.data.sizeMB && response.data.maxSizeMB) {
-            errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
-          }
-        }
-        // Otherwise use the error object
-        else if (response.error?.message) {
-          try {
-            // Try parsing as JSON first
-            const parsed = JSON.parse(response.error.message);
-            errorMessage = parsed.error || response.error.message;
-            errorDetails = parsed.details || '';
-          } catch {
-            // If not JSON, use the message directly
-            errorMessage = response.error.message;
-            if (response.error.message.includes('413') || response.error.message.includes('too large')) {
-              errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
-            }
-          }
-        }
-        
-        throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+      } catch (e) {
+        console.warn('applyMappingsAndColors fallback', e);
+        return segs;
       }
+    };
 
-      const { data, error } = response;
+    // Generate original transcript and save to database with proper transcript record
+    const generateOriginalTranscript = async () => {
+        setIsGenerating(true);
+        try {
+          const response = await supabase.functions.invoke('transcribe', {
+            body: { 
+              videoUrl: videoUrl,
+              rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
+              language: 'auto', // Auto-detect language
+              fullTranscript: true, // Request complete transcript
+              wordTimestamps: true // Request word-level timing
+            }
+          });
 
-      // Convert to segments format using actual timing from Whisper API
-      const segments: TranscriptSegment[] = [];
-      if (data?.words && Array.isArray(data.words)) {
-        // Group words into sentences for better readability
-        let currentSegment = '';
-        let segmentStart = 0;
-        let segmentIndex = 0;
-        
-        data.words.forEach((word: any, index: number) => {
-          if (index === 0) {
-            segmentStart = word.start || 0;
-          }
+        // Check for errors - the response might have error info in data even if no error object
+        if (response.error || response.data?.error) {
+          let errorMessage = 'Transcription failed';
+          let errorDetails = '';
           
-          currentSegment += (currentSegment ? ' ' : '') + word.word;
-          
-          // End segment on sentence boundaries or every 10-15 words
-          const isEndOfSentence = /[.!?]$/.test(word.word);
-          const isLongSegment = currentSegment.split(' ').length >= 12;
-          const isLastWord = index === data.words.length - 1;
-          
-          if (isEndOfSentence || isLongSegment || isLastWord) {
-            const speakerName = `Speaker ${(segmentIndex % 4) + 1}`;
-            segments.push({
-              id: `segment-${segmentIndex}`,
-              text: currentSegment.trim(),
-              startTime: segmentStart,
-              endTime: word.end || (segmentStart + 3),
-              speaker: speakerName,
-              speakerColor: getCharacterColor(speakerName, availableCharacters),
-              emphasis: 'normal',
-              pitch: 'normal'
-            });
+          // If there's response data with error info, use that
+          if (response.data?.error) {
+            errorMessage = response.data.error;
+            errorDetails = response.data.details || '';
             
-            currentSegment = '';
-            segmentIndex++;
-            // Next segment starts after current word
-            if (index < data.words.length - 1) {
-              segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
+            // Add size info if available
+            if (response.data.sizeMB && response.data.maxSizeMB) {
+              errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
             }
           }
-        });
-      } else if (data?.text) {
-        // Fallback to basic segmentation if word-level timing isn't available
-        const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
-        const totalDuration = data.duration || 120; // Use actual duration or fallback
-        const segmentDuration = totalDuration / sentences.length;
-        
-        sentences.forEach((sentence, index) => {
-          if (sentence.trim()) {
-            const speakerName = `Speaker ${(index % 4) + 1}`;
-            segments.push({
-              id: `segment-${index}`,
-              text: sentence.trim(),
+          // Otherwise use the error object
+          else if (response.error?.message) {
+            try {
+              // Try parsing as JSON first
+              const parsed = JSON.parse(response.error.message);
+              errorMessage = parsed.error || response.error.message;
+              errorDetails = parsed.details || '';
+            } catch {
+              // If not JSON, use the message directly
+              errorMessage = response.error.message;
+              if (response.error.message.includes('413') || response.error.message.includes('too large')) {
+                errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
+              }
+            }
+          }
+          
+          throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+        }
+
+        const { data, error } = response;
+
+        // Convert to segments format using actual timing from Whisper API
+        const segments: TranscriptSegment[] = [];
+        if (data?.words && Array.isArray(data.words)) {
+          // Group words into sentences for better readability
+          let currentSegment = '';
+          let segmentStart = 0;
+          let segmentIndex = 0;
+          
+          data.words.forEach((word: any, index: number) => {
+            if (index === 0) {
+              segmentStart = word.start || 0;
+            }
+            
+            currentSegment += (currentSegment ? ' ' : '') + word.word;
+            
+            // End segment on sentence boundaries or every 10-15 words
+            const isEndOfSentence = /[.!?]$/.test(word.word);
+            const isLongSegment = currentSegment.split(' ').length >= 12;
+            const isLastWord = index === data.words.length - 1;
+            
+            if (isEndOfSentence || isLongSegment || isLastWord) {
+              const speakerName = `Speaker ${(segmentIndex % 4) + 1}`;
+              segments.push({
+                id: `segment-${segmentIndex}`,
+                text: currentSegment.trim(),
+                startTime: segmentStart,
+                endTime: word.end || (segmentStart + 3),
+                speaker: speakerName,
+                speakerColor: getCharacterColor(speakerName, availableCharacters),
+                emphasis: 'normal',
+                pitch: 'normal'
+              });
+              
+              currentSegment = '';
+              segmentIndex++;
+              // Next segment starts after current word
+              if (index < data.words.length - 1) {
+                segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
+              }
+            }
+          });
+        } else if (data?.text) {
+          // Fallback to basic segmentation if word-level timing isn't available
+          const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
+          const totalDuration = data.duration || 120; // Use actual duration or fallback
+          const segmentDuration = totalDuration / sentences.length;
+          
+          sentences.forEach((sentence, index) => {
+            if (sentence.trim()) {
+              const speakerName = `Speaker ${(index % 4) + 1}`;
+              segments.push({
+                id: `segment-${index}`,
+                text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
               speaker: speakerName,
