@@ -81,7 +81,7 @@ serve(async (req) => {
     const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
       method: 'POST',
       headers: {
-        'Authorization': assemblyAIKey,
+        'Authorization': `Bearer ${assemblyAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(baseConfig),
@@ -106,7 +106,7 @@ serve(async (req) => {
       
       const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
         headers: {
-          'Authorization': assemblyAIKey,
+          'Authorization': `Bearer ${assemblyAIKey}`,
         },
       });
 

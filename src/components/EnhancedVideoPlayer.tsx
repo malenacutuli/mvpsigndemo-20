@@ -3,6 +3,7 @@ import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
+import { AnalysisStatusPanel } from './AnalysisStatusPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -761,50 +762,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Advanced speaker identification - force Twelve Labs (Pegasus 1.2) invoke once per session, then fallback/heuristics
-            try {
-              const tlOnceKey = `tl_invoked_${videoId}_${currentLanguage}`;
-              if (!sessionStorage.getItem(tlOnceKey)) {
-                console.log('🚀 ENHANCED PLAYER: Invoking Twelve Labs (Pegasus 1.2) now...');
-                sessionStorage.setItem(tlOnceKey, 'true');
-                const { data: tlData, error: tlError } = await supabase.functions.invoke('twelve-labs-analysis', {
-                  body: { videoUrl: videoSrc, videoId, language: currentLanguage || 'en' }
-                });
-                if (tlError) {
-                  console.error('❌ ENHANCED PLAYER: Twelve Labs invoke error:', tlError);
-                }
-                if (tlData && Array.isArray(tlData.segments) && tlData.segments.length > 0) {
-                  const tlSpeakerColors = new Map<string, string>();
-                  if (Array.isArray(tlData.speakers)) {
-                    tlData.speakers.forEach((s: any) => tlSpeakerColors.set(s.name, s.color));
-                  }
-                  captionSegments = captionSegments.map(seg => {
-                    let bestName = seg.speaker;
-                    let bestColor = seg.speakerColor;
-                    let bestOv = 0;
-                    for (const diar of tlData.segments as Array<any>) {
-                      const ov = computeOverlap(seg.startTime, seg.endTime, diar.start ?? diar.startTime, diar.end ?? diar.endTime);
-                      if (ov > bestOv) {
-                        bestOv = ov;
-                        bestName = diar.speaker || bestName;
-                        bestColor = diar.speakerColor || tlSpeakerColors.get(diar.speaker) || bestColor;
-                      }
-                    }
-                    return { ...seg, speaker: bestName, speakerColor: bestColor };
-                  });
-                  console.log('✅ ENHANCED PLAYER: Applied Twelve Labs speaker mapping:', captionSegments.slice(0, 2).map(s => ({ speaker: s.speaker, color: s.speakerColor })));
-                } else {
-                  console.warn('⚠️ ENHANCED PLAYER: Twelve Labs returned no segments; proceeding with fallback analysis');
-                }
-              }
-
-              // Also run our advanced analysis wrapper (TL → AssemblyAI fallback) to consolidate speakers if needed
-              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
-              console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
-            } catch (error) {
-              console.warn('⚠️ Advanced speaker analysis failed, keeping original speakers/colors:', error);
-              // On failure, do NOT override with generic colors; keep DB-derived values
-            }
+            // Skip direct client analysis - now handled by AnalysisStatusPanel workflow
+            console.log('🎯 ENHANCED PLAYER: Using database captions with existing speaker mappings');
             
             // 2. Analyze vocal intensity ONCE if needed with improved audio handling
             const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
@@ -1037,41 +996,52 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="transcript" className="space-y-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
-            </p>
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
-              </p>
-            </div>
-            <TranscriptEditor
-              videoUrl={videoSrc}
-              videoId={videoId || 'default'}
-              initialLanguage={currentLanguage}
-              onTranscriptUpdate={handleTranscriptUpdate}
-              onContentGenerated={handleContentGenerated}
-            />
-          </div>
+            <TabsContent value="transcript" className="space-y-4">
+              <AnalysisStatusPanel
+                videoId={videoId || 'default'}
+                videoUrl={videoSrc}
+                onAnalysisComplete={(speakerData, characterSuggestions) => {
+                  console.log('🎯 Analysis completed:', { speakerData, characterSuggestions });
+                  // Reload captions after analysis
+                  loadAndSetCaptions();
+                }}
+              />
+              
+              {/* Transcript Extraction & AI Analysis section */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
+                </p>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+                  </p>
+                </div>
+                <TranscriptEditor
+                  videoUrl={videoSrc}
+                  videoId={videoId || 'default'}
+                  initialLanguage={currentLanguage}
+                  onTranscriptUpdate={handleTranscriptUpdate}
+                  onContentGenerated={handleContentGenerated}
+                />
+              </div>
 
-          {/* Integrated Speaker & Character Management inside Transcript tab */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
-            </p>
-            <CharacterManager
-              videoId={videoId || 'default'}
-              onCharactersUpdate={handleCharactersUpdate}
-              existingCharacters={characters}
-              language={currentLanguage}
-              existingSpeakers={stableDetectedSpeakers}
-            />
-          </div>
-        </TabsContent>
+              {/* Integrated Speaker & Character Management inside Transcript tab */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
+                </p>
+                <CharacterManager
+                  videoId={videoId || 'default'}
+                  onCharactersUpdate={handleCharactersUpdate}
+                  existingCharacters={characters}
+                  language={currentLanguage}
+                  existingSpeakers={stableDetectedSpeakers}
+                />
+              </div>
+            </TabsContent>
         
         <TabsContent value="audio-description" className="space-y-4">
           <div className="border rounded-lg p-4">

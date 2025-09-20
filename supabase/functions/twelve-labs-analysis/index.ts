@@ -43,21 +43,39 @@ serve(async (req) => {
     // Use direct API calls instead of SDK for better Deno compatibility
     const baseUrl = 'https://api.twelvelabs.io/v1.3';
 
-    // Step 1: Create index for video analysis
-    const indexResponse = await fetch(`${baseUrl}/indexes`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        index_name: `video_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        models: [
-          { model_name: 'marengo2.7', model_options: ['audio', 'visual'] },
-          { model_name: 'pegasus1.2', model_options: ['audio', 'visual'] }
-        ]
-      }),
-    });
+    // Step 1: Create index for video analysis with retry logic
+    let indexResponse;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        indexResponse = await fetch(`${baseUrl}/indexes`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': twelveLabsApiKey,
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+          },
+          body: JSON.stringify({
+            index_name: `video_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            models: [
+              { model_name: 'marengo2.7', model_options: ['audio', 'visual'] },
+              { model_name: 'pegasus1.2', model_options: ['audio', 'visual'] }
+            ]
+          }),
+        });
+        
+        if (indexResponse.ok) break;
+        
+      } catch (error) {
+        console.warn(`⚠️ Index creation attempt ${retryCount + 1} failed:`, error);
+        if (retryCount === maxRetries - 1) throw error;
+      }
+      
+      retryCount++;
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+    }
 
     if (!indexResponse.ok) {
       const error = await indexResponse.text();
