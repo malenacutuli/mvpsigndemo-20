@@ -151,12 +151,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const computeOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => 
     Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 
-  // Enhanced speaker identification using AssemblyAI edge function
+  // Enhanced speaker identification using Twelve Labs first, fallback to AssemblyAI edge function
   const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
     if (!videoUrl || !videoId) return stabilizeSpeakerColors(segments);
 
-    console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
+    console.log('🎭 ENHANCED PLAYER: Starting advanced speaker diarization (Twelve Labs → AssemblyAI fallback)...');
 
     // Prevent repeated diarization runs in a single session to avoid UI flicker
     const diarKey = `diarized_${videoId}_${currentLanguage}`;
@@ -166,7 +166,48 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
 
     try {
-      // Use the speaker-diarization edge function directly
+      // Try Twelve Labs first
+      const { data: tlData, error: tlError } = await supabase.functions.invoke('twelve-labs-analysis', {
+        body: {
+          videoUrl,
+          videoId,
+          language: currentLanguage || 'en'
+        }
+      });
+
+      if (!tlError && tlData && Array.isArray(tlData.segments) && tlData.segments.length > 0) {
+        console.log('🎯 ENHANCED PLAYER: Twelve Labs returned', tlData.segments.length, 'segments');
+
+        // Build speaker color map from TL response
+        const tlSpeakerColors = new Map<string, string>();
+        if (Array.isArray(tlData.speakers)) {
+          tlData.speakers.forEach((s: any) => tlSpeakerColors.set(s.name, s.color));
+        }
+
+        const updatedFromTL = segments.map(segment => {
+          let bestName = segment.speaker;
+          let bestColor = segment.speakerColor;
+          let bestOv = 0;
+
+          for (const diar of tlData.segments as Array<any>) {
+            const ov = computeOverlap(segment.startTime, segment.endTime, diar.start ?? diar.startTime, diar.end ?? diar.endTime);
+            if (ov > bestOv) {
+              bestOv = ov;
+              bestName = diar.speaker || bestName;
+              bestColor = diar.speakerColor || tlSpeakerColors.get(diar.speaker) || bestColor;
+            }
+          }
+
+          return { ...segment, speaker: bestName, speakerColor: bestColor };
+        });
+
+        console.log('✅ ENHANCED PLAYER: Applied Twelve Labs speaker assignments to', updatedFromTL.length, 'segments');
+        sessionStorage.setItem(diarKey, 'done');
+        return updatedFromTL;
+      }
+
+      // Fallback to AssemblyAI speaker-diarization edge function
+      console.warn('⚠️ Twelve Labs unavailable or returned no data, falling back to AssemblyAI');
       const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
           videoUrl,
@@ -176,17 +217,14 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       });
 
       if (error) throw error;
-      
-      if (!data?.success || !data?.speakers || !data?.segments) {
-        console.warn('⚠️ No speaker data returned from diarization');
+      if (!data?.segments || data.segments.length === 0) {
+        console.warn('⚠️ No speaker data returned from fallback diarization');
         return stabilizeSpeakerColors(segments);
       }
 
-      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', data.speakers.length, 'speakers');
-      
-      // Map by speaker name for color lookup
+      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', (data.speakers || []).length, 'speakers');
       const speakerByName = new Map<string, { name: string; color: string }>();
-      data.speakers.forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
+      (data.speakers || []).forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
 
       const updatedSegments = segments.map(segment => {
         let bestName = segment.speaker;
@@ -206,11 +244,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         return { ...segment, speaker: bestName, speakerColor: bestColor };
       });
 
-      console.log('✅ ENHANCED PLAYER: Applied speaker assignments to', updatedSegments.length, 'segments');
+      console.log('✅ ENHANCED PLAYER: Applied fallback speaker assignments to', updatedSegments.length, 'segments');
+      sessionStorage.setItem(diarKey, 'done');
       return updatedSegments;
-      
     } catch (error) {
-      console.error('❌ AssemblyAI speaker analysis failed:', error);
+      console.error('❌ Advanced speaker analysis failed:', error);
       return stabilizeSpeakerColors(segments);
     }
   };
@@ -712,26 +750,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Advanced speaker identification - only if we don't already have trusted speakers from DB
-            const isGenericSpeaker = (name?: string) => {
-              if (!name) return true;
-              const n = name.toLowerCase().trim();
-              return n === 'speaker' || /^speaker\s*\d+$/.test(n) || n === 'unknown';
-            };
-            const trustedCount = captionSegments.filter(s => !isGenericSpeaker(s.speaker)).length;
-            const hasTrustedSpeakers = trustedCount >= Math.max(1, Math.floor(captionSegments.length * 0.5));
-
-            if (!hasTrustedSpeakers) {
-              console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification (no trusted speakers detected)...');
-              try {
-                captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
-                console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
-              } catch (error) {
-                console.warn('⚠️ Advanced speaker analysis failed, keeping original speakers/colors:', error);
-                // On failure, do NOT override with generic colors; keep DB-derived values
-              }
-            } else {
-              console.log('🛑 Skipping diarization: using saved transcript speakers/colors');
+            // 1. Advanced speaker identification - always run once per session to consolidate voices
+            try {
+              captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
+              console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+            } catch (error) {
+              console.warn('⚠️ Advanced speaker analysis failed, keeping original speakers/colors:', error);
+              // On failure, do NOT override with generic colors; keep DB-derived values
             }
             
             // 2. Analyze vocal intensity ONCE if needed with improved audio handling
