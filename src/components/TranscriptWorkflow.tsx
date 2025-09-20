@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,21 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('whisper');
   const [showUploader, setShowUploader] = useState(false);
   const { toast } = useToast();
+
+  // Keep a snapshot of the last non-empty segments to avoid accidental wipes
+  const lastNonEmptySegmentsRef = useRef<TranscriptSegment[]>([]);
+
+  useEffect(() => {
+    if (segments.length > 0) {
+      lastNonEmptySegmentsRef.current = segments;
+    } else if (!isLoadingExisting && !isExtracting && currentStep === 'edit') {
+      // Prevent unexpected empty state after extraction/save
+      if (lastNonEmptySegmentsRef.current.length > 0) {
+        console.warn('⚠️ Segments became empty unexpectedly. Restoring last known good state.');
+        setSegments(lastNonEmptySegmentsRef.current);
+      }
+    }
+  }, [segments, isLoadingExisting, isExtracting, currentStep]);
 
   useEffect(() => {
     // Load existing transcript, audio descriptions, and characters if available
@@ -591,7 +606,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       // Immediately trigger auto-save
       try {
-        await saveTranscript(false);
+        await saveTranscript(false, normalized);
         setCurrentStep('edit');
         toast({
           title: "Transcript saved",
@@ -696,8 +711,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     console.log('🔄 Audio descriptions updated and passed to parent');
   };
 
-  const saveTranscript = async (complete: boolean = false) => {
-    if (!segments.length || isSaving) {
+  const saveTranscript = async (complete: boolean = false, overrideSegments?: TranscriptSegment[]) => {
+    const toSave = overrideSegments && overrideSegments.length ? overrideSegments : segments;
+    if (!toSave.length || isSaving) {
       console.log('❌ Cannot save: no segments or already saving');
       return;
     }
@@ -705,7 +721,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setIsSaving(true);
     setSavingLock(true);
     console.log('💾 Starting atomic transcript save process...', { 
-      segmentCount: segments.length,
+      segmentCount: toSave.length,
       language: detectedLanguage 
     });
 
@@ -724,7 +740,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
 
       // Create checksum for change detection
-      const segmentData = segments.map((s, idx) => ({
+      const segmentData = toSave.map((s, idx) => ({
         idx,
         startTime: s.startTime,
         endTime: s.endTime,
@@ -768,7 +784,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         
         toast({
           title: complete ? "Transcript saved and completed" : "Transcript saved",
-          description: `${segments.length} segments saved to database`,
+          description: `${toSave.length} segments saved to database`,
           variant: "default"
         });
       }
@@ -1048,7 +1064,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                     }
                                     
                                     // Save the changes immediately
-                                    saveTranscript(false);
+                                    saveTranscript(false, updatedSegments);
                                   }
                                 }}
                               >
