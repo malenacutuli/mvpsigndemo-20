@@ -54,6 +54,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingOriginalSpeaker, setEditingOriginalSpeaker] = useState<string>('');
   const [wordEditingId, setWordEditingId] = useState<string | null>(null);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
@@ -404,8 +405,59 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     }
   };
 
+  // Add function to handle speaker propagation when editing segments
+  const handleSegmentSave = (segmentIndex: number, originalSpeaker: string) => {
+    const currentSegment = segments[segmentIndex];
+    const newSpeaker = currentSegment.speaker;
+    
+    // If speaker name changed, propagate to all matching segments
+    if (originalSpeaker !== newSpeaker) {
+      const updatedSegments = [...segments];
+      let updateCount = 0;
+      
+      // Find character color for new speaker
+      const character = characters.find(char => char.name === newSpeaker);
+      const newColor = character?.color || getSpeakerColor(segmentIndex);
+      
+      // Update ALL segments with the same original speaker
+      updatedSegments.forEach((segment, index) => {
+        if (segment.speaker === originalSpeaker) {
+          updatedSegments[index] = {
+            ...segment,
+            speaker: newSpeaker,
+            speakerColor: newColor
+          };
+          updateCount++;
+        }
+      });
+      
+      setSegments(updatedSegments);
+      
+      // Update localStorage for instant sync
+      const characterColorMap = {
+        ...JSON.parse(localStorage.getItem('character-colors') || '{}'),
+        [newSpeaker]: newColor
+      };
+      localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
+      
+      // Trigger global update event
+      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+        detail: { colors: characterColorMap, updatedSpeaker: newSpeaker, originalSpeaker } 
+      }));
+      
+      // Show confirmation toast
+      toast({
+        title: "Speaker Updated",
+        description: `Changed ${updateCount} segment(s) from "${originalSpeaker}" to "${newSpeaker}"`,
+        variant: "default",
+      });
+    }
+    
+    setEditingId(null);
+    saveTranscript();
+  };
+
   const handleCharactersUpdate = (updatedCharacters: any[]) => {
-    setCharacters(updatedCharacters);
     console.log('✅ Characters updated:', updatedCharacters.length, 'characters');
     
     if (onCharactersUpdate) {
@@ -694,60 +746,78 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              onClick={() => setEditingId(segment.id)}
+                              onClick={() => {
+                                setEditingOriginalSpeaker(segment.speaker);
+                                setEditingId(segment.id);
+                              }}
                             >
                               <Edit className="w-3 h-3" />
                             </Button>
                           </div>
                         </div>
                         
-                        {/* Segment text */}
-                        {editingId === segment.id ? (
-                          <div className="space-y-2">
-                            <Textarea
-                              value={segment.text}
-                              onChange={(e) => {
-                                const updatedSegments = [...segments];
-                                updatedSegments[index].text = e.target.value;
-                                setSegments(updatedSegments);
-                              }}
-                              className="text-sm"
-                            />
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setEditingId(null);
-                                  saveTranscript();
-                                }}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingId(null)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
+                         {/* Segment text */}
+                         {editingId === segment.id ? (
+                           <div className="space-y-2">
+                             <div className="flex items-center gap-2 mb-2">
+                               <label className="text-xs text-muted-foreground">Speaker:</label>
+                               <Input
+                                 value={segment.speaker}
+                                 onChange={(e) => {
+                                   const updatedSegments = [...segments];
+                                   updatedSegments[index].speaker = e.target.value;
+                                   setSegments(updatedSegments);
+                                 }}
+                                 className="h-6 w-32 text-xs"
+                               />
+                             </div>
+                             <Textarea
+                               value={segment.text}
+                               onChange={(e) => {
+                                 const updatedSegments = [...segments];
+                                 updatedSegments[index].text = e.target.value;
+                                 setSegments(updatedSegments);
+                               }}
+                               className="text-sm"
+                             />
+                             <div className="flex gap-2">
+                               <Button
+                                 size="sm"
+                                 onClick={() => handleSegmentSave(index, editingOriginalSpeaker)}
+                               >
+                                 Save
+                               </Button>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => setEditingId(null)}
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </div>
                         ) : (
                           <div className="flex items-start justify-between">
-                            <p 
-                              className="text-sm flex-1 cursor-pointer hover:bg-muted/50 p-2 rounded"
-                              onClick={() => setEditingId(segment.id)}
-                              style={{ color: segment.speakerColor }}
-                            >
-                              {segment.text}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingId(segment.id)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
+                             <p 
+                               className="text-sm flex-1 cursor-pointer hover:bg-muted/50 p-2 rounded"
+                               onClick={() => {
+                                 setEditingOriginalSpeaker(segment.speaker);
+                                 setEditingId(segment.id);
+                               }}
+                               style={{ color: segment.speakerColor }}
+                             >
+                               {segment.text}
+                             </p>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => {
+                                 setEditingOriginalSpeaker(segment.speaker);
+                                 setEditingId(segment.id);
+                               }}
+                             >
+                               <Edit className="h-3 w-3" />
+                             </Button>
                           </div>
                         )}
                       </div>
