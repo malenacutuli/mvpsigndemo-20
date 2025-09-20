@@ -154,7 +154,11 @@ export const AnalysisStatusPanel: React.FC<AnalysisStatusPanelProps> = ({
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to start analysis');
+        const friendly =
+          (data as any)?.error ||
+          (error as any)?.context?.response?.error ||
+          'Analysis failed. Please retry.';
+        throw new Error(friendly);
       }
 
       console.log('✅ Analysis workflow started:', data);
@@ -267,11 +271,13 @@ export const AnalysisStatusPanel: React.FC<AnalysisStatusPanelProps> = ({
           </div>
         )}
 
-          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-green-800 text-sm font-medium">
-              ✅ Analysis Complete! Speaker mappings and characters are ready.
-            </p>
-          </div>
+          {isCompleted && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-green-800 text-sm font-medium">
+                ✅ Analysis complete. Results are ready.
+              </p>
+            </div>
+          )}
       </CardContent>
     </Card>
   );
