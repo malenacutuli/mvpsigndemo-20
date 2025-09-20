@@ -39,7 +39,6 @@ export default function VideoDetailWorkflow() {
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
-  const [showWorkflow, setShowWorkflow] = useState(true);
 
   useEffect(() => {
     if (id) {
@@ -78,7 +77,7 @@ export default function VideoDetailWorkflow() {
           speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
         }));
         setCaptions(captionSegments);
-        setShowWorkflow(false); // Auto-proceed to player if captions exist
+        // Keep workflow visible so users can always edit transcript and manage characters
         console.log('✅ Loaded existing captions for video player:', captionSegments.length, 'segments');
       }
     } catch (error) {
@@ -168,7 +167,8 @@ export default function VideoDetailWorkflow() {
   };
 
   const handleWorkflowComplete = () => {
-    setShowWorkflow(false);
+    // Workflow completion is now handled internally by TranscriptWorkflow
+    console.log('Workflow completed');
   };
 
   const formatDuration = (seconds: number | null) => {
@@ -271,28 +271,17 @@ export default function VideoDetailWorkflow() {
             <div className="lg:col-span-2 space-y-6">
               {videoUrl && (
                 <div className="aspect-video">
-                  {showWorkflow ? (
-                    <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          Complete the transcript workflow to enable video playback
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <CleanAxessiblePlayer
-                      videoSrc={videoUrl}
-                      posterSrc={video.thumbnail_url || undefined}
-                      title={video.title}
-                      videoId={video.id}
-                      contentType={video.content_type as 'recipe' | 'education'}
-                      captions={captions}
-                      audioDescriptions={audioDescriptions}
-                      characters={characters}
-                      className="w-full h-full"
-                    />
-                  )}
+                  <CleanAxessiblePlayer
+                    videoSrc={videoUrl}
+                    posterSrc={video.thumbnail_url || undefined}
+                    title={video.title}
+                    videoId={video.id}
+                    contentType={video.content_type as 'recipe' | 'education'}
+                    captions={captions}
+                    audioDescriptions={audioDescriptions}
+                    characters={characters}
+                    className="w-full h-full"
+                  />
                 </div>
               )}
 
@@ -309,88 +298,17 @@ export default function VideoDetailWorkflow() {
               )}
             </div>
 
-            {/* Workflow Panel */}
+            {/* Workflow Panel - Always show transcript workflow */}
             <div className="space-y-6">
-              {showWorkflow ? (
-                <TranscriptWorkflow
-                  videoId={video.id}
-                  videoUrl={videoUrl}
-                  videoLanguage={video.language} // Pass video language
-                  onTranscriptReady={handleTranscriptReady}
-                  onWorkflowComplete={handleWorkflowComplete}
-                  onCharactersUpdate={handleCharactersUpdate}
-                  onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Video Ready</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        ✓
-                      </div>
-                      <h3 className="font-semibold text-green-700 mb-2">
-                        Accessibility Complete
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Your video now includes captions with intention, timing, and speaker identification
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2 bg-muted rounded">
-                          <div className="font-medium">Captions</div>
-                          <div className="text-green-600">✓ Ready</div>
-                        </div>
-                        <div className="p-2 bg-muted rounded">
-                          <div className="font-medium">Segments</div>
-                          <div className="text-green-600">{captions.length}</div>
-                        </div>
-                        <div className="p-2 bg-muted rounded">
-                          <div className="font-medium">Characters</div>
-                          <div className="text-green-600">{characters.length || 'Default'}</div>
-                        </div>
-                        <div className="p-2 bg-muted rounded">
-                          <div className="font-medium">Audio Desc</div>
-                          <div className="text-green-600">{audioDescriptions.length || 'None'}</div>
-                        </div>
-                      </div>
-                    </div>
-                     <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        setShowWorkflow(true);
-                        // Refresh data when re-entering workflow - no need for loadExistingCaptions since TranscriptWorkflow will load its own data
-                      }}
-                      className="w-full"
-                     >
-                       Edit Transcript
-                     </Button>
-                   </CardContent>
-                 </Card>
-               )}
-
-              {/* Accessible Video Export - Temporarily Hidden */}
-              {/* {!showWorkflow && (captions.length > 0 || audioDescriptions.length > 0) && (
-                <AccessibleVideoExporter
-                  videoUrl={videoUrl}
-                  videoId={video.id}
-                  captions={captions}
-                  audioDescriptions={audioDescriptions}
-                  characterColors={characters.reduce((acc, char) => ({
-                    ...acc,
-                    [char.name]: char.color
-                  }), {})}
-                  currentLanguage={video.language}
-                  onExportComplete={(downloadUrl) => {
-                    toast({
-                      title: "Export Complete!",
-                      description: "Your accessible video files are ready for download."
-                    });
-                  }}
-                />
-              )} */}
+              <TranscriptWorkflow
+                videoId={video.id}
+                videoUrl={videoUrl}
+                videoLanguage={video.language} // Pass video language
+                onTranscriptReady={handleTranscriptReady}
+                onWorkflowComplete={handleWorkflowComplete}
+                onCharactersUpdate={handleCharactersUpdate}
+                onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
+              />
 
               {/* Video Info */}
               <Card>
