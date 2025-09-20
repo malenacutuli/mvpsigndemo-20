@@ -258,14 +258,94 @@ serve(async (req) => {
     console.log(`✅ Enhanced speaker analysis complete: ${speakerMetadata.length} confirmed speakers, ${speakerSegments.length} segments`);
     console.log('🎨 Speaker metadata:', speakerMetadata);
 
-    // Step 5: Store results in Supabase and update transcript segments
+    // Normalize speaker IDs deterministically per video (by total time desc, then earliest start)
+    const earliestStartByLabel = new Map<string, number>();
+    const totalTimeByLabel = new Map<string, number>();
+    const labelSet = new Set<string>();
+    for (const seg of speakerSegments) {
+      labelSet.add(seg.speaker);
+      const prevEarliest = earliestStartByLabel.get(seg.speaker) ?? Number.POSITIVE_INFINITY;
+      earliestStartByLabel.set(seg.speaker, Math.min(prevEarliest, seg.startTime));
+      const prevTime = totalTimeByLabel.get(seg.speaker) ?? 0;
+      totalTimeByLabel.set(seg.speaker, prevTime + (seg.endTime - seg.startTime));
+    }
+    const normalizedOrder = Array.from(labelSet).sort((a, b) => {
+      const ta = totalTimeByLabel.get(a) ?? 0;
+      const tb = totalTimeByLabel.get(b) ?? 0;
+      if (tb !== ta) return tb - ta;
+      const ea = earliestStartByLabel.get(a) ?? 0;
+      const eb = earliestStartByLabel.get(b) ?? 0;
+      return ea - eb;
+    });
+    const labelToNormalized = new Map<string, string>();
+    normalizedOrder.forEach((label, idx) => {
+      labelToNormalized.set(label, `Speaker ${idx + 1}`);
+    });
+
+    // Apply normalization to segments
+    for (const seg of speakerSegments) {
+      const norm = labelToNormalized.get(seg.speaker) || seg.speaker;
+      seg.speaker = norm;
+    }
+
+    // Also normalize speakerMetadata ids/names and colors to match deterministic order
+    const normalizedSpeakerMetadata = normalizedOrder.map((label, idx) => {
+      const originalIndex = parseInt((label.match(/Speaker\s+(\d+)/)?.[1] || '1'), 10) - 1;
+      const orig = speakerMetadata[originalIndex];
+      return {
+        id: `Speaker ${idx + 1}`,
+        name: `Speaker ${idx + 1}`,
+        originalLabel: (orig as any)?.originalLabel || label,
+        color: speakerColors[idx % speakerColors.length],
+        segmentCount: (orig as any)?.segmentCount ?? speakerSegments.filter(s => s.speaker === `Speaker ${idx + 1}`).length,
+        totalTimeSeconds: totalTimeByLabel.get(label) ?? 0,
+        averageDuration: (orig as any)?.averageDuration ?? 0,
+        confidence: (orig as any)?.confidence ?? 0.9,
+        speakingStyle: (orig as any)?.speakingStyle ?? 'conversational',
+        likelihood: (orig as any)?.likelihood ?? 'high'
+      };
+    });
+
+    // Step 5: Store results in Supabase and update transcript segments with final names/colors
     try {
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      // First, cache the results
+      // Load existing speaker mappings and characters to resolve final names/colors
+      const { data: mappingRow } = await supabase
+        .from('speaker_mappings')
+        .select('mappings')
+        .eq('video_id', videoId)
+        .maybeSingle();
+      const { data: chars } = await supabase
+        .from('characters')
+        .select('name,color')
+        .eq('video_id', videoId);
+
+      const mappings: Record<string, string> = (mappingRow?.mappings as any) || {};
+      const colorByName: Record<string, string> = (chars || []).reduce((acc: Record<string,string>, c: any) => {
+        if (c?.name) acc[c.name] = c.color || '#3B82F6';
+        return acc;
+      }, {});
+
+      // Build final name/color per normalized speaker label
+      const finalNameByLabel = new Map<string, string>();
+      const finalColorByLabel = new Map<string, string>();
+      normalizedOrder.forEach((originalLabel, idx) => {
+        const normalizedLabel = `Speaker ${idx + 1}`;
+        const mappedCharacter = mappings[normalizedLabel];
+        if (mappedCharacter && colorByName[mappedCharacter]) {
+          finalNameByLabel.set(normalizedLabel, mappedCharacter);
+          finalColorByLabel.set(normalizedLabel, colorByName[mappedCharacter]);
+        } else {
+          finalNameByLabel.set(normalizedLabel, normalizedLabel);
+          finalColorByLabel.set(normalizedLabel, speakerColors[idx % speakerColors.length]);
+        }
+      });
+
+      // Update cache with normalized speakers and final mapping used
       await supabase
         .from('content_generation_cache')
         .upsert({
@@ -278,16 +358,17 @@ serve(async (req) => {
             timestamp: Date.now()
           },
           result_data: {
-            segments: speakerSegments,
-            speakers: speakerMetadata,
-            total_speakers: speakerCounter,
+            segments: speakerSegments.map(s => ({ ...s })),
+            speakers: normalizedSpeakerMetadata,
+            total_speakers: normalizedOrder.length,
+            mapping_applied: Object.fromEntries(Array.from(finalNameByLabel.entries())),
             processing_time_ms: Date.now()
           }
         }, {
           onConflict: 'video_id,content_type,language'
         });
 
-      console.log('💾 Results cached to database');
+      console.log('💾 Results cached to database with normalized speakers and mapping');
 
       // Step 6: Apply speaker labels to existing transcript segments
       console.log('🔄 Applying speaker labels to transcript segments...');
@@ -302,16 +383,17 @@ serve(async (req) => {
           .lte('end_time', segment.endTime + 0.5);
 
         if (matchingSegments && matchingSegments.length > 0) {
-          // Update all matching segments with speaker info
-          const speakerIndex = parseInt(segment.speaker.split(' ')[1]) - 1;
-          const speakerColor = speakerColors[speakerIndex % speakerColors.length];
+          // Update all matching segments with final name/color
+          const label = segment.speaker;
+          const finalName = finalNameByLabel.get(label) || label;
+          const finalColor = finalColorByLabel.get(label) || speakerColors[(parseInt(label.split(' ')[1]) - 1) % speakerColors.length];
           
           for (const matchingSegment of matchingSegments) {
             await supabase
               .from('transcript_segments')
               .update({
-                speaker: segment.speaker,
-                speaker_color: speakerColor
+                speaker: finalName,
+                speaker_color: finalColor
               })
               .eq('id', matchingSegment.id);
           }
@@ -330,11 +412,11 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          speakers: speakerMetadata,
+          speakers: normalizedSpeakerMetadata,
           segments: speakerSegments,
-          totalSpeakers: speakerMetadata.length,
+          totalSpeakers: normalizedOrder.length,
           speakerMappings: Object.fromEntries(
-            speakerMetadata.map(speaker => [speaker.id, speaker.name])
+            Array.from(finalNameByLabel.entries())
           ),
           analysisMetadata: {
             analysisDepth,
