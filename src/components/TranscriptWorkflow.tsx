@@ -407,21 +407,26 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   // Add function to handle speaker propagation when editing segments
   const handleSegmentSave = (segmentIndex: number, originalSpeaker: string) => {
+    console.log('🚨 handleSegmentSave called:', { segmentIndex, originalSpeaker });
     const currentSegment = segments[segmentIndex];
     const newSpeaker = currentSegment.speaker;
+    console.log('🚨 Current vs New speaker:', { originalSpeaker, newSpeaker });
     
     // If speaker name changed, propagate to all matching segments
     if (originalSpeaker !== newSpeaker) {
+      console.log('🚨 Speaker changed, starting propagation...');
       const updatedSegments = [...segments];
       let updateCount = 0;
       
       // Find character color for new speaker
       const character = characters.find(char => char.name === newSpeaker);
       const newColor = character?.color || getSpeakerColor(segmentIndex);
+      console.log('🚨 New speaker color:', newColor, 'from character:', character);
       
       // Update ALL segments with the same original speaker
       updatedSegments.forEach((segment, index) => {
         if (segment.speaker === originalSpeaker) {
+          console.log(`🚨 Updating segment ${index}: "${segment.speaker}" -> "${newSpeaker}"`);
           updatedSegments[index] = {
             ...segment,
             speaker: newSpeaker,
@@ -431,6 +436,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         }
       });
       
+      console.log('🚨 Updated', updateCount, 'segments');
       setSegments(updatedSegments);
       
       // Update localStorage for instant sync
@@ -451,6 +457,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         description: `Changed ${updateCount} segment(s) from "${originalSpeaker}" to "${newSpeaker}"`,
         variant: "default",
       });
+    } else {
+      console.log('🚨 No speaker change detected');
     }
     
     setEditingId(null);
@@ -747,6 +755,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               size="sm"
                               className="h-6 w-6 p-0"
                               onClick={() => {
+                                console.log('🚨 Edit button clicked, setting original speaker:', segment.speaker);
                                 setEditingOriginalSpeaker(segment.speaker);
                                 setEditingId(segment.id);
                               }}
