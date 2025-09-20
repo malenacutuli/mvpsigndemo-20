@@ -920,7 +920,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         
       } catch (error) {
         console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
-        setCaptions([]);
+        // Preserve existing captions to avoid disappearance on transient errors
+        console.warn('🚫 Skipping clear after load error; keeping last known captions');
       } finally {
         sessionStorage.removeItem(loadingKey); // Allow future loads
       }
