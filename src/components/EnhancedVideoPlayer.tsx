@@ -631,6 +631,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         return;
       }
       sessionStorage.setItem(loadingKey, 'true');
+
+      // Ensure diarization runs at least once per full page load
+      sessionStorage.removeItem(`diarized_${videoId}_${currentLanguage}`);
       
       try {
         // Try to load saved transcript from database with current language first
