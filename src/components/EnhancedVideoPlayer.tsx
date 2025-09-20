@@ -290,6 +290,29 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     applyMappings();
   }, [characters]);
 
+  // Listen for character updates and refresh captions immediately
+  useEffect(() => {
+    const handleCharacterColorsUpdate = async () => {
+      console.log('🔄 CHARACTER COLORS UPDATED - Refreshing captions from database');
+      await loadAndSetCaptions();
+    };
+
+    const handleRefreshVideoCaptions = async (event: CustomEvent) => {
+      if (event.detail?.videoId === videoId) {
+        console.log('🔄 REFRESH VIDEO CAPTIONS EVENT - Reloading from database');
+        await loadAndSetCaptions();
+      }
+    };
+
+    window.addEventListener('character-colors-updated', handleCharacterColorsUpdate);
+    window.addEventListener('refresh-video-captions', handleRefreshVideoCaptions as EventListener);
+
+    return () => {
+      window.removeEventListener('character-colors-updated', handleCharacterColorsUpdate);
+      window.removeEventListener('refresh-video-captions', handleRefreshVideoCaptions as EventListener);
+    };
+  }, [videoId]);
+
   // Re-apply when speaker mappings in database change (e.g., saved from Character Manager)
   useEffect(() => {
     const handleMappingsUpdate = async () => {
@@ -302,6 +325,39 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     // Listen for character updates that might affect mappings
     handleMappingsUpdate();
   }, [characters, videoId, currentLanguage]);
+
+  // Load captions directly from database with latest character mappings
+  const loadAndSetCaptions = async () => {
+    try {
+      console.log('🔄 LOADING FRESH CAPTIONS from database...');
+      const segments = await loadTranscriptSegments(currentLanguage);
+      if (segments && segments.length > 0) {
+        console.log('✅ Loaded fresh segments from database:', segments.length);
+        console.log('🎯 First fresh segment:', segments[0] ? {
+          speaker: segments[0].speaker,
+          speakerColor: (segments[0] as any).speaker_color || (segments[0] as any).speakerColor,
+          text: segments[0].text?.substring(0, 30)
+        } : 'none');
+        
+        // Convert database format to caption format
+        const captionSegments: CaptionSegment[] = segments.map((seg: any) => ({
+          text: seg.text,
+          speaker: seg.speaker,
+          startTime: seg.start_time,
+          endTime: seg.end_time,
+          speakerColor: seg.speaker_color || seg.speakerColor,
+          isOffCamera: seg.is_off_camera || seg.isOffCamera,
+          words: seg.words || []
+        }));
+        
+        setCaptions(captionSegments);
+        setTranscriptSegments(segments);
+        console.log('✅ Updated captions with fresh database data');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load fresh captions:', error);
+    }
+  };
 
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
