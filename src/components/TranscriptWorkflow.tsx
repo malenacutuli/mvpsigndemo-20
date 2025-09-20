@@ -820,18 +820,25 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                          {/* Segment text */}
                          {editingId === segment.id ? (
                            <div className="space-y-2">
-                             <div className="flex items-center gap-2 mb-2">
-                               <label className="text-xs text-muted-foreground">Speaker:</label>
-                               <Input
-                                 value={segment.speaker}
-                                 onChange={(e) => {
-                                   const updatedSegments = [...segments];
-                                   updatedSegments[index].speaker = e.target.value;
-                                   setSegments(updatedSegments);
-                                 }}
-                                 className="h-6 w-32 text-xs"
-                               />
-                             </div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <label className="text-xs text-muted-foreground">Speaker:</label>
+                                <Input
+                                  value={segment.speaker}
+                                  onChange={(e) => {
+                                    const newName = e.target.value;
+                                    const originalSpeaker = editingOriginalSpeaker || segment.speaker;
+                                    const originalColor = editingOriginalColor || segment.speakerColor;
+                                    // Live-propagate as user types: apply to all segments that match original name or color
+                                    const updated = segments.map(s =>
+                                      s.speaker === originalSpeaker || s.speakerColor === originalColor
+                                        ? { ...s, speaker: newName }
+                                        : s
+                                    );
+                                    setSegments(updated);
+                                  }}
+                                  className="h-6 w-32 text-xs"
+                                />
+                              </div>
                              <Textarea
                                value={segment.text}
                                onChange={(e) => {
