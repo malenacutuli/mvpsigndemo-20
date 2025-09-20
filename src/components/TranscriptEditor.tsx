@@ -93,6 +93,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [availableCharacters, setAvailableCharacters] = useState<{ name: string; color: string }[]>([]);
   const [editApplyToAll, setEditApplyToAll] = useState(false);
+  const [originalSpeaker, setOriginalSpeaker] = useState<string>('');
+  const [originalColor, setOriginalColor] = useState<string>('');
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
@@ -420,6 +422,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditEndTime(segment.endTime.toString());
     setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
     setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
+    setOriginalSpeaker(segment.speaker || 'Speaker');
+    setOriginalColor(segment.speakerColor || getNextCISpeakerColor(index));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -430,6 +434,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     if (editingIndex === null) return;
     
     const updated = [...editingTranscript];
+    // Apply edits to the current segment
     updated[editingIndex] = {
       ...updated[editingIndex],
       text: editText,
@@ -441,9 +446,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       pitch: useWordLevelEditing ? 'normal' : editPitch,
       words: useWordLevelEditing ? editWords : undefined, // Save word-level data if enabled
     };
+
+    // PROPAGATE: update all segments that shared the original speaker OR the original color
+    const propagated = updated.map((seg, idx) => {
+      const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
+      const matchesColor = originalColor && seg.speakerColor === originalColor;
+      if ((matchesSpeaker || matchesColor) && idx !== editingIndex) {
+        return {
+          ...seg,
+          speaker: editSpeaker,
+          speakerColor: editSpeakerColor,
+        };
+      }
+      return seg;
+    });
     
     // Sort segments by time after editing timing
-    const sortedSegments = sortSegmentsByTime(updated);
+    const sortedSegments = sortSegmentsByTime(propagated);
     setEditingTranscript(sortedSegments);
     
     // Save immediately to database with proper transcript record
