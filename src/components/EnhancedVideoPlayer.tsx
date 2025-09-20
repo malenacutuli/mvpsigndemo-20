@@ -343,11 +343,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         const captionSegments: CaptionSegment[] = segments.map((seg: any) => ({
           text: seg.text,
           speaker: seg.speaker,
-          startTime: seg.start_time,
-          endTime: seg.end_time,
-          speakerColor: seg.speaker_color || seg.speakerColor,
-          isOffCamera: seg.is_off_camera || seg.isOffCamera,
-          words: seg.words || []
+          startTime: (seg.start_time ?? seg.startTime) as number,
+          endTime: (seg.end_time ?? seg.endTime) as number,
+          speakerColor: (seg.speaker_color ?? seg.speakerColor) as string,
+          isOffCamera: (seg.is_off_camera ?? seg.isOffCamera) as boolean,
+          words: (seg.words ?? []) as any[]
         }));
         
         setCaptions(captionSegments);
