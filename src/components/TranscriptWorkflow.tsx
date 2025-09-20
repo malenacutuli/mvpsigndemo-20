@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,24 +62,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en'); // Initialize with video language
-  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('whisper');
+  const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('twelvelabs');
   const [showUploader, setShowUploader] = useState(false);
   const { toast } = useToast();
-
-  // Keep a snapshot of the last non-empty segments to avoid accidental wipes
-  const lastNonEmptySegmentsRef = useRef<TranscriptSegment[]>([]);
-
-  useEffect(() => {
-    if (segments.length > 0) {
-      lastNonEmptySegmentsRef.current = segments;
-    } else if (!isLoadingExisting && !isExtracting && currentStep === 'edit') {
-      // Prevent unexpected empty state after extraction/save
-      if (lastNonEmptySegmentsRef.current.length > 0) {
-        console.warn('⚠️ Segments became empty unexpectedly. Restoring last known good state.');
-        setSegments(lastNonEmptySegmentsRef.current);
-      }
-    }
-  }, [segments, isLoadingExisting, isExtracting, currentStep]);
 
   useEffect(() => {
     // Load existing transcript, audio descriptions, and characters if available
@@ -271,13 +256,12 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       });
 
       if (loadedSegments.length > 0) {
-        const normalized = await normalizeSpeakersAndColors(loadedSegments, detectedLanguage);
-        setSegments(normalized);
+        setSegments(loadedSegments);
         setCurrentStep('edit');
         setExtractionComplete(true);
         setIsLoadingExisting(false);
         
-        console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', normalized.length, 'segments');
+        console.log('✅ TranscriptWorkflow - Loaded transcript from', dataSource, ':', loadedSegments.length, 'segments');
         console.log('✅ TranscriptWorkflow - Current step set to: edit');
         
         // If loaded from localStorage but not in database, try to save to database
@@ -310,56 +294,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     return colors[index % colors.length];
   };
 
-  // Normalize speakers and colors using saved mappings and characters
-  const normalizeSpeakersAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
-    try {
-      const [{ data: mappingRow }, { data: chars }] = await Promise.all([
-        supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
-        supabase.from('characters').select('name,color').eq('video_id', videoId)
-      ]);
-
-      const dbMappings: Record<string, string> = (mappingRow?.mappings as any) || {};
-      let localMappings: Record<string, string> = {};
-      try {
-        const raw = localStorage.getItem(`speaker-mappings-${videoId}`);
-        if (raw) localMappings = JSON.parse(raw);
-      } catch (e) {
-        console.warn('Failed to read local speaker mappings', e);
-      }
-      const mappings: Record<string, string> = { ...localMappings, ...dbMappings };
-
-      const colorMap = (chars || []).reduce((acc: Record<string, string>, c: any) => {
-        acc[c.name] = c.color; return acc;
-      }, {} as Record<string, string>);
-
-      const normalized = segs.map((s, idx) => {
-        let name = (s.speaker || `Speaker ${((idx % 4) + 1)}`).trim();
-        if (mappings[name]) name = mappings[name];
-        const color = colorMap[name] || s.speakerColor || getSpeakerColor(idx);
-        return { ...s, speaker: name, speakerColor: color };
-      });
-
-      try {
-        for (const s of normalized) {
-          const original = segs.find(x => x.id === s.id);
-          if (!original) continue;
-          if (original.speaker !== s.speaker || original.speakerColor !== s.speakerColor) {
-            await supabase
-              .from('transcript_segments')
-              .update({ speaker: s.speaker, speaker_color: s.speakerColor })
-              .eq('id', s.id);
-          }
-        }
-      } catch (syncErr) {
-        console.warn('Speaker normalization DB sync skipped:', syncErr);
-      }
-
-      return normalized;
-    } catch (e) {
-      console.warn('normalizeSpeakersAndColors error', e);
-      return segs;
-    }
-  };
   const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
     console.log('📁 Transcript uploaded:', uploadedSegments.length, 'segments in', language);
     setSegments(uploadedSegments);
@@ -595,22 +529,21 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         }];
       }
 
-      const normalized = await normalizeSpeakersAndColors(transcriptSegments, language);
-      setSegments(normalized);
+      setSegments(transcriptSegments);
       setExtractionComplete(true);
       
       toast({
         title: "Transcript extracted",
-        description: `${normalized.length} segments extracted successfully. Saving...`
+        description: `${transcriptSegments.length} segments extracted successfully. Saving...`
       });
 
       // Immediately trigger auto-save
       try {
-        await saveTranscript(false, normalized);
+        await saveTranscript(false);
         setCurrentStep('edit');
         toast({
           title: "Transcript saved",
-          description: `Successfully saved ${normalized.length} segments to database`
+          description: `Successfully saved ${transcriptSegments.length} segments to database`
         });
       } catch (saveError) {
         console.error('❌ Auto-save failed:', saveError);
@@ -711,9 +644,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     console.log('🔄 Audio descriptions updated and passed to parent');
   };
 
-  const saveTranscript = async (complete: boolean = false, overrideSegments?: TranscriptSegment[]) => {
-    const toSave = overrideSegments && overrideSegments.length ? overrideSegments : segments;
-    if (!toSave.length || isSaving) {
+  const saveTranscript = async (complete: boolean = false) => {
+    if (!segments.length || isSaving) {
       console.log('❌ Cannot save: no segments or already saving');
       return;
     }
@@ -721,7 +653,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setIsSaving(true);
     setSavingLock(true);
     console.log('💾 Starting atomic transcript save process...', { 
-      segmentCount: toSave.length,
+      segmentCount: segments.length,
       language: detectedLanguage 
     });
 
@@ -740,7 +672,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
 
       // Create checksum for change detection
-      const segmentData = toSave.map((s, idx) => ({
+      const segmentData = segments.map((s, idx) => ({
         idx,
         startTime: s.startTime,
         endTime: s.endTime,
@@ -784,7 +716,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         
         toast({
           title: complete ? "Transcript saved and completed" : "Transcript saved",
-          description: `${toSave.length} segments saved to database`,
+          description: `${segments.length} segments saved to database`,
           variant: "default"
         });
       }
@@ -1030,41 +962,17 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               <Select 
                                 value={segments.find(s => s.speaker === speaker)?.speaker || "unassigned"}
                                 onValueChange={(characterName) => {
+                                  // Update all segments with this speaker
                                   if (characterName !== "unassigned") {
-                                    // Determine color from existing characters
-                                    const char = characters.find((c: any) => c.name === characterName);
-                                    const newColor = char?.color || segments.find(s => s.speaker === speaker)?.speakerColor || getSpeakerColor(0);
-
-                                    // Update all segments with this speaker
                                     const updatedSegments = segments.map(seg => 
                                       seg.speaker === speaker 
-                                        ? { ...seg, speaker: characterName, speakerColor: newColor }
+                                        ? { ...seg, speaker: characterName }
                                         : seg
                                     );
                                     setSegments(updatedSegments);
-
-                                    // Persist mapping locally for normalization on future loads
-                                    try {
-                                      const key = `speaker-mappings-${videoId}`;
-                                      const raw = localStorage.getItem(key);
-                                      const current = raw ? JSON.parse(raw) : {};
-                                      current[speaker] = characterName;
-                                      localStorage.setItem(key, JSON.stringify(current));
-
-                                      // Also persist character colors for global usage
-                                      const colorMap = (characters || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
-                                      localStorage.setItem('character-colors', JSON.stringify(colorMap));
-
-                                      // Notify listeners
-                                      window.dispatchEvent(new CustomEvent('character-colors-updated', {
-                                        detail: { colors: colorMap, characters, mappings: current }
-                                      }));
-                                    } catch (e) {
-                                      console.warn('Failed to persist speaker mapping locally', e);
-                                    }
                                     
                                     // Save the changes immediately
-                                    saveTranscript(false, updatedSegments);
+                                    saveTranscript(false);
                                   }
                                 }}
                               >

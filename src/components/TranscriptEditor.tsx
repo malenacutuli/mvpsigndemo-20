@@ -35,37 +35,10 @@ const CI_SUPPORTING_COLORS = [
 
 const PRIORITY_COLORS = [...CI_MAIN_COLORS, ...CI_SUPPORTING_COLORS];
 
-  // Get character color from Character Manager or fallback to CI colors
-  const getCharacterColor = (speakerName: string, availableCharacters: { name: string; color: string }[]): string => {
-    // First, try to find the color from defined characters
-    const character = availableCharacters.find(char => char.name === speakerName);
-    if (character?.color) {
-      return character.color;
-    }
-    
-    // Fallback to localStorage character-colors mapping
-    const characterColors = localStorage.getItem('character-colors');
-    if (characterColors) {
-      try {
-        const colors = JSON.parse(characterColors);
-        if (colors[speakerName]) {
-          return colors[speakerName];
-        }
-      } catch (e) {
-        console.warn('Failed to parse character-colors from localStorage');
-      }
-    }
-    
-    // Final fallback: use CI colors with consistent assignment based on speaker name
-    let hash = 0;
-    for (let i = 0; i < speakerName.length; i++) {
-      const char = speakerName.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    const colorIndex = Math.abs(hash) % PRIORITY_COLORS.length;
-    return PRIORITY_COLORS[colorIndex];
-  };
+// Get next CI color for speaker assignment
+const getNextCISpeakerColor = (index: number): string => {
+  return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
+};
 
 interface TranscriptSegment {
   id: string;
@@ -121,26 +94,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [availableCharacters, setAvailableCharacters] = useState<{ name: string; color: string }[]>([]);
   const [editApplyToAll, setEditApplyToAll] = useState(false);
   const { toast } = useToast();
-  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings } = useVideoStorage(videoId);
+  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
-  // Load saved transcript and character data on component mount
+  // Load saved transcript on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
-      // Load character definitions first
-      const characters = await loadCharacters();
-      if (characters.length > 0) {
-        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
-        
-        // Create character color mapping for localStorage
-        const colorMapping = characters.reduce((acc, char) => ({
-          ...acc,
-          [char.name]: char.color
-        }), {});
-        localStorage.setItem('character-colors', JSON.stringify(colorMapping));
-        console.log('🎭 TRANSCRIPT EDITOR: Loaded character definitions:', colorMapping);
-      }
-      
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
@@ -153,279 +112,168 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       }
     };
     loadTranscriptData();
-    
-      // Listen for character updates from Character Manager
-      const handleCharacterUpdate = (event: CustomEvent) => {
-        const { characters } = event.detail;
-        if (characters && Array.isArray(characters)) {
-          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
-          console.log('🎭 TRANSCRIPT EDITOR: Updated characters from event:', characters);
-          
-          // Update all existing segments with new character colors
-          const updatedTranscript = editingTranscript.map(segment => ({
-            ...segment,
-            speakerColor: getCharacterColor(segment.speaker || 'Speaker', characters.map(c => ({ name: c.name, color: c.color })))
-          }));
-          setEditingTranscript(updatedTranscript);
-        }
-      };
+  }, [videoId]);
 
-      // Run diarization then apply stored speaker mappings to update names/colors
-      const diarizeAndApplyMappings = async () => {
-        try {
-          if (!videoId || !videoUrl) return;
-          // Run diarization to label segments as Speaker 1..N
-          const resp = await supabase.functions.invoke('speaker-diarization', {
-            body: {
-              videoId,
-              videoUrl,
-              analysisDepth: 'advanced',
-              minSpeakerDuration: 1.5,
-              confidenceThreshold: 0.65
-            }
-          });
-          if (resp.error) console.warn('Diarization failed:', resp.error.message);
-
-          // Load mapping and characters
-          const [{ data: mappingRow }, { data: chars }] = await Promise.all([
-            supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
-            supabase.from('characters').select('name,color').eq('video_id', videoId)
-          ]);
-          const mappings: Record<string,string> = (mappingRow?.mappings as any) || {};
-          const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
-
-          // Apply mapping Speaker N -> Character name
-          const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
-          for (const key of genericKeys) {
-            const name = mappings[key];
-            const color = colorMap[name] || '#3B82F6';
-            const { error } = await supabase
-              .from('transcript_segments')
-              .update({ speaker: name, speaker_color: color })
-              .eq('video_id', videoId)
-              .eq('speaker', key);
-            if (error) console.warn('Mapping update failed for', key, '->', name, error.message);
-          }
-
-        // Refresh local editor state and apply current character colors
-        const refreshed = await loadTranscriptSegments(selectedLanguage);
-        const converted = refreshed.map(seg => ({
+  // Load saved transcript when language changes
+  useEffect(() => {
+    const loadTranscriptData = async () => {
+      const segments = await loadTranscriptSegments(selectedLanguage);
+      if (segments.length > 0) {
+        const convertedSegments = segments.map(seg => ({
           ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`,
-          speakerColor: getCharacterColor(seg.speaker || 'Speaker', availableCharacters)
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`
         }));
-        setEditingTranscript(converted);
-        setOriginalTranscript(converted);
-        onTranscriptUpdate?.(converted, selectedLanguage);
-
-        // Update localStorage with current character colors
-        localStorage.setItem('character-colors', JSON.stringify(colorMap));
-        
-        // Notify all components about the color update
-        window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-          detail: { colors: colorMap, characters: (chars||[]), mappings } 
-        }));
-        } catch (e) {
-          console.warn('diarizeAndApplyMappings error', e);
-        }
-      };
-      window.addEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
-      return () => {
-        window.removeEventListener('character-colors-updated', handleCharacterUpdate as EventListener);
-      };
-    }, [videoId]);
-
-    // Load saved transcript when language changes
-    useEffect(() => {
-      const loadTranscriptData = async () => {
-        // Reload characters when language changes
-        const characters = await loadCharacters();
-        if (characters.length > 0) {
-          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
-        }
-        
-        const segments = await loadTranscriptSegments(selectedLanguage);
-        if (segments.length > 0) {
-          const convertedSegments = segments.map(seg => ({
-            ...seg,
-            id: seg.id || `segment-${Date.now()}-${Math.random()}`
-          }));
-          setEditingTranscript(convertedSegments);
-          onTranscriptUpdate?.(convertedSegments, selectedLanguage);
-        }
-      };
-      loadTranscriptData();
-    }, [selectedLanguage]);
-
-    // Save transcript when it changes - database-first approach
-    const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
-      console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
-      
-      const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
-        text: segment.text,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        speaker: segment.speaker,
-        speakerColor: segment.speakerColor,
-        emphasis: segment.emphasis,
-        pitch: segment.pitch,
-        words: segment.words,
-        isOffCamera: false,
-        segmentType: 'dialogue' as const,
-        confidence: 0.9
-      }));
-      
-      try {
-        await saveTranscriptSegments(storageSegments, language);
-        console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
-      } catch (error) {
-        console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
-        throw error; // Re-throw to show user the error
+        setEditingTranscript(convertedSegments);
+        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
       }
     };
+    loadTranscriptData();
+  }, [selectedLanguage]);
 
-    const languages = [
-      { code: 'en', name: 'English' },
-      { code: 'es', name: 'Spanish' },
-      { code: 'fr', name: 'French' },
-      { code: 'de', name: 'German' },
-      { code: 'it', name: 'Italian' },
-      { code: 'pt', name: 'Portuguese' },
-      { code: 'zh', name: 'Chinese' },
-      { code: 'ja', name: 'Japanese' },
-      { code: 'ko', name: 'Korean' },
-    ];
+  // Save transcript when it changes - database-first approach
+  const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
+    console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
+    
+    const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
+      text: segment.text,
+      startTime: segment.startTime,
+      endTime: segment.endTime,
+      speaker: segment.speaker,
+      speakerColor: segment.speakerColor,
+      emphasis: segment.emphasis,
+      pitch: segment.pitch,
+      words: segment.words,
+      isOffCamera: false,
+      segmentType: 'dialogue' as const,
+      confidence: 0.9
+    }));
+    
+    try {
+      await saveTranscriptSegments(storageSegments, language);
+      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
+    } catch (error) {
+      console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
+      throw error; // Re-throw to show user the error
+    }
+  };
 
-    // Map extracted segments to Character Manager names/colors
-    const applyMappingsAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+  ];
+
+  // Generate original transcript and save to database with proper transcript record
+  const generateOriginalTranscript = async () => {
+      setIsGenerating(true);
       try {
-        const mappings = await loadSpeakerMappings(lang);
-        const chars = await loadCharacters();
-        const simple = chars.map((c: any) => ({ name: c.name, color: c.color }));
-        const colorMap = simple.reduce((acc: Record<string,string>, ch) => ({ ...acc, [ch.name]: ch.color }), {});
-        localStorage.setItem('character-colors', JSON.stringify(colorMap));
-        return segs.map((seg, i) => {
-          const orig = seg.speaker || `Speaker ${((i % 4) + 1)}`;
-          const mapped = mappings[orig] || orig;
-          return {
-            ...seg,
-            speaker: mapped,
-            speakerColor: getCharacterColor(mapped, simple)
-          };
+        const response = await supabase.functions.invoke('transcribe', {
+          body: { 
+            videoUrl: videoUrl,
+            rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
+            language: 'auto', // Auto-detect language
+            fullTranscript: true, // Request complete transcript
+            wordTimestamps: true // Request word-level timing
+          }
         });
-      } catch (e) {
-        console.warn('applyMappingsAndColors fallback', e);
-        return segs;
-      }
-    };
 
-    // Generate original transcript and save to database with proper transcript record
-    const generateOriginalTranscript = async () => {
-        setIsGenerating(true);
-        try {
-          const response = await supabase.functions.invoke('transcribe', {
-            body: { 
-              videoUrl: videoUrl,
-              rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-              language: 'auto', // Auto-detect language
-              fullTranscript: true, // Request complete transcript
-              wordTimestamps: true // Request word-level timing
-            }
-          });
-
-        // Check for errors - the response might have error info in data even if no error object
-        if (response.error || response.data?.error) {
-          let errorMessage = 'Transcription failed';
-          let errorDetails = '';
+      // Check for errors - the response might have error info in data even if no error object
+      if (response.error || response.data?.error) {
+        let errorMessage = 'Transcription failed';
+        let errorDetails = '';
+        
+        // If there's response data with error info, use that
+        if (response.data?.error) {
+          errorMessage = response.data.error;
+          errorDetails = response.data.details || '';
           
-          // If there's response data with error info, use that
-          if (response.data?.error) {
-            errorMessage = response.data.error;
-            errorDetails = response.data.details || '';
-            
-            // Add size info if available
-            if (response.data.sizeMB && response.data.maxSizeMB) {
-              errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
-            }
+          // Add size info if available
+          if (response.data.sizeMB && response.data.maxSizeMB) {
+            errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
           }
-          // Otherwise use the error object
-          else if (response.error?.message) {
-            try {
-              // Try parsing as JSON first
-              const parsed = JSON.parse(response.error.message);
-              errorMessage = parsed.error || response.error.message;
-              errorDetails = parsed.details || '';
-            } catch {
-              // If not JSON, use the message directly
-              errorMessage = response.error.message;
-              if (response.error.message.includes('413') || response.error.message.includes('too large')) {
-                errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
-              }
-            }
-          }
-          
-          throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
         }
-
-        const { data, error } = response;
-
-        // Convert to segments format using actual timing from Whisper API
-        const segments: TranscriptSegment[] = [];
-        if (data?.words && Array.isArray(data.words)) {
-          // Group words into sentences for better readability
-          let currentSegment = '';
-          let segmentStart = 0;
-          let segmentIndex = 0;
-          
-          data.words.forEach((word: any, index: number) => {
-            if (index === 0) {
-              segmentStart = word.start || 0;
+        // Otherwise use the error object
+        else if (response.error?.message) {
+          try {
+            // Try parsing as JSON first
+            const parsed = JSON.parse(response.error.message);
+            errorMessage = parsed.error || response.error.message;
+            errorDetails = parsed.details || '';
+          } catch {
+            // If not JSON, use the message directly
+            errorMessage = response.error.message;
+            if (response.error.message.includes('413') || response.error.message.includes('too large')) {
+              errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
             }
-            
-            currentSegment += (currentSegment ? ' ' : '') + word.word;
-            
-            // End segment on sentence boundaries or every 10-15 words
-            const isEndOfSentence = /[.!?]$/.test(word.word);
-            const isLongSegment = currentSegment.split(' ').length >= 12;
-            const isLastWord = index === data.words.length - 1;
-            
-            if (isEndOfSentence || isLongSegment || isLastWord) {
-              const speakerName = `Speaker ${(segmentIndex % 4) + 1}`;
-              segments.push({
-                id: `segment-${segmentIndex}`,
-                text: currentSegment.trim(),
-                startTime: segmentStart,
-                endTime: word.end || (segmentStart + 3),
-                speaker: speakerName,
-                speakerColor: getCharacterColor(speakerName, availableCharacters),
-                emphasis: 'normal',
-                pitch: 'normal'
-              });
-              
-              currentSegment = '';
-              segmentIndex++;
-              // Next segment starts after current word
-              if (index < data.words.length - 1) {
-                segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
-              }
-            }
-          });
-        } else if (data?.text) {
-          // Fallback to basic segmentation if word-level timing isn't available
-          const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
-          const totalDuration = data.duration || 120; // Use actual duration or fallback
-          const segmentDuration = totalDuration / sentences.length;
+          }
+        }
+        
+        throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+      }
+
+      const { data, error } = response;
+
+      // Convert to segments format using actual timing from Whisper API
+      const segments: TranscriptSegment[] = [];
+      if (data?.words && Array.isArray(data.words)) {
+        // Group words into sentences for better readability
+        let currentSegment = '';
+        let segmentStart = 0;
+        let segmentIndex = 0;
+        
+        data.words.forEach((word: any, index: number) => {
+          if (index === 0) {
+            segmentStart = word.start || 0;
+          }
           
-          sentences.forEach((sentence, index) => {
-            if (sentence.trim()) {
-              const speakerName = `Speaker ${(index % 4) + 1}`;
-              segments.push({
-                id: `segment-${index}`,
-                text: sentence.trim(),
+          currentSegment += (currentSegment ? ' ' : '') + word.word;
+          
+          // End segment on sentence boundaries or every 10-15 words
+          const isEndOfSentence = /[.!?]$/.test(word.word);
+          const isLongSegment = currentSegment.split(' ').length >= 12;
+          const isLastWord = index === data.words.length - 1;
+          
+          if (isEndOfSentence || isLongSegment || isLastWord) {
+            segments.push({
+              id: `segment-${segmentIndex}`,
+              text: currentSegment.trim(),
+              startTime: segmentStart,
+              endTime: word.end || (segmentStart + 3),
+              speaker: 'Speaker', // Use editable default name instead of 'narrator'
+              speakerColor: getNextCISpeakerColor(segmentIndex),
+              emphasis: 'normal',
+              pitch: 'normal'
+            });
+            
+            currentSegment = '';
+            segmentIndex++;
+            // Next segment starts after current word
+            if (index < data.words.length - 1) {
+              segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
+            }
+          }
+        });
+      } else if (data?.text) {
+        // Fallback to basic segmentation if word-level timing isn't available
+        const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
+        const totalDuration = data.duration || 120; // Use actual duration or fallback
+        const segmentDuration = totalDuration / sentences.length;
+        
+        sentences.forEach((sentence, index) => {
+          if (sentence.trim()) {
+            segments.push({
+              id: `segment-${index}`,
+              text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: speakerName,
-              speakerColor: getCharacterColor(speakerName, availableCharacters),
+              speaker: 'Speaker', // Use editable default name instead of 'narrator'
+              speakerColor: getNextCISpeakerColor(index),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -433,19 +281,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         });
       }
 
-      // Detect language and persist
-      const detectedLang = data?.language || 'en';
-      setSelectedLanguage(detectedLang);
-
-      // Apply existing character mappings and colors so Speaker N becomes the chosen character
-      const mappedSegments = await applyMappingsAndColors(segments, detectedLang);
-
-      setOriginalTranscript(mappedSegments);
-      setEditingTranscript([...mappedSegments]);
+      setOriginalTranscript(segments);
+      setEditingTranscript([...segments]);
+      
+      // Detect language from response and update state
+      const detectedLanguage = data?.language || 'en';
+      setSelectedLanguage(detectedLanguage);
       
       // Save to database with proper transcript record (not just localStorage)
-      await saveTranscriptData(mappedSegments, detectedLang);
-      onTranscriptUpdate?.(mappedSegments, detectedLang);
+      await saveTranscriptData(segments, detectedLanguage);
+      onTranscriptUpdate?.(segments, detectedLanguage);
 
       toast({
         title: "Transcript Generated",
@@ -573,16 +418,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditText(segment.text);
     setEditStartTime(segment.startTime.toString());
     setEditEndTime(segment.endTime.toString());
-    
-    // Use existing speaker if available, otherwise use first available character or 'Speaker'
-    const currentSpeaker = segment.speaker || (availableCharacters.length > 0 ? availableCharacters[0].name : 'Speaker');
-    setEditSpeaker(currentSpeaker);
-    
-    // Use character color if speaker matches a character, otherwise use segment color or default
-    const characterMatch = availableCharacters.find(c => c.name === currentSpeaker);
-    const currentColor = characterMatch?.color || segment.speakerColor || getCharacterColor(currentSpeaker, availableCharacters);
-    setEditSpeakerColor(currentColor);
-    
+    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
+    setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -683,14 +520,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       newStartTime = lastSegment ? lastSegment.endTime : 0;
     }
     
-    const defaultSpeaker = 'Speaker 1';
     const newSegment: TranscriptSegment = {
       id: `segment-${Date.now()}`,
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
-      speaker: defaultSpeaker,
-      speakerColor: getCharacterColor(defaultSpeaker, availableCharacters),
+      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
+      speakerColor: getNextCISpeakerColor(editingTranscript.length),
       emphasis: 'normal',
       pitch: 'normal'
     };
@@ -1028,44 +864,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                           <User className="w-3 h-3" />
                           Speaker
                         </Label>
-                        {availableCharacters.length > 0 ? (
-                          <Select 
-                            value={editSpeaker} 
-                            onValueChange={(value) => {
-                              setEditSpeaker(value);
-                              // Auto-update color when character is selected
-                              const character = availableCharacters.find(c => c.name === value);
-                              if (character) {
-                                setEditSpeakerColor(character.color);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select character" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableCharacters.map(character => (
-                                <SelectItem key={character.name} value={character.name}>
-                                  <div className="flex items-center gap-2">
-                                    <div 
-                                      className="w-3 h-3 rounded-full border" 
-                                      style={{ backgroundColor: character.color }}
-                                    />
-                                    {character.name}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="Custom">Custom Speaker</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            value={editSpeaker}
-                            onChange={(e) => setEditSpeaker(e.target.value)}
-                            placeholder="Speaker name (e.g., Teacher, Chef, Host)"
-                            className="text-xs"
-                          />
-                        )}
+                        <Input
+                          value={editSpeaker}
+                          onChange={(e) => setEditSpeaker(e.target.value)}
+                          placeholder="Speaker name (e.g., Teacher, Chef, Host)"
+                          className="text-xs"
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs flex items-center gap-1">

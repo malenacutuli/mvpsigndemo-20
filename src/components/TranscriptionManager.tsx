@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Download, Settings } from 'lucide-react';
+import { Mic, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useToast } from '@/hooks/use-toast';
-import { SpeakerCorrectionInterface } from './SpeakerCorrectionInterface';
 
 interface TranscriptionManagerProps {
   videoId?: string;
@@ -25,94 +24,15 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcripts, setTranscripts] = useState<any[]>([]);
   const [hasExistingTranscript, setHasExistingTranscript] = useState(false);
-  const [showSpeakerCorrection, setShowSpeakerCorrection] = useState(false);
-  const [characters, setCharacters] = useState<any[]>([]);
-  const [segments, setSegments] = useState<any[]>([]);
   const { loadTranscriptSegments, saveTranscriptSegments } = useVideoStorage(videoId || '');
   const { toast } = useToast();
 
-  // Helper: run diarization then apply saved speaker mappings to update names/colors
-  const runDiarizationAndApplyMappings = async () => {
-    if (!videoId || !videoUrl) return;
-
-    // 1) Run diarization to label segments as Speaker 1..N by time overlap
-    const diarize = await supabase.functions.invoke('speaker-diarization', {
-      body: {
-        videoId,
-        videoUrl,
-        analysisDepth: 'advanced',
-        minSpeakerDuration: 1.5,
-        confidenceThreshold: 0.65
-      }
-    });
-    if (diarize.error) {
-      console.warn('Speaker diarization failed:', diarize.error.message);
-    }
-
-    // 2) Load mappings and characters
-    const [{ data: mappingRow }, { data: chars }] = await Promise.all([
-      supabase.from('speaker_mappings').select('mappings').eq('video_id', videoId).maybeSingle(),
-      supabase.from('characters').select('name,color').eq('video_id', videoId)
-    ]);
-
-    const mappings: Record<string, string> = (mappingRow?.mappings as any) || {};
-    const colorMap = (chars || []).reduce((acc: Record<string,string>, c: any) => ({ ...acc, [c.name]: c.color }), {});
-
-    // 3) Apply mapping Speaker N -> Character name + color
-    const genericKeys = Object.keys(mappings).filter(k => k.startsWith('Speaker'));
-    for (const key of genericKeys) {
-      const characterName = mappings[key];
-      const color = colorMap[characterName] || '#3B82F6';
-      const { error } = await supabase
-        .from('transcript_segments')
-        .update({ speaker: characterName, speaker_color: color })
-        .eq('video_id', videoId)
-        .eq('speaker', key);
-      if (error) console.warn(`Failed to apply mapping for ${key} -> ${characterName}`, error.message);
-    }
-
-    // 4) Refresh local cache and UI
-    const refreshed = await loadTranscriptSegments();
-    if (refreshed && refreshed.length > 0) {
-      const mappedTranscripts = refreshed.map(seg => ({
-        text: seg.text,
-        start_time: seg.startTime,
-        end_time: seg.endTime,
-        speaker: seg.speaker
-      }));
-      setTranscripts(mappedTranscripts);
-      onTranscriptUpdate?.(refreshed);
-      console.log('✅ Updated UI with mapped transcripts:', mappedTranscripts.length);
-    } else {
-      console.warn('⚠️ No refreshed segments found, keeping existing transcripts');
-    }
-  };
-
-  // Load existing transcripts and characters on mount
+  // Load existing transcripts on mount
   useEffect(() => {
     if (videoId) {
       loadExistingTranscripts();
-      loadCharacters();
     }
   }, [videoId]);
-
-  const loadCharacters = async () => {
-    if (!videoId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('video_id', videoId)
-        .order('updated_at', { ascending: false });
-      
-      if (!error && data) {
-        setCharacters(data);
-      }
-    } catch (error) {
-      console.error('Failed to load characters:', error);
-    }
-  };
 
   const loadExistingTranscripts = async () => {
     if (!videoId) return;
@@ -128,7 +48,6 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           speaker: seg.speaker || 'narrator'
         }));
         setTranscripts(segments);
-        setSegments(existingSegments); // Keep full segment data for corrections
         setHasExistingTranscript(true);
         onTranscriptUpdate?.(segments);
         onTranscriptionComplete?.(segments, 'en');
@@ -205,33 +124,20 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           await saveTranscriptSegments(transcriptSegments, data.language || 'en');
           
           toast({
-            title: "Transcript generated",
-            description: `Generated ${segments.length} segments. Running speaker analysis...`
+            title: "Transcript saved successfully!",
+            description: `Successfully extracted and saved ${segments.length} segments to database`
           });
-          
-          // Run diarization in background to avoid clearing current display
-          setTimeout(async () => {
-            try {
-              await runDiarizationAndApplyMappings();
-              toast({
-                title: "Speaker analysis complete",  
-                description: "Applied character mappings and colors"
-              });
-            } catch (error) {
-              console.error('Speaker analysis failed:', error);
-              toast({
-                title: "Speaker analysis failed",
-                description: "Using generic speaker labels",
-                variant: "destructive"
-              });
-            }
-          }, 500);
-          
-          onTranscriptUpdate?.(segments);
-          onTranscriptionComplete?.(segments, data.language || 'en');
-        } catch (error) {
-          console.error('Failed to save transcript:', error);
+        } catch (saveError) {
+          console.error('Failed to save transcript:', saveError);
+          // Don't show error toast since it falls back to localStorage
+          toast({
+            title: "Transcript extracted",
+            description: `${segments.length} segments extracted (saved locally due to sync issue)`
+          });
         }
+        
+        onTranscriptUpdate?.(segments);
+        onTranscriptionComplete?.(segments, data.language || 'en');
       }
     } catch (error) {
       console.error('Transcription error:', error);
@@ -277,41 +183,12 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           Export Transcript
         </Button>
         
-        {transcripts.length > 0 && characters.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => setShowSpeakerCorrection(!showSpeakerCorrection)}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {showSpeakerCorrection ? 'Hide' : 'Review'} Speaker Assignments
-          </Button>
-        )}
-        
-        {showSpeakerCorrection && segments.length > 0 && (
-          <div className="mt-4">
-            <SpeakerCorrectionInterface
-              videoId={videoId || ''}
-              segments={segments}
-              characters={characters}
-              onCorrection={(corrections) => {
-                // Refresh transcripts after corrections
-                loadExistingTranscripts();
-                setShowSpeakerCorrection(false);
-              }}
-            />
-          </div>
-        )}
-        
         {transcripts.length > 0 && (
           <div className="mt-4 p-3 bg-muted rounded-md">
             <h4 className="font-medium mb-2">Generated Transcript:</h4>
             <div className="text-sm text-muted-foreground max-h-32 overflow-y-auto">
               {transcripts.map((segment, index) => (
-                <p key={index} className="mb-1">
-                  <span className="font-medium" style={{ color: segment.speaker_color || '#666' }}>
-                    {segment.speaker}:
-                  </span> {segment.text}
-                </p>
+                <p key={index}>{segment.text}</p>
               ))}
             </div>
           </div>

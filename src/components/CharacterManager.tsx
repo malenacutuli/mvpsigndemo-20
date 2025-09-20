@@ -311,56 +311,34 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const saveAllCharacters = async () => {
     try {
-      console.log('🚀 SAVING ALL CHARACTERS AND MAPPINGS...', { 
-        characters: characters.length, 
-        mappings: Object.keys(speakerMappings).length 
-      });
-      
       // 1. Save characters to database
       await saveCharacters(characters);
-      console.log('✅ Characters saved to database');
       
       // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
-      console.log('✅ Speaker mappings saved to database');
       
-      // 3. CRITICAL: Apply character settings to all segments in database FIRST
+      // 3. CRITICAL: Apply character settings to all segments in database
       await applyCharacterMappings();
-      console.log('✅ Character mappings applied to database segments');
       
-      // 4. CRITICAL: Save to localStorage for instant video player access
-      localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(speakerMappings));
-      
+      // 4. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
         ...acc, 
         [char.name]: char.color 
       }), {});
+      
       localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
-      localStorage.setItem(`characters-${videoId}`, JSON.stringify(characters));
       
-      console.log('💾 CRITICAL: All data saved to localStorage for instant access');
+      // 5. Trigger parent component update 
+      onCharactersUpdate?.(characters);
       
-      // 5. Trigger parent component update to reload from database
-      if (onCharactersUpdate) {
-        onCharactersUpdate(characters);
-        console.log('✅ Triggered parent update');
-      }
-      
-      // 6. Trigger window event for real-time synchronization
+      // 6. Trigger window event so other components can sync immediately
       window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, characters, mappings: speakerMappings } 
+        detail: { colors: characterColorMap, characters } 
       }));
-      console.log('✅ Triggered real-time sync event');
-      
-      // 7. Force reload of video player captions by dispatching a refresh event
-      window.dispatchEvent(new CustomEvent('refresh-video-captions', { 
-        detail: { videoId, language } 
-      }));
-      console.log('✅ Triggered video captions refresh');
       
       toast({
-        title: "Characters & Mappings Synchronized!",
-        description: `✅ ${characters.length} characters and ${Object.keys(speakerMappings).length} speaker mappings saved and applied everywhere`,
+        title: "Colors synchronized!",
+        description: `${characters.length} characters saved and colors synced across video player and transcript`,
         variant: "default"
       });
     } catch (error) {
@@ -375,17 +353,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
-      console.log('🚀 APPLYING CHARACTER MAPPINGS:', { mappings: speakerMappings, characters: characters.length });
-      
-      // Step 1: Apply speaker mappings (rename "Speaker" to character names)
-      for (const [originalSpeaker, characterName] of Object.entries(speakerMappings)) {
-        if (!characterName) continue;
-        
+      // Update both speaker mappings AND unmapped segments
+      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
         const character = characters.find(c => c.name === characterName);
         if (character) {
-          console.log(`🔄 Mapping "${originalSpeaker}" → "${characterName}" (${character.color})`);
-          
-          const { error } = await supabase
+          // Update all transcript segments with this original speaker name to new character
+          const { data, error } = await supabase
             .from('transcript_segments')
             .update({
               speaker: characterName,
@@ -394,21 +367,19 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             })
             .eq('video_id', videoId)
             .eq('language', language)
-            .eq('speaker', originalSpeaker);
+            .eq('speaker', speakerName);
           
           if (error) {
-            console.error(`❌ Failed to update segments for speaker "${originalSpeaker}":`, error);
+            console.error(`❌ Failed to update segments for speaker "${speakerName}":`, error);
           } else {
-            console.log(`✅ Updated segments: "${originalSpeaker}" → "${characterName}" (${character.color})`);
+            console.log(`🔄 CRITICAL COLOR SYNC: Mapped "${speakerName}" → "${characterName}" (${character.color}) in database`);
           }
         }
       }
       
-      // Step 2: Update any existing character segments with latest colors
+      // CRITICAL: Also update any segments that already have the character name but wrong color
       for (const character of characters) {
-        console.log(`🎨 Syncing character color: "${character.name}" → ${character.color}`);
-        
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('transcript_segments')
           .update({
             speaker_color: character.color,
@@ -421,15 +392,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         if (error) {
           console.error(`❌ Failed to sync color for character "${character.name}":`, error);
         } else {
-          console.log(`✅ Synced color for "${character.name}" → ${character.color}`);
+          console.log(`🎨 CRITICAL COLOR SYNC: Updated color for "${character.name}" → ${character.color} in database`);
         }
       }
       
-      console.log('✅ CHARACTER MAPPINGS APPLIED SUCCESSFULLY');
-      
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
-      throw error;
     }
   };
 

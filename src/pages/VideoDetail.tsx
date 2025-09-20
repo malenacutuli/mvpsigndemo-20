@@ -12,14 +12,11 @@ import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
-import { SpeakerTestingLink } from "@/components/SpeakerTestingLink";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
-import { SpeakerMappingSync } from "@/components/SpeakerMappingSync";
-import { ImprovedSpeakerDetection } from "@/components/ImprovedSpeakerDetection";
 
 interface Video {
   id: string;
@@ -369,25 +366,6 @@ const VideoDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sync speaker mappings for this specific video */}
-      {id === '2f9a71a2-0c14-44e7-b0c8-499eb996e28f' && (
-        <SpeakerMappingSync 
-          videoId={id}
-          mappings={{
-            "Speaker 1": "David",
-            "Speaker 2": "Rick", 
-            "Speaker 3": "Kevin",
-            "Speaker 4": "Photographer"
-          }}
-          characters={[
-            { name: 'David', color: '#3B82F6' },
-            { name: 'Rick', color: '#10B981' },
-            { name: 'Kevin', color: '#F59E0B' },
-            { name: 'Photographer', color: '#8B5CF6' },
-            { name: 'Housekeeper', color: '#EC4899' }
-          ]}
-        />
-      )}
       <Navigation />
       <main className="container mx-auto px-4 py-8">
           <div className="space-y-6">
@@ -516,30 +494,6 @@ const VideoDetail = () => {
                     {t('videoDetail.immersiveTip')}
                   </p>
                 </div>
-              </div>
-              
-              {/* Improved Speaker Detection Section */}
-              <div className="mt-6">
-                <ImprovedSpeakerDetection 
-                  videoId={video.id}
-                  videoUrl={videoUrl || ''}
-                  onCharactersUpdated={(characters) => {
-                    console.log('Characters updated:', characters);
-                    // Trigger a refresh of the video player to use new character mappings
-                    window.dispatchEvent(new CustomEvent('character-colors-updated', {
-                      detail: { 
-                        colors: characters.reduce((acc, char) => ({ ...acc, [char.name]: char.color }), {}),
-                        characters,
-                        mappings: {}
-                      }
-                    }));
-                  }}
-                />
-              </div>
-              
-              {/* Speaker Testing Lab Link */}
-              <div className="mt-4">
-                <SpeakerTestingLink videoId={video.id} />
               </div>
             </CardContent>
           </Card>

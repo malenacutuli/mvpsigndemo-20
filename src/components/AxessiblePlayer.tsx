@@ -71,8 +71,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         pitch: initialCaptions[0].words?.[0]?.pitch,
         text: initialCaptions[0].text?.substring(0, 50) + '...'
       } : 'No captions');
-      // Ensure captions are visible when fresh data arrives
-      setShowCaptions(true);
     } else {
       console.log('⚠️ AxessiblePlayer received empty or no initialCaptions');
     }

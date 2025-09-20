@@ -3,7 +3,6 @@ import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { CharacterManager } from './CharacterManager';
-import { AnalysisStatusPanel } from './AnalysisStatusPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -66,20 +65,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
     return unique;
   }, [transcriptSegments]);
-  // Stable speaker color assignment function - respects Character Manager colors
+  // Stable speaker color assignment function
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
-    // Load character colors from localStorage (set by Character Manager)
-    let characterColors: Record<string, string> = {};
-    try {
-      const characterColorString = localStorage.getItem('character-colors');
-      if (characterColorString) {
-        characterColors = JSON.parse(characterColorString);
-      }
-    } catch (e) {
-      console.warn('Failed to parse character colors from localStorage');
-    }
-    
-    // Create consistent speaker color mapping based on character definitions first
+    // Create consistent speaker color mapping based on speaker names
     const speakerColorMap = new Map<string, string>();
     const availableColors = [
       '#E5E517', // CI Main Yellow
@@ -102,20 +90,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     segments.forEach(segment => {
       const speakerName = segment.speaker || 'Speaker';
       if (!speakerColorMap.has(speakerName)) {
-        // Priority 1: Use Character Manager color if available
-        if (characterColors[speakerName]) {
-          speakerColorMap.set(speakerName, characterColors[speakerName]);
-        } else {
-          // Priority 2: Use consistent CI color based on speaker name hash
-          let hash = 0;
-          for (let i = 0; i < speakerName.length; i++) {
-            const char = speakerName.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-          }
-          const consistentColorIndex = Math.abs(hash) % availableColors.length;
-          speakerColorMap.set(speakerName, availableColors[consistentColorIndex]);
-        }
+        speakerColorMap.set(speakerName, availableColors[colorIndex % availableColors.length]);
+        colorIndex++;
       }
     });
     
@@ -152,12 +128,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const computeOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => 
     Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 
-  // Enhanced speaker identification using Twelve Labs first, fallback to AssemblyAI edge function
+  // Enhanced speaker identification using AssemblyAI edge function
   const performAdvancedSpeakerAnalysis = async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<CaptionSegment[]> => {
     if (!segments || segments.length === 0) return segments;
     if (!videoUrl || !videoId) return stabilizeSpeakerColors(segments);
 
-    console.log('🎭 ENHANCED PLAYER: Starting advanced speaker diarization (Twelve Labs → AssemblyAI fallback)...');
+    console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
 
     // Prevent repeated diarization runs in a single session to avoid UI flicker
     const diarKey = `diarized_${videoId}_${currentLanguage}`;
@@ -167,48 +143,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
 
     try {
-      // Try Twelve Labs first
-      const { data: tlData, error: tlError } = await supabase.functions.invoke('twelve-labs-analysis', {
-        body: {
-          videoUrl,
-          videoId,
-          language: currentLanguage || 'en'
-        }
-      });
-
-      if (!tlError && tlData && Array.isArray(tlData.segments) && tlData.segments.length > 0) {
-        console.log('🎯 ENHANCED PLAYER: Twelve Labs returned', tlData.segments.length, 'segments');
-
-        // Build speaker color map from TL response
-        const tlSpeakerColors = new Map<string, string>();
-        if (Array.isArray(tlData.speakers)) {
-          tlData.speakers.forEach((s: any) => tlSpeakerColors.set(s.name, s.color));
-        }
-
-        const updatedFromTL = segments.map(segment => {
-          let bestName = segment.speaker;
-          let bestColor = segment.speakerColor;
-          let bestOv = 0;
-
-          for (const diar of tlData.segments as Array<any>) {
-            const ov = computeOverlap(segment.startTime, segment.endTime, diar.start ?? diar.startTime, diar.end ?? diar.endTime);
-            if (ov > bestOv) {
-              bestOv = ov;
-              bestName = diar.speaker || bestName;
-              bestColor = diar.speakerColor || tlSpeakerColors.get(diar.speaker) || bestColor;
-            }
-          }
-
-          return { ...segment, speaker: bestName, speakerColor: bestColor };
-        });
-
-        console.log('✅ ENHANCED PLAYER: Applied Twelve Labs speaker assignments to', updatedFromTL.length, 'segments');
-        sessionStorage.setItem(diarKey, 'done');
-        return updatedFromTL;
-      }
-
-      // Fallback to AssemblyAI speaker-diarization edge function
-      console.warn('⚠️ Twelve Labs unavailable or returned no data, falling back to AssemblyAI');
+      // Use the speaker-diarization edge function directly
       const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
           videoUrl,
@@ -218,14 +153,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       });
 
       if (error) throw error;
-      if (!data?.segments || data.segments.length === 0) {
-        console.warn('⚠️ No speaker data returned from fallback diarization');
+      
+      if (!data?.success || !data?.speakers || !data?.segments) {
+        console.warn('⚠️ No speaker data returned from diarization');
         return stabilizeSpeakerColors(segments);
       }
 
-      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', (data.speakers || []).length, 'speakers');
+      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', data.speakers.length, 'speakers');
+      
+      // Map by speaker name for color lookup
       const speakerByName = new Map<string, { name: string; color: string }>();
-      (data.speakers || []).forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
+      data.speakers.forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
 
       const updatedSegments = segments.map(segment => {
         let bestName = segment.speaker;
@@ -245,11 +183,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         return { ...segment, speaker: bestName, speakerColor: bestColor };
       });
 
-      console.log('✅ ENHANCED PLAYER: Applied fallback speaker assignments to', updatedSegments.length, 'segments');
-      sessionStorage.setItem(diarKey, 'done');
+      console.log('✅ ENHANCED PLAYER: Applied speaker assignments to', updatedSegments.length, 'segments');
       return updatedSegments;
+      
     } catch (error) {
-      console.error('❌ Advanced speaker analysis failed:', error);
+      console.error('❌ AssemblyAI speaker analysis failed:', error);
       return stabilizeSpeakerColors(segments);
     }
   };
@@ -329,29 +267,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     applyMappings();
   }, [characters]);
 
-  // Listen for character updates and refresh captions immediately
-  useEffect(() => {
-    const handleCharacterColorsUpdate = async () => {
-      console.log('🔄 CHARACTER COLORS UPDATED - Refreshing captions from database');
-      await loadAndSetCaptions();
-    };
-
-    const handleRefreshVideoCaptions = async (event: CustomEvent) => {
-      if (event.detail?.videoId === videoId) {
-        console.log('🔄 REFRESH VIDEO CAPTIONS EVENT - Reloading from database');
-        await loadAndSetCaptions();
-      }
-    };
-
-    window.addEventListener('character-colors-updated', handleCharacterColorsUpdate);
-    window.addEventListener('refresh-video-captions', handleRefreshVideoCaptions as EventListener);
-
-    return () => {
-      window.removeEventListener('character-colors-updated', handleCharacterColorsUpdate);
-      window.removeEventListener('refresh-video-captions', handleRefreshVideoCaptions as EventListener);
-    };
-  }, [videoId]);
-
   // Re-apply when speaker mappings in database change (e.g., saved from Character Manager)
   useEffect(() => {
     const handleMappingsUpdate = async () => {
@@ -365,55 +280,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     handleMappingsUpdate();
   }, [characters, videoId, currentLanguage]);
 
-  // Load captions directly from database with latest character mappings
-  const loadAndSetCaptions = async () => {
-    try {
-      console.log('🔄 LOADING FRESH CAPTIONS from database...');
-      const segments = await loadTranscriptSegments(currentLanguage);
-      if (segments && segments.length > 0) {
-        console.log('✅ Loaded fresh segments from database:', segments.length);
-        console.log('🎯 First fresh segment:', segments[0] ? {
-          speaker: segments[0].speaker,
-          speakerColor: (segments[0] as any).speaker_color || (segments[0] as any).speakerColor,
-          text: segments[0].text?.substring(0, 30)
-        } : 'none');
-        
-        // Convert database format to caption format
-        const captionSegments: CaptionSegment[] = segments.map((seg: any) => ({
-          text: seg.text,
-          speaker: seg.speaker,
-          startTime: (seg.start_time ?? seg.startTime) as number,
-          endTime: (seg.end_time ?? seg.endTime) as number,
-          speakerColor: (seg.speaker_color ?? seg.speakerColor) as string,
-          isOffCamera: (seg.is_off_camera ?? seg.isOffCamera) as boolean,
-          words: (seg.words ?? []) as any[]
-        }));
-        
-        setCaptions(captionSegments);
-        setTranscriptSegments(segments);
-        console.log('✅ Updated captions with fresh database data');
-
-        // Kick off Twelve Labs diarization + mappings pipeline on initial load
-        try {
-          // Ensure diarization runs at least once per video/language session
-          sessionStorage.removeItem(`diarized_${videoId}_${currentLanguage}`);
-          await handleTranscriptUpdate(captionSegments, currentLanguage);
-        } catch (e) {
-          console.warn('⚠️ Failed to run advanced speaker analysis on initial load:', e);
-        }
-      }
-    } catch (error) {
-    }
-  };
-
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
-    
-    // Do not clear existing captions on empty updates
-    if (!segments || segments.length === 0) {
-      console.warn('⏭️ handleTranscriptUpdate called with empty segments; preserving existing captions');
-      return;
-    }
     
   // Auto-detect language if not provided, but prefer explicit prop
   const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
@@ -513,12 +381,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     captions: any[];
     audioDescription: any[];
   }) => {
-    if (content.captions && content.captions.length > 0) {
+    if (content.captions) {
       setCaptions(content.captions);
-    } else if (content.captions && content.captions.length === 0) {
-      console.warn('⏭️ Skipping empty captions update to preserve current display');
     }
-    if (content.audioDescription && content.audioDescription.length > 0) {
+    if (content.audioDescription) {
       setAudioDescriptions(content.audioDescription);
     }
   };
@@ -632,9 +498,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         return;
       }
       sessionStorage.setItem(loadingKey, 'true');
-
-      // Ensure diarization runs at least once per full page load
-      sessionStorage.removeItem(`diarized_${videoId}_${currentLanguage}`);
       
       try {
         // Try to load saved transcript from database with current language first
@@ -762,8 +625,27 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // Skip direct client analysis - now handled by AnalysisStatusPanel workflow
-            console.log('🎯 ENHANCED PLAYER: Using database captions with existing speaker mappings');
+            // 1. Advanced speaker identification - only if we don't already have trusted speakers from DB
+            const isGenericSpeaker = (name?: string) => {
+              if (!name) return true;
+              const n = name.toLowerCase().trim();
+              return n === 'speaker' || /^speaker\s*\d+$/.test(n) || n === 'unknown';
+            };
+            const trustedCount = captionSegments.filter(s => !isGenericSpeaker(s.speaker)).length;
+            const hasTrustedSpeakers = trustedCount >= Math.max(1, Math.floor(captionSegments.length * 0.5));
+
+            if (!hasTrustedSpeakers) {
+              console.log('🎭 ENHANCED PLAYER: Processing advanced speaker identification (no trusted speakers detected)...');
+              try {
+                captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
+                console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
+              } catch (error) {
+                console.warn('⚠️ Advanced speaker analysis failed, keeping original speakers/colors:', error);
+                // On failure, do NOT override with generic colors; keep DB-derived values
+              }
+            } else {
+              console.log('🛑 Skipping diarization: using saved transcript speakers/colors');
+            }
             
             // 2. Analyze vocal intensity ONCE if needed with improved audio handling
             const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
@@ -918,8 +800,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             const detectedLang = detectLanguageFromCaptions(captions);
             await handleTranscriptUpdate(captions, detectedLang);
           } else {
-            // Do not clear captions; preserve last non-empty state to avoid flicker/disappear
-            console.warn('🚫 Skipping clear: preserving existing captions until data is available');
+            setCaptions([]);
+            setTranscriptSegments([]);
           }
         }
         
@@ -959,8 +841,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         
       } catch (error) {
         console.error('❌ ENHANCED PLAYER: Error loading saved data:', error);
-        // Preserve existing captions to avoid disappearance on transient errors
-        console.warn('🚫 Skipping clear after load error; keeping last known captions');
+        setCaptions([]);
       } finally {
         sessionStorage.removeItem(loadingKey); // Allow future loads
       }
@@ -996,52 +877,41 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
         </TabsList>
         
-            <TabsContent value="transcript" className="space-y-4">
-              <AnalysisStatusPanel
-                videoId={videoId || 'default'}
-                videoUrl={videoSrc}
-                onAnalysisComplete={(speakerData, characterSuggestions) => {
-                  console.log('🎯 Analysis completed:', { speakerData, characterSuggestions });
-                  // Reload captions after analysis
-                  loadAndSetCaptions();
-                }}
-              />
-              
-              {/* Transcript Extraction & AI Analysis section */}
-              <div className="border rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
-                </p>
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
-                  </p>
-                </div>
-                <TranscriptEditor
-                  videoUrl={videoSrc}
-                  videoId={videoId || 'default'}
-                  initialLanguage={currentLanguage}
-                  onTranscriptUpdate={handleTranscriptUpdate}
-                  onContentGenerated={handleContentGenerated}
-                />
-              </div>
+        <TabsContent value="transcript" className="space-y-4">
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+              </p>
+            </div>
+            <TranscriptEditor
+              videoUrl={videoSrc}
+              videoId={videoId || 'default'}
+              initialLanguage={currentLanguage}
+              onTranscriptUpdate={handleTranscriptUpdate}
+              onContentGenerated={handleContentGenerated}
+            />
+          </div>
 
-              {/* Integrated Speaker & Character Management inside Transcript tab */}
-              <div className="border rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
-                </p>
-                <CharacterManager
-                  videoId={videoId || 'default'}
-                  onCharactersUpdate={handleCharactersUpdate}
-                  existingCharacters={characters}
-                  language={currentLanguage}
-                  existingSpeakers={stableDetectedSpeakers}
-                />
-              </div>
-            </TabsContent>
+          {/* Integrated Speaker & Character Management inside Transcript tab */}
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
+            </p>
+            <CharacterManager
+              videoId={videoId || 'default'}
+              onCharactersUpdate={handleCharactersUpdate}
+              existingCharacters={characters}
+              language={currentLanguage}
+              existingSpeakers={stableDetectedSpeakers}
+            />
+          </div>
+        </TabsContent>
         
         <TabsContent value="audio-description" className="space-y-4">
           <div className="border rounded-lg p-4">
