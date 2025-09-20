@@ -86,32 +86,12 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
       result_data: { steps, current_step: 'speaker_analysis' }
     });
 
-  // Step 1: Speaker Diarization
-  console.log('🎤 Starting speaker diarization...');
+  // Step 1: Enhanced Speaker Analysis with Twelve Labs
+  console.log('🎭 Starting enhanced speaker analysis with Twelve Labs...');
   updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 10);
 
-  const diarizationResponse = await supabase.functions.invoke('speaker-diarization', {
-    body: {
-      videoUrl,
-      videoId,
-      analysisDepth: options.analysisDepth || 'standard',
-      confidenceThreshold: options.confidenceThreshold || 0.6
-    }
-  });
-
-  if (diarizationResponse.error) {
-    await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'error', 0, diarizationResponse.error.message);
-    throw new Error(`Speaker analysis failed: ${diarizationResponse.error.message}`);
-  }
-
-  const speakerData = diarizationResponse.data;
-  await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'completed', 100, speakerData);
-
-  // Step 2: Transcript Extraction (if not already done)
-  console.log('📝 Extracting transcript...');
-  await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'running', 25);
-
-  const transcriptResponse = await supabase.functions.invoke('transcribe', {
+  // Primary: Use Twelve Labs for superior speaker diarization
+  const twelveLabsResponse = await supabase.functions.invoke('twelve-labs-analysis', {
     body: {
       videoUrl,
       videoId,
@@ -119,9 +99,81 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
     }
   });
 
-  if (transcriptResponse.error) {
-    await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'error', 0, transcriptResponse.error.message);
-    throw new Error(`Transcript extraction failed: ${transcriptResponse.error.message}`);
+  let speakerData;
+  
+  if (twelveLabsResponse.error || !twelveLabsResponse.data || twelveLabsResponse.data.error) {
+    console.warn('⚠️ Twelve Labs analysis failed, falling back to basic diarization:', twelveLabsResponse.error);
+    await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 20);
+    
+    // Fallback: Use basic speaker diarization
+    const diarizationResponse = await supabase.functions.invoke('speaker-diarization', {
+      body: {
+        videoUrl,
+        videoId,
+        analysisDepth: options.analysisDepth || 'standard',
+        confidenceThreshold: options.confidenceThreshold || 0.6
+      }
+    });
+
+    if (diarizationResponse.error) {
+      await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'error', 0, diarizationResponse.error.message);
+      throw new Error(`Both enhanced and basic speaker analysis failed: ${diarizationResponse.error.message}`);
+    }
+
+    speakerData = diarizationResponse.data;
+    console.log('✅ Fallback speaker analysis completed');
+  } else {
+    speakerData = twelveLabsResponse.data;
+    console.log(`✅ Enhanced speaker analysis completed: ${speakerData.segments?.length || 0} segments, ${speakerData.speakers?.length || 0} unique speakers identified`);
+  }
+
+  await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'completed', 100, speakerData);
+
+  // Step 2: Save Enhanced Transcript (if we have segments from Twelve Labs)
+  console.log('📝 Processing enhanced transcript data...');
+  await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'running', 25);
+
+  // If Twelve Labs provided segments, save them directly
+  if (speakerData.segments && speakerData.segments.length > 0) {
+    console.log(`💾 Saving ${speakerData.segments.length} enhanced segments from Twelve Labs...`);
+    
+    // Transform segments to match our database format
+    const transformedSegments = speakerData.segments.map((segment: any, idx: number) => ({
+      idx,
+      startTime: segment.start,
+      endTime: segment.end,
+      text: segment.text,
+      speaker: segment.speaker,
+      speakerColor: segment.speakerColor,
+      confidence: segment.confidence || 0.9,
+      words: segment.words || []
+    }));
+
+    // Save using our transcript upsert function
+    const { error: upsertError } = await supabase.rpc('upsert_transcript_segments', {
+      p_video_id: videoId,
+      p_language: options.language || 'en',
+      p_created_by: null, // System generated
+      p_segments: transformedSegments
+    });
+
+    if (upsertError) {
+      console.error('❌ Failed to save enhanced transcript:', upsertError);
+    }
+  } else {
+    // Fallback: Use standard transcript extraction
+    const transcriptResponse = await supabase.functions.invoke('transcribe', {
+      body: {
+        videoUrl,
+        videoId,
+        language: options.language || 'en'
+      }
+    });
+
+    if (transcriptResponse.error) {
+      await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'error', 0, transcriptResponse.error.message);
+      throw new Error(`Transcript extraction failed: ${transcriptResponse.error.message}`);
+    }
   }
 
   await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'completed', 100);
@@ -142,18 +194,37 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
     speakers_detected: speakerData.speakers?.length || 0
   });
 
-  // Step 4: Character Framework Setup
-  console.log('👥 Setting up character framework...');
+  // Step 4: Enhanced Character Framework Setup
+  console.log('👥 Setting up enhanced character framework...');
   await updateWorkflowStep(supabase, videoId, 'character_setup', 'running', 90);
 
-  // Create initial character suggestions based on speaker analysis
-  const characterSuggestions = speakerData.speakers?.map((speaker: any, index: number) => ({
-    suggested_name: `Character ${index + 1}`,
-    speaker_id: speaker.id,
-    suggested_type: index === 0 ? 'main' : index < 3 ? 'supporting' : 'minor',
-    speaking_time: speaker.totalTimeSeconds,
-    confidence: speaker.confidence
-  })) || [];
+  // Create intelligent character suggestions based on enhanced speaker analysis
+  let characterSuggestions = [];
+  
+  if (speakerData.speakers && speakerData.speakers.length > 0) {
+    // Use Twelve Labs speaker data with better naming
+    characterSuggestions = speakerData.speakers.map((speaker: any, index: number) => ({
+      suggested_name: speaker.name || `Speaker ${index + 1}`,
+      speaker_id: speaker.id || speaker.name,
+      suggested_type: determineSpeakerType(speaker, index, speakerData.speakers),
+      speaking_time: speaker.totalTimeSeconds || calculateSpeakingTime(speaker, speakerData.segments),
+      confidence: speaker.confidence || 0.9,
+      color: speaker.color || `#${Math.floor(Math.random()*16777215).toString(16)}`
+    }));
+  } else if (segments && segments.length > 0) {
+    // Fallback: Extract speakers from saved segments
+    const speakerStats = extractSpeakerStats(segments);
+    characterSuggestions = Object.entries(speakerStats).map(([speakerName, stats]: [string, any], index: number) => ({
+      suggested_name: speakerName,
+      speaker_id: speakerName,
+      suggested_type: determineSpeakerTypeFromStats(stats, index, Object.keys(speakerStats).length),
+      speaking_time: stats.totalTime,
+      confidence: stats.averageConfidence,
+      color: stats.color || `#${Math.floor(Math.random()*16777215).toString(16)}`
+    }));
+  }
+
+  console.log(`✅ Created ${characterSuggestions.length} character suggestions`);
 
   await updateWorkflowStep(supabase, videoId, 'character_setup', 'completed', 100, {
     character_suggestions: characterSuggestions,
@@ -332,4 +403,62 @@ async function updateWorkflowStep(supabase: any, videoId: string, stepId: string
       .eq('video_id', videoId)
       .eq('content_type', 'analysis_workflow');
   }
+}
+
+// Helper functions for enhanced character suggestions
+
+function determineSpeakerType(speaker: any, index: number, allSpeakers: any[]): string {
+  const speakingTime = speaker.totalTimeSeconds || 0;
+  const maxSpeakingTime = Math.max(...allSpeakers.map(s => s.totalTimeSeconds || 0));
+  
+  // Determine type based on speaking time and position
+  if (speakingTime > maxSpeakingTime * 0.7) return 'main';
+  if (speakingTime > maxSpeakingTime * 0.3) return 'supporting';
+  return 'minor';
+}
+
+function determineSpeakerTypeFromStats(stats: any, index: number, totalSpeakers: number): string {
+  // First speaker with most time is usually main
+  if (index === 0) return 'main';
+  if (index < Math.min(3, totalSpeakers)) return 'supporting';
+  return 'minor';
+}
+
+function calculateSpeakingTime(speaker: any, segments: any[]): number {
+  if (!segments) return 0;
+  
+  return segments
+    .filter(seg => seg.speaker === speaker.name || seg.speaker === speaker.id)
+    .reduce((total, seg) => total + (seg.end - seg.start), 0);
+}
+
+function extractSpeakerStats(segments: any[]): Record<string, any> {
+  const stats: Record<string, any> = {};
+  
+  segments.forEach(segment => {
+    const speaker = segment.speaker || 'Unknown';
+    
+    if (!stats[speaker]) {
+      stats[speaker] = {
+        totalTime: 0,
+        segmentCount: 0,
+        confidenceSum: 0,
+        color: segment.speaker_color
+      };
+    }
+    
+    stats[speaker].totalTime += (segment.end_time || segment.endTime) - (segment.start_time || segment.startTime);
+    stats[speaker].segmentCount += 1;
+    stats[speaker].confidenceSum += segment.confidence || 0.9;
+  });
+  
+  // Calculate averages
+  Object.values(stats).forEach((stat: any) => {
+    stat.averageConfidence = stat.confidenceSum / stat.segmentCount;
+  });
+  
+  // Sort by speaking time
+  return Object.fromEntries(
+    Object.entries(stats).sort(([,a], [,b]) => (b as any).totalTime - (a as any).totalTime)
+  );
 }

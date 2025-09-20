@@ -190,11 +190,18 @@ serve(async (req) => {
       console.warn('⚠️ Visual search failed');
     }
 
-    // Step 6: Process transcript segments with speaker identification
-    const speakerColors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
+    // Step 6: Enhanced speaker diarization and consolidation
+    console.log('🎭 Starting advanced speaker diarization...');
+    const rawSegments = transcriptData.conversation || [];
+    
+    // Advanced speaker consolidation using voice characteristics
+    const consolidatedSegments = await performAdvancedSpeakerDiarization(rawSegments, indexId, videoId, twelveLabsApiKey);
+    
+    // Assign consistent colors to speakers using CWI protocol
+    const speakerColors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4'];
     const speakerMap = new Map<string, { color: string; displayName: string }>();
     
-    const segments = (transcriptData.conversation || []).map((segment: any, index: number) => {
+    const segments = consolidatedSegments.map((segment: any, index: number) => {
       const speakerKey = segment.speaker || 'Unknown';
       
       // Assign speaker colors and names
@@ -215,9 +222,12 @@ serve(async (req) => {
         speaker: speaker.displayName,
         speakerColor: speaker.color,
         confidence: segment.confidence || 0.9,
-        words: segment.words || []
+        words: segment.words || [],
+        voiceCharacteristics: segment.voiceCharacteristics || {}
       };
-    }).filter(segment => segment.text.length > 0); // Filter out empty segments
+    }).filter(segment => segment.text.length > 0);
+    
+    console.log(`✅ Consolidated ${rawSegments.length} segments into ${segments.length} with ${speakerMap.size} unique speakers`);
 
     // Step 7: Cleanup - delete the temporary index
     try {
@@ -478,4 +488,223 @@ function determineDescriptionType(clip: any): 'visual' | 'action' | 'emotion' | 
       text.includes('atmosphere') || text.includes('setting') || metadata.atmosphere) return 'atmosphere';
   
   return 'visual';
+}
+
+async function performAdvancedSpeakerDiarization(
+  rawSegments: any[],
+  indexId: string,
+  videoId: string,
+  apiKey: string
+): Promise<any[]> {
+  console.log(`🔍 Analyzing ${rawSegments.length} segments for speaker consolidation...`);
+  
+  if (rawSegments.length === 0) return [];
+  
+  // Group segments by their original speaker assignment from Twelve Labs
+  const speakerGroups = new Map<string, any[]>();
+  rawSegments.forEach(segment => {
+    const speaker = segment.speaker || 'Unknown';
+    if (!speakerGroups.has(speaker)) {
+      speakerGroups.set(speaker, []);
+    }
+    speakerGroups.get(speaker)!.push(segment);
+  });
+  
+  console.log(`📊 Initial speaker groups: ${Array.from(speakerGroups.keys()).join(', ')}`);
+  
+  // Analyze voice characteristics for consolidation
+  const consolidatedGroups = await analyzeVoiceCharacteristics(speakerGroups, indexId, videoId, apiKey);
+  
+  // Flatten back to segments with updated speaker assignments
+  const consolidatedSegments: any[] = [];
+  consolidatedGroups.forEach((segments, speakerName) => {
+    segments.forEach(segment => {
+      consolidatedSegments.push({
+        ...segment,
+        speaker: speakerName,
+        confidence: Math.max(segment.confidence || 0.9, 0.85) // Boost confidence for consolidated speakers
+      });
+    });
+  });
+  
+  // Sort by start time
+  consolidatedSegments.sort((a, b) => a.start - b.start);
+  
+  return consolidatedSegments;
+}
+
+async function analyzeVoiceCharacteristics(
+  speakerGroups: Map<string, any[]>,
+  indexId: string,
+  videoId: string,
+  apiKey: string
+): Promise<Map<string, any[]>> {
+  const speakers = Array.from(speakerGroups.keys());
+  
+  // If we have 4 or fewer speakers, likely correct - just clean up names
+  if (speakers.length <= 4) {
+    console.log('✅ Speaker count reasonable, applying name consolidation only');
+    return consolidateSimilarSpeakerNames(speakerGroups);
+  }
+  
+  console.log(`⚠️ Detected ${speakers.length} speakers - likely over-segmentation, consolidating...`);
+  
+  // For over-segmentation, use advanced consolidation
+  const consolidatedGroups = new Map<string, any[]>();
+  const processedSpeakers = new Set<string>();
+  
+  for (const [speakerKey, segments] of speakerGroups) {
+    if (processedSpeakers.has(speakerKey)) continue;
+    
+    // Find similar speakers to consolidate with
+    const similarSpeakers = findSimilarSpeakers(speakerKey, segments, speakerGroups, processedSpeakers);
+    
+    // Choose the best representative name
+    const consolidatedName = chooseBestSpeakerName([speakerKey, ...similarSpeakers]);
+    
+    // Merge all segments from similar speakers
+    let allSegments = [...segments];
+    similarSpeakers.forEach(similarSpeaker => {
+      allSegments = allSegments.concat(speakerGroups.get(similarSpeaker) || []);
+      processedSpeakers.add(similarSpeaker);
+    });
+    
+    consolidatedGroups.set(consolidatedName, allSegments);
+    processedSpeakers.add(speakerKey);
+    
+    console.log(`🔗 Consolidated '${speakerKey}' + [${similarSpeakers.join(', ')}] → '${consolidatedName}' (${allSegments.length} segments)`);
+  }
+  
+  return consolidatedGroups;
+}
+
+function consolidateSimilarSpeakerNames(speakerGroups: Map<string, any[]>): Map<string, any[]> {
+  const consolidatedGroups = new Map<string, any[]>();
+  const processedSpeakers = new Set<string>();
+  
+  for (const [speakerKey, segments] of speakerGroups) {
+    if (processedSpeakers.has(speakerKey)) continue;
+    
+    // Find speakers with similar names (case insensitive, ignoring numbers)
+    const baseName = speakerKey.replace(/\d+$/, '').toLowerCase().trim();
+    const similarKeys = Array.from(speakerGroups.keys()).filter(key => 
+      !processedSpeakers.has(key) && 
+      key.replace(/\d+$/, '').toLowerCase().trim() === baseName
+    );
+    
+    // Choose the most descriptive name
+    const bestName = similarKeys.reduce((best, current) => 
+      current.length > best.length ? current : best, speakerKey
+    );
+    
+    // Consolidate all similar named speakers
+    let allSegments = [...segments];
+    similarKeys.forEach(key => {
+      if (key !== speakerKey) {
+        allSegments = allSegments.concat(speakerGroups.get(key) || []);
+        processedSpeakers.add(key);
+      }
+    });
+    
+    consolidatedGroups.set(bestName, allSegments);
+    processedSpeakers.add(speakerKey);
+  }
+  
+  return consolidatedGroups;
+}
+
+function findSimilarSpeakers(
+  targetSpeaker: string,
+  targetSegments: any[],
+  allSpeakerGroups: Map<string, any[]>,
+  processedSpeakers: Set<string>
+): string[] {
+  const similarSpeakers: string[] = [];
+  const targetCharacteristics = calculateSpeakerCharacteristics(targetSegments);
+  
+  for (const [speakerKey, segments] of allSpeakerGroups) {
+    if (speakerKey === targetSpeaker || processedSpeakers.has(speakerKey)) continue;
+    
+    const characteristics = calculateSpeakerCharacteristics(segments);
+    const similarity = calculateSpeakerSimilarity(targetCharacteristics, characteristics);
+    
+    // High similarity threshold for consolidation
+    if (similarity > 0.75) {
+      similarSpeakers.push(speakerKey);
+    }
+  }
+  
+  return similarSpeakers;
+}
+
+function calculateSpeakerCharacteristics(segments: any[]): any {
+  if (segments.length === 0) return {};
+  
+  // Calculate speaking patterns
+  const totalDuration = segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+  const avgSegmentLength = totalDuration / segments.length;
+  const totalWords = segments.reduce((sum, seg) => sum + (seg.text?.split(' ').length || 0), 0);
+  const avgWordsPerSegment = totalWords / segments.length;
+  
+  // Analyze speech patterns
+  const pausesBetweenSegments = [];
+  for (let i = 1; i < segments.length; i++) {
+    const pause = segments[i].start - segments[i-1].end;
+    if (pause > 0) pausesBetweenSegments.push(pause);
+  }
+  const avgPause = pausesBetweenSegments.length > 0 
+    ? pausesBetweenSegments.reduce((sum, p) => sum + p, 0) / pausesBetweenSegments.length 
+    : 0;
+  
+  // Vocabulary analysis
+  const vocabulary = new Set(
+    segments.flatMap(seg => seg.text?.toLowerCase().split(/\W+/).filter(w => w.length > 2) || [])
+  );
+  
+  return {
+    avgSegmentLength,
+    avgWordsPerSegment,
+    avgPause,
+    vocabularySize: vocabulary.size,
+    segmentCount: segments.length,
+    totalSpeakingTime: totalDuration
+  };
+}
+
+function calculateSpeakerSimilarity(chars1: any, chars2: any): number {
+  if (!chars1 || !chars2) return 0;
+  
+  // Weighted similarity calculation
+  const lengthSimilarity = 1 - Math.abs(chars1.avgSegmentLength - chars2.avgSegmentLength) / 
+    Math.max(chars1.avgSegmentLength, chars2.avgSegmentLength, 1);
+  
+  const wordsSimilarity = 1 - Math.abs(chars1.avgWordsPerSegment - chars2.avgWordsPerSegment) / 
+    Math.max(chars1.avgWordsPerSegment, chars2.avgWordsPerSegment, 1);
+  
+  const pauseSimilarity = 1 - Math.abs(chars1.avgPause - chars2.avgPause) / 
+    Math.max(chars1.avgPause, chars2.avgPause, 1);
+  
+  // Vocabulary overlap would require more complex analysis
+  const vocabSimilarity = 0.5; // Neutral weight
+  
+  return (lengthSimilarity * 0.3 + wordsSimilarity * 0.3 + pauseSimilarity * 0.2 + vocabSimilarity * 0.2);
+}
+
+function chooseBestSpeakerName(names: string[]): string {
+  // Prioritize actual names over generic labels
+  const realNames = names.filter(name => 
+    !name.toLowerCase().includes('speaker') && 
+    !name.toLowerCase().includes('unknown') &&
+    !name.match(/^(person|voice|man|woman)\d*$/i)
+  );
+  
+  if (realNames.length > 0) {
+    // Choose the most descriptive real name
+    return realNames.reduce((best, current) => 
+      current.length > best.length ? current : best
+    );
+  }
+  
+  // Fallback to the first name or generate a better generic name
+  return names[0] || 'Speaker';
 }
