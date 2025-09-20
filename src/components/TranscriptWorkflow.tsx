@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -503,49 +503,80 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   const handleSpeakerChange = (segmentIndex: number, newSpeaker: string) => {
-    const updatedSegments = [...segments];
     const originalSpeaker = segments[segmentIndex].speaker;
+    const originalColor = segments[segmentIndex].speakerColor;
     const character = characters.find(char => char.name === newSpeaker);
-    
-    if (character) {
-      // Count how many segments will be updated
-      const matchingSegments = segments.filter(seg => seg.speaker === originalSpeaker);
-      
-      // Update ALL segments with the same original speaker
-      updatedSegments.forEach((segment, index) => {
-        if (segment.speaker === originalSpeaker) {
-          updatedSegments[index] = {
-            ...segment,
-            speaker: newSpeaker,
-            speakerColor: character.color
-          };
-        }
-      });
-      
-      setSegments(updatedSegments);
-      
-      // Immediately update character colors in localStorage for instant UI sync
-      const characterColorMap = {
-        ...JSON.parse(localStorage.getItem('character-colors') || '{}'),
-        [newSpeaker]: character.color
-      };
-      localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
-      
-      // Trigger global update event
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, updatedSpeaker: newSpeaker, originalSpeaker } 
-      }));
-      
-      // Show confirmation toast
-      toast({
-        title: "Speaker Updated",
-        description: `Changed ${matchingSegments.length} segment(s) from "${originalSpeaker}" to "${newSpeaker}"`,
-        variant: "default",
-      });
-      
-      saveTranscript();
-    }
+
+    if (!character) return;
+
+    // Update all segments that match the original speaker OR original color
+    const updatedSegments = segments.map((segment) =>
+      segment.speaker === originalSpeaker || segment.speakerColor === originalColor
+        ? { ...segment, speaker: newSpeaker, speakerColor: character.color }
+        : segment
+    );
+
+    const matchingCount = segments.filter(
+      (seg) => seg.speaker === originalSpeaker || seg.speakerColor === originalColor
+    ).length;
+
+    setSegments(updatedSegments);
+
+    // Update character colors in localStorage for instant UI sync
+    const characterColorMap = {
+      ...JSON.parse(localStorage.getItem('character-colors') || '{}'),
+      [newSpeaker]: character.color,
+    };
+    localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
+
+    // Trigger global update event
+    window.dispatchEvent(
+      new CustomEvent('character-colors-updated', {
+        detail: { colors: characterColorMap, updatedSpeaker: newSpeaker, originalSpeaker },
+      })
+    );
+
+    toast({
+      title: 'Speaker Updated',
+      description: `Changed ${matchingCount} segment(s) from "${originalSpeaker}" to "${newSpeaker}"`,
+    });
+
+    saveTranscript();
   };
+
+  // Auto-propagate names by color when any segment changes (prevents tedious manual edits)
+  const autoPropagatingRef = useRef(false);
+  useEffect(() => {
+    if (autoPropagatingRef.current) return;
+    if (!segments || segments.length === 0) return;
+
+    const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
+
+    // Build preferred name per color (first non-generic wins)
+    const preferredByColor = new Map<string, string>();
+    for (const seg of segments) {
+      if (seg.speakerColor && seg.speaker && !isGeneric(seg.speaker)) {
+        if (!preferredByColor.has(seg.speakerColor)) preferredByColor.set(seg.speakerColor, seg.speaker);
+      }
+    }
+
+    let changed = false;
+    const updated = segments.map(seg => {
+      const preferred = preferredByColor.get(seg.speakerColor);
+      if (preferred && isGeneric(seg.speaker)) {
+        changed = true;
+        return { ...seg, speaker: preferred };
+      }
+      return seg;
+    });
+
+    if (changed) {
+      autoPropagatingRef.current = true;
+      setSegments(updated);
+      // release flag in next tick to avoid loops
+      setTimeout(() => (autoPropagatingRef.current = false), 0);
+    }
+  }, [segments]);
 
   if (isLoadingExisting) {
     return (
