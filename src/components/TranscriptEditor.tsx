@@ -121,7 +121,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [availableCharacters, setAvailableCharacters] = useState<{ name: string; color: string }[]>([]);
   const [editApplyToAll, setEditApplyToAll] = useState(false);
   const { toast } = useToast();
-  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
+  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // Load saved transcript and character data on component mount
@@ -296,6 +296,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     { code: 'ko', name: 'Korean' },
   ];
 
+  // Map extracted segments to Character Manager names/colors
+  const applyMappingsAndColors = async (segs: TranscriptSegment[], lang: string): Promise<TranscriptSegment[]> => {
+    try {
+      const mappings = await loadSpeakerMappings(lang);
+      const chars = await loadCharacters();
+      const simple = chars.map((c: any) => ({ name: c.name, color: c.color }));
+      const colorMap = simple.reduce((acc: Record<string,string>, ch) => ({ ...acc, [ch.name]: ch.color }), {});
+      localStorage.setItem('character-colors', JSON.stringify(colorMap));
+      return segs.map((seg, i) => {
+        const orig = seg.speaker || `Speaker ${((i % 4) + 1)}`;
+        const mapped = mappings[orig] || orig;
+        return {
+          ...seg,
+          speaker: mapped,
+          speakerColor: getCharacterColor(mapped, simple)
+        };
+      });
+    } catch (e) {
+      console.warn('applyMappingsAndColors fallback', e);
+      return segs;
+    }
+  };
+
   // Generate original transcript and save to database with proper transcript record
   const generateOriginalTranscript = async () => {
       setIsGenerating(true);
@@ -410,16 +433,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         });
       }
 
-      setOriginalTranscript(segments);
-      setEditingTranscript([...segments]);
-      
-      // Detect language from response and update state
-      const detectedLanguage = data?.language || 'en';
-      setSelectedLanguage(detectedLanguage);
+      // Detect language and persist
+      const detectedLang = data?.language || 'en';
+      setSelectedLanguage(detectedLang);
+
+      // Apply existing character mappings and colors so Speaker N becomes the chosen character
+      const mappedSegments = await applyMappingsAndColors(segments, detectedLang);
+
+      setOriginalTranscript(mappedSegments);
+      setEditingTranscript([...mappedSegments]);
       
       // Save to database with proper transcript record (not just localStorage)
-      await saveTranscriptData(segments, detectedLanguage);
-      onTranscriptUpdate?.(segments, detectedLanguage);
+      await saveTranscriptData(mappedSegments, detectedLang);
+      onTranscriptUpdate?.(mappedSegments, detectedLang);
 
       toast({
         title: "Transcript Generated",
