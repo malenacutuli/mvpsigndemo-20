@@ -12,6 +12,7 @@ import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
+import { SpeakerTestingLink } from "@/components/SpeakerTestingLink";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
@@ -534,6 +535,11 @@ const VideoDetail = () => {
                     }));
                   }}
                 />
+              </div>
+              
+              {/* Speaker Testing Lab Link */}
+              <div className="mt-4">
+                <SpeakerTestingLink videoId={video.id} />
               </div>
             </CardContent>
           </Card>
