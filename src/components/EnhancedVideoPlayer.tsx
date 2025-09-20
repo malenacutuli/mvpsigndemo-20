@@ -761,8 +761,44 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
             
-            // 1. Advanced speaker identification - always run once per session to consolidate voices
+            // 1. Advanced speaker identification - force Twelve Labs (Pegasus 1.2) invoke once per session, then fallback/heuristics
             try {
+              const tlOnceKey = `tl_invoked_${videoId}_${currentLanguage}`;
+              if (!sessionStorage.getItem(tlOnceKey)) {
+                console.log('🚀 ENHANCED PLAYER: Invoking Twelve Labs (Pegasus 1.2) now...');
+                sessionStorage.setItem(tlOnceKey, 'true');
+                const { data: tlData, error: tlError } = await supabase.functions.invoke('twelve-labs-analysis', {
+                  body: { videoUrl: videoSrc, videoId, language: currentLanguage || 'en' }
+                });
+                if (tlError) {
+                  console.error('❌ ENHANCED PLAYER: Twelve Labs invoke error:', tlError);
+                }
+                if (tlData && Array.isArray(tlData.segments) && tlData.segments.length > 0) {
+                  const tlSpeakerColors = new Map<string, string>();
+                  if (Array.isArray(tlData.speakers)) {
+                    tlData.speakers.forEach((s: any) => tlSpeakerColors.set(s.name, s.color));
+                  }
+                  captionSegments = captionSegments.map(seg => {
+                    let bestName = seg.speaker;
+                    let bestColor = seg.speakerColor;
+                    let bestOv = 0;
+                    for (const diar of tlData.segments as Array<any>) {
+                      const ov = computeOverlap(seg.startTime, seg.endTime, diar.start ?? diar.startTime, diar.end ?? diar.endTime);
+                      if (ov > bestOv) {
+                        bestOv = ov;
+                        bestName = diar.speaker || bestName;
+                        bestColor = diar.speakerColor || tlSpeakerColors.get(diar.speaker) || bestColor;
+                      }
+                    }
+                    return { ...seg, speaker: bestName, speakerColor: bestColor };
+                  });
+                  console.log('✅ ENHANCED PLAYER: Applied Twelve Labs speaker mapping:', captionSegments.slice(0, 2).map(s => ({ speaker: s.speaker, color: s.speakerColor })));
+                } else {
+                  console.warn('⚠️ ENHANCED PLAYER: Twelve Labs returned no segments; proceeding with fallback analysis');
+                }
+              }
+
+              // Also run our advanced analysis wrapper (TL → AssemblyAI fallback) to consolidate speakers if needed
               captionSegments = await performAdvancedSpeakerAnalysis(captionSegments, videoSrc, videoId);
               console.log('🎨 ENHANCED PLAYER: After advanced speaker analysis:', captionSegments.map(s => ({ speaker: s.speaker, color: s.speakerColor })).slice(0, 3));
             } catch (error) {
