@@ -102,7 +102,99 @@ async function startFullAnalysis(supabase: any, videoId: string, videoUrl: strin
       result_data: { steps, current_step: 'speaker_analysis' }
     });
 
-  // Step 1: Enhanced Speaker Analysis
+  // FAST PATH: If transcript segments already exist, synthesize analysis and finish
+  const { data: existingSegments } = await supabase
+    .from('transcript_segments')
+    .select('*')
+    .eq('video_id', videoId)
+    .eq('language', options.language || 'en')
+    .order('start_time');
+
+  if (existingSegments && existingSegments.length > 0) {
+    console.log(`ℹ️ Found existing transcript segments: ${existingSegments.length}. Using fast path.`);
+
+    // Mark analysis running briefly
+    await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 10);
+
+    // Build speaker data from existing segments
+    const stats = extractSpeakerStats(existingSegments);
+    const speakersList = Object.entries(stats).map(([name, s]: [string, any]) => ({
+      name,
+      id: name,
+      totalTimeSeconds: (s as any).totalTime,
+      confidence: (s as any).averageConfidence,
+      color: (s as any).color,
+    }));
+
+    const formattedSegments = existingSegments.map((seg: any) => ({
+      start: seg.start_time ?? seg.startTime,
+      end: seg.end_time ?? seg.endTime,
+      text: seg.text,
+      speaker: seg.speaker,
+      speakerColor: seg.speaker_color,
+      confidence: seg.confidence ?? 0.9,
+      words: seg.words ?? []
+    }));
+
+    const speakerData = { speakers: speakersList, segments: formattedSegments };
+
+    await updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'completed', 100, speakerData);
+
+    // Transcript extraction is implicitly complete
+    await updateWorkflowStep(supabase, videoId, 'transcript_extraction', 'completed', 100);
+
+    // Speaker assignment verification
+    await updateWorkflowStep(supabase, videoId, 'speaker_assignment', 'completed', 100, {
+      total_segments: existingSegments.length,
+      speakers_detected: speakersList.length
+    });
+
+    // Character suggestions from stats
+    const characterSuggestions = Object.entries(stats).map(([speakerName, s]: [string, any], index: number) => ({
+      suggested_name: speakerName,
+      speaker_id: speakerName,
+      suggested_type: determineSpeakerTypeFromStats(s, index, Object.keys(stats).length),
+      speaking_time: s.totalTime,
+      confidence: s.averageConfidence,
+      color: s.color || `#${Math.floor(Math.random()*16777215).toString(16)}`
+    }));
+
+    await updateWorkflowStep(supabase, videoId, 'character_setup', 'completed', 100, {
+      character_suggestions: characterSuggestions,
+      ready_for_user_input: true
+    });
+
+    // Finalize workflow as completed
+    await supabase
+      .from('content_generation_cache')
+      .upsert({
+        video_id: videoId,
+        content_type: 'analysis_workflow',
+        language: options.language || 'en',
+        generation_params: { completed_at: new Date().toISOString(), options },
+        result_data: {
+          steps: steps.map(s => ({ ...s, status: 'completed', progress: 100 })),
+          current_step: 'completed',
+          speaker_data: speakerData,
+          character_suggestions: characterSuggestions,
+          ready_for_user_configuration: true
+        }
+      });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        workflow_complete: true,
+        speaker_data: speakerData,
+        character_suggestions: characterSuggestions,
+        total_segments: existingSegments.length,
+        next_step: 'user_character_configuration'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Step 1: Enhanced speaker analysis
   console.log('🎭 Starting enhanced speaker analysis...');
   updateWorkflowStep(supabase, videoId, 'speaker_analysis', 'running', 10);
 
