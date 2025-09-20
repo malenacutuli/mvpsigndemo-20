@@ -428,6 +428,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
     setUseWordLevelEditing(false); // Reset to segment-level editing by default
+    setEditApplyToAll(false); // Default: do NOT propagate changes unless explicitly enabled
   };
 
   const saveEdit = async () => {
@@ -447,22 +448,26 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       words: useWordLevelEditing ? editWords : undefined, // Save word-level data if enabled
     };
 
-    // PROPAGATE: update all segments that shared the original speaker OR the original color
-    const propagated = updated.map((seg, idx) => {
-      const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
-      const matchesColor = originalColor && seg.speakerColor === originalColor;
-      if ((matchesSpeaker || matchesColor) && idx !== editingIndex) {
-        return {
-          ...seg,
-          speaker: editSpeaker,
-          speakerColor: editSpeakerColor,
-        };
-      }
-      return seg;
-    });
+    // Optionally propagate to all matching segments only if explicitly enabled
+    let nextSegments = updated;
+    if (editApplyToAll) {
+      const propagated = updated.map((seg, idx) => {
+        const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
+        const matchesColor = originalColor && seg.speakerColor === originalColor;
+        if ((matchesSpeaker || matchesColor) && idx !== editingIndex) {
+          return {
+            ...seg,
+            speaker: editSpeaker,
+            speakerColor: editSpeakerColor,
+          };
+        }
+        return seg;
+      });
+      nextSegments = propagated;
+    }
     
     // Sort segments by time after editing timing
-    const sortedSegments = sortSegmentsByTime(propagated);
+    const sortedSegments = sortSegmentsByTime(nextSegments);
     setEditingTranscript(sortedSegments);
     
     // Save immediately to database with proper transcript record
