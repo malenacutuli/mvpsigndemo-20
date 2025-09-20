@@ -418,8 +418,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       // Find character color for new speaker
       const character = characters.find(char => char.name === newSpeaker);
-      const newColor = character?.color || getSpeakerColor(segmentIndex);
-      console.log('🚨 New speaker color:', newColor, 'from character:', character);
+      const newColor = character?.color || originalColor || segments[segmentIndex].speakerColor;
       const colorToMatch = originalColor || segments[segmentIndex].speakerColor;
       
       // Update ALL segments that match original speaker OR original color
