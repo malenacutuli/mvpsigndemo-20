@@ -424,16 +424,35 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
   const handleSpeakerChange = (segmentIndex: number, newSpeaker: string) => {
     const updatedSegments = [...segments];
+    const originalSpeaker = segments[segmentIndex].speaker;
     const character = characters.find(char => char.name === newSpeaker);
     
     if (character) {
-      updatedSegments[segmentIndex] = {
-        ...updatedSegments[segmentIndex],
-        speaker: newSpeaker,
-        speakerColor: character.color
-      };
+      // Update ALL segments with the same original speaker
+      updatedSegments.forEach((segment, index) => {
+        if (segment.speaker === originalSpeaker) {
+          updatedSegments[index] = {
+            ...segment,
+            speaker: newSpeaker,
+            speakerColor: character.color
+          };
+        }
+      });
       
       setSegments(updatedSegments);
+      
+      // Immediately update character colors in localStorage for instant UI sync
+      const characterColorMap = {
+        ...JSON.parse(localStorage.getItem('character-colors') || '{}'),
+        [newSpeaker]: character.color
+      };
+      localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
+      
+      // Trigger global update event
+      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+        detail: { colors: characterColorMap, updatedSpeaker: newSpeaker, originalSpeaker } 
+      }));
+      
       saveTranscript();
     }
   };
