@@ -472,7 +472,17 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               // Finalize by sending transcript segments only once when ready
               try {
                 const finalizeResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
-                  body: { indexId, taskId, language: detectedLanguage, transcriptSegments }
+                  body: { 
+                    indexId, 
+                    taskId, 
+                    language: detectedLanguage, 
+                    transcriptSegments: transcriptSegments.map((s: any) => ({
+                      text: s.text,
+                      speaker: s.speaker,
+                      startTime: typeof s.startTime === 'number' ? Number(s.startTime.toFixed(2)) : s.startTime,
+                      endTime: typeof s.endTime === 'number' ? Number(s.endTime.toFixed(2)) : s.endTime,
+                    }))
+                  }
                 });
                 
                 if (finalizeResp.error) {
