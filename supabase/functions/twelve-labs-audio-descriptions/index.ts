@@ -32,14 +32,14 @@ serve(async (req) => {
 
   try {
     const { videoUrl, videoId: inputVideoId, language, transcriptSegments, indexId: providedIndexId, taskId: providedTaskId } = await req.json();
-    
-    if (!videoUrl) {
+
+    // Only require videoUrl on kickoff requests (no continuation identifiers)
+    if (!providedIndexId && !providedTaskId && !videoUrl) {
       throw new Error('Video URL is required');
     }
 
     // transcriptSegments are optional on kickoff; required only when generation starts
     // (They will be provided later once the indexing task is ready)
-
 
     const twelveLabsApiKey = Deno.env.get('TWELVE_LABS_API_KEY');
     if (!twelveLabsApiKey) {
@@ -348,10 +348,44 @@ async function generateAudioDescriptions(
   
   console.log(`🎬 Starting audio description generation for ${silenceGaps.length} silence gaps...`);
 
-  // Limit gaps to prevent timeout (max 10 gaps for edge function)
-  const limitedGaps = silenceGaps.slice(0, 10);
+  // Select representative gaps across the whole timeline to prevent early cutoffs
+  const maxGaps = 12;
+  let limitedGaps: SilenceGap[] = [];
+  if (silenceGaps.length <= maxGaps) {
+    limitedGaps = silenceGaps;
+  } else {
+    const sorted = [...silenceGaps].sort((a, b) => a.startTime - b.startTime);
+    const totalSpan = (sorted[sorted.length - 1].endTime - sorted[0].startTime) || 1;
+    const bucketSize = totalSpan / maxGaps;
+    const selected: SilenceGap[] = [];
+
+    for (let i = 0; i < maxGaps; i++) {
+      const bucketStart = sorted[0].startTime + i * bucketSize;
+      const bucketEnd = i === maxGaps - 1 ? Infinity : bucketStart + bucketSize;
+      const inBucket = sorted.filter(g => g.startTime >= bucketStart && g.startTime < bucketEnd);
+      if (inBucket.length > 0) {
+        inBucket.sort((a, b) => b.duration - a.duration);
+        selected.push(inBucket[0]);
+      }
+    }
+
+    // Ensure we include a gap near the end of the video
+    const lastGap = sorted[sorted.length - 1];
+    if (!selected.some(g => g.startTime === lastGap.startTime && g.endTime === lastGap.endTime)) {
+      selected[selected.length - 1] = lastGap;
+    }
+
+    // Deduplicate and cap to max
+    const keySet = new Set<string>();
+    limitedGaps = selected.filter(g => {
+      const key = `${g.startTime}-${g.endTime}`;
+      if (keySet.has(key)) return false;
+      keySet.add(key);
+      return true;
+    }).slice(0, maxGaps);
+  }
   if (limitedGaps.length < silenceGaps.length) {
-    console.log(`⚠️ Limited to ${limitedGaps.length} gaps to prevent timeout`);
+    console.log(`⚠️ Selected ${limitedGaps.length}/${silenceGaps.length} representative gaps across full timeline`);
   }
 
   for (let i = 0; i < limitedGaps.length; i++) {

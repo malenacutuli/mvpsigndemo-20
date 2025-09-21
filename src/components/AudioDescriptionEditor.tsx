@@ -662,7 +662,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               disabled={isGenerating || isLoading}
               variant="outline"
             >
-              {isGenerating ? (
+              {isGenerating && !isUsingTwelveLabs ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Basic Generation...
