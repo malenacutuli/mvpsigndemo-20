@@ -401,7 +401,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         toast.info('Indexing video for analysis. Checking status every 10s...', { duration: 4000 });
 
         let attempts = 0;
-        const maxAttempts = 30; // ~5 minutes
+        const maxAttempts = 60; // ~10 minutes for longer videos
         pollingRef.current = window.setInterval(async () => {
           attempts++;
           try {
@@ -464,7 +464,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           if (attempts >= maxAttempts) {
             clearInterval(pollingRef.current!);
             pollingRef.current = null;
-            toast.info('Still processing. Try again in a moment.');
+            console.error('🎬 Twelve Labs: Timeout after', maxAttempts, 'attempts');
+            toast.error('Video analysis timeout. This video may require more processing time. Please try again in a few minutes.');
             setIsGenerating(false);
             setIsUsingTwelveLabs(false);
           }
