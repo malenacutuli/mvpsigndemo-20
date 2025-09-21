@@ -139,16 +139,58 @@ serve(async (req) => {
     const silenceGaps = detectSilenceGaps(transcriptSegments);
     console.log(`🔇 Detected ${silenceGaps.length} silence gaps for comprehensive analysis`);
 
+    // Also get visual highlights from Twelve Labs to supplement gaps
+    const speechIntervals = transcriptSegments.map((s: any) => ({ start: s.startTime, end: s.endTime }));
+
+    let highlightGaps: Array<{ startTime: number; endTime: number; duration: number }> = [];
+    try {
+      const summarizeResp = await fetch(`${baseUrl}/summarize`, {
+        method: 'POST',
+        headers: { 'x-api-key': twelveLabsApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          video_id: videoId,
+          type: 'highlight',
+          // Prompt to encourage visual, not dialogue-focused highlights
+          prompt: 'Identify visual highlights with precise start_sec and end_sec. Prefer moments without active dialogue (silent action, scenery, transitions, reactions).',
+          temperature: 0.2,
+          max_tokens: 4096,
+        }),
+      });
+      if (summarizeResp.ok) {
+        const sumData = await summarizeResp.json();
+        const highlights = (sumData.highlights || []).filter((h: any) => h.start_sec != null && h.end_sec != null);
+        // Keep highlights that don\'t significantly overlap with speech
+        highlightGaps = highlights
+          .map((h: any) => ({ startTime: h.start_sec, endTime: h.end_sec, duration: (h.end_sec - h.start_sec) }))
+          .filter((g: any) => {
+            const overlap = speechIntervals.some(si => Math.max(0, Math.min(g.endTime, si.end) - Math.max(g.startTime, si.start)) > (g.duration * 0.3));
+            return !overlap && g.duration >= 1.0;
+          });
+        console.log(`✨ Retrieved ${highlightGaps.length} visual highlights suitable for AD`);
+      } else {
+        console.warn('⚠️ Summarize(highlight) request failed:', await summarizeResp.text());
+      }
+    } catch (e) {
+      console.warn('⚠️ Error calling summarize(highlight):', e);
+    }
+
+    // Combine and de-duplicate by time (±0.3s)
+    const gapsToDescribe = [...silenceGaps, ...highlightGaps].reduce((acc: any[], g) => {
+      const exists = acc.some(x => Math.abs(x.startTime - g.startTime) < 0.3 && Math.abs(x.endTime - g.endTime) < 0.3);
+      if (!exists) acc.push(g);
+      return acc;
+    }, [] as any[]).sort((a, b) => a.startTime - b.startTime);
+
     const audioDescriptions: AudioDescriptionSegment[] = [];
 
-    // Step 5: Generate audio descriptions for ALL silence gaps
-    console.log('🎬 Generating video-specific audio descriptions for all silence gaps...');
+    // Step 5: Generate audio descriptions for ALL candidate gaps
+    console.log(`🎬 Generating video-specific audio descriptions for ${gapsToDescribe.length} moments...`);
     
-    for (let i = 0; i < silenceGaps.length; i++) {
-      const gap = silenceGaps[i];
+    for (let i = 0; i < gapsToDescribe.length; i++) {
+      const gap = gapsToDescribe[i];
       
       try {
-        console.log(`🎯 Analyzing gap ${i + 1}/${silenceGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration.toFixed(1)}s)`);
+        console.log(`🎯 Analyzing gap ${i + 1}/${gapsToDescribe.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration.toFixed(1)}s)`);
         
         const analysisPrompt = `Analyze the video content from ${gap.startTime} to ${gap.endTime} seconds and create a vivid, cinematic audio description for this ${gap.duration.toFixed(1)}-second silent moment.
 
@@ -245,12 +287,12 @@ Provide only the audio description text, nothing else.`;
     // Sort descriptions by start time
     audioDescriptions.sort((a, b) => a.startTime - b.startTime);
 
-    console.log(`🎉 Successfully generated ${audioDescriptions.length} audio descriptions from ${silenceGaps.length} silence gaps`);
+    console.log(`🎉 Successfully generated ${audioDescriptions.length} audio descriptions from ${gapsToDescribe.length} analyzed moments`);
 
     return new Response(JSON.stringify({
       success: true,
       audioDescriptions,
-      silenceGapsAnalyzed: silenceGaps.length,
+      silenceGapsAnalyzed: gapsToDescribe.length,
       descriptionsGenerated: audioDescriptions.length,
       language: language || 'en'
     }), {
@@ -288,7 +330,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     return intervals;
   }
 
-  const minGapDuration = 1.5; // Minimum gap worth describing
+  const minGapDuration = 1.0; // Minimum gap worth describing
   const bufferTime = 0.2; // Small buffer around speech
   
   // Add opening gap if video doesn't start immediately with speech
