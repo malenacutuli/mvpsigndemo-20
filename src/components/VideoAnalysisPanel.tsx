@@ -203,10 +203,23 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       if (error) throw error;
 
-      setResult(data as AnalysisResult);
+      // Parse the response structure from Twelve Labs API
+      let analysisResult: AnalysisResult;
+      if (data?.data && typeof data.data === 'string') {
+        // Parse the stringified JSON from Twelve Labs
+        const parsedData = JSON.parse(data.data);
+        analysisResult = parsedData;
+      } else if (data?.silences) {
+        // Direct format (fallback)
+        analysisResult = data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+
+      setResult(analysisResult);
       toast({
         title: "Analysis Complete",
-        description: `Found ${data?.silences?.length || 0} silent segments`
+        description: `Found ${analysisResult?.silences?.length || 0} silent segments`
       });
     } catch (error: any) {
       console.error('Analysis error:', error);
