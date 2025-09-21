@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TL_BASE = "https://api.twelvelabs.io/v1";
+const TL_BASE = "https://api.twelvelabs.io/v1.3";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -35,76 +35,68 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get mapping from database
+    // Get mapping from database to find video_id
     const { data: mapping, error: mappingError } = await supabase
       .from('twelve_labs_mappings')
       .select('*')
       .eq('asset_id', assetId)
+      .eq('status', 'ready')
       .maybeSingle();
 
     if (mappingError) throw mappingError;
     
-    if (!mapping?.index_id || !mapping?.tl_video_id || mapping.status !== 'ready') {
+    if (!mapping?.tl_video_id) {
       return new Response(
-        JSON.stringify({ error: 'Asset not ready for analysis. Please ensure indexing is complete.' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Video not ready for analysis. Please ensure indexing is complete.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Perform analysis with Pegasus 1.2
-    const analysisResponse = await fetch(`${TL_BASE}/analyze`, {
+    console.log('🎯 Starting analysis for video:', mapping.tl_video_id);
+
+    // Call analyze API
+    const analyzeResponse = await fetch(`${TL_BASE}/analyze`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${twelveLabsApiKey}`,
-        'Content-Type': 'application/json'
+        'x-api-key': twelveLabsApiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        model: 'pegasus-1.2',
-        input_videos: [{
-          index_id: mapping.index_id,
-          video_id: mapping.tl_video_id
-        }],
+        video_id: mapping.tl_video_id,
         prompt: prompt,
-        response_format: { type: 'json_object' }
+        temperature: 0.2
       })
     });
 
-    const analysisResult = await analysisResponse.json();
-    console.log('Analysis result:', analysisResult);
+    const analyzeText = await analyzeResponse.text();
+    console.log('📊 Analyze response status:', analyzeResponse.status);
+    console.log('📊 Analyze response text:', analyzeText.substring(0, 500));
 
-    // Parse the result if it's a string
-    let parsedResult = analysisResult;
+    if (!analyzeResponse.ok) {
+      throw new Error(`Analysis failed ${analyzeResponse.status}: ${analyzeText}`);
+    }
+
+    let analyzeResult: any;
     try {
-      const content = analysisResult?.choices?.[0]?.message?.content || analysisResult?.content;
-      if (typeof content === 'string') {
-        parsedResult = JSON.parse(content);
-      }
-    } catch (parseError) {
-      console.log('Could not parse result as JSON, using raw result');
+      analyzeResult = JSON.parse(analyzeText);
+    } catch {
+      throw new Error(`Analysis API returned non-JSON: ${analyzeText}`);
     }
 
-    // Save analysis result to database
-    const { error: saveError } = await supabase
-      .from('video_analysis_results')
-      .insert({
-        asset_id: assetId,
-        prompt: prompt,
-        result: parsedResult,
-        language: 'en'
-      });
-
-    if (saveError) {
-      console.error('Failed to save analysis result:', saveError);
-      // Don't throw error here, still return the analysis result
-    }
+    console.log('✅ Analysis completed successfully');
 
     return new Response(
-      JSON.stringify(parsedResult),
+      JSON.stringify({ 
+        ok: true, 
+        result: analyzeResult,
+        videoId: mapping.tl_video_id 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Video analysis analyze error:', error);
+    console.error('Video analysis error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
