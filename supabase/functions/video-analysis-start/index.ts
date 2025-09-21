@@ -102,7 +102,7 @@ async function createIndex() {
     try {
       console.log(`Trying endpoint: ${endpoint}/indexes`);
       const listResponse = await fetch(`${endpoint}/indexes`, {
-        headers: { 'Authorization': `Bearer ${twelveLabsApiKey}` }
+        headers: { 'x-api-key': `${twelveLabsApiKey}`, 'Accept': 'application/json' }
       });
       
       console.log(`Response status: ${listResponse.status}`);
@@ -135,8 +135,9 @@ async function createNewIndex(endpoint: string, apiKey: string) {
   const createResponse = await fetch(`${endpoint}/indexes`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
     body: JSON.stringify({
       name: 'axessible-video-analysis',
@@ -168,12 +169,14 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
       const formData = new FormData();
       formData.append('index_id', indexId);
       formData.append('url', videoUrl);
+      formData.append('video_url', videoUrl); // compatibility
 
       console.log(`Attempting to create task at ${endpoint}/tasks`);
       const response = await fetch(`${endpoint}/tasks`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${twelveLabsApiKey}`
+          'x-api-key': `${twelveLabsApiKey}`,
+          'Accept': 'application/json'
         },
         body: formData
       });
