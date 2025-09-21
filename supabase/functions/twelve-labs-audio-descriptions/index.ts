@@ -46,52 +46,83 @@ serve(async (req) => {
 
     const baseUrl = 'https://api.twelvelabs.io/v1.3';
 
-    // Step 1: Create index for video analysis
-    const indexResponse = await fetch(`${baseUrl}/indexes`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        index_name: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        models: [
-          { model_name: 'pegasus-1.2', model_options: ['audio', 'visual'] }
-        ]
-      }),
-    });
+    // Step 1: Create index for video analysis (with retries)
+    let indexId: string | null = null;
+    for (let attempt = 0; attempt < 3 && !indexId; attempt++) {
+      try {
+        const res = await fetch(`${baseUrl}/indexes`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': twelveLabsApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            index_name: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            models: [
+              { model_name: 'pegasus-1.2', model_options: ['audio', 'visual'] }
+            ]
+          }),
+        });
 
-    if (!indexResponse.ok) {
-      const error = await indexResponse.text();
-      throw new Error(`Failed to create index: ${error}`);
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(`Failed to create index: ${error}`);
+        }
+
+        const created = await res.json();
+        indexId = created._id;
+      } catch (e) {
+        console.warn(`⚠️ Create index attempt ${attempt + 1} failed`, e);
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        }
+      }
     }
 
-    const indexData = await indexResponse.json();
-    const indexId = indexData._id;
+    if (!indexId) {
+      throw new Error('Failed to create Twelve Labs index after retries');
+    }
+
     console.log('✅ Created Twelve Labs index for audio descriptions:', indexId);
 
-    // Step 2: Create video indexing task
-    const taskCreateResponse = await fetch(`${baseUrl}/tasks`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        index_id: indexId,
-        video_url: videoUrl,
-        enable_video_stream: false
-      }),
-    });
+    // Step 2: Create video indexing task (with retries)
+    let taskId: string | null = null;
+    let videoId: string | null = null;
+    for (let attempt = 0; attempt < 3 && !taskId; attempt++) {
+      try {
+        const res = await fetch(`${baseUrl}/tasks`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': twelveLabsApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            index_id: indexId,
+            video_url: videoUrl,
+            enable_video_stream: false
+          }),
+        });
 
-    if (!taskCreateResponse.ok) {
-      const error = await taskCreateResponse.text();
-      throw new Error(`Failed to create indexing task: ${error}`);
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(`Failed to create indexing task: ${error}`);
+        }
+
+        const taskData = await res.json();
+        taskId = taskData._id;
+        videoId = taskData.video_id || null;
+      } catch (e) {
+        console.warn(`⚠️ Create task attempt ${attempt + 1} failed`, e);
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        }
+      }
     }
 
-    const taskData = await taskCreateResponse.json();
-    const taskId = taskData._id;
-    let videoId = taskData.video_id || null;
+    if (!taskId) {
+      throw new Error('Failed to create Twelve Labs task after retries');
+    }
+
     console.log('🎥 Indexing task created for audio descriptions:', { taskId, videoId });
 
     // Step 3: Wait for video processing to complete
@@ -199,7 +230,7 @@ Analyze the entire video comprehensively and provide detailed results for ALL si
         console.warn('⚠️ No descriptions could be parsed from comprehensive analysis, falling back to gap-based approach');
         
         // Fallback: generate descriptions for detected silence gaps
-        for (const gap of silenceGaps.slice(0, 5)) { // Limit to avoid rate limits
+        for (const gap of silenceGaps.slice(0, 20)) { // Generate up to 20 gaps to match platform analysis
           try {
             const gapPrompt = `For the video segment from ${gap.startTime}s to ${gap.endTime}s (${gap.duration.toFixed(1)} seconds), write a cinematic narrative audio description. Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere. Focus on story, emotions, and sensory details. Call out character names if known. Keep it concise to fit in ${gap.duration.toFixed(1)} seconds.`;
 
