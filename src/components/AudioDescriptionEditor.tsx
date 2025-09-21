@@ -64,6 +64,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
   const [isUsingTwelveLabs, setIsUsingTwelveLabs] = useState(false);
   const pollingRef = React.useRef<number | null>(null);
+  const timeoutHandledRef = React.useRef<boolean>(false);
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
@@ -398,6 +399,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
     setIsGenerating(true);
     setIsUsingTwelveLabs(true);
+    timeoutHandledRef.current = false;
     
     try {
       toast.info('Starting comprehensive video analysis for detailed audio descriptions...', { duration: 4000 });
@@ -435,7 +437,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         }
 
         let attempts = 0;
-        const maxAttempts = 60; // ~10 minutes for longer videos
+        const maxAttempts = 24; // ~4 minutes max before graceful fallback
         pollingRef.current = window.setInterval(async () => {
           attempts++;
           console.log(`🎬 Twelve Labs: Polling attempt ${attempts}/${maxAttempts}`);
