@@ -17,7 +17,6 @@ import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
-import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
 
 interface Video {
   id: string;
@@ -498,15 +497,6 @@ const VideoDetail = () => {
                   contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                   className="mb-4"
                 />
-                
-                {/* Video Analysis Panel */}
-                {videoUrl && (
-                  <VideoAnalysisPanel
-                    assetId={video.id}
-                    playbackUrl={videoUrl}
-                    videoElementId="main-video-player"
-                  />
-                )}
                 
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
