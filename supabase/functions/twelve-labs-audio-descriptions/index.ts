@@ -192,25 +192,25 @@ serve(async (req) => {
       try {
         console.log(`🎯 Analyzing gap ${i + 1}/${gapsToDescribe.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration.toFixed(1)}s)`);
         
-        const analysisPrompt = `Analyze the video content from ${gap.startTime} to ${gap.endTime} seconds and create a vivid, cinematic audio description for this ${gap.duration.toFixed(1)}-second silent moment.
+        const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds (${gap.duration.toFixed(1)} seconds duration) and create a concise audio description for this silent moment.
 
-Write a present-tense audio description that captures:
-- Visual storytelling elements (lighting, composition, character positioning)
-- Character actions, expressions, and body language when visible
-- Environmental details and atmospheric elements
-- Emotional undertones and dramatic tension
-- Any important visual information that enhances the narrative
+Focus on what is visually happening during this specific time period:
+- Character actions, movements, and expressions
+- Environmental details and setting changes
+- Visual storytelling elements (lighting, composition)
+- Important objects or elements that appear
+- Emotional undertones conveyed through visuals
 
-Style requirements:
-- Present tense, descriptive but concise
-- Fits naturally in ${gap.duration.toFixed(1)} seconds of silence
-- Cinematic and immersive like a radio drama narrator
-- Include character names if identifiable
-- Focus on visual elements that advance the story
+Requirements:
+- Write in present tense
+- Keep it concise for ${gap.duration.toFixed(1)} seconds of narration
+- Focus only on visual elements visible during this time segment
+- Use cinematic language appropriate for audio description
+- Do not mention audio or dialogue
 
-Provide only the audio description text, nothing else.`;
+Generate only the audio description text, nothing else.`;
 
-        // Use Twelve Labs analyze endpoint
+        // Use Twelve Labs analyze endpoint instead of summarize
         const analyzeResponse = await fetch(`${baseUrl}/analyze`, {
           method: 'POST',
           headers: {
@@ -221,7 +221,8 @@ Provide only the audio description text, nothing else.`;
             video_id: videoId,
             prompt: analysisPrompt,
             temperature: 0.3,
-            max_tokens: Math.min(300, Math.floor(gap.duration * 20)),
+            stream: false,
+            max_tokens: Math.min(200, Math.floor(gap.duration * 15)),
           }),
         });
 
