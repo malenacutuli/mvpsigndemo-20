@@ -611,9 +611,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       <CardContent className="space-y-6">
         <Tabs defaultValue="transcript" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
-            <TabsTrigger value="video-analysis">Video Analysis</TabsTrigger>
             <TabsTrigger value="audio-desc">Audio Descriptions</TabsTrigger>
           </TabsList>
 
@@ -923,14 +922,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 </div>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="video-analysis">
-            <VideoAnalysisPanel
-              assetId={videoId}
-              playbackUrl={videoUrl}
-              videoElementId="mainVideo"
-            />
           </TabsContent>
 
           <TabsContent value="audio-desc">
