@@ -17,6 +17,7 @@ import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
+import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
 
 interface Video {
   id: string;
@@ -375,13 +376,6 @@ const VideoDetail = () => {
               {t('videoDetail.backToVideos')}
             </Button>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="default"
-                onClick={() => navigate(`/video/${video.id}/workflow`)}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Open Workflow
-              </Button>
               <VideoPublishingControls
                 videoId={video.id}
                 isPublic={video.is_public}
@@ -466,7 +460,7 @@ const VideoDetail = () => {
                   <Play className="w-5 h-5" />
                   {t('videoDetail.immersiveFeatures')}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <Card className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -485,6 +479,15 @@ const VideoDetail = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">Describes visual elements for screen readers</p>
                   </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 font-semibold text-sm">VA</span>
+                      </div>
+                      <h3 className="font-semibold">Video Analysis</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">AI-powered analysis and narration generation</p>
+                  </Card>
                 </div>
                 
                 {/* Audio Description Voice Selector */}
@@ -495,6 +498,15 @@ const VideoDetail = () => {
                   contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                   className="mb-4"
                 />
+                
+                {/* Video Analysis Panel */}
+                {videoUrl && (
+                  <VideoAnalysisPanel
+                    assetId={video.id}
+                    playbackUrl={videoUrl}
+                    videoElementId="main-video-player"
+                  />
+                )}
                 
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
