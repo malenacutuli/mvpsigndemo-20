@@ -694,13 +694,6 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             </Button>
           </div>
 
-          {transcriptSegments && transcriptSegments.length > 0 && (
-            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-              <p className="text-sm text-green-800 dark:text-green-200">
-                ✅ {transcriptSegments.length} transcript segments available for silence gap analysis
-              </p>
-            </div>
-          )}
 
           <div className="flex gap-2">
             <Button 
