@@ -97,6 +97,7 @@ async function createIndex() {
   
   // Prefer v1.3, fallback to older if needed
   const endpoints = [`https://api.twelvelabs.io/v1.3`, `https://api.twelvelabs.io/v1.2`, `https://api.twelvelabs.io/v1`];
+  const errors: string[] = [];
   
   for (const endpoint of endpoints) {
     try {
@@ -122,13 +123,15 @@ async function createIndex() {
       } else {
         const errorText = await listResponse.text();
         console.log(`Endpoint ${endpoint} failed:`, errorText);
+        errors.push(`${endpoint} list indexes -> ${listResponse.status}: ${errorText}`);
       }
     } catch (error) {
       console.log(`Endpoint ${endpoint} error:`, error);
+      errors.push(`${endpoint} list indexes -> error: ${String(error)}`);
     }
   }
   
-  throw new Error('All API endpoints failed. Please check your TWELVELABS_API_KEY');
+  throw new Error('All API endpoints failed for list/create index. Details: ' + errors.join(' | '));
 }
 
 async function createNewIndex(endpoint: string, apiKey: string) {
@@ -164,6 +167,7 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
 
   // Try different endpoints for tasks
   const endpoints = [`https://api.twelvelabs.io/v1.3`, `https://api.twelvelabs.io/v1.2`, `https://api.twelvelabs.io/v1`];
+  const errors: string[] = [];
   
   for (const endpoint of endpoints) {
     try {
@@ -188,11 +192,13 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
       } else {
         const errorText = await response.text();
         console.log(`Task creation failed at ${endpoint}:`, errorText);
+        errors.push(`${endpoint} create task -> ${response.status}: ${errorText}`);
       }
     } catch (error) {
       console.log(`Task endpoint ${endpoint} error:`, error);
+      errors.push(`${endpoint} create task -> error: ${String(error)}`);
     }
   }
   
-  throw new Error('Failed to create indexing task at all endpoints');
+  throw new Error('Failed to create indexing task at all endpoints. Details: ' + errors.join(' | '));
 }
