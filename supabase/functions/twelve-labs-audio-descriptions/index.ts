@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============== INTERFACES ==============
+
 interface AudioDescriptionSegment {
   text: string;
   startTime: number;
@@ -14,21 +16,13 @@ interface AudioDescriptionSegment {
   type: 'silence_gap';
 }
 
-interface TwelveLabsConfig {
-  baseUrl: string;
-  apiKey: string;
-  indexName: string;
-  model: {
-    name: string;
-    options: string[];
-  };
-}
-
 interface SilenceGap {
   startTime: number;
   endTime: number;
   duration: number;
 }
+
+// ============== MAIN HANDLER ==============
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -53,41 +47,39 @@ serve(async (req) => {
     }
 
     console.log('🎬 Starting Twelve Labs Audio Description Generation...');
-    console.log('📊 Parameters:', {
+    console.log('📊 Request Parameters:', {
       videoId: inputVideoId,
       videoUrl: videoUrl.substring(0, 50) + '...',
       segments: transcriptSegments.length,
       language: language || 'en'
     });
 
-    // Initialize Twelve Labs configuration
-    const config: TwelveLabsConfig = {
-      baseUrl: 'https://api.twelvelabs.io/v1.3',
-      apiKey: twelveLabsApiKey,
-      indexName: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      model: {
-        name: 'pegasus1.2',
-        options: ['audio', 'visual']
-      }
+    // API Configuration following documentation
+    const API_BASE_URL = 'https://api.twelvelabs.io/v1.3';
+    const headers = {
+      'x-api-key': twelveLabsApiKey,
+      'Content-Type': 'application/json',
     };
 
-    // Step 1: Create Index following Python methodology
-    const indexId = await createTwelveLabsIndex(config);
+    // Step 1: Create Index
+    const indexName = `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const indexId = await createIndex(API_BASE_URL, headers, indexName);
     console.log('✅ Created index:', indexId);
 
     let videoId: string;
     try {
       // Step 2: Upload Video and Monitor Processing
-      videoId = await uploadAndProcessVideo(config, indexId, videoUrl);
+      videoId = await uploadAndProcessVideo(API_BASE_URL, headers, indexId, videoUrl);
       console.log('✅ Video processed successfully:', videoId);
 
-      // Step 3: Detect Silence Gaps for Analysis
+      // Step 3: Detect Silence Gaps for Audio Descriptions
       const silenceGaps = detectSilenceGaps(transcriptSegments);
       console.log(`🔇 Detected ${silenceGaps.length} silence gaps for analysis`);
 
-      // Step 4: Generate Audio Descriptions using Analyze API
+      // Step 4: Generate Audio Descriptions
       const audioDescriptions = await generateAudioDescriptions(
-        config, 
+        API_BASE_URL, 
+        headers, 
         videoId, 
         silenceGaps, 
         language || 'en'
@@ -107,7 +99,7 @@ serve(async (req) => {
 
     } finally {
       // Step 5: Cleanup - Always delete the temporary index
-      await cleanupTwelveLabsIndex(config, indexId);
+      await cleanupIndex(API_BASE_URL, headers, indexId);
       console.log('🧹 Cleaned up temporary index');
     }
 
@@ -125,39 +117,31 @@ serve(async (req) => {
   }
 });
 
-// ============== TWELVE LABS METHODOLOGY FUNCTIONS ==============
-// Following Python SDK patterns for proper API interaction
+// ============== TWELVE LABS API FUNCTIONS ==============
 
 /**
- * Step 1: Create Index (following official Twelve Labs documentation)
+ * Step 1: Create Index (following official REST documentation)
  */
-async function createTwelveLabsIndex(config: TwelveLabsConfig): Promise<string> {
+async function createIndex(baseUrl: string, headers: any, indexName: string): Promise<string> {
   console.log('🔧 Creating Twelve Labs index...');
   
-  // Follow exact header pattern from documentation
-  const headers = {
-    'x-api-key': config.apiKey,
-    'Content-Type': 'application/json',
-  };
-
-  // Follow exact data structure from documentation
   const data = {
+    index_name: indexName,
     models: [
       {
-        model_name: config.model.name,
-        model_options: config.model.options
+        model_name: "pegasus1.2",
+        model_options: ["visual", "audio"]
       }
-    ],
-    index_name: config.indexName
+    ]
   };
 
   console.log('📤 Sending index creation request:', {
-    url: `${config.baseUrl}/indexes`,
-    indexName: config.indexName,
-    model: config.model
+    url: `${baseUrl}/indexes`,
+    indexName: indexName,
+    modelName: "pegasus1.2"
   });
 
-  const response = await fetch(`${config.baseUrl}/indexes`, {
+  const response = await fetch(`${baseUrl}/indexes`, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify(data),
@@ -180,19 +164,13 @@ async function createTwelveLabsIndex(config: TwelveLabsConfig): Promise<string> 
  * Step 2: Upload Video and Monitor Processing (following official documentation)
  */
 async function uploadAndProcessVideo(
-  config: TwelveLabsConfig, 
+  baseUrl: string, 
+  headers: any,
   indexId: string, 
   videoUrl: string
 ): Promise<string> {
   console.log('🎥 Starting video upload and processing...');
   
-  // Follow exact header pattern from documentation
-  const headers = {
-    'x-api-key': config.apiKey,
-    'Content-Type': 'application/json',
-  };
-
-  // Create video indexing task with exact data structure
   const taskData = {
     index_id: indexId,
     video_url: videoUrl,
@@ -200,12 +178,12 @@ async function uploadAndProcessVideo(
   };
 
   console.log('📤 Creating indexing task:', {
-    url: `${config.baseUrl}/tasks`,
+    url: `${baseUrl}/tasks`,
     indexId: indexId,
     videoUrl: videoUrl.substring(0, 50) + '...'
   });
 
-  const taskResponse = await fetch(`${config.baseUrl}/tasks`, {
+  const taskResponse = await fetch(`${baseUrl}/tasks`, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify(taskData),
@@ -225,10 +203,10 @@ async function uploadAndProcessVideo(
   
   console.log('✅ Indexing task created successfully:', { taskId, videoId });
 
-  // Monitor the indexing process (similar to Python wait_for_done)
+  // Monitor the indexing process
   let processingComplete = false;
   let attempts = 0;
-  const maxAttempts = 120; // 20 minutes max for larger videos
+  const maxAttempts = 120; // 20 minutes max
   const sleepInterval = 10; // 10 seconds between checks
 
   console.log(`🔄 Monitoring video processing (max ${maxAttempts * sleepInterval / 60} minutes)...`);
@@ -236,9 +214,9 @@ async function uploadAndProcessVideo(
   while (!processingComplete && attempts < maxAttempts) {
     await new Promise(resolve => setTimeout(resolve, sleepInterval * 1000));
     
-    const statusResponse = await fetch(`${config.baseUrl}/tasks/${taskId}`, {
+    const statusResponse = await fetch(`${baseUrl}/tasks/${taskId}`, {
       headers: {
-        'x-api-key': config.apiKey,
+        'x-api-key': headers['x-api-key'],
       },
     });
 
@@ -278,10 +256,11 @@ async function uploadAndProcessVideo(
 }
 
 /**
- * Step 3: Generate Audio Descriptions using Analyze API (following official documentation)
+ * Step 3: Generate Audio Descriptions using Analyze API
  */
 async function generateAudioDescriptions(
-  config: TwelveLabsConfig,
+  baseUrl: string,
+  headers: any,
   videoId: string,
   silenceGaps: SilenceGap[],
   language: string
@@ -289,12 +268,6 @@ async function generateAudioDescriptions(
   const audioDescriptions: AudioDescriptionSegment[] = [];
   
   console.log(`🎬 Starting audio description generation for ${silenceGaps.length} silence gaps...`);
-
-  // Follow exact header pattern from documentation
-  const headers = {
-    'x-api-key': config.apiKey,
-    'Content-Type': 'application/json',
-  };
 
   for (let i = 0; i < silenceGaps.length; i++) {
     const gap = silenceGaps[i];
@@ -320,7 +293,6 @@ Requirements:
 
 Generate only the audio description text.`;
 
-      // Follow exact data structure from documentation
       const requestData = {
         video_id: videoId,
         prompt: analysisPrompt,
@@ -331,8 +303,7 @@ Generate only the audio description text.`;
 
       console.log('📤 Sending analyze request for gap', i + 1);
 
-      // Use Analyze API (equivalent to Python analyze method)
-      const response = await fetch(`${config.baseUrl}/analyze`, {
+      const response = await fetch(`${baseUrl}/analyze`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(requestData),
@@ -373,7 +344,7 @@ Generate only the audio description text.`;
         console.log(`🔄 Created fallback for failed analysis: "${fallback.text.substring(0, 50)}..."`);
       }
 
-      // Rate limiting to respect API limits (following documentation best practices)
+      // Rate limiting
       await new Promise(resolve => setTimeout(resolve, 2000));
       
     } catch (error) {
@@ -394,14 +365,14 @@ Generate only the audio description text.`;
 }
 
 /**
- * Step 4: Cleanup Index (following Python methodology)
+ * Step 4: Cleanup Index
  */
-async function cleanupTwelveLabsIndex(config: TwelveLabsConfig, indexId: string): Promise<void> {
+async function cleanupIndex(baseUrl: string, headers: any, indexId: string): Promise<void> {
   try {
-    const response = await fetch(`${config.baseUrl}/indexes/${indexId}`, {
+    const response = await fetch(`${baseUrl}/indexes/${indexId}`, {
       method: 'DELETE',
       headers: {
-        'x-api-key': config.apiKey,
+        'x-api-key': headers['x-api-key'],
       },
     });
     
@@ -413,7 +384,7 @@ async function cleanupTwelveLabsIndex(config: TwelveLabsConfig, indexId: string)
   }
 }
 
-// ============== SILENCE DETECTION AND UTILITY FUNCTIONS ==============
+// ============== UTILITY FUNCTIONS ==============
 
 function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
   const gaps: SilenceGap[] = [];
@@ -424,7 +395,7 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     .sort((a, b) => a.startTime - b.startTime);
 
   if (sortedSegments.length === 0) {
-    // If no transcript segments, create default intervals throughout the video
+    // Create default intervals if no transcript
     const intervals = [];
     for (let i = 0; i < 180; i += 15) { // Every 15 seconds for 3 minutes
       intervals.push({ startTime: i, endTime: i + 3, duration: 3 });
@@ -433,10 +404,10 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     return intervals;
   }
 
-  const minGapDuration = 1.0; // Minimum gap worth describing
-  const bufferTime = 0.2; // Small buffer around speech
+  const minGapDuration = 1.0;
+  const bufferTime = 0.2;
   
-  // Add opening gap if video doesn't start immediately with speech
+  // Add opening gap if needed
   if (sortedSegments[0].startTime > 1.0) {
     const gapEnd = Math.max(0, sortedSegments[0].startTime - bufferTime);
     const duration = gapEnd;
@@ -449,7 +420,7 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     }
   }
 
-  // Find ALL gaps between speech segments
+  // Find gaps between segments
   for (let i = 0; i < sortedSegments.length - 1; i++) {
     const currentEnd = sortedSegments[i].endTime + bufferTime;
     const nextStart = sortedSegments[i + 1].startTime - bufferTime;
@@ -464,13 +435,13 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     }
   }
 
-  // Add extensive trailing gaps to cover the full video
+  // Add trailing gaps
   const lastSegment = sortedSegments[sortedSegments.length - 1];
-  const estimatedVideoEnd = Math.max(lastSegment.endTime + 120, 300); // Assume longer video
+  const estimatedVideoEnd = Math.max(lastSegment.endTime + 120, 300);
   
   let currentTime = lastSegment.endTime + bufferTime;
   let gapCount = 0;
-  while (currentTime < estimatedVideoEnd && gapCount < 20) { // Up to 20 trailing gaps
+  while (currentTime < estimatedVideoEnd && gapCount < 20) {
     const gapEnd = Math.min(currentTime + 3, estimatedVideoEnd);
     const duration = gapEnd - currentTime;
     
@@ -483,7 +454,7 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
       gapCount++;
     }
     
-    currentTime = gapEnd + 8; // Skip 8 seconds ahead to find next opportunity
+    currentTime = gapEnd + 8;
   }
 
   console.log(`📊 Detected ${gaps.length} silence gaps total from ${sortedSegments.length} speech segments`);
@@ -520,7 +491,7 @@ function cleanDescription(description: string, maxDuration: number): string {
   description = description.trim()
     .replace(/^(The scene shows|We see|The video shows|In this segment|Audio description:|Description:|Analysis:|Here's what happens|This is|During this time)/i, '')
     .replace(/\b(audio description|for blind audiences|visually impaired|screen reader|accessibility)\b/gi, '')
-    .replace(/^["']|["']$/g, '') // Remove quotes
+    .replace(/^["']|["']$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   
@@ -534,7 +505,7 @@ function cleanDescription(description: string, maxDuration: number): string {
     description += '.';
   }
   
-  // Rough word count check (assuming ~2.5 words per second for natural speech)
+  // Word count check
   const maxWords = Math.floor(maxDuration * 2.5);
   const words = description.split(' ');
   if (words.length > maxWords && maxWords > 5) {
