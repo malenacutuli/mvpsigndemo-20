@@ -99,6 +99,12 @@ async function createIndex() {
     headers: { 'Authorization': `Bearer ${twelveLabsApiKey}` }
   });
   
+  if (!listResponse.ok) {
+    const errorText = await listResponse.text();
+    console.error('Failed to list indexes:', errorText);
+    throw new Error(`Failed to list indexes: ${listResponse.status} - ${errorText}`);
+  }
+  
   const indexList = await listResponse.json();
   const existingIndex = indexList?.data?.find((i: any) => i.name === 'axessible-video-analysis');
   
@@ -122,6 +128,12 @@ async function createIndex() {
     })
   });
 
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
+    console.error('Failed to create index:', errorText);
+    throw new Error(`Failed to create index: ${createResponse.status} - ${errorText}`);
+  }
+
   const newIndex = await createResponse.json();
   return newIndex.id;
 }
@@ -140,6 +152,12 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
     },
     body: formData
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Failed to create indexing task:', errorText);
+    throw new Error(`Failed to create indexing task: ${response.status} - ${errorText}`);
+  }
 
   return await response.json();
 }
