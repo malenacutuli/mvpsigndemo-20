@@ -159,14 +159,14 @@ serve(async (req) => {
       if (summarizeResp.ok) {
         const sumData = await summarizeResp.json();
         const highlights = (sumData.highlights || []).filter((h: any) => h.start_sec != null && h.end_sec != null);
-        // Keep highlights that don\'t significantly overlap with speech
+        // Keep highlights that don't significantly overlap with speech
         highlightGaps = highlights
           .map((h: any) => ({ startTime: h.start_sec, endTime: h.end_sec, duration: (h.end_sec - h.start_sec) }))
           .filter((g: any) => {
             const overlap = speechIntervals.some(si => Math.max(0, Math.min(g.endTime, si.end) - Math.max(g.startTime, si.start)) > (g.duration * 0.3));
             return !overlap && g.duration >= 1.0;
           });
-        console.log(`✨ Retrieved ${highlightGaps.length} visual highlights suitable for AD`);
+        console.log(`✨ Retrieved ${highlightGaps.length} visual highlights suitable for AD from ${highlights.length} total highlights`);
       } else {
         console.warn('⚠️ Summarize(highlight) request failed:', await summarizeResp.text());
       }
@@ -251,10 +251,8 @@ Provide only the audio description text, nothing else.`;
           
           // Create fallback description for this gap
           const fallbackDescription = createFallbackDescription(gap, i);
-          if (fallbackDescription) {
-            audioDescriptions.push(fallbackDescription);
-            console.log(`🔄 Created fallback description for gap ${gap.startTime}s-${gap.endTime}s`);
-          }
+          audioDescriptions.push(fallbackDescription);
+          console.log(`🔄 Created fallback description for gap ${gap.startTime}s-${gap.endTime}s: "${fallbackDescription.text.substring(0, 60)}..."`);
         }
 
         // Rate limiting to avoid API throttling
@@ -265,9 +263,8 @@ Provide only the audio description text, nothing else.`;
         
         // Create fallback description for this gap
         const fallbackDescription = createFallbackDescription(gap, i);
-        if (fallbackDescription) {
-          audioDescriptions.push(fallbackDescription);
-        }
+        audioDescriptions.push(fallbackDescription);
+        console.log(`🔄 Created error fallback for gap ${gap.startTime}s-${gap.endTime}s: "${fallbackDescription.text.substring(0, 60)}..."`);
       }
     }
 
@@ -324,9 +321,10 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
   if (sortedSegments.length === 0) {
     // If no transcript segments, create comprehensive intervals throughout the video
     const intervals = [];
-    for (let i = 0; i < 300; i += 20) { // Every 20 seconds for 5 minutes
-      intervals.push({ startTime: i, endTime: i + 4, duration: 4 });
+    for (let i = 0; i < 180; i += 15) { // Every 15 seconds for 3 minutes
+      intervals.push({ startTime: i, endTime: i + 3, duration: 3 });
     }
+    console.log(`📊 No transcript found, created ${intervals.length} default intervals`);
     return intervals;
   }
 
@@ -346,7 +344,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Find gaps between speech segments
+  // Find ALL gaps between speech segments
   for (let i = 0; i < sortedSegments.length - 1; i++) {
     const currentEnd = sortedSegments[i].endTime + bufferTime;
     const nextStart = sortedSegments[i + 1].startTime - bufferTime;
@@ -361,13 +359,14 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Add comprehensive trailing gaps to cover the full video
+  // Add extensive trailing gaps to cover the full video
   const lastSegment = sortedSegments[sortedSegments.length - 1];
-  const estimatedVideoEnd = Math.max(lastSegment.endTime + 60, 180); // Assume reasonable video length
+  const estimatedVideoEnd = Math.max(lastSegment.endTime + 120, 300); // Assume longer video
   
   let currentTime = lastSegment.endTime + bufferTime;
-  while (currentTime < estimatedVideoEnd) {
-    const gapEnd = Math.min(currentTime + 4, estimatedVideoEnd);
+  let gapCount = 0;
+  while (currentTime < estimatedVideoEnd && gapCount < 20) { // Up to 20 trailing gaps
+    const gapEnd = Math.min(currentTime + 3, estimatedVideoEnd);
     const duration = gapEnd - currentTime;
     
     if (duration >= minGapDuration) {
@@ -376,12 +375,13 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
         endTime: gapEnd,
         duration
       });
+      gapCount++;
     }
     
-    currentTime = gapEnd + 12; // Skip 12 seconds ahead to find next opportunity
+    currentTime = gapEnd + 8; // Skip 8 seconds ahead to find next opportunity
   }
 
-  console.log(`📊 Detected ${gaps.length} silence gaps total`);
+  console.log(`📊 Detected ${gaps.length} silence gaps total from ${sortedSegments.length} speech segments`);
   return gaps.sort((a, b) => a.startTime - b.startTime);
 }
 
