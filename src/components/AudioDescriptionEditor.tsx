@@ -273,11 +273,9 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
   // Generate basic fallback descriptions when processing fails
   const generateBasicFallbackDescriptions = (): AudioDescriptionSegment[] => {
-    if (!transcriptSegments || transcriptSegments.length === 0) {
-      return [];
-    }
+    // Compute gaps even if transcript is missing (will use default strategic intervals)
+    const gaps = computeGaps(transcriptSegments || []);
 
-    const gaps = computeGaps(transcriptSegments);
     const fallbackTexts = [
       "A person enters the frame, examining their surroundings carefully.",
       "Someone moves across the room, their attention focused on something specific.",
@@ -403,6 +401,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     timeoutHandledRef.current = false;
     
     try {
+      // Clear any lingering toasts before starting a new run
+      toast.dismiss();
       toast.info('Starting comprehensive video analysis for detailed audio descriptions...', { duration: 4000 });
       
       console.log('🎬 Twelve Labs: Starting generation request');
@@ -468,6 +468,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 
                 // After 3+ minutes of processing, offer fallback descriptions
                 if (attempts > 18) { // 3 minutes
+                  toast.dismiss();
                   toast.info('Processing is taking longer than expected. Generating basic descriptions...');
                   const basicDescriptions = generateBasicFallbackDescriptions();
                   setDescriptions(basicDescriptions);
@@ -514,6 +515,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   clearInterval(pollingRef.current!);
                   pollingRef.current = null;
                   
+                  toast.dismiss();
                   toast.info('Processing completed with fallback descriptions due to connection issues.');
                   const basicDescriptions = generateBasicFallbackDescriptions();
                   setDescriptions(basicDescriptions);
@@ -547,6 +549,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 clearInterval(pollingRef.current!);
                 pollingRef.current = null;
                 
+                toast.dismiss();
                 toast.info('Processing completed with fallback descriptions due to connection issues.');
                 const basicDescriptions = generateBasicFallbackDescriptions();
                 setDescriptions(basicDescriptions);
@@ -576,6 +579,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               setDescriptions(finalDescriptions);
               onDescriptionsUpdate?.(finalDescriptions);
               await saveDescriptionsToDatabase(finalDescriptions);
+              toast.dismiss();
               toast.info(`🎬 Processing completed with fallback descriptions (${finalDescriptions.length})`);
               setIsGenerating(false);
               setIsUsingTwelveLabs(false);
