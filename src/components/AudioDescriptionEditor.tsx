@@ -500,7 +500,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Basic AI:</strong> Analyzes transcript to find silence windows and generates simple descriptions.<br/>
-              <strong>Analyze the video To Generate Audio Descriptions:</strong> Uses sophisticated video analysis with cinematic storytelling style.
+              <strong>Generate Audio Description:</strong> Uses sophisticated video analysis with cinematic storytelling style.
             </p>
           </div>
 
@@ -569,7 +569,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               ) : (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
-                  Analyze the video To Generate Audio Descriptions
+                  Generate Audio Description
                 </>
               )}
             </Button>
