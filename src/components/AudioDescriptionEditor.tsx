@@ -277,16 +277,16 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
     const gaps = computeGaps(transcriptSegments);
     const fallbackTexts = [
-      "The scene continues with visual storytelling elements.",
-      "Characters move through the environment as the narrative develops.",
-      "Visual details enhance the atmosphere of the scene.",
-      "The story progresses through carefully composed imagery.",
-      "Environmental elements contribute to the narrative mood.",
-      "Character expressions and gestures convey emotions.",
-      "The setting provides context for the developing story.",
-      "Visual cues guide the audience through the narrative.",
-      "Subtle details in the frame add depth to the storytelling.",
-      "The composition draws attention to key story elements."
+      "A person enters the frame, examining their surroundings carefully.",
+      "Someone moves across the room, their attention focused on something specific.",
+      "A character looks up with a concerned expression, then reaches for an object.",
+      "The camera reveals a new location as footsteps echo in the space.",
+      "A hand gestures toward something off-screen while eyes follow the motion.",
+      "Someone pauses at a doorway, listening intently before proceeding forward.",
+      "A figure sits down slowly, their posture suggesting deep concentration.",
+      "Bright light filters through windows, illuminating dust particles in the air.",
+      "A person's face shows recognition as they discover something unexpected.",
+      "Someone walks toward the camera, their expression shifting from calm to alert."
     ];
 
     return gaps.map((gap, index) => ({

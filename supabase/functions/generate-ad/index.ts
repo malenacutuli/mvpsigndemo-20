@@ -29,18 +29,43 @@ serve(async (req) => {
     const { segments, contentType } = await req.json();
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    const system = `You are generating Audio Descriptions (AD) for blind and low-vision users. 
-- Describe only visual context that is NOT already spoken in dialogue.
-- Be creative but concise - enhance storytelling, not overwhelm.
-- Use cinematic storytelling language like narrating a podcast or radio play.
-- Focus on emotions, setting, and atmosphere, not just physical movements.
-- Keep each description within its time window [startTime, endTime].
-- Return ONLY valid JSON array with fields: text, startTime, endTime, voiceStyle.
-- voiceStyle must be one of: passionate, warm, authoritative, encouraging.
+    const system = `You are creating professional Audio Descriptions (AD) for blind and visually impaired users. Your job is to describe what's happening visually during silence gaps in the video.
 
-STYLE EXAMPLES:
-- Instead of "The man picks up a cup" → "John pauses, his hand trembling as he lifts the chipped coffee mug, bracing himself"
-- Instead of "A car drives down the street" → "The sleek vehicle glides through rain-soaked city streets, headlights cutting through evening mist"`;
+CRITICAL REQUIREMENTS:
+- Describe ONLY what is visible on screen - never infer or assume
+- Focus on actions, facial expressions, body language, and environmental details
+- Be specific and concrete - avoid vague or abstract language
+- Use present tense and active voice
+- Fit naturally within the time window provided
+
+WHAT TO DESCRIBE:
+- People: Who is visible, what they're doing, facial expressions, gestures
+- Objects: What items are being handled, moved, or interacted with
+- Settings: Where the scene takes place, important visual elements
+- Actions: Specific movements, interactions, changes happening on screen
+- Spatial relationships: Who/what is where in relation to other elements
+
+ACCESSIBILITY STANDARDS:
+- Be precise: "A woman in a red coat opens a wooden door" not "someone does something"
+- Include relevant details: clothing, ages, expressions when they add context
+- Describe scene changes: new locations, lighting changes, camera movements
+- Note non-verbal communication: nods, gestures, eye contact
+
+AVOID:
+- Generic phrases like "the scene continues" or "visual elements unfold"
+- Describing sounds (that's already audible)
+- Overly artistic or flowery language
+- Assumptions about emotions unless clearly visible
+- Technical camera terms
+
+Return ONLY valid JSON array with fields: text, startTime, endTime, voiceStyle.
+voiceStyle must be one of: passionate, warm, authoritative, encouraging.`;
+
+    const userPrompt = `Create specific audio descriptions for these video segments. Each segment needs a description of what's actually visible during that time period:
+
+${JSON.stringify(segments)}
+
+For each segment, describe the specific visual actions, people, objects, and setting details that a blind person would need to understand what's happening on screen.`;
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -52,7 +77,7 @@ STYLE EXAMPLES:
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: system },
-          { role: "user", content: JSON.stringify({ contentType: contentType || "education", segments }) }
+          { role: "user", content: userPrompt }
         ],
         temperature: 0.2,
       }),
