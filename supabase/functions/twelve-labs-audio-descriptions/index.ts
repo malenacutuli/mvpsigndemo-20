@@ -47,9 +47,10 @@ serve(async (req) => {
     }
 
     console.log('🎬 Starting Twelve Labs Audio Description Generation...');
+    const shortUrl = typeof videoUrl === 'string' ? videoUrl.substring(0, 50) + '...' : 'n/a';
     console.log('📊 Request Parameters:', {
       videoId: inputVideoId,
-      videoUrl: videoUrl.substring(0, 50) + '...',
+      videoUrl: shortUrl,
       segments: (Array.isArray(transcriptSegments) ? transcriptSegments.length : 0),
       language: language || 'en'
     });
