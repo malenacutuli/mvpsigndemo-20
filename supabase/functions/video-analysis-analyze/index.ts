@@ -91,7 +91,8 @@ serve(async (req) => {
       body: JSON.stringify({
         video_id: videoId,
         prompt,
-        temperature: 0.2
+        temperature: 0.2,
+        stream: false  // Disable streaming to get a single JSON response
       })
     });
 
