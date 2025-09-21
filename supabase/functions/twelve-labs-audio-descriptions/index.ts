@@ -129,73 +129,109 @@ serve(async (req) => {
 // Following Python SDK patterns for proper API interaction
 
 /**
- * Step 1: Create Index (following Python methodology)
+ * Step 1: Create Index (following official Twelve Labs documentation)
  */
 async function createTwelveLabsIndex(config: TwelveLabsConfig): Promise<string> {
-  const response = await fetch(`${config.baseUrl}/indexes`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': config.apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      index_name: config.indexName,
-      models: [
-        { 
-          model_name: config.model.name, 
-          model_options: config.model.options 
-        }
-      ]
-    }),
+  console.log('🔧 Creating Twelve Labs index...');
+  
+  // Follow exact header pattern from documentation
+  const headers = {
+    'x-api-key': config.apiKey,
+    'Content-Type': 'application/json',
+  };
+
+  // Follow exact data structure from documentation
+  const data = {
+    models: [
+      {
+        model_name: config.model.name,
+        model_options: config.model.options
+      }
+    ],
+    index_name: config.indexName
+  };
+
+  console.log('📤 Sending index creation request:', {
+    url: `${config.baseUrl}/indexes`,
+    indexName: config.indexName,
+    model: config.model
   });
 
+  const response = await fetch(`${config.baseUrl}/indexes`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(data),
+  });
+
+  console.log(`📥 Index creation response status: ${response.status}`);
+
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to create index: ${error}`);
+    const errorText = await response.text();
+    console.error('❌ Index creation failed:', errorText);
+    throw new Error(`Failed to create index (${response.status}): ${errorText}`);
   }
 
   const indexData = await response.json();
+  console.log('✅ Index created successfully:', { id: indexData._id });
   return indexData._id;
 }
 
 /**
- * Step 2: Upload Video and Monitor Processing (following Python methodology)
+ * Step 2: Upload Video and Monitor Processing (following official documentation)
  */
 async function uploadAndProcessVideo(
   config: TwelveLabsConfig, 
   indexId: string, 
   videoUrl: string
 ): Promise<string> {
-  // Create video indexing task
-  const taskResponse = await fetch(`${config.baseUrl}/tasks`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': config.apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      index_id: indexId,
-      video_url: videoUrl,
-      enable_video_stream: false
-    }),
+  console.log('🎥 Starting video upload and processing...');
+  
+  // Follow exact header pattern from documentation
+  const headers = {
+    'x-api-key': config.apiKey,
+    'Content-Type': 'application/json',
+  };
+
+  // Create video indexing task with exact data structure
+  const taskData = {
+    index_id: indexId,
+    video_url: videoUrl,
+    enable_video_stream: false
+  };
+
+  console.log('📤 Creating indexing task:', {
+    url: `${config.baseUrl}/tasks`,
+    indexId: indexId,
+    videoUrl: videoUrl.substring(0, 50) + '...'
   });
 
+  const taskResponse = await fetch(`${config.baseUrl}/tasks`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(taskData),
+  });
+
+  console.log(`📥 Task creation response status: ${taskResponse.status}`);
+
   if (!taskResponse.ok) {
-    const error = await taskResponse.text();
-    throw new Error(`Failed to create indexing task: ${error}`);
+    const errorText = await taskResponse.text();
+    console.error('❌ Task creation failed:', errorText);
+    throw new Error(`Failed to create indexing task (${taskResponse.status}): ${errorText}`);
   }
 
-  const taskData = await taskResponse.json();
-  const taskId = taskData._id;
-  let videoId = taskData.video_id || null;
+  const taskResult = await taskResponse.json();
+  const taskId = taskResult._id;
+  let videoId = taskResult.video_id || null;
   
-  console.log('🎥 Created indexing task:', { taskId, videoId });
+  console.log('✅ Indexing task created successfully:', { taskId, videoId });
 
   // Monitor the indexing process (similar to Python wait_for_done)
   let processingComplete = false;
   let attempts = 0;
   const maxAttempts = 120; // 20 minutes max for larger videos
   const sleepInterval = 10; // 10 seconds between checks
+
+  console.log(`🔄 Monitoring video processing (max ${maxAttempts * sleepInterval / 60} minutes)...`);
 
   while (!processingComplete && attempts < maxAttempts) {
     await new Promise(resolve => setTimeout(resolve, sleepInterval * 1000));
@@ -215,27 +251,34 @@ async function uploadAndProcessVideo(
         if (!videoId && (statusData.video_id || statusData.videoId)) {
           videoId = statusData.video_id || statusData.videoId;
         }
+        console.log('✅ Video processing completed successfully');
       } else if (statusData.status === 'failed') {
-        throw new Error(`Video processing failed: ${statusData.message || 'Unknown error'}`);
+        const errorMsg = statusData.message || 'Unknown processing error';
+        console.error('❌ Video processing failed:', errorMsg);
+        throw new Error(`Video processing failed: ${errorMsg}`);
       }
+    } else {
+      console.warn(`⚠️ Status check failed: ${statusResponse.status}`);
     }
     
     attempts++;
   }
 
   if (!processingComplete) {
-    throw new Error(`Video processing timeout after ${maxAttempts * sleepInterval} seconds`);
+    const timeoutMinutes = (maxAttempts * sleepInterval) / 60;
+    throw new Error(`Video processing timeout after ${timeoutMinutes} minutes`);
   }
 
   if (!videoId) {
     throw new Error('Video ID could not be retrieved after processing completion');
   }
 
+  console.log('🎉 Video fully processed and ready for analysis:', videoId);
   return videoId;
 }
 
 /**
- * Step 3: Generate Audio Descriptions using Analyze API (following Python methodology)
+ * Step 3: Generate Audio Descriptions using Analyze API (following official documentation)
  */
 async function generateAudioDescriptions(
   config: TwelveLabsConfig,
@@ -245,13 +288,19 @@ async function generateAudioDescriptions(
 ): Promise<AudioDescriptionSegment[]> {
   const audioDescriptions: AudioDescriptionSegment[] = [];
   
-  console.log(`🎬 Generating audio descriptions for ${silenceGaps.length} silence gaps...`);
+  console.log(`🎬 Starting audio description generation for ${silenceGaps.length} silence gaps...`);
+
+  // Follow exact header pattern from documentation
+  const headers = {
+    'x-api-key': config.apiKey,
+    'Content-Type': 'application/json',
+  };
 
   for (let i = 0; i < silenceGaps.length; i++) {
     const gap = silenceGaps[i];
     
     try {
-      console.log(`🎯 Processing gap ${i + 1}/${silenceGaps.length}: ${gap.startTime}s-${gap.endTime}s`);
+      console.log(`🎯 Processing gap ${i + 1}/${silenceGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration}s)`);
       
       const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a concise audio description for this ${gap.duration.toFixed(1)}-second moment.
 
@@ -271,21 +320,25 @@ Requirements:
 
 Generate only the audio description text.`;
 
+      // Follow exact data structure from documentation
+      const requestData = {
+        video_id: videoId,
+        prompt: analysisPrompt,
+        temperature: 0.3,
+        stream: false,
+        max_tokens: Math.min(300, Math.floor(gap.duration * 20)),
+      };
+
+      console.log('📤 Sending analyze request for gap', i + 1);
+
       // Use Analyze API (equivalent to Python analyze method)
       const response = await fetch(`${config.baseUrl}/analyze`, {
         method: 'POST',
-        headers: {
-          'x-api-key': config.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          video_id: videoId,
-          prompt: analysisPrompt,
-          temperature: 0.3,
-          stream: false,
-          max_tokens: Math.min(300, Math.floor(gap.duration * 20)),
-        }),
+        headers: headers,
+        body: JSON.stringify(requestData),
       });
+
+      console.log(`📥 Analyze response status for gap ${i + 1}: ${response.status}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -311,8 +364,8 @@ Generate only the audio description text.`;
           console.log(`🔄 Using fallback for gap ${i + 1}: "${fallback.text.substring(0, 50)}..."`);
         }
       } else {
-        const error = await response.text();
-        console.error(`❌ Analyze API error for gap ${gap.startTime}s-${gap.endTime}s:`, error);
+        const errorText = await response.text();
+        console.error(`❌ Analyze API error for gap ${gap.startTime}s-${gap.endTime}s (${response.status}):`, errorText);
         
         // Create fallback description
         const fallback = createFallbackDescription(gap, i);
@@ -320,7 +373,7 @@ Generate only the audio description text.`;
         console.log(`🔄 Created fallback for failed analysis: "${fallback.text.substring(0, 50)}..."`);
       }
 
-      // Rate limiting to respect API limits
+      // Rate limiting to respect API limits (following documentation best practices)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
     } catch (error) {
@@ -329,12 +382,14 @@ Generate only the audio description text.`;
       // Always provide a fallback
       const fallback = createFallbackDescription(gap, i);
       audioDescriptions.push(fallback);
+      console.log(`🔄 Exception fallback for gap ${i + 1}: "${fallback.text.substring(0, 50)}..."`);
     }
   }
 
   // Sort by start time
   audioDescriptions.sort((a, b) => a.startTime - b.startTime);
   
+  console.log(`🎉 Audio description generation completed: ${audioDescriptions.length} descriptions created`);
   return audioDescriptions;
 }
 
