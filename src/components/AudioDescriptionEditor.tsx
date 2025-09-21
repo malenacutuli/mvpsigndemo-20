@@ -65,6 +65,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [isUsingTwelveLabs, setIsUsingTwelveLabs] = useState(false);
   const pollingRef = React.useRef<number | null>(null);
   const timeoutHandledRef = React.useRef<boolean>(false);
+  const currentTaskRef = React.useRef<{ indexId: string; taskId: string } | null>(null);
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
@@ -435,11 +436,21 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
+        // Bind this task to the current polling loop
+        currentTaskRef.current = { indexId, taskId };
 
         let attempts = 0;
         const maxAttempts = 24; // ~4 minutes max before graceful fallback
         pollingRef.current = window.setInterval(async () => {
           attempts++;
+
+          // Abort this loop if a new task has started
+          if (!currentTaskRef.current || currentTaskRef.current.taskId !== taskId) {
+            console.log('🛑 Stale polling loop detected. Stopping previous task polling.');
+            clearInterval(pollingRef.current!);
+            pollingRef.current = null;
+            return;
+          }
           console.log(`🎬 Twelve Labs: Polling attempt ${attempts}/${maxAttempts}`);
           
           try {
@@ -545,6 +556,29 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 setIsUsingTwelveLabs(false);
                 return;
               }
+            } else if (pollData?.status === 'completed_with_fallback') {
+              clearInterval(pollingRef.current!);
+              pollingRef.current = null;
+
+              let finalDescriptions: AudioDescriptionSegment[] = [];
+              if (Array.isArray(pollData.audioDescriptions) && pollData.audioDescriptions.length > 0) {
+                finalDescriptions = pollData.audioDescriptions.map((desc: any) => ({
+                  text: desc.text,
+                  startTime: desc.startTime,
+                  endTime: desc.endTime,
+                  voiceStyle: 'warm'
+                }));
+              } else {
+                // Generate local basic fallbacks if none provided
+                finalDescriptions = generateBasicFallbackDescriptions();
+              }
+
+              setDescriptions(finalDescriptions);
+              onDescriptionsUpdate?.(finalDescriptions);
+              await saveDescriptionsToDatabase(finalDescriptions);
+              toast.info(`🎬 Processing completed with fallback descriptions (${finalDescriptions.length})`);
+              setIsGenerating(false);
+              setIsUsingTwelveLabs(false);
             } else if (pollData?.status === 'ready' && Array.isArray(pollData.audioDescriptions)) {
               clearInterval(pollingRef.current!);
               pollingRef.current = null;
@@ -581,11 +615,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             pollingRef.current = null;
             console.error('🎬 Twelve Labs: Timeout after', maxAttempts, 'attempts');
             
-            // Instead of erroring, provide immediate fallback descriptions
-            const basicDescriptions = generateBasicFallbackDescriptions();
-            setDescriptions(basicDescriptions);
-            await saveDescriptionsToDatabase(basicDescriptions);
-            toast.info('Processing timed out. Generated basic audio descriptions instead.');
+            if (!timeoutHandledRef.current) {
+              timeoutHandledRef.current = true;
+              // Instead of erroring, provide immediate fallback descriptions
+              const basicDescriptions = generateBasicFallbackDescriptions();
+              setDescriptions(basicDescriptions);
+              await saveDescriptionsToDatabase(basicDescriptions);
+              toast.info('Processing timed out. Generated basic audio descriptions instead.');
+            }
             setIsGenerating(false);
             setIsUsingTwelveLabs(false);
           }
