@@ -53,7 +53,7 @@ serve(async (req) => {
       body: JSON.stringify({
         index_name: `video_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         models: [
-          { model_name: 'marengo2.7', model_options: ['audio', 'visual'] }
+          { model_name: 'pegasus-1.2', model_options: ['audio', 'visual'] }
         ]
       }),
     });
