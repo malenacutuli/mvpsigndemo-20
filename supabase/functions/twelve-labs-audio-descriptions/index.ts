@@ -395,43 +395,41 @@ async function generateAudioDescriptions(
     try {
       console.log(`🎯 Processing gap ${i + 1}/${limitedGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration}s)`);
       
-      const analysisPrompt = `You are a master storyteller crafting immersive audio descriptions that transport listeners into a cinematic world. Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a captivating narrative description for this ${gap.duration.toFixed(1)}-second moment.
+      const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a compelling audio description for this ${gap.duration.toFixed(1)}-second moment.
 
-Write as a creative advertising copywriter with the soul of an audiobook narrator. Your mission: paint vivid scenes that listeners can feel, not just understand.
+Write as a skilled narrator who makes visual content accessible while keeping it engaging. Focus on what's actually happening in the scene while using vivid, clear language.
 
-CREATIVE FOCUS:
-• Story and emotional beats - What's the emotional pulse of this moment?
-• Sensory atmosphere - What would listeners smell, feel, or sense in this space?
-• Character psychology - What unspoken emotions flicker across faces?
-• Environmental storytelling - How does the setting itself tell a story?
-• Cinematic mood and tension - What feelings does this visual moment evoke?
+CONTENT FOCUS:
+• Character actions, movements, and facial expressions
+• Important visual details and environmental changes
+• Objects, settings, and atmosphere that advance the story
+• Body language and non-verbal communication
+• Visual elements that create mood or context
 
-NARRATIVE STYLE:
-• Write like you're narrating an intimate podcast
-• Use evocative, sensory language that creates atmosphere
-• Focus on the WHY behind actions, not just WHAT happens
-• Blend observation with emotional interpretation
-• Create immersion through vivid, specific details
+STYLE REQUIREMENTS:
+• Write in present tense with natural, flowing language
+• Be specific and descriptive, not generic
+• Use engaging but clear vocabulary
+• Focus on observable visual details during this exact timeframe
+• Create a sense of being there without being overly dramatic
 
 AVOID:
-• Technical descriptions (camera angles, cuts, lighting equipment)
-• Dry, clinical observations
-• Listing actions without emotional context
-• Generic descriptions that could apply to any scene
+• Technical camera terminology
+• Overly flowery or abstract language
+• Audio references (dialogue, music, sound effects)
+• Generic descriptions that could fit any scene
 
-REQUIREMENTS:
-• Write in present tense with narrative flow
-• Fit naturally within ${gap.duration.toFixed(1)} seconds of spoken narration
-• Create a mini-story arc within this moment
-• Use language that enhances dramatic tension and emotional connection
-• Focus exclusively on visual elements during this specific timeframe
+TIMING:
+• Must fit comfortably within ${gap.duration.toFixed(1)} seconds of narration
+• Be concise but descriptive
+• Focus on the most important visual elements
 
-Craft a description that makes listeners lean in, feeling they're experiencing the story firsthand.`;
+Generate only the audio description text that describes what is visually happening during this specific time segment.`;
 
       const requestData = {
         video_id: videoId,
         prompt: analysisPrompt,
-        temperature: 0.7, // Higher creativity for narrative descriptions
+        temperature: 0.4, // Balanced creativity and accuracy
         stream: false,
         max_tokens: Math.min(400, Math.floor(gap.duration * 25)), // More tokens for richer descriptions
       };
@@ -631,26 +629,21 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
 }
 
 function createFallbackDescription(gap: SilenceGap, index: number): AudioDescriptionSegment {
-  const narrativeFallbacks = [
-    "Shadows dance across weathered faces as unspoken tensions simmer beneath the surface.",
-    "The camera lingers on intimate details that speak louder than words ever could.",
-    "A moment of quiet revelation unfolds through glances and subtle body language.", 
-    "The atmosphere thickens with anticipation as characters navigate their emotional landscape.",
-    "Visual poetry emerges from the interplay of light and shadow across expressive features.",
-    "Time seems suspended as the weight of the moment settles over everyone present.",
-    "Subliminal storytelling unfolds through carefully orchestrated visual metaphors and symbolism.",
-    "The mise-en-scène breathes with hidden meanings waiting to be discovered.",
-    "Character dynamics shift like tectonic plates beneath a veneer of normalcy.",
-    "The visual narrative pulses with underlying currents of drama and human complexity.",
-    "Environmental details whisper secrets about the characters' inner worlds.",
-    "A tapestry of emotions weaves itself through fleeting expressions and meaningful pauses.",
-    "The scene builds dramatic momentum through strategic silence and visual tension.",
-    "Cinematic storytelling flows through the subtle choreography of human interaction.",
-    "Layers of meaning emerge from the deliberate placement of objects and people in frame."
+  const practicalFallbacks = [
+    "Characters move through the scene with purposeful actions and expressions.",
+    "The camera reveals important visual details that advance the narrative.",
+    "Body language and facial expressions convey the emotional tone of the moment.", 
+    "The setting and lighting create atmosphere while characters interact.",
+    "Visual elements combine to build tension and advance the story.",
+    "Characters' movements and positioning suggest their relationships and intentions.",
+    "The scene composition draws attention to key narrative elements.",
+    "Subtle visual cues reveal character motivations and emotional states.",
+    "Environmental details and character actions work together to tell the story.",
+    "The visual narrative unfolds through carefully observed details and interactions."
   ];
   
   return {
-    text: narrativeFallbacks[index % narrativeFallbacks.length],
+    text: practicalFallbacks[index % practicalFallbacks.length],
     startTime: gap.startTime,
     endTime: gap.endTime,
     duration: gap.duration,
