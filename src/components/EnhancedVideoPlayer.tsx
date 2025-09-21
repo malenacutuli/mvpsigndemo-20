@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
+import { VideoAnalysisPanel } from './VideoAnalysisPanel';
 import { CharacterManager } from './CharacterManager';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -914,6 +915,16 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         </TabsContent>
         
         <TabsContent value="audio-description" className="space-y-4">
+          {/* Video Analysis Panel */}
+          <div className="border rounded-lg p-4 mb-4">
+            <VideoAnalysisPanel
+              assetId={videoId || 'default'}
+              playbackUrl={videoSrc}
+              videoElementId="video-player"
+              videoId={videoId}
+            />
+          </div>
+          
           <div className="border rounded-lg p-4">
             <h3 className="text-lg font-semibold mb-4">Audio Description Generation</h3>
             <p className="text-sm text-muted-foreground mb-4">
