@@ -348,7 +348,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     setIsUsingTwelveLabs(true);
     
     try {
-      toast.info('Starting advanced AI video analysis...', { duration: 3000 });
+      toast.info('Starting comprehensive video analysis for detailed audio descriptions...', { duration: 4000 });
       
       const response = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
         body: {
@@ -394,7 +394,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       // Save to database
       await saveDescriptionsToDatabase(formattedDescriptions);
       
-      toast.success(`🎬 Generated ${descriptionsGenerated} cinematic audio descriptions from ${silenceGapsAnalyzed} silence gaps using advanced AI analysis`);
+      toast.success(`🎬 Generated ${descriptionsGenerated} comprehensive audio descriptions from detailed video analysis using ${silenceGapsAnalyzed} identified moments`);
       console.log('✅ Generated Twelve Labs AD:', formattedDescriptions);
     } catch (error) {
       console.error('❌ Failed to generate Twelve Labs descriptions:', error);
@@ -500,7 +500,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Basic AI:</strong> Analyzes transcript to find silence windows and generates simple descriptions.<br/>
-              <strong>Generate Audio Description:</strong> Uses sophisticated video analysis with cinematic storytelling style.
+              <strong>Generate Audio Description:</strong> Uses comprehensive video analysis to detect ALL silent moments and generate detailed cinematic descriptions matching character names and story context.
             </p>
           </div>
 

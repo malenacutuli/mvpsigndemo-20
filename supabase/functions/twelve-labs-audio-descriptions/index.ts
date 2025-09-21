@@ -36,7 +36,13 @@ serve(async (req) => {
       throw new Error('Twelve Labs API key not configured');
     }
 
-    console.log('🎬 Starting Twelve Labs audio description analysis for video:', inputVideoId);
+    console.log('🎬 Starting comprehensive Twelve Labs audio description analysis...');
+    console.log('📊 Video analysis parameters:', {
+      videoId: inputVideoId,
+      videoUrl: videoUrl.substring(0, 50) + '...',
+      transcriptSegments: transcriptSegments.length,
+      language
+    });
 
     const baseUrl = 'https://api.twelvelabs.io/v1.3';
 
@@ -131,69 +137,115 @@ serve(async (req) => {
     const silenceGaps = detectSilenceGaps(transcriptSegments);
     console.log(`🔇 Detected ${silenceGaps.length} silence gaps for audio descriptions`);
 
-    // Step 5: Generate audio descriptions for each silence gap using Twelve Labs
+    // Step 5: Generate comprehensive audio descriptions using the exact prompt structure
+    console.log('🎬 Generating comprehensive audio descriptions with detailed analysis...');
+    
+    // Use the comprehensive prompt that matches the platform's direct analysis
+    const comprehensivePrompt = `Analyze the provided video and perform the following steps:
+
+Detect Silence:
+Identify every moment in the video where there is no character dialogue or narration.
+Provide exact start and end timestamps for each silent gap.
+
+Duration Check:
+Calculate the length of each silent gap.
+Ensure that any generated description fits naturally within the available time — concise, clear, and not exceeding the gap's duration.
+
+Creative Descriptions:
+For each silent moment, write a cinematic narrative description that could be spoken as audio description. Call out the name of the characters if known.
+Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere.
+Focus on story, emotions, and sensory details, not technical aspects like camera angles.
+Descriptions should flow like a narrative podcast, enhancing immersion for listeners who cannot see the visuals.
+
+Output Format:
+For each silent gap, provide:
+Timestamp (start → end)
+Gap duration
+Narrative description (concise enough to fit in the silence)
+
+Analyze the entire video comprehensively and provide detailed results for ALL silent moments you detect.`;
+
+    // Generate comprehensive analysis
+    const comprehensiveResponse = await fetch(`${baseUrl}/generate`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        video_id: videoId,
+        type: 'summary',
+        prompt: comprehensivePrompt,
+        temperature: 0.7,
+        max_tokens: 4000, // Increased for comprehensive analysis
+      }),
+    });
+
     const audioDescriptions: AudioDescriptionSegment[] = [];
 
-    for (const gap of silenceGaps) {
-      try {
-        // Custom prompt for audio descriptions in silence gaps
-        const customPrompt = `Analyze the provided video segment from ${gap.startTime}s to ${gap.endTime}s and perform the following steps:
-
-SILENCE GAP ANALYSIS:
-- This is a ${gap.duration.toFixed(1)}-second silent gap with no dialogue or narration
-- Create a concise audio description that fits naturally within this ${gap.duration.toFixed(1)}-second window
-
-CREATIVE DESCRIPTION REQUIREMENTS:
-- Write a cinematic narrative description suitable for audio description
-- Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere
-- Focus on story, emotions, and sensory details, not technical aspects like camera angles
-- Call out character names if visible and identifiable
-- Description should flow like a narrative podcast, enhancing immersion
-- Keep it concise (max ${Math.floor(gap.duration * 3)} words) to fit in the ${gap.duration.toFixed(1)}-second gap
-
-OUTPUT: Provide only the narrative description text, nothing else.`;
-
-        const descriptionResponse = await fetch(`${baseUrl}/generate`, {
-          method: 'POST',
-          headers: {
-            'x-api-key': twelveLabsApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            video_id: videoId,
-            type: 'summary',
-            prompt: customPrompt,
-            temperature: 0.8,
-            max_tokens: Math.min(150, Math.floor(gap.duration * 5)), // Scale tokens with gap duration
-          }),
-        });
-
-        if (descriptionResponse.ok) {
-          const descData = await descriptionResponse.json();
-          let description = descData.data || '';
-          
-          // Clean and validate the description
-          description = cleanDescription(description, gap.duration);
-          
-          if (description && description.length > 10) {
-            audioDescriptions.push({
-              text: description,
-              startTime: gap.startTime,
-              endTime: gap.endTime,
-              duration: gap.duration,
-              type: 'silence_gap'
-            });
-            console.log(`✅ Generated description for gap ${gap.startTime}s-${gap.endTime}s: "${description.substring(0, 50)}..."`);
-          }
-        } else {
-          console.warn(`⚠️ Failed to generate description for gap ${gap.startTime}s-${gap.endTime}s`);
-        }
-      } catch (error) {
-        console.error(`❌ Error generating description for gap ${gap.startTime}s-${gap.endTime}s:`, error);
-      }
+    if (comprehensiveResponse.ok) {
+      const comprehensiveData = await comprehensiveResponse.json();
+      const analysisResult = comprehensiveData.data || '';
       
-      // Add small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('📊 Comprehensive analysis result:', analysisResult.substring(0, 300) + '...');
+      
+      // Parse the comprehensive analysis to extract timestamp and description pairs
+      const parsedDescriptions = parseComprehensiveAnalysis(analysisResult);
+      
+      if (parsedDescriptions.length > 0) {
+        audioDescriptions.push(...parsedDescriptions);
+        console.log(`✅ Successfully parsed ${parsedDescriptions.length} audio descriptions from comprehensive analysis`);
+      } else {
+        console.warn('⚠️ No descriptions could be parsed from comprehensive analysis, falling back to gap-based approach');
+        
+        // Fallback: generate descriptions for detected silence gaps
+        for (const gap of silenceGaps.slice(0, 5)) { // Limit to avoid rate limits
+          try {
+            const gapPrompt = `For the video segment from ${gap.startTime}s to ${gap.endTime}s (${gap.duration.toFixed(1)} seconds), write a cinematic narrative audio description. Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere. Focus on story, emotions, and sensory details. Call out character names if known. Keep it concise to fit in ${gap.duration.toFixed(1)} seconds.`;
+
+            const gapResponse = await fetch(`${baseUrl}/generate`, {
+              method: 'POST',
+              headers: {
+                'x-api-key': twelveLabsApiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                video_id: videoId,
+                type: 'summary',
+                prompt: gapPrompt,
+                temperature: 0.8,
+                max_tokens: Math.min(200, Math.floor(gap.duration * 8)),
+              }),
+            });
+
+            if (gapResponse.ok) {
+              const gapData = await gapResponse.json();
+              let description = gapData.data || '';
+              
+              description = cleanDescription(description, gap.duration);
+              
+              if (description && description.length > 10) {
+                audioDescriptions.push({
+                  text: description,
+                  startTime: gap.startTime,
+                  endTime: gap.endTime,
+                  duration: gap.duration,
+                  type: 'silence_gap'
+                });
+              }
+            }
+            
+            // Rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          } catch (error) {
+            console.error(`❌ Error generating fallback description for gap ${gap.startTime}s-${gap.endTime}s:`, error);
+          }
+        }
+      }
+    } else {
+      const errorText = await comprehensiveResponse.text();
+      console.error('❌ Comprehensive analysis failed:', errorText);
+      throw new Error(`Comprehensive analysis failed: ${errorText}`);
     }
 
     // Step 6: Cleanup - delete the temporary index
@@ -233,6 +285,56 @@ OUTPUT: Provide only the narrative description text, nothing else.`;
   }
 });
 
+function parseComprehensiveAnalysis(analysisText: string): AudioDescriptionSegment[] {
+  const descriptions: AudioDescriptionSegment[] = [];
+  
+  try {
+    // Extract all timestamp patterns and their descriptions
+    const timestampPattern = /Timestamp:\s*(\d+)s?\s*\(?\d*:?\d*\)?\s*→\s*(\d+)s?\s*\(?\d*:?\d*\)?\s*(?:\n|$)/gi;
+    const gapDurationPattern = /Gap Duration:\s*(\d+(?:\.\d+)?)\s*seconds?/gi;
+    const descriptionPattern = /Narrative Description:\s*"([^"]+)"/gi;
+    
+    // Split text into segments by timestamp
+    const segments = analysisText.split(/(?=Timestamp:)/gi).filter(segment => segment.trim());
+    
+    for (const segment of segments) {
+      // Reset regex lastIndex
+      timestampPattern.lastIndex = 0;
+      gapDurationPattern.lastIndex = 0;
+      descriptionPattern.lastIndex = 0;
+      
+      const timestampMatch = timestampPattern.exec(segment);
+      const durationMatch = gapDurationPattern.exec(segment);
+      const descriptionMatch = descriptionPattern.exec(segment);
+      
+      if (timestampMatch && descriptionMatch) {
+        const startTime = parseInt(timestampMatch[1]);
+        const endTime = parseInt(timestampMatch[2]);
+        const duration = durationMatch ? parseFloat(durationMatch[1]) : (endTime - startTime);
+        const description = descriptionMatch[1];
+        
+        // Validate the extracted data
+        if (startTime >= 0 && endTime > startTime && description.length > 5) {
+          descriptions.push({
+            text: description,
+            startTime: startTime,
+            endTime: endTime,
+            duration: duration,
+            type: 'silence_gap'
+          });
+        }
+      }
+    }
+    
+    console.log(`📝 Parsed ${descriptions.length} descriptions from comprehensive analysis`);
+    return descriptions;
+    
+  } catch (error) {
+    console.error('❌ Error parsing comprehensive analysis:', error);
+    return [];
+  }
+}
+
 function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number, endTime: number, duration: number}> {
   const gaps: Array<{startTime: number, endTime: number, duration: number}> = [];
   
@@ -242,21 +344,23 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     .sort((a, b) => a.startTime - b.startTime);
 
   if (sortedSegments.length === 0) {
-    // If no transcript segments, create regular intervals for descriptions
+    // If no transcript segments, create comprehensive intervals for descriptions
     return [
-      { startTime: 0, endTime: 5, duration: 5 },
+      { startTime: 0, endTime: 6, duration: 6 },
       { startTime: 15, endTime: 20, duration: 5 },
-      { startTime: 35, endTime: 40, duration: 5 }
+      { startTime: 35, endTime: 40, duration: 5 },
+      { startTime: 60, endTime: 65, duration: 5 },
+      { startTime: 90, endTime: 95, duration: 5 }
     ];
   }
 
-  // More flexible approach - reduce minimum gap and buffer
-  const minGapDuration = 1.5; // Reduced from 3.0 to 1.5 seconds
-  const bufferTime = 0.3; // Reduced from 0.5 to 0.3 seconds
-
-  // Always add a gap at the beginning if there's any space
-  if (sortedSegments[0].startTime > 1.0) {
-    const gapEnd = sortedSegments[0].startTime - bufferTime;
+  // More comprehensive gap detection to match platform analysis
+  const minGapDuration = 1.0; // Reduced minimum for more comprehensive detection
+  const bufferTime = 0.2; // Smaller buffer for more precise gaps
+  
+  // Always add opening gap if video doesn't start immediately with speech
+  if (sortedSegments[0].startTime > 0.5) {
+    const gapEnd = Math.max(0, sortedSegments[0].startTime - bufferTime);
     const duration = gapEnd;
     if (duration >= minGapDuration) {
       gaps.push({
@@ -267,7 +371,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Check gaps between segments with more lenient requirements
+  // Comprehensive gap detection between all segments
   for (let i = 0; i < sortedSegments.length - 1; i++) {
     const currentEnd = sortedSegments[i].endTime + bufferTime;
     const nextStart = sortedSegments[i + 1].startTime - bufferTime;
@@ -282,48 +386,56 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Add a gap at the end if the last segment ends reasonably early
+  // Add comprehensive trailing gaps
   const lastSegment = sortedSegments[sortedSegments.length - 1];
-  if (lastSegment.endTime < 300) { // If video seems under 5 minutes, add end gap
-    const gapStart = lastSegment.endTime + bufferTime;
-    const estimatedEnd = Math.min(lastSegment.endTime + 30, 300); // Estimate end
-    const duration = estimatedEnd - gapStart;
+  const estimatedVideoDuration = Math.max(lastSegment.endTime + 60, 300); // Assume video continues
+  
+  // Add multiple trailing gaps for comprehensive coverage
+  let currentTime = lastSegment.endTime + bufferTime;
+  while (currentTime < estimatedVideoDuration) {
+    const gapEnd = Math.min(currentTime + 5, estimatedVideoDuration);
+    const duration = gapEnd - currentTime;
     
     if (duration >= minGapDuration) {
       gaps.push({
-        startTime: gapStart,
-        endTime: estimatedEnd,
+        startTime: currentTime,
+        endTime: gapEnd,
         duration
       });
     }
+    
+    currentTime = gapEnd + 10; // Skip ahead to find more gaps
   }
 
-  // If still no gaps found, create strategic intervals based on transcript timing
-  if (gaps.length === 0) {
-    const totalDuration = sortedSegments[sortedSegments.length - 1].endTime;
-    const interval = Math.max(20, totalDuration / 4); // Create 3-4 intervals
+  // If we still have limited gaps, create strategic intervals throughout the video
+  if (gaps.length < 5) {
+    const totalDuration = Math.max(lastSegment.endTime, 180);
+    const intervalSize = totalDuration / 8; // Create 8 potential intervals
     
-    for (let i = 0; i < 3; i++) {
-      const start = i * interval + 5;
-      const end = start + 3;
+    for (let i = 0; i < 8; i++) {
+      const start = i * intervalSize + 2;
+      const end = start + 4;
       
-      // Only add if it doesn't overlap with existing speech
+      // Only add if it doesn't overlap significantly with existing speech
       const overlaps = sortedSegments.some(seg => 
-        (start >= seg.startTime && start <= seg.endTime) ||
-        (end >= seg.startTime && end <= seg.endTime)
+        (start >= seg.startTime - 1 && start <= seg.endTime + 1) ||
+        (end >= seg.startTime - 1 && end <= seg.endTime + 1)
       );
       
-      if (!overlaps && start < totalDuration) {
+      if (!overlaps && start < totalDuration && !gaps.some(gap => 
+        Math.abs(gap.startTime - start) < 5
+      )) {
         gaps.push({
           startTime: start,
           endTime: end,
-          duration: 3
+          duration: 4
         });
       }
     }
   }
   
-  return gaps.slice(0, 8); // Limit to first 8 gaps
+  // Sort gaps by start time and return comprehensive list
+  return gaps.sort((a, b) => a.startTime - b.startTime).slice(0, 20); // Allow up to 20 gaps for comprehensive analysis
 }
 
 function cleanDescription(description: string, maxDuration: number): string {
