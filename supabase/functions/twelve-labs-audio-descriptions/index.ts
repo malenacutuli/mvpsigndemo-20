@@ -241,13 +241,21 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
     .sort((a, b) => a.startTime - b.startTime);
 
-  if (sortedSegments.length === 0) return gaps;
+  if (sortedSegments.length === 0) {
+    // If no transcript segments, create regular intervals for descriptions
+    return [
+      { startTime: 0, endTime: 5, duration: 5 },
+      { startTime: 15, endTime: 20, duration: 5 },
+      { startTime: 35, endTime: 40, duration: 5 }
+    ];
+  }
 
-  const minGapDuration = 3.0; // Minimum 3 seconds for audio description
-  const bufferTime = 0.5; // Buffer around speech
+  // More flexible approach - reduce minimum gap and buffer
+  const minGapDuration = 1.5; // Reduced from 3.0 to 1.5 seconds
+  const bufferTime = 0.3; // Reduced from 0.5 to 0.3 seconds
 
-  // Check for gap at the beginning
-  if (sortedSegments[0].startTime > minGapDuration + bufferTime) {
+  // Always add a gap at the beginning if there's any space
+  if (sortedSegments[0].startTime > 1.0) {
     const gapEnd = sortedSegments[0].startTime - bufferTime;
     const duration = gapEnd;
     if (duration >= minGapDuration) {
@@ -259,7 +267,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Check gaps between segments
+  // Check gaps between segments with more lenient requirements
   for (let i = 0; i < sortedSegments.length - 1; i++) {
     const currentEnd = sortedSegments[i].endTime + bufferTime;
     const nextStart = sortedSegments[i + 1].startTime - bufferTime;
@@ -274,12 +282,48 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
 
-  // Check for gap at the end (if video continues after last transcript)
+  // Add a gap at the end if the last segment ends reasonably early
   const lastSegment = sortedSegments[sortedSegments.length - 1];
-  const potentialGapStart = lastSegment.endTime + bufferTime;
-  // We don't know the total video duration, so we'll skip the end gap for now
+  if (lastSegment.endTime < 300) { // If video seems under 5 minutes, add end gap
+    const gapStart = lastSegment.endTime + bufferTime;
+    const estimatedEnd = Math.min(lastSegment.endTime + 30, 300); // Estimate end
+    const duration = estimatedEnd - gapStart;
+    
+    if (duration >= minGapDuration) {
+      gaps.push({
+        startTime: gapStart,
+        endTime: estimatedEnd,
+        duration
+      });
+    }
+  }
+
+  // If still no gaps found, create strategic intervals based on transcript timing
+  if (gaps.length === 0) {
+    const totalDuration = sortedSegments[sortedSegments.length - 1].endTime;
+    const interval = Math.max(20, totalDuration / 4); // Create 3-4 intervals
+    
+    for (let i = 0; i < 3; i++) {
+      const start = i * interval + 5;
+      const end = start + 3;
+      
+      // Only add if it doesn't overlap with existing speech
+      const overlaps = sortedSegments.some(seg => 
+        (start >= seg.startTime && start <= seg.endTime) ||
+        (end >= seg.startTime && end <= seg.endTime)
+      );
+      
+      if (!overlaps && start < totalDuration) {
+        gaps.push({
+          startTime: start,
+          endTime: end,
+          duration: 3
+        });
+      }
+    }
+  }
   
-  return gaps.slice(0, 10); // Limit to first 10 gaps to avoid overwhelming
+  return gaps.slice(0, 8); // Limit to first 8 gaps
 }
 
 function cleanDescription(description: string, maxDuration: number): string {
