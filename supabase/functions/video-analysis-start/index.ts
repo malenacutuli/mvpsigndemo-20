@@ -146,8 +146,8 @@ async function createNewIndex(endpoint: string, apiKey: string) {
     body: JSON.stringify({
       index_name: 'axessible-video-analysis',
       models: [{
-        name: 'pegasus1.3',
-        options: ['visual', 'conversation', 'text_in_video']
+        model_name: 'pegasus1.3',
+        model_options: ['visual', 'conversation', 'text_in_video']
       }]
     })
   });
