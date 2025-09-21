@@ -171,12 +171,17 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
     body: formData
   });
 
+  const text = await response.text();
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create indexing task: ${response.status}: ${errorText}`);
+    throw new Error(`Failed to create indexing task: ${response.status}: ${text}`);
   }
 
-  const result = await response.json();
+  let result: any;
+  try {
+    result = JSON.parse(text);
+  } catch {
+    throw new Error(`Failed to parse task response as JSON: ${text}`);
+  }
   console.log('Task created successfully:', result);
   return result;
 }
