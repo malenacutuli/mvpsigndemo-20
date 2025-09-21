@@ -474,6 +474,17 @@ async function cleanupIndex(baseUrl: string, headers: any, indexId: string): Pro
 function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
   const gaps: SilenceGap[] = [];
   
+  // Handle undefined or empty transcript segments
+  if (!transcriptSegments || transcriptSegments.length === 0) {
+    // Create more default intervals if no transcript
+    const intervals = [];
+    for (let i = 0; i < 300; i += 8) { // Every 8 seconds for 5 minutes
+      intervals.push({ startTime: i, endTime: i + 4, duration: 4 });
+    }
+    console.log(`📊 No transcript found, created ${intervals.length} default intervals`);
+    return intervals;
+  }
+  
   // Sort segments by start time
   const sortedSegments = [...transcriptSegments]
     .filter(s => typeof s.startTime === 'number' && typeof s.endTime === 'number')
