@@ -5,7 +5,7 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play, Share } from "lucide-react";
+import { ArrowLeft, Play, Share, Edit } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
 import { EmbedSettings } from "@/components/EmbedSettings";
@@ -375,6 +375,13 @@ const VideoDetail = () => {
               {t('videoDetail.backToVideos')}
             </Button>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="default"
+                onClick={() => navigate(`/video/${video.id}/workflow`)}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Open Workflow
+              </Button>
               <VideoPublishingControls
                 videoId={video.id}
                 isPublic={video.is_public}
