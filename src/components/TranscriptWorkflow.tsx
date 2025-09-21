@@ -14,6 +14,7 @@ import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor } from './WordLevelEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { TranscriptUploader } from './TranscriptUploader';
+import { VideoAnalysisPanel } from './VideoAnalysisPanel';
 
 interface TranscriptSegment {
   id: string;
@@ -610,8 +611,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       <CardContent className="space-y-6">
         <Tabs defaultValue="transcript" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
+            <TabsTrigger value="video-analysis">Video Analysis</TabsTrigger>
             <TabsTrigger value="audio-desc">Audio Descriptions</TabsTrigger>
           </TabsList>
 
@@ -921,6 +923,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="video-analysis">
+            <VideoAnalysisPanel
+              assetId={videoId}
+              playbackUrl={videoUrl}
+              videoElementId="mainVideo"
+            />
           </TabsContent>
 
           <TabsContent value="audio-desc">

@@ -751,6 +751,88 @@ export type Database = {
         }
         Relationships: []
       }
+      twelve_labs_mappings: {
+        Row: {
+          asset_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          index_id: string | null
+          metadata: Json | null
+          status: string
+          task_id: string | null
+          tl_video_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          index_id?: string | null
+          metadata?: Json | null
+          status?: string
+          task_id?: string | null
+          tl_video_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          index_id?: string | null
+          metadata?: Json | null
+          status?: string
+          task_id?: string | null
+          tl_video_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twelve_labs_mappings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_analysis_results: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          language: string | null
+          prompt: string
+          result: Json
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          prompt: string
+          result: Json
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          prompt?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_analysis_results_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           channel_id: string | null

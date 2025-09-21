@@ -41,3 +41,12 @@ verify_jwt = false
 
 [functions.twelve-labs-audio-descriptions]
 verify_jwt = true
+
+[functions.video-analysis-start]
+verify_jwt = true
+
+[functions.video-analysis-status]
+verify_jwt = true
+
+[functions.video-analysis-analyze]
+verify_jwt = true
