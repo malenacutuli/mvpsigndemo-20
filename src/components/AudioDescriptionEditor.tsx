@@ -428,6 +428,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         console.log('🎬 Twelve Labs: Task processing, will poll status', { indexId, taskId });
         toast.info('Indexing video for analysis. Checking status every 10s...', { duration: 4000 });
 
+        // Ensure no duplicate polling loops
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+
         let attempts = 0;
         const maxAttempts = 60; // ~10 minutes for longer videos
         pollingRef.current = window.setInterval(async () => {
@@ -572,7 +578,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             clearInterval(pollingRef.current!);
             pollingRef.current = null;
             console.error('🎬 Twelve Labs: Timeout after', maxAttempts, 'attempts');
-            toast.error('Video analysis timeout. This video may require more processing time. Please try again in a few minutes.');
+            
+            // Instead of erroring, provide immediate fallback descriptions
+            const basicDescriptions = generateBasicFallbackDescriptions();
+            setDescriptions(basicDescriptions);
+            await saveDescriptionsToDatabase(basicDescriptions);
+            toast.info('Processing timed out. Generated basic audio descriptions instead.');
             setIsGenerating(false);
             setIsUsingTwelveLabs(false);
           }
