@@ -59,7 +59,7 @@ serve(async (req) => {
           body: JSON.stringify({
             index_name: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             models: [
-              { model_name: 'pegasus-1.2', model_options: ['audio', 'visual'] }
+              { model_name: 'pegasus1.2', model_options: ['audio', 'visual'] }
             ]
           }),
         });
@@ -226,12 +226,77 @@ Analyze the entire video comprehensively and provide detailed results for ALL si
       if (parsedDescriptions.length > 0) {
         audioDescriptions.push(...parsedDescriptions);
         console.log(`✅ Successfully parsed ${parsedDescriptions.length} audio descriptions from comprehensive analysis`);
+        if (parsedDescriptions.length < silenceGaps.length) {
+          console.warn(`ℹ️ Parsed ${parsedDescriptions.length} descriptions but detected ${silenceGaps.length} silence gaps — generating additional gap-based descriptions`);
+          for (const gap of silenceGaps) {
+            try {
+              // Skip if this gap substantially overlaps with an already parsed description
+              const overlapsParsed = audioDescriptions.some(desc => {
+                const overlapStart = Math.max(desc.startTime, gap.startTime);
+                const overlapEnd = Math.min(desc.endTime, gap.endTime);
+                const overlap = Math.max(0, overlapEnd - overlapStart);
+                const gapDur = gap.endTime - gap.startTime;
+                const descDur = desc.endTime - desc.startTime;
+                return overlap >= Math.min(gapDur * 0.5, descDur * 0.5);
+              });
+              if (overlapsParsed) continue;
+
+              const gapPrompt = `For the video segment from ${gap.startTime}s to ${gap.endTime}s (${gap.duration.toFixed(1)} seconds), write a cinematic narrative audio description. Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere. Focus on story, emotions, and sensory details. Call out character names if known. Keep it concise to fit in ${gap.duration.toFixed(1)} seconds.`;
+
+              const gapResponse = await fetch(`${baseUrl}/generate`, {
+                method: 'POST',
+                headers: {
+                  'x-api-key': twelveLabsApiKey,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  video_id: videoId,
+                  type: 'summary',
+                  prompt: gapPrompt,
+                  temperature: 0.8,
+                  max_tokens: Math.min(200, Math.floor(gap.duration * 8)),
+                }),
+              });
+
+              if (gapResponse.ok) {
+                const gapData = await gapResponse.json();
+                let description = gapData.data || '';
+                description = cleanDescription(description, gap.duration);
+                if (description && description.length > 10) {
+                  audioDescriptions.push({
+                    text: description,
+                    startTime: gap.startTime,
+                    endTime: gap.endTime,
+                    duration: gap.duration,
+                    type: 'silence_gap'
+                  });
+                }
+              }
+
+              // Basic pacing between calls to avoid rate limits
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            } catch (error) {
+              console.error(`❌ Error generating additional fallback description for gap ${gap.startTime}s-${gap.endTime}s:`, error);
+            }
+          }
+        }
       } else {
         console.warn('⚠️ No descriptions could be parsed from comprehensive analysis, falling back to gap-based approach');
         
-        // Fallback: generate descriptions for detected silence gaps
-        for (const gap of silenceGaps.slice(0, 20)) { // Generate up to 20 gaps to match platform analysis
+        // Fallback: generate descriptions for detected silence gaps (no cap)
+        for (const gap of silenceGaps) {
           try {
+            // Skip if this gap substantially overlaps with an already parsed description
+            const overlapsParsed = audioDescriptions.some(desc => {
+              const overlapStart = Math.max(desc.startTime, gap.startTime);
+              const overlapEnd = Math.min(desc.endTime, gap.endTime);
+              const overlap = Math.max(0, overlapEnd - overlapStart);
+              const gapDur = gap.endTime - gap.startTime;
+              const descDur = desc.endTime - desc.startTime;
+              return overlap >= Math.min(gapDur * 0.5, descDur * 0.5);
+            });
+            if (overlapsParsed) continue;
+
             const gapPrompt = `For the video segment from ${gap.startTime}s to ${gap.endTime}s (${gap.duration.toFixed(1)} seconds), write a cinematic narrative audio description. Style: creative advertising copywriter, blending audiobook storytelling with cinematic atmosphere. Focus on story, emotions, and sensory details. Call out character names if known. Keep it concise to fit in ${gap.duration.toFixed(1)} seconds.`;
 
             const gapResponse = await fetch(`${baseUrl}/generate`, {
@@ -252,9 +317,7 @@ Analyze the entire video comprehensively and provide detailed results for ALL si
             if (gapResponse.ok) {
               const gapData = await gapResponse.json();
               let description = gapData.data || '';
-              
               description = cleanDescription(description, gap.duration);
-              
               if (description && description.length > 10) {
                 audioDescriptions.push({
                   text: description,
@@ -265,8 +328,8 @@ Analyze the entire video comprehensively and provide detailed results for ALL si
                 });
               }
             }
-            
-            // Rate limiting
+
+            // Basic pacing between calls to avoid rate limits
             await new Promise(resolve => setTimeout(resolve, 1500));
           } catch (error) {
             console.error(`❌ Error generating fallback description for gap ${gap.startTime}s-${gap.endTime}s:`, error);
@@ -465,8 +528,8 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     }
   }
   
-  // Sort gaps by start time and return comprehensive list
-  return gaps.sort((a, b) => a.startTime - b.startTime).slice(0, 20); // Allow up to 20 gaps for comprehensive analysis
+  // Sort gaps by start time and return full list (no cap)
+  return gaps.sort((a, b) => a.startTime - b.startTime);
 }
 
 function cleanDescription(description: string, maxDuration: number): string {
