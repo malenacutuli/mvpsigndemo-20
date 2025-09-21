@@ -54,20 +54,21 @@ serve(async (req) => {
     
     // Create indexing task
     const task = await createIndexingTask(indexId, playbackUrl);
-    const taskId = task.id || task.task_id || task.data?.id;
-    
-    if (!taskId) {
-      throw new Error('Failed to create indexing task');
-    }
+const taskId = task._id || task.id || task.task_id || task.data?.id || task.video_id;
+
+if (!taskId) {
+  throw new Error(`Failed to create indexing task: unexpected response ${JSON.stringify(task)}`);
+}
 
     // Upsert mapping in database
-    const mappingData = {
-      asset_id: assetId,
-      index_id: indexId,
-      task_id: taskId,
-      status: 'processing',
-      updated_at: new Date().toISOString()
-    };
+const mappingData = {
+  asset_id: assetId,
+  index_id: indexId,
+  task_id: taskId,
+  tl_video_id: task.video_id ?? null,
+  status: 'processing',
+  updated_at: new Date().toISOString()
+};
 
     const { data: mapping, error: mappingError } = await supabase
       .from('twelve_labs_mappings')
