@@ -14,6 +14,22 @@ interface AudioDescriptionSegment {
   type: 'silence_gap';
 }
 
+interface TwelveLabsConfig {
+  baseUrl: string;
+  apiKey: string;
+  indexName: string;
+  model: {
+    name: string;
+    options: string[];
+  };
+}
+
+interface SilenceGap {
+  startTime: number;
+  endTime: number;
+  duration: number;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -36,266 +52,64 @@ serve(async (req) => {
       throw new Error('Twelve Labs API key not configured');
     }
 
-    console.log('🎬 Starting Twelve Labs video analysis for comprehensive audio descriptions...');
-    console.log('📊 Analysis parameters:', {
+    console.log('🎬 Starting Twelve Labs Audio Description Generation...');
+    console.log('📊 Parameters:', {
       videoId: inputVideoId,
       videoUrl: videoUrl.substring(0, 50) + '...',
-      transcriptSegments: transcriptSegments.length,
-      language
-    });
-
-    const baseUrl = 'https://api.twelvelabs.io/v1.3';
-
-    // Step 1: Create index for video analysis
-    const indexResponse = await fetch(`${baseUrl}/indexes`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        index_name: `audio_desc_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        models: [
-          { model_name: 'pegasus1.2', model_options: ['audio', 'visual'] }
-        ]
-      }),
-    });
-
-    if (!indexResponse.ok) {
-      const error = await indexResponse.text();
-      throw new Error(`Failed to create index: ${error}`);
-    }
-
-    const indexData = await indexResponse.json();
-    const indexId = indexData._id;
-    console.log('✅ Created Twelve Labs index:', indexId);
-
-    // Step 2: Create video indexing task
-    const taskCreateResponse = await fetch(`${baseUrl}/tasks`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        index_id: indexId,
-        video_url: videoUrl,
-        enable_video_stream: false
-      }),
-    });
-
-    if (!taskCreateResponse.ok) {
-      const error = await taskCreateResponse.text();
-      throw new Error(`Failed to create indexing task: ${error}`);
-    }
-
-    const taskData = await taskCreateResponse.json();
-    const taskId = taskData._id;
-    let videoId = taskData.video_id || null;
-    console.log('🎥 Indexing task created:', { taskId, videoId });
-
-    // Step 3: Wait for video processing to complete
-    let processingComplete = false;
-    let attempts = 0;
-    const maxAttempts = 60; // 10 minutes max
-
-    while (!processingComplete && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-      
-      const statusResponse = await fetch(`${baseUrl}/tasks/${taskId}`, {
-        headers: {
-          'x-api-key': twelveLabsApiKey,
-        },
-      });
-
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        console.log(`📊 Processing status: ${statusData.status}`);
-        
-        if (statusData.status === 'ready') {
-          processingComplete = true;
-          if (!videoId && (statusData.video_id || statusData.videoId)) {
-            videoId = statusData.video_id || statusData.videoId;
-          }
-        } else if (statusData.status === 'failed') {
-          throw new Error(`Video processing failed: ${statusData.message || 'Unknown error'}`);
-        }
-      }
-      
-      attempts++;
-    }
-
-    if (!processingComplete) {
-      throw new Error('Video processing timeout');
-    }
-
-    if (!videoId) {
-      throw new Error('Video ID could not be retrieved after processing');
-    }
-
-    console.log('✅ Video processed successfully, ID:', videoId);
-
-    // Step 4: Detect silence gaps from transcript segments
-    const silenceGaps = detectSilenceGaps(transcriptSegments);
-    console.log(`🔇 Detected ${silenceGaps.length} silence gaps for comprehensive analysis`);
-
-    // Also get visual highlights from Twelve Labs to supplement gaps
-    const speechIntervals = transcriptSegments.map((s: any) => ({ start: s.startTime, end: s.endTime }));
-
-    let highlightGaps: Array<{ startTime: number; endTime: number; duration: number }> = [];
-    try {
-      const summarizeResp = await fetch(`${baseUrl}/summarize`, {
-        method: 'POST',
-        headers: { 'x-api-key': twelveLabsApiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          video_id: videoId,
-          type: 'highlight',
-          // Prompt to encourage visual, not dialogue-focused highlights
-          prompt: 'Identify visual highlights with precise start_sec and end_sec. Prefer moments without active dialogue (silent action, scenery, transitions, reactions).',
-          temperature: 0.2,
-          max_tokens: 4096,
-        }),
-      });
-      if (summarizeResp.ok) {
-        const sumData = await summarizeResp.json();
-        const highlights = (sumData.highlights || []).filter((h: any) => h.start_sec != null && h.end_sec != null);
-        // Keep highlights that don't significantly overlap with speech
-        highlightGaps = highlights
-          .map((h: any) => ({ startTime: h.start_sec, endTime: h.end_sec, duration: (h.end_sec - h.start_sec) }))
-          .filter((g: any) => {
-            const overlap = speechIntervals.some(si => Math.max(0, Math.min(g.endTime, si.end) - Math.max(g.startTime, si.start)) > (g.duration * 0.3));
-            return !overlap && g.duration >= 1.0;
-          });
-        console.log(`✨ Retrieved ${highlightGaps.length} visual highlights suitable for AD from ${highlights.length} total highlights`);
-      } else {
-        console.warn('⚠️ Summarize(highlight) request failed:', await summarizeResp.text());
-      }
-    } catch (e) {
-      console.warn('⚠️ Error calling summarize(highlight):', e);
-    }
-
-    // Combine and de-duplicate by time (±0.3s)
-    const gapsToDescribe = [...silenceGaps, ...highlightGaps].reduce((acc: any[], g) => {
-      const exists = acc.some(x => Math.abs(x.startTime - g.startTime) < 0.3 && Math.abs(x.endTime - g.endTime) < 0.3);
-      if (!exists) acc.push(g);
-      return acc;
-    }, [] as any[]).sort((a, b) => a.startTime - b.startTime);
-
-    const audioDescriptions: AudioDescriptionSegment[] = [];
-
-    // Step 5: Generate audio descriptions for ALL candidate gaps
-    console.log(`🎬 Generating video-specific audio descriptions for ${gapsToDescribe.length} moments...`);
-    
-    for (let i = 0; i < gapsToDescribe.length; i++) {
-      const gap = gapsToDescribe[i];
-      
-      try {
-        console.log(`🎯 Analyzing gap ${i + 1}/${gapsToDescribe.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration.toFixed(1)}s)`);
-        
-        const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds (${gap.duration.toFixed(1)} seconds duration) and create a concise audio description for this silent moment.
-
-Focus on what is visually happening during this specific time period:
-- Character actions, movements, and expressions
-- Environmental details and setting changes
-- Visual storytelling elements (lighting, composition)
-- Important objects or elements that appear
-- Emotional undertones conveyed through visuals
-
-Requirements:
-- Write in present tense
-- Keep it concise for ${gap.duration.toFixed(1)} seconds of narration
-- Focus only on visual elements visible during this time segment
-- Use cinematic language appropriate for audio description
-- Do not mention audio or dialogue
-
-Generate only the audio description text, nothing else.`;
-
-        // Use Twelve Labs analyze endpoint instead of summarize
-        const analyzeResponse = await fetch(`${baseUrl}/analyze`, {
-          method: 'POST',
-          headers: {
-            'x-api-key': twelveLabsApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            video_id: videoId,
-            prompt: analysisPrompt,
-            temperature: 0.3,
-            stream: false,
-            max_tokens: Math.min(200, Math.floor(gap.duration * 15)),
-          }),
-        });
-
-        if (analyzeResponse.ok) {
-          const analysisData = await analyzeResponse.json();
-          let description = analysisData.data || '';
-          
-          // Clean and validate the description
-          description = cleanDescription(description, gap.duration);
-          
-          if (description && description.length > 10) {
-            audioDescriptions.push({
-              text: description,
-              startTime: gap.startTime,
-              endTime: gap.endTime,
-              duration: gap.duration,
-              type: 'silence_gap'
-            });
-            
-            console.log(`✅ Generated description ${i + 1}: "${description.substring(0, 80)}..."`);
-          } else {
-            console.warn(`⚠️ Generated description too short for gap ${gap.startTime}s-${gap.endTime}s`);
-          }
-        } else {
-          const analysisError = await analyzeResponse.text();
-          console.error(`❌ Analysis failed for gap ${gap.startTime}s-${gap.endTime}s:`, analysisError);
-          
-          // Create fallback description for this gap
-          const fallbackDescription = createFallbackDescription(gap, i);
-          audioDescriptions.push(fallbackDescription);
-          console.log(`🔄 Created fallback description for gap ${gap.startTime}s-${gap.endTime}s: "${fallbackDescription.text.substring(0, 60)}..."`);
-        }
-
-        // Rate limiting to avoid API throttling
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-      } catch (error) {
-        console.error(`❌ Error analyzing gap ${gap.startTime}s-${gap.endTime}s:`, error);
-        
-        // Create fallback description for this gap
-        const fallbackDescription = createFallbackDescription(gap, i);
-        audioDescriptions.push(fallbackDescription);
-        console.log(`🔄 Created error fallback for gap ${gap.startTime}s-${gap.endTime}s: "${fallbackDescription.text.substring(0, 60)}..."`);
-      }
-    }
-
-    // Step 6: Cleanup - delete the temporary index
-    try {
-      await fetch(`${baseUrl}/indexes/${indexId}`, {
-        method: 'DELETE',
-        headers: {
-          'x-api-key': twelveLabsApiKey,
-        },
-      });
-      console.log('🧹 Cleaned up temporary index');
-    } catch (error) {
-      console.warn('⚠️ Failed to cleanup index:', error);
-    }
-
-    // Sort descriptions by start time
-    audioDescriptions.sort((a, b) => a.startTime - b.startTime);
-
-    console.log(`🎉 Successfully generated ${audioDescriptions.length} audio descriptions from ${gapsToDescribe.length} analyzed moments`);
-
-    return new Response(JSON.stringify({
-      success: true,
-      audioDescriptions,
-      silenceGapsAnalyzed: gapsToDescribe.length,
-      descriptionsGenerated: audioDescriptions.length,
+      segments: transcriptSegments.length,
       language: language || 'en'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
+    // Initialize Twelve Labs configuration
+    const config: TwelveLabsConfig = {
+      baseUrl: 'https://api.twelvelabs.io/v1.3',
+      apiKey: twelveLabsApiKey,
+      indexName: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      model: {
+        name: 'pegasus1.2',
+        options: ['audio', 'visual']
+      }
+    };
+
+    // Step 1: Create Index following Python methodology
+    const indexId = await createTwelveLabsIndex(config);
+    console.log('✅ Created index:', indexId);
+
+    let videoId: string;
+    try {
+      // Step 2: Upload Video and Monitor Processing
+      videoId = await uploadAndProcessVideo(config, indexId, videoUrl);
+      console.log('✅ Video processed successfully:', videoId);
+
+      // Step 3: Detect Silence Gaps for Analysis
+      const silenceGaps = detectSilenceGaps(transcriptSegments);
+      console.log(`🔇 Detected ${silenceGaps.length} silence gaps for analysis`);
+
+      // Step 4: Generate Audio Descriptions using Analyze API
+      const audioDescriptions = await generateAudioDescriptions(
+        config, 
+        videoId, 
+        silenceGaps, 
+        language || 'en'
+      );
+
+      console.log(`🎉 Generated ${audioDescriptions.length} audio descriptions`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        audioDescriptions,
+        silenceGapsAnalyzed: silenceGaps.length,
+        descriptionsGenerated: audioDescriptions.length,
+        language: language || 'en'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } finally {
+      // Step 5: Cleanup - Always delete the temporary index
+      await cleanupTwelveLabsIndex(config, indexId);
+      console.log('🧹 Cleaned up temporary index');
+    }
 
   } catch (error) {
     console.error('❌ Twelve Labs audio description error:', error);
@@ -311,8 +125,243 @@ Generate only the audio description text, nothing else.`;
   }
 });
 
-function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number, endTime: number, duration: number}> {
-  const gaps: Array<{startTime: number, endTime: number, duration: number}> = [];
+// ============== TWELVE LABS METHODOLOGY FUNCTIONS ==============
+// Following Python SDK patterns for proper API interaction
+
+/**
+ * Step 1: Create Index (following Python methodology)
+ */
+async function createTwelveLabsIndex(config: TwelveLabsConfig): Promise<string> {
+  const response = await fetch(`${config.baseUrl}/indexes`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      index_name: config.indexName,
+      models: [
+        { 
+          model_name: config.model.name, 
+          model_options: config.model.options 
+        }
+      ]
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create index: ${error}`);
+  }
+
+  const indexData = await response.json();
+  return indexData._id;
+}
+
+/**
+ * Step 2: Upload Video and Monitor Processing (following Python methodology)
+ */
+async function uploadAndProcessVideo(
+  config: TwelveLabsConfig, 
+  indexId: string, 
+  videoUrl: string
+): Promise<string> {
+  // Create video indexing task
+  const taskResponse = await fetch(`${config.baseUrl}/tasks`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      index_id: indexId,
+      video_url: videoUrl,
+      enable_video_stream: false
+    }),
+  });
+
+  if (!taskResponse.ok) {
+    const error = await taskResponse.text();
+    throw new Error(`Failed to create indexing task: ${error}`);
+  }
+
+  const taskData = await taskResponse.json();
+  const taskId = taskData._id;
+  let videoId = taskData.video_id || null;
+  
+  console.log('🎥 Created indexing task:', { taskId, videoId });
+
+  // Monitor the indexing process (similar to Python wait_for_done)
+  let processingComplete = false;
+  let attempts = 0;
+  const maxAttempts = 120; // 20 minutes max for larger videos
+  const sleepInterval = 10; // 10 seconds between checks
+
+  while (!processingComplete && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, sleepInterval * 1000));
+    
+    const statusResponse = await fetch(`${config.baseUrl}/tasks/${taskId}`, {
+      headers: {
+        'x-api-key': config.apiKey,
+      },
+    });
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      console.log(`📊 Task status: ${statusData.status} (attempt ${attempts + 1}/${maxAttempts})`);
+      
+      if (statusData.status === 'ready') {
+        processingComplete = true;
+        if (!videoId && (statusData.video_id || statusData.videoId)) {
+          videoId = statusData.video_id || statusData.videoId;
+        }
+      } else if (statusData.status === 'failed') {
+        throw new Error(`Video processing failed: ${statusData.message || 'Unknown error'}`);
+      }
+    }
+    
+    attempts++;
+  }
+
+  if (!processingComplete) {
+    throw new Error(`Video processing timeout after ${maxAttempts * sleepInterval} seconds`);
+  }
+
+  if (!videoId) {
+    throw new Error('Video ID could not be retrieved after processing completion');
+  }
+
+  return videoId;
+}
+
+/**
+ * Step 3: Generate Audio Descriptions using Analyze API (following Python methodology)
+ */
+async function generateAudioDescriptions(
+  config: TwelveLabsConfig,
+  videoId: string,
+  silenceGaps: SilenceGap[],
+  language: string
+): Promise<AudioDescriptionSegment[]> {
+  const audioDescriptions: AudioDescriptionSegment[] = [];
+  
+  console.log(`🎬 Generating audio descriptions for ${silenceGaps.length} silence gaps...`);
+
+  for (let i = 0; i < silenceGaps.length; i++) {
+    const gap = silenceGaps[i];
+    
+    try {
+      console.log(`🎯 Processing gap ${i + 1}/${silenceGaps.length}: ${gap.startTime}s-${gap.endTime}s`);
+      
+      const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a concise audio description for this ${gap.duration.toFixed(1)}-second moment.
+
+Focus on visual elements during this time period:
+- Character actions, movements, and expressions
+- Environmental details and setting changes  
+- Visual storytelling elements (lighting, composition)
+- Important objects or visual elements
+- Emotional undertones conveyed visually
+
+Requirements:
+- Write in present tense
+- Keep concise for ${gap.duration.toFixed(1)} seconds of narration
+- Focus only on visual elements during this specific time segment
+- Use cinematic language appropriate for audio description
+- Do not mention audio, dialogue, or sound
+
+Generate only the audio description text.`;
+
+      // Use Analyze API (equivalent to Python analyze method)
+      const response = await fetch(`${config.baseUrl}/analyze`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': config.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          video_id: videoId,
+          prompt: analysisPrompt,
+          temperature: 0.3,
+          stream: false,
+          max_tokens: Math.min(300, Math.floor(gap.duration * 20)),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        let description = data.data || '';
+        
+        // Clean and validate description
+        description = cleanDescription(description, gap.duration);
+        
+        if (description && description.length > 10) {
+          audioDescriptions.push({
+            text: description,
+            startTime: gap.startTime,
+            endTime: gap.endTime,
+            duration: gap.duration,
+            type: 'silence_gap'
+          });
+          
+          console.log(`✅ Generated description ${i + 1}: "${description.substring(0, 70)}..."`);
+        } else {
+          // Use fallback if description is too short
+          const fallback = createFallbackDescription(gap, i);
+          audioDescriptions.push(fallback);
+          console.log(`🔄 Using fallback for gap ${i + 1}: "${fallback.text.substring(0, 50)}..."`);
+        }
+      } else {
+        const error = await response.text();
+        console.error(`❌ Analyze API error for gap ${gap.startTime}s-${gap.endTime}s:`, error);
+        
+        // Create fallback description
+        const fallback = createFallbackDescription(gap, i);
+        audioDescriptions.push(fallback);
+        console.log(`🔄 Created fallback for failed analysis: "${fallback.text.substring(0, 50)}..."`);
+      }
+
+      // Rate limiting to respect API limits
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+    } catch (error) {
+      console.error(`❌ Error processing gap ${gap.startTime}s-${gap.endTime}s:`, error);
+      
+      // Always provide a fallback
+      const fallback = createFallbackDescription(gap, i);
+      audioDescriptions.push(fallback);
+    }
+  }
+
+  // Sort by start time
+  audioDescriptions.sort((a, b) => a.startTime - b.startTime);
+  
+  return audioDescriptions;
+}
+
+/**
+ * Step 4: Cleanup Index (following Python methodology)
+ */
+async function cleanupTwelveLabsIndex(config: TwelveLabsConfig, indexId: string): Promise<void> {
+  try {
+    const response = await fetch(`${config.baseUrl}/indexes/${indexId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-api-key': config.apiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`⚠️ Failed to delete index ${indexId}:`, await response.text());
+    }
+  } catch (error) {
+    console.warn('⚠️ Error during index cleanup:', error);
+  }
+}
+
+// ============== SILENCE DETECTION AND UTILITY FUNCTIONS ==============
+
+function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
+  const gaps: SilenceGap[] = [];
   
   // Sort segments by start time
   const sortedSegments = [...transcriptSegments]
@@ -320,7 +369,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
     .sort((a, b) => a.startTime - b.startTime);
 
   if (sortedSegments.length === 0) {
-    // If no transcript segments, create comprehensive intervals throughout the video
+    // If no transcript segments, create default intervals throughout the video
     const intervals = [];
     for (let i = 0; i < 180; i += 15) { // Every 15 seconds for 3 minutes
       intervals.push({ startTime: i, endTime: i + 3, duration: 3 });
@@ -386,7 +435,7 @@ function detectSilenceGaps(transcriptSegments: any[]): Array<{startTime: number,
   return gaps.sort((a, b) => a.startTime - b.startTime);
 }
 
-function createFallbackDescription(gap: any, index: number): AudioDescriptionSegment {
+function createFallbackDescription(gap: SilenceGap, index: number): AudioDescriptionSegment {
   const fallbacks = [
     "The scene unfolds with carefully composed visuals that enhance the narrative atmosphere.",
     "Character interactions and environmental details develop through expressive cinematography.", 
