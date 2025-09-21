@@ -295,9 +295,17 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       return;
     }
 
+    // Prevent multiple concurrent generations
+    if (isGenerating) {
+      console.warn('Generation already in progress, ignoring request');
+      return;
+    }
+
     setIsGenerating(true);
     setIsUsingTwelveLabs(false);
+    
     try {
+      console.log('🎬 Basic AI: Starting generation');
       const gaps = computeGaps(transcriptSegments);
       const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
 
@@ -323,7 +331,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       await saveDescriptionsToDatabase(scheduled);
       
       toast.success(`Generated ${scheduled.length} audio descriptions`);
-      console.log('✅ Generated AD (scheduled):', scheduled);
+      console.log('✅ Generated Basic AI AD:', scheduled.length, 'descriptions');
     } catch (error) {
       console.error('❌ Failed to generate descriptions:', error);
       toast.error('Generation failed - please try again.');
@@ -344,11 +352,19 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       return;
     }
 
+    // Prevent multiple concurrent generations
+    if (isGenerating) {
+      console.warn('Generation already in progress, ignoring request');
+      return;
+    }
+
     setIsGenerating(true);
     setIsUsingTwelveLabs(true);
     
     try {
       toast.info('Starting comprehensive video analysis for detailed audio descriptions...', { duration: 4000 });
+      
+      console.log('🎬 Twelve Labs: Starting generation request');
       
       const response = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
         body: {
@@ -359,13 +375,25 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         }
       });
 
+      console.log('🎬 Twelve Labs: Response received', { 
+        hasError: !!response.error, 
+        hasData: !!response.data
+      });
+
       if (response.error) {
+        console.error('🎬 Twelve Labs: Function returned error:', response.error);
         throw new Error(response.error.message || 'Twelve Labs analysis failed');
+      }
+
+      if (!response.data || !response.data.success) {
+        console.error('🎬 Twelve Labs: Invalid response format:', response.data);
+        throw new Error(response.data?.error || 'Invalid response from Twelve Labs service');
       }
 
       const { audioDescriptions, silenceGapsAnalyzed, descriptionsGenerated } = response.data;
 
       if (!audioDescriptions || audioDescriptions.length === 0) {
+        console.warn('🎬 Twelve Labs: No descriptions generated, using fallback');
         // Advanced AI fallback: create strategic descriptions
         const strategicDescriptions: AudioDescriptionSegment[] = [
           { text: "Cinematic visuals establish the scene with rich atmospheric details and character positioning.", startTime: 2, endTime: 6, voiceStyle: 'warm' },
@@ -395,10 +423,13 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       await saveDescriptionsToDatabase(formattedDescriptions);
       
       toast.success(`🎬 Generated ${descriptionsGenerated} comprehensive audio descriptions from detailed video analysis using ${silenceGapsAnalyzed} identified moments`);
-      console.log('✅ Generated Twelve Labs AD:', formattedDescriptions);
+      console.log('✅ Generated Twelve Labs AD:', formattedDescriptions.length, 'descriptions');
     } catch (error) {
       console.error('❌ Failed to generate Twelve Labs descriptions:', error);
       toast.error(`Twelve Labs analysis failed: ${error.message}`);
+      
+      // Don't trigger basic AI automatically - let user decide
+      console.log('🎬 Twelve Labs failed, user can manually try Basic AI if needed');
     } finally {
       setIsGenerating(false);
       setIsUsingTwelveLabs(false);
