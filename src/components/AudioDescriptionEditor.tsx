@@ -410,6 +410,16 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             });
             if (pollResp.error) {
               console.error('🎬 Twelve Labs: Polling error:', pollResp.error);
+              
+              // Handle critical errors that should stop polling
+              if (pollResp.error?.message?.includes('Load failed') || pollResp.error?.name === 'FunctionsFetchError') {
+                clearInterval(pollingRef.current!);
+                pollingRef.current = null;
+                toast.error('Connection lost during processing. Please try starting the process again.');
+                setIsGenerating(false);
+                setIsUsingTwelveLabs(false);
+                return;
+              }
               return;
             }
             const pollData: any = pollResp.data;
@@ -420,6 +430,15 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               });
               if (finalizeResp.error) {
                 console.error('🎬 Twelve Labs: Finalize error:', finalizeResp.error);
+                
+                // Handle finalize errors that should stop processing
+                if (finalizeResp.error?.message?.includes('Load failed') || finalizeResp.error?.name === 'FunctionsFetchError') {
+                  clearInterval(pollingRef.current!);
+                  pollingRef.current = null;
+                  toast.error('Connection lost during final processing. Please try again.');
+                  setIsGenerating(false);
+                  setIsUsingTwelveLabs(false);
+                }
                 return;
               }
               if (finalizeResp.data?.status === 'ready' && Array.isArray(finalizeResp.data.audioDescriptions)) {
@@ -458,8 +477,18 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               setIsGenerating(false);
               setIsUsingTwelveLabs(false);
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error('🎬 Twelve Labs: Polling exception:', err);
+            
+            // Handle polling errors that should stop the process
+            if (err?.message?.includes('Load failed') || err?.name === 'FunctionsFetchError') {
+              clearInterval(pollingRef.current!);
+              pollingRef.current = null;
+              toast.error('Connection interrupted. Please refresh the page and try again.');
+              setIsGenerating(false);
+              setIsUsingTwelveLabs(false);
+              return;
+            }
           }
           if (attempts >= maxAttempts) {
             clearInterval(pollingRef.current!);
@@ -513,9 +542,15 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       
       toast.success(`🎬 Generated ${descriptionsGenerated} comprehensive audio descriptions from detailed video analysis using ${silenceGapsAnalyzed} identified moments`);
       console.log('✅ Generated Twelve Labs AD:', formattedDescriptions.length, 'descriptions');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to generate Twelve Labs descriptions:', error);
-      toast.error(`Twelve Labs analysis failed: ${error.message}`);
+      
+      // Handle specific network errors
+      if (error?.message?.includes('Load failed') || error?.name === 'FunctionsFetchError') {
+        toast.error('Network connection failed. Please check your internet connection and try again.');
+      } else {
+        toast.error(`Twelve Labs analysis failed: ${error?.message || 'Unknown error'}`);
+      }
       
       // Don't trigger basic AI automatically - let user decide
       console.log('🎬 Twelve Labs failed, user can manually try Basic AI if needed');
