@@ -386,7 +386,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     }
 
     if (!videoUrl) {
-      toast.error('Video URL is required for Twelve Labs analysis.');
+      toast.error('Video URL is required for analysis.');
       return;
     }
 
@@ -405,7 +405,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       toast.dismiss();
       toast.info('Starting comprehensive video analysis for detailed audio descriptions...', { duration: 4000 });
       
-      console.log('🎬 Twelve Labs: Starting generation request');
+      console.log('🎬 Analysis: Starting generation request');
       
       const response = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
         body: {
@@ -415,20 +415,20 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         }
       });
 
-      console.log('🎬 Twelve Labs: Response received', { 
+      console.log('🎬 Analysis: Response received', { 
         hasError: !!response.error, 
         hasData: !!response.data
       });
 
       if (response.error) {
-        console.error('🎬 Twelve Labs: Function returned error:', response.error);
-        throw new Error(response.error.message || 'Twelve Labs analysis failed');
+        console.error('🎬 Analysis: Function returned error:', response.error);
+        throw new Error(response.error.message || 'Video analysis failed');
       }
 
       // Handle async processing mode
       if (response.data?.status === 'processing' && (response.data as any).indexId && (response.data as any).taskId) {
         const { indexId, taskId } = response.data as any;
-        console.log('🎬 Twelve Labs: Task processing, will poll status', { indexId, taskId });
+        console.log('🎬 Analysis: Task processing, will poll status', { indexId, taskId });
         toast.info('Indexing video for analysis. Checking status every 10s...', { duration: 4000 });
 
         // Ensure no duplicate polling loops
@@ -451,7 +451,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             pollingRef.current = null;
             return;
           }
-          console.log(`🎬 Twelve Labs: Polling attempt ${attempts}/${maxAttempts}`);
+          console.log(`🎬 Analysis: Polling attempt ${attempts}/${maxAttempts}`);
           
           try {
             const pollResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
@@ -459,7 +459,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             });
             
             if (pollResp.error) {
-              console.error('🎬 Twelve Labs: Polling error:', pollResp.error);
+              console.error('🎬 Analysis: Polling error:', pollResp.error);
               
               // Handle critical errors that should stop polling
               if (pollResp.error?.message?.includes('Load failed') || pollResp.error?.name === 'FunctionsFetchError') {
@@ -485,10 +485,10 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             }
             
             const pollData: any = pollResp.data;
-            console.log(`🎬 Twelve Labs: Poll status: ${pollData?.status}`);
+            console.log(`🎬 Analysis: Poll status: ${pollData?.status}`);
             
             if (pollData?.status === 'ready' && pollData?.needsSegments) {
-              console.log('🎬 Twelve Labs: Ready for finalization with segments');
+              console.log('🎬 Analysis: Ready for finalization with segments');
               // Finalize by sending transcript segments only once when ready
               try {
                 // Pre-compute compact silence gaps on client to reduce payload
@@ -509,7 +509,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 });
                 
                 if (finalizeResp.error) {
-                  console.error('🎬 Twelve Labs: Finalize error:', finalizeResp.error);
+                  console.error('🎬 Analysis: Finalize error:', finalizeResp.error);
                   
                   // Handle finalize errors - use fallback instead of failing
                   clearInterval(pollingRef.current!);
@@ -545,7 +545,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   setIsUsingTwelveLabs(false);
                 }
               } catch (finalizeError: any) {
-                console.error('🎬 Twelve Labs: Finalize exception:', finalizeError);
+                console.error('🎬 Analysis: Finalize exception:', finalizeError);
                 clearInterval(pollingRef.current!);
                 pollingRef.current = null;
                 
@@ -602,7 +602,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               setIsUsingTwelveLabs(false);
             }
           } catch (err: any) {
-            console.error('🎬 Twelve Labs: Polling exception:', err);
+            console.error('🎬 Analysis: Polling exception:', err);
             
             // Handle polling errors that should stop the process
             if (err?.message?.includes('Load failed') || err?.name === 'FunctionsFetchError') {
@@ -617,7 +617,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           if (attempts >= maxAttempts) {
             clearInterval(pollingRef.current!);
             pollingRef.current = null;
-            console.error('🎬 Twelve Labs: Timeout after', maxAttempts, 'attempts');
+            console.error('🎬 Analysis: Timeout after', maxAttempts, 'attempts');
             
             if (!timeoutHandledRef.current) {
               timeoutHandledRef.current = true;
@@ -636,14 +636,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       }
 
       if (!response.data || !response.data.success) {
-        console.error('🎬 Twelve Labs: Invalid response format:', response.data);
-        throw new Error(response.data?.error || 'Invalid response from Twelve Labs service');
+        console.error('🎬 Analysis: Invalid response format:', response.data);
+        throw new Error(response.data?.error || 'Invalid response from analysis service');
       }
 
       const { audioDescriptions, silenceGapsAnalyzed, descriptionsGenerated } = response.data;
 
       if (!audioDescriptions || audioDescriptions.length === 0) {
-        console.warn('🎬 Twelve Labs: No descriptions generated, using fallback');
+        console.warn('🎬 Analysis: No descriptions generated, using fallback');
         // Advanced AI fallback: create strategic descriptions
         const strategicDescriptions: AudioDescriptionSegment[] = [
           { text: "Cinematic visuals establish the scene with rich atmospheric details and character positioning.", startTime: 2, endTime: 6, voiceStyle: 'warm' },
@@ -673,19 +673,19 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       await saveDescriptionsToDatabase(formattedDescriptions);
       
       toast.success(`🎬 Generated ${descriptionsGenerated} comprehensive audio descriptions from detailed video analysis using ${silenceGapsAnalyzed} identified moments`);
-      console.log('✅ Generated Twelve Labs AD:', formattedDescriptions.length, 'descriptions');
+      console.log('✅ Generated advanced AD:', formattedDescriptions.length, 'descriptions');
     } catch (error: any) {
-      console.error('❌ Failed to generate Twelve Labs descriptions:', error);
+      console.error('❌ Failed to generate advanced descriptions:', error);
       
       // Handle specific network errors
       if (error?.message?.includes('Load failed') || error?.name === 'FunctionsFetchError') {
         toast.error('Network connection failed. Please check your internet connection and try again.');
       } else {
-        toast.error(`Twelve Labs analysis failed: ${error?.message || 'Unknown error'}`);
+        toast.error(`Video analysis failed: ${error?.message || 'Unknown error'}`);
       }
       
       // Don't trigger basic AI automatically - let user decide
-      console.log('🎬 Twelve Labs failed, user can manually try Basic AI if needed');
+      console.log('🎬 Advanced analysis failed, user can manually try Basic AI if needed');
     } finally {
       setIsGenerating(false);
       setIsUsingTwelveLabs(false);

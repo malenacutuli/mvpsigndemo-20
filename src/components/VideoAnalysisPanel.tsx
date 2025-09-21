@@ -203,10 +203,10 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       if (error) throw error;
 
-      // Parse the response structure from Twelve Labs API
+      // Parse the response structure from analysis API
       let analysisResult: AnalysisResult;
       if (data?.data && typeof data.data === 'string') {
-        // Parse the stringified JSON from Twelve Labs
+        // Parse the stringified JSON from analysis service
         const parsedData = JSON.parse(data.data);
         analysisResult = parsedData;
       } else if (data?.silences) {
@@ -256,7 +256,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       {/* Header and Controls */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Video Analysis (Pegasus 1.2)</h3>
+          <h3 className="text-lg font-semibold">Video Analysis</h3>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
               {status === 'idle' && 'Not Started'}
@@ -315,7 +315,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         <Alert>
           <Loader2 className="h-4 w-4 animate-spin" />
           <AlertDescription>
-            Video is being indexed with Twelve Labs. This may take a few minutes depending on video length.
+            Video is being indexed for analysis. This may take a few minutes depending on video length.
           </AlertDescription>
         </Alert>
       )}
