@@ -135,31 +135,40 @@ async function createIndex() {
 }
 
 async function createNewIndex(endpoint: string, apiKey: string) {
-  
-  const createResponse = await fetch(`${endpoint}/indexes`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      index_name: 'axessible-video-analysis',
-      models: [{
-        model_name: 'pegasus1.3',
-        model_options: ['visual', 'conversation', 'text_in_video']
-      }]
-    })
-  });
+  const candidates = [
+    { model_name: 'pegasus1.3', model_options: ['visual', 'conversation', 'text_in_video'] },
+    { model_name: 'pegasus1.1', model_options: ['visual', 'conversation', 'text_in_video'] },
+    { model_name: 'marengo2.6', model_options: ['visual', 'conversation', 'text_in_video'] },
+  ];
+  const errors: string[] = [];
 
-  if (!createResponse.ok) {
+  for (const candidate of candidates) {
+    const payload = {
+      index_name: 'axessible-video-analysis',
+      models: [candidate],
+    };
+
+    const createResponse = await fetch(`${endpoint}/indexes`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (createResponse.ok) {
+      const newIndex = await createResponse.json();
+      return newIndex._id || newIndex.id;
+    }
+
     const errorText = await createResponse.text();
-    console.error('Failed to create index:', errorText);
-    throw new Error(`Failed to create index: ${createResponse.status} - ${errorText}`);
+    errors.push(`${candidate.model_name}: ${createResponse.status} - ${errorText}`);
   }
 
-  const newIndex = await createResponse.json();
-  return newIndex._id || newIndex.id;
+  console.error('Failed to create index with all candidates:', errors.join(' | '));
+  throw new Error(`Failed to create index with all candidates: ${errors.join(' | ')}`);
 }
 
 async function createIndexingTask(indexId: string, videoUrl: string) {
