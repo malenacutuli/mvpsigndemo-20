@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines } from 'lucide-react';
@@ -102,6 +103,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [editedNarrations, setEditedNarrations] = useState<{[index: number]: string}>({});
+  const [editedTimestamps, setEditedTimestamps] = useState<{[index: number]: { start: string, end: string }}>({});
   const [showAudioDescriptionDialog, setShowAudioDescriptionDialog] = useState(false);
   const [savingAudioDescriptions, setSavingAudioDescriptions] = useState(false);
   const { toast } = useToast();
@@ -262,6 +264,16 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     }));
   };
 
+  const updateTimestamp = (index: number, field: 'start' | 'end', value: string) => {
+    setEditedTimestamps(prev => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: value
+      }
+    }));
+  };
+
   const convertToAudioDescriptions = async () => {
     if (!videoId) {
       toast({
@@ -275,13 +287,20 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     setSavingAudioDescriptions(true);
     
     try {
-      const audioDescriptions: AudioDescriptionSegment[] = rows.map((row, index) => ({
-        text: editedNarrations[index] || row.narration,
-        startTime: hhmmssToSeconds(row.start),
-        endTime: hhmmssToSeconds(row.end),
-        voiceStyle: 'warm', // Default voice style
-        timestamp: Date.now()
-      }));
+      const audioDescriptions: AudioDescriptionSegment[] = rows.map((row, index) => {
+        const finalNarration = editedNarrations[index] || row.narration;
+        const timestamps = editedTimestamps[index];
+        const startTime = timestamps?.start ? hhmmssToSeconds(timestamps.start) : hhmmssToSeconds(row.start);
+        const endTime = timestamps?.end ? hhmmssToSeconds(timestamps.end) : hhmmssToSeconds(row.end);
+        
+        return {
+          text: finalNarration,
+          startTime,
+          endTime,
+          voiceStyle: 'warm', // Default voice style
+          timestamp: Date.now()
+        };
+      });
 
       // Clear existing audio descriptions for this video
       await supabase
@@ -473,15 +492,34 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 return (
                   <div key={i} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => seekTo(row.start)}
-                        className="text-sm"
-                      >
-                        <Play className="w-3 h-3 mr-1" />
-                        {row.start} → {row.end}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => seekTo(editedTimestamps[i]?.start || row.start)}
+                          className="text-sm"
+                        >
+                          <Play className="w-3 h-3 mr-1" />
+                          Play
+                        </Button>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Input
+                            type="text"
+                            value={editedTimestamps[i]?.start || row.start}
+                            onChange={(e) => updateTimestamp(i, 'start', e.target.value)}
+                            className="w-24 h-7 text-xs"
+                            placeholder="HH:MM:SS"
+                          />
+                          <span className="text-muted-foreground">→</span>
+                          <Input
+                            type="text"
+                            value={editedTimestamps[i]?.end || row.end}
+                            onChange={(e) => updateTimestamp(i, 'end', e.target.value)}
+                            className="w-24 h-7 text-xs"
+                            placeholder="HH:MM:SS"
+                          />
+                        </div>
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {msToNice(row.duration_ms)}
                       </div>
