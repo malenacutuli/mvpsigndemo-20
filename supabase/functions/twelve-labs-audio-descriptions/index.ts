@@ -46,37 +46,48 @@ serve(async (req) => {
 
     const baseUrl = 'https://api.twelvelabs.io/v1.3';
 
-    // Step 1: Create index for video analysis (with retries)
+    // Step 1: Create index for video analysis with robust fallbacks
     let indexId: string | null = null;
-    for (let attempt = 0; attempt < 3 && !indexId; attempt++) {
+    const nameBase = `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const modelCandidates = ['pegasus1.2', 'pegasus1.1', 'marengo2.7'];
+
+    // Try multiple payload shapes to handle API variations
+    async function tryCreate(payload: any) {
+      const res = await fetch(`${baseUrl}/indexes`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': twelveLabsApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || `status ${res.status}`);
       try {
-        const res = await fetch(`${baseUrl}/indexes`, {
-          method: 'POST',
-          headers: {
-            'x-api-key': twelveLabsApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            index_name: `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            models: [
-              { model_name: 'pegasus1.2', model_options: ['audio', 'visual'] }
-            ]
-          }),
-        });
+        const created = JSON.parse(text);
+        return created._id as string;
+      } catch (_) {
+        throw new Error(`Unexpected response: ${text?.slice(0, 200)}`);
+      }
+    }
 
-        if (!res.ok) {
-          const error = await res.text();
-          throw new Error(`Failed to create index: ${error}`);
-        }
-
-        const created = await res.json();
-        indexId = created._id;
-      } catch (e) {
-        console.warn(`⚠️ Create index attempt ${attempt + 1} failed`, e);
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    for (let attempt = 0; attempt < 3 && !indexId; attempt++) {
+      for (const model of modelCandidates) {
+        if (indexId) break;
+        const variants = [
+          { index_name: `${nameBase}`, models: [{ model_name: model, model_options: ['audio', 'visual'] }] },
+          { name: `${nameBase}`, engines: [{ name: model, options: ['audio', 'visual'] }] },
+        ];
+        for (const payload of variants) {
+          try {
+            indexId = await tryCreate(payload);
+            if (indexId) break;
+          } catch (e) {
+            console.warn(`⚠️ Create index attempt ${attempt + 1} failed for model ${model} payload ${Object.keys(payload)[0]}:`, String(e).slice(0, 300));
+          }
         }
       }
+      if (!indexId && attempt < 2) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
     }
 
     if (!indexId) {
