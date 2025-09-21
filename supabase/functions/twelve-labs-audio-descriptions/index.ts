@@ -171,11 +171,11 @@ async function uploadAndProcessVideo(
 ): Promise<string> {
   console.log('🎥 Starting video upload and processing...');
   
-  const taskData = {
-    index_id: indexId,
-    video_url: videoUrl,
-    enable_video_stream: false
-  };
+  // Twelve Labs requires multipart/form-data for video uploads
+  const formData = new FormData();
+  formData.append('index_id', indexId);
+  formData.append('video_url', videoUrl);
+  formData.append('enable_video_stream', 'false');
 
   console.log('📤 Creating indexing task:', {
     url: `${baseUrl}/tasks`,
@@ -183,10 +183,16 @@ async function uploadAndProcessVideo(
     videoUrl: videoUrl.substring(0, 50) + '...'
   });
 
+  // Use multipart/form-data headers
+  const uploadHeaders = {
+    'x-api-key': headers['x-api-key'],
+    // Don't set Content-Type - let browser set it with boundary for FormData
+  };
+
   const taskResponse = await fetch(`${baseUrl}/tasks`, {
     method: 'POST',
-    headers: headers,
-    body: JSON.stringify(taskData),
+    headers: uploadHeaders,
+    body: formData,
   });
 
   console.log(`📥 Task creation response status: ${taskResponse.status}`);
@@ -395,20 +401,20 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     .sort((a, b) => a.startTime - b.startTime);
 
   if (sortedSegments.length === 0) {
-    // Create default intervals if no transcript
+    // Create more default intervals if no transcript
     const intervals = [];
-    for (let i = 0; i < 180; i += 15) { // Every 15 seconds for 3 minutes
-      intervals.push({ startTime: i, endTime: i + 3, duration: 3 });
+    for (let i = 0; i < 300; i += 8) { // Every 8 seconds for 5 minutes
+      intervals.push({ startTime: i, endTime: i + 4, duration: 4 });
     }
     console.log(`📊 No transcript found, created ${intervals.length} default intervals`);
     return intervals;
   }
 
-  const minGapDuration = 1.0;
-  const bufferTime = 0.2;
+  const minGapDuration = 0.8; // Reduced minimum gap (was 1.0)
+  const bufferTime = 0.1; // Smaller buffer around speech (was 0.2)
   
   // Add opening gap if needed
-  if (sortedSegments[0].startTime > 1.0) {
+  if (sortedSegments[0].startTime > 0.5) {
     const gapEnd = Math.max(0, sortedSegments[0].startTime - bufferTime);
     const duration = gapEnd;
     if (duration >= minGapDuration) {
@@ -420,7 +426,7 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     }
   }
 
-  // Find gaps between segments
+  // Find gaps between segments - more aggressive detection
   for (let i = 0; i < sortedSegments.length - 1; i++) {
     const currentEnd = sortedSegments[i].endTime + bufferTime;
     const nextStart = sortedSegments[i + 1].startTime - bufferTime;
@@ -435,14 +441,14 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
     }
   }
 
-  // Add trailing gaps
+  // Add more trailing gaps to cover the full video
   const lastSegment = sortedSegments[sortedSegments.length - 1];
-  const estimatedVideoEnd = Math.max(lastSegment.endTime + 120, 300);
+  const estimatedVideoEnd = Math.max(lastSegment.endTime + 180, 400); // Assume longer video
   
   let currentTime = lastSegment.endTime + bufferTime;
   let gapCount = 0;
-  while (currentTime < estimatedVideoEnd && gapCount < 20) {
-    const gapEnd = Math.min(currentTime + 3, estimatedVideoEnd);
+  while (currentTime < estimatedVideoEnd && gapCount < 50) { // Up to 50 trailing gaps
+    const gapEnd = Math.min(currentTime + 4, estimatedVideoEnd); // Longer segments
     const duration = gapEnd - currentTime;
     
     if (duration >= minGapDuration) {
@@ -454,7 +460,30 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
       gapCount++;
     }
     
-    currentTime = gapEnd + 8;
+    currentTime = gapEnd + 5; // Skip 5 seconds ahead to find next opportunity
+  }
+
+  // Add additional mid-video gaps by finding longer pauses within speech segments
+  for (let i = 0; i < sortedSegments.length - 1; i++) {
+    const currentSegment = sortedSegments[i];
+    const nextSegment = sortedSegments[i + 1];
+    const gapBetween = nextSegment.startTime - currentSegment.endTime;
+    
+    // If there's a gap longer than 3 seconds, create multiple smaller descriptions
+    if (gapBetween > 3) {
+      const numSubGaps = Math.floor(gapBetween / 2);
+      for (let j = 0; j < Math.min(numSubGaps, 3); j++) {
+        const subGapStart = currentSegment.endTime + (j * 2);
+        const subGapEnd = Math.min(subGapStart + 1.5, nextSegment.startTime - 0.1);
+        if (subGapEnd > subGapStart) {
+          gaps.push({
+            startTime: subGapStart,
+            endTime: subGapEnd,
+            duration: subGapEnd - subGapStart
+          });
+        }
+      }
+    }
   }
 
   console.log(`📊 Detected ${gaps.length} silence gaps total from ${sortedSegments.length} speech segments`);
