@@ -16,89 +16,119 @@ serve(async (req) => {
   }
 
   try {
-    const { assetId, prompt } = await req.json();
-    
-    if (!assetId || !prompt) {
+    if (req.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+    }
+
+    // Accept either { videoId, prompt } or { assetId, prompt }
+    const body = await req.json();
+    let { videoId, assetId, prompt } = body || {};
+
+    if (!videoId && !assetId) {
       return new Response(
-        JSON.stringify({ error: 'assetId and prompt required' }), 
+        JSON.stringify({ error: 'videoId or assetId required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (prompt === undefined || prompt === null) {
+      return new Response(
+        JSON.stringify({ error: 'prompt required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
-    if (!twelveLabsApiKey) {
-      throw new Error('TWELVELABS_API_KEY not configured');
+    // Ensure the prompt we send is a STRING
+    if (typeof prompt !== 'string') {
+      try { prompt = JSON.stringify(prompt); } catch { prompt = String(prompt); }
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Get mapping from database to find video_id
-    const { data: mapping, error: mappingError } = await supabase
-      .from('twelve_labs_mappings')
-      .select('*')
-      .eq('asset_id', assetId)
-      .eq('status', 'ready')
-      .maybeSingle();
-
-    if (mappingError) throw mappingError;
-    
-    if (!mapping?.tl_video_id) {
+    const apiKey = Deno.env.get('TWELVELABS_API_KEY');
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'Video not ready for analysis. Please ensure indexing is complete.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing TWELVELABS_API_KEY' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('🎯 Starting analysis for video:', mapping.tl_video_id);
+    // Resolve videoId from assetId if needed
+    if (!videoId && assetId) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
 
-    // Call analyze API
-    const analyzeResponse = await fetch(`${TL_BASE}/analyze`, {
+      const { data: mapping, error: mappingError } = await supabase
+        .from('twelve_labs_mappings')
+        .select('*')
+        .eq('asset_id', assetId)
+        .eq('status', 'ready')
+        .maybeSingle();
+
+      if (mappingError) {
+        return new Response(
+          JSON.stringify({ error: `Lookup failed: ${mappingError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!mapping?.tl_video_id) {
+        return new Response(
+          JSON.stringify({ error: 'Video not ready for analysis. Please wait for indexing to complete.' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      videoId = mapping.tl_video_id;
+    }
+
+    // Call analysis endpoint
+    const url = `${TL_BASE}/analyze`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'x-api-key': twelveLabsApiKey,
+        'x-api-key': apiKey,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        video_id: mapping.tl_video_id,
-        prompt: prompt,
+        video_id: videoId,
+        prompt,
         temperature: 0.2
       })
     });
 
-    const analyzeText = await analyzeResponse.text();
-    console.log('📊 Analyze response status:', analyzeResponse.status);
-    console.log('📊 Analyze response text:', analyzeText.substring(0, 500));
+    const raw = await res.text();
 
-    if (!analyzeResponse.ok) {
-      throw new Error(`Analysis failed ${analyzeResponse.status}: ${analyzeText}`);
+    // If not 2xx, bubble up the exact upstream body for easier debugging
+    if (!res.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Analyze request failed', status: res.status, body: raw }),
+        { status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    let analyzeResult: any;
+    let data: any;
     try {
-      analyzeResult = JSON.parse(analyzeText);
+      data = JSON.parse(raw);
     } catch {
-      throw new Error(`Analysis API returned non-JSON: ${analyzeText}`);
+      return new Response(
+        JSON.stringify({ error: 'Analyze returned non-JSON', body: raw }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('✅ Analysis completed successfully');
+    // Ensure video_id present for UI convenience
+    if (data && typeof data === 'object' && !data.video_id) {
+      data.video_id = videoId;
+    }
 
+    // Return the analysis result directly to match UI expectations
     return new Response(
-      JSON.stringify({ 
-        ok: true, 
-        result: analyzeResult,
-        videoId: mapping.tl_video_id 
-      }),
+      JSON.stringify(data),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
-    console.error('Video analysis error:', error);
+  } catch (e: any) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: `Video analysis analyze error: ${String(e?.message || e)}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
