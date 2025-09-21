@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TL_BASE = "https://api.twelvelabs.io/v1";
+const TL_BASE = "https://api.twelvelabs.io/v1.2";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -93,37 +93,56 @@ serve(async (req) => {
 
 async function createIndex() {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
+  console.log('Using API key:', twelveLabsApiKey ? 'Present' : 'Missing');
   
-  // Check for existing index
-  const listResponse = await fetch(`${TL_BASE}/indexes`, {
-    headers: { 'Authorization': `Bearer ${twelveLabsApiKey}` }
-  });
+  // Test with v1 first, then try v1.2
+  const endpoints = [`https://api.twelvelabs.io/v1`, `https://api.twelvelabs.io/v1.2`];
   
-  if (!listResponse.ok) {
-    const errorText = await listResponse.text();
-    console.error('Failed to list indexes:', errorText);
-    throw new Error(`Failed to list indexes: ${listResponse.status} - ${errorText}`);
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`Trying endpoint: ${endpoint}/indexes`);
+      const listResponse = await fetch(`${endpoint}/indexes`, {
+        headers: { 'Authorization': `Bearer ${twelveLabsApiKey}` }
+      });
+      
+      console.log(`Response status: ${listResponse.status}`);
+      
+      if (listResponse.ok) {
+        const indexList = await listResponse.json();
+        console.log('Successfully listed indexes:', indexList);
+        const existingIndex = indexList?.data?.find((i: any) => i.name === 'axessible-video-analysis');
+        
+        if (existingIndex) {
+          return existingIndex.id;
+        }
+        
+        // Create new index using this working endpoint
+        return await createNewIndex(endpoint, twelveLabsApiKey);
+      } else {
+        const errorText = await listResponse.text();
+        console.log(`Endpoint ${endpoint} failed:`, errorText);
+      }
+    } catch (error) {
+      console.log(`Endpoint ${endpoint} error:`, error);
+    }
   }
   
-  const indexList = await listResponse.json();
-  const existingIndex = indexList?.data?.find((i: any) => i.name === 'axessible-video-analysis');
-  
-  if (existingIndex) {
-    return existingIndex.id;
-  }
+  throw new Error('All API endpoints failed. Please check your TWELVELABS_API_KEY');
+}
 
-  // Create new index
-  const createResponse = await fetch(`${TL_BASE}/indexes`, {
+async function createNewIndex(endpoint: string, apiKey: string) {
+  
+  const createResponse = await fetch(`${endpoint}/indexes`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${twelveLabsApiKey}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       name: 'axessible-video-analysis',
       engines: [{
-        model: 'pegasus-1.2',
-        modalities: ['video', 'audio', 'text']
+        name: 'pegasus1.2',
+        options: ['visual', 'conversation', 'text_in_video']
       }]
     })
   });
@@ -135,29 +154,42 @@ async function createIndex() {
   }
 
   const newIndex = await createResponse.json();
-  return newIndex.id;
+  return newIndex._id || newIndex.id;
 }
 
 async function createIndexingTask(indexId: string, videoUrl: string) {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
 
-  const formData = new FormData();
-  formData.append('index_id', indexId);
-  formData.append('video_url', videoUrl);
+  // Try different endpoints for tasks
+  const endpoints = [`https://api.twelvelabs.io/v1`, `https://api.twelvelabs.io/v1.2`];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const formData = new FormData();
+      formData.append('index_id', indexId);
+      formData.append('url', videoUrl);
 
-  const response = await fetch(`${TL_BASE}/tasks`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${twelveLabsApiKey}`
-    },
-    body: formData
-  });
+      console.log(`Attempting to create task at ${endpoint}/tasks`);
+      const response = await fetch(`${endpoint}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${twelveLabsApiKey}`
+        },
+        body: formData
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Failed to create indexing task:', errorText);
-    throw new Error(`Failed to create indexing task: ${response.status} - ${errorText}`);
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Task created successfully:', result);
+        return result;
+      } else {
+        const errorText = await response.text();
+        console.log(`Task creation failed at ${endpoint}:`, errorText);
+      }
+    } catch (error) {
+      console.log(`Task endpoint ${endpoint} error:`, error);
+    }
   }
-
-  return await response.json();
+  
+  throw new Error('Failed to create indexing task at all endpoints');
 }
