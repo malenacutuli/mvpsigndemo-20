@@ -95,8 +95,8 @@ async function createIndex() {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
   console.log('Using API key:', twelveLabsApiKey ? 'Present' : 'Missing');
   
-  // Test with v1 first, then try v1.2
-  const endpoints = [`https://api.twelvelabs.io/v1`, `https://api.twelvelabs.io/v1.2`];
+  // Prefer v1.3, fallback to older if needed
+  const endpoints = [`https://api.twelvelabs.io/v1.3`, `https://api.twelvelabs.io/v1.2`, `https://api.twelvelabs.io/v1`];
   
   for (const endpoint of endpoints) {
     try {
@@ -110,10 +110,11 @@ async function createIndex() {
       if (listResponse.ok) {
         const indexList = await listResponse.json();
         console.log('Successfully listed indexes:', indexList);
-        const existingIndex = indexList?.data?.find((i: any) => i.name === 'axessible-video-analysis');
+        const list = Array.isArray(indexList?.data) ? indexList.data : (Array.isArray(indexList?.items) ? indexList.items : (Array.isArray(indexList) ? indexList : []));
+        const existingIndex = list.find((i: any) => (i.name === 'axessible-video-analysis' || i.index_name === 'axessible-video-analysis'));
         
         if (existingIndex) {
-          return existingIndex.id;
+          return existingIndex._id || existingIndex.id;
         }
         
         // Create new index using this working endpoint
@@ -140,9 +141,9 @@ async function createNewIndex(endpoint: string, apiKey: string) {
       'Accept': 'application/json'
     },
     body: JSON.stringify({
-      name: 'axessible-video-analysis',
-      engines: [{
-        name: 'pegasus1.2',
+      index_name: 'axessible-video-analysis',
+      models: [{
+        name: 'pegasus1.3',
         options: ['visual', 'conversation', 'text_in_video']
       }]
     })
@@ -162,14 +163,13 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
 
   // Try different endpoints for tasks
-  const endpoints = [`https://api.twelvelabs.io/v1`, `https://api.twelvelabs.io/v1.2`];
+  const endpoints = [`https://api.twelvelabs.io/v1.3`, `https://api.twelvelabs.io/v1.2`, `https://api.twelvelabs.io/v1`];
   
   for (const endpoint of endpoints) {
     try {
       const formData = new FormData();
       formData.append('index_id', indexId);
-      formData.append('url', videoUrl);
-      formData.append('video_url', videoUrl); // compatibility
+      formData.append('video_url', videoUrl);
 
       console.log(`Attempting to create task at ${endpoint}/tasks`);
       const response = await fetch(`${endpoint}/tasks`, {
