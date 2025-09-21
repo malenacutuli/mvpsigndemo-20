@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('📊 Request Parameters:', {
       videoId: inputVideoId,
       videoUrl: videoUrl.substring(0, 50) + '...',
-      segments: transcriptSegments.length,
+      segments: (Array.isArray(transcriptSegments) ? transcriptSegments.length : 0),
       language: language || 'en'
     });
 
