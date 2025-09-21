@@ -471,17 +471,20 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               console.log('🎬 Twelve Labs: Ready for finalization with segments');
               // Finalize by sending transcript segments only once when ready
               try {
+                // Pre-compute compact silence gaps on client to reduce payload
+                const localGaps = computeGaps(transcriptSegments).map((g: any) => ({
+                  startTime: Number((g.start).toFixed(2)),
+                  endTime: Number((g.end).toFixed(2)),
+                  duration: Number((g.end - g.start).toFixed(2)),
+                }));
+
                 const finalizeResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
                   body: { 
                     indexId, 
                     taskId, 
-                    language: detectedLanguage, 
-                    transcriptSegments: transcriptSegments.map((s: any) => ({
-                      text: s.text,
-                      speaker: s.speaker,
-                      startTime: typeof s.startTime === 'number' ? Number(s.startTime.toFixed(2)) : s.startTime,
-                      endTime: typeof s.endTime === 'number' ? Number(s.endTime.toFixed(2)) : s.endTime,
-                    }))
+                    language: detectedLanguage,
+                    videoId: pollData.videoId,
+                    silenceGaps: localGaps
                   }
                 });
                 

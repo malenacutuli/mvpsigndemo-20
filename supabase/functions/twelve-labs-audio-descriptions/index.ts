@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId: inputVideoId, language, transcriptSegments, indexId: providedIndexId, taskId: providedTaskId } = await req.json();
+    const { videoUrl, videoId: inputVideoId, language, transcriptSegments, silenceGaps: providedSilenceGaps, indexId: providedIndexId, taskId: providedTaskId } = await req.json();
 
     // Only require videoUrl on kickoff requests (no continuation identifiers)
     if (!providedIndexId && !providedTaskId && !videoUrl) {
@@ -142,7 +142,7 @@ serve(async (req) => {
 
       // If the task is ready but we don't have transcript segments yet,
       // ask the client to send them in a follow-up request
-      if (!transcriptSegments || transcriptSegments.length === 0) {
+      if ((!transcriptSegments || transcriptSegments.length === 0) && (!providedSilenceGaps || providedSilenceGaps.length === 0)) {
         return new Response(JSON.stringify({
           success: true,
           status: 'ready',
@@ -154,7 +154,14 @@ serve(async (req) => {
       }
 
       // Generate descriptions now that the task is ready
-      const silenceGaps = detectSilenceGaps(transcriptSegments);
+      const silenceGaps: SilenceGap[] = (providedSilenceGaps && providedSilenceGaps.length > 0)
+        ? providedSilenceGaps.map((g: any) => ({
+            startTime: Number(g.startTime ?? g.start ?? 0),
+            endTime: Number(g.endTime ?? g.end ?? 0),
+            duration: Number(g.duration ?? Math.max(0, (Number(g.endTime ?? g.end ?? 0) - Number(g.startTime ?? g.start ?? 0))))
+          }))
+        : detectSilenceGaps(transcriptSegments);
+
       const audioDescriptions = await generateAudioDescriptions(
         API_BASE_URL,
         headers,
