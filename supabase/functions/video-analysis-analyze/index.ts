@@ -37,11 +37,6 @@ serve(async (req) => {
       );
     }
 
-    // Ensure the prompt we send is a STRING
-    if (typeof prompt !== 'string') {
-      try { prompt = JSON.stringify(prompt); } catch { prompt = String(prompt); }
-    }
-
     const apiKey = Deno.env.get('TWELVELABS_API_KEY');
     if (!apiKey) {
       return new Response(
@@ -79,6 +74,32 @@ serve(async (req) => {
       videoId = mapping.tl_video_id;
     }
 
+    // Ensure the prompt we send is a STRING and wrap it in a strict, structured schema
+    const USER_HINT = typeof prompt === 'string' ? prompt : (() => { try { return JSON.stringify(prompt); } catch { return String(prompt); } })();
+
+    const STRUCTURED_PROMPT = JSON.stringify({
+      task: "Find dialogue-free gaps and write ad-style audio descriptions that fit each gap.",
+      definitions: {
+        silence: "No SPOKEN dialogue or narration by characters. Background music or SFX may exist and should NOT block a gap from being considered silent.",
+      },
+      instructions: [
+        "Scan the entire video and detect every segment with no spoken dialogue.",
+        "Return precise timestamps as HH:MM:SS.mmm for start and end.",
+        "Return duration_ms for each gap.",
+        "Write a concise creative narration that fits the gap at ~160 WPM; keep 0.3s buffer.",
+        "Tone: creative advertising copywriter; cinematic podcast; no camera directions.",
+        "Language: English.",
+        "Output STRICT JSON only, matching the schema.",
+      ],
+      user_hint: USER_HINT,
+      output_schema: {
+        video_id: "string",
+        silences: [
+          { start: "HH:MM:SS.mmm", end: "HH:MM:SS.mmm", duration_ms: 0, max_words_allowed: 0, narration: "string" },
+        ],
+      },
+    });
+
     // Call analysis endpoint
     const url = `${TL_BASE}/analyze`;
     const res = await fetch(url, {
@@ -86,44 +107,61 @@ serve(async (req) => {
       headers: {
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         video_id: videoId,
-        prompt,
+        prompt: STRUCTURED_PROMPT, // enforce schema
         temperature: 0.2,
-        stream: false  // Disable streaming to get a single JSON response
-      })
+        stream: false, // Disable streaming to get a single JSON response
+      }),
     });
 
     const raw = await res.text();
 
     // If not 2xx, bubble up the exact upstream body for easier debugging
     if (!res.ok) {
+      console.log('Analyze failed', res.status, raw?.slice(0, 200));
       return new Response(
-        JSON.stringify({ error: 'Analyze request failed', status: res.status, body: raw }),
+        JSON.stringify({ error: 'Analyze request failed', status: res.status, url, body: raw }),
         { status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let data: any;
+    let envelope: any;
     try {
-      data = JSON.parse(raw);
+      envelope = JSON.parse(raw);
     } catch {
+      // TL sometimes returns non-JSON when misconfigured
       return new Response(
-        JSON.stringify({ error: 'Analyze returned non-JSON', body: raw }),
+        JSON.stringify({ error: 'Analyze returned non-JSON', url, body: raw }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Ensure video_id present for UI convenience
-    if (data && typeof data === 'object' && !data.video_id) {
-      data.video_id = videoId;
+    // Normalize: TL often returns { id, data: \"{...}\" }
+    let normalized: any = envelope;
+    if (typeof envelope?.data === 'string') {
+      try {
+        const parsed = JSON.parse(envelope.data);
+        if (parsed && typeof parsed === 'object') {
+          normalized = parsed;
+        }
+      } catch (e) {
+        // keep envelope if parsing fails
+      }
+    } else if (envelope?.result && typeof envelope.result === 'object') {
+      normalized = envelope.result;
     }
 
-    // Return the analysis result directly to match UI expectations
+    // Ensure video_id present
+    if (normalized && typeof normalized === 'object' && !normalized.video_id) {
+      normalized.video_id = videoId;
+    }
+
+    // Return the normalized analysis result directly to match UI expectations
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(normalized),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

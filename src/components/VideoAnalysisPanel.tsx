@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Play, Eye, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface VideoAnalysisPanelProps {
   assetId: string;
@@ -90,6 +91,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const { toast } = useToast();
+  const [debugRaw, setDebugRaw] = useState<string | null>(null);
 
   // Check existing mapping on mount
   useEffect(() => {
@@ -203,17 +205,32 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       if (error) throw error;
 
-      // Parse the response structure from Twelve Labs API
-      let analysisResult: AnalysisResult;
-      if (data?.data && typeof data.data === 'string') {
-        // Parse the stringified JSON from Twelve Labs
-        const parsedData = JSON.parse(data.data);
-        analysisResult = parsedData;
-      } else if (data?.silences) {
-        // Direct format (fallback)
-        analysisResult = data;
+      // Parse/normalize Twelve Labs response
+      let analysisResult: AnalysisResult | null = null;
+      const rawPayload = data;
+
+      try {
+        if (data?.silences) {
+          analysisResult = data as AnalysisResult;
+        } else if (data?.data && typeof data.data === 'string') {
+          const parsed = JSON.parse(data.data);
+          if (parsed?.silences) analysisResult = parsed as AnalysisResult;
+        } else if (data?.result?.silences) {
+          analysisResult = data.result as AnalysisResult;
+        }
+      } catch (e) {
+        console.warn('Failed to parse analysis payload', e);
+      }
+
+      if (!analysisResult) {
+        analysisResult = { video_id: (data as any)?.video_id, silences: [] };
+      }
+
+      // Debug: if empty, show raw payload for inspection
+      if (!Array.isArray(analysisResult.silences) || analysisResult.silences.length === 0) {
+        setDebugRaw(JSON.stringify(rawPayload, null, 2));
       } else {
-        throw new Error('Invalid response format');
+        setDebugRaw(null);
       }
 
       setResult(analysisResult);
@@ -402,6 +419,18 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   </div>
                 );
               })}
+            </div>
+          )}
+          {debugRaw && (
+            <div className="mt-6">
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm">Debug (raw response)</Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <pre className="mt-3 p-3 rounded-md bg-muted text-xs overflow-auto max-h-64">{debugRaw}</pre>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
         </CardContent>
