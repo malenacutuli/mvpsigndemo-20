@@ -212,7 +212,7 @@ async function uploadAndProcessVideo(
   // Monitor the indexing process
   let processingComplete = false;
   let attempts = 0;
-  const maxAttempts = 120; // 20 minutes max
+  const maxAttempts = 30; // 5 minutes max (edge function timeout limit)
   const sleepInterval = 10; // 10 seconds between checks
 
   console.log(`🔄 Monitoring video processing (max ${maxAttempts * sleepInterval / 60} minutes)...`);
@@ -275,11 +275,17 @@ async function generateAudioDescriptions(
   
   console.log(`🎬 Starting audio description generation for ${silenceGaps.length} silence gaps...`);
 
-  for (let i = 0; i < silenceGaps.length; i++) {
-    const gap = silenceGaps[i];
+  // Limit gaps to prevent timeout (max 10 gaps for edge function)
+  const limitedGaps = silenceGaps.slice(0, 10);
+  if (limitedGaps.length < silenceGaps.length) {
+    console.log(`⚠️ Limited to ${limitedGaps.length} gaps to prevent timeout`);
+  }
+
+  for (let i = 0; i < limitedGaps.length; i++) {
+    const gap = limitedGaps[i];
     
     try {
-      console.log(`🎯 Processing gap ${i + 1}/${silenceGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration}s)`);
+      console.log(`🎯 Processing gap ${i + 1}/${limitedGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration}s)`);
       
       const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a concise audio description for this ${gap.duration.toFixed(1)}-second moment.
 
@@ -350,8 +356,8 @@ Generate only the audio description text.`;
         console.log(`🔄 Created fallback for failed analysis: "${fallback.text.substring(0, 50)}..."`);
       }
 
-      // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Reduced rate limiting for edge function timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
       console.error(`❌ Error processing gap ${gap.startTime}s-${gap.endTime}s:`, error);
