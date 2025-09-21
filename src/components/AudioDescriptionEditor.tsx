@@ -62,6 +62,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [manualEndTime, setManualEndTime] = useState<number>(5);
   const [manualText, setManualText] = useState('');
   const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
+  const [isUsingTwelveLabs, setIsUsingTwelveLabs] = useState(false);
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
@@ -263,6 +264,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     }
 
     setIsGenerating(true);
+    setIsUsingTwelveLabs(false);
     try {
       const gaps = computeGaps(transcriptSegments);
       const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
@@ -285,6 +287,69 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       toast.error('Generation failed - please try again.');
     } finally {
       setIsGenerating(false);
+      setIsUsingTwelveLabs(false);
+    }
+  };
+
+  const generateTwelveLabsDescriptions = async () => {
+    if (!transcriptSegments || transcriptSegments.length === 0) {
+      toast.error('Please generate a transcript first for silence gap detection.');
+      return;
+    }
+
+    if (!videoUrl) {
+      toast.error('Video URL is required for Twelve Labs analysis.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setIsUsingTwelveLabs(true);
+    
+    try {
+      toast.info('Starting advanced video analysis with Twelve Labs Pegasus 1.2...', { duration: 3000 });
+      
+      const response = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
+        body: {
+          videoUrl,
+          videoId,
+          language: detectedLanguage,
+          transcriptSegments
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Twelve Labs analysis failed');
+      }
+
+      const { audioDescriptions, silenceGapsAnalyzed, descriptionsGenerated } = response.data;
+
+      if (!audioDescriptions || audioDescriptions.length === 0) {
+        toast.error('No audio descriptions were generated. The video may not have suitable silence gaps.');
+        return;
+      }
+
+      // Convert to our format
+      const formattedDescriptions: AudioDescriptionSegment[] = audioDescriptions.map((desc: any) => ({
+        text: desc.text,
+        startTime: desc.startTime,
+        endTime: desc.endTime,
+        voiceStyle: 'warm'
+      }));
+
+      setDescriptions(formattedDescriptions);
+      onDescriptionsUpdate?.(formattedDescriptions);
+      
+      // Save to database
+      await saveDescriptionsToDatabase(formattedDescriptions);
+      
+      toast.success(`🎬 Generated ${descriptionsGenerated} cinematic audio descriptions from ${silenceGapsAnalyzed} silence gaps using Twelve Labs Pegasus 1.2`);
+      console.log('✅ Generated Twelve Labs AD:', formattedDescriptions);
+    } catch (error) {
+      console.error('❌ Failed to generate Twelve Labs descriptions:', error);
+      toast.error(`Twelve Labs analysis failed: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+      setIsUsingTwelveLabs(false);
     }
   };
 
@@ -382,7 +447,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         <CardContent className="space-y-4">
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              We analyze the transcript to find silence windows and generate concise, creative descriptions for your video.
+              <strong>Basic AI:</strong> Analyzes transcript to find silence windows and generates simple descriptions.<br/>
+              <strong>Advanced AI (Twelve Labs):</strong> Uses Pegasus 1.2 for sophisticated video analysis with cinematic storytelling style.
             </p>
           </div>
 
@@ -418,23 +484,52 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             </div>
           </div>
 
-          <Button 
-            onClick={generateAIDescriptions} 
-            className="w-full" 
-            disabled={isGenerating || isLoading}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Thinking...
-              </>
-            ) : (
-              <>
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate Audio Descriptions ({transcriptSegments?.length || 0} transcript segments available)
-              </>
-            )}
-          </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button 
+              onClick={generateAIDescriptions} 
+              className="w-full" 
+              disabled={isGenerating || isLoading}
+              variant="outline"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Basic Generation...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Basic AI Generation
+                </>
+              )}
+            </Button>
+
+            <Button 
+              onClick={generateTwelveLabsDescriptions} 
+              className="w-full" 
+              disabled={isGenerating || isLoading}
+            >
+              {isGenerating && isUsingTwelveLabs ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing Video...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Advanced AI Analysis (Twelve Labs)
+                </>
+              )}
+            </Button>
+          </div>
+
+          {transcriptSegments && transcriptSegments.length > 0 && (
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                ✅ {transcriptSegments.length} transcript segments available for silence gap analysis
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button 
