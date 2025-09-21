@@ -63,6 +63,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [manualText, setManualText] = useState('');
   const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
   const [isUsingTwelveLabs, setIsUsingTwelveLabs] = useState(false);
+  const pollingRef = React.useRef<number | null>(null);
 
   // Load existing audio descriptions from database
   const loadExistingDescriptions = async () => {
@@ -179,6 +180,15 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     }
   }, [videoId, detectedLanguage]);
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, []);
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -383,6 +393,57 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       if (response.error) {
         console.error('🎬 Twelve Labs: Function returned error:', response.error);
         throw new Error(response.error.message || 'Twelve Labs analysis failed');
+      }
+
+      // Handle async processing mode
+      if (response.data?.status === 'processing' && (response.data as any).indexId && (response.data as any).taskId) {
+        const { indexId, taskId } = response.data as any;
+        console.log('🎬 Twelve Labs: Task processing, will poll status', { indexId, taskId });
+        toast.info('Indexing video for analysis. Checking status every 10s...', { duration: 4000 });
+
+        let attempts = 0;
+        const maxAttempts = 30; // ~5 minutes
+        pollingRef.current = window.setInterval(async () => {
+          attempts++;
+          try {
+            const pollResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
+              body: { indexId, taskId, language: detectedLanguage, transcriptSegments }
+            });
+            if (pollResp.error) {
+              console.error('🎬 Twelve Labs: Polling error:', pollResp.error);
+              return;
+            }
+            if (pollResp.data?.status === 'ready' && Array.isArray(pollResp.data.audioDescriptions)) {
+              clearInterval(pollingRef.current!);
+              pollingRef.current = null;
+
+              const formattedDescriptions: AudioDescriptionSegment[] = pollResp.data.audioDescriptions.map((desc: any) => ({
+                text: desc.text,
+                startTime: desc.startTime,
+                endTime: desc.endTime,
+                voiceStyle: 'warm'
+              }));
+
+              setDescriptions(formattedDescriptions);
+              onDescriptionsUpdate?.(formattedDescriptions);
+              await saveDescriptionsToDatabase(formattedDescriptions);
+              toast.success(`🎬 Generated ${formattedDescriptions.length} comprehensive audio descriptions`);
+              setIsGenerating(false);
+              setIsUsingTwelveLabs(false);
+            }
+          } catch (err) {
+            console.error('🎬 Twelve Labs: Polling exception:', err);
+          }
+          if (attempts >= maxAttempts) {
+            clearInterval(pollingRef.current!);
+            pollingRef.current = null;
+            toast.info('Still processing. Try again in a moment.');
+            setIsGenerating(false);
+            setIsUsingTwelveLabs(false);
+          }
+        }, 10000);
+
+        return;
       }
 
       if (!response.data || !response.data.success) {

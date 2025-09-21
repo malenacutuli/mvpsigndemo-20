@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId: inputVideoId, language, transcriptSegments } = await req.json();
+    const { videoUrl, videoId: inputVideoId, language, transcriptSegments, indexId: providedIndexId, taskId: providedTaskId } = await req.json();
     
     if (!videoUrl) {
       throw new Error('Video URL is required');
@@ -61,47 +61,107 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // Step 1: Create Index
-    const indexName = `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const indexId = await createIndex(API_BASE_URL, headers, indexName);
-    console.log('✅ Created index:', indexId);
+    // If continuation identifiers are provided, check status and finish if ready
+    if (providedIndexId && providedTaskId) {
+      console.log('🔁 Continuing existing Twelve Labs task:', { providedIndexId, providedTaskId });
 
-    let videoId: string;
-    try {
-      // Step 2: Upload Video and Monitor Processing
-      videoId = await uploadAndProcessVideo(API_BASE_URL, headers, indexId, videoUrl);
-      console.log('✅ Video processed successfully:', videoId);
+      const statusRes = await fetch(`${API_BASE_URL}/tasks/${providedTaskId}`, {
+        headers: { 'x-api-key': twelveLabsApiKey },
+      });
 
-      // Step 3: Detect Silence Gaps for Audio Descriptions
+      if (!statusRes.ok) {
+        const txt = await statusRes.text();
+        console.warn('⚠️ Status check failed:', txt);
+        return new Response(JSON.stringify({
+          success: true,
+          status: 'processing',
+          indexId: providedIndexId,
+          taskId: providedTaskId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const statusData = await statusRes.json();
+      console.log(`📊 Task status: ${statusData.status}`);
+
+      if (statusData.status !== 'ready') {
+        return new Response(JSON.stringify({
+          success: true,
+          status: statusData.status || 'processing',
+          indexId: providedIndexId,
+          taskId: providedTaskId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const readyVideoId = statusData.video_id || statusData.videoId;
+      if (!readyVideoId) {
+        return new Response(JSON.stringify({
+          success: true,
+          status: 'processing',
+          indexId: providedIndexId,
+          taskId: providedTaskId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Generate descriptions now that the task is ready
       const silenceGaps = detectSilenceGaps(transcriptSegments);
-      console.log(`🔇 Detected ${silenceGaps.length} silence gaps for analysis`);
-
-      // Step 4: Generate Audio Descriptions
       const audioDescriptions = await generateAudioDescriptions(
-        API_BASE_URL, 
-        headers, 
-        videoId, 
-        silenceGaps, 
+        API_BASE_URL,
+        headers,
+        readyVideoId,
+        silenceGaps,
         language || 'en'
       );
 
-      console.log(`🎉 Generated ${audioDescriptions.length} audio descriptions`);
+      // Cleanup index after completion
+      await cleanupIndex(API_BASE_URL, headers, providedIndexId);
+      console.log('🧹 Cleaned up temporary index');
 
       return new Response(JSON.stringify({
         success: true,
+        status: 'ready',
         audioDescriptions,
         silenceGapsAnalyzed: silenceGaps.length,
         descriptionsGenerated: audioDescriptions.length,
         language: language || 'en'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } finally {
-      // Step 5: Cleanup - Always delete the temporary index
-      await cleanupIndex(API_BASE_URL, headers, indexId);
-      console.log('🧹 Cleaned up temporary index');
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    // Kickoff path: create index and start task without waiting
+    const indexName = `audio_desc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const indexId = await createIndex(API_BASE_URL, headers, indexName);
+    console.log('✅ Created index:', indexId);
+
+    // Create indexing task using multipart/form-data
+    const formData = new FormData();
+    formData.append('index_id', indexId);
+    formData.append('video_url', videoUrl);
+    formData.append('enable_video_stream', 'false');
+
+    console.log('📤 Creating indexing task (kickoff)...', { indexId });
+
+    const uploadHeaders = { 'x-api-key': twelveLabsApiKey };
+    const taskResponse = await fetch(`${API_BASE_URL}/tasks`, {
+      method: 'POST',
+      headers: uploadHeaders,
+      body: formData,
+    });
+
+    console.log(`📥 Task creation response status: ${taskResponse.status}`);
+
+    if (!taskResponse.ok) {
+      const errorText = await taskResponse.text();
+      console.error('❌ Task creation failed:', errorText);
+      throw new Error(`Failed to create indexing task (${taskResponse.status}): ${errorText}`);
+    }
+
+    const taskResult = await taskResponse.json();
+
+    return new Response(JSON.stringify({
+      success: true,
+      status: 'processing',
+      indexId,
+      taskId: taskResult._id
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
     console.error('❌ Twelve Labs audio description error:', error);
