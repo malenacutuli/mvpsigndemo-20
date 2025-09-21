@@ -298,7 +298,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             description: desc.text,
             start_time: desc.startTime,
             end_time: desc.endTime,
-            description_type: 'analysis_narration'
+            description_type: 'visual'
           }))
         );
 
