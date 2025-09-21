@@ -73,6 +73,41 @@ serve(async (req) => {
       if (!statusRes.ok) {
         const txt = await statusRes.text();
         console.warn('⚠️ Status check failed:', txt);
+        
+        // If task doesn't exist or has been lost, generate fallback descriptions
+        if (statusRes.status === 404 || txt.includes('does not exist') || txt.includes('resource_not_exists')) {
+          console.log('🔄 Task lost - generating fallback descriptions immediately...');
+          
+          // Clean up the index if it exists
+          try {
+            await cleanupIndex(API_BASE_URL, headers, providedIndexId);
+          } catch (e) {
+            console.warn('⚠️ Failed to cleanup index:', e);
+          }
+          
+          // Generate fallback descriptions
+          const silenceGaps = providedSilenceGaps?.length > 0 
+            ? providedSilenceGaps.map((g: any) => ({
+                startTime: Number(g.startTime ?? g.start ?? 0),
+                endTime: Number(g.endTime ?? g.end ?? 0),
+                duration: Number(g.duration ?? Math.max(0, (Number(g.endTime ?? g.end ?? 0) - Number(g.startTime ?? g.start ?? 0))))
+              }))
+            : transcriptSegments ? detectSilenceGaps(transcriptSegments) : [];
+
+          const fallbackDescriptions = generateFallbackDescriptions(silenceGaps);
+          
+          return new Response(JSON.stringify({
+            success: true,
+            status: 'completed_with_fallback',
+            audioDescriptions: fallbackDescriptions,
+            silenceGapsAnalyzed: silenceGaps.length,
+            descriptionsGenerated: fallbackDescriptions.length,
+            language: language || 'en',
+            message: 'Generated fallback descriptions - task was lost during processing'
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        
+        // For other errors, continue processing
         return new Response(JSON.stringify({
           success: true,
           status: 'processing',
