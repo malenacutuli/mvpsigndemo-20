@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Play, Eye, AlertCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,6 +13,7 @@ interface VideoAnalysisPanelProps {
   assetId: string;
   playbackUrl: string;
   videoElementId?: string;
+  videoId?: string; // Add videoId for audio description integration
 }
 
 interface AnalysisResult {
@@ -23,6 +25,15 @@ interface AnalysisResult {
     max_words_allowed?: number;
     narration: string;
   }>;
+}
+
+interface AudioDescriptionSegment {
+  id?: string;
+  text: string;
+  startTime: number;
+  endTime: number;
+  voiceStyle: string;
+  timestamp?: number;
 }
 
 // Helper functions
@@ -82,13 +93,17 @@ const DEFAULT_PROMPT = JSON.stringify(
 export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({ 
   assetId, 
   playbackUrl, 
-  videoElementId = "mainVideo" 
+  videoElementId = "mainVideo",
+  videoId
 }) => {
   const [status, setStatus] = useState<'idle' | 'indexing' | 'ready' | 'failed'>('idle');
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [indexing, setIndexing] = useState(false);
+  const [editedNarrations, setEditedNarrations] = useState<{[index: number]: string}>({});
+  const [showAudioDescriptionDialog, setShowAudioDescriptionDialog] = useState(false);
+  const [savingAudioDescriptions, setSavingAudioDescriptions] = useState(false);
   const { toast } = useToast();
 
   // Check existing mapping on mount
@@ -240,6 +255,73 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     el.play().catch(() => {});
   };
 
+  const updateNarration = (index: number, newText: string) => {
+    setEditedNarrations(prev => ({
+      ...prev,
+      [index]: newText
+    }));
+  };
+
+  const convertToAudioDescriptions = async () => {
+    if (!videoId) {
+      toast({
+        title: "Error",
+        description: "Video ID is required to save audio descriptions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingAudioDescriptions(true);
+    
+    try {
+      const audioDescriptions: AudioDescriptionSegment[] = rows.map((row, index) => ({
+        text: editedNarrations[index] || row.narration,
+        startTime: hhmmssToSeconds(row.start),
+        endTime: hhmmssToSeconds(row.end),
+        voiceStyle: 'warm', // Default voice style
+        timestamp: Date.now()
+      }));
+
+      // Clear existing audio descriptions for this video
+      await supabase
+        .from('audio_descriptions')
+        .delete()
+        .eq('video_id', videoId);
+
+      // Insert new audio descriptions
+      const { error } = await supabase
+        .from('audio_descriptions')
+        .insert(
+          audioDescriptions.map(desc => ({
+            video_id: videoId,
+            description: desc.text,
+            start_time: desc.startTime,
+            end_time: desc.endTime,
+            description_type: 'analysis_narration'
+          }))
+        );
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Applied ${audioDescriptions.length} audio descriptions to video`
+      });
+      
+      setShowAudioDescriptionDialog(false);
+    } catch (error: any) {
+      console.error('Error saving audio descriptions:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save audio descriptions",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingAudioDescriptions(false);
+    }
+  };
+
   const rows = useMemo(() => {
     const list = result?.silences || [];
     return list.map((s: any) => ({
@@ -350,7 +432,25 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       {/* Results */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Analysis Results</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Analysis Results</CardTitle>
+            {rows.length > 0 && (
+              <Button
+                onClick={() => setShowAudioDescriptionDialog(true)}
+                disabled={!videoId}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <AudioLines className="w-4 h-4" />
+                Use as Audio Description
+              </Button>
+            )}
+          </div>
+          {!videoId && rows.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Video ID required to save as audio descriptions
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           {!result ? (
@@ -366,7 +466,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           ) : (
             <div className="space-y-4">
               {rows.map((row, i) => {
-                const wordCount = row.narration.trim().split(/\s+/).filter(Boolean).length;
+                const currentText = editedNarrations[i] || row.narration;
+                const wordCount = currentText.trim().split(/\s+/).filter(Boolean).length;
                 const tooLong = wordCount > row.max_words;
                 
                 return (
@@ -387,14 +488,22 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm leading-relaxed">{row.narration}</p>
+                      <div className="flex items-start gap-2">
+                        <Edit3 className="w-4 h-4 mt-1 text-muted-foreground flex-shrink-0" />
+                        <Textarea
+                          value={currentText}
+                          onChange={(e) => updateNarration(i, e.target.value)}
+                          className="text-sm leading-relaxed min-h-20 resize-none"
+                          placeholder="Edit narration..."
+                        />
+                      </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>
                           {wordCount} / {row.max_words} words
                         </span>
                         {tooLong && (
                           <Badge variant="destructive" className="text-xs">
-                            Too long — trim or regenerate
+                            Too long — trim text
                           </Badge>
                         )}
                       </div>
@@ -406,6 +515,40 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Audio Description Confirmation Dialog */}
+      <AlertDialog open={showAudioDescriptionDialog} onOpenChange={setShowAudioDescriptionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert to Audio Descriptions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will convert your {rows.length} analysis segments into audio descriptions for the video. 
+              Any existing audio descriptions will be replaced.
+              <br /><br />
+              Make sure to review and edit the narrations before proceeding.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={convertToAudioDescriptions}
+              disabled={savingAudioDescriptions}
+            >
+              {savingAudioDescriptions ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Converting...
+                </>
+              ) : (
+                <>
+                  <AudioLines className="w-4 h-4 mr-2" />
+                  Apply as Audio Descriptions
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
