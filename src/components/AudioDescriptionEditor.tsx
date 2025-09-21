@@ -380,8 +380,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         body: {
           videoUrl,
           videoId,
-          language: detectedLanguage,
-          transcriptSegments
+          language: detectedLanguage
         }
       });
 
@@ -407,17 +406,45 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           attempts++;
           try {
             const pollResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
-              body: { indexId, taskId, language: detectedLanguage, transcriptSegments }
+              body: { indexId, taskId, language: detectedLanguage }
             });
             if (pollResp.error) {
               console.error('🎬 Twelve Labs: Polling error:', pollResp.error);
               return;
             }
-            if (pollResp.data?.status === 'ready' && Array.isArray(pollResp.data.audioDescriptions)) {
+            const pollData: any = pollResp.data;
+            if (pollData?.status === 'ready' && pollData?.needsSegments) {
+              // Finalize by sending transcript segments only once when ready
+              const finalizeResp = await supabase.functions.invoke('twelve-labs-audio-descriptions', {
+                body: { indexId, taskId, language: detectedLanguage, transcriptSegments }
+              });
+              if (finalizeResp.error) {
+                console.error('🎬 Twelve Labs: Finalize error:', finalizeResp.error);
+                return;
+              }
+              if (finalizeResp.data?.status === 'ready' && Array.isArray(finalizeResp.data.audioDescriptions)) {
+                clearInterval(pollingRef.current!);
+                pollingRef.current = null;
+
+                const formattedDescriptions: AudioDescriptionSegment[] = finalizeResp.data.audioDescriptions.map((desc: any) => ({
+                  text: desc.text,
+                  startTime: desc.startTime,
+                  endTime: desc.endTime,
+                  voiceStyle: 'warm'
+                }));
+
+                setDescriptions(formattedDescriptions);
+                onDescriptionsUpdate?.(formattedDescriptions);
+                await saveDescriptionsToDatabase(formattedDescriptions);
+                toast.success(`🎬 Generated ${formattedDescriptions.length} comprehensive audio descriptions`);
+                setIsGenerating(false);
+                setIsUsingTwelveLabs(false);
+              }
+            } else if (pollData?.status === 'ready' && Array.isArray(pollData.audioDescriptions)) {
               clearInterval(pollingRef.current!);
               pollingRef.current = null;
 
-              const formattedDescriptions: AudioDescriptionSegment[] = pollResp.data.audioDescriptions.map((desc: any) => ({
+              const formattedDescriptions: AudioDescriptionSegment[] = pollData.audioDescriptions.map((desc: any) => ({
                 text: desc.text,
                 startTime: desc.startTime,
                 endTime: desc.endTime,

@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.enhanced-video-analysis]
 verify_jwt = false
+
+[functions.twelve-labs-audio-descriptions]
+verify_jwt = true

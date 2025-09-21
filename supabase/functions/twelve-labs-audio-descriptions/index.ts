@@ -37,9 +37,9 @@ serve(async (req) => {
       throw new Error('Video URL is required');
     }
 
-    if (!transcriptSegments || transcriptSegments.length === 0) {
-      throw new Error('Transcript segments are required for silence detection');
-    }
+    // transcriptSegments are optional on kickoff; required only when generation starts
+    // (They will be provided later once the indexing task is ready)
+
 
     const twelveLabsApiKey = Deno.env.get('TWELVE_LABS_API_KEY');
     if (!twelveLabsApiKey) {
@@ -99,6 +99,19 @@ serve(async (req) => {
           status: 'processing',
           indexId: providedIndexId,
           taskId: providedTaskId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // If the task is ready but we don't have transcript segments yet,
+      // ask the client to send them in a follow-up request
+      if (!transcriptSegments || transcriptSegments.length === 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          status: 'ready',
+          needsSegments: true,
+          indexId: providedIndexId,
+          taskId: providedTaskId,
+          videoId: readyVideoId
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
