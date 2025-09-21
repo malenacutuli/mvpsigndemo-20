@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TL_BASE = "https://api.twelvelabs.io/v1";
+const TL_BASE = "https://api.twelvelabs.io/v1.3";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -53,12 +53,21 @@ serve(async (req) => {
 
     // Check task status with Twelve Labs
     const taskResponse = await fetch(`${TL_BASE}/tasks/${mapping.task_id}`, {
-      headers: { 'Authorization': `Bearer ${twelveLabsApiKey}` }
+      headers: { 'x-api-key': `${twelveLabsApiKey}`, 'Accept': 'application/json' }
     });
 
-    const taskData = await taskResponse.json();
-    console.log('Task status response:', taskData);
+    const taskText = await taskResponse.text();
+    if (!taskResponse.ok) {
+      throw new Error(`Status check failed ${taskResponse.status}: ${taskText}`);
+    }
 
+    let taskData: any;
+    try {
+      taskData = JSON.parse(taskText);
+    } catch {
+      throw new Error(`Status API returned non-JSON: ${taskText}`);
+    }
+    console.log('Task status response:', taskData);
     // Extract video ID from task response
     const tlVideoId = taskData.video_id || 
                       taskData.result?.video_id || 
