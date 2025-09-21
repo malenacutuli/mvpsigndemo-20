@@ -395,30 +395,45 @@ async function generateAudioDescriptions(
     try {
       console.log(`🎯 Processing gap ${i + 1}/${limitedGaps.length}: ${gap.startTime}s-${gap.endTime}s (${gap.duration}s)`);
       
-      const analysisPrompt = `Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a concise audio description for this ${gap.duration.toFixed(1)}-second moment.
+      const analysisPrompt = `You are a master storyteller crafting immersive audio descriptions that transport listeners into a cinematic world. Analyze the video segment from ${gap.startTime} to ${gap.endTime} seconds and create a captivating narrative description for this ${gap.duration.toFixed(1)}-second moment.
 
-Focus on visual elements during this time period:
-- Character actions, movements, and expressions
-- Environmental details and setting changes  
-- Visual storytelling elements (lighting, composition)
-- Important objects or visual elements
-- Emotional undertones conveyed visually
+Write as a creative advertising copywriter with the soul of an audiobook narrator. Your mission: paint vivid scenes that listeners can feel, not just understand.
 
-Requirements:
-- Write in present tense
-- Keep concise for ${gap.duration.toFixed(1)} seconds of narration
-- Focus only on visual elements during this specific time segment
-- Use cinematic language appropriate for audio description
-- Do not mention audio, dialogue, or sound
+CREATIVE FOCUS:
+• Story and emotional beats - What's the emotional pulse of this moment?
+• Sensory atmosphere - What would listeners smell, feel, or sense in this space?
+• Character psychology - What unspoken emotions flicker across faces?
+• Environmental storytelling - How does the setting itself tell a story?
+• Cinematic mood and tension - What feelings does this visual moment evoke?
 
-Generate only the audio description text.`;
+NARRATIVE STYLE:
+• Write like you're narrating an intimate podcast
+• Use evocative, sensory language that creates atmosphere
+• Focus on the WHY behind actions, not just WHAT happens
+• Blend observation with emotional interpretation
+• Create immersion through vivid, specific details
+
+AVOID:
+• Technical descriptions (camera angles, cuts, lighting equipment)
+• Dry, clinical observations
+• Listing actions without emotional context
+• Generic descriptions that could apply to any scene
+
+REQUIREMENTS:
+• Write in present tense with narrative flow
+• Fit naturally within ${gap.duration.toFixed(1)} seconds of spoken narration
+• Create a mini-story arc within this moment
+• Use language that enhances dramatic tension and emotional connection
+• Focus exclusively on visual elements during this specific timeframe
+
+Craft a description that makes listeners lean in, feeling they're experiencing the story firsthand.`;
 
       const requestData = {
         video_id: videoId,
         prompt: analysisPrompt,
-        temperature: 0.3,
+        temperature: 0.7, // Higher creativity for narrative descriptions
         stream: false,
-        max_tokens: Math.min(300, Math.floor(gap.duration * 20)),
+        max_tokens: Math.min(400, Math.floor(gap.duration * 25)), // More tokens for richer descriptions
       };
 
       console.log('📤 Sending analyze request for gap', i + 1);
@@ -616,21 +631,26 @@ function detectSilenceGaps(transcriptSegments: any[]): SilenceGap[] {
 }
 
 function createFallbackDescription(gap: SilenceGap, index: number): AudioDescriptionSegment {
-  const fallbacks = [
-    "The scene unfolds with carefully composed visuals that enhance the narrative atmosphere.",
-    "Character interactions and environmental details develop through expressive cinematography.", 
-    "Visual storytelling elements create dramatic tension and emotional resonance.",
-    "The composition draws attention to key narrative elements through lighting and framing.",
-    "Atmospheric details and character positioning advance the story's emotional journey.",
-    "Visual metaphors and symbolic elements enrich the narrative's thematic depth.",
-    "The mise-en-scène establishes mood and context through deliberate visual choices.",
-    "Character expressions and body language convey subtext and emotional complexity.",
-    "Environmental storytelling elements provide context and enhance immersion.",
-    "The visual narrative builds tension through strategic composition and timing."
+  const narrativeFallbacks = [
+    "Shadows dance across weathered faces as unspoken tensions simmer beneath the surface.",
+    "The camera lingers on intimate details that speak louder than words ever could.",
+    "A moment of quiet revelation unfolds through glances and subtle body language.", 
+    "The atmosphere thickens with anticipation as characters navigate their emotional landscape.",
+    "Visual poetry emerges from the interplay of light and shadow across expressive features.",
+    "Time seems suspended as the weight of the moment settles over everyone present.",
+    "Subliminal storytelling unfolds through carefully orchestrated visual metaphors and symbolism.",
+    "The mise-en-scène breathes with hidden meanings waiting to be discovered.",
+    "Character dynamics shift like tectonic plates beneath a veneer of normalcy.",
+    "The visual narrative pulses with underlying currents of drama and human complexity.",
+    "Environmental details whisper secrets about the characters' inner worlds.",
+    "A tapestry of emotions weaves itself through fleeting expressions and meaningful pauses.",
+    "The scene builds dramatic momentum through strategic silence and visual tension.",
+    "Cinematic storytelling flows through the subtle choreography of human interaction.",
+    "Layers of meaning emerge from the deliberate placement of objects and people in frame."
   ];
   
   return {
-    text: fallbacks[index % fallbacks.length],
+    text: narrativeFallbacks[index % narrativeFallbacks.length],
     startTime: gap.startTime,
     endTime: gap.endTime,
     duration: gap.duration,
@@ -641,26 +661,31 @@ function createFallbackDescription(gap: SilenceGap, index: number): AudioDescrip
 function cleanDescription(description: string, maxDuration: number): string {
   if (!description) return '';
   
-  // Remove common prefixes and artifacts
+  // Remove technical artifacts while preserving creative narrative language
   description = description.trim()
-    .replace(/^(The scene shows|We see|The video shows|In this segment|Audio description:|Description:|Analysis:|Here's what happens|This is|During this time)/i, '')
+    // Remove robotic prefixes
+    .replace(/^(The scene shows|We see|The video shows|In this segment|Audio description:|Description:|Analysis:|Here's what happens|This is|During this time|The video depicts|This segment shows|In this moment|The image shows)/i, '')
+    // Remove accessibility references while keeping creative terms
     .replace(/\b(audio description|for blind audiences|visually impaired|screen reader|accessibility)\b/gi, '')
+    // Remove generic technical language
+    .replace(/\b(camera angle|shot composition|visual element|film technique)\b/gi, '')
+    // Clean up formatting
     .replace(/^["']|["']$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Ensure it starts with a capital letter
+  // Enhance narrative flow - capitalize appropriately
   if (description.length > 0) {
     description = description.charAt(0).toUpperCase() + description.slice(1);
   }
   
-  // Ensure it ends properly
-  if (description && !description.match(/[.!?]$/)) {
+  // Add natural narrative closure if needed and description isn't too long
+  if (description && !description.match(/[.!?]$/) && description.split(' ').length < 25) {
     description += '.';
   }
   
-  // Word count check
-  const maxWords = Math.floor(maxDuration * 2.5);
+  // Adjust word count for narrative pacing (allow more creative language)
+  const maxWords = Math.floor(maxDuration * 3); // More generous word limit for narrative descriptions
   const words = description.split(' ');
   if (words.length > maxWords && maxWords > 5) {
     description = words.slice(0, maxWords).join(' ') + '.';
