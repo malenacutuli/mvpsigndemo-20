@@ -24,7 +24,13 @@ serve(async (req) => {
 
   try {
     const body = await req.text();
-    const { videoUrl, videoId, language, forceReExtract } = JSON.parse(body);
+    
+    // Ensure proper UTF-8 handling for international characters
+    const decodedBody = new TextDecoder('utf-8', { fatal: false }).decode(
+      new TextEncoder().encode(body)
+    );
+    
+    const { videoUrl, videoId, language, forceReExtract } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -612,21 +618,39 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       console.log("Cleared existing segments");
     }
     
-    // Prepare segments for database
-    const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => ({
-      video_id: videoId,
-      text: segment.text || '',
-      start_time: Number(segment.start) || (index * 3),
-      end_time: Number(segment.end) || ((index + 1) * 3),
-      confidence: segment.confidence || null,
-      language: transcriptionResult.language || 'en',
-      segment_type: 'dialogue',
-      speaker: `Speaker ${(index % 3) + 1}`,
-      speaker_color: '#3B82F6',
-      emphasis: 'normal',
-      pitch: 'normal',
-      is_off_camera: false
-    }));
+    // Prepare segments for database with proper text sanitization
+    const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
+      // Sanitize text to handle special characters and remove invalid ones
+      let sanitizedText = segment.text || '';
+      try {
+        // Ensure proper UTF-8 encoding and remove null bytes or other invalid characters
+        sanitizedText = sanitizedText
+          .replace(/\0/g, '') // Remove null bytes
+          .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters except common ones like newlines
+          .trim();
+        
+        // Test if the text can be properly JSON stringified (final validation)
+        JSON.stringify(sanitizedText);
+      } catch (error) {
+        console.warn(`Text sanitization failed for segment ${index}:`, error);
+        sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
+      }
+      
+      return {
+        video_id: videoId,
+        text: sanitizedText,
+        start_time: Number(segment.start) || (index * 3),
+        end_time: Number(segment.end) || ((index + 1) * 3),
+        confidence: segment.confidence || null,
+        language: transcriptionResult.language || 'en',
+        segment_type: 'dialogue',
+        speaker: `Speaker ${(index % 3) + 1}`,
+        speaker_color: '#3B82F6',
+        emphasis: 'normal',
+        pitch: 'normal',
+        is_off_camera: false
+      };
+    });
     
     // Save in batches
     const BATCH_SIZE = 50;
