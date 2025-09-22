@@ -186,7 +186,103 @@
       "contactTeam": "Kontaktieren Sie Unser Team"
     }
   },
-  "footer": {
+  "about": {
+    "mission": {
+      "title": "Unsere Mission",
+      "description": "Wir glauben, dass kreativer Ausdruck für alle zugänglich sein sollte. Unsere KI-gestützte Plattform transformiert Videoinhalte in immersive Erlebnisse, die Barrieren abbauen und inklusives Storytelling schaffen.",
+      "ethicalAI": "Ethische KI",
+      "creativeIntelligence": "Kreative Intelligenz",
+      "humanCentric": "Menschzentriert"
+    },
+    "dataQuality": {
+      "title": "Datenqualität & Ethik",
+      "description": "Unser Ansatz zur künstlichen Intelligenz basiert auf Prinzipien der Transparenz, Zustimmung und kreativen Verbesserung statt Ersetzung.",
+      "ethicalData": {
+        "title": "Ethische Datensammlung",
+        "description": "Wir priorisieren zustimmungsbasierte Datensammlung und transparente KI-Trainingsprozesse, die Urheber­rechte und Benutzerdaten­schutz respektieren."
+      },
+      "powerOfIntentionality": {
+        "title": "Die Macht der Absichtlichkeit",
+        "description": "Jede algorithmische Entscheidung ist darauf ausgelegt, menschliche Kreativität zu verstärken, nicht zu ersetzen. Unsere KI dient als kreativer Kollaborateur."
+      },
+      "builtOnTrust": {
+        "title": "Auf Vertrauen Aufgebaut",
+        "description": "Transparenz in unseren KI-Prozessen stellt sicher, dass Ersteller die Kontrolle behalten und gleichzeitig von verbesserten Barrierefreiheitsfunktionen profitieren."
+      }
+    },
+    "aiLab": {
+      "title": "KI-Forschungslabor",
+      "subtitle": "Die Grenzen kreativer Intelligenz durch ethische KI-Entwicklung und menschzentriertes Design erweitern.",
+      "useCases": {
+        "title": "Real-World-Anwendungen",
+        "description": "Unsere Technologie ermöglicht bahnbrechende Anwendungen in allen Branchen und transformiert, wie Inhalte erstellt, analysiert und erlebt werden."
+      }
+    },
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Kreative Analysen",
+        "emotionalResonance": {
+          "title": "Emotionale Resonanzanalyse",
+          "description": "Verstehen Sie, wie Ihr Inhalt emotional mit Zielgruppen verbindet durch fortschrittliche Sentimentanalyse und Engagement-Vorhersage."
+        },
+        "narrativeOptimization": {
+          "title": "Narrative Optimierung",
+          "description": "KI-gestützte Insights helfen bei der Optimierung von Erzählstruktur, Tempo und emotionalem Bogen für maximale Zielgruppenwirkung."
+        },
+        "crossCulturalInsights": {
+          "title": "Interkulturelle Insights",
+          "description": "Analysieren Sie, wie Inhalte in verschiedenen kulturellen Kontexten funktionieren und passen Sie Botschaften für globale Zielgruppen an."
+        }
+      },
+      "filmTV": {
+        "title": "Film- & TV-Produktion",
+        "editingPostProduction": {
+          "title": "Schnitt & Postproduktion",
+          "description": "Optimieren Sie Schnitt-Workflows mit KI-generierten Szenenzusammenfassungen, emotionaler Beat-Erkennung und automatisierten Barrierefreiheitsfunktionen."
+        },
+        "scriptAnalysis": {
+          "title": "Drehbuchanalyse",
+          "description": "Analysieren Sie Drehbücher auf emotionale Tiefe, Charakterentwicklung und narrative Struktur zur Anleitung von Produktionsentscheidungen."
+        },
+        "characterDevelopment": {
+          "title": "Charakterentwicklung",
+          "description": "Verfolgen Sie Charakterbögen und emotionale Reisen durch Produktionen mit KI-gestützten Analysetools."
+        }
+      },
+      "generativeAI": {
+        "title": "Generative KI & Medien",
+        "emotionallyAware": {
+          "title": "Emotional Bewusste Inhalte",
+          "description": "Generieren Sie Inhalte, die sich an den emotionalen Zustand und Präferenzen der Zuschauer für personalisierte Erlebnisse anpassen."
+        },
+        "dynamicMusic": {
+          "title": "Dynamische Musikkomposition",
+          "description": "KI-komponierte Soundtracks, die auf emotionale Beats des Inhalts und Engagement-Muster der Zuschauer reagieren."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Personalisierte Medienplattformen",
+        "emotionBased": {
+          "title": "Emotionsbasierte Empfehlungen",
+          "description": "Liefern Sie Inhaltsempfehlungen basierend auf emotionalen Präferenzen und Betrachtungskontext für verbessertes Engagement."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Strategie für Geistiges Eigentum",
+      "description": "Unsere innovativen Ansätze für KI-gesteuerte Barrierefreiheit und kreative Analyse sind durch strategische Patentanmeldungen geschützt.",
+      "emotionNarrative": "Emotion-Narrative-Fusions-Technologie",
+      "explainableAVLM": "Erklärbare Audio-Visuelle Sprachmodelle",
+      "interactiveCreative": "Interaktive Kreative Analyseplattform"
+    },
+    "cta": {
+      "title": "Bereit, die Zukunft der Kreativen KI zu Gestalten?",
+      "description": "Schließen Sie sich uns an bei der Revolution, wie künstliche Intelligenz menschliche Kreativität versteht und verbessert.",
+      "exploreTechnology": "Erkunden Sie Unsere Technologie",
+      "contactTeam": "Kontaktieren Sie Unser Team"
+    }
+  }
+}
     "tagline": "Hören Sie das Ungehörte. Sehen Sie das Unsichtbare.",
     "about": "Über uns",
     "community": "Gemeinschaft", 

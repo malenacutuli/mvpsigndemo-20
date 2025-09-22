@@ -186,7 +186,103 @@
       "contactTeam": "Contacta el Nostre Equip"
     }
   },
-  "footer": {
+  "about": {
+    "mission": {
+      "title": "La Nostra Missió",
+      "description": "Creiem que l'expressió creativa ha de ser accessible per a tothom. La nostra plataforma impulsada per IA transforma el contingut de vídeo en experiències immersives que trenquen barreres i creen narrativa inclusiva.",
+      "ethicalAI": "IA Ètica",
+      "creativeIntelligence": "Intel·ligència Creativa",
+      "humanCentric": "Centrat en l'Humà"
+    },
+    "dataQuality": {
+      "title": "Qualitat de Dades i Ètica",
+      "description": "El nostre enfocament cap a la intel·ligència artificial es basa en principis de transparència, consentiment i millora creativa en lloc de substitució.",
+      "ethicalData": {
+        "title": "Recollida Ètica de Dades",
+        "description": "Prioritzem la recollida de dades basada en consentiment i processos transparents d'entrenament d'IA que respecten els drets del creador i la privacitat de l'usuari."
+      },
+      "powerOfIntentionality": {
+        "title": "El Poder de la Intencionalitat",
+        "description": "Cada decisió algorítmica està dissenyada per amplificar la creativitat humana, no substituir-la. La nostra IA serveix com a col·laborador creatiu."
+      },
+      "builtOnTrust": {
+        "title": "Construït sobre Confiança",
+        "description": "La transparència en els nostres processos d'IA assegura que els creadors mantinguin el control mentre es beneficien de característiques d'accessibilitat millorades."
+      }
+    },
+    "aiLab": {
+      "title": "Laboratori de Recerca IA",
+      "subtitle": "Empenyent els límits de la intel·ligència creativa a través del desenvolupament ètic d'IA i disseny centrat en l'humà.",
+      "useCases": {
+        "title": "Aplicacions del Món Real",
+        "description": "La nostra tecnologia permet aplicacions revolucionàries en totes les indústries, transformant com es crea, analitza i experimenta el contingut."
+      }
+    },
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Analítica Creativa",
+        "emotionalResonance": {
+          "title": "Anàlisi de Ressonància Emocional",
+          "description": "Comprèn com el teu contingut es connecta emocionalment amb les audiències a través d'anàlisi avançada de sentiments i predicció d'engagement."
+        },
+        "narrativeOptimization": {
+          "title": "Optimització Narrativa",
+          "description": "Els insights impulsats per IA ajuden a optimitzar l'estructura narrativa, el ritme i l'arc emocional per al màxim impacte en l'audiència."
+        },
+        "crossCulturalInsights": {
+          "title": "Insights Interculturals",
+          "description": "Analitza com el contingut funciona en diferents contextos culturals i adapta missatges per a audiències globals."
+        }
+      },
+      "filmTV": {
+        "title": "Producció Cinema i TV",
+        "editingPostProduction": {
+          "title": "Edició i Post-Producció",
+          "description": "Optimitza fluxos de treball d'edició amb resums d'escenes generats per IA, detecció de beats emocionals i característiques d'accessibilitat automatitzades."
+        },
+        "scriptAnalysis": {
+          "title": "Anàlisi de Guió",
+          "description": "Analitza guions per profunditat emocional, desenvolupament de personatges i estructura narrativa per guiar decisions de producció."
+        },
+        "characterDevelopment": {
+          "title": "Desenvolupament de Personatges",
+          "description": "Rastreja arcs de personatges i viatges emocionals a través de produccions amb eines d'anàlisi impulsades per IA."
+        }
+      },
+      "generativeAI": {
+        "title": "IA Generativa i Mitjans",
+        "emotionallyAware": {
+          "title": "Contingut Emocionalment Conscient",
+          "description": "Genera contingut que s'adapta a l'estat emocional de l'espectador i preferències per a experiències personalitzades."
+        },
+        "dynamicMusic": {
+          "title": "Banda Sonora Dinàmica",
+          "description": "Bandes sonores compostes per IA que responen als beats emocionals del contingut i patrons d'engagement de l'espectador."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Plataformes de Mitjans Personalitzats",
+        "emotionBased": {
+          "title": "Recomanacions Basades en Emoció",
+          "description": "Lliura recomanacions de contingut basades en preferències emocionals i context de visualització per a engagement millorat."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Estratègia de Propietat Intel·lectual",
+      "description": "Els nostres enfocaments innovadors cap a l'accessibilitat impulsada per IA i l'anàlisi creativa estan protegits per aplicacions estratègiques de patents.",
+      "emotionNarrative": "Tecnologia de Fusió Emoció-Narrativa",
+      "explainableAVLM": "Models de Llenguatge Audio-Visual Explicables",
+      "interactiveCreative": "Plataforma Interactiva d'Anàlisi Creativa"
+    },
+    "cta": {
+      "title": "Llest per Donar Forma al Futur de l'IA Creativa?",
+      "description": "Uniu-vos a nosaltres per revolucionar com la intel·ligència artificial comprèn i millora la creativitat humana.",
+      "exploreTechnology": "Explora la Nostra Tecnologia",
+      "contactTeam": "Contacta el Nostre Equip"
+    }
+  }
+}
     "tagline": "Escolta l'Inescoltable. Veu l'Invisible.",
     "about": "Sobre",
     "community": "Comunitat", 

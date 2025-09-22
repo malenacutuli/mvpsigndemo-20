@@ -186,7 +186,103 @@
       "contactTeam": "Contatta il Nostro Team"
     }
   },
-  "footer": {
+  "about": {
+    "mission": {
+      "title": "La Nostra Missione",
+      "description": "Crediamo che l'espressione creativa debba essere accessibile a tutti. La nostra piattaforma potenziata dall'IA trasforma i contenuti video in esperienze immersive che abbattono le barriere e creano narrazione inclusiva.",
+      "ethicalAI": "IA Etica",
+      "creativeIntelligence": "Intelligenza Creativa",
+      "humanCentric": "Centrato sull'Umano"
+    },
+    "dataQuality": {
+      "title": "Qualità dei Dati ed Etica",
+      "description": "Il nostro approccio all'intelligenza artificiale è basato su principi di trasparenza, consenso e miglioramento creativo piuttosto che sostituzione.",
+      "ethicalData": {
+        "title": "Raccolta Etica dei Dati",
+        "description": "Diamo priorità alla raccolta di dati basata sul consenso e processi trasparenti di addestramento IA che rispettano i diritti dei creatori e la privacy degli utenti."
+      },
+      "powerOfIntentionality": {
+        "title": "Il Potere dell'Intenzionalità",
+        "description": "Ogni decisione algoritmica è progettata per amplificare la creatività umana, non sostituirla. La nostra IA funge da collaboratore creativo."
+      },
+      "builtOnTrust": {
+        "title": "Basato sulla Fiducia",
+        "description": "La trasparenza nei nostri processi IA assicura che i creatori mantengano il controllo beneficiando di funzionalità di accessibilità migliorate."
+      }
+    },
+    "aiLab": {
+      "title": "Laboratorio di Ricerca IA",
+      "subtitle": "Spingendo i confini dell'intelligenza creativa attraverso lo sviluppo etico dell'IA e il design centrato sull'umano.",
+      "useCases": {
+        "title": "Applicazioni del Mondo Reale",
+        "description": "La nostra tecnologia abilita applicazioni rivoluzionarie in tutte le industrie, trasformando come i contenuti vengono creati, analizzati ed esperiti."
+      }
+    },
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Analisi Creative",
+        "emotionalResonance": {
+          "title": "Analisi della Risonanza Emotiva",
+          "description": "Comprendi come il tuo contenuto si connette emotivamente con il pubblico attraverso analisi avanzate del sentiment e previsione del coinvolgimento."
+        },
+        "narrativeOptimization": {
+          "title": "Ottimizzazione Narrativa",
+          "description": "Gli insights potenziati dall'IA aiutano a ottimizzare la struttura narrativa, il ritmo e l'arco emotivo per il massimo impatto sul pubblico."
+        },
+        "crossCulturalInsights": {
+          "title": "Insights Interculturali",
+          "description": "Analizza come i contenuti si comportano in diversi contesti culturali e adatta i messaggi per pubblici globali."
+        }
+      },
+      "filmTV": {
+        "title": "Produzione Cinema e TV",
+        "editingPostProduction": {
+          "title": "Montaggio e Post-Produzione",
+          "description": "Semplifica i flussi di lavoro di montaggio con riassunti di scene generati dall'IA, rilevamento di beat emotivi e funzionalità di accessibilità automatizzate."
+        },
+        "scriptAnalysis": {
+          "title": "Analisi della Sceneggiatura",
+          "description": "Analizza le sceneggiature per profondità emotiva, sviluppo dei personaggi e struttura narrativa per guidare le decisioni di produzione."
+        },
+        "characterDevelopment": {
+          "title": "Sviluppo dei Personaggi",
+          "description": "Traccia gli archi dei personaggi e i viaggi emotivi attraverso le produzioni con strumenti di analisi potenziati dall'IA."
+        }
+      },
+      "generativeAI": {
+        "title": "IA Generativa e Media",
+        "emotionallyAware": {
+          "title": "Contenuti Emotivamente Consapevoli",
+          "description": "Genera contenuti che si adattano allo stato emotivo dello spettatore e alle preferenze per esperienze personalizzate."
+        },
+        "dynamicMusic": {
+          "title": "Colonna Sonora Dinamica",
+          "description": "Colonne sonore composte dall'IA che rispondono ai beat emotivi del contenuto e ai pattern di coinvolgimento dello spettatore."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Piattaforme Media Personalizzate",
+        "emotionBased": {
+          "title": "Raccomandazioni Basate sull'Emozione",
+          "description": "Fornisci raccomandazioni di contenuto basate su preferenze emotive e contesto di visualizzazione per coinvolgimento migliorato."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Strategia di Proprietà Intellettuale",
+      "description": "I nostri approcci innovativi all'accessibilità guidata dall'IA e all'analisi creativa sono protetti da applicazioni strategiche di brevetti.",
+      "emotionNarrative": "Tecnologia di Fusione Emozione-Narrativa",
+      "explainableAVLM": "Modelli di Linguaggio Audio-Visivo Spiegabili",
+      "interactiveCreative": "Piattaforma Interattiva di Analisi Creativa"
+    },
+    "cta": {
+      "title": "Pronto a Plasmare il Futuro dell'IA Creativa?",
+      "description": "Unisciti a noi nel rivoluzionare come l'intelligenza artificiale comprende e migliora la creatività umana.",
+      "exploreTechnology": "Esplora la Nostra Tecnologia",
+      "contactTeam": "Contatta il Nostro Team"
+    }
+  }
+}
     "tagline": "Senti l'Inaudito. Vedi l'Invisibile.",
     "about": "Chi siamo",
     "community": "Comunità", 

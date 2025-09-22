@@ -866,5 +866,101 @@
     "selectLanguage": "Select Language",
     "makePublic": "Make this video public",
     "enableAccessibility": "Enable accessibility features"
+  },
+  "about": {
+    "mission": {
+      "title": "Our Mission",
+      "description": "We believe that creative expression should be accessible to everyone. Our AI-powered platform transforms video content into immersive experiences that break down barriers and create inclusive storytelling.",
+      "ethicalAI": "Ethical AI",
+      "creativeIntelligence": "Creative Intelligence",
+      "humanCentric": "Human-Centric"
+    },
+    "dataQuality": {
+      "title": "Data Quality & Ethics",
+      "description": "Our approach to artificial intelligence is built on principles of transparency, consent, and creative enhancement rather than replacement.",
+      "ethicalData": {
+        "title": "Ethical Data Collection",
+        "description": "We prioritize consent-driven data collection and transparent AI training processes that respect creator rights and user privacy."
+      },
+      "powerOfIntentionality": {
+        "title": "The Power of Intentionality",
+        "description": "Every algorithm decision is designed to amplify human creativity, not replace it. Our AI serves as a creative collaborator."
+      },
+      "builtOnTrust": {
+        "title": "Built on Trust",
+        "description": "Transparency in our AI processes ensures creators maintain control while benefiting from enhanced accessibility features."
+      }
+    },
+    "aiLab": {
+      "title": "AI Research Lab",
+      "subtitle": "Pushing the boundaries of creative intelligence through ethical AI development and human-centered design.",
+      "useCases": {
+        "title": "Real-World Applications",
+        "description": "Our technology enables breakthrough applications across industries, transforming how content is created, analyzed, and experienced."
+      }
+    },
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Creative Analytics",
+        "emotionalResonance": {
+          "title": "Emotional Resonance Analysis",
+          "description": "Understand how your content emotionally connects with audiences through advanced sentiment analysis and engagement prediction."
+        },
+        "narrativeOptimization": {
+          "title": "Narrative Optimization",
+          "description": "AI-powered insights help optimize storytelling structure, pacing, and emotional arc for maximum audience impact."
+        },
+        "crossCulturalInsights": {
+          "title": "Cross-Cultural Insights",
+          "description": "Analyze how content performs across different cultural contexts and adapt messaging for global audiences."
+        }
+      },
+      "filmTV": {
+        "title": "Film & TV Production",
+        "editingPostProduction": {
+          "title": "Editing & Post-Production",
+          "description": "Streamline editing workflows with AI-generated scene summaries, emotional beat detection, and automated accessibility features."
+        },
+        "scriptAnalysis": {
+          "title": "Script Analysis",
+          "description": "Analyze scripts for emotional depth, character development, and narrative structure to guide production decisions."
+        },
+        "characterDevelopment": {
+          "title": "Character Development",
+          "description": "Track character arcs and emotional journeys throughout productions with AI-powered analysis tools."
+        }
+      },
+      "generativeAI": {
+        "title": "Generative AI & Media",
+        "emotionallyAware": {
+          "title": "Emotionally-Aware Content",
+          "description": "Generate content that adapts to viewer emotional state and preferences for personalized experiences."
+        },
+        "dynamicMusic": {
+          "title": "Dynamic Music Scoring",
+          "description": "AI-composed soundtracks that respond to content emotional beats and viewer engagement patterns."
+        }
+      },
+      "personalizedMedia": {
+        "title": "Personalized Media Platforms",
+        "emotionBased": {
+          "title": "Emotion-Based Recommendations",
+          "description": "Deliver content recommendations based on emotional preferences and viewing context for enhanced engagement."
+        }
+      }
+    },
+    "intellectualProperty": {
+      "title": "Intellectual Property Strategy",
+      "description": "Our innovative approaches to AI-driven accessibility and creative analysis are protected by strategic patent applications.",
+      "emotionNarrative": "Emotion-Narrative Fusion Technology",
+      "explainableAVLM": "Explainable Audio-Visual Language Models",
+      "interactiveCreative": "Interactive Creative Analytics Platform"
+    },
+    "cta": {
+      "title": "Ready to Shape the Future of Creative AI?",
+      "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
+      "exploreTechnology": "Explore Our Technology",
+      "contactTeam": "Contact Our Team"
+    }
   }
 }
