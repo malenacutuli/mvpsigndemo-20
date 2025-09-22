@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines } from 'lucide-react';
+import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -62,7 +62,7 @@ function wordsAllowed(durationMs: number) {
   return Math.floor((160 / 60) * secs);
 }
 
-const DEFAULT_PROMPT = JSON.stringify(
+const DEFAULT_SILENCE_PROMPT = JSON.stringify(
   {
     task: "Extract silent moments and generate ad-style narration that fits each gap.",
     requirements: [
@@ -99,18 +99,21 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   videoId
 }) => {
   const [status, setStatus] = useState<'idle' | 'indexing' | 'ready' | 'failed'>('idle');
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [silenceResult, setSilenceResult] = useState<AnalysisResult | null>(null);
+  const [insightResult, setInsightResult] = useState<AnalysisResult | null>(null);
+  const [analyzingSilence, setAnalyzingSilence] = useState(false);
+  const [analyzingInsight, setAnalyzingInsight] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [editedNarrations, setEditedNarrations] = useState<{[index: number]: string}>({});
   const [editedTimestamps, setEditedTimestamps] = useState<{[index: number]: { start: string, end: string }}>({});
   const [showAudioDescriptionDialog, setShowAudioDescriptionDialog] = useState(false);
   const [savingAudioDescriptions, setSavingAudioDescriptions] = useState(false);
   const [loadingCachedResults, setLoadingCachedResults] = useState(false);
-  const [resultsFromCache, setResultsFromCache] = useState(false);
-  const [savingResults, setSavingResults] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [silenceResultsFromCache, setSilenceResultsFromCache] = useState(false);
+  const [insightResultsFromCache, setInsightResultsFromCache] = useState(false);
+  const [savingSilenceResults, setSavingSilenceResults] = useState(false);
+  const [hasUnsavedSilenceChanges, setHasUnsavedSilenceChanges] = useState(false);
   const { toast } = useToast();
 
   // Check existing mapping on mount
@@ -119,40 +122,57 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     loadExistingResults();
   }, [assetId]);
 
-  // Reload results when prompt changes
+  // Reload results when prompts change
   useEffect(() => {
     if (assetId) {
       loadExistingResults();
     }
-  }, [prompt]);
+  }, [customPrompt]);
 
   const loadExistingResults = async () => {
     if (!assetId) return;
     
     setLoadingCachedResults(true);
     try {
-      const { data: existingResult } = await supabase
+      // Load silence analysis results
+      const { data: silenceData } = await supabase
         .from('video_analysis_results')
         .select('*')
         .eq('asset_id', assetId)
-        .eq('prompt', prompt)
+        .eq('prompt', DEFAULT_SILENCE_PROMPT)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (existingResult) {
-        setResult(existingResult.result as AnalysisResult);
-        setResultsFromCache(true);
-        setHasUnsavedChanges(false); // Clear unsaved changes for cached results
-        console.log('✅ Loaded cached analysis results');
-        toast({
-          title: "Loaded Cached Results",
-          description: "Using previously saved analysis results"
-        });
+      if (silenceData) {
+        setSilenceResult(silenceData.result as AnalysisResult);
+        setSilenceResultsFromCache(true);
+        setHasUnsavedSilenceChanges(false);
+        console.log('✅ Loaded cached silence analysis results');
       } else {
-        // No cached results found, clear current results
-        setResult(null);
-        setResultsFromCache(false);
+        setSilenceResult(null);
+        setSilenceResultsFromCache(false);
+      }
+
+      // Load insight analysis results if custom prompt exists
+      if (customPrompt.trim()) {
+        const { data: insightData } = await supabase
+          .from('video_analysis_results')
+          .select('*')
+          .eq('asset_id', assetId)
+          .eq('prompt', customPrompt)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (insightData) {
+          setInsightResult(insightData.result as AnalysisResult);
+          setInsightResultsFromCache(true);
+          console.log('✅ Loaded cached insight analysis results');
+        } else {
+          setInsightResult(null);
+          setInsightResultsFromCache(false);
+        }
       }
     } catch (error) {
       console.error('Error loading cached results:', error);
@@ -161,7 +181,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     }
   };
 
-  const saveAnalysisResults = async (analysisResult: AnalysisResult) => {
+  const saveAnalysisResults = async (analysisResult: AnalysisResult, prompt: string) => {
     if (!assetId || !analysisResult) return;
 
     try {
@@ -210,7 +230,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
   const startIndexing = async () => {
     setIndexing(true);
-    setResult(null);
+    setSilenceResult(null);
+    setInsightResult(null);
     
     try {
       const { data, error } = await supabase.functions.invoke('video-analysis-start', {
@@ -282,12 +303,12 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     setTimeout(() => clearInterval(pollInterval), 600000);
   };
 
-  const analyze = async () => {
-    setAnalyzing(true);
+  const analyzeSilences = async () => {
+    setAnalyzingSilence(true);
     
     try {
       const { data, error } = await supabase.functions.invoke('video-analysis-analyze', {
-        body: { assetId, prompt }
+        body: { assetId, prompt: DEFAULT_SILENCE_PROMPT }
       });
 
       if (error) throw error;
@@ -301,13 +322,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           const parsedData = JSON.parse(data.data);
           analysisResult = parsedData;
         } catch (parseError) {
-          // If JSON parsing fails, treat as text-based analysis result
-          console.log('Non-JSON analysis result detected, treating as text:', data.data);
-          analysisResult = {
-            video_id: data.video_id || assetId,
-            analysis_text: data.data, // Store the raw text result
-            silences: [] // Empty silences for text-based results
-          };
+          throw new Error('Invalid silence analysis response format');
         }
       } else if (data?.silences) {
         // Direct format (fallback)
@@ -319,28 +334,84 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         throw new Error('Invalid response format');
       }
 
-      setResult(analysisResult);
-      setResultsFromCache(false); // Mark as newly generated
-      setHasUnsavedChanges(false); // Clear unsaved changes flag for new results
+      setSilenceResult(analysisResult);
+      setSilenceResultsFromCache(false);
+      setHasUnsavedSilenceChanges(false);
       
       // Save results to database for future use
-      await saveAnalysisResults(analysisResult);
+      await saveAnalysisResults(analysisResult, DEFAULT_SILENCE_PROMPT);
       
       toast({
-        title: "Analysis Complete",
-        description: analysisResult.analysis_text 
-          ? "Generated text-based analysis result"
-          : `Found ${analysisResult?.silences?.length || 0} silent segments`
+        title: "Silence Analysis Complete",
+        description: `Found ${analysisResult?.silences?.length || 0} silent segments`
       });
     } catch (error: any) {
-      console.error('Analysis error:', error);
+      console.error('Silence analysis error:', error);
       toast({
-        title: "Analysis Failed",
-        description: error.message || 'Failed to analyze video',
+        title: "Silence Analysis Failed",
+        description: error.message || 'Failed to analyze video for silent segments',
         variant: "destructive"
       });
     } finally {
-      setAnalyzing(false);
+      setAnalyzingSilence(false);
+    }
+  };
+
+  const analyzeInsights = async () => {
+    if (!customPrompt.trim()) {
+      toast({
+        title: "Prompt Required",
+        description: "Please enter a custom analysis prompt",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAnalyzingInsight(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('video-analysis-analyze', {
+        body: { assetId, prompt: customPrompt }
+      });
+
+      if (error) throw error;
+
+      // Parse the response structure from analysis API
+      let analysisResult: AnalysisResult;
+      
+      if (data?.data && typeof data.data === 'string') {
+        // For custom prompts, treat as text-based analysis result
+        analysisResult = {
+          video_id: data.video_id || assetId,
+          analysis_text: data.data,
+          silences: []
+        };
+      } else if (data?.data) {
+        // Handle non-string data
+        analysisResult = data.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+
+      setInsightResult(analysisResult);
+      setInsightResultsFromCache(false);
+      
+      // Save results to database for future use
+      await saveAnalysisResults(analysisResult, customPrompt);
+      
+      toast({
+        title: "Insight Analysis Complete",
+        description: "Generated custom analysis insights"
+      });
+    } catch (error: any) {
+      console.error('Insight analysis error:', error);
+      toast({
+        title: "Insight Analysis Failed",
+        description: error.message || 'Failed to analyze video with custom prompt',
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzingInsight(false);
     }
   };
 
@@ -356,7 +427,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       ...prev,
       [index]: newText
     }));
-    setHasUnsavedChanges(true);
+    setHasUnsavedSilenceChanges(true);
   };
 
   const updateTimestamp = (index: number, field: 'start' | 'end', value: string) => {
@@ -367,18 +438,18 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         [field]: value
       }
     }));
-    setHasUnsavedChanges(true);
+    setHasUnsavedSilenceChanges(true);
   };
 
-  const saveEditedResults = async () => {
-    if (!result || !assetId) return;
+  const saveSilenceResults = async () => {
+    if (!silenceResult || !assetId) return;
 
-    setSavingResults(true);
+    setSavingSilenceResults(true);
     try {
       // Create updated result with edited narrations and timestamps
       const updatedResult = {
-        ...result,
-        silences: result.silences?.map((silence, index) => ({
+        ...silenceResult,
+        silences: silenceResult.silences?.map((silence, index) => ({
           ...silence,
           narration: editedNarrations[index] || silence.narration,
           start: editedTimestamps[index]?.start || silence.start,
@@ -391,7 +462,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         .from('video_analysis_results')
         .delete()
         .eq('asset_id', assetId)
-        .eq('prompt', prompt);
+        .eq('prompt', DEFAULT_SILENCE_PROMPT);
 
       // Save updated result
       const { error } = await supabase
@@ -399,22 +470,22 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         .insert({
           asset_id: assetId,
           result: updatedResult as any,
-          prompt: prompt,
+          prompt: DEFAULT_SILENCE_PROMPT,
           language: 'en'
         });
 
       if (error) throw error;
 
       // Update local state
-      setResult(updatedResult);
-      setHasUnsavedChanges(false);
+      setSilenceResult(updatedResult);
+      setHasUnsavedSilenceChanges(false);
 
       toast({
         title: "Analysis Saved",
         description: "Your edited analysis results have been saved successfully"
       });
 
-      console.log('✅ Edited analysis results saved to database');
+      console.log('✅ Edited silence analysis results saved to database');
     } catch (error: any) {
       console.error('Error saving edited results:', error);
       toast({
@@ -423,7 +494,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         variant: "destructive"
       });
     } finally {
-      setSavingResults(false);
+      setSavingSilenceResults(false);
     }
   };
 
@@ -440,7 +511,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     setSavingAudioDescriptions(true);
     
     try {
-      const audioDescriptions: AudioDescriptionSegment[] = rows.map((row, index) => {
+      const audioDescriptions: AudioDescriptionSegment[] = silenceRows.map((row, index) => {
         const finalNarration = editedNarrations[index] || row.narration;
         const timestamps = editedTimestamps[index];
         const startTime = timestamps?.start ? hhmmssToSeconds(timestamps.start) : hhmmssToSeconds(row.start);
@@ -494,8 +565,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     }
   };
 
-  const rows = useMemo(() => {
-    const list = result?.silences || [];
+  const silenceRows = useMemo(() => {
+    const list = silenceResult?.silences || [];
     return list.map((s: any) => ({
       start: s.start,
       end: s.end,
@@ -503,7 +574,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       narration: s.narration || "",
       max_words: s.max_words_allowed ?? wordsAllowed(s.duration_ms ?? 0)
     }));
-  }, [result]);
+  }, [silenceResult]);
 
   return (
     <div className="space-y-6">
@@ -522,11 +593,6 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               <Badge variant="outline">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Loading Cache...
-              </Badge>
-            )}
-            {resultsFromCache && result && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                📋 Cached Results
               </Badge>
             )}
           </div>
@@ -554,24 +620,6 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               </>
             )}
           </Button>
-          
-          <Button
-            onClick={analyze}
-            disabled={status !== 'ready' || analyzing}
-            variant={status === 'ready' ? 'default' : 'secondary'}
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Analyze
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -594,92 +642,83 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </Alert>
       )}
 
-      {/* Prompt Editor */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Analysis Prompt</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Customize the analysis prompt to extract specific insights from your video.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-48 font-mono text-sm"
-            placeholder="Enter your analysis prompt..."
-          />
-        </CardContent>
-      </Card>
-
-      {/* Results */}
+      {/* Silent Gaps and Narrations Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Analysis Results</CardTitle>
-              {hasUnsavedChanges && (
+              <CardTitle className="text-base">Silent Gaps and Narrations</CardTitle>
+              {silenceResultsFromCache && silenceResult && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  📋 Cached
+                </Badge>
+              )}
+              {hasUnsavedSilenceChanges && (
                 <Badge variant="secondary" className="text-xs">
                   Unsaved Changes
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {rows.length > 0 && hasUnsavedChanges && (
+              <Button
+                onClick={analyzeSilences}
+                disabled={status !== 'ready' || analyzingSilence}
+                size="sm"
+              >
+                {analyzingSilence ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Run Analysis
+                  </>
+                )}
+              </Button>
+              {silenceRows.length > 0 && hasUnsavedSilenceChanges && (
                 <Button
-                  onClick={saveEditedResults}
-                  disabled={savingResults}
+                  onClick={saveSilenceResults}
+                  disabled={savingSilenceResults}
                   size="sm"
-                  className="flex items-center gap-2"
+                  variant="secondary"
                 >
-                  {savingResults ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {savingSilenceResults ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                   ) : (
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 className="w-4 h-4 mr-1" />
                   )}
-                  {savingResults ? 'Saving...' : 'Save Changes'}
+                  Save Changes
                 </Button>
               )}
-              {rows.length > 0 && !result?.analysis_text && (
+              {silenceRows.length > 0 && (
                 <Button
                   onClick={() => setShowAudioDescriptionDialog(true)}
                   disabled={!videoId}
                   size="sm"
-                  className="flex items-center gap-2"
+                  variant="outline"
                 >
-                  <AudioLines className="w-4 h-4" />
+                  <AudioLines className="w-4 h-4 mr-1" />
                   Use as Audio Description
                 </Button>
               )}
             </div>
           </div>
-          {!videoId && rows.length > 0 && (
+          {!videoId && silenceRows.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Video ID required to save as audio descriptions
             </p>
           )}
         </CardHeader>
         <CardContent>
-          {!result ? (
+          {!silenceResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Run analysis to see silent gaps and narrations.</p>
+              <p className="font-medium">Run analysis to see silent gaps and narrations.</p>
               <p className="text-xs mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
             </div>
-          ) : result.analysis_text ? (
-            // Display text-based analysis results (like hashtags, topics)
-            <div className="space-y-4">
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-medium mb-3 text-sm">Analysis Result</h4>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {result.analysis_text}
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                <p>💡 This analysis result contains text-based insights. For silence detection and audio descriptions, use the default analysis prompt.</p>
-              </div>
-            </div>
-          ) : rows.length === 0 ? (
+          ) : silenceRows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>No silent segments found in this video.</p>
@@ -687,7 +726,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {rows.map((row, i) => {
+              {silenceRows.map((row, i) => {
                 const currentText = editedNarrations[i] || row.narration;
                 const wordCount = currentText.trim().split(/\s+/).filter(Boolean).length;
                 const tooLong = wordCount > row.max_words;
@@ -757,13 +796,81 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardContent>
       </Card>
 
+      {/* Custom Analysis Insights Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Custom Analysis Insights</CardTitle>
+              {insightResultsFromCache && insightResult && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  📋 Cached
+                </Badge>
+              )}
+            </div>
+            <Button
+              onClick={analyzeInsights}
+              disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
+              size="sm"
+            >
+              {analyzingInsight ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Analyze with Prompt
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Custom Analysis Prompt</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Enter a custom prompt to extract specific insights from your video (e.g., generate hashtags, identify themes, extract key quotes, etc.)
+            </p>
+            <Textarea
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="min-h-24"
+              placeholder="e.g. Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
+            />
+          </div>
+          
+          {!insightResult ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Enter a custom prompt above and click "Analyze" to generate insights.</p>
+            </div>
+          ) : insightResult.analysis_text ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium mb-3 text-sm">Analysis Result</h4>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {insightResult.analysis_text}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">No insights generated. Try adjusting your prompt.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Audio Description Confirmation Dialog */}
       <AlertDialog open={showAudioDescriptionDialog} onOpenChange={setShowAudioDescriptionDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Convert to Audio Descriptions?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will convert your {rows.length} analysis segments into audio descriptions for the video. 
+              This will convert your {silenceRows.length} analysis segments into audio descriptions for the video. 
               Any existing audio descriptions will be replaced.
               <br /><br />
               Make sure to review and edit the narrations before proceeding.
