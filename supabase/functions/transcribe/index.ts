@@ -26,6 +26,13 @@ serve(async (req) => {
     const body = await req.text();
     const { videoUrl, videoId, language, forceReExtract } = JSON.parse(body);
     
+    console.log("Request parameters:", {
+      videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
+      videoId: videoId || 'none',
+      language: language || 'auto',
+      forceReExtract: !!forceReExtract
+    });
+    
     const origin = req.headers.get("origin") || "";
     const resolvedVideoUrl = (videoUrl && (videoUrl.startsWith("http://") || videoUrl.startsWith("https://")))
       ? videoUrl
@@ -205,10 +212,29 @@ serve(async (req) => {
       }
     }
 
-    // Save to database
+    // Save to database and log the attempt
+    console.log("Checking database save conditions:", { 
+      hasVideoId: !!videoId, 
+      hasSegments: !!transcriptionResult.segments,
+      segmentCount: transcriptionResult.segments?.length || 0,
+      resultKeys: Object.keys(transcriptionResult)
+    });
+    
     if (videoId && transcriptionResult.segments) {
+      console.log("Attempting to save to database...");
       await saveTranscriptToDatabase(videoId, transcriptionResult, forceReExtract);
+    } else {
+      console.log("Skipping database save - missing videoId or segments");
     }
+
+    console.log("Final transcription result structure:", {
+      hasText: !!transcriptionResult.text,
+      hasSegments: !!transcriptionResult.segments,
+      segmentCount: transcriptionResult.segments?.length || 0,
+      hasLanguage: !!transcriptionResult.language,
+      hasError: !!transcriptionResult.error,
+      resultKeys: Object.keys(transcriptionResult)
+    });
 
     return new Response(JSON.stringify(transcriptionResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
