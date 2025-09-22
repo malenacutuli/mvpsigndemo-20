@@ -115,10 +115,10 @@ export const About: React.FC = () => {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Lightbulb className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">The Power of Intentionality</h3>
+                  <h3 className="text-xl font-bold text-foreground">{t('about.dataQuality.powerOfIntentionality.title')}</h3>
                 </div>
                 <p className="text-foreground font-light leading-relaxed">
-                  Scraped internet content captures what people watch, but not why they created it. Our data, contributed by filmmakers, advertisers, and artists, is rich with creative purpose. Our AVLM goes beyond a basic emotional fingerprint and understands the narrative beats, creative tropes, and emotional arcs that make content truly great.
+                  {t('about.dataQuality.powerOfIntentionality.description')}
                 </p>
               </div>
 
@@ -127,10 +127,10 @@ export const About: React.FC = () => {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Lock className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">Built on Trust</h3>
+                  <h3 className="text-xl font-bold text-foreground">{t('about.dataQuality.builtOnTrust.title')}</h3>
                 </div>
                 <p className="text-foreground font-light leading-relaxed">
-                  Our data is not just a collection of pixels and audio waves; it is a repository of human creativity and emotion, annotated by the creators themselves. This proprietary dataset will allow us to train a model with a level of depth and nuance no other company can achieve.
+                  {t('about.dataQuality.builtOnTrust.description')}
                 </p>
               </div>
             </div>
@@ -148,10 +148,10 @@ export const About: React.FC = () => {
             {/* Description before image */}
             <div className="text-center mb-16 animate-fade-in">
               <h1 className="text-3xl md:text-4xl font-light text-foreground leading-tight mb-6">
-                Our AI research lab
+                {t('about.aiLab.title')}
               </h1>
               <p className="text-xl text-foreground font-light leading-relaxed max-w-3xl mx-auto">
-                Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.
+                {t('about.aiLab.subtitle')}
               </p>
             </div>
             
@@ -175,17 +175,17 @@ export const About: React.FC = () => {
 
             {/* Creative Analytics */}
             <div className="mb-16">
-              <h3 className="text-2xl font-light text-foreground mb-8 animate-fade-in">Creative Analytics for Advertising & Marketing:</h3>
+              <h3 className="text-2xl font-light text-foreground mb-8 animate-fade-in">{t('about.useCases.creativeAnalytics.title')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:200ms]">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Emotional Resonance Testing</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.creativeAnalytics.emotionalResonance.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Analyze how an audience emotionally connects with an ad at a granular level, pinpointing moments of awe, frustration, or delight.
+                    {t('about.useCases.creativeAnalytics.emotionalResonance.description')}
                   </p>
                 </div>
                 
@@ -194,10 +194,10 @@ export const About: React.FC = () => {
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <Target className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Narrative Optimization</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.creativeAnalytics.narrativeOptimization.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Identify which scenes or narrative beats in a campaign are most effective at driving emotional engagement and brand recall.
+                    {t('about.useCases.creativeAnalytics.narrativeOptimization.description')}
                   </p>
                 </div>
                 
@@ -206,10 +206,10 @@ export const About: React.FC = () => {
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <Globe className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Cross-Cultural Insights</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.creativeAnalytics.crossCulturalInsights.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Automatically detect culturally specific emotional nuances and creative tropes to optimize content for global markets.
+                    {t('about.useCases.creativeAnalytics.crossCulturalInsights.description')}
                   </p>
                 </div>
               </div>
@@ -217,17 +217,17 @@ export const About: React.FC = () => {
 
             {/* Film & TV */}
             <div className="mb-16">
-              <h3 className="text-2xl font-light text-foreground mb-8 animate-fade-in">Narrative Feedback for Film & TV Studios:</h3>
+              <h3 className="text-2xl font-light text-foreground mb-8 animate-fade-in">{t('about.useCases.filmTV.title')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20 animate-fade-in [animation-delay:200ms]">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <Film className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Editing & Post-Production</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.filmTV.editingPostProduction.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Provide real-time, emotional feedback to editors, helping them craft scenes that land with the intended emotional impact.
+                    {t('about.useCases.filmTV.editingPostProduction.description')}
                   </p>
                 </div>
                 
@@ -236,10 +236,10 @@ export const About: React.FC = () => {
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Script Analysis</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.filmTV.scriptAnalysis.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Analyze a script's narrative arc and emotional flow before production begins, identifying potential weaknesses or opportunities.
+                    {t('about.useCases.filmTV.scriptAnalysis.description')}
                   </p>
                 </div>
                 
@@ -248,10 +248,10 @@ export const About: React.FC = () => {
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <UserCheck className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="font-bold text-foreground text-lg">Character Development</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.filmTV.characterDevelopment.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Study how audiences respond to a character's emotional journey over a film or series.
+                    {t('about.useCases.filmTV.characterDevelopment.description')}
                   </p>
                 </div>
               </div>
@@ -264,25 +264,25 @@ export const About: React.FC = () => {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Wand2 className="w-6 h-6 text-primary" />
                   </div>
-                  Generative AI for Creative Tools:
+                  {t('about.useCases.generativeAI.title')}
                 </h3>
                 <div className="space-y-6">
                   <div className="p-6 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
                     <div className="flex items-center gap-3 mb-3">
                       <Sparkles className="w-5 h-5 text-primary" />
-                      <h4 className="font-bold text-foreground text-lg">Emotionally-Aware Generative Video</h4>
+                      <h4 className="font-bold text-foreground text-lg">{t('about.useCases.generativeAI.emotionallyAware.title')}</h4>
                     </div>
                     <p className="text-foreground font-light leading-relaxed">
-                      Use our AVLM to guide text-to-video models to create content with specific emotional tones and narrative structures.
+                      {t('about.useCases.generativeAI.emotionallyAware.description')}
                     </p>
                   </div>
                   <div className="p-6 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
                     <div className="flex items-center gap-3 mb-3">
                       <Music className="w-5 h-5 text-primary" />
-                      <h4 className="font-bold text-foreground text-lg">Dynamic Music & Sound Design</h4>
+                      <h4 className="font-bold text-foreground text-lg">{t('about.useCases.generativeAI.dynamicMusic.title')}</h4>
                     </div>
                     <p className="text-foreground font-light leading-relaxed">
-                      Generate music or soundscapes that adapt to the emotional arc of a video in real-time.
+                      {t('about.useCases.generativeAI.dynamicMusic.description')}
                     </p>
                   </div>
                 </div>
@@ -293,15 +293,15 @@ export const About: React.FC = () => {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
-                  Personalized Media Platforms:
+                  {t('about.useCases.personalizedMedia.title')}
                 </h3>
                 <div className="p-8 bg-white rounded-xl border border-slate-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:border-primary/20">
                   <div className="flex items-center gap-3 mb-4">
                     <Heart className="w-5 h-5 text-primary" />
-                    <h4 className="font-bold text-foreground text-lg">Emotion-Based Curation</h4>
+                    <h4 className="font-bold text-foreground text-lg">{t('about.useCases.personalizedMedia.emotionBased.title')}</h4>
                   </div>
                   <p className="text-foreground font-light leading-relaxed">
-                    Recommend content not just by genre, but by the emotional journey it provides. For example, a "comforting" playlist of short films or an "awe-inspiring" feed of documentaries.
+                    {t('about.useCases.personalizedMedia.emotionBased.description')}
                   </p>
                 </div>
               </div>
@@ -319,25 +319,25 @@ export const About: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 animate-fade-in">
               <h2 className="text-3xl font-light text-foreground mb-6">
-                Intellectual Property & Patent Areas
+                {t('about.intellectualProperty.title')}
               </h2>
               <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed mb-8">
-                We are building a robust intellectual property portfolio around our unique technology. Our patent strategy focuses on three key areas:
+                {t('about.intellectualProperty.description')}
               </p>
             </div>
             
             <div className="flex flex-wrap gap-3 justify-center">
               <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-primary/60" />
-                Emotion-Narrative Fusion
+                {t('about.intellectualProperty.emotionNarrative')}
               </div>
               <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                 <Eye className="w-4 h-4 text-primary/60" />
-                Explainable AV-LM
+                {t('about.intellectualProperty.explainableAVLM')}
               </div>
               <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary/60" />
-                Interactive Creative Critique
+                {t('about.intellectualProperty.interactiveCreative')}
               </div>
             </div>
           </div>
@@ -352,22 +352,22 @@ export const About: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center animate-fade-in">
             <h2 className="text-4xl md:text-5xl font-light mb-8 text-foreground leading-tight">
-              Ready to Shape the Future of Creative AI?
+              {t('about.cta.title')}
             </h2>
             <p className="text-xl text-foreground font-light mb-12 leading-relaxed max-w-2xl mx-auto">
-              Join us in revolutionizing how artificial intelligence understands and enhances human creativity.
+              {t('about.cta.description')}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in [animation-delay:300ms]">
               <Link to="/explore">
                 <Button size="lg" className="px-10 py-6 text-lg font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center gap-2">
                   <Rocket className="w-5 h-5" />
-                  Explore Our Technology
+                  {t('about.cta.exploreTechnology')}
                 </Button>
               </Link>
               <Link to="/contact">
                 <Button variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-primary/5 flex items-center gap-2">
                   <Mail className="w-5 h-5" />
-                  Contact Our Team
+                  {t('about.cta.contactTeam')}
                 </Button>
               </Link>
             </div>

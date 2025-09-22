@@ -91,7 +91,7 @@
     }
   },
   "about": {
-    "title": "Sobre Nosotros",
+    "title": "Sobre nosotros",
     "mission": "Somos una empresa de tecnología y un laboratorio de investigación que desarrolla un Modelo de Lenguaje Audiovisual Emocional (AVLM), entrenado con contenido creativo obtenido éticamente. Al enseñar a la IA a entender la emoción, la narrativa y la intención en medios audiovisuales, desbloqueamos herramientas sin precedentes para creadores, marcas y plataformas.",
     "values": {
       "ethicalAI": "IA Ética",
@@ -113,6 +113,10 @@
         "title": "Construido sobre la Confianza",
         "description": "Nuestros datos no son solo una colección de píxeles y ondas de audio; es un repositorio de creatividad y emoción humana, anotado por los propios creadores. Este conjunto de datos propietario nos permitirá entrenar un modelo con un nivel de profundidad y matices que ninguna otra empresa puede lograr."
       }
+    },
+    "aiLab": {
+      "title": "Nuestro laboratorio de investigación de IA",
+      "subtitle": "Construyendo la próxima generación de IA que comprende y mejora la creatividad humana a través de nuestro Modelo de Lenguaje Audiovisual Emocional."
     },
     "useCases": {
       "title": "Nuestro laboratorio de investigación de IA",

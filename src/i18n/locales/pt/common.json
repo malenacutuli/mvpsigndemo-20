@@ -114,6 +114,10 @@
         "description": "Nossos dados não são apenas uma coleção de pixels e ondas de áudio; é um repositório de criatividade e emoção humana, anotado pelos próprios criadores. Este conjunto de dados proprietário nos permitirá treinar um modelo com um nível de profundidade e nuance que nenhuma outra empresa pode alcançar."
       }
     },
+    "aiLab": {
+      "title": "Nosso laboratório de pesquisa de IA",
+      "subtitle": "Construindo a próxima geração de IA que compreende e aprimora a criatividade humana através do nosso Modelo de Linguagem Audiovisual Emocional."
+    },
     "useCases": {
       "title": "Nosso laboratório de pesquisa de IA",
       "subtitle": "Construindo a próxima geração de IA que compreende e aprimora a criatividade humana através do nosso Modelo de Linguagem Audiovisual Emocional.",
@@ -177,7 +181,9 @@
     },
     "cta": {
       "title": "Pronto para Moldar o Futuro da IA Criativa?",
-      "description": "Junte-se a nós para revolucionar como a inteligência artificial compreende e aprimora a criatividade humana.",
+      "exploreTechnology": "Explore Nossa Tecnologia",
+      "contactTeam": "Entre em Contato com Nossa Equipe"
+    }
       "exploreTechnology": "Explore Nossa Tecnologia",
       "contactTeam": "Entre em Contato com Nossa Equipe"
     }

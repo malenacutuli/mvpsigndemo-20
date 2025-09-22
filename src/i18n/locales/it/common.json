@@ -114,6 +114,10 @@
         "description": "I nostri dati non sono solo una collezione di pixel e onde audio; è un repository di creatività ed emozione umana, annotato dagli stessi creatori. Questo dataset proprietario ci permetterà di addestrare un modello con un livello di profondità e sfumature che nessun'altra azienda può raggiungere."
       }
     },
+    "aiLab": {
+      "title": "Il nostro laboratorio di ricerca IA",
+      "subtitle": "Costruire la prossima generazione di IA che comprende e migliora la creatività umana attraverso il nostro Modello di Linguaggio Audiovisivo Emotivo."
+    },
     "useCases": {
       "title": "Il nostro laboratorio di ricerca IA",
       "subtitle": "Costruire la prossima generazione di IA che comprende e migliora la creatività umana attraverso il nostro Modello di Linguaggio Audiovisivo Emotivo.",
@@ -177,7 +181,9 @@
     },
     "cta": {
       "title": "Pronto a Plasmare il Futuro dell'IA Creativa?",
-      "description": "Unisciti a noi per rivoluzionare il modo in cui l'intelligenza artificiale comprende e migliora la creatività umana.",
+      "exploreTechnology": "Esplora la Nostra Tecnologia",
+      "contactTeam": "Contatta il Nostro Team"
+    }
       "exploreTechnology": "Esplora la Nostra Tecnologia",
       "contactTeam": "Contatta il Nostro Team"
     }

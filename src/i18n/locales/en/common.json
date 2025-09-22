@@ -172,7 +172,20 @@
         "whiteLabel": "White-label embeddable player",
         "apiFirst": "API-first architecture",
         "sso": "Enterprise SSO & user management"
-      }
+    },
+    "intellectualProperty": {
+      "title": "Intellectual Property & Patent Areas",
+      "description": "We are building a robust intellectual property portfolio around our unique technology. Our patent strategy focuses on three key areas:",
+      "emotionNarrative": "Emotion-Narrative Fusion",
+      "explainableAVLM": "Explainable AV-LM", 
+      "interactiveCreative": "Interactive Creative Critique"
+    },
+    "cta": {
+      "title": "Ready to Shape the Future of Creative AI?",
+      "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
+      "exploreTechnology": "Explore Our Technology",
+      "contactTeam": "Contact Our Team"
+    }
     },
     "quote": "\"We don't just enhance video—we future-proof it.\""
   },

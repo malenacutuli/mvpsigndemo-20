@@ -114,6 +114,10 @@
         "description": "Nos données ne sont pas juste une collection de pixels et d'ondes audio ; c'est un dépôt de créativité et d'émotion humaine, annoté par les créateurs eux-mêmes. Cet ensemble de données propriétaire nous permettra d'entraîner un modèle avec un niveau de profondeur et de nuance qu'aucune autre entreprise ne peut atteindre."
       }
     },
+    "aiLab": {
+      "title": "Notre laboratoire de recherche en IA",
+      "subtitle": "Construire la prochaine génération d'IA qui comprend et améliore la créativité humaine grâce à notre Modèle de Langage Audiovisuel Émotionnel."
+    },
     "useCases": {
       "title": "Notre laboratoire de recherche IA",
       "subtitle": "Construire la prochaine génération d'IA qui comprend et améliore la créativité humaine grâce à notre Modèle de Langage Audiovisuel Émotionnel.",
