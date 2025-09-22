@@ -874,13 +874,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       {/* Content Generation and Management Controls */}
       <Tabs defaultValue="transcript" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
-          <TabsTrigger value="audio-description">Audio Description</TabsTrigger>
+          <TabsTrigger value="transcript">Transcript Extraction & Character Management</TabsTrigger>
+          <TabsTrigger value="audio-description">Audio Description and Video Analysis</TabsTrigger>
         </TabsList>
         
         <TabsContent value="transcript" className="space-y-4">
           <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & AI Analysis</h3>
+            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & Character Management</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
             </p>
