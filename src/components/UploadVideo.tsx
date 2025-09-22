@@ -34,7 +34,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState('auto');
   const [contentType, setContentType] = useState<string>('education');
   const [selectedVoice, setSelectedVoice] = useState('aria-engaging'); // Default to education voice
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
@@ -574,6 +574,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="auto">Auto-detect Language</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="es">Spanish</SelectItem>
                   <SelectItem value="fr">French</SelectItem>

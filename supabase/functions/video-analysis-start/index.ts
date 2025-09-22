@@ -60,7 +60,7 @@ if (!taskId) {
   throw new Error(`Failed to create indexing task: unexpected response ${JSON.stringify(task)}`);
 }
 
-    // Upsert mapping in database
+    // Update or insert mapping in database
 const mappingData = {
   asset_id: assetId,
   index_id: indexId,
@@ -70,13 +70,29 @@ const mappingData = {
   updated_at: new Date().toISOString()
 };
 
-    const { data: mapping, error: mappingError } = await supabase
-      .from('twelve_labs_mappings')
-      .upsert(mappingData)
-      .select()
-      .single();
-
-    if (mappingError) throw mappingError;
+    let mapping;
+    if (existingMapping) {
+      // Update existing mapping
+      const { data: updatedMapping, error: updateError } = await supabase
+        .from('twelve_labs_mappings')
+        .update(mappingData)
+        .eq('asset_id', assetId)
+        .select()
+        .single();
+      
+      if (updateError) throw updateError;
+      mapping = updatedMapping;
+    } else {
+      // Insert new mapping
+      const { data: newMapping, error: insertError } = await supabase
+        .from('twelve_labs_mappings')
+        .insert(mappingData)
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      mapping = newMapping;
+    }
 
     return new Response(
       JSON.stringify({ ok: true, mapping }),
