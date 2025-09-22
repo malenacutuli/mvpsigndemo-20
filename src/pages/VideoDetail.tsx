@@ -557,25 +557,15 @@ const VideoDetail = () => {
 
           {/* Complete Video Workflow Section */}
           {videoUrl && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Edit className="w-5 h-5" />
-                  Transcript Extraction & Character Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TranscriptWorkflow
-                  videoId={video.id}
-                  videoUrl={videoUrl}
-                  videoLanguage={video.language}
-                  onTranscriptReady={handleTranscriptReady}
-                  onWorkflowComplete={handleWorkflowComplete}
-                  onCharactersUpdate={handleCharactersUpdate}
-                  onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
-                />
-              </CardContent>
-            </Card>
+            <TranscriptWorkflow
+              videoId={video.id}
+              videoUrl={videoUrl}
+              videoLanguage={video.language}
+              onTranscriptReady={handleTranscriptReady}
+              onWorkflowComplete={handleWorkflowComplete}
+              onCharactersUpdate={handleCharactersUpdate}
+              onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
+            />
           )}
 
           {/* Export Accessible Video - Temporarily Hidden */}
