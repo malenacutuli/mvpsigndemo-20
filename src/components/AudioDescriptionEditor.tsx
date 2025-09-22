@@ -48,8 +48,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editVoiceStyle, setEditVoiceStyle] = useState<string>('warm');
-  const [editStartTime, setEditStartTime] = useState<number>(0);
-  const [editEndTime, setEditEndTime] = useState<number>(0);
+  const [editStartTime, setEditStartTime] = useState<string>('0:00.0');
+  const [editEndTime, setEditEndTime] = useState<string>('0:00.0');
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
   const detectedLanguage = videoData?.transcript_language || 'en';
 const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
@@ -58,8 +58,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
-  const [manualStartTime, setManualStartTime] = useState<number>(0);
-  const [manualEndTime, setManualEndTime] = useState<number>(5);
+  const [manualStartTime, setManualStartTime] = useState<string>('0:00.0');
+  const [manualEndTime, setManualEndTime] = useState<string>('0:05.0');
   const [manualText, setManualText] = useState('');
   const [manualVoiceStyle, setManualVoiceStyle] = useState<string>('warm');
   const [isUsingTwelveLabs, setIsUsingTwelveLabs] = useState(false);
@@ -192,9 +192,36 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     };
   }, []);
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = (seconds % 60).toFixed(1);
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+    }
+    return `${mins}:${secs.padStart(4, '0')}`;
+  };
+
+  const parseTimeInput = (timeStr: string): number => {
+    if (timeStr.includes(':')) {
+      const parts = timeStr.split(':');
+      if (parts.length === 3) {
+        // HH:MM:SS format
+        const [hours, mins, secs] = parts;
+        return parseInt(hours) * 3600 + parseInt(mins) * 60 + parseFloat(secs);
+      } else if (parts.length === 2) {
+        // MM:SS format
+        const [mins, secs] = parts;
+        return parseInt(mins) * 60 + parseFloat(secs);
+      }
+    }
+    return parseFloat(timeStr) || 0;
+  };
+
+  const adjustTime = (currentTime: string, adjustment: number): string => {
+    const currentSeconds = parseTimeInput(currentTime);
+    const newSeconds = Math.max(0, currentSeconds + adjustment);
+    return formatTime(newSeconds);
   };
 
   const getVoiceStyleColor = (voiceId: string): string => {
@@ -686,8 +713,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     setEditingIndex(index);
     setEditText(descriptions[index].text);
     setEditVoiceStyle(descriptions[index].voiceStyle);
-    setEditStartTime(descriptions[index].startTime);
-    setEditEndTime(descriptions[index].endTime);
+    setEditStartTime(formatTime(descriptions[index].startTime));
+    setEditEndTime(formatTime(descriptions[index].endTime));
   };
 
   const saveEdit = async () => {
@@ -698,8 +725,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       ...updatedDescriptions[editingIndex],
       text: editText,
       voiceStyle: editVoiceStyle,
-      startTime: editStartTime,
-      endTime: editEndTime
+      startTime: parseTimeInput(editStartTime),
+      endTime: parseTimeInput(editEndTime)
     };
 
     setDescriptions(updatedDescriptions);
@@ -710,29 +737,29 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     
     setEditingIndex(null);
     setEditText('');
-    setEditStartTime(0);
-    setEditEndTime(0);
+    setEditStartTime('0:00.0');
+    setEditEndTime('0:00.0');
     setEditVoiceStyle('warm');
   };
 
   const cancelEdit = () => {
     setEditingIndex(null);
     setEditText('');
-    setEditStartTime(0);
-    setEditEndTime(0);
+    setEditStartTime('0:00.0');
+    setEditEndTime('0:00.0');
     setEditVoiceStyle('warm');
   };
 
   const addManualSegment = async () => {
-    if (!manualText.trim() || manualEndTime <= manualStartTime) {
+    if (!manualText.trim() || parseTimeInput(manualEndTime) <= parseTimeInput(manualStartTime)) {
       toast.error('Please enter valid text and time range');
       return;
     }
 
     const newSegment: AudioDescriptionSegment = {
       text: manualText.trim(),
-      startTime: manualStartTime,
-      endTime: manualEndTime,
+      startTime: parseTimeInput(manualStartTime),
+      endTime: parseTimeInput(manualEndTime),
       voiceStyle: manualVoiceStyle
     };
 
@@ -747,8 +774,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     
     // Reset form
     setManualText('');
-    setManualStartTime(0);
-    setManualEndTime(5);
+    setManualStartTime('0:00.0');
+    setManualEndTime('0:05.0');
     setManualVoiceStyle('warm');
     setShowManualForm(false);
     
@@ -888,26 +915,102 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Start Time (seconds)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={manualStartTime}
-                      onChange={(e) => setManualStartTime(parseFloat(e.target.value) || 0)}
-                      className="h-8"
-                    />
+                    <Label className="text-xs">Start Time</Label>
+                    <div className="space-y-1">
+                      <Input
+                        value={manualStartTime}
+                        onChange={(e) => setManualStartTime(e.target.value)}
+                        placeholder="0:00.0 or 1:23:45.0"
+                        className="text-xs font-mono"
+                      />
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualStartTime(adjustTime(manualStartTime, -5))}
+                          className="h-6 px-2 text-xs"
+                          title="Subtract 5 seconds"
+                        >
+                          -5s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualStartTime(adjustTime(manualStartTime, -1))}
+                          className="h-6 px-2 text-xs"
+                          title="Subtract 1 second"
+                        >
+                          -1s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualStartTime(adjustTime(manualStartTime, 1))}
+                          className="h-6 px-2 text-xs"
+                          title="Add 1 second"
+                        >
+                          +1s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualStartTime(adjustTime(manualStartTime, 5))}
+                          className="h-6 px-2 text-xs"
+                          title="Add 5 seconds"
+                        >
+                          +5s
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   <div>
-                    <Label className="text-xs">End Time (seconds)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={manualEndTime}
-                      onChange={(e) => setManualEndTime(parseFloat(e.target.value) || 0)}
-                      className="h-8"
-                    />
+                    <Label className="text-xs">End Time</Label>
+                    <div className="space-y-1">
+                      <Input
+                        value={manualEndTime}
+                        onChange={(e) => setManualEndTime(e.target.value)}
+                        placeholder="0:05.0 or 1:23:45.0"
+                        className="text-xs font-mono"
+                      />
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualEndTime(adjustTime(manualEndTime, -5))}
+                          className="h-6 px-2 text-xs"
+                          title="Subtract 5 seconds"
+                        >
+                          -5s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualEndTime(adjustTime(manualEndTime, -1))}
+                          className="h-6 px-2 text-xs"
+                          title="Subtract 1 second"
+                        >
+                          -1s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualEndTime(adjustTime(manualEndTime, 1))}
+                          className="h-6 px-2 text-xs"
+                          title="Add 1 second"
+                        >
+                          +1s
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualEndTime(adjustTime(manualEndTime, 5))}
+                          className="h-6 px-2 text-xs"
+                          title="Add 5 seconds"
+                        >
+                          +5s
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -939,7 +1042,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 <Button 
                   onClick={addManualSegment} 
                   className="w-full"
-                  disabled={!manualText.trim() || manualEndTime <= manualStartTime}
+                  disabled={!manualText.trim() || parseTimeInput(manualEndTime) <= parseTimeInput(manualStartTime)}
                 >
                   Add Description
                 </Button>
@@ -958,26 +1061,102 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-xs">Start Time (seconds)</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={editStartTime}
-                              onChange={(e) => setEditStartTime(parseFloat(e.target.value) || 0)}
-                              className="h-8"
-                            />
+                            <Label className="text-xs">Start Time</Label>
+                            <div className="space-y-1">
+                              <Input
+                                value={editStartTime}
+                                onChange={(e) => setEditStartTime(e.target.value)}
+                                placeholder="0:00.0 or 1:23:45.0"
+                                className="text-xs font-mono"
+                              />
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditStartTime(adjustTime(editStartTime, -5))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Subtract 5 seconds"
+                                >
+                                  -5s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditStartTime(adjustTime(editStartTime, -1))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Subtract 1 second"
+                                >
+                                  -1s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditStartTime(adjustTime(editStartTime, 1))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Add 1 second"
+                                >
+                                  +1s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditStartTime(adjustTime(editStartTime, 5))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Add 5 seconds"
+                                >
+                                  +5s
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                           <div>
-                            <Label className="text-xs">End Time (seconds)</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={editEndTime}
-                              onChange={(e) => setEditEndTime(parseFloat(e.target.value) || 0)}
-                              className="h-8"
-                            />
+                            <Label className="text-xs">End Time</Label>
+                            <div className="space-y-1">
+                              <Input
+                                value={editEndTime}
+                                onChange={(e) => setEditEndTime(e.target.value)}
+                                placeholder="0:05.0 or 1:23:45.0"
+                                className="text-xs font-mono"
+                              />
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditEndTime(adjustTime(editEndTime, -5))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Subtract 5 seconds"
+                                >
+                                  -5s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditEndTime(adjustTime(editEndTime, -1))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Subtract 1 second"
+                                >
+                                  -1s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditEndTime(adjustTime(editEndTime, 1))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Add 1 second"
+                                >
+                                  +1s
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditEndTime(adjustTime(editEndTime, 5))}
+                                  className="h-6 px-2 text-xs"
+                                  title="Add 5 seconds"
+                                >
+                                  +5s
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         
