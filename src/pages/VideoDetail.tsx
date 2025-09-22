@@ -13,7 +13,7 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
-import { TranscriptWorkflow } from "@/components/TranscriptWorkflow";
+
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
@@ -555,18 +555,6 @@ const VideoDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Complete Video Workflow Section */}
-          {videoUrl && (
-            <TranscriptWorkflow
-              videoId={video.id}
-              videoUrl={videoUrl}
-              videoLanguage={video.language}
-              onTranscriptReady={handleTranscriptReady}
-              onWorkflowComplete={handleWorkflowComplete}
-              onCharactersUpdate={handleCharactersUpdate}
-              onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
-            />
-          )}
 
           {/* Export Accessible Video - Temporarily Hidden */}
           {/* {captions.length > 0 && videoUrl && (
