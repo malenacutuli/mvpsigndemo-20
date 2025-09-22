@@ -221,6 +221,24 @@ serve(async (req) => {
       }
     }
 
+    // POST-PROCESSING VALIDATION
+    if (transcriptionResult && transcriptionResult.segments) {
+      console.log("🔍 Validating transcription quality...");
+      
+      // Check for gibberish patterns and suspicious content
+      const validationResult = validateTranscriptionQuality(transcriptionResult);
+      if (!validationResult.isValid) {
+        console.log("❌ Transcription validation failed:", validationResult.reason);
+        transcriptionResult = {
+          error: 'invalid_transcription',
+          message: `Transcription quality check failed: ${validationResult.reason}. This may indicate issues with audio quality, video format, or API processing. Please try with a different video or check audio clarity.`,
+          details: validationResult.issues
+        };
+      } else {
+        console.log("✅ Transcription validation passed");
+      }
+    }
+
     // Save to database and log the attempt
     console.log("Checking database save conditions:", { 
       hasVideoId: !!videoId, 
@@ -696,4 +714,69 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
   } catch (error) {
     console.error("Database save failed:", error);
   }
+}
+
+// Validate transcription quality to detect gibberish and low-quality outputs
+function validateTranscriptionQuality(result: any): { isValid: boolean; reason?: string; issues?: string[] } {
+  const issues: string[] = [];
+  
+  if (!result.segments || result.segments.length === 0) {
+    return { isValid: false, reason: 'No segments found in transcription' };
+  }
+  
+  // Check for gibberish patterns
+  for (const segment of result.segments) {
+    const text = segment.text || '';
+    
+    // Check for repetitive characters (like "Qaaaaaaa...")
+    const repetitivePattern = /(.)\1{10,}/; // Same character repeated 11+ times
+    if (repetitivePattern.test(text)) {
+      issues.push(`Repetitive character pattern detected: "${text.substring(0, 50)}..."`);
+    }
+    
+    // Check for extremely low character diversity
+    const uniqueChars = new Set(text.replace(/\s+/g, '').toLowerCase()).size;
+    const totalChars = text.replace(/\s+/g, '').length;
+    if (totalChars > 20 && uniqueChars < 3) {
+      issues.push(`Very low character diversity: ${uniqueChars} unique chars in ${totalChars} characters`);
+    }
+    
+    // Check for nonsensical word patterns
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    if (words.length > 5) {
+      const shortWords = words.filter(w => w.length < 3).length;
+      const longRepetitiveWords = words.filter(w => w.length > 8 && /(.{2,})\1{2,}/.test(w)).length;
+      
+      if (shortWords / words.length > 0.8) {
+        issues.push(`Too many very short words (${shortWords}/${words.length})`);
+      }
+      if (longRepetitiveWords > 0) {
+        issues.push(`Repetitive word patterns detected`);
+      }
+    }
+    
+    // Check for Spanish refusal patterns (from previous fix)
+    const spanishRefusalPatterns = [
+      /lo siento.*no puedo.*ayudar/i,
+      /sorry.*cannot.*help/i,
+      /i cannot.*assist/i,
+      /no puedo.*proporcionar/i
+    ];
+    
+    if (spanishRefusalPatterns.some(pattern => pattern.test(text))) {
+      issues.push(`API refusal message detected instead of transcription: "${text}"`);
+    }
+  }
+  
+  // If we found significant issues, mark as invalid
+  if (issues.length > 0) {
+    console.log("🚨 Transcription quality issues detected:", issues);
+    return { 
+      isValid: false, 
+      reason: `${issues.length} quality issue${issues.length > 1 ? 's' : ''} detected`, 
+      issues 
+    };
+  }
+  
+  return { isValid: true };
 }
