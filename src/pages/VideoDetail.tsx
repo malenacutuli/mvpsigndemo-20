@@ -12,10 +12,12 @@ import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
+import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { VoiceOption, findVoiceById } from "@/types/voice";
+import { MessageSquare } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -496,6 +498,26 @@ const VideoDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Video Analysis Section */}
+          {videoUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Video Analysis & Narration Generation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VideoAnalysisPanel
+                  assetId={video.id}
+                  playbackUrl={videoUrl}
+                  videoElementId="video-player"
+                  videoId={video.id}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Export Accessible Video - Temporarily Hidden */}
           {/* {captions.length > 0 && videoUrl && (
