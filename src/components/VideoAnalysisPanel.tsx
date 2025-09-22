@@ -106,12 +106,80 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [editedTimestamps, setEditedTimestamps] = useState<{[index: number]: { start: string, end: string }}>({});
   const [showAudioDescriptionDialog, setShowAudioDescriptionDialog] = useState(false);
   const [savingAudioDescriptions, setSavingAudioDescriptions] = useState(false);
+  const [loadingCachedResults, setLoadingCachedResults] = useState(false);
+  const [resultsFromCache, setResultsFromCache] = useState(false);
   const { toast } = useToast();
 
   // Check existing mapping on mount
   useEffect(() => {
     checkExistingMapping();
+    loadExistingResults();
   }, [assetId]);
+
+  // Reload results when prompt changes
+  useEffect(() => {
+    if (assetId) {
+      loadExistingResults();
+    }
+  }, [prompt]);
+
+  const loadExistingResults = async () => {
+    if (!assetId) return;
+    
+    setLoadingCachedResults(true);
+    try {
+      const { data: existingResult } = await supabase
+        .from('video_analysis_results')
+        .select('*')
+        .eq('asset_id', assetId)
+        .eq('prompt', prompt)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingResult) {
+        setResult(existingResult.result as AnalysisResult);
+        setResultsFromCache(true);
+        console.log('✅ Loaded cached analysis results');
+        toast({
+          title: "Loaded Cached Results",
+          description: "Using previously saved analysis results"
+        });
+      } else {
+        // No cached results found, clear current results
+        setResult(null);
+        setResultsFromCache(false);
+      }
+    } catch (error) {
+      console.error('Error loading cached results:', error);
+    } finally {
+      setLoadingCachedResults(false);
+    }
+  };
+
+  const saveAnalysisResults = async (analysisResult: AnalysisResult) => {
+    if (!assetId || !analysisResult) return;
+
+    try {
+      // Save to database - cast to JSON type
+      const { error } = await supabase
+        .from('video_analysis_results')
+        .insert({
+          asset_id: assetId,
+          result: analysisResult as any, // Cast to match database JSON type
+          prompt: prompt,
+          language: 'en'
+        });
+
+      if (error) {
+        console.error('Error saving analysis results:', error);
+      } else {
+        console.log('✅ Analysis results saved to database');
+      }
+    } catch (error) {
+      console.error('Error saving analysis results:', error);
+    }
+  };
 
   const checkExistingMapping = async () => {
     try {
@@ -234,6 +302,11 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       }
 
       setResult(analysisResult);
+      setResultsFromCache(false); // Mark as newly generated
+      
+      // Save results to database for future use
+      await saveAnalysisResults(analysisResult);
+      
       toast({
         title: "Analysis Complete",
         description: `Found ${analysisResult?.silences?.length || 0} silent segments`
@@ -365,6 +438,17 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               {status === 'ready' && 'Ready'}
               {status === 'failed' && 'Failed'}
             </Badge>
+            {loadingCachedResults && (
+              <Badge variant="outline">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Loading Cache...
+              </Badge>
+            )}
+            {resultsFromCache && result && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                📋 Cached Results
+              </Badge>
+            )}
           </div>
         </div>
         
