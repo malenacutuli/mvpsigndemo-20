@@ -64,27 +64,30 @@ function wordsAllowed(durationMs: number) {
 
 const DEFAULT_SILENCE_PROMPT = JSON.stringify(
   {
-    task: "Extract silent moments and generate ad-style narration that fits each gap for up to 1 hour of content.",
-    requirements: [
-      "Detect ALL segments with no character dialogue or narration throughout the entire video (up to 1 hour).",
+    "task": "Extract silent moments and generate storytelling audio description that fits within each gap.",
+    "requirements": [
+      "Detect all segments where there is no character dialogue or narration (silence or just background music).",
+      "Also analyze surrounding dialogue to enrich the context of the scene, so descriptions feel connected to the story.",
       "Return precise timestamps as HH:MM:SS.mmm for start and end.",
       "Provide duration in milliseconds.",
-      "Process up to 100 silent segments to ensure comprehensive coverage.",
-      "Ensure each narration fits within the gap using ~160 words per minute and keep a 0.3s safety buffer.",
-      "Style: creative advertising copywriter, cinematic podcast tone; avoid camera directions and technical terms.",
-      "Focus on story, emotions, and sensory detail; keep concise for the gap length.",
-      "US English.",
+      "Limit to ~160 words per minute, leaving 0.3s safety buffer per gap.",
+      "Narration style: cinematic podcast or audiobook storytelling — emotionally engaging, sensory-rich, and narrative-driven.",
+      "Do NOT describe cameras, angles, or technical details.",
+      "Blend dialogue meaning and visual action into the narration when dialogue is present nearby.",
+      "Make the listener 'see with their ears' — describe emotions, atmospheres, and story flow.",
+      "If characters are known (e.g., David Beckham, Kevin Hart), name them and tie their actions to the overall story/emotion.",
+      "Ensure each narration fits strictly within its silent segment timing.",
       "Output STRICT JSON only."
     ],
-    output_schema: {
-      video_id: "string",
-      silences: [
+    "output_schema": {
+      "video_id": "string",
+      "silences": [
         {
-          start: "HH:MM:SS.mmm",
-          end: "HH:MM:SS.mmm",
-          duration_ms: 0,
-          max_words_allowed: 0,
-          narration: "string"
+          "start": "HH:MM:SS.mmm",
+          "end": "HH:MM:SS.mmm",
+          "duration_ms": 0,
+          "max_words_allowed": 0,
+          "narration": "string"
         }
       ]
     }
