@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
+import { useTranslation } from 'react-i18next';
 import { 
   Heart, 
   Brain, 
@@ -28,6 +29,8 @@ import aiNeuralNetwork from '@/assets/ai-neural-network.jpg';
 import humanAiCollaboration from '@/assets/human-ai-collaboration.jpg';
 
 export const About: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background relative">
       <Navigation />
@@ -48,24 +51,31 @@ export const About: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-4xl font-light text-foreground mb-8 animate-fade-in [animation-delay:200ms] text-center">About</h2>
+              <h2 className="text-4xl font-light text-foreground mb-8 animate-fade-in [animation-delay:200ms] text-center lg:text-left">{t('about.mission.title')}</h2>
               <p className="text-lg text-foreground font-light leading-relaxed mb-8 animate-fade-in [animation-delay:400ms]">
-                We are a technology company and a research lab developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.
+                {t('about.mission.description')}
               </p>
-              <div className="flex flex-wrap gap-3 justify-center animate-fade-in [animation-delay:600ms]">
+              <div className="flex flex-wrap gap-3 justify-center lg:justify-start animate-fade-in [animation-delay:600ms]">
                 <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary/60" />
-                  Ethical AI
+                  {t('about.mission.ethicalAI')}
                 </div>
                 <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                   <Brain className="w-4 h-4 text-primary/60" />
-                  Creative Intelligence
+                  {t('about.mission.creativeIntelligence')}
                 </div>
                 <div className="px-4 py-2 border border-slate-200 text-foreground text-sm font-light rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-primary/5 hover:border-primary/30 cursor-default flex items-center gap-2">
                   <Heart className="w-4 h-4 text-primary/60" />
-                  Human-Centric
+                  {t('about.mission.humanCentric')}
                 </div>
               </div>
+            </div>
+            <div className="animate-fade-in [animation-delay:800ms]">
+              <img 
+                src={humanAiCollaboration} 
+                alt="Human AI Collaboration" 
+                className="rounded-xl w-full transition-all duration-500 hover:scale-105"
+              />
             </div>
           </div>
         </div>
@@ -80,10 +90,10 @@ export const About: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 animate-fade-in">
               <h2 className="text-3xl font-light text-foreground mb-6">
-                Why High-Quality Data is the Key to Unlocking Emotion
+                {t('about.dataQuality.title')}
               </h2>
               <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed mb-8">
-                The quality of an AI model is a direct function of the data it's trained on. Today's large-scale models are built on billions of hours of scraped, low-quality, and often ethically questionable internet data. This leads to models that can recognize basic patterns but fail to grasp the rich, subtle tapestry of human emotion.
+                {t('about.dataQuality.description')}
               </p>
             </div>
 
@@ -93,10 +103,10 @@ export const About: React.FC = () => {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Shield className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">Ethical Data</h3>
+                  <h3 className="text-xl font-bold text-foreground">{t('about.dataQuality.ethicalData.title')}</h3>
                 </div>
                 <p className="text-foreground font-light leading-relaxed">
-                  We are building our foundation on a rights-first, voluntarily contributed dataset. Through our flagship product, Axessible, we've created a virtuous cycle. Creators who use our platform to make their content compliant with new regulations are also giving us permission to learn from their work.
+                  {t('about.dataQuality.ethicalData.description')}
                 </p>
               </div>
 
@@ -154,14 +164,14 @@ export const About: React.FC = () => {
               />
             </div>
             
-            <div className="text-center mb-16 animate-fade-in [animation-delay:500ms]">
-              <h2 className="text-3xl font-light text-foreground mb-6">
-                Broader Use Cases & IP Strategy
-              </h2>
-              <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed mb-8">
-                The applications of an AVLM trained on a high-quality, creative-led dataset extend far beyond our initial product, Axessvideo Platform. Our technology powers a new class of tools across diverse industries.
-              </p>
-            </div>
+              <div className="text-center mb-16 animate-fade-in [animation-delay:500ms]">
+                <h2 className="text-3xl font-light text-foreground mb-6">
+                  {t('about.aiLab.useCases.title')}
+                </h2>
+                <p className="text-xl text-foreground font-light max-w-4xl mx-auto leading-relaxed mb-8">
+                  {t('about.aiLab.useCases.description')}
+                </p>
+              </div>
 
             {/* Creative Analytics */}
             <div className="mb-16">

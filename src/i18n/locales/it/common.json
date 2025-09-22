@@ -475,6 +475,110 @@
       }
     }
   },
+  "about": {
+    "pageTitle": "Chi siamo",
+    "mission": {
+      "title": "Chi siamo",
+      "description": "Siamo un'azienda tecnologica e un laboratorio di ricerca che sviluppa un Modello di Linguaggio Audiovisivo Emotivo (AVLM), addestrato su contenuti creativi di origine etica. Insegnando all'IA a comprendere emozione, narrativa e intenzione nei media audiovisivi, sblocchiamo strumenti senza precedenti per creatori, marchi e piattaforme.",
+      "ethicalAI": "IA Etica",
+      "creativeIntelligence": "Intelligenza Creativa",
+      "humanCentric": "Centrato sull'Umano"
+    },
+    "dataQuality": {
+      "title": "Perché i Dati di Alta Qualità sono la Chiave per Sbloccare l'Emozione",
+      "description": "La qualità di un modello di IA è una funzione diretta dei dati su cui è addestrato. I modelli su larga scala di oggi sono costruiti su miliardi di ore di dati internet raccolti, di bassa qualità e spesso eticamente discutibili. Questo porta a modelli che possono riconoscere schemi di base ma falliscono nel cogliere il ricco e sottile arazzo dell'emozione umana.",
+      "ethicalData": {
+        "title": "Dati Etici",
+        "description": "Stiamo costruendo le nostre fondamenta su un dataset volontariamente contribuito, incentrato sui diritti. Attraverso il nostro prodotto di punta, Axessible, abbiamo creato un circolo virtuoso. I creatori che usano la nostra piattaforma per rendere il loro contenuto conforme alle nuove normative ci danno anche il permesso di imparare dal loro lavoro."
+      },
+      "powerOfIntentionality": {
+        "title": "Il Potere dell'Intenzionalità",
+        "description": "Il contenuto raccolto da internet cattura ciò che le persone guardano, ma non perché l'hanno creato. I nostri dati, contribuiti da filmmaker, pubblicitari e artisti, sono ricchi di scopo creativo. Il nostro AVLM va oltre un'impronta emotiva di base e comprende i ritmi narrativi, i tropi creativi e gli archi emotivi che rendono i contenuti veramente eccezionali."
+      },
+      "builtOnTrust": {
+        "title": "Costruito sulla Fiducia",
+        "description": "I nostri dati non sono solo una collezione di pixel e onde audio; è un repository di creatività ed emozione umana, annotato dai creatori stessi. Questo dataset proprietario ci permetterà di addestrare un modello con un livello di profondità e sfumatura che nessun'altra azienda può raggiungere."
+      }
+    },
+    "aiLab": {
+      "title": "Il nostro laboratorio di ricerca IA",
+      "description": "Costruire la prossima generazione di IA che comprende e migliora la creatività umana attraverso il nostro Modello di Linguaggio Audiovisivo Emotivo.",
+      "useCases": {
+        "title": "Casi d'Uso Più Ampi e Strategia IP",
+        "description": "Le applicazioni di un AVLM addestrato su un dataset di alta qualità guidato dalla creatività si estendono ben oltre il nostro prodotto iniziale, Piattaforma Axessvideo. La nostra tecnologia alimenta una nuova classe di strumenti in diverse industrie."
+      }
+    },
+    "creativeAnalytics": {
+      "title": "Analytics Creativi per Pubblicità e Marketing:",
+      "emotionalResonance": {
+        "title": "Test di Risonanza Emotiva",
+        "description": "Analizzare come un pubblico si connette emotivamente con un annuncio a livello granulare, identificando momenti di meraviglia, frustrazione o piacere."
+      },
+      "narrativeOptimization": {
+        "title": "Ottimizzazione Narrativa",
+        "description": "Identificare quali scene o battute narrative in una campagna sono più efficaci nel guidare l'engagement emotivo e il ricordo del marchio."
+      },
+      "crossCulturalInsights": {
+        "title": "Intuizioni Interculturali",
+        "description": "Rilevare automaticamente sfumature emotive specifiche della cultura e tropi creativi per ottimizzare i contenuti per i mercati globali."
+      }
+    },
+    "filmTv": {
+      "title": "Feedback Narrativo per Studi Cinematografici e TV:",
+      "editingPostProduction": {
+        "title": "Montaggio e Post-Produzione",
+        "description": "Fornire feedback emotivo in tempo reale agli editor, aiutandoli a creare scene che abbiano l'impatto emotivo previsto."
+      },
+      "scriptAnalysis": {
+        "title": "Analisi di Sceneggiatura",
+        "description": "Analizzare l'arco narrativo e il flusso emotivo di una sceneggiatura prima che inizi la produzione, identificando debolezze o opportunità potenziali."
+      },
+      "characterDevelopment": {
+        "title": "Sviluppo del Personaggio",
+        "description": "Studiare come il pubblico risponde al viaggio emotivo di un personaggio lungo un film o una serie."
+      }
+    },
+    "generativeAI": {
+      "title": "IA Generativa per Strumenti Creativi:",
+      "emotionallyAwareVideo": {
+        "title": "Video Generativo Emotivamente Consapevole",
+        "description": "Usare il nostro AVLM per guidare i modelli testo-a-video per creare contenuti con toni emotivi specifici e strutture narrative."
+      },
+      "dynamicMusic": {
+        "title": "Musica Dinamica e Sound Design",
+        "description": "Generare musica o paesaggi sonori che si adattano all'arco emotivo di un video in tempo reale."
+      }
+    },
+    "personalizedMedia": {
+      "title": "Piattaforme Multimediali Personalizzate:",
+      "emotionBasedCuration": {
+        "title": "Curation Basata sull'Emozione",
+        "description": "Raccomandare contenuti non solo per genere, ma per il viaggio emotivo che forniscono. Per esempio, una playlist \"confortante\" di cortometraggi o un feed \"ispirante\" di documentari."
+      }
+    },
+    "intellectualProperty": {
+      "title": "Proprietà Intellettuale e Aree di Brevetti:",
+      "description": "La nostra ricerca sull'IA emotiva ha portato a innovazioni rivoluzionarie in multiple aree elegibili per brevetti:",
+      "emotionNarrative": {
+        "title": "Fusione Emozione-Narrativa",
+        "description": "Metodi per sincronizzare l'analisi emotiva generata dall'IA con il riconoscimento della struttura narrativa per creare strumenti di raccomandazione e generazione di contenuti contestualmente consapevoli."
+      },
+      "explainableAvlm": {
+        "title": "AV-LM Spiegabile",
+        "description": "Tecniche per creare modelli di linguaggio audiovisivo interpretabili che possono articolare perché contenuti specifici evocano risposte emotive particolari, permettendo ai creatori di comprendere e replicare pattern creativi di successo."
+      },
+      "interactiveCreativeCritique": {
+        "title": "Critica Creativa Interattiva",
+        "description": "Sistemi di feedback in tempo reale che analizzano contenuti creativi durante la produzione e forniscono intuizioni azionabili per migliorare l'impatto emotivo e la coerenza narrativa."
+      }
+    },
+    "cta": {
+      "title": "Pronti ad esplorare il futuro dell'IA emotiva?",
+      "description": "Unitevi a noi nella costruzione di tecnologia che non solo elabora contenuti—ma comprende l'esperienza umana dietro di essi.",
+      "exploreTech": "Esplora la Nostra Tecnologia",
+      "contactTeam": "Contatta il Nostro Team"
+    }
+  },
   "auth": {
     "signIn": "Accedi",
     "signUp": "Registrati",

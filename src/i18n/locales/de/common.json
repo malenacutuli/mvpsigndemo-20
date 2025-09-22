@@ -449,6 +449,110 @@
       }
     }
   },
+  "about": {
+    "pageTitle": "Über uns",
+    "mission": {
+      "title": "Über uns",
+      "description": "Wir sind ein Technologieunternehmen und ein Forschungslabor, das ein Emotionales Audiovisuelles Sprachmodell (AVLM) entwickelt, trainiert auf ethisch beschafften kreativen Inhalten. Indem wir KI beibringen, Emotionen, Erzählung und Absicht in audiovisuellen Medien zu verstehen, erschließen wir beispiellose Werkzeuge für Kreative, Marken und Plattformen.",
+      "ethicalAI": "Ethische KI",
+      "creativeIntelligence": "Kreative Intelligenz",
+      "humanCentric": "Menschenzentriert"
+    },
+    "dataQuality": {
+      "title": "Warum hochwertige Daten der Schlüssel zum Erschließen von Emotionen sind",
+      "description": "Die Qualität eines KI-Modells ist eine direkte Funktion der Daten, mit denen es trainiert wird. Heutige großangelegte Modelle basieren auf Milliarden von Stunden an gescrapten, minderwertigen und oft ethisch fragwürdigen Internet-Daten. Dies führt zu Modellen, die grundlegende Muster erkennen können, aber versagen, das reiche, subtile Geflecht menschlicher Emotionen zu erfassen.",
+      "ethicalData": {
+        "title": "Ethische Daten",
+        "description": "Wir bauen unser Fundament auf einem rechte-ersten, freiwillig beigetragenen Datensatz auf. Durch unser Flaggschiff-Produkt Axessible haben wir einen Tugendkreis geschaffen. Kreative, die unsere Plattform nutzen, um ihre Inhalte mit neuen Vorschriften konform zu machen, geben uns auch die Erlaubnis, von ihrer Arbeit zu lernen."
+      },
+      "powerOfIntentionality": {
+        "title": "Die Macht der Intentionalität",
+        "description": "Gescrapte Internet-Inhalte erfassen, was Menschen schauen, aber nicht warum sie es erstellt haben. Unsere Daten, beigetragen von Filmemachern, Werbetreibenden und Künstlern, sind reich an kreativem Zweck. Unser AVLM geht über einen grundlegenden emotionalen Fingerabdruck hinaus und versteht die narrativen Beats, kreativen Tropen und emotionalen Bögen, die Inhalte wirklich großartig machen."
+      },
+      "builtOnTrust": {
+        "title": "Auf Vertrauen gebaut",
+        "description": "Unsere Daten sind nicht nur eine Sammlung von Pixeln und Audiowellen; sie sind ein Repository menschlicher Kreativität und Emotion, kommentiert von den Kreativen selbst. Dieser proprietäre Datensatz wird es uns ermöglichen, ein Modell mit einem Niveau an Tiefe und Nuance zu trainieren, das kein anderes Unternehmen erreichen kann."
+      }
+    },
+    "aiLab": {
+      "title": "Unser KI-Forschungslabor",
+      "description": "Aufbau der nächsten Generation von KI, die menschliche Kreativität durch unser Emotionales Audiovisuelles Sprachmodell versteht und verbessert.",
+      "useCases": {
+        "title": "Breitere Anwendungsfälle & IP-Strategie",
+        "description": "Die Anwendungen eines AVLM, trainiert auf einem hochwertigen, kreativ-geführten Datensatz, erstrecken sich weit über unser erstes Produkt, Axessvideo-Plattform, hinaus. Unsere Technologie treibt eine neue Klasse von Werkzeugen in verschiedenen Branchen an."
+      }
+    },
+    "creativeAnalytics": {
+      "title": "Kreative Analytics für Werbung & Marketing:",
+      "emotionalResonance": {
+        "title": "Emotionale Resonanztests",
+        "description": "Analysieren, wie ein Publikum sich emotional mit einer Anzeige auf granularer Ebene verbindet, und Momente des Staunens, der Frustration oder des Vergnügens identifizieren."
+      },
+      "narrativeOptimization": {
+        "title": "Narrative Optimierung",
+        "description": "Identifizieren, welche Szenen oder narrativen Beats in einer Kampagne am effektivsten sind, um emotionales Engagement und Markenerinnerung zu fördern."
+      },
+      "crossCulturalInsights": {
+        "title": "Interkulturelle Einsichten",
+        "description": "Automatische Erkennung kulturspezifischer emotionaler Nuancen und kreativer Tropen zur Optimierung von Inhalten für globale Märkte."
+      }
+    },
+    "filmTv": {
+      "title": "Narratives Feedback für Film- & TV-Studios:",
+      "editingPostProduction": {
+        "title": "Schnitt & Nachbearbeitung",
+        "description": "Echzeit-emotionales Feedback für Editoren bereitstellen, um ihnen zu helfen, Szenen zu gestalten, die mit der beabsichtigten emotionalen Wirkung landen."
+      },
+      "scriptAnalysis": {
+        "title": "Drehbuchanalyse",
+        "description": "Den narrativen Bogen und emotionalen Fluss eines Drehbuchs vor Produktionsbeginn analysieren und potenzielle Schwächen oder Chancen identifizieren."
+      },
+      "characterDevelopment": {
+        "title": "Charakterentwicklung",
+        "description": "Studieren, wie Publikum auf die emotionale Reise eines Charakters über einen Film oder eine Serie reagiert."
+      }
+    },
+    "generativeAI": {
+      "title": "Generative KI für Kreative Werkzeuge:",
+      "emotionallyAwareVideo": {
+        "title": "Emotional bewusstes generatives Video",
+        "description": "Unser AVLM nutzen, um Text-zu-Video-Modelle zu leiten, um Inhalte mit spezifischen emotionalen Tönen und narrativen Strukturen zu erstellen."
+      },
+      "dynamicMusic": {
+        "title": "Dynamische Musik & Sounddesign",
+        "description": "Musik oder Klanglandschaften generieren, die sich in Echtzeit an den emotionalen Bogen eines Videos anpassen."
+      }
+    },
+    "personalizedMedia": {
+      "title": "Personalisierte Medienplattformen:",
+      "emotionBasedCuration": {
+        "title": "Emotionsbasierte Kuration",
+        "description": "Inhalte nicht nur nach Genre empfehlen, sondern nach der emotionalen Reise, die sie bieten. Zum Beispiel eine \"tröstende\" Playlist von Kurzfilmen oder einen \"ehrfurchtgebietenden\" Feed von Dokumentationen."
+      }
+    },
+    "intellectualProperty": {
+      "title": "Geistiges Eigentum & Patentbereiche:",
+      "description": "Unsere Forschung zu emotionaler KI hat zu bahnbrechenden Innovationen in mehreren patentfähigen Bereichen geführt:",
+      "emotionNarrative": {
+        "title": "Emotion-Narrativ-Fusion",
+        "description": "Methoden zur Synchronisation KI-generierter emotionaler Analyse mit narrativer Strukturerkennung zur Erstellung kontextuell bewusster Inhaltsempfehlungs- und Generierungstools."
+      },
+      "explainableAvlm": {
+        "title": "Erklärbares AV-LM",
+        "description": "Techniken zur Erstellung interpretierbarer audiovisueller Sprachmodelle, die artikulieren können, warum spezifische Inhalte bestimmte emotionale Reaktionen hervorrufen, und es Kreativen ermöglichen, erfolgreiche kreative Muster zu verstehen und zu replizieren."
+      },
+      "interactiveCreativeCritique": {
+        "title": "Interaktive Kreative Kritik",
+        "description": "Echzeit-Feedback-Systeme, die kreative Inhalte während der Produktion analysieren und umsetzbare Einsichten zur Verbesserung emotionaler Wirkung und narrativer Kohärenz bieten."
+      }
+    },
+    "cta": {
+      "title": "Bereit, die Zukunft emotionaler KI zu erkunden?",
+      "description": "Schließen Sie sich uns beim Aufbau von Technologie an, die nicht nur Inhalte verarbeitet—sie versteht die menschliche Erfahrung dahinter.",
+      "exploreTech": "Erkunden Sie Unsere Technologie",
+      "contactTeam": "Kontaktieren Sie Unser Team"
+    }
+  },
   "auth": {
     "signIn": "Anmelden",
     "signUp": "Registrieren",

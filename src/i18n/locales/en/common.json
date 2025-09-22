@@ -396,6 +396,110 @@
       }
     }
   },
+  "about": {
+    "pageTitle": "About",
+    "mission": {
+      "title": "About",
+      "description": "We are a technology company and a research lab developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.",
+      "ethicalAI": "Ethical AI",
+      "creativeIntelligence": "Creative Intelligence",
+      "humanCentric": "Human-Centric"
+    },
+    "dataQuality": {
+      "title": "Why High-Quality Data is the Key to Unlocking Emotion",
+      "description": "The quality of an AI model is a direct function of the data it's trained on. Today's large-scale models are built on billions of hours of scraped, low-quality, and often ethically questionable internet data. This leads to models that can recognize basic patterns but fail to grasp the rich, subtle tapestry of human emotion.",
+      "ethicalData": {
+        "title": "Ethical Data",
+        "description": "We are building our foundation on a rights-first, voluntarily contributed dataset. Through our flagship product, Axessible, we've created a virtuous cycle. Creators who use our platform to make their content compliant with new regulations are also giving us permission to learn from their work."
+      },
+      "powerOfIntentionality": {
+        "title": "The Power of Intentionality",
+        "description": "Scraped internet content captures what people watch, but not why they created it. Our data, contributed by filmmakers, advertisers, and artists, is rich with creative purpose. Our AVLM goes beyond a basic emotional fingerprint and understands the narrative beats, creative tropes, and emotional arcs that make content truly great."
+      },
+      "builtOnTrust": {
+        "title": "Built on Trust",
+        "description": "Our data is not just a collection of pixels and audio waves; it is a repository of human creativity and emotion, annotated by the creators themselves. This proprietary dataset will allow us to train a model with a level of depth and nuance no other company can achieve."
+      }
+    },
+    "aiLab": {
+      "title": "Our AI research lab",
+      "description": "Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.",
+      "useCases": {
+        "title": "Broader Use Cases & IP Strategy",
+        "description": "The applications of an AVLM trained on a high-quality, creative-led dataset extend far beyond our initial product, Axessvideo Platform. Our technology powers a new class of tools across diverse industries."
+      }
+    },
+    "creativeAnalytics": {
+      "title": "Creative Analytics for Advertising & Marketing:",
+      "emotionalResonance": {
+        "title": "Emotional Resonance Testing",
+        "description": "Analyze how an audience emotionally connects with an ad at a granular level, pinpointing moments of awe, frustration, or delight."
+      },
+      "narrativeOptimization": {
+        "title": "Narrative Optimization",
+        "description": "Identify which scenes or narrative beats in a campaign are most effective at driving emotional engagement and brand recall."
+      },
+      "crossCulturalInsights": {
+        "title": "Cross-Cultural Insights",
+        "description": "Automatically detect culturally specific emotional nuances and creative tropes to optimize content for global markets."
+      }
+    },
+    "filmTv": {
+      "title": "Narrative Feedback for Film & TV Studios:",
+      "editingPostProduction": {
+        "title": "Editing & Post-Production",
+        "description": "Provide real-time, emotional feedback to editors, helping them craft scenes that land with the intended emotional impact."
+      },
+      "scriptAnalysis": {
+        "title": "Script Analysis",
+        "description": "Analyze a script's narrative arc and emotional flow before production begins, identifying potential weaknesses or opportunities."
+      },
+      "characterDevelopment": {
+        "title": "Character Development",
+        "description": "Study how audiences respond to a character's emotional journey over a film or series."
+      }
+    },
+    "generativeAI": {
+      "title": "Generative AI for Creative Tools:",
+      "emotionallyAwareVideo": {
+        "title": "Emotionally-Aware Generative Video",
+        "description": "Use our AVLM to guide text-to-video models to create content with specific emotional tones and narrative structures."
+      },
+      "dynamicMusic": {
+        "title": "Dynamic Music & Sound Design",
+        "description": "Generate music or soundscapes that adapt to the emotional arc of a video in real-time."
+      }
+    },
+    "personalizedMedia": {
+      "title": "Personalized Media Platforms:",
+      "emotionBasedCuration": {
+        "title": "Emotion-Based Curation",
+        "description": "Recommend content not just by genre, but by the emotional journey it provides. For example, a \"comforting\" playlist of short films or an \"awe-inspiring\" feed of documentaries."
+      }
+    },
+    "intellectualProperty": {
+      "title": "Intellectual Property & Patent Areas:",
+      "description": "Our research into emotional AI has led to breakthrough innovations across multiple patent-eligible areas:",
+      "emotionNarrative": {
+        "title": "Emotion-Narrative Fusion",
+        "description": "Methods for synchronizing AI-generated emotional analysis with narrative structure recognition to create contextually aware content recommendations and generation tools."
+      },
+      "explainableAvlm": {
+        "title": "Explainable AV-LM",
+        "description": "Techniques for creating interpretable audiovisual language models that can articulate why specific content evokes particular emotional responses, enabling creators to understand and replicate successful creative patterns."
+      },
+      "interactiveCreativeCritique": {
+        "title": "Interactive Creative Critique",
+        "description": "Real-time feedback systems that analyze creative content during production and provide actionable insights for enhancing emotional impact and narrative coherence."
+      }
+    },
+    "cta": {
+      "title": "Ready to explore the future of emotional AI?",
+      "description": "Join us in building technology that doesn't just process content—it understands the human experience behind it.",
+      "exploreTech": "Explore Our Technology",
+      "contactTeam": "Contact Our Team"
+    }
+  },
   "auth": {
     "signIn": "Sign In",
     "signUp": "Sign Up",
