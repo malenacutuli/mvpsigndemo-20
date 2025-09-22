@@ -576,17 +576,36 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   };
 
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = (seconds % 60).toFixed(1);
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+    }
     return `${mins}:${secs.padStart(4, '0')}`;
   };
 
   const parseTimeInput = (timeStr: string): number => {
     if (timeStr.includes(':')) {
-      const [mins, secs] = timeStr.split(':');
-      return parseInt(mins) * 60 + parseFloat(secs);
+      const parts = timeStr.split(':');
+      if (parts.length === 3) {
+        // HH:MM:SS format
+        const [hours, mins, secs] = parts;
+        return parseInt(hours) * 3600 + parseInt(mins) * 60 + parseFloat(secs);
+      } else if (parts.length === 2) {
+        // MM:SS format
+        const [mins, secs] = parts;
+        return parseInt(mins) * 60 + parseFloat(secs);
+      }
     }
     return parseFloat(timeStr) || 0;
+  };
+
+  const adjustTime = (currentTime: string, adjustment: number): string => {
+    const currentSeconds = parseTimeInput(currentTime);
+    const newSeconds = Math.max(0, currentSeconds + adjustment);
+    return formatTime(newSeconds);
   };
 
   const exportTranscript = () => {
@@ -860,24 +879,104 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                           <Clock className="w-3 h-3" />
                           Start Time
                         </Label>
-                        <Input
-                          value={editStartTime}
-                          onChange={(e) => setEditStartTime(e.target.value)}
-                          placeholder="0:00.0"
-                          className="text-xs"
-                        />
+                        <div className="space-y-1">
+                          <Input
+                            value={editStartTime}
+                            onChange={(e) => setEditStartTime(e.target.value)}
+                            placeholder="0:00.0 or 1:23:45.0"
+                            className="text-xs font-mono"
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditStartTime(adjustTime(editStartTime, -5))}
+                              className="h-6 px-2 text-xs"
+                              title="Subtract 5 seconds"
+                            >
+                              -5s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditStartTime(adjustTime(editStartTime, -1))}
+                              className="h-6 px-2 text-xs"
+                              title="Subtract 1 second"
+                            >
+                              -1s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditStartTime(adjustTime(editStartTime, 1))}
+                              className="h-6 px-2 text-xs"
+                              title="Add 1 second"
+                            >
+                              +1s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditStartTime(adjustTime(editStartTime, 5))}
+                              className="h-6 px-2 text-xs"
+                              title="Add 5 seconds"
+                            >
+                              +5s
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           End Time
                         </Label>
-                        <Input
-                          value={editEndTime}
-                          onChange={(e) => setEditEndTime(e.target.value)}
-                          placeholder="0:03.0"
-                          className="text-xs"
-                        />
+                        <div className="space-y-1">
+                          <Input
+                            value={editEndTime}
+                            onChange={(e) => setEditEndTime(e.target.value)}
+                            placeholder="0:03.0 or 1:23:45.0"
+                            className="text-xs font-mono"
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditEndTime(adjustTime(editEndTime, -5))}
+                              className="h-6 px-2 text-xs"
+                              title="Subtract 5 seconds"
+                            >
+                              -5s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditEndTime(adjustTime(editEndTime, -1))}
+                              className="h-6 px-2 text-xs"
+                              title="Subtract 1 second"
+                            >
+                              -1s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditEndTime(adjustTime(editEndTime, 1))}
+                              className="h-6 px-2 text-xs"
+                              title="Add 1 second"
+                            >
+                              +1s
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditEndTime(adjustTime(editEndTime, 5))}
+                              className="h-6 px-2 text-xs"
+                              title="Add 5 seconds"
+                            >
+                              +5s
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
