@@ -328,11 +328,6 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   };
 
   const generateAIDescriptions = async () => {
-    if (!transcriptSegments || transcriptSegments.length === 0) {
-      toast.error('Please generate a transcript first to place audio descriptions.');
-      return;
-    }
-
     // Prevent multiple concurrent generations
     if (isGenerating) {
       console.warn('Generation already in progress, ignoring request');
@@ -344,8 +339,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     
     try {
       console.log('🎬 Basic AI: Starting generation');
-      const gaps = computeGaps(transcriptSegments);
-      const scheduled = await generateTextOnlyFallback(transcriptSegments, gaps);
+      const gaps = computeGaps(transcriptSegments || []);
+      const scheduled = await generateTextOnlyFallback(transcriptSegments || [], gaps);
 
       if (scheduled.length === 0) {
         // Fallback: create basic timed descriptions even without perfect gaps
@@ -358,7 +353,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         setDescriptions(fallbackDescriptions);
         onDescriptionsUpdate?.(fallbackDescriptions);
         await saveDescriptionsToDatabase(fallbackDescriptions);
-        toast.success(`Generated ${fallbackDescriptions.length} fallback audio descriptions`);
+        toast.success(`Generated ${fallbackDescriptions.length} audio descriptions`);
         return;
       }
 
@@ -380,11 +375,6 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   };
 
   const generateTwelveLabsDescriptions = async () => {
-    if (!transcriptSegments || transcriptSegments.length === 0) {
-      toast.error('Please generate a transcript first for silence gap detection.');
-      return;
-    }
-
     if (!videoUrl) {
       toast.error('Video URL is required for analysis.');
       return;
@@ -780,14 +770,17 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
-            Audio Description Editor ({detectedLanguage === 'es' ? 'Spanish' : 'English'})
+            Audio Description Editor
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Generate and manage audio descriptions to describe visual elements for accessibility.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Basic AI:</strong> Analyzes transcript to find silence windows and generates simple descriptions.<br/>
-              <strong>Generate Audio Description:</strong> Uses comprehensive video analysis to detect ALL silent moments and generate detailed cinematic descriptions matching character names and story context.
+              <strong>Basic AI:</strong> Generates simple audio descriptions for common video scenarios.<br/>
+              <strong>Advanced Analysis:</strong> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
             </p>
           </div>
 
