@@ -242,9 +242,9 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
   // Get proper header text based on content type and avatar
   const getHeaderText = () => {
     if (contentType === 'education') {
-      return selectedASLAvatar?.name?.includes('Teacher') ? 'ASL Teacher' : 'ASL Guide';
+      return selectedASLAvatar?.name?.includes('Teacher') ? 'ASL Guide' : 'ASL Guide';
     }
-    return 'ASL Chef';
+    return 'ASL Guide';
   };
 
   return (
@@ -253,10 +253,9 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
         {/* Header bar */}
         <div className="absolute top-1 left-1 right-1 flex items-center justify-between text-xs text-white/80">
           <span className="inline-flex items-center gap-1">
-            {contentType === 'recipe' ? <ChefHat className="w-3 h-3 text-primary"/> : <HandHelping className="w-3 h-3 text-primary"/>}
+            <HandHelping className="w-3 h-3 text-primary"/>
             {getHeaderText()}
           </span>
-          <span className="inline-flex items-center gap-1"><HandHelping className="w-3 h-3 text-primary"/> LIVE</span>
         </div>
 
         {/* Video avatar with robust error handling */}
@@ -292,7 +291,7 @@ export const ASLAvatar: React.FC<ASLAvatarProps> = ({ contentType = 'recipe', se
 
         {/* Meta pill - simplified without character description */}
         <div className="absolute bottom-1 left-1 bg-primary/30 text-white text-[10px] px-2 py-0.5 rounded-full">
-          {contentType === 'recipe' ? 'Chef' : 'Teacher'}
+          Sign Language
         </div>
       </div>
     </div>
