@@ -66,6 +66,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [hasTranscript, setHasTranscript] = useState(false);
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'transcript' | 'audio-desc'>('transcript');
 
   // Get unique detected speakers from segments
   const getDetectedSpeakers = () => {
@@ -610,7 +611,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <Tabs defaultValue="transcript" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { console.log('📑 Tabs changed to', v); setActiveTab(v as 'transcript' | 'audio-desc'); }} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
             <TabsTrigger value="audio-desc">Audio Descriptions</TabsTrigger>
