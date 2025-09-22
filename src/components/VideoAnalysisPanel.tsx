@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare } from 'lucide-react';
+import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -554,6 +554,69 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     }
   };
 
+  const downloadSilenceAnalysis = () => {
+    if (!silenceResult) return;
+
+    const analysisData = {
+      video_id: assetId,
+      analysis_type: "Silent Gaps and Narrations",
+      generated_at: new Date().toISOString(),
+      total_segments: silenceRows.length,
+      segments: silenceRows.map((row, index) => ({
+        segment_number: index + 1,
+        start_time: editedTimestamps[index]?.start || row.start,
+        end_time: editedTimestamps[index]?.end || row.end,
+        duration: msToNice(row.duration_ms),
+        narration: editedNarrations[index] || row.narration,
+        word_count: (editedNarrations[index] || row.narration).trim().split(/\s+/).filter(Boolean).length,
+        max_words_allowed: row.max_words
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(analysisData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `silence-analysis-${assetId}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Complete",
+      description: "Silent gaps analysis has been downloaded as JSON file"
+    });
+  };
+
+  const downloadCustomAnalysis = () => {
+    if (!insightResult) return;
+
+    const analysisData = {
+      video_id: assetId,
+      analysis_type: "Custom Analysis Insights",
+      generated_at: new Date().toISOString(),
+      prompt: customPrompt,
+      analysis_result: insightResult.analysis_text || "No text analysis available",
+      raw_data: insightResult
+    };
+
+    const blob = new Blob([JSON.stringify(analysisData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `custom-analysis-${assetId}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Complete",
+      description: "Custom analysis insights have been downloaded as JSON file"
+    });
+  };
+
   const convertToAudioDescriptions = async () => {
     if (!videoId) {
       toast({
@@ -744,15 +807,25 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 </Button>
               )}
               {silenceRows.length > 0 && (
-                <Button
-                  onClick={() => setShowAudioDescriptionDialog(true)}
-                  disabled={!videoId}
-                  size="sm"
-                  variant="outline"
-                >
-                  <AudioLines className="w-4 h-4 mr-1" />
-                  Use as Audio Description
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setShowAudioDescriptionDialog(true)}
+                    disabled={!videoId}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <AudioLines className="w-4 h-4 mr-1" />
+                    Use as Audio Description
+                  </Button>
+                  <Button
+                    onClick={downloadSilenceAnalysis}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Download Analysis
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -891,19 +964,29 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 )}
               </Button>
               {insightResult && (
-                <Button
-                  onClick={saveInsightResults}
-                  disabled={savingInsightResults}
-                  size="sm"
-                  variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
-                >
-                  {savingInsightResults ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <Edit3 className="w-4 h-4 mr-1" />
-                  )}
-                  {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
-                </Button>
+                <>
+                  <Button
+                    onClick={saveInsightResults}
+                    disabled={savingInsightResults}
+                    size="sm"
+                    variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
+                  >
+                    {savingInsightResults ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Edit3 className="w-4 h-4 mr-1" />
+                    )}
+                    {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
+                  </Button>
+                  <Button
+                    onClick={downloadCustomAnalysis}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Download Analysis
+                  </Button>
+                </>
               )}
             </div>
           </div>
