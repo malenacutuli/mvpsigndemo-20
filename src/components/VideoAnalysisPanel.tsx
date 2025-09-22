@@ -324,7 +324,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       
       toast({
         title: "Analysis Complete",
-        description: result.analysis_text 
+        description: analysisResult.analysis_text 
           ? "Generated text-based analysis result"
           : `Found ${analysisResult?.silences?.length || 0} silent segments`
       });
