@@ -79,6 +79,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
+  
+  // Sync selectedLanguage with initialLanguage prop changes
+  useEffect(() => {
+    if (initialLanguage && initialLanguage !== selectedLanguage) {
+      console.log('🌐 TranscriptEditor: Updating language from', selectedLanguage, 'to', initialLanguage);
+      setSelectedLanguage(initialLanguage);
+    }
+  }, [initialLanguage]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editStartTime, setEditStartTime] = useState('');
@@ -175,12 +183,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const generateOriginalTranscript = async () => {
       setIsGenerating(true);
       try {
+        console.log('🌐 TRANSCRIPT EDITOR: Extracting transcript in language:', selectedLanguage);
         const response = await supabase.functions.invoke('transcribe', {
           body: { 
             videoUrl: videoUrl,
             videoId: videoId, // Pass videoId for database saving
             rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-            language: 'auto', // Auto-detect language
+            language: selectedLanguage, // Use selected language from dropdown
             fullTranscript: true, // Request complete transcript
             wordTimestamps: true // Request word-level timing
           }
@@ -284,6 +293,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         });
       }
 
+      console.log('✅ TRANSCRIPT EDITOR: Transcript extracted successfully in', selectedLanguage, 'with', segments.length, 'segments');
+      
       setOriginalTranscript(segments);
       setEditingTranscript([...segments]);
       

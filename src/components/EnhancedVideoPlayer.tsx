@@ -199,8 +199,16 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     
     const combinedText = captions.map(cap => cap.text || '').join(' ').toLowerCase();
     
-    // Spanish detection patterns
-    if (combinedText.includes('imagina') || 
+    // Spanish detection patterns - expanded with more common words
+    if (combinedText.includes('hola') || 
+        combinedText.includes('siento') || 
+        combinedText.includes('pero') ||
+        combinedText.includes('con') ||
+        combinedText.includes('que') ||
+        combinedText.includes('una') ||
+        combinedText.includes('algo') ||
+        combinedText.includes('muy') ||
+        combinedText.includes('imagina') || 
         combinedText.includes('verano') || 
         combinedText.includes('corazón') ||
         combinedText.includes('más') ||
@@ -287,6 +295,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   // Auto-detect language if not provided, but prefer explicit prop
   const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
   const preferredLang = language || autoDetectedLang;
+  
+  console.log('🌐 Language resolution debug:', {
+    propLanguage: language,
+    detectedLang,
+    autoDetectedLang,
+    preferredLang,
+    currentLanguage,
+    willUpdate: preferredLang !== currentLanguage
+  });
   
   // Update current language if preferred language is different
   if (preferredLang !== currentLanguage) {
