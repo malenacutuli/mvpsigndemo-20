@@ -635,10 +635,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       
       const { error } = await supabase
         .from('transcript_segments')
-        .upsert(batch, { 
-          onConflict: 'video_id,language,start_time',
-          ignoreDuplicates: false
-        });
+        .insert(batch);
         
       if (error) {
         console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
