@@ -617,8 +617,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             <TabsTrigger value="audio-desc">Audio Descriptions</TabsTrigger>
           </TabsList>
 
-          {activeTab === 'transcript' && (
-            <TabsContent value="transcript" className="space-y-6">
+          <TabsContent value="transcript" className="space-y-6">
               {/* Toolbar: Language + Primary Actions */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -925,7 +924,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 </div>
               )}
             </TabsContent>
-          )}
 
           <TabsContent value="audio-desc">
             <AudioDescriptionEditor
