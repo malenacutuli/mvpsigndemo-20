@@ -64,11 +64,12 @@ function wordsAllowed(durationMs: number) {
 
 const DEFAULT_SILENCE_PROMPT = JSON.stringify(
   {
-    task: "Extract silent moments and generate ad-style narration that fits each gap.",
+    task: "Extract silent moments and generate ad-style narration that fits each gap for up to 1 hour of content.",
     requirements: [
-      "Detect all segments with no character dialogue or narration.",
+      "Detect ALL segments with no character dialogue or narration throughout the entire video (up to 1 hour).",
       "Return precise timestamps as HH:MM:SS.mmm for start and end.",
       "Provide duration in milliseconds.",
+      "Process up to 100 silent segments to ensure comprehensive coverage.",
       "Ensure each narration fits within the gap using ~160 words per minute and keep a 0.3s safety buffer.",
       "Style: creative advertising copywriter, cinematic podcast tone; avoid camera directions and technical terms.",
       "Focus on story, emotions, and sensory detail; keep concise for the gap length.",
@@ -99,6 +100,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   videoId
 }) => {
   const [status, setStatus] = useState<'idle' | 'indexing' | 'ready' | 'failed'>('idle');
+  const [silencePrompt, setSilencePrompt] = useState(DEFAULT_SILENCE_PROMPT);
   const [customPrompt, setCustomPrompt] = useState('');
   const [silenceResult, setSilenceResult] = useState<AnalysisResult | null>(null);
   const [insightResult, setInsightResult] = useState<AnalysisResult | null>(null);
@@ -113,7 +115,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [silenceResultsFromCache, setSilenceResultsFromCache] = useState(false);
   const [insightResultsFromCache, setInsightResultsFromCache] = useState(false);
   const [savingSilenceResults, setSavingSilenceResults] = useState(false);
+  const [savingInsightResults, setSavingInsightResults] = useState(false);
   const [hasUnsavedSilenceChanges, setHasUnsavedSilenceChanges] = useState(false);
+  const [hasUnsavedInsightChanges, setHasUnsavedInsightChanges] = useState(false);
   const { toast } = useToast();
 
   // Check existing mapping on mount
@@ -127,7 +131,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     if (assetId) {
       loadExistingResults();
     }
-  }, [customPrompt]);
+  }, [silencePrompt, customPrompt]);
 
   const loadExistingResults = async () => {
     if (!assetId) return;
@@ -139,7 +143,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         .from('video_analysis_results')
         .select('*')
         .eq('asset_id', assetId)
-        .eq('prompt', DEFAULT_SILENCE_PROMPT)
+        .eq('prompt', silencePrompt)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -308,7 +312,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     
     try {
       const { data, error } = await supabase.functions.invoke('video-analysis-analyze', {
-        body: { assetId, prompt: DEFAULT_SILENCE_PROMPT }
+        body: { assetId, prompt: silencePrompt }
       });
 
       if (error) throw error;
@@ -339,7 +343,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       setHasUnsavedSilenceChanges(false);
       
       // Save results to database for future use
-      await saveAnalysisResults(analysisResult, DEFAULT_SILENCE_PROMPT);
+      await saveAnalysisResults(analysisResult, silencePrompt);
       
       toast({
         title: "Silence Analysis Complete",
@@ -395,6 +399,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       setInsightResult(analysisResult);
       setInsightResultsFromCache(false);
+      setHasUnsavedInsightChanges(false);
       
       // Save results to database for future use
       await saveAnalysisResults(analysisResult, customPrompt);
@@ -462,7 +467,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         .from('video_analysis_results')
         .delete()
         .eq('asset_id', assetId)
-        .eq('prompt', DEFAULT_SILENCE_PROMPT);
+        .eq('prompt', silencePrompt);
 
       // Save updated result
       const { error } = await supabase
@@ -470,7 +475,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         .insert({
           asset_id: assetId,
           result: updatedResult as any,
-          prompt: DEFAULT_SILENCE_PROMPT,
+          prompt: silencePrompt,
           language: 'en'
         });
 
@@ -495,6 +500,50 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       });
     } finally {
       setSavingSilenceResults(false);
+    }
+  };
+
+  const saveInsightResults = async () => {
+    if (!insightResult || !assetId || !customPrompt.trim()) return;
+
+    setSavingInsightResults(true);
+    try {
+      // Delete existing result for this video/prompt combination
+      await supabase
+        .from('video_analysis_results')
+        .delete()
+        .eq('asset_id', assetId)
+        .eq('prompt', customPrompt);
+
+      // Save updated result
+      const { error } = await supabase
+        .from('video_analysis_results')
+        .insert({
+          asset_id: assetId,
+          result: insightResult as any,
+          prompt: customPrompt,
+          language: 'en'
+        });
+
+      if (error) throw error;
+
+      setHasUnsavedInsightChanges(false);
+
+      toast({
+        title: "Insight Analysis Saved",
+        description: "Your custom analysis insights have been saved successfully"
+      });
+
+      console.log('✅ Insight analysis results saved to database');
+    } catch (error: any) {
+      console.error('Error saving insight results:', error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save insight results",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingInsightResults(false);
     }
   };
 
@@ -711,7 +760,20 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </p>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Analysis Prompt</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Customize the prompt to adjust how silent gaps are detected and described (supports up to 100 silent moments for 1-hour content)
+            </p>
+            <Textarea
+              value={silencePrompt}
+              onChange={(e) => setSilencePrompt(e.target.value)}
+              className="min-h-32 font-mono text-xs"
+              placeholder="Enter analysis prompt..."
+            />
+          </div>
+
           {!silenceResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -807,24 +869,46 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   📋 Cached
                 </Badge>
               )}
-            </div>
-            <Button
-              onClick={analyzeInsights}
-              disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
-              size="sm"
-            >
-              {analyzingInsight ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Analyze with Prompt
-                </>
+              {hasUnsavedInsightChanges && (
+                <Badge variant="secondary" className="text-xs">
+                  Unsaved Changes
+                </Badge>
               )}
-            </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={analyzeInsights}
+                disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
+                size="sm"
+              >
+                {analyzingInsight ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Analyze with Prompt
+                  </>
+                )}
+              </Button>
+              {insightResult && hasUnsavedInsightChanges && (
+                <Button
+                  onClick={saveInsightResults}
+                  disabled={savingInsightResults}
+                  size="sm"
+                  variant="secondary"
+                >
+                  {savingInsightResults ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4 mr-1" />
+                  )}
+                  Save Changes
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
