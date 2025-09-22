@@ -13,6 +13,7 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
+import { TranscriptWorkflow } from "@/components/TranscriptWorkflow";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
@@ -51,6 +52,8 @@ const VideoDetail = () => {
   const [showEmbedSettings, setShowEmbedSettings] = useState(false);
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [characterColors, setCharacterColors] = useState<{ [key: string]: string }>({});
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [deletingVideo, setDeletingVideo] = useState(false);
   const { toast } = useToast();
   
@@ -202,6 +205,59 @@ const VideoDetail = () => {
     } finally {
       setDeletingVideo(false);
     }
+  };
+
+  const handleTranscriptReady = (newCaptions: CaptionSegment[]) => {
+    setCaptions(newCaptions);
+    console.log('✅ VIDEO DETAIL: Transcript ready with', newCaptions.length, 'segments');
+    toast({
+      title: "Transcript Ready",
+      description: `Processed ${newCaptions.length} segments successfully`
+    });
+  };
+
+  const handleCharactersUpdate = (updatedCharacters: any[]) => {
+    setCharacters(updatedCharacters);
+    console.log('🎭 VIDEO DETAIL: Characters updated:', updatedCharacters.length);
+    
+    // Refresh captions with character-specific settings
+    if (captions.length > 0) {
+      const characterMap = updatedCharacters.reduce((acc, char) => {
+        acc[char.name] = char;
+        return acc;
+      }, {} as { [key: string]: any });
+      
+      const refreshedCaptions = captions.map(caption => {
+        const character = characterMap[caption.speaker];
+        if (character) {
+          return {
+            ...caption,
+            speakerColor: character.color,
+            words: caption.words?.map(word => ({
+              ...word,
+              emphasis: character.emphasis || word.emphasis,
+              pitch: character.pitch || word.pitch,
+            })) || []
+          };
+        }
+        return caption;
+      });
+      setCaptions(refreshedCaptions);
+      console.log('🔄 VIDEO DETAIL: Captions refreshed with character updates');
+    }
+  };
+
+  const handleAudioDescriptionsUpdate = (updatedDescriptions: any[]) => {
+    setAudioDescriptions(updatedDescriptions);
+    console.log('✅ VIDEO DETAIL: Audio descriptions updated:', updatedDescriptions.length, 'descriptions');
+  };
+
+  const handleWorkflowComplete = () => {
+    console.log('✅ VIDEO DETAIL: Workflow completed');
+    toast({
+      title: "Workflow Complete",
+      description: "All video processing steps have been completed"
+    });
   };
 
   const loadExistingCaptions = async () => {
@@ -499,21 +555,24 @@ const VideoDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Video Analysis Section */}
+          {/* Complete Video Workflow Section */}
           {videoUrl && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Video Analysis & Narration Generation
+                  <Edit className="w-5 h-5" />
+                  Transcript Extraction & Character Management
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <VideoAnalysisPanel
-                  assetId={video.id}
-                  playbackUrl={videoUrl}
-                  videoElementId="video-player"
+                <TranscriptWorkflow
                   videoId={video.id}
+                  videoUrl={videoUrl}
+                  videoLanguage={video.language}
+                  onTranscriptReady={handleTranscriptReady}
+                  onWorkflowComplete={handleWorkflowComplete}
+                  onCharactersUpdate={handleCharactersUpdate}
+                  onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
                 />
               </CardContent>
             </Card>
