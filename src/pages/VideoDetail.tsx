@@ -15,7 +15,6 @@ import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
-import { AudioDescriptionVoiceSelector } from "@/components/AudioDescriptionVoiceSelector";
 import { VoiceOption, findVoiceById } from "@/types/voice";
 
 interface Video {
@@ -488,15 +487,6 @@ const VideoDetail = () => {
                     <p className="text-sm text-muted-foreground">AI-powered analysis and narration generation</p>
                   </Card>
                 </div>
-                
-                {/* Audio Description Voice Selector */}
-                <AudioDescriptionVoiceSelector
-                  selectedVoiceId={selectedVoiceId}
-                  onVoiceSelect={setSelectedVoiceId}
-                  language={video.language}
-                  contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
-                  className="mb-4"
-                />
                 
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
