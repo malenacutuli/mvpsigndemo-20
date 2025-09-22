@@ -109,6 +109,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [savingAudioDescriptions, setSavingAudioDescriptions] = useState(false);
   const [loadingCachedResults, setLoadingCachedResults] = useState(false);
   const [resultsFromCache, setResultsFromCache] = useState(false);
+  const [savingResults, setSavingResults] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { toast } = useToast();
 
   // Check existing mapping on mount
@@ -141,6 +143,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       if (existingResult) {
         setResult(existingResult.result as AnalysisResult);
         setResultsFromCache(true);
+        setHasUnsavedChanges(false); // Clear unsaved changes for cached results
         console.log('✅ Loaded cached analysis results');
         toast({
           title: "Loaded Cached Results",
@@ -318,6 +321,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       setResult(analysisResult);
       setResultsFromCache(false); // Mark as newly generated
+      setHasUnsavedChanges(false); // Clear unsaved changes flag for new results
       
       // Save results to database for future use
       await saveAnalysisResults(analysisResult);
@@ -352,6 +356,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       ...prev,
       [index]: newText
     }));
+    setHasUnsavedChanges(true);
   };
 
   const updateTimestamp = (index: number, field: 'start' | 'end', value: string) => {
@@ -362,6 +367,64 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         [field]: value
       }
     }));
+    setHasUnsavedChanges(true);
+  };
+
+  const saveEditedResults = async () => {
+    if (!result || !assetId) return;
+
+    setSavingResults(true);
+    try {
+      // Create updated result with edited narrations and timestamps
+      const updatedResult = {
+        ...result,
+        silences: result.silences?.map((silence, index) => ({
+          ...silence,
+          narration: editedNarrations[index] || silence.narration,
+          start: editedTimestamps[index]?.start || silence.start,
+          end: editedTimestamps[index]?.end || silence.end,
+        }))
+      };
+
+      // Delete existing result for this video/prompt combination
+      await supabase
+        .from('video_analysis_results')
+        .delete()
+        .eq('asset_id', assetId)
+        .eq('prompt', prompt);
+
+      // Save updated result
+      const { error } = await supabase
+        .from('video_analysis_results')
+        .insert({
+          asset_id: assetId,
+          result: updatedResult as any,
+          prompt: prompt,
+          language: 'en'
+        });
+
+      if (error) throw error;
+
+      // Update local state
+      setResult(updatedResult);
+      setHasUnsavedChanges(false);
+
+      toast({
+        title: "Analysis Saved",
+        description: "Your edited analysis results have been saved successfully"
+      });
+
+      console.log('✅ Edited analysis results saved to database');
+    } catch (error: any) {
+      console.error('Error saving edited results:', error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save edited results",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingResults(false);
+    }
   };
 
   const convertToAudioDescriptions = async () => {
@@ -553,18 +616,42 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Analysis Results</CardTitle>
-            {rows.length > 0 && !result?.analysis_text && (
-              <Button
-                onClick={() => setShowAudioDescriptionDialog(true)}
-                disabled={!videoId}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <AudioLines className="w-4 h-4" />
-                Use as Audio Description
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Analysis Results</CardTitle>
+              {hasUnsavedChanges && (
+                <Badge variant="secondary" className="text-xs">
+                  Unsaved Changes
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {rows.length > 0 && hasUnsavedChanges && (
+                <Button
+                  onClick={saveEditedResults}
+                  disabled={savingResults}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {savingResults ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4" />
+                  )}
+                  {savingResults ? 'Saving...' : 'Save Changes'}
+                </Button>
+              )}
+              {rows.length > 0 && !result?.analysis_text && (
+                <Button
+                  onClick={() => setShowAudioDescriptionDialog(true)}
+                  disabled={!videoId}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <AudioLines className="w-4 h-4" />
+                  Use as Audio Description
+                </Button>
+              )}
+            </div>
           </div>
           {!videoId && rows.length > 0 && (
             <p className="text-xs text-muted-foreground">
