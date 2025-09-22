@@ -729,19 +729,19 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   </>
                 )}
               </Button>
-              {silenceRows.length > 0 && hasUnsavedSilenceChanges && (
+              {silenceRows.length > 0 && (
                 <Button
                   onClick={saveSilenceResults}
                   disabled={savingSilenceResults}
                   size="sm"
-                  variant="secondary"
+                  variant={hasUnsavedSilenceChanges ? "secondary" : "outline"}
                 >
                   {savingSilenceResults ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                   ) : (
                     <Edit3 className="w-4 h-4 mr-1" />
                   )}
-                  Save Changes
+                  {hasUnsavedSilenceChanges ? "Save Changes" : "Save Analysis"}
                 </Button>
               )}
               {silenceRows.length > 0 && (
@@ -896,19 +896,19 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   </>
                 )}
               </Button>
-              {insightResult && hasUnsavedInsightChanges && (
+              {insightResult && (
                 <Button
                   onClick={saveInsightResults}
                   disabled={savingInsightResults}
                   size="sm"
-                  variant="secondary"
+                  variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
                 >
                   {savingInsightResults ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                   ) : (
                     <Edit3 className="w-4 h-4 mr-1" />
                   )}
-                  Save Changes
+                  {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
                 </Button>
               )}
             </div>
