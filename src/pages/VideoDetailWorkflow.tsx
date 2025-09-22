@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
-import { TranscriptWorkflow } from '@/components/TranscriptWorkflow';
-import { CleanAxessiblePlayer } from '@/components/CleanAxessiblePlayer';
+import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { AccessibleVideoExporter } from '@/components/AccessibleVideoExporter';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
@@ -270,19 +269,16 @@ export default function VideoDetailWorkflow() {
             {/* Video Player */}
             <div className="lg:col-span-2 space-y-6">
               {videoUrl && (
-                <div className="aspect-video">
-                  <CleanAxessiblePlayer
-                    videoSrc={videoUrl}
-                    posterSrc={video.thumbnail_url || undefined}
-                    title={video.title}
-                    videoId={video.id}
-                    contentType={video.content_type as 'recipe' | 'education'}
-                    captions={captions}
-                    audioDescriptions={audioDescriptions}
-                    characters={characters}
-                    className="w-full h-full"
-                  />
-                </div>
+                <EnhancedVideoPlayer
+                  videoSrc={videoUrl}
+                  posterSrc={video.thumbnail_url || undefined}
+                  title={video.title}
+                  videoId={video.id}
+                  language={video.language}
+                  contentType={video.content_type as 'recipe' | 'education'}
+                  onTranscriptUpdate={handleTranscriptReady}
+                  className="w-full"
+                />
               )}
 
               {/* Video Description */}
@@ -298,17 +294,8 @@ export default function VideoDetailWorkflow() {
               )}
             </div>
 
-            {/* Workflow Panel - Always show transcript workflow */}
+            {/* Video Info Panel */}
             <div className="space-y-6">
-              <TranscriptWorkflow
-                videoId={video.id}
-                videoUrl={videoUrl}
-                videoLanguage={video.language} // Pass video language
-                onTranscriptReady={handleTranscriptReady}
-                onWorkflowComplete={handleWorkflowComplete}
-                onCharactersUpdate={handleCharactersUpdate}
-                onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
-              />
 
               {/* Video Info */}
               <Card>
