@@ -64,12 +64,14 @@ function wordsAllowed(durationMs: number) {
 
 const DEFAULT_SILENCE_PROMPT = JSON.stringify(
   {
-    "task": "Extract silent moments and generate storytelling audio description that fits within each gap.",
+    "task": "Extract silent moments and generate storytelling audio description that fits within each gap for the ENTIRE video duration.",
     "requirements": [
-      "Detect all segments where there is no character dialogue or narration (silence or just background music).",
+      "Detect ALL segments where there is no character dialogue or narration (silence or just background music) throughout the COMPLETE video from start to finish.",
+      "Process the ENTIRE video duration - do not stop early, analyze from 00:00:00 to the very end of the video.",
       "Also analyze surrounding dialogue to enrich the context of the scene, so descriptions feel connected to the story.",
       "Return precise timestamps as HH:MM:SS.mmm for start and end.",
       "Provide duration in milliseconds.",
+      "Process up to 100 silent segments to ensure comprehensive coverage of the full video length.",
       "Limit to ~160 words per minute, leaving 0.3s safety buffer per gap.",
       "Narration style: cinematic podcast or audiobook storytelling — emotionally engaging, sensory-rich, and narrative-driven.",
       "Do NOT describe cameras, angles, or technical details.",
@@ -77,10 +79,12 @@ const DEFAULT_SILENCE_PROMPT = JSON.stringify(
       "Make the listener 'see with their ears' — describe emotions, atmospheres, and story flow.",
       "If characters are known (e.g., David Beckham, Kevin Hart), name them and tie their actions to the overall story/emotion.",
       "Ensure each narration fits strictly within its silent segment timing.",
+      "CRITICAL: Analyze the complete video from beginning to end - do not truncate or stop analysis early.",
       "Output STRICT JSON only."
     ],
     "output_schema": {
       "video_id": "string",
+      "total_video_duration_analyzed": "HH:MM:SS.mmm",
       "silences": [
         {
           "start": "HH:MM:SS.mmm",
@@ -700,11 +704,6 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Silent Gaps and Narrations</CardTitle>
-              {silenceResultsFromCache && silenceResult && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  📋 Cached
-                </Badge>
-              )}
               {hasUnsavedSilenceChanges && (
                 <Badge variant="secondary" className="text-xs">
                   Unsaved Changes
@@ -767,7 +766,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <div>
             <label className="text-sm font-medium">Analysis Prompt</label>
             <p className="text-xs text-muted-foreground mb-2">
-              Customize the prompt to adjust how silent gaps are detected and described (supports up to 100 silent moments for 1-hour content)
+              Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
             </p>
             <Textarea
               value={silencePrompt}
@@ -867,11 +866,6 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Custom Analysis Insights</CardTitle>
-              {insightResultsFromCache && insightResult && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  📋 Cached
-                </Badge>
-              )}
               {hasUnsavedInsightChanges && (
                 <Badge variant="secondary" className="text-xs">
                   Unsaved Changes

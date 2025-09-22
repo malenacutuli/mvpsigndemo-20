@@ -79,6 +79,9 @@ serve(async (req) => {
       videoId = mapping.tl_video_id;
     }
 
+    console.log('🎬 Starting video analysis for:', videoId);
+    console.log('📝 Prompt length:', prompt.length, 'characters');
+    
     // Call analysis endpoint
     const url = `${TL_BASE}/analyze`;
     const res = await fetch(url, {
@@ -92,14 +95,27 @@ serve(async (req) => {
         video_id: videoId,
         prompt,
         temperature: 0.2,
-        stream: false  // Disable streaming to get a single JSON response
+        stream: false,  // Disable streaming to get a single JSON response
+        // Force analysis of complete video duration
+        include_clips: true,
+        clip_search_options: {
+          filter: {
+            duration: {
+              gte: 0,  // Start from beginning
+              lte: 3600  // Up to 1 hour (3600 seconds)
+            }
+          }
+        }
       })
     });
 
     const raw = await res.text();
+    console.log('📊 Analysis response status:', res.status);
+    console.log('📊 Analysis response length:', raw.length, 'characters');
 
     // If not 2xx, bubble up the exact upstream body for easier debugging
     if (!res.ok) {
+      console.error('❌ Analysis failed:', res.status, raw);
       return new Response(
         JSON.stringify({ error: 'Analyze request failed', status: res.status, body: raw }),
         { status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -109,7 +125,16 @@ serve(async (req) => {
     let data: any;
     try {
       data = JSON.parse(raw);
+      console.log('✅ Analysis parsed successfully');
+      
+      // Log analysis coverage for debugging
+      if (data?.silences?.length) {
+        const lastSegment = data.silences[data.silences.length - 1];
+        console.log('📈 Found', data.silences.length, 'silent segments');
+        console.log('⏰ Last segment ends at:', lastSegment?.end || 'unknown');
+      }
     } catch {
+      console.error('❌ Failed to parse analysis response as JSON');
       return new Response(
         JSON.stringify({ error: 'Analyze returned non-JSON', body: raw }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
