@@ -19,6 +19,7 @@ interface VideoAnalysisPanelProps {
 
 interface AnalysisResult {
   video_id?: string;
+  analysis_text?: string; // For text-based analysis results
   silences?: Array<{
     start: string;
     end: string;
@@ -290,13 +291,27 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       // Parse the response structure from analysis API
       let analysisResult: AnalysisResult;
+      
       if (data?.data && typeof data.data === 'string') {
-        // Parse the stringified JSON from analysis service
-        const parsedData = JSON.parse(data.data);
-        analysisResult = parsedData;
+        // Try to parse as JSON first (for silence detection results)
+        try {
+          const parsedData = JSON.parse(data.data);
+          analysisResult = parsedData;
+        } catch (parseError) {
+          // If JSON parsing fails, treat as text-based analysis result
+          console.log('Non-JSON analysis result detected, treating as text:', data.data);
+          analysisResult = {
+            video_id: data.video_id || assetId,
+            analysis_text: data.data, // Store the raw text result
+            silences: [] // Empty silences for text-based results
+          };
+        }
       } else if (data?.silences) {
         // Direct format (fallback)
         analysisResult = data;
+      } else if (data?.data) {
+        // Handle non-string data
+        analysisResult = data.data;
       } else {
         throw new Error('Invalid response format');
       }
@@ -309,7 +324,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       
       toast({
         title: "Analysis Complete",
-        description: `Found ${analysisResult?.silences?.length || 0} silent segments`
+        description: result.analysis_text 
+          ? "Generated text-based analysis result"
+          : `Found ${analysisResult?.silences?.length || 0} silent segments`
       });
     } catch (error: any) {
       console.error('Analysis error:', error);
@@ -537,7 +554,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Analysis Results</CardTitle>
-            {rows.length > 0 && (
+            {rows.length > 0 && !result?.analysis_text && (
               <Button
                 onClick={() => setShowAudioDescriptionDialog(true)}
                 disabled={!videoId}
@@ -560,11 +577,26 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Run analysis to see silent gaps and narrations.</p>
+              <p className="text-xs mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
+            </div>
+          ) : result.analysis_text ? (
+            // Display text-based analysis results (like hashtags, topics)
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium mb-3 text-sm">Analysis Result</h4>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {result.analysis_text}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <p>💡 This analysis result contains text-based insights. For silence detection and audio descriptions, use the default analysis prompt.</p>
+              </div>
             </div>
           ) : rows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>No silent segments found in this video.</p>
+              <p className="text-xs mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
             </div>
           ) : (
             <div className="space-y-4">
