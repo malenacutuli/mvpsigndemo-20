@@ -30,13 +30,16 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
       videoId: videoId || 'none',
       language: language || 'auto',
-      forceReExtract: !!forceReExtract
+      forceReExtract: !!forceReExtract,
+      fullTranscript: !!fullTranscript,
+      wordTimestamps: !!wordTimestamps,
+      rangeBytes: rangeBytes || 'default'
     });
     
     const origin = req.headers.get("origin") || "";
