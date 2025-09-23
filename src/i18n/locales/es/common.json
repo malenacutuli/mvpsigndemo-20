@@ -275,6 +275,49 @@
       "explainableAVLM": "Modelos de Lenguaje Audio-Visual Explicables",
       "interactiveCreative": "Plataforma Interactiva de Análisis Creativo"
     },
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Análisis Creativo",
+        "emotionalResonance": {
+          "title": "Análisis de Resonancia Emocional",
+          "description": "Comprende cómo tu contenido conecta emocionalmente con las audiencias a través de análisis de sentimiento avanzado y predicción de compromiso."
+        },
+        "narrativeOptimization": {
+          "title": "Optimización de Narrativa",
+          "description": "Insights impulsados por IA ayudan a optimizar la estructura narrativa, el ritmo y el arco emocional para el máximo impacto en la audiencia."
+        },
+        "crossCulturalInsights": {
+          "title": "Insights Interculturales",
+          "description": "Analiza cómo el contenido se desempeña en diferentes contextos culturales y adapta el mensaje para audiencias globales."
+        }
+      },
+      "filmTV": {
+        "title": "Producción de Cine y TV",
+        "editingPostProduction": {
+          "title": "Edición y Postproducción",
+          "description": "Optimiza los flujos de trabajo de edición con resúmenes de escenas generados por IA, detección de beats emocionales y funciones de accesibilidad automatizadas."
+        },
+        "scriptAnalysis": {
+          "title": "Análisis de Guión",
+          "description": "Analiza guiones para profundidad emocional, desarrollo de personajes y estructura narrativa para guiar decisiones de producción."
+        },
+        "characterDevelopment": {
+          "title": "Desarrollo de Personajes",
+          "description": "Rastrea arcos de personajes y viajes emocionales a lo largo de las producciones con herramientas de análisis impulsadas por IA."
+        }
+      },
+      "generativeAI": {
+        "title": "IA Generativa y Medios",
+        "emotionallyAwareContent": {
+          "title": "Contenido Emocionalmente Consciente",
+          "description": "Genera contenido que se adapta al estado emocional y preferencias del espectador para experiencias personalizadas."
+        },
+        "dynamicMusicScoring": {
+          "title": "Puntuación Musical Dinámica",
+          "description": "Bandas sonoras compuestas por IA que responden a los beats emocionales del contenido y patrones de compromiso del espectador."
+        }
+      }
+    },
     "cta": {
       "title": "¿Listo para Moldear el Futuro de la IA Creativa?",
       "description": "Únete a nosotros para revolucionar cómo la inteligencia artificial comprende y mejora la creatividad humana.",
