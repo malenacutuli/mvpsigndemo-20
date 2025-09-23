@@ -58,6 +58,33 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
     loadSignLanguageClips();
   }, [videoId]);
 
+  // Realtime: listen for inserts/updates/deletes to refresh clips list
+  useEffect(() => {
+    if (!videoId) return;
+    const channel = supabase
+      .channel(`asl_clips_${videoId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sign_language_clips', filter: `video_id=eq.${videoId}` }, (payload) => {
+        console.log('🤟 Realtime ASL clip change detected:', (payload as any).eventType, (payload as any).new || (payload as any).old);
+        // Refresh list to stay consistent
+        supabase
+          .from('sign_language_clips')
+          .select('*')
+          .eq('video_id', videoId)
+          .order('start_time_ms')
+          .then(({ data, error }) => {
+            if (error) {
+              console.warn('⚠️ Failed to refresh ASL clips after realtime update:', error);
+              return;
+            }
+            setSignLanguageClips(data || []);
+          });
+      });
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [videoId]);
+
   // Find current clip based on time
   useEffect(() => {
     if (!isSignLanguageEnabled) {

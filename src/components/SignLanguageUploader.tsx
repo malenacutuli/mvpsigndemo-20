@@ -76,6 +76,43 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       return;
     }
 
+    // Verify segment exists on server and belongs to this video
+    try {
+      const { data: segRow, error: segErr } = await supabase
+        .from('transcript_segments')
+        .select('id, video_id')
+        .eq('id', segmentId)
+        .maybeSingle();
+
+      if (segErr) {
+        console.warn('[ASL Upload] Segment lookup error (RLS?):', segErr);
+      }
+      if (!segRow) {
+        toast({
+          title: "Segment not saved",
+          description: "Save this transcript segment before uploading a Sign Language clip.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (segRow.video_id !== videoId) {
+        toast({
+          title: "Segment mismatch",
+          description: "This segment does not belong to the current video.",
+          variant: "destructive"
+        });
+        return;
+      }
+    } catch (e) {
+      console.error('[ASL Upload] Failed to verify transcript segment:', e);
+      toast({
+        title: "Verification failed",
+        description: "Could not verify the transcript segment. Please try again after saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith('video/')) {
       toast({
