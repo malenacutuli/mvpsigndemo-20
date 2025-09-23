@@ -194,7 +194,7 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
   }
 
   return (
-    <div className="absolute bottom-16 right-4 w-48 h-36 bg-black/80 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
+    <div className="absolute bottom-12 right-4 w-48 h-36 bg-black/80 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
       <video
         ref={videoRef}
         src={currentClip.clip_url}
