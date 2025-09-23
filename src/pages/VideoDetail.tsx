@@ -13,7 +13,6 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
-import { TranscriptWorkflow } from "@/components/TranscriptWorkflow";
 
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
@@ -510,27 +509,6 @@ const VideoDetail = () => {
                   </div>
                 </div>
               )}
-              
-              {/* Immersive Features Section */}
-              <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Mic className="w-5 h-5" />
-                  Accessibility Workflow
-                </h2>
-                
-                {/* Transcript Generation */}
-                {videoUrl && (
-                  <TranscriptWorkflow
-                    videoId={video.id}
-                    videoUrl={videoUrl}
-                    videoLanguage={video.language}
-                    onTranscriptReady={handleTranscriptReady}
-                    onWorkflowComplete={handleWorkflowComplete}
-                    onCharactersUpdate={handleCharactersUpdate}
-                    onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
-                  />
-                )}
-              </div>
               
               {/* Immersive Features Section */}
               <div className="mt-6">
