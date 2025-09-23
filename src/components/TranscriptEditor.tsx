@@ -546,7 +546,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     return [...segments].sort((a, b) => a.startTime - b.startTime);
   };
 
-  const addNewSegment = (insertAfterIndex?: number) => {
+  const addNewSegment = async (insertAfterIndex?: number) => {
     let newStartTime: number;
     
     if (insertAfterIndex !== undefined && editingTranscript[insertAfterIndex]) {
@@ -572,6 +572,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     updated.splice(insertPosition, 0, newSegment);
     
     setEditingTranscript(updated);
+    
+    // Save to database with proper transcript record
+    await saveTranscriptData(updated, selectedLanguage);
     onTranscriptUpdate?.(updated, selectedLanguage);
     
     // Start editing the new segment
