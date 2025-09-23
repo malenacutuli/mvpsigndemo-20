@@ -112,7 +112,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         .from('sign_language_clips')
         .upsert({
           video_id: videoId,
-          transcript_segment_id: segmentId,
+          transcript_segment_id: segmentId || null, // Allow null for unsaved segments
           start_time_ms: startTimeMs,
           end_time_ms: endTimeMs,
           clip_url: publicUrl,
@@ -181,6 +181,12 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         <div className="flex items-center gap-2 p-2 bg-accent/10 rounded-md">
           <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
           <span className="text-sm text-muted-foreground">Loading...</span>
+        </div>
+      ) : !segmentId ? (
+        <div className="flex items-center gap-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-md">
+          <span className="text-sm text-yellow-800 dark:text-yellow-200">
+            Save transcript segment first to upload ASL clip
+          </span>
         </div>
       ) : clipUrl ? (
         <div className="space-y-2">

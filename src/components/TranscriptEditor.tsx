@@ -1048,7 +1048,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <div className="border-t pt-3">
                        <SignLanguageUploader
                          videoId={videoId}
-                         segmentId={segment.id}
+                         segmentId={segment.id.startsWith('segment-') ? '' : segment.id}
                          startTimeMs={Math.round(segment.startTime * 1000)}
                          endTimeMs={Math.round(segment.endTime * 1000)}
                          onUploadComplete={(clipUrl) => {
