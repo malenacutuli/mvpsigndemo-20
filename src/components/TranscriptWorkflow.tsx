@@ -12,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor } from './WordLevelEditor';
-import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { TranscriptUploader } from './TranscriptUploader';
 import { VideoAnalysisPanel } from './VideoAnalysisPanel';
 
@@ -66,7 +65,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [hasTranscript, setHasTranscript] = useState(false);
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'transcript' | 'audio-desc'>('transcript');
+  const [activeTab, setActiveTab] = useState<'transcript'>('transcript');
 
   // Get unique detected speakers from segments
   const getDetectedSpeakers = () => {
@@ -611,10 +610,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <Tabs value={activeTab} onValueChange={(v) => { console.log('📑 Tabs changed to', v); setActiveTab(v as 'transcript' | 'audio-desc'); }} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={(v) => { console.log('📑 Tabs changed to', v); setActiveTab(v as 'transcript'); }} className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="transcript">Transcript & Analysis</TabsTrigger>
-            <TabsTrigger value="audio-desc">Audio Descriptions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="transcript" className="space-y-6">
@@ -924,15 +922,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                 </div>
               )}
             </TabsContent>
-
-          <TabsContent value="audio-desc">
-            <AudioDescriptionEditor
-              videoUrl={videoUrl}
-              videoId={videoId}
-              transcriptSegments={segments}
-              onDescriptionsUpdate={handleAudioDescriptionsUpdate}
-            />
-          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
