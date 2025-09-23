@@ -514,7 +514,7 @@ export type Database = {
           {
             foreignKeyName: "sign_language_clips_transcript_segment_id_fkey"
             columns: ["transcript_segment_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "transcript_segments"
             referencedColumns: ["id"]
           },
