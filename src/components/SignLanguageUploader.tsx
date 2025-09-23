@@ -93,7 +93,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       // Generate unique filename
       const fileExtension = file.name.split('.').pop() || 'mp4';
       const fileName = `${segmentId}.${fileExtension}`;
-      const filePath = `sign_language_clips/${videoId}/${fileName}`;
+      const filePath = `${videoId}/${fileName}`;
 
       // Safe user handling
       let userId: string | null = null;
