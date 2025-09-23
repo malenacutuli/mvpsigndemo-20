@@ -7,6 +7,7 @@ import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
 import { ASLAvatar } from './ASLAvatar';
+import { SynchronizedASLPlayer } from './SynchronizedASLPlayer';
 import { AccessibilityGrader } from './AccessibilityGrader';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
@@ -981,8 +982,19 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-      {/* ASL Avatar Overlay */}
-      {showASL && (
+      {/* ASL Avatar Overlay - Using time-synchronized clips */}
+      {showASL && videoId && (
+        <SynchronizedASLPlayer
+          videoId={videoId}
+          currentTimeMs={currentTime * 1000}
+          isASLEnabled={showASL}
+          onPreloadStart={() => console.log('Preloading ASL clip...')}
+          onPreloadComplete={() => console.log('ASL clip preloaded')}
+        />
+      )}
+
+      {/* Fallback ASL Avatar for videos without time-synced clips */}
+      {showASL && !videoId && (
         <ASLAvatar
           contentType={contentType}
           selectedASLAvatar={selectedASLAvatar}

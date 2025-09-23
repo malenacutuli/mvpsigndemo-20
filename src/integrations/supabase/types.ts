@@ -476,6 +476,50 @@ export type Database = {
         }
         Relationships: []
       }
+      sign_language_clips: {
+        Row: {
+          clip_url: string
+          created_at: string
+          created_by: string | null
+          end_time_ms: number
+          id: string
+          start_time_ms: number
+          transcript_segment_id: string | null
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          clip_url: string
+          created_at?: string
+          created_by?: string | null
+          end_time_ms: number
+          id?: string
+          start_time_ms: number
+          transcript_segment_id?: string | null
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          clip_url?: string
+          created_at?: string
+          created_by?: string | null
+          end_time_ms?: number
+          id?: string
+          start_time_ms?: number
+          transcript_segment_id?: string | null
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sign_language_clips_transcript_segment_id_fkey"
+            columns: ["transcript_segment_id"]
+            isOneToOne: false
+            referencedRelation: "transcript_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speaker_mappings: {
         Row: {
           created_at: string

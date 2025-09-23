@@ -8,12 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type, Zap } from 'lucide-react';
+import { Mic, Globe, Download, Edit, Save, X, Plus, Clock, User, Palette, Volume2, Users, Type, Zap, Upload, HandHelping } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { saveTranscript, loadTranscript, type VideoTranscript } from '@/lib/videoStorage';
 import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor, type WordData } from './WordLevelEditor';
+import { SignLanguageUploader } from './SignLanguageUploader';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 import { VocalIntensityIndicator } from './VocalIntensityIndicator';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
@@ -1041,9 +1042,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                           </Select>
                         </div>
                       </div>
-                    )}
-                    
-                    <div className="flex gap-2">
+                     )}
+                     
+                     {/* Sign Language Section */}
+                     <div className="border-t pt-3">
+                       <SignLanguageUploader
+                         videoId={videoId}
+                         segmentId={segment.id}
+                         startTimeMs={Math.round(segment.startTime * 1000)}
+                         endTimeMs={Math.round(segment.endTime * 1000)}
+                         onUploadComplete={(clipUrl) => {
+                           // Optionally update segment state or refresh data
+                           console.log('ASL clip uploaded:', clipUrl);
+                         }}
+                       />
+                     </div>
+                     
+                     <div className="flex gap-2">
                       <Button size="sm" onClick={saveEdit}>
                         <Save className="w-3 h-3 mr-1" />
                         Save
