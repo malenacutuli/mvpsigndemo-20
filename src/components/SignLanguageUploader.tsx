@@ -172,6 +172,15 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       console.log("Public URL:", publicUrl);
 
       // Save to database - segmentId is guaranteed to be valid UUID
+      console.log('💾 Saving ASL clip to database:', {
+        video_id: videoId,
+        transcript_segment_id: segmentId,
+        start_time_ms: startTimeMs,
+        end_time_ms: endTimeMs,
+        clip_url: publicUrl,
+        created_by: userId
+      });
+
       const { error: dbError } = await supabase
         .from('sign_language_clips')
         .upsert(
@@ -185,6 +194,13 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           },
           { onConflict: 'transcript_segment_id' }
         );
+
+      if (dbError) {
+        console.error('💾 Database save error:', dbError);
+        throw new Error(`DB error: ${dbError.message}`);
+      }
+
+      console.log('✅ ASL clip saved to database successfully');
 
       if (dbError) throw new Error(`DB error: ${dbError.message}`);
 

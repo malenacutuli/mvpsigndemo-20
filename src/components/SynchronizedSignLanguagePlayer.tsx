@@ -184,7 +184,7 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
   }
 
   return (
-    <div className="absolute top-4 right-4 w-48 h-36 bg-black/80 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg">
+    <div className="absolute bottom-4 right-4 w-48 h-36 bg-black/80 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg">
       <div className="absolute top-1 left-1 z-10">
         <div className="bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
