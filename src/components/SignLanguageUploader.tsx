@@ -29,6 +29,11 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const isValidUUID = (value: string | null | undefined): boolean => {
+    if (!value) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  };
+
   // Load existing Sign Language clip on mount
   useEffect(() => {
     const loadExistingClip = async () => {
@@ -117,13 +122,15 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
 
       const publicUrl = urlData.publicUrl;
 
-      // Save to database
-      const { error: dbError } = await supabase
+      // Save to database (handle potential FK issues gracefully)
+      const sanitizedSegmentId = isValidUUID(segmentId) ? segmentId : null;
+
+      const firstAttempt = await supabase
         .from('sign_language_clips')
         .upsert(
           {
             video_id: videoId,
-            transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null,
+            transcript_segment_id: sanitizedSegmentId,
             start_time_ms: startTimeMs,
             end_time_ms: endTimeMs,
             clip_url: publicUrl,
@@ -132,7 +139,29 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           { onConflict: 'transcript_segment_id' }
         );
 
-      if (dbError) throw new Error(`DB error: ${dbError.message}`);
+      if (firstAttempt.error) {
+        const msg = String(firstAttempt.error.message || '').toLowerCase();
+        // If FK violation, retry without linking to a segment
+        if (msg.includes('foreign key')) {
+          const secondAttempt = await supabase
+            .from('sign_language_clips')
+            .upsert(
+              {
+                video_id: videoId,
+                transcript_segment_id: null,
+                start_time_ms: startTimeMs,
+                end_time_ms: endTimeMs,
+                clip_url: publicUrl,
+                created_by: userId
+              },
+              { onConflict: 'transcript_segment_id' }
+            );
+          if (secondAttempt.error) throw new Error(`DB error: ${secondAttempt.error.message}`);
+          console.warn('Transcript segment not found or inaccessible; saved clip without segment link.');
+        } else {
+          throw new Error(`DB error: ${firstAttempt.error.message}`);
+        }
+      }
 
       setClipUrl(publicUrl);
       onUploadComplete?.(publicUrl);
