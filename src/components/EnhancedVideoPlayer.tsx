@@ -397,14 +397,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   const handleContentGenerated = (content: {
     captions: any[];
-    audioDescription: any[];
+    dubbing: any;
   }) => {
+    console.log('📝 Content generated:', content);
     if (content.captions) {
       setCaptions(content.captions);
     }
-    if (content.audioDescription) {
-      setAudioDescriptions(content.audioDescription);
-    }
+    // Audio descriptions are now handled only in the Audio Description tab
   };
 
   const handleCharactersUpdate = async (updatedCharacters: any[]) => {

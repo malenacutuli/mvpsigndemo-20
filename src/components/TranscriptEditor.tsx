@@ -62,7 +62,6 @@ interface TranscriptEditorProps {
   onTranscriptUpdate?: (segments: TranscriptSegment[], language: string) => void;
   onContentGenerated?: (content: {
     captions: any[];
-    audioDescription: any[];
     dubbing: any;
   }) => void;
 }
@@ -382,36 +381,21 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         })
       }));
 
-      // Generate audio descriptions
-      const { data: adData, error: adError } = await supabase.functions.invoke('generate-ad', {
-        body: {
-          contentType: 'education',
-          segments: translatedSegments.map(s => ({
-            text: s.text,
-            startTime: s.startTime,
-            endTime: s.endTime
-          }))
-        }
-      });
-
-      const audioDescription = adError ? [] : (adData?.descriptions || []);
-
-        setEditingTranscript(translatedSegments);
-        setSelectedLanguage(targetLanguage);
-        
-        // Save translated transcript to database with proper transcript record
-        await saveTranscriptData(translatedSegments, targetLanguage);
-        
-        onTranscriptUpdate?.(translatedSegments, targetLanguage);
+      setEditingTranscript(translatedSegments);
+      setSelectedLanguage(targetLanguage);
+      
+      // Save translated transcript to database with proper transcript record
+      await saveTranscriptData(translatedSegments, targetLanguage);
+      
+      onTranscriptUpdate?.(translatedSegments, targetLanguage);
       onContentGenerated?.({
         captions,
-        audioDescription,
         dubbing: translationData
       });
 
       toast({
         title: "Content Generated",
-        description: `Transcript, captions, and audio descriptions generated for ${languages.find(l => l.code === targetLanguage)?.name}`
+        description: `Transcript and captions generated for ${languages.find(l => l.code === targetLanguage)?.name}`
       });
 
     } catch (error) {
@@ -1096,7 +1080,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded">
             <p>✓ Transcript translated to {languages.find(l => l.code === selectedLanguage)?.name}</p>
             <p>✓ Captions with intention generated</p>
-            <p>✓ Audio descriptions created</p>
             <p>✓ Dubbing content prepared</p>
           </div>
         )}
