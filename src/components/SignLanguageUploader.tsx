@@ -104,6 +104,14 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         console.warn("No user logged in:", e);
       }
 
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = prev + 10;
+          return newProgress >= 90 ? 90 : newProgress;
+        });
+      }, 100);
+
       // Upload to Supabase Storage (sign_language_clips bucket)
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('sign_language_clips')
@@ -112,6 +120,9 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           upsert: true,
           contentType: file.type
         });
+
+      clearInterval(progressInterval);
+      setUploadProgress(95);
 
       if (uploadError) throw new Error(`Storage error: ${uploadError.message}`);
 
@@ -166,6 +177,8 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       setClipUrl(publicUrl);
       onUploadComplete?.(publicUrl);
       
+      setUploadProgress(100);
+      
       toast({
         title: "Sign Language clip uploaded",
         description: "Your Sign Language clip has been successfully uploaded and linked to this segment.",
@@ -180,7 +193,8 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       });
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
+      // Small delay to show 100% before hiding progress bar
+      setTimeout(() => setUploadProgress(0), 500);
     }
   };
 
