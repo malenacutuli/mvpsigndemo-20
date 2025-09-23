@@ -66,6 +66,16 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Strict validation: Must have valid segment ID before upload
+    if (!isValidUUID(segmentId)) {
+      toast({
+        title: "Segment not saved",
+        description: "You must save this transcript segment before uploading a Sign Language clip.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith('video/')) {
       toast({
@@ -86,16 +96,13 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       return;
     }
 
-    // Validate UUID for FK safety
-    const sanitizedSegmentId = isValidUUID(segmentId) ? segmentId : null;
-    
-    console.log("Uploading clip with segmentId:", sanitizedSegmentId);
+    console.log("Uploading clip with segmentId:", segmentId);
 
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      // Generate unique filename
+      // Generate unique filename using correct path convention
       const fileExtension = file.name.split('.').pop() || 'mp4';
       const fileName = `${segmentId}.${fileExtension}`;
       const filePath = `${videoId}/${fileName}`;
@@ -161,13 +168,13 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
 
       console.log("Public URL:", publicUrl);
 
-      // Save to database
+      // Save to database - segmentId is guaranteed to be valid UUID
       const { error: dbError } = await supabase
         .from('sign_language_clips')
         .upsert(
           {
             video_id: videoId,
-            transcript_segment_id: sanitizedSegmentId,
+            transcript_segment_id: segmentId,
             start_time_ms: startTimeMs,
             end_time_ms: endTimeMs,
             clip_url: publicUrl,
@@ -185,7 +192,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       
       toast({
         title: "Sign Language clip uploaded",
-        description: "Your Sign Language clip has been successfully uploaded and linked to this segment.",
+        description: "Sign Language clip uploaded and linked to this segment.",
       });
 
     } catch (error) {
@@ -242,7 +249,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
           <span className="text-sm text-muted-foreground">Loading...</span>
         </div>
-      ) : !segmentId || segmentId.length === 0 ? (
+      ) : !segmentId || segmentId.length === 0 || !isValidUUID(segmentId) ? (
         <div className="flex items-center gap-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-md">
           <span className="text-sm text-yellow-800 dark:text-yellow-200">
             Save transcript segment first to upload Sign Language clip
@@ -264,10 +271,10 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           </div>
           <video 
             src={clipUrl} 
-            className="w-full max-w-xs h-20 object-cover rounded border"
+            className="w-full max-w-xs rounded border"
             muted
-            controls={false}
-            preload="metadata"
+            controls
+            preload="auto"
           />
         </div>
       ) : (
@@ -276,7 +283,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || !isValidUUID(segmentId)}
             className="w-full"
           >
             <Upload className="h-4 w-4 mr-2" />
