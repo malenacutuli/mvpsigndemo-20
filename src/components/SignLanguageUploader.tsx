@@ -90,20 +90,29 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       const fileName = `${segmentId}.${fileExtension}`;
       const filePath = `sign_language_clips/${videoId}/${fileName}`;
 
-      // Upload to Supabase Storage
+      // Safe user handling
+      let userId: string | null = null;
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        userId = userData?.user?.id ?? null;
+      } catch (e) {
+        console.warn("No user logged in:", e);
+      }
+
+      // Upload to Supabase Storage (sign_language_clips bucket)
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('videos')
+        .from('sign_language_clips')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
           contentType: file.type
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) throw new Error(`Storage error: ${uploadError.message}`);
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('videos')
+        .from('sign_language_clips')
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
@@ -114,16 +123,16 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         .upsert(
           {
             video_id: videoId,
-            transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null, // Only use valid segment IDs
+            transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null,
             start_time_ms: startTimeMs,
             end_time_ms: endTimeMs,
             clip_url: publicUrl,
-            created_by: (await supabase.auth.getUser()).data.user?.id
+            created_by: userId
           },
           { onConflict: 'transcript_segment_id' }
         );
 
-      if (dbError) throw dbError;
+      if (dbError) throw new Error(`DB error: ${dbError.message}`);
 
       setClipUrl(publicUrl);
       onUploadComplete?.(publicUrl);
