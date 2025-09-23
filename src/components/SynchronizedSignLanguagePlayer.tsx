@@ -33,9 +33,13 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
 
   // Load Sign Language clips for the video
   useEffect(() => {
-    if (!videoId) return;
+    if (!videoId) {
+      console.log('🤟 No videoId provided to SynchronizedSignLanguagePlayer');
+      return;
+    }
     
     const loadSignLanguageClips = async () => {
+      console.log('🤟 Loading Sign Language clips for video:', videoId);
       try {
         const { data, error } = await supabase
           .from('sign_language_clips')
@@ -44,9 +48,10 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
           .order('start_time_ms');
 
         if (error) throw error;
+        console.log('🤟 Loaded Sign Language clips:', data?.length || 0, data);
         setSignLanguageClips(data || []);
       } catch (error) {
-        console.error('Error loading Sign Language clips:', error);
+        console.error('❌ Error loading Sign Language clips:', error);
       }
     };
 
@@ -55,7 +60,14 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
 
   // Find current clip based on time
   useEffect(() => {
-    if (!isSignLanguageEnabled || signLanguageClips.length === 0) {
+    if (!isSignLanguageEnabled) {
+      console.log('🤟 Sign language disabled, hiding clips');
+      setCurrentClip(null);
+      return;
+    }
+    
+    if (signLanguageClips.length === 0) {
+      console.log('🤟 No sign language clips available');
       setCurrentClip(null);
       return;
     }
@@ -65,6 +77,7 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
     );
 
     if (activeClip !== currentClip) {
+      console.log('🤟 Active clip changed:', activeClip ? `${activeClip.start_time_ms}-${activeClip.end_time_ms}ms` : 'none', 'at time:', currentTimeMs);
       setCurrentClip(activeClip || null);
     }
   }, [currentTimeMs, isSignLanguageEnabled, signLanguageClips, currentClip]);
