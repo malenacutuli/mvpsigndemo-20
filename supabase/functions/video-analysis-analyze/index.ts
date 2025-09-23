@@ -37,10 +37,49 @@ serve(async (req) => {
       );
     }
 
-    // Ensure the prompt we send is a STRING
+    // Parse JSON prompt if needed and create a more direct prompt for the API
+    let finalPrompt = prompt;
     if (typeof prompt !== 'string') {
-      try { prompt = JSON.stringify(prompt); } catch { prompt = String(prompt); }
+      try { 
+        finalPrompt = JSON.stringify(prompt); 
+      } catch { 
+        finalPrompt = String(prompt); 
+      }
     }
+    
+    // If the prompt looks like a JSON structure for silence analysis, convert it to a direct prompt
+    if (typeof finalPrompt === 'string' && finalPrompt.includes('"task"') && finalPrompt.includes('silent moments')) {
+      try {
+        const parsedPrompt = JSON.parse(finalPrompt);
+        if (parsedPrompt.task && parsedPrompt.task.includes('silent moments')) {
+          finalPrompt = `Analyze this video and identify ALL silent segments (no dialogue or narration, only background music/ambiance) throughout the ENTIRE video duration from start to finish.
+
+CRITICAL REQUIREMENTS:
+- Process the complete video from 00:00:00 to the very end
+- Return ONLY valid JSON in this exact format (no additional text):
+
+{
+  "video_id": "${videoId || 'unknown'}",
+  "total_video_duration_analyzed": "HH:MM:SS.mmm",
+  "silences": [
+    {
+      "start": "HH:MM:SS.mmm",
+      "end": "HH:MM:SS.mmm", 
+      "duration_ms": 0,
+      "max_words_allowed": 0,
+      "narration": "Cinematic description for this silent segment"
+    }
+  ]
+}
+
+Find gaps where there is no character dialogue or narration (silence or just background music). Provide precise timestamps and create engaging audio descriptions that fit within each gap (~160 words per minute, leaving 0.3s buffer). Make descriptions cinematic and storytelling-focused.`;
+        }
+      } catch (e) {
+        console.log('📝 Using original prompt format');
+      }
+    }
+    
+    prompt = finalPrompt;
 
     const apiKey = Deno.env.get('TWELVELABS_API_KEY');
     if (!apiKey) {
