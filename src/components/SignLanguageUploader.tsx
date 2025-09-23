@@ -86,6 +86,11 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       return;
     }
 
+    // Validate UUID for FK safety
+    const sanitizedSegmentId = isValidUUID(segmentId) ? segmentId : null;
+    
+    console.log("Uploading clip with segmentId:", sanitizedSegmentId);
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -154,10 +159,10 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
 
       setUploadProgress(98);
 
-      // Save to database (handle potential FK issues gracefully)
-      const sanitizedSegmentId = isValidUUID(segmentId) ? segmentId : null;
+      console.log("Public URL:", publicUrl);
 
-      const firstAttempt = await supabase
+      // Save to database
+      const { error: dbError } = await supabase
         .from('sign_language_clips')
         .upsert(
           {
@@ -171,29 +176,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           { onConflict: 'transcript_segment_id' }
         );
 
-      if (firstAttempt.error) {
-        const msg = String(firstAttempt.error.message || '').toLowerCase();
-        // If FK violation, retry without linking to a segment
-        if (msg.includes('foreign key')) {
-          const secondAttempt = await supabase
-            .from('sign_language_clips')
-            .upsert(
-              {
-                video_id: videoId,
-                transcript_segment_id: null,
-                start_time_ms: startTimeMs,
-                end_time_ms: endTimeMs,
-                clip_url: publicUrl,
-                created_by: userId
-              },
-              { onConflict: 'transcript_segment_id' }
-            );
-          if (secondAttempt.error) throw new Error(`DB error: ${secondAttempt.error.message}`);
-          console.warn('Transcript segment not found or inaccessible; saved clip without segment link.');
-        } else {
-          throw new Error(`DB error: ${firstAttempt.error.message}`);
-        }
-      }
+      if (dbError) throw new Error(`DB error: ${dbError.message}`);
 
       setClipUrl(publicUrl);
       onUploadComplete?.(publicUrl);
