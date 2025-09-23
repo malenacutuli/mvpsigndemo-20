@@ -384,9 +384,22 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       });
     } catch (error: any) {
       console.error('Silence analysis error:', error);
+      // Try to surface upstream error details from the Edge Function
+      let description = error?.message || 'Failed to analyze video for silent segments';
+      try {
+        const ctxBody = (error as any)?.context?.body;
+        if (ctxBody) {
+          // The edge function forwards upstream errors as JSON: { error, status, body }
+          const parsed = typeof ctxBody === 'string' ? JSON.parse(ctxBody) : ctxBody;
+          const upstream = parsed?.error || parsed?.body || parsed;
+          description = typeof upstream === 'string' ? upstream : JSON.stringify(upstream);
+        }
+      } catch (_) {
+        // Fallback to default description
+      }
       toast({
         title: "Silence Analysis Failed",
-        description: error.message || 'Failed to analyze video for silent segments',
+        description,
         variant: "destructive"
       });
     } finally {
