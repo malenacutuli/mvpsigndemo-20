@@ -327,7 +327,10 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       // Parse the response structure from analysis API
       let analysisResult: AnalysisResult;
       
-      if (data?.data && typeof data.data === 'string') {
+      if (data?.silences) {
+        // Direct format from edge function
+        analysisResult = data;
+      } else if (data?.data && typeof data.data === 'string') {
         // Try to parse as JSON first (for silence detection results)
         try {
           const parsedData = JSON.parse(data.data);
@@ -335,9 +338,6 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         } catch (parseError) {
           throw new Error('Invalid silence analysis response format');
         }
-      } else if (data?.silences) {
-        // Direct format (fallback)
-        analysisResult = data;
       } else if (data?.data) {
         // Handle non-string data
         analysisResult = data.data;
