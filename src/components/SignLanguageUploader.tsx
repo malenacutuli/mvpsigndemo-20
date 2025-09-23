@@ -95,7 +95,8 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         .from('videos')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType: file.type
         });
 
       if (uploadError) throw uploadError;
@@ -110,14 +111,17 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       // Save to database
       const { error: dbError } = await supabase
         .from('sign_language_clips')
-        .upsert({
-          video_id: videoId,
-          transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null, // Only use valid segment IDs
-          start_time_ms: startTimeMs,
-          end_time_ms: endTimeMs,
-          clip_url: publicUrl,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        });
+        .upsert(
+          {
+            video_id: videoId,
+            transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null, // Only use valid segment IDs
+            start_time_ms: startTimeMs,
+            end_time_ms: endTimeMs,
+            clip_url: publicUrl,
+            created_by: (await supabase.auth.getUser()).data.user?.id
+          },
+          { onConflict: 'transcript_segment_id' }
+        );
 
       if (dbError) throw dbError;
 
@@ -133,7 +137,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       console.error('Error uploading Sign Language clip:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload Sign Language clip. Please try again.",
+        description: `Failed to upload Sign Language clip: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive"
       });
     } finally {
