@@ -327,20 +327,46 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       // Parse the response structure from analysis API
       let analysisResult: AnalysisResult;
       
+      // Debug: log raw response shape
+      console.log('🧪 Silence analysis raw response:', data);
+
+      const tryParseJson = (val: any) => {
+        if (typeof val !== 'string') return null;
+        const cleaned = val
+          .trim()
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/```\s*$/i, '');
+        try { return JSON.parse(cleaned); } catch { return null; }
+      };
+      
       if (data?.silences) {
         // Direct format from edge function
         analysisResult = data;
+      } else if (typeof data === 'string') {
+        const parsed = tryParseJson(data);
+        analysisResult = parsed || { video_id: assetId, analysis_text: data, silences: [] };
       } else if (data?.data && typeof data.data === 'string') {
-        // Try to parse as JSON first (for silence detection results)
-        try {
-          const parsedData = JSON.parse(data.data);
-          analysisResult = parsedData;
-        } catch (parseError) {
-          throw new Error('Invalid silence analysis response format');
-        }
-      } else if (data?.data) {
-        // Handle non-string data
+        // Try to parse JSON string
+        const parsedData = tryParseJson(data.data);
+        analysisResult = parsedData || { video_id: data.video_id || assetId, analysis_text: data.data, silences: [] };
+      } else if (data?.data && typeof data.data === 'object' && data.data.silences) {
+        // Nested object with silences
         analysisResult = data.data;
+      } else if (typeof data === 'object') {
+        // Look for common fields that may contain JSON string output
+        const candidate: any = (data as any).output || (data as any).text || (data as any).content || (data as any).message || (data as any).result;
+        if (typeof candidate === 'string') {
+          const parsed = tryParseJson(candidate);
+          analysisResult = parsed || { video_id: (data as any).video_id || assetId, analysis_text: candidate, silences: [] };
+        } else {
+          // Last resort: accept object, even without silences
+          analysisResult = {
+            video_id: (data as any).video_id || assetId,
+            analysis_text: JSON.stringify(data),
+            silences: Array.isArray((data as any).silences) ? (data as any).silences : []
+          };
+        }
       } else {
         throw new Error('Invalid response format');
       }
