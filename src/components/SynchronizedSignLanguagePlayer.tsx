@@ -11,17 +11,17 @@ interface SignLanguageClip {
 }
 
 interface SynchronizedSignLanguagePlayerProps {
-  videoId: string;
-  currentTimeMs: number;
-  isSignLanguageEnabled: boolean;
+  videoId?: string;
+  currentTimeMs?: number;
+  isSignLanguageEnabled?: boolean;
   onPreloadStart?: () => void;
   onPreloadComplete?: () => void;
 }
 
 export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePlayerProps> = ({
   videoId,
-  currentTimeMs,
-  isSignLanguageEnabled,
+  currentTimeMs = 0,
+  isSignLanguageEnabled = false,
   onPreloadStart,
   onPreloadComplete
 }) => {
@@ -33,6 +33,8 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
 
   // Load Sign Language clips for the video
   useEffect(() => {
+    if (!videoId) return;
+    
     const loadSignLanguageClips = async () => {
       try {
         const { data, error } = await supabase
@@ -48,9 +50,7 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
       }
     };
 
-    if (videoId) {
-      loadSignLanguageClips();
-    }
+    loadSignLanguageClips();
   }, [videoId]);
 
   // Find current clip based on time

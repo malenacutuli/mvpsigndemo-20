@@ -44,6 +44,7 @@ interface AxessiblePlayerProps {
   onTranscriptUpdate?: (segments: any[], language: string) => void;
   isPublic?: boolean;
   videoStatus?: string;
+  showSignLanguageProp?: boolean; // optional external control
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -60,6 +61,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   onTranscriptUpdate,
   isPublic,
   videoStatus,
+  showSignLanguageProp,
 }) => {
   // Update captions when initialCaptions changes (from database)
   useEffect(() => {
@@ -84,7 +86,27 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
-  const [showSignLanguage, setShowSignLanguage] = useState(false);
+  
+  // === Sign Language toggle state (safe default + persistence) ===
+  const [showSignLanguage, setShowSignLanguage] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem("axv:showSignLanguage");
+      return v ? JSON.parse(v) : false;
+    } catch {
+      return false;
+    }
+  });
+  
+  useEffect(() => {
+    try { 
+      localStorage.setItem("axv:showSignLanguage", JSON.stringify(showSignLanguage)); 
+    } catch {}
+  }, [showSignLanguage]);
+  
+  // Effective show sign language with prop override support
+  const effectiveShowSignLanguage = 
+    typeof showSignLanguageProp === "boolean" ? showSignLanguageProp : showSignLanguage;
+  
   const [showAudioDescription, setShowAudioDescription] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [generatedCaptions, setGeneratedCaptions] = useState<CaptionSegment[] | null>(null);
@@ -120,8 +142,27 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   });
   
   // Hooks
-  // Hooks
   const isMobile = useIsMobile();
+  
+  // Keyboard shortcut for Sign Language toggle
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "s" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Only if not focused on input elements
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && (
+          activeElement.tagName === 'INPUT' || 
+          activeElement.tagName === 'TEXTAREA' || 
+          activeElement.contentEditable === 'true'
+        )) {
+          return;
+        }
+        setShowSignLanguage(v => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Force-disable any native text tracks (in-band or <track>) so only our overlay captions show
   useEffect(() => {
@@ -983,18 +1024,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       )}
 
       {/* Sign Language Overlay - Using time-synchronized clips */}
-      {showSignLanguage && videoId && (
+      {effectiveShowSignLanguage && videoId && (
         <SynchronizedSignLanguagePlayer
           videoId={videoId}
           currentTimeMs={currentTime * 1000}
-          isSignLanguageEnabled={showSignLanguage}
+          isSignLanguageEnabled={effectiveShowSignLanguage}
           onPreloadStart={() => console.log('Preloading Sign Language clip...')}
           onPreloadComplete={() => console.log('Sign Language clip preloaded')}
         />
       )}
 
       {/* Fallback Sign Language Avatar for videos without time-synced clips */}
-      {showSignLanguage && !videoId && (
+      {effectiveShowSignLanguage && !videoId && (
         <ASLAvatar
           contentType={contentType}
           selectedASLAvatar={selectedASLAvatar}
@@ -1162,13 +1203,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             
             {/* Dubbing speed selection moved into SynchronizedDubbingPlayer */}
             
-            {/* Sign Language Avatar */}
+            {/* Sign Language Toggle */}
             <Button
+              type="button"
               variant="ghost"
               size="sm"
-              onClick={() => setShowSignLanguage(!showSignLanguage)}
-              title="Toggle Sign Language avatar"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showSignLanguage ? 'bg-accent/20 text-accent-foreground' : ''}`}
+              onClick={() => setShowSignLanguage((v) => !v)}
+              aria-pressed={effectiveShowSignLanguage}
+              aria-label={effectiveShowSignLanguage ? "Hide Sign Language" : "Show Sign Language"}
+              title={effectiveShowSignLanguage ? "Hide Sign Language (S)" : "Show Sign Language (S)"}
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${effectiveShowSignLanguage ? 'bg-accent/20 text-accent-foreground' : ''}`}
             >
               <HandHelping className="w-4 h-4" />
             </Button>
@@ -1284,7 +1328,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   hasTranscript={!!generatedCaptions?.length}
                   hasAudioDescription={showAudioDescription}
                   hasCaptions={showCaptions}
-                  hasSignLanguage={showSignLanguage}
+                  hasSignLanguage={effectiveShowSignLanguage}
                   hasKeyboardNav={keyboardNavEnabled}
                   language={contentType === 'education' ? 'es' : 'en'}
                   hasScreenReaderSupport={true}
