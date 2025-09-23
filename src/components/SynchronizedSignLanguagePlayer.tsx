@@ -99,6 +99,8 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
       return;
     }
 
+    console.log('🤟 Looking for clip at time:', currentTimeMs, 'ms. Available clips:', signLanguageClips.map(c => `${c.start_time_ms}-${c.end_time_ms}ms`));
+
     const activeClip = signLanguageClips.find(clip => 
       currentTimeMs >= clip.start_time_ms && currentTimeMs <= clip.end_time_ms
     );
