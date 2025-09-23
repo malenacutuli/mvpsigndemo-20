@@ -7,7 +7,7 @@ import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
 import { ASLAvatar } from './ASLAvatar';
-import { SynchronizedASLPlayer } from './SynchronizedASLPlayer';
+import { SynchronizedSignLanguagePlayer } from './SynchronizedSignLanguagePlayer';
 import { AccessibilityGrader } from './AccessibilityGrader';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
@@ -84,7 +84,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
-  const [showASL, setShowASL] = useState(false);
+  const [showSignLanguage, setShowSignLanguage] = useState(false);
   const [showAudioDescription, setShowAudioDescription] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [generatedCaptions, setGeneratedCaptions] = useState<CaptionSegment[] | null>(null);
@@ -522,8 +522,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       case 'generateAudioDescription':
         await handleToggleDynamicAD();
         break;
-      case 'enableASL':
-        setShowASL(true);
+      case 'enableSignLanguage':
+        setShowSignLanguage(true);
         break;
       case 'enableKeyboard':
         setKeyboardNavEnabled(true);
@@ -982,19 +982,19 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         </div>
       )}
 
-      {/* ASL Avatar Overlay - Using time-synchronized clips */}
-      {showASL && videoId && (
-        <SynchronizedASLPlayer
+      {/* Sign Language Overlay - Using time-synchronized clips */}
+      {showSignLanguage && videoId && (
+        <SynchronizedSignLanguagePlayer
           videoId={videoId}
           currentTimeMs={currentTime * 1000}
-          isASLEnabled={showASL}
-          onPreloadStart={() => console.log('Preloading ASL clip...')}
-          onPreloadComplete={() => console.log('ASL clip preloaded')}
+          isSignLanguageEnabled={showSignLanguage}
+          onPreloadStart={() => console.log('Preloading Sign Language clip...')}
+          onPreloadComplete={() => console.log('Sign Language clip preloaded')}
         />
       )}
 
-      {/* Fallback ASL Avatar for videos without time-synced clips */}
-      {showASL && !videoId && (
+      {/* Fallback Sign Language Avatar for videos without time-synced clips */}
+      {showSignLanguage && !videoId && (
         <ASLAvatar
           contentType={contentType}
           selectedASLAvatar={selectedASLAvatar}
@@ -1166,9 +1166,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowASL(!showASL)}
-              title="Toggle ASL avatar"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showASL ? 'bg-accent/20 text-accent-foreground' : ''}`}
+              onClick={() => setShowSignLanguage(!showSignLanguage)}
+              title="Toggle Sign Language avatar"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${showSignLanguage ? 'bg-accent/20 text-accent-foreground' : ''}`}
             >
               <HandHelping className="w-4 h-4" />
             </Button>
@@ -1284,7 +1284,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   hasTranscript={!!generatedCaptions?.length}
                   hasAudioDescription={showAudioDescription}
                   hasCaptions={showCaptions}
-                  hasASL={showASL}
+                  hasSignLanguage={showSignLanguage}
                   hasKeyboardNav={keyboardNavEnabled}
                   language={contentType === 'education' ? 'es' : 'en'}
                   hasScreenReaderSupport={true}

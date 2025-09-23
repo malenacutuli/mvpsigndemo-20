@@ -29,7 +29,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Load existing ASL clip on mount
+  // Load existing Sign Language clip on mount
   useEffect(() => {
     const loadExistingClip = async () => {
       try {
@@ -44,13 +44,13 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         }
       } catch (error) {
         // No existing clip - this is normal
-        console.log('No existing ASL clip for segment:', segmentId);
+        console.log('No existing Sign Language clip for segment:', segmentId);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (segmentId && !existingClipUrl) {
+    if (segmentId && segmentId.length > 0 && !existingClipUrl) {
       loadExistingClip();
     } else {
       setIsLoading(false);
@@ -112,7 +112,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         .from('sign_language_clips')
         .upsert({
           video_id: videoId,
-          transcript_segment_id: segmentId || null, // Allow null for unsaved segments
+          transcript_segment_id: segmentId && segmentId.length > 0 ? segmentId : null, // Only use valid segment IDs
           start_time_ms: startTimeMs,
           end_time_ms: endTimeMs,
           clip_url: publicUrl,
@@ -126,11 +126,11 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       
       toast({
         title: "Sign Language clip uploaded",
-        description: "Your ASL clip has been successfully uploaded and linked to this segment.",
+        description: "Your Sign Language clip has been successfully uploaded and linked to this segment.",
       });
 
     } catch (error) {
-      console.error('Error uploading ASL clip:', error);
+      console.error('Error uploading Sign Language clip:', error);
       toast({
         title: "Upload failed",
         description: "Failed to upload Sign Language clip. Please try again.",
@@ -157,11 +157,11 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
       
       toast({
         title: "Sign Language clip removed",
-        description: "The ASL clip has been removed from this segment.",
+        description: "The Sign Language clip has been removed from this segment.",
       });
 
     } catch (error) {
-      console.error('Error removing ASL clip:', error);
+      console.error('Error removing Sign Language clip:', error);
       toast({
         title: "Removal failed",
         description: "Failed to remove Sign Language clip. Please try again.",
@@ -182,17 +182,17 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin"></div>
           <span className="text-sm text-muted-foreground">Loading...</span>
         </div>
-      ) : !segmentId ? (
+      ) : !segmentId || segmentId.length === 0 ? (
         <div className="flex items-center gap-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-md">
           <span className="text-sm text-yellow-800 dark:text-yellow-200">
-            Save transcript segment first to upload ASL clip
+            Save transcript segment first to upload Sign Language clip
           </span>
         </div>
       ) : clipUrl ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2 p-2 bg-accent/30 rounded-md">
             <Check className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm text-foreground">ASL clip attached</span>
+            <span className="text-sm text-foreground">Sign Language clip attached</span>
             <Button
               variant="ghost"
               size="sm"
@@ -220,7 +220,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
             className="w-full"
           >
             <Upload className="h-4 w-4 mr-2" />
-            {isUploading ? 'Uploading...' : 'Upload ASL Clip'}
+            {isUploading ? 'Uploading...' : 'Upload Sign Language Clip'}
           </Button>
           
           {isUploading && (

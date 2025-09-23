@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface ASLClip {
+interface SignLanguageClip {
   id: string;
   video_id: string;
   transcript_segment_id: string;
@@ -10,30 +10,30 @@ interface ASLClip {
   clip_url: string;
 }
 
-interface SynchronizedASLPlayerProps {
+interface SynchronizedSignLanguagePlayerProps {
   videoId: string;
   currentTimeMs: number;
-  isASLEnabled: boolean;
+  isSignLanguageEnabled: boolean;
   onPreloadStart?: () => void;
   onPreloadComplete?: () => void;
 }
 
-export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
+export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePlayerProps> = ({
   videoId,
   currentTimeMs,
-  isASLEnabled,
+  isSignLanguageEnabled,
   onPreloadStart,
   onPreloadComplete
 }) => {
-  const [aslClips, setAslClips] = useState<ASLClip[]>([]);
-  const [currentClip, setCurrentClip] = useState<ASLClip | null>(null);
+  const [signLanguageClips, setSignLanguageClips] = useState<SignLanguageClip[]>([]);
+  const [currentClip, setCurrentClip] = useState<SignLanguageClip | null>(null);
   const [preloadedClips, setPreloadedClips] = useState<Map<string, string>>(new Map());
   const videoRef = useRef<HTMLVideoElement>(null);
   const preloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load ASL clips for the video
+  // Load Sign Language clips for the video
   useEffect(() => {
-    const loadASLClips = async () => {
+    const loadSignLanguageClips = async () => {
       try {
         const { data, error } = await supabase
           .from('sign_language_clips')
@@ -42,36 +42,36 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
           .order('start_time_ms');
 
         if (error) throw error;
-        setAslClips(data || []);
+        setSignLanguageClips(data || []);
       } catch (error) {
-        console.error('Error loading ASL clips:', error);
+        console.error('Error loading Sign Language clips:', error);
       }
     };
 
     if (videoId) {
-      loadASLClips();
+      loadSignLanguageClips();
     }
   }, [videoId]);
 
   // Find current clip based on time
   useEffect(() => {
-    if (!isASLEnabled || aslClips.length === 0) {
+    if (!isSignLanguageEnabled || signLanguageClips.length === 0) {
       setCurrentClip(null);
       return;
     }
 
-    const activeClip = aslClips.find(clip => 
+    const activeClip = signLanguageClips.find(clip => 
       currentTimeMs >= clip.start_time_ms && currentTimeMs <= clip.end_time_ms
     );
 
     if (activeClip !== currentClip) {
       setCurrentClip(activeClip || null);
     }
-  }, [currentTimeMs, isASLEnabled, aslClips, currentClip]);
+  }, [currentTimeMs, isSignLanguageEnabled, signLanguageClips, currentClip]);
 
   // Preload next clip logic
   useEffect(() => {
-    if (!isASLEnabled || aslClips.length === 0) return;
+    if (!isSignLanguageEnabled || signLanguageClips.length === 0) return;
 
     // Clear existing timeout
     if (preloadTimeoutRef.current) {
@@ -79,7 +79,7 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
     }
 
     // Find next clip that starts within 3 seconds
-    const nextClip = aslClips.find(clip => 
+    const nextClip = signLanguageClips.find(clip => 
       clip.start_time_ms > currentTimeMs && 
       clip.start_time_ms <= currentTimeMs + 3000 &&
       !preloadedClips.has(clip.id)
@@ -98,9 +98,9 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
         clearTimeout(preloadTimeoutRef.current);
       }
     };
-  }, [currentTimeMs, isASLEnabled, aslClips, preloadedClips]);
+  }, [currentTimeMs, isSignLanguageEnabled, signLanguageClips, preloadedClips]);
 
-  const preloadClip = async (clip: ASLClip) => {
+  const preloadClip = async (clip: SignLanguageClip) => {
     try {
       onPreloadStart?.();
       
@@ -120,7 +120,7 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
       onPreloadComplete?.();
       
     } catch (error) {
-      console.error('Error preloading ASL clip:', error);
+      console.error('Error preloading Sign Language clip:', error);
       onPreloadComplete?.();
     }
   };
@@ -139,7 +139,7 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
     }
   }, [currentTimeMs, currentClip]);
 
-  if (!isASLEnabled || !currentClip) {
+  if (!isSignLanguageEnabled || !currentClip) {
     return null;
   }
 
@@ -148,7 +148,7 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
       <div className="absolute top-1 left-1 z-10">
         <div className="bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-          ASL
+          Sign Language
         </div>
       </div>
       
@@ -161,7 +161,7 @@ export const SynchronizedASLPlayer: React.FC<SynchronizedASLPlayerProps> = ({
         loop={false}
         playsInline
         onError={(e) => {
-          console.error('Error playing ASL clip:', e);
+          console.error('Error playing Sign Language clip:', e);
         }}
       />
     </div>

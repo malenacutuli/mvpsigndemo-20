@@ -111,7 +111,7 @@ export const UploadAccessible: React.FC = () => {
   const [asl, setAsl] = useState(asls[0].id);
   const [activeTab, setActiveTab] = useState("player");
   const [showCaptions, setShowCaptions] = useState(true);
-  const [showASL, setShowASL] = useState(false);
+  const [showSignLanguage, setShowSignLanguage] = useState(false);
   const [showAudioDescription, setShowAudioDescription] = useState(true);
 
   const selectedVoice = useMemo(() => voices.find(v => v.id === voice) || voices[0], [voices, voice]);
@@ -276,7 +276,7 @@ export const UploadAccessible: React.FC = () => {
                     videoUrl={videoUrl || undefined}
                     hasCaptions={!!initialCaptions}
                     hasAudioDescription={showAudioDescription}
-                    hasASL={showASL}
+                    hasSignLanguage={showSignLanguage}
                     hasTranscript={!!initialCaptions}
                     hasKeyboardNav={true}
                     contrastRatio={4.8}
@@ -315,7 +315,7 @@ export const UploadAccessible: React.FC = () => {
                   <div className="grid gap-6 md:grid-cols-2">
                     <KeyboardAccessibilityManager
                       onToggleCaptions={() => setShowCaptions(!showCaptions)}
-                      onToggleASL={() => setShowASL(!showASL)}
+                      onToggleSignLanguage={() => setShowSignLanguage(!showSignLanguage)}
                       onToggleAD={() => setShowAudioDescription(!showAudioDescription)}
                     />
                     <RealtimeChat

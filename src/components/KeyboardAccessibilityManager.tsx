@@ -7,14 +7,14 @@ import { Keyboard } from 'lucide-react';
 interface KeyboardAccessibilityManagerProps {
   onKeyboardModeChange?: (enabled: boolean) => void;
   onToggleCaptions?: () => void;
-  onToggleASL?: () => void;
+  onToggleSignLanguage?: () => void;
   onToggleAD?: () => void;
 }
 
 export const KeyboardAccessibilityManager: React.FC<KeyboardAccessibilityManagerProps> = ({
   onKeyboardModeChange,
   onToggleCaptions,
-  onToggleASL,
+  onToggleSignLanguage,
   onToggleAD
 }) => {
   return (
@@ -38,8 +38,8 @@ export const KeyboardAccessibilityManager: React.FC<KeyboardAccessibilityManager
             <Label htmlFor="captions-toggle">Toggle Captions (C)</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <Switch id="asl-toggle" onCheckedChange={() => onToggleASL?.()} />
-            <Label htmlFor="asl-toggle">Toggle ASL (S)</Label>
+            <Switch id="sign-language-toggle" onCheckedChange={() => onToggleSignLanguage?.()} />
+            <Label htmlFor="sign-language-toggle">Toggle Sign Language (S)</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Switch id="ad-toggle" onCheckedChange={() => onToggleAD?.()} />

@@ -9,7 +9,7 @@ interface AccessibilityGraderProps {
   hasTranscript: boolean;
   hasAudioDescription: boolean;
   hasCaptions: boolean;
-  hasASL: boolean;
+  hasSignLanguage: boolean;
   hasKeyboardNav: boolean;
   language: string;
   contrastRatio?: number;
@@ -26,7 +26,7 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
   hasTranscript,
   hasAudioDescription,
   hasCaptions,
-  hasASL,
+  hasSignLanguage,
   hasKeyboardNav,
   contrastRatio,
   hasScreenReaderSupport = true,
@@ -42,7 +42,8 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
     { name: 'Thumbnail Alt Text', status: hasThumbnailAltText, issue: 'updateThumbnailAlt' },
     { name: 'Play Button Visible', status: hasVisiblePlayButton, issue: 'showPlayButton' },
     { name: 'Captions Available', status: hasCaptions, issue: 'generateCaptions' },
-    { name: 'Audio Description', status: hasAudioDescription, issue: 'generateAudioDescription' }
+    { name: 'Audio Description', status: hasAudioDescription, issue: 'generateAudioDescription' },
+    { name: 'Sign Language Support', status: hasSignLanguage, issue: 'enableSignLanguage' }
   ];
 
   const passedChecks = checks.filter(check => check.status).length;
@@ -61,7 +62,7 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
       </div>
       
       <div className="space-y-3">
-        <h4 className="font-medium text-sm mb-3">7-Point Accessibility Checklist</h4>
+        <h4 className="font-medium text-sm mb-3">8-Point Accessibility Checklist</h4>
         {checks.map((check, index) => (
           <div key={index} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">

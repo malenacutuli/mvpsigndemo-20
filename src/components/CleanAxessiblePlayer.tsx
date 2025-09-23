@@ -498,7 +498,7 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
                   hasTranscript={captions.length > 0}
                   hasAudioDescription={audioDescriptions.length > 0}
                   hasCaptions={captions.length > 0}
-                  hasASL={true}
+                  hasSignLanguage={true}
                   hasKeyboardNav={true}
                   language="en"
                   onFixIssue={(issue) => {
