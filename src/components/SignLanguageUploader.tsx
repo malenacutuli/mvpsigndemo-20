@@ -133,6 +133,27 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
 
       const publicUrl = urlData.publicUrl;
 
+      // Verify the uploaded file is actually accessible
+      let accessible = false;
+      try {
+        const head = await fetch(publicUrl, { method: 'HEAD' });
+        accessible = head.ok;
+        console.info('[ASL Upload] Public URL HEAD status:', head.status, publicUrl);
+        if (!accessible) {
+          const probe = await fetch(publicUrl, { headers: { Range: 'bytes=0-1' } });
+          console.info('[ASL Upload] Public URL PROBE status:', probe.status);
+          accessible = probe.ok;
+        }
+      } catch (e) {
+        console.warn('[ASL Upload] Public URL check failed:', e);
+      }
+
+      if (!accessible) {
+        throw new Error(`Uploaded file is not accessible yet at ${publicUrl}. If this persists, check bucket public access/policies.`);
+      }
+
+      setUploadProgress(98);
+
       // Save to database (handle potential FK issues gracefully)
       const sanitizedSegmentId = isValidUUID(segmentId) ? segmentId : null;
 
