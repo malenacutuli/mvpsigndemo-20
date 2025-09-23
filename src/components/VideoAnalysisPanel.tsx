@@ -62,6 +62,68 @@ function wordsAllowed(durationMs: number) {
   return Math.floor((160 / 60) * secs);
 }
 
+// Extract silence segments from narrative text that contains timing patterns like [0s (00:00)-4s (00:04)]
+function extractSilencesFromNarrative(text: string): Array<{
+  start: string;
+  end: string;
+  duration_ms: number;
+  max_words_allowed?: number;
+  narration: string;
+}> {
+  const silences: Array<{
+    start: string;
+    end: string;
+    duration_ms: number;
+    max_words_allowed?: number;
+    narration: string;
+  }> = [];
+
+  // Regex to match patterns like [0s (00:00)-4s (00:04)] or [4s (00:04)-7s (00:07)]
+  const timePattern = /\[(\d+)s \((\d{2}:\d{2})\)-(\d+)s \((\d{2}:\d{2})\)\]/g;
+  
+  let match;
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+  let sentenceIndex = 0;
+
+  while ((match = timePattern.exec(text)) !== null) {
+    const [fullMatch, startSeconds, startTime, endSeconds, endTime] = match;
+    const duration = (parseInt(endSeconds) - parseInt(startSeconds)) * 1000;
+    
+    // Find the sentence containing this timing pattern and extract surrounding context
+    let narration = '';
+    for (let i = sentenceIndex; i < sentences.length; i++) {
+      if (sentences[i].includes(fullMatch)) {
+        // Get this sentence and potentially the next one for context
+        narration = sentences[i].replace(fullMatch, '').trim();
+        if (i + 1 < sentences.length && narration.length < 50) {
+          narration += ' ' + sentences[i + 1].trim();
+        }
+        sentenceIndex = i + 1;
+        break;
+      }
+    }
+
+    // Clean up narration text
+    narration = narration
+      .replace(/^[,\s]+/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (narration && duration > 0) {
+      silences.push({
+        start: `00:${startTime}.000`,
+        end: `00:${endTime}.000`,
+        duration_ms: duration,
+        max_words_allowed: wordsAllowed(duration),
+        narration: narration || `Visual elements and ambiance during this ${duration/1000}s segment.`
+      });
+    }
+  }
+
+  console.log(`🔍 Extracted ${silences.length} silence segments from narrative text`);
+  return silences;
+}
+
 const DEFAULT_SILENCE_PROMPT = JSON.stringify(
   {
     "task": "Extract silent moments and generate storytelling audio description that fits within each gap for the ENTIRE video duration.",
@@ -347,9 +409,23 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         const parsed = tryParseJson(data);
         analysisResult = parsed || { video_id: assetId, analysis_text: data, silences: [] };
       } else if (data?.data && typeof data.data === 'string') {
-        // Try to parse JSON string
+        // Try to parse JSON string first
         const parsedData = tryParseJson(data.data);
-        analysisResult = parsedData || { video_id: data.video_id || assetId, analysis_text: data.data, silences: [] };
+        if (parsedData) {
+          analysisResult = parsedData;
+        } else {
+          // If JSON parsing fails, try to extract silence segments from narrative text
+          const extractedSilences = extractSilencesFromNarrative(data.data);
+          analysisResult = { 
+            video_id: data.video_id || assetId, 
+            analysis_text: data.data, 
+            silences: extractedSilences.length > 0 ? extractedSilences : []
+          };
+          
+          if (extractedSilences.length === 0) {
+            console.warn('⚠️ No silence segments found in narrative text. API may not be following JSON format instructions.');
+          }
+        }
       } else if (data?.data && typeof data.data === 'object' && data.data.silences) {
         // Nested object with silences
         analysisResult = data.data;
