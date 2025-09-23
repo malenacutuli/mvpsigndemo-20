@@ -175,9 +175,17 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
     const clipStartTimeSeconds = currentClip.start_time_ms / 1000;
     const relativeTime = (currentTimeMs - currentClip.start_time_ms) / 1000;
     
+    // Check if video has loaded and get its actual duration
+    if (video.duration && relativeTime >= video.duration) {
+      console.log('🤟 Video ended early - expected to play until', (currentClip.end_time_ms - currentClip.start_time_ms) / 1000, 'seconds, but video is only', video.duration, 'seconds');
+      return; // Don't try to seek beyond video duration
+    }
+    
     // Sync video time with the clip's relative position
-    if (Math.abs(video.currentTime - relativeTime) > 0.1) {
-      video.currentTime = Math.max(0, relativeTime);
+    if (Math.abs(video.currentTime - relativeTime) > 0.1 && relativeTime >= 0) {
+      const seekTime = Math.min(relativeTime, video.duration || relativeTime);
+      console.log('🤟 Syncing video time from', video.currentTime, 'to', seekTime, 'relative time:', relativeTime);
+      video.currentTime = seekTime;
     }
   }, [currentTimeMs, currentClip]);
 
@@ -196,7 +204,21 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
         loop={false}
         playsInline
         onError={(e) => {
-          console.error('Error playing Sign Language clip:', e);
+          console.error('🤟 Error playing Sign Language clip:', e);
+        }}
+        onLoadedMetadata={() => {
+          if (videoRef.current) {
+            const expectedDuration = (currentClip.end_time_ms - currentClip.start_time_ms) / 1000;
+            console.log('🤟 Video loaded - actual duration:', videoRef.current.duration, 'expected duration:', expectedDuration);
+          }
+        }}
+        onEnded={() => {
+          console.log('🤟 Sign Language video ended at', videoRef.current?.currentTime, 'seconds');
+        }}
+        onTimeUpdate={() => {
+          if (videoRef.current) {
+            console.log('🤟 Video time:', videoRef.current.currentTime, '/', videoRef.current.duration);
+          }
         }}
       />
     </div>
