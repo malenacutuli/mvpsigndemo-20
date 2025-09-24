@@ -77,6 +77,11 @@ export class ExportOrchestrator {
 
       progressCallback?.({ stage: 'uploading', progress: 85, message: 'Uploading processed video...' });
 
+      // Prepare local fallback URL for immediate download
+      const localDownloadUrl = URL.createObjectURL(resultBlob);
+      let uploadedOk = true;
+      let uploadErrMsg: string | null = null;
+
       // 7. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('exports')
@@ -86,19 +91,22 @@ export class ExportOrchestrator {
         });
 
       if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
+        uploadedOk = false;
+        uploadErrMsg = uploadError.message;
+        console.warn('⚠️ Upload failed, will fallback to local download URL:', uploadErrMsg);
       }
 
       progressCallback?.({ stage: 'finalizing', progress: 95, message: 'Finalizing export...' });
 
-      // 8. Update export record with completion
+      // 8. Update export record with completion/failed-upload
       const { error: updateError } = await supabase
         .from('video_exports')
         .update({
-          status: 'completed',
+          status: uploadedOk ? 'completed' : 'failed',
           completed_at: new Date().toISOString(),
           file_size_bytes: resultBlob.size,
-          duration_seconds: assets.video.duration_seconds
+          duration_seconds: assets.video.duration_seconds,
+          error_message: uploadedOk ? null : `Upload failed: ${uploadErrMsg}`
         })
         .eq('id', exportId);
 
@@ -106,10 +114,10 @@ export class ExportOrchestrator {
         console.warn('Failed to update export record:', updateError);
       }
 
-      progressCallback?.({ stage: 'finalizing', progress: 100, message: 'Export completed successfully!' });
+      progressCallback?.({ stage: 'finalizing', progress: 100, message: uploadedOk ? 'Export completed successfully!' : 'Export ready locally (cloud upload failed)' });
 
-      // 9. Generate download URL
-      const downloadUrl = await this.getDownloadUrl(storagePath);
+      // 9. Generate download URL (fallback to local if necessary)
+      const downloadUrl = uploadedOk ? await this.getDownloadUrl(storagePath) : localDownloadUrl;
 
       return { exportId, downloadUrl };
 
