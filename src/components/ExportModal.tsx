@@ -61,10 +61,37 @@ export function ExportModal({
     }
   };
 
+  const handleForceDownload = () => {
+    if (!downloadUrl) return;
+    try {
+      const fileNameSafe = (videoTitle || 'export')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const suggestedName = `${fileNameSafe || 'export'}-accessible.mp4`;
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = suggestedName;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Optionally revoke blob URLs after some time to free memory
+      if (downloadUrl.startsWith('blob:')) {
+        setTimeout(() => {
+          try { URL.revokeObjectURL(downloadUrl); } catch {}
+        }, 60_000);
+      }
+    } catch (e) {
+      // Fallback to opening in a new tab if direct download fails
+      window.open(downloadUrl, '_blank');
+    }
+  };
+
   const getSelectedFeatureCount = () => {
     return Object.values(options).filter(Boolean).length;
   };
-
   const renderFeatureOption = (
     key: keyof ExportOptions,
     icon: React.ReactNode,
@@ -158,7 +185,7 @@ export function ExportModal({
                 <span>Your export is ready for download!</span>
                 <Button
                   size="sm"
-                  onClick={() => window.open(downloadUrl, '_blank')}
+                  onClick={handleForceDownload}
                   className="ml-2"
                 >
                   <Download className="w-4 h-4 mr-2" />

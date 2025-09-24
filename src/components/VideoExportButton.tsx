@@ -81,13 +81,36 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
         description: 'Your accessible video export is ready for download.',
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Export failed:', error);
       toast({
         title: 'Export Failed',
-        description: error.message || 'An error occurred during export.',
+        description: error?.message || 'An error occurred during export.',
         variant: 'destructive',
       });
+
+      // Fallback: provide original video for download so the user always has something
+      try {
+        const { data: video, error: videoErr } = await supabase
+          .from('videos')
+          .select('storage_path')
+          .eq('id', videoId)
+          .single();
+        if (!videoErr && video?.storage_path) {
+          const { data: signed, error: urlErr } = await supabase.storage
+            .from('videos')
+            .createSignedUrl(video.storage_path, 3600);
+          if (!urlErr && signed?.signedUrl) {
+            setDownloadUrl(signed.signedUrl);
+            toast({
+              title: 'Fallback Ready',
+              description: 'Could not export, but you can download the original video.',
+            });
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn('Fallback original download failed:', fallbackErr);
+      }
     } finally {
       console.log('🔄 Export process finished, resetting state...');
       setIsProcessing(false);
@@ -99,7 +122,6 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
     setProgress(undefined);
     setDownloadUrl(undefined);
   };
-
   return (
     <>
       <div className="flex gap-2">
