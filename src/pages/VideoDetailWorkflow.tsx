@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
 import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { AccessibleVideoExporter } from '@/components/AccessibleVideoExporter';
+import { VideoExportButton } from '@/components/VideoExportButton';
+import { VideoExportsPanel } from '@/components/VideoExportsPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -38,13 +40,26 @@ export default function VideoDetailWorkflow() {
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchVideo(id);
       loadExistingCaptions(id);
     }
+    getCurrentUser();
   }, [id]);
+
+  const getCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    } catch (error) {
+      console.error('Error getting current user:', error);
+    }
+  };
 
   const loadExistingCaptions = async (videoId: string) => {
     try {
@@ -247,6 +262,16 @@ export default function VideoDetailWorkflow() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Videos
             </Button>
+            
+            {userId && (
+              <VideoExportButton
+                videoId={video.id}
+                videoTitle={video.title}
+                onExportComplete={() => {
+                  window.location.reload();
+                }}
+              />
+            )}
             <div>
               <h1 className="text-2xl font-bold">{video.title}</h1>
               <div className="flex items-center gap-4 mt-2">
@@ -323,6 +348,13 @@ export default function VideoDetailWorkflow() {
               </Card>
             </div>
           </div>
+
+          {/* Video Exports Panel */}
+          {userId && (
+            <div className="mt-6">
+              <VideoExportsPanel videoId={video.id} userId={userId} />
+            </div>
+          )}
         </div>
     </div>
   );

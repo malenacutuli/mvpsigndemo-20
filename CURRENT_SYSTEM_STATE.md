@@ -1,7 +1,7 @@
 # Current System State Documentation
 
 ## Overview
-Axessible is a video accessibility platform that allows users to upload videos and add accessibility features like captions, audio descriptions, and sign language interpretation.
+Axessible is a video accessibility platform that allows users to upload videos and add accessibility features like captions, audio descriptions, and sign language interpretation. The system now includes a complete **Finalize & Export** workflow that renders accessible MP4 videos with any combination of accessibility features.
 
 ## Current Architecture
 
@@ -15,6 +15,7 @@ Axessible is a video accessibility platform that allows users to upload videos a
 - **sign_language_clips**: ASL video clips linked to transcript segments
 - **audio_descriptions**: Audio description cues with timing
 - **tracks**: Video tracks (subtitles, audio, etc.)
+- **video_exports**: NEW - Tracks finalized video exports with options and status
 
 #### User & Channel Management
 - **profiles**: User profile information
@@ -33,11 +34,14 @@ Axessible is a video accessibility platform that allows users to upload videos a
 - **tracks**: Private bucket for subtitle/track files
 - **processed-videos**: Public bucket for processed video outputs
 - **sign_language_clips**: Public bucket for ASL video clips
+- **exports**: NEW - Private bucket for finalized accessible video exports
 
 ### Key Components
 
 #### Video Processing
 - **BrowserVideoProcessor**: FFmpeg.js-based video processing for subtitle burning
+- **VideoExportProcessor**: NEW - Enhanced FFmpeg processor for multi-layer accessible video rendering
+- **ExportOrchestrator**: NEW - Manages complete export workflow from assets to download
 - **AxessiblePlayer**: Main video player with accessibility features
 - **EnhancedVideoPlayer**: Database-integrated player with timing normalization
 - **CleanAxessiblePlayer**: Simplified player version
@@ -47,6 +51,12 @@ Axessible is a video accessibility platform that allows users to upload videos a
 - **SynchronizedSignLanguagePlayer**: ASL video overlay synchronized with main video
 - **AudioDescriptionEditor**: Interface for creating/editing audio descriptions
 - **AccessibilityControls**: User controls for accessibility features
+
+#### NEW: Export System
+- **ExportModal**: UI for selecting export options with real-time validation
+- **VideoExportButton**: Trigger button integrated into video detail pages
+- **VideoExportsPanel**: Management panel for viewing and downloading exports
+- **Export Types**: Complete TypeScript type definitions for export workflow
 
 #### Transcript Management
 - **TranscriptEditor**: Rich text editor for transcript content
@@ -75,6 +85,14 @@ Axessible is a video accessibility platform that allows users to upload videos a
 - **Sign Language**: ASL video clips synchronized with transcript segments
 - **Keyboard Navigation**: Full keyboard accessibility support
 
+#### NEW: Finalize & Export System
+- **Multi-layer Rendering**: Combines captions, audio descriptions, and sign language PiP
+- **Real-time Processing**: Browser-based FFmpeg processing with progress tracking
+- **Private Storage**: Secure export storage with user-only access
+- **Download Management**: Signed URL downloads with export history
+- **Quality Validation**: Pre-export validation and mobile device warnings
+- **Export Options**: Flexible selection of accessibility features to include
+
 #### Transcript Processing
 - Automatic transcription via AssemblyAI
 - Manual transcript editing with rich text features
@@ -102,18 +120,29 @@ Axessible is a video accessibility platform that allows users to upload videos a
 - Row-Level Security (RLS) policies
 - User role management system
 
-### Current Limitations
-- No finalized video export functionality
-- No combined accessibility feature rendering
-- Manual process for creating final accessible videos
-- Limited batch processing capabilities
+### Export Workflow Features
 
-## Next Implementation: Finalize & Export Flow
-The next major feature will add the ability to:
-1. Combine all accessibility features into a single rendered video
-2. Export to private storage with download links
-3. Manage export history and downloads
-4. Provide quality validation and guardrails
+#### Technical Capabilities
+- **FFmpeg.js Integration**: Browser-based video processing (no server required)
+- **Multi-track Audio**: Program audio ducking with audio description overlay
+- **Video Overlays**: Time-synced sign language picture-in-picture positioning
+- **Subtitle Burning**: Character-colored captions burned into video
+- **Progress Tracking**: Real-time processing feedback
+- **Error Handling**: Graceful failure recovery with user notifications
+
+#### User Experience
+- **Feature Detection**: Automatic validation of available accessibility content
+- **Mobile Warnings**: Performance guidance for mobile users
+- **Export History**: Complete tracking of user's finalized videos
+- **Secure Downloads**: Time-limited signed URLs for download access
+- **Storage Management**: User can delete old exports to manage storage
+
+### System Improvements
+- Complete export functionality eliminates manual accessibility video creation
+- Private storage ensures user content security
+- Real-time processing provides immediate feedback
+- Comprehensive validation prevents export failures
+- Mobile-optimized experience with appropriate warnings
 
 ---
-*Document updated: 2024-01-24*
+*Document updated: 2025-01-24 - Added complete Finalize & Export system*

@@ -53,15 +53,15 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
       setIsProcessing(true);
       setProgress({ stage: 'preparing', progress: 0, message: 'Starting export...' });
 
-      const { user } = await supabase.auth.getUser();
-      if (!user.data.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         throw new Error('User not authenticated');
       }
 
       const orchestrator = new ExportOrchestrator(setProgress);
       const result = await orchestrator.finalizeAndExport(
         videoId,
-        user.data.user.id,
+        user.id,
         options,
         setProgress
       );

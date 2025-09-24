@@ -252,7 +252,8 @@ export class ExportOrchestrator {
 
     return (data || []).map(item => ({
       ...item,
-      export_options: item.export_options as ExportOptions
+      status: item.status as 'processing' | 'completed' | 'failed',
+      export_options: item.export_options as unknown as ExportOptions
     }));
   }
 

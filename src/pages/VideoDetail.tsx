@@ -13,6 +13,8 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
+import { VideoExportButton } from "@/components/VideoExportButton";
+import { VideoExportsPanel } from "@/components/VideoExportsPanel";
 
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
@@ -55,6 +57,7 @@ const VideoDetail = () => {
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [deletingVideo, setDeletingVideo] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Voice and ASL Avatar options for accessibility
@@ -74,7 +77,21 @@ const VideoDetail = () => {
     } else {
       console.error('❌ No video ID found in URL');
     }
+    
+    // Get current user
+    getCurrentUser();
   }, [id]);
+
+  const getCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    } catch (error) {
+      console.error('Error getting current user:', error);
+    }
+  };
 
   const fetchVideo = async () => {
     console.log('🎬 Starting to fetch video with ID:', id);
@@ -432,6 +449,14 @@ const VideoDetail = () => {
               {t('videoDetail.backToVideos')}
             </Button>
             <div className="flex items-center gap-2">
+              <VideoExportButton
+                videoId={video.id}
+                videoTitle={video.title}
+                onExportComplete={() => {
+                  // Refresh the page to show new export in panel
+                  window.location.reload();
+                }}
+              />
               <VideoPublishingControls
                 videoId={video.id}
                 isPublic={video.is_public}
@@ -583,6 +608,9 @@ const VideoDetail = () => {
               <EmbedAnalytics videoId={video.id} />
             </div>
           )}
+
+          {/* Video Exports Panel */}
+          <VideoExportsPanel videoId={video.id} userId={userId || ''} />
         </div>
       </main>
     </div>
