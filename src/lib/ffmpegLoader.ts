@@ -39,31 +39,63 @@ class FFmpegLoader {
         }));
       });
 
-      // Use the SAME version as in package.json (0.12.15)
-      const version = '0.12.15';
-      const baseURL = `https://unpkg.com/@ffmpeg/core@${version}/dist/umd`;
+      // Core version must match the WASM glue on CDN/local
+      const version = '0.12.6';
 
-      const [coreURL, wasmURL, workerURL] = await Promise.all([
-        toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
-      ]);
+      // Prefer same-origin local assets to avoid CORS/CDN issues
+      const sources = [
+        `${window.location.origin}/ffmpeg/${version}`,
+        `https://unpkg.com/@ffmpeg/core@${version}/dist/umd`,
+        `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${version}/dist/umd`,
+      ];
 
-      await this.ffmpeg.load({ coreURL, wasmURL, workerURL });
+      let lastError: unknown = null;
 
-      console.log('✅ FFmpeg loaded successfully');
-      this.isLoaded = true;
+      for (const baseURL of sources) {
+        try {
+          console.log(`[FFmpeg] Attempting load from: ${baseURL}`);
 
-      // Quick self-test
-      await this.ffmpeg.exec(['-version']);
-      console.log('✅ FFmpeg test passed');
+          const [coreURL, wasmURL, workerURL] = await Promise.all([
+            toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+            toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+          ]);
 
-      return this.ffmpeg;
-    } catch (error) {
+          // Load with timeout to avoid hanging
+          const loadTimeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('[FFmpeg] Load timeout after 45s')), 45000)
+          );
+
+          await Promise.race([
+            this.ffmpeg.load({ coreURL, wasmURL, workerURL }),
+            loadTimeout,
+          ]);
+
+          console.log(`[FFmpeg] ✅ Loaded from: ${baseURL}`);
+          this.isLoaded = true;
+
+          // Self-test: print version
+          await this.ffmpeg.exec(['-version']);
+          console.log('[FFmpeg] ✅ Self-test passed');
+
+          // Signal readiness
+          window.dispatchEvent(new CustomEvent('ffmpeg-ready'));
+          return this.ffmpeg;
+        } catch (e) {
+          console.warn(`[FFmpeg] Source failed (${baseURL}):`, e);
+          lastError = e;
+          // try next source
+        }
+      }
+
+      throw lastError || new Error('[FFmpeg] All sources failed');
+    } catch (error: any) {
       console.error('FFmpeg load error:', error);
       this.loadPromise = null;
       this.isLoaded = false;
-      throw new Error(`FFmpeg initialization failed: ${error.message}`);
+      // Bubble an event for UI/debuggers
+      window.dispatchEvent(new CustomEvent('ffmpeg-error', { detail: { error: String(error?.message || error) } }));
+      throw new Error(`FFmpeg initialization failed: ${error?.message || error}`);
     }
   }
 
