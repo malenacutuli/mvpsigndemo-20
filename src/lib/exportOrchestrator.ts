@@ -212,8 +212,14 @@ export class ExportOrchestrator {
       throw new Error('No transcript segments available for captions');
     }
 
-    if (options.audioDescription && assets.audioDescriptions.length === 0) {
-      throw new Error('No audio descriptions available');
+    if (options.audioDescription) {
+      const adWithAudio = (assets.audioDescriptions || []).filter(ad => !!ad.audio_url);
+      if ((assets.audioDescriptions || []).length === 0) {
+        throw new Error('No audio descriptions available');
+      }
+      if (adWithAudio.length === 0) {
+        throw new Error('Audio descriptions selected but no audio files found. Please generate TTS for descriptions first.');
+      }
     }
 
     if (options.signLanguage && assets.signLanguageClips.length === 0) {

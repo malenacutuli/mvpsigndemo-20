@@ -137,33 +137,40 @@ export async function runBrowserExport(
       
       const ffmpeg = await getFFmpeg();
       
-      const audioDescForFFmpeg = assets.audioDescriptions.map(ad => ({
-        start_time_ms: ad.start_time * 1000,
-        end_time_ms: ad.end_time * 1000,
-        duration: ad.end_time - ad.start_time,
-        audio_url: ad.audio_url
-      }));
+      const audioDescForFFmpeg = (assets.audioDescriptions || [])
+        .filter(ad => !!ad.audio_url)
+        .map(ad => ({
+          start_time_ms: ad.start_time * 1000,
+          end_time_ms: ad.end_time * 1000,
+          duration: ad.end_time - ad.start_time,
+          audio_url: ad.audio_url!
+        }));
       
-      const adBlob = await exportManager.exportVideo({
-        videoFile: currentUrl,
-        transcriptSegments: [],
-        signLanguageClips: [],
-        audioDescriptions: audioDescForFFmpeg,
-        features: { captions: false, signLanguage: false, audioDescription: true },
-        onProgress: (progress) => {
-          progressAggregator({ stage: 'ad', progress: progress.progress, msg: `Audio: ${progress.step}` });
+      if (audioDescForFFmpeg.length === 0) {
+        console.warn('Skipping AD mix: no audio files present');
+        progressAggregator({ stage: 'ad', progress: 100, msg: 'No audio files for audio descriptions; skipped' });
+      } else {
+        const adBlob = await exportManager.exportVideo({
+          videoFile: currentUrl,
+          transcriptSegments: [],
+          signLanguageClips: [],
+          audioDescriptions: audioDescForFFmpeg,
+          features: { captions: false, signLanguage: false, audioDescription: true },
+          onProgress: (progress) => {
+            progressAggregator({ stage: 'ad', progress: progress.progress, msg: `Audio: ${progress.step}` });
+          }
+        });
+        
+        // Update to final blob URL
+        if (previousUrl !== videoUrl && previousUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previousUrl);
         }
-      });
-      
-      // Update to final blob URL
-      if (previousUrl !== videoUrl && previousUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previousUrl);
+        currentUrl = URL.createObjectURL(adBlob);
+        console.log('✅ Audio descriptions completed');
       }
-      currentUrl = URL.createObjectURL(adBlob);
       
       // Cleanup FFmpeg memory
       gcFFmpeg(ffmpeg);
-      console.log('✅ Audio descriptions completed');
     }
     
     // 4) Finalize
