@@ -1,6 +1,5 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { ExportOptions, ExportAssets, ProgressCallback, RenderProgress } from '@/types/export';
+import { exportManager } from './videoExportManager';
 
 interface AudioCue {
   audio_url: string;
@@ -16,11 +15,9 @@ interface SignLanguageClip {
 }
 
 export class VideoExportProcessor {
-  private ffmpeg: FFmpeg;
   private progressCallback?: ProgressCallback;
 
   constructor(progressCallback?: ProgressCallback) {
-    this.ffmpeg = new FFmpeg();
     this.progressCallback = progressCallback;
   }
 
@@ -46,171 +43,47 @@ export class VideoExportProcessor {
     try {
       this.updateProgress('preparing', 0, 'Initializing processing. This could take up to 5 minutes.');
 
-      if (!this.ffmpeg.loaded) {
-        console.log('📦 Loading FFmpeg core...');
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      // Convert assets to the format expected by VideoExportManager
+      const transcriptForManager = assets.transcriptSegments.map(segment => ({
+        id: segment.id,
+        start_time: segment.start_time,
+        end_time: segment.end_time,
+        text: segment.text,
+        start_time_ms: segment.start_time * 1000,
+        end_time_ms: segment.end_time * 1000
+      }));
 
-        await this.ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm')
-        });
+      const signLanguageForManager = assets.signLanguageClips.map(clip => ({
+        id: clip.id,
+        start_time_ms: clip.start_time_ms,
+        end_time_ms: clip.end_time_ms,
+        clip_url: clip.clip_url
+      }));
 
-        this.ffmpeg.on('log', ({ message }) => console.log('FFmpeg Log:', message));
-        this.ffmpeg.on('progress', ({ progress }) => {
-          const pct = Math.round(progress * 100);
-          this.updateProgress('processing', 50 + pct * 0.4, `Processing video... ${pct}%`);
-        });
+      const audioDescForManager = assets.audioDescriptions.map(ad => ({
+        start_time_ms: ad.start_time * 1000,
+        end_time_ms: ad.end_time * 1000,
+        duration: ad.end_time - ad.start_time,
+        audio_url: ad.audio_url
+      }));
 
-        console.log('✅ FFmpeg loaded successfully');
-      }
-
-      this.updateProgress('preparing', 10, 'Loading video file...');
-      console.log('⬇️ Fetching video from:', videoUrl);
-
-      // --- Input video
-      const videoData = await fetchFile(videoUrl);
-      await this.ffmpeg.writeFile('input.mp4', videoData);
-      console.log('✅ Video loaded, size:', (videoData.length / 1024 / 1024).toFixed(2), 'MB');
-
-      let inputs = ['-i', 'input.mp4'];
-      let filterLines: string[] = [];
-      let videoOut = '[0:v]';
-      let audioOut = '[0:a]';
-      let inputIndex = 1;
-
-      this.updateProgress('preparing', 20, 'Processing accessibility features...');
-
-      // --- Sign Language Overlays
-      if (options.signLanguage && assets.signLanguageClips.length > 0) {
-        console.log('🤟 Processing', assets.signLanguageClips.length, 'ASL clips');
-        
-        for (let i = 0; i < assets.signLanguageClips.length; i++) {
-          const asl = assets.signLanguageClips[i];
-          try {
-            console.log(`Loading ASL clip ${i + 1}:`, asl.clip_url);
-            const aslData = await fetchFile(asl.clip_url);
-            const aslFile = `asl_${i}.mp4`;
-            await this.ffmpeg.writeFile(aslFile, aslData);
-            inputs.push('-i', aslFile);
-
-            const start = asl.start_time_ms / 1000;
-            const end = asl.end_time_ms / 1000;
-            const outLabel = `[v_asl_${i}]`;
-
-            filterLines.push(
-              `${videoOut}[${inputIndex}:v]overlay=W-w-20:H-h-20:enable='between(t,${start},${end})'${outLabel}`
-            );
-            videoOut = outLabel;
-            inputIndex++;
-          } catch (error) {
-            console.warn(`Failed to load ASL clip ${i}:`, error);
-          }
+      // Use the new VideoExportManager
+      const blob = await exportManager.exportVideo({
+        videoFile: videoUrl,
+        transcriptSegments: transcriptForManager,
+        signLanguageClips: signLanguageForManager,
+        audioDescriptions: audioDescForManager,
+        features: {
+          captions: options.captions,
+          signLanguage: options.signLanguage,
+          audioDescription: options.audioDescription
+        },
+        onProgress: (progress) => {
+          this.updateProgress('processing', progress.progress, `Processing ${progress.step}...`);
         }
-      }
-
-      // --- Captions
-      if (options.captions && assets.transcriptSegments.length > 0) {
-        console.log('📝 Adding captions, segments:', assets.transcriptSegments.length);
-        const srt = this.generateSRTFromSegments(assets.transcriptSegments);
-        await this.ffmpeg.writeFile('subtitles.srt', new TextEncoder().encode(srt));
-        const outLabel = '[v_sub]';
-        filterLines.push(`${videoOut}subtitles=subtitles.srt:force_style=FontSize=24,PrimaryColor=&Hffffff,BackColour=&H80000000,Bold=1${outLabel}`);
-        videoOut = outLabel;
-      } else {
-        // Video passthrough
-        const outLabel = '[v_passthrough]';
-        filterLines.push(`${videoOut}null${outLabel}`);
-        videoOut = outLabel;
-      }
-
-      // --- Audio Descriptions
-      if (options.audioDescription && assets.audioDescriptions.length > 0) {
-        console.log('🎧 Processing', assets.audioDescriptions.length, 'audio descriptions');
-        
-        const adInputs: string[] = [];
-        for (let i = 0; i < assets.audioDescriptions.length; i++) {
-          const ad = assets.audioDescriptions[i];
-          if (!ad.audio_url) {
-            console.warn(`AD ${i} has no audio_url, skipping`);
-            continue;
-          }
-          
-          try {
-            console.log(`Loading AD audio ${i + 1}:`, ad.audio_url);
-            const adData = await fetchFile(ad.audio_url);
-            const adFile = `ad_${i}.mp3`;
-            await this.ffmpeg.writeFile(adFile, adData);
-            inputs.push('-i', adFile);
-            adInputs.push(`[${inputIndex}:a]`);
-            inputIndex++;
-          } catch (error) {
-            console.warn(`Failed to load AD audio ${i}:`, error);
-          }
-        }
-
-        if (adInputs.length > 0) {
-          // Duck main audio and mix with AD
-          filterLines.push(`[0:a]volume=0.7[a_main]`);
-          const outLabel = '[a_mix]';
-          filterLines.push(`[a_main]${adInputs.join('')}amix=inputs=${adInputs.length + 1}:duration=longest:normalize=0${outLabel}`);
-          audioOut = outLabel;
-        } else {
-          // Audio passthrough
-          const outLabel = '[a_passthrough]';
-          filterLines.push(`${audioOut}anull${outLabel}`);
-          audioOut = outLabel;
-        }
-      } else {
-        // Audio passthrough
-        const outLabel = '[a_passthrough]';
-        filterLines.push(`${audioOut}anull${outLabel}`);
-        audioOut = outLabel;
-      }
-
-      this.updateProgress('processing', 50, 'Building FFmpeg command...');
-
-      // --- Build FFmpeg arguments
-      let ffmpegArgs = [...inputs];
-      
-      if (filterLines.length > 0) {
-        ffmpegArgs.push('-filter_complex', filterLines.join(';'));
-        ffmpegArgs.push('-map', videoOut, '-map', audioOut);
-      } else {
-        // No filters needed, direct mapping
-        ffmpegArgs.push('-map', '0:v', '-map', '0:a');
-      }
-
-      ffmpegArgs.push(
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-crf', '23',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
-        '-y', 'output.mp4'
-      );
-
-      console.log('🔧 FFmpeg command:', ffmpegArgs.join(' '));
-      console.log('🔧 Filter lines:', filterLines);
-      this.updateProgress('processing', 60, 'Processing video with FFmpeg...');
-
-      // Execute with extended timeout (10 minutes)
-      const execPromise = this.ffmpeg.exec(ffmpegArgs);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('FFmpeg processing timeout after 10 minutes')), 600000)
-      );
-
-      await Promise.race([execPromise, timeoutPromise]);
-      console.log('✅ FFmpeg processing completed');
-
-      this.updateProgress('processing', 90, 'Reading output file...');
-
-      const outputData = await this.ffmpeg.readFile('output.mp4');
-      console.log('📤 Output file size:', (outputData.length / 1024 / 1024).toFixed(2), 'MB');
+      });
 
       this.updateProgress('processing', 100, 'Export complete!');
-
-      const blob = new Blob([outputData as Uint8Array], { type: 'video/mp4' });
       console.log('🎉 Video export processing completed successfully');
 
       return blob;
@@ -259,14 +132,7 @@ export class VideoExportProcessor {
   }
 
   cleanup() {
-    // Clean up FFmpeg files if needed
-    try {
-      if (this.ffmpeg.loaded) {
-        // FFmpeg.js automatically handles cleanup, but we can reset the instance if needed
-        console.log('🧹 VideoExportProcessor cleanup completed');
-      }
-    } catch (error) {
-      console.warn('Cleanup error:', error);
-    }
+    // Cleanup is now handled by the VideoExportManager
+    console.log('🧹 VideoExportProcessor cleanup completed');
   }
 }
