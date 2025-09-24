@@ -44,37 +44,68 @@ class FFmpegLoader {
         }));
       });
 
-      // Use CDN with specific version for stability
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      
-      // Load core files with proper error handling
-      const [coreURL, wasmURL, workerURL] = await Promise.all([
-        toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
-      ]);
+      // Try multiple CDN sources for better reliability
+      const sources = [
+        'https://unpkg.com/@ffmpeg/core@0.12.15/dist/umd',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.15/dist/umd',
+        'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+      ];
 
-      // Load FFmpeg with timeout
-      const loadTimeout = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('FFmpeg load timeout')), 30000)
-      );
-
-      await Promise.race([
-        this.ffmpeg.load({
-          coreURL,
-          wasmURL,
-          workerURL,
-        }),
-        loadTimeout
-      ]);
-
-      console.log('FFmpeg loaded successfully');
-      this.isLoaded = true;
+      let loadError;
       
-      // Test with minimal operation
-      await this.testFFmpeg();
+      for (const baseURL of sources) {
+        try {
+          console.log(`Trying to load FFmpeg from: ${baseURL}`);
+          
+          // Load core files with detailed error handling
+          const [coreURL, wasmURL, workerURL] = await Promise.all([
+            toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript').catch(e => {
+              console.error(`Failed to load core.js from ${baseURL}:`, e);
+              throw e;
+            }),
+            toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm').catch(e => {
+              console.error(`Failed to load core.wasm from ${baseURL}:`, e);
+              throw e;
+            }),
+            toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript').catch(e => {
+              console.error(`Failed to load core.worker.js from ${baseURL}:`, e);
+              throw e;
+            })
+          ]);
+
+          console.log('All FFmpeg files loaded, initializing...');
+
+          // Load FFmpeg with timeout
+          const loadTimeout = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('FFmpeg load timeout after 45 seconds')), 45000)
+          );
+
+          await Promise.race([
+            this.ffmpeg.load({
+              coreURL,
+              wasmURL,
+              workerURL,
+            }),
+            loadTimeout
+          ]);
+
+          console.log('FFmpeg loaded successfully from:', baseURL);
+          this.isLoaded = true;
+          
+          // Test with minimal operation
+          await this.testFFmpeg();
+          
+          return this.ffmpeg;
+
+        } catch (error) {
+          console.error(`Failed to load from ${baseURL}:`, error);
+          loadError = error;
+          continue;
+        }
+      }
       
-      return this.ffmpeg;
+      // If we get here, all sources failed
+      throw loadError || new Error('All FFmpeg sources failed to load');
     } catch (error) {
       console.error('FFmpeg load error:', error);
       this.loadPromise = null;
