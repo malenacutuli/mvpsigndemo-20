@@ -51,15 +51,21 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
 
   const handleExport = async (options: ExportOptions) => {
     try {
+      console.log('🚀 Export started with options:', options);
       setIsProcessing(true);
       setProgress({ stage: 'preparing', progress: 0, message: 'Starting export...' });
 
+      console.log('🔐 Getting user authentication...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
+      console.log('✅ User authenticated:', user.id);
 
+      console.log('🎬 Creating export orchestrator...');
       const orchestrator = new ExportOrchestrator(setProgress);
+      
+      console.log('⚡ Starting finalize and export process...');
       const result = await orchestrator.finalizeAndExport(
         videoId,
         user.id,
@@ -76,13 +82,14 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
       });
 
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('❌ Export failed:', error);
       toast({
         title: 'Export Failed',
         description: error.message || 'An error occurred during export.',
         variant: 'destructive',
       });
     } finally {
+      console.log('🔄 Export process finished, resetting state...');
       setIsProcessing(false);
     }
   };

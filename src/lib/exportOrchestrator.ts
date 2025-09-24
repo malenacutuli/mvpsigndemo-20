@@ -24,8 +24,15 @@ export class ExportOrchestrator {
       exportId = uuidv4();
       
       // 2. Gather all required assets from database
+      console.log('📦 Gathering assets for video:', videoId, 'options:', options);
       progressCallback?.({ stage: 'preparing', progress: 0, message: 'Gathering video assets...' });
       const assets = await this.gatherAssets(videoId, options);
+      console.log('✅ Assets gathered:', { 
+        videoFound: !!assets.video, 
+        transcriptSegments: assets.transcriptSegments.length,
+        audioDescriptions: assets.audioDescriptions.length,
+        signLanguageClips: assets.signLanguageClips.length 
+      });
 
       // 3. Validate assets
       this.validateAssets(assets, options);

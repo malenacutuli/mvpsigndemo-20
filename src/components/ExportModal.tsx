@@ -33,6 +33,8 @@ export function ExportModal({
   isProcessing,
   downloadUrl
 }: ExportModalProps) {
+  console.log('🎭 ExportModal rendered with:', { open, isProcessing, availableFeatures });
+  
   const [options, setOptions] = useState<ExportOptions>({
     captions: availableFeatures.hasTranscript,
     audioDescription: availableFeatures.hasAudioDescriptions,
@@ -45,9 +47,11 @@ export function ExportModal({
 
   const handleExport = async () => {
     try {
+      console.log('🎯 ExportModal handleExport called with options:', options);
       await onExport(options);
+      console.log('✅ ExportModal onExport completed successfully');
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('❌ ExportModal export failed:', error);
     }
   };
 

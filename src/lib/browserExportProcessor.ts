@@ -19,6 +19,13 @@ export async function runBrowserExport(
   onProgress?: ProgressCallback
 ): Promise<{ blob: Blob; meta: BrowserExportMeta }> {
   console.log('🎬 Starting browser-based export processing...');
+  console.log('📊 Export options:', options);
+  console.log('📦 Assets summary:', {
+    videoUrl: videoUrl ? 'provided' : 'missing',
+    transcriptSegments: assets.transcriptSegments?.length || 0,
+    audioDescriptions: assets.audioDescriptions?.length || 0,
+    signLanguageClips: assets.signLanguageClips?.length || 0
+  });
   
   // Create progress aggregator
   const progressAggregator = onProgress ? makeProgressAggregator(onProgress) : () => {};
