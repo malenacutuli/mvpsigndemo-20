@@ -53,11 +53,13 @@ export class ExportOrchestrator {
       const mainVideoUrl = await this.getVideoUrl(assets.video.id, assets.video.storage_path);
 
       // 6. Process video with FFmpeg
+      console.log('🎬 Starting video processing with options:', options);
       const resultBlob = await this.processor.renderAccessibleVideo(
         mainVideoUrl,
         assets,
         options
       );
+      console.log('✅ Video processing completed, blob size:', (resultBlob.size / 1024 / 1024).toFixed(2), 'MB');
 
       progressCallback?.({ stage: 'uploading', progress: 85, message: 'Uploading processed video...' });
 
