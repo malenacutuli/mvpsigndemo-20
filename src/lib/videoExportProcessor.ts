@@ -1,5 +1,6 @@
 import { ExportOptions, ExportAssets, ProgressCallback, RenderProgress } from '@/types/export';
 import { exportManager } from './videoExportManager';
+import { canvasCaptionRenderer } from './canvasCaptionRenderer';
 
 interface AudioCue {
   audio_url: string;
@@ -43,6 +44,28 @@ export class VideoExportProcessor {
     try {
       this.updateProgress('preparing', 0, 'Initializing processing. This could take up to 5 minutes.');
 
+      // Route captions through Canvas (avoid WASM subtitles filter crash)
+      let processedVideoUrl = videoUrl;
+      
+      if (options.captions && assets.transcriptSegments.length > 0) {
+        console.log('↪ Rendering captions via Canvas...');
+        this.updateProgress('processing', 10, 'Rendering captions via Canvas...');
+        
+        const captionsForCanvas = assets.transcriptSegments.map(segment => ({
+          startTime: segment.start_time,
+          endTime: segment.end_time,
+          text: segment.text,
+          speakerColor: segment.speaker_color || '#ffffff'
+        }));
+
+        processedVideoUrl = await canvasCaptionRenderer.renderCaptionsOnCanvas(
+          videoUrl,
+          captionsForCanvas,
+          { fontSize: 24, bg: true }
+        );
+        console.log('✅ Canvas captions rendered successfully');
+      }
+
       // Convert assets to the format expected by VideoExportManager
       const transcriptForManager = assets.transcriptSegments.map(segment => ({
         id: segment.id,
@@ -67,19 +90,21 @@ export class VideoExportProcessor {
         audio_url: ad.audio_url
       }));
 
-      // Use the new VideoExportManager
+      // Use FFmpeg for remaining features (ASL PiP, AD mixing) with captions disabled
+      const ffmpegOptions = {
+        captions: false, // Already processed via Canvas
+        signLanguage: options.signLanguage,
+        audioDescription: options.audioDescription
+      };
+
       const blob = await exportManager.exportVideo({
-        videoFile: videoUrl,
+        videoFile: processedVideoUrl,
         transcriptSegments: transcriptForManager,
         signLanguageClips: signLanguageForManager,
         audioDescriptions: audioDescForManager,
-        features: {
-          captions: options.captions,
-          signLanguage: options.signLanguage,
-          audioDescription: options.audioDescription
-        },
+        features: ffmpegOptions,
         onProgress: (progress) => {
-          this.updateProgress('processing', progress.progress, `Processing ${progress.step}...`);
+          this.updateProgress('processing', Math.max(30, progress.progress), `Processing ${progress.step}...`);
         }
       });
 

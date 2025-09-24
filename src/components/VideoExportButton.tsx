@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Video } from 'lucide-react';
+import { Video, TestTube } from 'lucide-react';
 import { ExportModal } from './ExportModal';
 import { ExportOrchestrator } from '@/lib/exportOrchestrator';
 import { ExportOptions, RenderProgress } from '@/types/export';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { testFFmpegLoad } from '@/lib/ffmpegLoader';
 
 interface VideoExportButtonProps {
   videoId: string;
@@ -94,10 +95,16 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
 
   return (
     <>
-      <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-        <Video className="w-4 h-4" />
-        Finalize & Export
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+          <Video className="w-4 h-4" />
+          Finalize & Export
+        </Button>
+        <Button onClick={testFFmpegLoad} variant="outline" size="sm" className="gap-1">
+          <TestTube className="w-3 h-3" />
+          Test FFmpeg
+        </Button>
+      </div>
 
       <ExportModal
         open={isModalOpen}
