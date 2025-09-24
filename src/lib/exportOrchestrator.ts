@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { VideoExportProcessor } from './videoExportProcessor';
+import { runBrowserExport } from './browserExportProcessor';
 import { ExportOptions, ExportAssets, VideoExport, ProgressCallback } from '@/types/export';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -52,14 +53,20 @@ export class ExportOrchestrator {
       // 5. Get main video URL
       const mainVideoUrl = await this.getVideoUrl(assets.video.id, assets.video.storage_path);
 
-      // 6. Process video with FFmpeg
-      console.log('🎬 Starting video processing with options:', options);
-      const resultBlob = await this.processor.renderAccessibleVideo(
+      // 6. Process video with optimized browser export
+      console.log('🎬 Starting sequential video processing with options:', options);
+      const { blob: resultBlob, meta } = await runBrowserExport(
         mainVideoUrl,
         assets,
-        options
+        options,
+        progressCallback
       );
       console.log('✅ Video processing completed, blob size:', (resultBlob.size / 1024 / 1024).toFixed(2), 'MB');
+      
+      // Log export metadata
+      if (meta.warning) {
+        console.warn('Export warning:', meta.warning);
+      }
 
       progressCallback?.({ stage: 'uploading', progress: 85, message: 'Uploading processed video...' });
 
