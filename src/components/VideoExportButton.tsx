@@ -19,6 +19,7 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<RenderProgress>();
   const [downloadUrl, setDownloadUrl] = useState<string>();
+  const [originalUrl, setOriginalUrl] = useState<string>();
   const [availableFeatures, setAvailableFeatures] = useState({
     hasTranscript: false,
     hasAudioDescriptions: false,
@@ -30,6 +31,29 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
   useEffect(() => {
     checkAvailableFeatures();
   }, [videoId]);
+
+  useEffect(() => {
+    const fetchOriginal = async () => {
+      try {
+        const { data: video, error: videoErr } = await supabase
+          .from('videos')
+          .select('storage_path')
+          .eq('id', videoId)
+          .single();
+        if (!videoErr && video?.storage_path) {
+          const { data: signed, error: urlErr } = await supabase.storage
+            .from('videos')
+            .createSignedUrl(video.storage_path, 3600);
+          if (!urlErr && signed?.signedUrl) {
+            setOriginalUrl(signed.signedUrl);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load original video URL', e);
+      }
+    };
+    if (isModalOpen) fetchOriginal();
+  }, [isModalOpen, videoId]);
 
   const checkAvailableFeatures = async () => {
     try {
@@ -144,6 +168,7 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
         progress={progress}
         isProcessing={isProcessing}
         downloadUrl={downloadUrl}
+        originalDownloadUrl={originalUrl}
       />
     </>
   );

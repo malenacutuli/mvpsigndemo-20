@@ -21,6 +21,7 @@ interface ExportModalProps {
   progress?: RenderProgress;
   isProcessing: boolean;
   downloadUrl?: string;
+  originalDownloadUrl?: string;
 }
 
 export function ExportModal({
@@ -31,7 +32,8 @@ export function ExportModal({
   availableFeatures,
   progress,
   isProcessing,
-  downloadUrl
+  downloadUrl,
+  originalDownloadUrl
 }: ExportModalProps) {
   console.log('🎭 ExportModal rendered with:', { open, isProcessing, availableFeatures });
   
@@ -86,6 +88,27 @@ export function ExportModal({
     } catch (e) {
       // Fallback to opening in a new tab if direct download fails
       window.open(downloadUrl, '_blank');
+    }
+};
+
+  const handleForceDownloadOriginal = () => {
+    if (!originalDownloadUrl) return;
+    try {
+      const fileNameSafe = (videoTitle || 'video')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const suggestedName = `${fileNameSafe || 'video'}-original.mp4`;
+      const a = document.createElement('a');
+      a.href = originalDownloadUrl;
+      a.download = suggestedName;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      window.open(originalDownloadUrl, '_blank');
     }
   };
 
@@ -156,6 +179,20 @@ export function ExportModal({
               <AlertDescription>
                 Video processing on mobile devices may be slow or fail for longer videos. 
                 For best results, use a desktop computer.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Always-available original download */}
+          {originalDownloadUrl && (
+            <Alert>
+              <Download className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>Need a copy now? Download the original video.</span>
+                <Button size="sm" variant="outline" onClick={handleForceDownloadOriginal} className="ml-2">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download original
+                </Button>
               </AlertDescription>
             </Alert>
           )}
