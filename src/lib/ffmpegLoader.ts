@@ -1,10 +1,15 @@
+// src/lib/ffmpegLoader.ts
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 
-// Use exact version matching the installed @ffmpeg/ffmpeg package (0.12.15)
+/**
+ * IMPORTANT:
+ * - Make sure package.json has "@ffmpeg/ffmpeg": "0.12.15" (exact or ^0.12.15)
+ * - This loader fetches the matching @ffmpeg/core v0.12.15 from CDN.
+ */
 const CORE_VERSION = '0.12.15';
 
-// Order matters: jsDelivr → unpkg fallback
+// Strict, ordered fallbacks: jsDelivr → unpkg
 const SOURCES = [
   `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/umd`,
   `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`,
@@ -13,69 +18,91 @@ const SOURCES = [
 let instance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
 
+/** Public: get a ready-to-use FFmpeg instance (singleton). */
 export async function getFFmpeg(): Promise<FFmpeg> {
-  if (instance?.loaded) return instance!;
+  if (instance?.loaded) return instance;
+
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    console.log(`[FFmpeg] Initializing FFmpeg with @ffmpeg/core version ${CORE_VERSION}`);
+    console.log(`[FFmpeg] init → targeting @ffmpeg/core@${CORE_VERSION}`);
     const ff = new FFmpeg();
+
+    // Debug logs
     ff.on('log', ({ message }) => console.log('[FFmpeg]', message));
-    ff.on('progress', ({ progress }) => {
-      console.log('[FFmpeg] progress', Math.round(progress * 100) + '%');
+    ff.on('progress', ({ progress, time }) => {
+      const pct = Math.round((progress ?? 0) * 100);
+      console.log(`[FFmpeg] progress = ${pct}% @ time=${time ?? 'n/a'}`);
     });
 
-    let lastErr: any = null;
+    let lastErr: unknown = null;
+
     for (const baseURL of SOURCES) {
       try {
-        console.log(`[FFmpeg] Loading core from: ${baseURL}`);
-        console.log(`[FFmpeg] Fetching core files from ${baseURL}...`);
-        
+        console.log(`[FFmpeg] trying source: ${baseURL}`);
+        // Fetch the core files as Blob URLs so we avoid CORS / MIME issues
         const [coreURL, wasmURL, workerURL] = await Promise.all([
           toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
           toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
           toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
         ]);
-        
-        console.log(`[FFmpeg] Core files fetched successfully from ${baseURL}`);
-        console.log(`[FFmpeg] Loading FFmpeg instance...`);
-        
-        await ff.load({ coreURL, wasmURL, workerURL });
-        console.log(`[FFmpeg] FFmpeg loaded successfully from: ${baseURL}`);
 
-        // Self-test
-        console.log(`[FFmpeg] Running self-test...`);
+        console.log('[FFmpeg] core files fetched; loading…');
+        await ff.load({ coreURL, wasmURL, workerURL });
+        console.log(`[FFmpeg] load OK from ${baseURL}`);
+
+        // Self-test: verify the runtime is *actually* alive
+        console.log('[FFmpeg] self-test: exec -version');
         await ff.exec(['-version']);
-        console.log(`[FFmpeg] Self-test passed - FFmpeg is ready`);
-        
+
+        // Tiny FS sanity check
+        const testName = 'ffprobe_smoketest.txt';
+        await ff.writeFile(testName, new TextEncoder().encode('ok'));
+        const listing = await ff.listDir('/');
+        console.log('[FFmpeg] FS list(/):', listing);
+
         instance = ff;
         return ff;
       } catch (e) {
-        console.error(`[FFmpeg] Failed to load from ${baseURL}:`, e);
+        console.error(`[FFmpeg] load failed from ${baseURL}`, e);
         lastErr = e;
+        // try next source
       }
     }
-    throw lastErr ?? new Error(`FFmpeg load failed from all sources. Core version: ${CORE_VERSION}`);
+
+    throw lastErr ?? new Error(`FFmpeg load failed from all sources (core ${CORE_VERSION}).`);
   })();
 
   try {
     return await loadPromise;
   } finally {
+    // Allow future re-load attempts if this one threw
     loadPromise = null;
   }
 }
 
-// Smoke test function
-export async function testFFmpegLoad() {
+/** Optional: proactively confirm FFmpeg is ready. Great for a debug button. */
+export async function testFFmpegLoad(): Promise<void> {
+  console.log(`[FFmpeg Test] start (core=${CORE_VERSION})`);
+  const ff = await getFFmpeg();
+  await ff.exec(['-version']);
+  console.log('[FFmpeg Test] version OK, instance ready:', ff);
+  // eslint-disable-next-line no-alert
+  alert(`FFmpeg is ready (core ${CORE_VERSION}). Check console for details.`);
+}
+
+/** Optional helpers */
+export function isFFmpegReady(): boolean {
+  return Boolean(instance?.loaded);
+}
+
+export function terminateFFmpeg(): void {
   try {
-    console.log(`[FFmpeg Test] Starting FFmpeg test with core version ${CORE_VERSION}`);
-    const ff = await getFFmpeg();
-    console.log('[FFmpeg Test] FFmpeg instance ready:', ff);
-    await ff.exec(['-version']);
-    console.log('[FFmpeg Test] Version check passed');
-    alert(`FFmpeg test succeeded! Using core version ${CORE_VERSION}`);
-  } catch (e: any) {
-    console.error('[FFmpeg Test] Test failed:', e);
-    alert(`FFmpeg test failed: ${e?.message ?? e}\nCore version attempted: ${CORE_VERSION}`);
+    instance?.terminate?.();
+  } catch (e) {
+    console.warn('[FFmpeg] terminate error:', e);
+  } finally {
+    instance = null;
+    loadPromise = null;
   }
 }
