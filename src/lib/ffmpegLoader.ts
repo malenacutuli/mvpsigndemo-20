@@ -48,9 +48,10 @@ class FFmpegLoader {
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
       
       // Load core files with proper error handling
-      const [coreURL, wasmURL] = await Promise.all([
+      const [coreURL, wasmURL, workerURL] = await Promise.all([
         toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm')
+        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
       ]);
 
       // Load FFmpeg with timeout
@@ -62,6 +63,7 @@ class FFmpegLoader {
         this.ffmpeg.load({
           coreURL,
           wasmURL,
+          workerURL,
         }),
         loadTimeout
       ]);
