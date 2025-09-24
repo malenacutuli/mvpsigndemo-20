@@ -48,38 +48,13 @@ export class VideoExportProcessor {
 
       if (!this.ffmpeg.loaded) {
         console.log('📦 Loading FFmpeg core...');
-        // Try multiple CDNs to avoid intermittent CORS/CDN issues
-        const sources = [
-          'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
-          'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm',
-          'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd',
-        ];
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
-        let loaded = false;
-        let lastError: any = null;
-        for (const baseURL of sources) {
-          try {
-            console.log('🛰️ Attempting FFmpeg load from:', baseURL);
-            const coreURL = baseURL + '/ffmpeg-core.js';
-            const wasmURL = baseURL + '/ffmpeg-core.wasm';
-            const workerURL = baseURL.includes('/esm') ? (baseURL + '/ffmpeg-core.worker.js') : undefined;
-
-            await this.ffmpeg.load({
-              coreURL: await toBlobURL(coreURL, 'text/javascript'),
-              wasmURL: await toBlobURL(wasmURL, 'application/wasm'),
-              ...(workerURL ? { workerURL: await toBlobURL(workerURL, 'text/javascript') } : {})
-            });
-            loaded = true;
-            break;
-          } catch (err) {
-            console.warn('⚠️ FFmpeg load attempt failed from', baseURL, err);
-            lastError = err;
-          }
-        }
-
-        if (!loaded) {
-          throw new Error('Load Failed: Unable to initialize FFmpeg core from CDN(s)');
-        }
+        await this.ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
+        });
 
         this.ffmpeg.on('log', ({ message }) => console.log('FFmpeg Log:', message));
         this.ffmpeg.on('progress', ({ progress }) => {
@@ -288,7 +263,8 @@ export class VideoExportProcessor {
     // Clean up FFmpeg files if needed
     try {
       if (this.ffmpeg.loaded) {
-        // FFmpeg cleanup is handled automatically
+        // FFmpeg.js automatically handles cleanup, but we can reset the instance if needed
+        console.log('🧹 VideoExportProcessor cleanup completed');
       }
     } catch (error) {
       console.warn('Cleanup error:', error);
