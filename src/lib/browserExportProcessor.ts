@@ -12,6 +12,19 @@ export interface BrowserExportMeta {
   warning?: string | null;
 }
 
+// Global timeout for entire export process
+const EXPORT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max
+const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stepName: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error(`${stepName} timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
 export async function runBrowserExport(
   videoUrl: string, 
   assets: ExportAssets, 
@@ -27,35 +40,37 @@ export async function runBrowserExport(
     signLanguageClips: assets.signLanguageClips?.length || 0
   });
   
-  // Create progress aggregator
+  // Create progress aggregator with timeout awareness
   const progressAggregator = onProgress ? makeProgressAggregator(onProgress) : () => {};
   
-  // 0) Pre-flight: Get video metadata and warnings
-  progressAggregator({ stage: 'captions', progress: 0, msg: 'Analyzing video metadata...' });
+  // Global timeout wrapper
+  const exportWithTimeout = async (): Promise<{ blob: Blob; meta: BrowserExportMeta }> => {
+    // 0) Pre-flight: Get video metadata and warnings
+    progressAggregator({ stage: 'captions', progress: 0, msg: 'Analyzing video metadata...' });
+    
+    const videoMeta: VideoMeta = {
+      bytes: await withTimeout(fetchHeadSize(videoUrl), 30000, 'Video metadata fetch'),
+      durationSec: await withTimeout(getVideoDuration(videoUrl), 30000, 'Video duration fetch'),
+      aslClips: assets.signLanguageClips?.length || 0,
+      adTracks: assets.audioDescriptions?.length || 0
+    };
+    
+    console.log('[Export] Video metadata:', {
+      size: videoMeta.bytes ? `${Math.round(videoMeta.bytes / 1024 / 1024)}MB` : 'unknown',
+      duration: videoMeta.durationSec ? `${Math.round(videoMeta.durationSec)}s` : 'unknown',
+      aslClips: videoMeta.aslClips,
+      adTracks: videoMeta.adTracks
+    });
+    
+    const warning = warnIfLarge(videoMeta);
+    if (warning) {
+      console.warn(warning);
+    }
+    
+    let currentUrl = videoUrl;
+    let previousUrl = videoUrl;
   
-  const videoMeta: VideoMeta = {
-    bytes: await fetchHeadSize(videoUrl),
-    durationSec: await getVideoDuration(videoUrl),
-    aslClips: assets.signLanguageClips?.length || 0,
-    adTracks: assets.audioDescriptions?.length || 0
-  };
-  
-  console.log('[Export] Video metadata:', {
-    size: videoMeta.bytes ? `${Math.round(videoMeta.bytes / 1024 / 1024)}MB` : 'unknown',
-    duration: videoMeta.durationSec ? `${Math.round(videoMeta.durationSec)}s` : 'unknown',
-    aslClips: videoMeta.aslClips,
-    adTracks: videoMeta.adTracks
-  });
-  
-  const warning = warnIfLarge(videoMeta);
-  if (warning) {
-    console.warn(warning);
-  }
-  
-  let currentUrl = videoUrl;
-  let previousUrl = videoUrl;
-  
-  try {
+    try {
     // 1) CAPTIONS (Canvas rendering)
     if (options.captions && assets.transcriptSegments?.length) {
       progressAggregator({ stage: 'captions', progress: 0, msg: 'Rendering captions via Canvas...' });
@@ -67,10 +82,14 @@ export async function runBrowserExport(
         speakerColor: segment.speaker_color || '#ffffff'
       }));
       
-      currentUrl = await canvasCaptionRenderer.renderCaptionsOnCanvas(
-        currentUrl,
-        captionsForCanvas,
-        { fontSize: 24, bg: true }
+      currentUrl = await withTimeout(
+        canvasCaptionRenderer.renderCaptionsOnCanvas(
+          currentUrl,
+          captionsForCanvas,
+          { fontSize: 24, bg: true }
+        ),
+        STEP_TIMEOUT_MS,
+        'Caption rendering'
       );
       
       // Cleanup previous URL if it's a blob
@@ -207,7 +226,11 @@ export async function runBrowserExport(
     }
     
     throw error;
-  }
+    }
+  };
+
+  // Apply global timeout to entire export process
+  return withTimeout(exportWithTimeout(), EXPORT_TIMEOUT_MS, 'Entire export process');
 }
 
 /**
