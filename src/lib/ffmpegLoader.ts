@@ -25,105 +25,45 @@ class FFmpegLoader {
   private async _loadFFmpeg(): Promise<FFmpeg> {
     try {
       console.log('Initializing FFmpeg...');
-      
-      this.ffmpeg = new FFmpeg();
-      
-      // Set up logging
-      this.ffmpeg.on('log', ({ message }) => {
-        console.log('[FFmpeg]:', message);
-      });
 
-      // Progress tracking
-      this.ffmpeg.on('progress', ({ progress, time }) => {
+      this.ffmpeg = new FFmpeg();
+
+      this.ffmpeg.on('log', ({ message }) => console.log('[FFmpeg]:', message));
+      this.ffmpeg.on('progress', ({ progress }) => {
         const progressPercent = Math.round(progress * 100);
-        console.log(`Processing: ${progressPercent}% (time: ${time})`);
+        console.log(`Progress: ${progressPercent}%`);
         
         // Dispatch custom event for UI updates
         window.dispatchEvent(new CustomEvent('ffmpeg-progress', {
-          detail: { progress: progressPercent, time }
+          detail: { progress: progressPercent }
         }));
       });
 
-      // Try multiple CDN sources for better reliability
-      const sources = [
-        'https://unpkg.com/@ffmpeg/core@0.12.15/dist/umd',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.15/dist/umd',
-        'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
-      ];
+      // Use the SAME version as in package.json (0.12.15)
+      const version = '0.12.15';
+      const baseURL = `https://unpkg.com/@ffmpeg/core@${version}/dist/umd`;
 
-      let loadError;
-      
-      for (const baseURL of sources) {
-        try {
-          console.log(`Trying to load FFmpeg from: ${baseURL}`);
-          
-          // Load core files with detailed error handling
-          const [coreURL, wasmURL, workerURL] = await Promise.all([
-            toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript').catch(e => {
-              console.error(`Failed to load core.js from ${baseURL}:`, e);
-              throw e;
-            }),
-            toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm').catch(e => {
-              console.error(`Failed to load core.wasm from ${baseURL}:`, e);
-              throw e;
-            }),
-            toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript').catch(e => {
-              console.error(`Failed to load core.worker.js from ${baseURL}:`, e);
-              throw e;
-            })
-          ]);
+      const [coreURL, wasmURL, workerURL] = await Promise.all([
+        toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+      ]);
 
-          console.log('All FFmpeg files loaded, initializing...');
+      await this.ffmpeg.load({ coreURL, wasmURL, workerURL });
 
-          // Load FFmpeg with timeout
-          const loadTimeout = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('FFmpeg load timeout after 45 seconds')), 45000)
-          );
+      console.log('✅ FFmpeg loaded successfully');
+      this.isLoaded = true;
 
-          await Promise.race([
-            this.ffmpeg.load({
-              coreURL,
-              wasmURL,
-              workerURL,
-            }),
-            loadTimeout
-          ]);
+      // Quick self-test
+      await this.ffmpeg.exec(['-version']);
+      console.log('✅ FFmpeg test passed');
 
-          console.log('FFmpeg loaded successfully from:', baseURL);
-          this.isLoaded = true;
-          
-          // Test with minimal operation
-          await this.testFFmpeg();
-          
-          return this.ffmpeg;
-
-        } catch (error) {
-          console.error(`Failed to load from ${baseURL}:`, error);
-          loadError = error;
-          continue;
-        }
-      }
-      
-      // If we get here, all sources failed
-      throw loadError || new Error('All FFmpeg sources failed to load');
+      return this.ffmpeg;
     } catch (error) {
       console.error('FFmpeg load error:', error);
       this.loadPromise = null;
       this.isLoaded = false;
       throw new Error(`FFmpeg initialization failed: ${error.message}`);
-    }
-  }
-
-  private async testFFmpeg(): Promise<void> {
-    try {
-      // Quick test to ensure FFmpeg is working
-      if (this.ffmpeg) {
-        await this.ffmpeg.exec(['-version']);
-        console.log('FFmpeg test passed');
-      }
-    } catch (error) {
-      console.error('FFmpeg test failed:', error);
-      throw error;
     }
   }
 
