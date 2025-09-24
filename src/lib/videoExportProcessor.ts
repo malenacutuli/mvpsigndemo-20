@@ -36,7 +36,7 @@ export class VideoExportProcessor {
     console.log('🎬 Starting video export processing...', { videoUrl, options });
     
     try {
-      this.updateProgress('preparing', 0, 'Initializing FFmpeg...');
+      this.updateProgress('preparing', 0, 'Initializing processing. This could take up to 5 minutes.');
       
       if (!this.ffmpeg.loaded) {
         console.log('📦 Loading FFmpeg core...');
