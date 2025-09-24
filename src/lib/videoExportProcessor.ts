@@ -44,17 +44,42 @@ export class VideoExportProcessor {
     });
 
     try {
-      this.updateProgress('preparing', 0, 'Initializing processing. This could take up to 10 minutes.');
+      this.updateProgress('preparing', 0, 'Initializing processing. This could take up to 5 minutes.');
 
       if (!this.ffmpeg.loaded) {
         console.log('📦 Loading FFmpeg core...');
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+        // Try multiple CDNs to avoid intermittent CORS/CDN issues
+        const sources = [
+          'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
+          'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm',
+          'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd',
+        ];
 
-        await this.ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
-        });
+        let loaded = false;
+        let lastError: any = null;
+        for (const baseURL of sources) {
+          try {
+            console.log('🛰️ Attempting FFmpeg load from:', baseURL);
+            const coreURL = baseURL + '/ffmpeg-core.js';
+            const wasmURL = baseURL + '/ffmpeg-core.wasm';
+            const workerURL = baseURL.includes('/esm') ? (baseURL + '/ffmpeg-core.worker.js') : undefined;
+
+            await this.ffmpeg.load({
+              coreURL: await toBlobURL(coreURL, 'text/javascript'),
+              wasmURL: await toBlobURL(wasmURL, 'application/wasm'),
+              ...(workerURL ? { workerURL: await toBlobURL(workerURL, 'text/javascript') } : {})
+            });
+            loaded = true;
+            break;
+          } catch (err) {
+            console.warn('⚠️ FFmpeg load attempt failed from', baseURL, err);
+            lastError = err;
+          }
+        }
+
+        if (!loaded) {
+          throw new Error('Load Failed: Unable to initialize FFmpeg core from CDN(s)');
+        }
 
         this.ffmpeg.on('log', ({ message }) => console.log('FFmpeg Log:', message));
         this.ffmpeg.on('progress', ({ progress }) => {
@@ -115,7 +140,7 @@ export class VideoExportProcessor {
         const srt = this.generateSRTFromSegments(assets.transcriptSegments);
         await this.ffmpeg.writeFile('subtitles.srt', new TextEncoder().encode(srt));
         const outLabel = '[v_sub]';
-        filterLines.push(`${videoOut}subtitles=subtitles.srt:force_style="FontSize=24,PrimaryColor=&Hffffff,BackColour=&H80000000,Bold=1"${outLabel}`);
+        filterLines.push(`${videoOut}subtitles=subtitles.srt:force_style=FontSize=24,PrimaryColor=&Hffffff,BackColour=&H80000000,Bold=1${outLabel}`);
         videoOut = outLabel;
       } else {
         // Video passthrough
