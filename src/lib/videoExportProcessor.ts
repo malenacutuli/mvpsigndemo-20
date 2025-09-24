@@ -52,8 +52,7 @@ export class VideoExportProcessor {
 
         await this.ffmpeg.load({
           coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm')
         });
 
         this.ffmpeg.on('log', ({ message }) => console.log('FFmpeg Log:', message));
