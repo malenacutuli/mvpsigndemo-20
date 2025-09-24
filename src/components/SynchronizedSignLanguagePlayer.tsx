@@ -172,20 +172,14 @@ export const SynchronizedSignLanguagePlayer: React.FC<SynchronizedSignLanguagePl
     if (!currentClip || !videoRef.current) return;
 
     const video = videoRef.current;
-    const clipStartTimeSeconds = currentClip.start_time_ms / 1000;
     const relativeTime = (currentTimeMs - currentClip.start_time_ms) / 1000;
     
-    // Check if video has loaded and get its actual duration
-    if (video.duration && relativeTime >= video.duration) {
-      console.log('🤟 Video ended early - expected to play until', (currentClip.end_time_ms - currentClip.start_time_ms) / 1000, 'seconds, but video is only', video.duration, 'seconds');
-      return; // Don't try to seek beyond video duration
-    }
-    
-    // Sync video time with the clip's relative position
-    if (Math.abs(video.currentTime - relativeTime) > 0.1 && relativeTime >= 0) {
-      const seekTime = Math.min(relativeTime, video.duration || relativeTime);
-      console.log('🤟 Syncing video time from', video.currentTime, 'to', seekTime, 'relative time:', relativeTime);
-      video.currentTime = seekTime;
+    // Let the sign language video play its full duration
+    // Only sync at the start, then let it play naturally
+    if (relativeTime >= 0 && relativeTime <= 0.1 && video.currentTime > 0.1) {
+      // Reset to beginning when clip starts
+      console.log('🤟 Starting sign language clip from beginning');
+      video.currentTime = 0;
     }
   }, [currentTimeMs, currentClip]);
 
