@@ -877,6 +877,59 @@ export type Database = {
           },
         ]
       }
+      video_exports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          error_message: string | null
+          export_options: Json
+          file_size_bytes: number | null
+          id: string
+          status: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          export_options?: Json
+          file_size_bytes?: number | null
+          id?: string
+          status?: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          export_options?: Json
+          file_size_bytes?: number | null
+          id?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_exports_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           channel_id: string | null

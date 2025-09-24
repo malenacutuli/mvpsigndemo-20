@@ -1,0 +1,292 @@
+import { supabase } from '@/integrations/supabase/client';
+import { VideoExportProcessor } from './videoExportProcessor';
+import { ExportOptions, ExportAssets, VideoExport, ProgressCallback } from '@/types/export';
+import { v4 as uuidv4 } from 'uuid';
+
+export class ExportOrchestrator {
+  private processor: VideoExportProcessor;
+
+  constructor(progressCallback?: ProgressCallback) {
+    this.processor = new VideoExportProcessor(progressCallback);
+  }
+
+  async finalizeAndExport(
+    videoId: string,
+    userId: string,
+    options: ExportOptions,
+    progressCallback?: ProgressCallback
+  ): Promise<{ exportId: string; downloadUrl?: string }> {
+    let exportId: string | null = null;
+
+    try {
+      // 1. Generate unique export ID
+      exportId = uuidv4();
+      
+      // 2. Gather all required assets from database
+      progressCallback?.({ stage: 'preparing', progress: 0, message: 'Gathering video assets...' });
+      const assets = await this.gatherAssets(videoId, options);
+
+      // 3. Validate assets
+      this.validateAssets(assets, options);
+
+      // 4. Create export record
+      const storagePath = `exports/${userId}/${videoId}/${exportId}.mp4`;
+      
+      const { error: insertError } = await supabase
+        .from('video_exports')
+        .insert({
+          id: exportId,
+          video_id: videoId,
+          user_id: userId,
+          export_options: options as any,
+          status: 'processing',
+          storage_path: storagePath,
+        });
+
+      if (insertError) {
+        throw new Error(`Failed to create export record: ${insertError.message}`);
+      }
+
+      progressCallback?.({ stage: 'preparing', progress: 20, message: 'Starting video processing...' });
+
+      // 5. Get main video URL
+      const mainVideoUrl = await this.getVideoUrl(assets.video.id, assets.video.storage_path);
+
+      // 6. Process video with FFmpeg
+      const resultBlob = await this.processor.renderAccessibleVideo(
+        mainVideoUrl,
+        assets,
+        options
+      );
+
+      progressCallback?.({ stage: 'uploading', progress: 85, message: 'Uploading processed video...' });
+
+      // 7. Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('exports')
+        .upload(storagePath, resultBlob, {
+          contentType: 'video/mp4',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      progressCallback?.({ stage: 'finalizing', progress: 95, message: 'Finalizing export...' });
+
+      // 8. Update export record with completion
+      const { error: updateError } = await supabase
+        .from('video_exports')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          file_size_bytes: resultBlob.size,
+          duration_seconds: assets.video.duration_seconds
+        })
+        .eq('id', exportId);
+
+      if (updateError) {
+        console.warn('Failed to update export record:', updateError);
+      }
+
+      progressCallback?.({ stage: 'finalizing', progress: 100, message: 'Export completed successfully!' });
+
+      // 9. Generate download URL
+      const downloadUrl = await this.getDownloadUrl(storagePath);
+
+      return { exportId, downloadUrl };
+
+    } catch (error) {
+      console.error('Export failed:', error);
+      
+      // Update export record with error if we have the ID
+      if (exportId) {
+        await supabase
+          .from('video_exports')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', exportId);
+      }
+
+      throw error;
+    } finally {
+      this.processor.cleanup();
+    }
+  }
+
+  private async gatherAssets(videoId: string, options: ExportOptions): Promise<ExportAssets> {
+    // Get video metadata
+    const { data: video, error: videoError } = await supabase
+      .from('videos')
+      .select('id, storage_path, duration_seconds, title')
+      .eq('id', videoId)
+      .single();
+
+    if (videoError || !video) {
+      throw new Error('Video not found');
+    }
+
+    // Get transcript segments if captions are requested
+    let transcriptSegments: ExportAssets['transcriptSegments'] = [];
+    if (options.captions) {
+      const { data: segments, error: segmentsError } = await supabase
+        .from('transcript_segments')
+        .select('id, start_time, end_time, text, speaker, speaker_color, emphasis, words')
+        .eq('video_id', videoId)
+        .order('start_time');
+
+      if (segmentsError) {
+        console.warn('Failed to load transcript segments:', segmentsError);
+      } else {
+        transcriptSegments = segments || [];
+      }
+    }
+
+    // Get audio descriptions if requested
+    let audioDescriptions: ExportAssets['audioDescriptions'] = [];
+    if (options.audioDescription) {
+      const { data: ads, error: adsError } = await supabase
+        .from('audio_descriptions')
+        .select('start_time, end_time, description')
+        .eq('video_id', videoId)
+        .order('start_time');
+
+      if (adsError) {
+        console.warn('Failed to load audio descriptions:', adsError);
+      } else {
+        audioDescriptions = (ads || []).map(ad => ({
+          start_time: ad.start_time,
+          end_time: ad.end_time,
+          description: ad.description,
+          audio_url: undefined // TODO: Generate TTS audio URLs if needed
+        }));
+      }
+    }
+
+    // Get sign language clips if requested
+    let signLanguageClips: ExportAssets['signLanguageClips'] = [];
+    if (options.signLanguage) {
+      const { data: clips, error: clipsError } = await supabase
+        .from('sign_language_clips')
+        .select('id, start_time_ms, end_time_ms, clip_url')
+        .eq('video_id', videoId)
+        .order('start_time_ms');
+
+      if (clipsError) {
+        console.warn('Failed to load sign language clips:', clipsError);
+      } else {
+        signLanguageClips = clips || [];
+      }
+    }
+
+    return {
+      video,
+      transcriptSegments,
+      audioDescriptions,
+      signLanguageClips
+    };
+  }
+
+  private validateAssets(assets: ExportAssets, options: ExportOptions) {
+    if (options.captions && assets.transcriptSegments.length === 0) {
+      throw new Error('No transcript segments available for captions');
+    }
+
+    if (options.audioDescription && assets.audioDescriptions.length === 0) {
+      throw new Error('No audio descriptions available');
+    }
+
+    if (options.signLanguage && assets.signLanguageClips.length === 0) {
+      throw new Error('No sign language clips available');
+    }
+
+    if (!assets.video.storage_path) {
+      throw new Error('Video file not found');
+    }
+  }
+
+  private async getVideoUrl(videoId: string, storagePath?: string): Promise<string> {
+    if (!storagePath) {
+      throw new Error('Video storage path not found');
+    }
+
+    // Try to get a signed URL for the video
+    const { data, error } = await supabase.storage
+      .from('videos')
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+    if (error) {
+      throw new Error(`Failed to get video URL: ${error.message}`);
+    }
+
+    return data.signedUrl;
+  }
+
+  async getDownloadUrl(storagePath: string): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('exports')
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+    if (error) {
+      throw new Error(`Failed to generate download URL: ${error.message}`);
+    }
+
+    return data.signedUrl;
+  }
+
+  async listExports(userId: string, videoId: string): Promise<VideoExport[]> {
+    const { data, error } = await supabase
+      .from('video_exports')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('video_id', videoId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to load exports: ${error.message}`);
+    }
+
+    return (data || []).map(item => ({
+      ...item,
+      export_options: item.export_options as ExportOptions
+    }));
+  }
+
+  async deleteExport(exportId: string, userId: string): Promise<void> {
+    // Get export record first
+    const { data: exportRecord, error: fetchError } = await supabase
+      .from('video_exports')
+      .select('storage_path')
+      .eq('id', exportId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !exportRecord) {
+      throw new Error('Export not found');
+    }
+
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from('exports')
+      .remove([exportRecord.storage_path]);
+
+    if (storageError) {
+      console.warn('Failed to delete from storage:', storageError);
+    }
+
+    // Delete database record
+    const { error: dbError } = await supabase
+      .from('video_exports')
+      .delete()
+      .eq('id', exportId)
+      .eq('user_id', userId);
+
+    if (dbError) {
+      throw new Error(`Failed to delete export: ${dbError.message}`);
+    }
+  }
+}
