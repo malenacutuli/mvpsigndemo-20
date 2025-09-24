@@ -44,7 +44,7 @@ export class VideoExportProcessor {
       
       if (!this.ffmpeg.loaded) {
         console.log('📦 Loading FFmpeg core...');
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
         
         this.ffmpeg.on('log', ({ message }) => {
           console.log('FFmpeg Log:', message);
@@ -58,7 +58,8 @@ export class VideoExportProcessor {
 
         await this.ffmpeg.load({
           coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm')
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
         });
         console.log('✅ FFmpeg loaded successfully');
       }
@@ -117,19 +118,19 @@ export class VideoExportProcessor {
           console.log('📝 Adding captions to ASL video, segments:', assets.transcriptSegments.length);
           const srtContent = this.generateSRTFromSegments(assets.transcriptSegments);
           await this.ffmpeg.writeFile('subtitles.srt', new TextEncoder().encode(srtContent));
-          videoFilterChain += `;[${lastVideoRef}]subtitles=subtitles.srt:force_style="FontSize=24,PrimaryColor=&Hffffff,BackColour=&H80000000,Bold=1"[vout]`;
+          videoFilterChain += `;[${lastVideoRef}]subtitles=subtitles.srt:force_style=FontSize=24,PrimaryColor=\&Hffffff,BackColour=\&H80000000,Bold=1[vout]`;
         } else {
-          videoFilterChain += `;[${lastVideoRef}]copy[vout]`;
+          videoFilterChain += `;[${lastVideoRef}]null[vout]`;
         }
       } else if (options.captions && assets.transcriptSegments.length > 0) {
         // Only subtitles, no ASL
         console.log('📝 Adding captions only, segments:', assets.transcriptSegments.length);
         const srtContent = this.generateSRTFromSegments(assets.transcriptSegments);
         await this.ffmpeg.writeFile('subtitles.srt', new TextEncoder().encode(srtContent));
-        videoFilterChain = '[0:v]subtitles=subtitles.srt:force_style="FontSize=24,PrimaryColor=&Hffffff,BackColour=&H80000000,Bold=1"[vout]';
+        videoFilterChain = '[0:v]subtitles=subtitles.srt:force_style=FontSize=24,PrimaryColor=\&Hffffff,BackColour=\&H80000000,Bold=1[vout]';
       } else {
         // No video processing needed
-        videoFilterChain = '[0:v]copy[vout]';
+        videoFilterChain = '[0:v]null[vout]';
       }
 
       // Handle Audio Descriptions
@@ -163,10 +164,10 @@ export class VideoExportProcessor {
           }
           audioFilterChain += `;${mixInputs}amix=inputs=${adInputsLoaded + 1}:duration=longest:normalize=0[aout]`;
         } else {
-          audioFilterChain = '[0:a]copy[aout]';
+          audioFilterChain = '[0:a]anull[aout]';
         }
       } else {
-        audioFilterChain = '[0:a]copy[aout]';
+        audioFilterChain = '[0:a]anull[aout]';
       }
 
       // Combine filters if needed
