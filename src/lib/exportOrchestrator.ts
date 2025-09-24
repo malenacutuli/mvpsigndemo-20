@@ -138,7 +138,7 @@ export class ExportOrchestrator {
     // Get video metadata
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select('id, storage_path, duration_seconds, title')
+      .select('id, storage_path, duration_seconds, title, language')
       .eq('id', videoId)
       .single();
 
@@ -174,12 +174,46 @@ export class ExportOrchestrator {
       if (adsError) {
         console.warn('Failed to load audio descriptions:', adsError);
       } else {
-        audioDescriptions = (ads || []).map(ad => ({
-          start_time: ad.start_time,
-          end_time: ad.end_time,
-          description: ad.description,
-          audio_url: undefined // TODO: Generate TTS audio URLs if needed
-        }));
+        const rawAds = ads || [];
+        // Generate TTS audio for each description via Edge Function
+        try {
+          audioDescriptions = await Promise.all(
+            rawAds.map(async (ad) => {
+              try {
+                const { data, error } = await supabase.functions.invoke('tts', {
+                  body: { text: ad.description, language: video.language || 'en' }
+                });
+                if (error) throw error;
+                const blob = data instanceof ArrayBuffer
+                  ? new Blob([data], { type: 'audio/mpeg' })
+                  : new Blob([data as any], { type: 'audio/mpeg' });
+                const url = URL.createObjectURL(blob);
+                return {
+                  start_time: ad.start_time,
+                  end_time: ad.end_time,
+                  description: ad.description,
+                  audio_url: url
+                };
+              } catch (ttsErr) {
+                console.warn('TTS generation failed for AD segment:', ttsErr);
+                return {
+                  start_time: ad.start_time,
+                  end_time: ad.end_time,
+                  description: ad.description,
+                  audio_url: undefined
+                };
+              }
+            })
+          );
+        } catch (e) {
+          console.warn('Bulk TTS generation failed, proceeding without audio URLs');
+          audioDescriptions = rawAds.map(ad => ({
+            start_time: ad.start_time,
+            end_time: ad.end_time,
+            description: ad.description,
+            audio_url: undefined
+          }));
+        }
       }
     }
 
