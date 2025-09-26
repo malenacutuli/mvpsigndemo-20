@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, LogIn, Gift } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link } from 'react-router-dom';
 
 export const Auth = () => {
   const [email, setEmail] = useState('');
@@ -23,6 +25,7 @@ export const Auth = () => {
   const [message, setMessage] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { user, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -65,6 +68,12 @@ export const Auth = () => {
 
     if (password.length < 6) {
       setError(t('auth.passwordMinLength'));
+      setLoading(false);
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setError('You must accept the Terms and Conditions to create an account.');
       setLoading(false);
       return;
     }
@@ -405,7 +414,28 @@ export const Auth = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="terms" 
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  />
+                  <Label 
+                    htmlFor="terms" 
+                    className="text-sm font-light leading-relaxed cursor-pointer"
+                  >
+                    I agree to the{' '}
+                    <Link 
+                      to="/terms" 
+                      className="text-primary hover:underline font-medium"
+                      target="_blank"
+                    >
+                      Terms and Conditions
+                    </Link>
+                  </Label>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading || !acceptedTerms}>
                   <User className="w-4 h-4 mr-2" />
                   {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                 </Button>
