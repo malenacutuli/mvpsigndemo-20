@@ -645,6 +645,7 @@
         "name": "Creators",
         "price": "$26",
         "cadence": "per month",
+        "trial": "30-day free trial",
         "users": "1 user",
         "storage": "100GB storage",
         "cta": "Start Free Trial",

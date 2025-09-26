@@ -72,7 +72,8 @@ serve(async (req) => {
 
     logStep("Creating checkout session", { plan, priceAmount, planName });
 
-    const session = await stripe.checkout.sessions.create({
+    // Configure trial period for starter plan
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -92,7 +93,17 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?checkout=success`,
       cancel_url: `${req.headers.get("origin")}/pricing?checkout=cancelled`,
-    });
+    };
+
+    // Add 30-day trial for starter plan
+    if (plan === 'starter') {
+      sessionConfig.subscription_data = {
+        trial_period_days: 30,
+      };
+      logStep("Adding 30-day trial period for starter plan");
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 

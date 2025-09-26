@@ -15,6 +15,7 @@ const getPlanData = (t: any) => [
     name: t('pricing.plans.starter.name'),
     price: t('pricing.plans.starter.price'),
     cadence: t('pricing.plans.starter.cadence'),
+    trial: t('pricing.plans.starter.trial'),
     users: t('pricing.plans.starter.users'),
     storage: t('pricing.plans.starter.storage'),
     features: t('pricing.plans.starter.features', { returnObjects: true }),
@@ -203,6 +204,9 @@ export default function Pricing() {
                 <div className="mt-4">
                   <div className="text-3xl md:text-4xl font-bold text-center">{plan.price}</div>
                   <div className="text-sm text-muted-foreground text-center mt-1">{plan.cadence}</div>
+                  {plan.trial && (
+                    <div className="text-sm text-primary font-medium text-center mt-1">{plan.trial}</div>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground text-center mt-2">
                   {plan.storage}
