@@ -813,52 +813,59 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-light text-foreground mb-2">Video Analysis</h2>
-          <p className="text-sm text-muted-foreground mb-3">
-            Analyze video content for silent gaps and generate storytelling audio descriptions using AI.
-          </p>
-          <div className="flex items-center gap-2">
-            <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-              {status === 'idle' && 'Ready to Index'}
-              {status === 'indexing' && 'Indexing...'}
-              {status === 'ready' && 'Ready'}
-              {status === 'failed' && 'Failed'}
-            </Badge>
-            {loadingCachedResults && (
-              <Badge variant="outline">
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Loading Cache...
-              </Badge>
-            )}
+      <Card className="shadow-soft border-border">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-2xl font-light text-foreground mb-2">Video Analysis</h2>
+              <p className="text-muted-foreground font-light leading-relaxed max-w-2xl">
+                Analyze video content for silent gaps and generate storytelling audio descriptions using AI.
+              </p>
+              <div className="flex items-center gap-2 mt-4">
+                <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
+                  {status === 'idle' && 'Ready to Index'}
+                  {status === 'indexing' && 'Indexing...'}
+                  {status === 'ready' && 'Ready'}
+                  {status === 'failed' && 'Failed'}
+                </Badge>
+                {loadingCachedResults && (
+                  <Badge variant="outline">
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Loading Cache...
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex-shrink-0 ml-6">
+              <Button
+                onClick={startIndexing}
+                disabled={indexing || status === 'indexing'}
+                size="sm"
+                variant="outline"
+                className="shadow-sm"
+              >
+                {indexing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Indexing...
+                  </>
+                ) : status === 'indexing' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Indexing...
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    {status === 'ready' ? 'Re-index' : 'Index Video'}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={startIndexing}
-            disabled={indexing || status === 'indexing'}
-          >
-            {indexing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Indexing...
-              </>
-            ) : status === 'indexing' ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Indexing...
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                {status === 'ready' ? 'Re-index' : 'Index Video'}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Status Messages */}
       {status === 'indexing' && (
@@ -892,7 +899,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   </Badge>
                 )}
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-muted-foreground font-light leading-relaxed mt-2">
                 Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
               </p>
             </div>
@@ -958,13 +965,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Analysis Prompt</label>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">Analysis Prompt</label>
             <Textarea
               value={silencePrompt}
               onChange={(e) => setSilencePrompt(e.target.value)}
-              className="min-h-32 font-mono text-xs bg-muted/30 border-border"
+              className="min-h-40 font-mono text-xs bg-muted/30 border-border leading-relaxed"
               placeholder="Enter analysis prompt..."
             />
           </div>
@@ -1054,13 +1061,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       </Card>
 
       {/* Custom Analysis Insights Section */}
-      <Card>
+      <Card className="shadow-soft border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Custom Analysis Insights</CardTitle>
+              <CardTitle className="text-lg font-light text-foreground">Custom Analysis Insights</CardTitle>
               {hasUnsavedInsightChanges && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs font-normal">
                   Unsaved Changes
                 </Badge>
               )}
@@ -1111,16 +1118,16 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Custom Analysis Prompt</label>
-            <p className="text-xs text-muted-foreground mb-2">
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">Custom Analysis Prompt</label>
+            <p className="text-muted-foreground font-light leading-relaxed">
               Enter a custom prompt to extract specific insights from your video (e.g., generate hashtags, identify themes, extract key quotes, etc.)
             </p>
             <Textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              className="min-h-24"
+              className="min-h-32 leading-relaxed"
               placeholder="e.g. Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
             />
           </div>
@@ -1132,9 +1139,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </div>
           ) : insightResult.analysis_text ? (
             <div className="space-y-4">
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-medium mb-3 text-sm">Analysis Result</h4>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="p-6 bg-muted/30 rounded-lg border border-border">
+                <h4 className="font-medium mb-4 text-foreground">Analysis Result</h4>
+                <div className="text-foreground font-light leading-relaxed whitespace-pre-wrap">
                   {insightResult.analysis_text}
                 </div>
               </div>
