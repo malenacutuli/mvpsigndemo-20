@@ -248,7 +248,7 @@ export const UploadAccessible: React.FC = () => {
                       videoSrc={videoUrl}
                       title="Your uploaded video"
                       selectedVoice={selectedVoice}
-                      selectedASLAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
+                      selectedSignLanguageAvatar={{ id: asl, name: selectedAsl.name, description: selectedAsl.description }}
                       contentType={contentType}
                       initialCaptions={initialCaptions}
                     />

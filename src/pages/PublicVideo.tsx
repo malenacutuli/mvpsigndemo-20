@@ -352,7 +352,7 @@ const PublicVideo = () => {
               title={video.title}
               videoId={video.id}
               selectedVoice={selectedVoicePreference}
-              selectedASLAvatar={undefined}
+              selectedSignLanguageAvatar={undefined}
               contentType={video.content_type as 'recipe' | 'education'}
               initialCaptions={captions}
               dynamicDescriptions={audioDescriptions}

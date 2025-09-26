@@ -24,7 +24,7 @@ import { CICharacterSync } from './CICharacterSync';
 
 import { VoiceOption } from "@/types/voice";
 
-interface ASLOption {
+interface SignLanguageOption {
   id: string;
   name: string;
   description: string;
@@ -36,7 +36,7 @@ interface AxessiblePlayerProps {
   title: string;
   className?: string;
   selectedVoice?: VoiceOption;
-  selectedASLAvatar?: ASLOption;
+  selectedSignLanguageAvatar?: SignLanguageOption;
   contentType?: 'recipe' | 'education';
   initialCaptions?: CaptionSegment[];
   dynamicDescriptions?: any[];
@@ -53,7 +53,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   title,
   className = "",
   selectedVoice,
-  selectedASLAvatar,
+  selectedSignLanguageAvatar,
   contentType = 'education',
   initialCaptions,
   dynamicDescriptions,
@@ -1038,7 +1038,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       {effectiveShowSignLanguage && !videoId && (
         <SignLanguageAvatar
           contentType={contentType}
-          selectedASLAvatar={selectedASLAvatar}
+          selectedSignLanguageAvatar={selectedSignLanguageAvatar}
           currentCaption={activeCaption}
         />
       )}

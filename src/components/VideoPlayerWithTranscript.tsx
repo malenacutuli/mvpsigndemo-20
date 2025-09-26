@@ -14,7 +14,7 @@ interface VideoPlayerWithTranscriptProps {
     name: string;
     description: string;
   };
-  selectedASLAvatar?: {
+  selectedSignLanguageAvatar?: {
     id: string;
     name: string;
     description: string;
@@ -32,7 +32,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
   videoId,
   language,
   selectedVoice,
-  selectedASLAvatar,
+  selectedSignLanguageAvatar,
   contentType = 'education',
   className = "",
   isPublic,
@@ -47,7 +47,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
       videoId={videoId}
       language={language}
       selectedVoice={selectedVoice}
-      selectedASLAvatar={selectedASLAvatar}
+      selectedSignLanguageAvatar={selectedSignLanguageAvatar}
       contentType={contentType}
       className={className}
       isPublic={isPublic}

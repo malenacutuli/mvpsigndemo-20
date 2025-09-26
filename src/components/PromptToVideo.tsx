@@ -128,7 +128,7 @@ export const PromptToVideo: React.FC = () => {
                     videoSrc={videoUrl}
                     title="Generated video"
                     selectedVoice={selectedVoice}
-                    selectedASLAvatar={selectedAsl}
+                    selectedSignLanguageAvatar={selectedAsl}
                     contentType="recipe"
                   />
                 ) : (

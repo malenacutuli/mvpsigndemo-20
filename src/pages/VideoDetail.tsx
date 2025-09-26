@@ -36,7 +36,7 @@ interface Video {
   channel_id: string | null;
 }
 
-interface ASLOption {
+interface SignLanguageOption {
   id: string;
   name: string;
   description: string;
@@ -58,12 +58,12 @@ const VideoDetail = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Voice and ASL Avatar options for accessibility
+  // Voice and Sign Language Avatar options for accessibility
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>('gordon-ramsay');
   
-  const [selectedASLAvatar] = useState<ASLOption>({
+  const [selectedSignLanguageAvatar] = useState<SignLanguageOption>({
     id: 'chef-avatar',
-    name: 'ASL Chef',
+    name: 'Sign Language Chef',
     description: 'Professional cooking instructor'
   });
 
@@ -498,7 +498,7 @@ const VideoDetail = () => {
                     videoId={video.id}
                     language={video.language}
                     selectedVoice={findVoiceById(selectedVoiceId) || { id: selectedVoiceId, name: selectedVoiceId, description: '' }}
-                    selectedASLAvatar={selectedASLAvatar}
+                    selectedSignLanguageAvatar={selectedSignLanguageAvatar}
                     contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
                     className="w-full"
                     isPublic={video.is_public}

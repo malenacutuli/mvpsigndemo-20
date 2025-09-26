@@ -22,7 +22,7 @@ interface EnhancedVideoPlayerProps {
     name: string;
     description: string;
   };
-  selectedASLAvatar?: {
+  selectedSignLanguageAvatar?: {
     id: string;
     name: string;
     description: string;
@@ -41,7 +41,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   videoId,
   language,
   selectedVoice,
-  selectedASLAvatar,
+  selectedSignLanguageAvatar,
   contentType = 'education',
   className = "",
   onTranscriptUpdate,
@@ -877,7 +877,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         title={title}
         videoId={videoId}
         selectedVoice={selectedVoice}
-        selectedASLAvatar={selectedASLAvatar}
+        selectedSignLanguageAvatar={selectedSignLanguageAvatar}
         contentType={contentType}
         className={className}
         initialCaptions={captions}
