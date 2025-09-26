@@ -170,7 +170,6 @@
         "title": "Enterprise Features",
         "compliance": "Built-in compliance auditing & reporting",
         "whiteLabel": "White-label embeddable player",
-        "apiFirst": "API-first architecture",
         "sso": "Enterprise SSO & user management"
     },
     "intellectualProperty": {
@@ -197,7 +196,7 @@
       "contentInput": {
         "title": "Content Input",
         "description": "Upload existing videos or generate from text prompts",
-        "features": ["Bulk video processing", "AI video generation", "Live stream integration"]
+        "features": []
       },
       "featureSelection": {
         "title": "Feature Selection",
@@ -215,7 +214,7 @@
       "userToggleable": "User-Toggleable Features",
       "enterpriseSSO": "Enterprise SSO Ready"
     },
-    "deployMessage": "Deploy to millions of users in under 30 minutes with our enterprise-grade infrastructure"
+    "deployMessage": "Deploy to millions of users with Multi-language ASL with our enterprise-grade infrastructure"
   },
   "techStack": {
     "badge": "Technology Stack",
@@ -229,7 +228,7 @@
       "aiMachineLearning": {
         "title": "AI & Machine Learning",
         "description": "Advanced AI models for accessibility",
-        "technologies": ["Vision-Language Models", "Custom ASL Models", "AI Integration"]
+        "technologies": ["Vision-Language Models", "AI Integration"]
       },
       "voiceAudio": {
         "title": "Voice & Audio",
@@ -239,7 +238,7 @@
       "computerVision": {
         "title": "Computer Vision",
         "description": "Scene analysis and visual understanding",
-        "technologies": ["Blender Integration", "3D Animation", "Pose Estimation"]
+        "technologies": []
       },
       "complianceSecurity": {
         "title": "Compliance & Security",
@@ -304,7 +303,7 @@
   "patentClaims": {
     "badge": "Patent Validation",
     "title": "Protecting Revolutionary Innovation",
-    "description": "Our MVP directly validates key patent claims, demonstrating unique intellectual property that creates substantial competitive advantages in the accessibility market.",
+    "description": "Our platform directly validates key patent claims, demonstrating unique intellectual property that creates substantial competitive advantages in the accessibility market.",
     "validatedBy": "Validated By:",
     "claims": {
       "dataProcessing": {
@@ -377,7 +376,7 @@
       "eaaEnforcement": {
         "date": "June 2025",
         "title": "EAA Enforcement",
-        "description": "European Accessibility Act penalties begin"
+        "description": "European Accessibility Act penalties started"
       }
     },
     "solution": {
@@ -401,7 +400,7 @@
       },
       "uploadVideo": {
         "title": "Upload Video", 
-        "description": "Upload your video and get professional captions, audio descriptions, and ASL support"
+        "description": "Upload your video and automate with captions with intention, audio descriptions and analyze video content"
       },
       "manageVideos": {
         "title": "Manage Videos",
