@@ -8,42 +8,39 @@ export const Hero: React.FC = () => {
   const { t } = useTranslation();
   
   return (
-    <section className="relative bg-white py-20 lg:py-32 overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6">
+    <section className="relative bg-background py-20 sm:py-28 lg:py-40 overflow-hidden">
+      <div className="container mx-auto px-6">
         <div className="max-w-5xl mx-auto text-center">
           {/* Subtitle */}
-          <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-medium">
+          <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-light">
             {t('hero.subtitle')}
           </p>
           
           {/* Main Headline */}
-          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-foreground leading-tight mb-8 px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight mb-8 px-2">
             {t('hero.headline')}
             <span className="block">{t('hero.headlineSecond')}</span>
           </h1>
           
           {/* Description */}
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-12 px-4">
+          <p className="text-base sm:text-lg md:text-xl text-foreground font-light max-w-3xl mx-auto leading-relaxed mb-10 px-4">
             {t('hero.description')}
           </p>
           
           {/* CTA Button */}
-          <Link to="/upload">
-            <Button 
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold rounded-full inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
+          <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto inline-flex items-center gap-2">
+            <Link to="/upload">
               {t('hero.cta')}
               <ArrowRight className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           
           {/* Inclusivity Message */}
-          <div className="mt-16 max-w-3xl mx-auto px-4">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4">
+          <div className="mt-20 max-w-3xl mx-auto px-4">
+            <h2 className="text-2xl md:text-3xl font-light text-foreground mb-4">
               {t('hero.inclusivity.title')}
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+            <p className="text-lg text-muted-foreground font-light leading-relaxed">
               {t('hero.inclusivity.description')}
             </p>
           </div>
