@@ -8,8 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
 import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { AccessibleVideoExporter } from '@/components/AccessibleVideoExporter';
-import { VideoExportButton } from '@/components/VideoExportButton';
-import { VideoExportsPanel } from '@/components/VideoExportsPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -263,15 +261,6 @@ export default function VideoDetailWorkflow() {
               Back to Videos
             </Button>
             
-            {userId && (
-              <VideoExportButton
-                videoId={video.id}
-                videoTitle={video.title}
-                onExportComplete={() => {
-                  window.location.reload();
-                }}
-              />
-            )}
             <div>
               <h1 className="text-2xl font-bold">{video.title}</h1>
               <div className="flex items-center gap-4 mt-2">
@@ -349,12 +338,6 @@ export default function VideoDetailWorkflow() {
             </div>
           </div>
 
-          {/* Video Exports Panel */}
-          {userId && (
-            <div className="mt-6">
-              <VideoExportsPanel videoId={video.id} userId={userId} />
-            </div>
-          )}
         </div>
     </div>
   );

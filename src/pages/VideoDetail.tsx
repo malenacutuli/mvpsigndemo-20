@@ -13,8 +13,6 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
-import { VideoExportButton } from "@/components/VideoExportButton";
-import { VideoExportsPanel } from "@/components/VideoExportsPanel";
 
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
@@ -449,14 +447,6 @@ const VideoDetail = () => {
               {t('videoDetail.backToVideos')}
             </Button>
             <div className="flex items-center gap-2">
-              <VideoExportButton
-                videoId={video.id}
-                videoTitle={video.title}
-                onExportComplete={() => {
-                  // Refresh the page to show new export in panel
-                  window.location.reload();
-                }}
-              />
               <VideoPublishingControls
                 videoId={video.id}
                 isPublic={video.is_public}
@@ -609,8 +599,6 @@ const VideoDetail = () => {
             </div>
           )}
 
-          {/* Video Exports Panel */}
-          <VideoExportsPanel videoId={video.id} userId={userId || ''} />
         </div>
       </main>
     </div>
