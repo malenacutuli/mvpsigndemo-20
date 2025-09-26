@@ -88,7 +88,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const createCheckout = async (plan: string) => {
+    console.log('[Subscription] createCheckout called with plan:', plan);
+    console.log('[Subscription] user:', !!user, 'session:', !!session);
+    
     if (!user || !session) {
+      console.error('[Subscription] No user or session found');
       toast({
         title: "Authentication Required",
         description: "Please sign in to continue",
@@ -97,8 +101,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
+    console.log('[Subscription] Starting checkout process...');
     setLoading(true);
     try {
+      console.log('[Subscription] Calling create-checkout edge function...');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
         headers: {
@@ -106,15 +112,26 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         },
       });
 
-      if (error) throw error;
+      console.log('[Subscription] Edge function response:', { data, error });
 
+      if (error) {
+        console.error('[Subscription] Edge function error:', error);
+        throw error;
+      }
+
+      if (!data?.url) {
+        console.error('[Subscription] No checkout URL received:', data);
+        throw new Error('No checkout URL received from server');
+      }
+
+      console.log('[Subscription] Redirecting to checkout URL:', data.url);
       // Redirect to Stripe checkout in the same tab (popup blockers won't interfere)
-      window.location.href = data.url;
+          window.location.href = data.url;
     } catch (error) {
-      console.error('Failed to create checkout:', error);
+      console.error('[Subscription] Failed to create checkout:', error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session",
+        description: `Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
