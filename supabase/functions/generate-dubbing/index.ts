@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,7 +109,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Dubbing error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate dubbing' 
+      error: error instanceof Error ? error.message : 'Failed to generate dubbing' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

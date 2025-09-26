@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -107,7 +107,8 @@ function decodeAudioData(base64Audio: string): Float32Array {
     
     return floatData;
   } catch (error) {
-    logStep('Audio decode error', { error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logStep('Audio decode error', { error: errorMessage });
     throw new Error('Failed to decode audio data');
   }
 }
@@ -292,9 +293,10 @@ serve(async (req) => {
         }
 
       } catch (segmentError) {
+        const errorMessage = segmentError instanceof Error ? segmentError.message : 'Unknown segment processing error';
         logStep('Segment processing error', { 
           segmentId: segment.id, 
-          error: segmentError.message 
+          error: errorMessage 
         });
         
         // Add segment with default values if analysis fails
@@ -325,10 +327,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep('Error in vocal intensity analysis', { error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    logStep('Error in vocal intensity analysis', { error: errorMessage });
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: errorMessage,
       success: false
     }), {
       status: 500,
