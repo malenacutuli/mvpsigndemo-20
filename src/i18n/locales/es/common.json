@@ -413,7 +413,7 @@
       "featureSelection": {
         "title": "Selección de Características",
         "description": "Configura características de accesibilidad para tu caso de uso",
-        "features": ["Subtítulos emocionales", "Descripciones de audio", "ASL multiidioma"]
+        "features": ["Subtítulos emocionales", "Descripciones de audio", "Lenguaje de señas multiidioma"]
       },
       "deployMonitor": {
         "title": "Despliega y Monitorea",
@@ -440,7 +440,7 @@
       "aiMachineLearning": {
         "title": "IA y Aprendizaje Automático",
         "description": "Modelos de IA avanzados para accesibilidad",
-        "technologies": ["Modelos Visión-Lenguaje", "Modelos ASL Personalizados", "Integración LLM"]
+        "technologies": ["Modelos Visión-Lenguaje", "Modelos de Lenguaje de Señas Personalizados", "Integración LLM"]
       },
       "voiceAudio": {
         "title": "Voz y Audio",
@@ -462,7 +462,7 @@
       "title": "Aspectos Destacados de la Arquitectura",
       "gpu": {
         "title": "Procesamiento Acelerado por GPU",
-        "description": "Computación de alto rendimiento para inferencia IA en tiempo real y generación ASL compleja"
+        "description": "Computación de alto rendimiento para inferencia IA en tiempo real y generación compleja de lenguaje de señas"
       },
       "eventDriven": {
         "title": "Arquitectura Dirigida por Eventos",
@@ -479,7 +479,7 @@
     "subtitle": "Crea, personaliza y gestiona tu contenido de video accesible",
     "uploadVideo": {
       "title": "Subir Video",
-      "description": "Sube tu video y deja que la IA genere subtítulos, descripciones de audio y soporte ASL"
+      "description": "Sube tu video y deja que la IA genere subtítulos, descripciones de audio y soporte de lenguaje de señas"
     },
     "myVideos": {
       "title": "Mis Videos",
@@ -533,14 +533,14 @@
       "avatarGeneration": {
         "number": "Reivindicación 2",
         "title": "Generación de Avatar con Sincronización de Tiempo",
-        "description": "Avatares ASL animados por IA con sincronización precisa del habla",
+        "description": "Avatares de lenguaje de señas animados por IA con sincronización precisa del habla",
         "validatedBy": [
-          "Tres avatares ASL distintos amigables para niños",
+          "Tres avatares de lenguaje de señas distintos amigables para niños",
           "Análisis de marcas de tiempo del habla y mapeo de gestos",
           "Renderizado de animación coincidente con la línea de tiempo",
           "Sincronización en tiempo real con contenido hablado"
         ],
-        "implementation": "Generación ASL avanzada con sincronización perfecta de píxeles"
+        "implementation": "Generación avanzada de lenguaje de señas con sincronización perfecta de píxeles"
       },
       "complianceLayer": {
         "number": "Reivindicación 3",
@@ -612,7 +612,7 @@
       },
       "uploadVideo": {
         "title": "Subir Video",
-        "description": "Sube tu video y deja que la IA genere subtítulos, descripciones de audio y soporte ASL"
+        "description": "Sube tu video y deja que la IA genere subtítulos, descripciones de audio y soporte de lenguaje de señas"
       },
       "manageVideos": {
         "title": "Gestionar Videos",
@@ -904,7 +904,7 @@
           "Revisiones de seguridad",
           "Integraciones personalizadas",
           "Gerente de cuenta dedicado",
-          "Avatares ASL personalizados",
+          "Avatares de lenguaje de señas personalizados",
           "Entrenamiento y soporte personalizado para tus equipos",
           "Doblaje multiidioma, incluyendo sincronización labial"
         ]
@@ -916,10 +916,10 @@
         "contentStorage": "Contenido y Almacenamiento"
       },
       "features": {
-        "axessiblePlayer": "Reproductor Axessible (CWI, AD, ASL)",
+        "axessiblePlayer": "Reproductor Axessible (CWI, AD, Lenguaje de Señas)",
         "emotionTaggedCaptions": "Subtítulos con Etiquetas Emocionales",
         "aiAudioDescriptions": "Descripciones de Audio con IA",
-        "aslAvatarSupport": "Soporte de Avatar ASL",
+        "signLanguageAvatarSupport": "Soporte de Avatar de Lenguaje de Señas",
         "storage": "Almacenamiento", 
         "videoProcessing": "Procesamiento de Video"
       },

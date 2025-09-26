@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AudioDescription } from './AudioDescription';
-import { ASLAvatar } from './ASLAvatar';
+import { SignLanguageAvatar } from './SignLanguageAvatar';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -50,7 +50,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   // Accessibility toggles
   const [showCaptions, setShowCaptions] = useState(true);
   const [showAudioDescription, setShowAudioDescription] = useState(false);
-  const [showASL, setShowASL] = useState(false);
+  const [showSignLanguage, setShowSignLanguage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // Disable any native text tracks so only overlay captions are shown
@@ -246,9 +246,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         onPause={() => setIsPlaying(false)}
       />
 
-      {/* ASL Avatar Overlay */}
-      {showASL && (
-        <ASLAvatar
+      {/* Sign Language Avatar Overlay */}
+      {showSignLanguage && (
+        <SignLanguageAvatar
           contentType={contentType}
           currentCaption={captions.find(seg => 
             currentTime >= seg.startTime && currentTime <= seg.endTime
@@ -414,8 +414,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={showASL}
-                onChange={(e) => setShowASL(e.target.checked)}
+                checked={showSignLanguage}
+                onChange={(e) => setShowSignLanguage(e.target.checked)}
                 className="rounded"
               />
               <span>Sign Language Avatar</span>

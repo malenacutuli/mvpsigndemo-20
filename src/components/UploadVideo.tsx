@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceSelector } from '@/components/VoiceSelector';
-import { ASLAvatarSelector } from '@/components/ASLAvatarSelector';
+import { SignLanguageAvatarSelector } from '@/components/SignLanguageAvatarSelector';
 import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
@@ -677,7 +677,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               )}
             </div>
             
-            <ASLAvatarSelector
+            <SignLanguageAvatarSelector
               options={aslOptions[contentType] || []}
               selectedValue={selectedASL}
               onValueChange={setSelectedASL}

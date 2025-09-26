@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AudioDescription } from './AudioDescription';
-import { ASLAvatar } from './ASLAvatar';
+import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { AccessibilityGrader } from './AccessibilityGrader';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
@@ -66,7 +66,7 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   // Accessibility toggles
   const [showCaptions, setShowCaptions] = useState(true);
   const [showAudioDescription, setShowAudioDescription] = useState(false);
-  const [showASL, setShowASL] = useState(false);
+  const [showSignLanguage, setShowSignLanguage] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -292,9 +292,9 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
         </div>
       )}
 
-      {/* ASL Avatar Overlay */}
-      {showASL && (
-        <ASLAvatar
+      {/* Sign Language Avatar Overlay */}
+      {showSignLanguage && (
+        <SignLanguageAvatar
           contentType={contentType}
           currentCaption={captions.find(seg => 
             currentTime >= seg.startTime && currentTime <= seg.endTime
@@ -483,8 +483,8 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
                     <span>Sign Language Avatar</span>
                     <input
                       type="checkbox"
-                      checked={showASL}
-                      onChange={(e) => setShowASL(e.target.checked)}
+                      checked={showSignLanguage}
+                      onChange={(e) => setShowSignLanguage(e.target.checked)}
                       className="rounded"
                     />
                   </label>

@@ -1,20 +1,20 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface ASLOption {
+interface SignLanguageOption {
   id: string;
   name: string;
   description: string;
 }
 
-interface ASLAvatarSelectorProps {
+interface SignLanguageAvatarSelectorProps {
   options: Array<{ id: string; name: string; description: string }>;
   selectedValue: string;
   onValueChange: (value: string) => void;
   contentType: string;
 }
 
-export const ASLAvatarSelector: React.FC<ASLAvatarSelectorProps> = ({
+export const SignLanguageAvatarSelector: React.FC<SignLanguageAvatarSelectorProps> = ({
   options,
   selectedValue,
   onValueChange,
@@ -31,11 +31,11 @@ export const ASLAvatarSelector: React.FC<ASLAvatarSelectorProps> = ({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-background border border-border shadow-lg backdrop-blur-sm z-50">
-          {options.map((asl) => (
-            <SelectItem key={asl.id} value={asl.id} className="cursor-pointer hover:bg-accent focus:bg-accent">
+          {options.map((signLanguageOption) => (
+            <SelectItem key={signLanguageOption.id} value={signLanguageOption.id} className="cursor-pointer hover:bg-accent focus:bg-accent">
               <div className="flex flex-col gap-1 py-1">
-                <div className="font-medium text-foreground">{asl.name}</div>
-                <div className="text-xs text-muted-foreground line-clamp-1">{asl.description}</div>
+                <div className="font-medium text-foreground">{signLanguageOption.name}</div>
+                <div className="text-xs text-muted-foreground line-clamp-1">{signLanguageOption.description}</div>
               </div>
             </SelectItem>
           ))}

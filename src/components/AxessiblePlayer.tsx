@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AccessibilityControls } from './AccessibilityControls';
 import { AudioDescription } from './AudioDescription';
-import { ASLAvatar } from './ASLAvatar';
+import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { SynchronizedSignLanguagePlayer } from './SynchronizedSignLanguagePlayer';
 import { AccessibilityGrader } from './AccessibilityGrader';
 import { TranscriptionManager } from './TranscriptionManager';
@@ -1036,7 +1036,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
       {/* Fallback Sign Language Avatar for videos without time-synced clips */}
       {effectiveShowSignLanguage && !videoId && (
-        <ASLAvatar
+        <SignLanguageAvatar
           contentType={contentType}
           selectedASLAvatar={selectedASLAvatar}
           currentCaption={activeCaption}

@@ -6,12 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping, Subtitles } from 'lucide-react';
-import { ASLAvatarSelector } from './ASLAvatarSelector';
+import { SignLanguageAvatarSelector } from './SignLanguageAvatarSelector';
 
 export const DemoSection: React.FC = () => {
   const [selectedDemo, setSelectedDemo] = useState<'recipe' | 'education'>('recipe');
   const [selectedVoice, setSelectedVoice] = useState('gordon-ramsay');
-  const [selectedASLAvatar, setSelectedASLAvatar] = useState('chef-avatar');
+  const [selectedSignLanguageAvatar, setSelectedSignLanguageAvatar] = useState('chef-avatar');
 
   const demoContent = {
     recipe: {
@@ -94,7 +94,7 @@ export const DemoSection: React.FC = () => {
 
   const currentDemo = demoContent[selectedDemo];
   const currentVoice = currentDemo.voiceOptions.find(v => v.id === selectedVoice) || currentDemo.voiceOptions[0];
-  const currentASL = currentDemo.aslOptions.find(a => a.id === selectedASLAvatar) || currentDemo.aslOptions[0];
+  const currentSignLanguage = currentDemo.aslOptions.find(a => a.id === selectedSignLanguageAvatar) || currentDemo.aslOptions[0];
 
   return (
     <section id="demo" className="py-20 bg-background">
@@ -122,7 +122,7 @@ export const DemoSection: React.FC = () => {
               onClick={() => {
                 setSelectedDemo('recipe');
                 setSelectedVoice('gordon-ramsay');
-                setSelectedASLAvatar('chef-avatar');
+                setSelectedSignLanguageAvatar('chef-avatar');
               }}
               className="flex items-center gap-2"
             >
@@ -134,7 +134,7 @@ export const DemoSection: React.FC = () => {
               onClick={() => {
                 setSelectedDemo('education');
                 setSelectedVoice('dora-exploradora');
-                setSelectedASLAvatar('superhero-captain');
+                setSelectedSignLanguageAvatar('superhero-captain');
               }}
               className="flex items-center gap-2 ml-2"
             >
@@ -187,10 +187,10 @@ export const DemoSection: React.FC = () => {
                   </div>
                   
                   
-                  <ASLAvatarSelector
+                  <SignLanguageAvatarSelector
                     options={currentDemo.aslOptions}
-                    selectedValue={selectedASLAvatar}
-                    onValueChange={setSelectedASLAvatar}
+                    selectedValue={selectedSignLanguageAvatar}
+                    onValueChange={setSelectedSignLanguageAvatar}
                     contentType={selectedDemo}
                   />
                 </div>
@@ -206,7 +206,7 @@ export const DemoSection: React.FC = () => {
                     title={currentDemo.title}
                     className="w-full h-full"
                     selectedVoice={currentVoice}
-                    selectedASLAvatar={currentASL}
+                    selectedSignLanguageAvatar={currentSignLanguage}
                     contentType={selectedDemo}
                   />
                 )}

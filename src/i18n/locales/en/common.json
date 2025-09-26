@@ -252,7 +252,7 @@
     "subtitle": "Create, customize, and manage your accessible video content",
     "uploadVideo": {
       "title": "Upload Video",
-      "description": "Upload your video and get professional captions, audio descriptions, and ASL support"
+      "description": "Upload your video and get professional captions, audio descriptions, and Sign Language support"
     },
     "myVideos": {
       "title": "My Videos",
@@ -658,7 +658,7 @@
           "Security reviews",
           "Custom integrations",
           "Dedicated account manager",
-          "Custom ASL avatars",
+          "Custom Sign Language avatars",
           "Custom training and support for your teams",
           "Multi-Language dubbing, including lip-sync"
         ]
@@ -670,10 +670,10 @@
         "contentStorage": "Content & Storage"
       },
       "features": {
-        "axessiblePlayer": "Axessible Player (CWI, AD, ASL)",
+        "axessiblePlayer": "Axessible Player (CWI, AD, Sign Language)",
         "emotionTaggedCaptions": "Emotion-tagged Captions",
         "aiAudioDescriptions": "Audio Descriptions",
-        "aslAvatarSupport": "ASL Avatar Support",
+        "signLanguageAvatarSupport": "Sign Language Avatar Support",
         "storage": "Storage",
         "videoProcessing": "Video Processing"
       },
