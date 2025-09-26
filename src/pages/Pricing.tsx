@@ -179,7 +179,7 @@ export default function Pricing() {
           {plans.map((plan) => (
             <Card 
               key={plan.key} 
-              className={`relative ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
+              className={`relative flex flex-col ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
                 subscribed && subscription_tier === plan.name ? 'ring-2 ring-green-500' : ''
               }`}
             >
@@ -209,7 +209,7 @@ export default function Pricing() {
                 </div>
               </CardHeader>
 
-              <CardContent className="text-center">
+              <CardContent className="text-center flex flex-col flex-1 justify-between">
                 <ul className="space-y-3 mb-6 text-left">
                   {plan.features.map((feature: string, index: number) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
