@@ -78,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("[SIGNUP-NOTIFICATION] Error:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         success: false 
       }),
       {
