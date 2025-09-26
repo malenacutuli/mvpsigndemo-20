@@ -195,7 +195,7 @@
     "steps": {
       "contentInput": {
         "title": "Content Input",
-        "description": "Upload existing videos or generate from text prompts",
+        "description": "Upload existing videos",
         "features": []
       },
       "featureSelection": {
@@ -314,22 +314,6 @@
           "Content auditing and validation"
         ],
         "implementation": "Built-in accessibility verification system"
-      }
-    },
-    "strategicImportance": {
-      "title": "Strategic Importance",
-      "subtitle": "Why these patent claims create substantial market value",
-      "differentiation": {
-        "title": "Market Differentiation",
-        "description": "Unique features that competitors cannot easily replicate"
-      },
-      "protection": {
-        "title": "IP Protection",
-        "description": "Enforceable intellectual property rights for core technology"
-      },
-      "investment": {
-        "title": "Investment Value",
-        "description": "Proven innovation backing future development and scaling"
       }
     }
   },

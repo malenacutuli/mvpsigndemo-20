@@ -92,42 +92,6 @@ export const TechStack: React.FC = () => {
             </Card>
           ))}
         </div>
-
-        {/* Architecture Highlights */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <h3 className="text-2xl font-bold text-center mb-8">{t('techStack.architectureHighlights.title')}</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Cpu className="w-8 h-8 text-primary" />
-              </div>
-              <h4 className="font-semibold mb-2">{t('techStack.architectureHighlights.gpu.title')}</h4>
-              <p className="text-sm text-muted-foreground">
-                {t('techStack.architectureHighlights.gpu.description')}
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-accent" />
-              </div>
-              <h4 className="font-semibold mb-2">{t('techStack.architectureHighlights.eventDriven.title')}</h4>
-              <p className="text-sm text-muted-foreground">
-                {t('techStack.architectureHighlights.eventDriven.description')}
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-cwi-main-green/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-cwi-main-green" />
-              </div>
-              <h4 className="font-semibold mb-2">{t('techStack.architectureHighlights.complianceFirst.title')}</h4>
-              <p className="text-sm text-muted-foreground">
-                {t('techStack.architectureHighlights.complianceFirst.description')}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
