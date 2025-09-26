@@ -281,14 +281,14 @@ const Explore = () => {
                 setActiveTab(item.id);
                 setSidebarOpen(false);
               }}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-light transition-colors ${
                 activeTab === item.id 
                   ? 'bg-primary text-primary-foreground' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
               <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <span className="font-light">{item.label}</span>
             </button>
           );
         })}
@@ -332,8 +332,8 @@ const Explore = () => {
         </div>
 
         <div className="flex-1">
-          <div className="border-b bg-card">
-            <div className="p-4 sm:p-6">
+            <div className="border-b bg-muted/10">
+              <div className="p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   {/* Mobile Menu Trigger */}
@@ -348,7 +348,7 @@ const Explore = () => {
                     </SheetContent>
                   </Sheet>
                   
-                  <h1 className="text-2xl sm:text-3xl font-bold">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-foreground">
                     {activeTab === 'videos' && t('explore.title')}
                     {activeTab === 'channels' && t('explore.channels')}
                     {activeTab === 'subscribed' && t('explore.subscribed')}
@@ -370,12 +370,12 @@ const Explore = () => {
             </div>
           </div>
 
-          <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          <div className="p-6 sm:p-8 space-y-8 sm:space-y-12">
             {activeTab === 'videos' && (
               <>
                 {featuredVideo && (
                   <div className="relative">
-                    <h2 className="text-xl font-semibold mb-4">{t('explore.featured')}</h2>
+                    <h2 className="text-xl sm:text-2xl font-light text-foreground mb-6">{t('explore.featured')}</h2>
                     <Link to={`/watch/${featuredVideo.id}`}>
                       <Card className="group cursor-pointer overflow-hidden hover:shadow-xl transition-all duration-300">
                         <div className="relative aspect-video md:aspect-[21/9] overflow-hidden">
@@ -402,20 +402,20 @@ const Explore = () => {
                             </div>
                           )}
                         </div>
-                        <CardContent className="p-6">
-                          <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">
+                        <CardContent className="p-6 sm:p-8">
+                          <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-4 group-hover:text-primary transition-colors">
                             {featuredVideo.title}
                           </h3>
                             <div className="flex items-center gap-4 text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <Eye className="w-4 h-4" />
-                                <span>{formatViewCount(featuredVideo.view_count)} {t('explore.views')}</span>
+                                <span className="font-light">{formatViewCount(featuredVideo.view_count)} {t('explore.views')}</span>
                               </div>
                             <div className="flex items-center gap-2">
                               <Languages className="w-4 h-4" />
-                              <span>{getLanguageDisplay(featuredVideo.language)}</span>
+                              <span className="font-light">{getLanguageDisplay(featuredVideo.language)}</span>
                             </div>
-                            <Badge variant="secondary">{featuredVideo.content_type}</Badge>
+                            <Badge variant="secondary" className="font-light">{featuredVideo.content_type}</Badge>
                           </div>
                         </CardContent>
                       </Card>
@@ -436,9 +436,9 @@ const Explore = () => {
                         </div>
                         <div>
                           <Link to={`/channel/${channel.id}`} className="hover:text-primary transition-colors">
-                            <h3 className="text-xl font-semibold cursor-pointer">{channel.name}</h3>
+                            <h3 className="text-lg sm:text-xl font-light cursor-pointer">{channel.name}</h3>
                           </Link>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground font-light">
                             {formatViewCount(channel.subscriber_count)} {t('explore.subscribers')} • {channel.video_count} {t('explore.videos')}
                           </p>
                         </div>
@@ -447,6 +447,7 @@ const Explore = () => {
                         onClick={() => handleSubscribe(channel.id)}
                         variant={subscriptions.has(channel.id) ? "outline" : "default"}
                         size="sm"
+                        className="font-light"
                       >
                         {subscriptions.has(channel.id) ? (
                           <>
@@ -490,16 +491,16 @@ const Explore = () => {
                                 </div>
                               )}
                             </div>
-                            <CardContent className="p-4">
-                              <h4 className="font-medium line-clamp-2 mb-2 group-hover:text-primary transition-colors text-sm leading-tight">
+                            <CardContent className="p-4 sm:p-5">
+                              <h4 className="font-light line-clamp-2 mb-2 group-hover:text-primary transition-colors text-sm leading-tight">
                                 {video.title}
                               </h4>
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <div className="flex items-center gap-2">
                                   <Eye className="w-3 h-3" />
-                                  <span>{formatViewCount(video.view_count)} views</span>
+                                  <span className="font-light">{formatViewCount(video.view_count)} views</span>
                                 </div>
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs font-light">
                                   {video.content_type}
                                 </Badge>
                               </div>
@@ -526,10 +527,10 @@ const Explore = () => {
                         </div>
                       )}
                       <Link to={`/channel/${channel.id}`} className="hover:text-primary transition-colors">
-                        <h3 className="text-xl font-semibold cursor-pointer">{channel.name}</h3>
+                        <h3 className="text-xl font-light cursor-pointer">{channel.name}</h3>
                       </Link>
                       {channel.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                        <p className="text-sm text-muted-foreground font-light line-clamp-2">
                           {channel.description}
                         </p>
                       )}
@@ -537,19 +538,19 @@ const Explore = () => {
                     <CardContent className="text-center">
                       <div className="flex justify-center space-x-6 mb-4 text-sm text-muted-foreground">
                         <div>
-                          <div className="font-semibold text-foreground">{formatViewCount(channel.subscriber_count)}</div>
-                          <div>{t('explore.subscribers')}</div>
+                          <div className="font-light text-foreground">{formatViewCount(channel.subscriber_count)}</div>
+                          <div className="font-light">{t('explore.subscribers')}</div>
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">{channel.video_count}</div>
-                          <div>{t('explore.videos')}</div>
+                          <div className="font-light text-foreground">{channel.video_count}</div>
+                          <div className="font-light">{t('explore.videos')}</div>
                         </div>
                       </div>
                       <Button
                         onClick={() => handleSubscribe(channel.id)}
                         variant={subscriptions.has(channel.id) ? "outline" : "default"}
                         size="sm"
-                        className="w-full"
+                        className="w-full font-light"
                       >
                         {subscriptions.has(channel.id) ? (
                           <>
@@ -570,9 +571,9 @@ const Explore = () => {
             )}
 
             {(activeTab === 'subscribed' || activeTab === 'trending' || activeTab === 'saved') && (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold mb-2">{t('explore.comingSoon')}</h3>
-                <p className="text-muted-foreground">
+              <div className="text-center py-16 sm:py-20">
+                <h3 className="text-xl sm:text-2xl font-light mb-4 text-foreground">{t('explore.comingSoon')}</h3>
+                <p className="text-muted-foreground font-light text-base sm:text-lg">
                   {t('explore.comingSoonDesc')}
                 </p>
               </div>
