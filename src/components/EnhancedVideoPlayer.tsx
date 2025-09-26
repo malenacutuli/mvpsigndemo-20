@@ -6,6 +6,7 @@ import { VideoAnalysisPanel } from './VideoAnalysisPanel';
 import { CharacterManager } from './CharacterManager';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
@@ -889,71 +890,95 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       {/* Content Generation and Management Controls */}
       <Tabs defaultValue="transcript" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="transcript">Transcript Extraction & Character Management</TabsTrigger>
-          <TabsTrigger value="audio-description">Audio Description and Video Analysis</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-muted/30">
+          <TabsTrigger 
+            value="transcript" 
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm font-light"
+          >
+            Transcript Extraction & Character Management
+          </TabsTrigger>
+          <TabsTrigger 
+            value="audio-description"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm font-light"
+          >
+            Audio Description and Video Analysis
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="transcript" className="space-y-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Transcript Extraction & Character Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
-            </p>
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+        <TabsContent value="transcript" className="space-y-6">
+          <Card className="shadow-soft border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-light text-foreground">Transcript Extraction & Character Management</CardTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
               </p>
-            </div>
-            <TranscriptEditor
-              videoUrl={videoSrc}
-              videoId={videoId || 'default'}
-              initialLanguage={currentLanguage}
-              onTranscriptUpdate={handleTranscriptUpdate}
-              onContentGenerated={handleContentGenerated}
-            />
-          </div>
+              <div className="bg-accent/50 border border-accent-foreground/20 rounded-lg p-4 mt-4">
+                <p className="text-sm text-accent-foreground">
+                  <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TranscriptEditor
+                videoUrl={videoSrc}
+                videoId={videoId || 'default'}
+                initialLanguage={currentLanguage}
+                onTranscriptUpdate={handleTranscriptUpdate}
+                onContentGenerated={handleContentGenerated}
+              />
+            </CardContent>
+          </Card>
 
           {/* Integrated Speaker & Character Management inside Transcript tab */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-2">Speaker & Character Management</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
-            </p>
-            <CharacterManager
-              videoId={videoId || 'default'}
-              onCharactersUpdate={handleCharactersUpdate}
-              existingCharacters={characters}
-              language={currentLanguage}
-              existingSpeakers={stableDetectedSpeakers}
-            />
-          </div>
+          <Card className="shadow-soft border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-light text-foreground">Speaker & Character Management</CardTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CharacterManager
+                videoId={videoId || 'default'}
+                onCharactersUpdate={handleCharactersUpdate}
+                existingCharacters={characters}
+                language={currentLanguage}
+                existingSpeakers={stableDetectedSpeakers}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        <TabsContent value="audio-description" className="space-y-4">
+        <TabsContent value="audio-description" className="space-y-6">
           {/* Video Analysis Panel */}
-          <div className="border rounded-lg p-4 mb-4">
-            <VideoAnalysisPanel
-              assetId={videoId || 'default'}
-              playbackUrl={videoSrc}
-              videoElementId="video-player"
-              videoId={videoId}
-            />
-          </div>
+          <Card className="shadow-soft border-border">
+            <CardContent className="p-6">
+              <VideoAnalysisPanel
+                assetId={videoId || 'default'}
+                playbackUrl={videoSrc}
+                videoElementId="video-player"
+                videoId={videoId}
+              />
+            </CardContent>
+          </Card>
           
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Audio Description Generation</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Enable audio descriptions for visual elements in the video.
-            </p>
-            <AudioDescriptionEditor
-              videoUrl={videoSrc}
-              videoId={videoId || 'default'}
-              videoData={{ transcript_language: currentLanguage }}
-              transcriptSegments={transcriptSegments}
-              onDescriptionsUpdate={handleAudioDescriptionsUpdate}
-            />
-          </div>
+          <Card className="shadow-soft border-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-light text-foreground">Audio Description Generation</CardTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Enable audio descriptions for visual elements in the video.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AudioDescriptionEditor
+                videoUrl={videoSrc}
+                videoId={videoId || 'default'}
+                videoData={{ transcript_language: currentLanguage }}
+                transcriptSegments={transcriptSegments}
+                onDescriptionsUpdate={handleAudioDescriptionsUpdate}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
         
       </Tabs>

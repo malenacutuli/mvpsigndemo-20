@@ -815,10 +815,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       {/* Header and Controls */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Video Analysis</h3>
-          <div className="flex items-center gap-2 mt-1">
+          <h2 className="text-2xl font-light text-foreground mb-2">Video Analysis</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Analyze video content for silent gaps and generate storytelling audio descriptions using AI.
+          </p>
+          <div className="flex items-center gap-2">
             <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-              {status === 'idle' && 'Not Started'}
+              {status === 'idle' && 'Ready to Index'}
               {status === 'indexing' && 'Indexing...'}
               {status === 'ready' && 'Ready'}
               {status === 'failed' && 'Failed'}
@@ -877,16 +880,21 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       )}
 
       {/* Silent Gaps and Narrations Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Silent Gaps and Narrations</CardTitle>
-              {hasUnsavedSilenceChanges && (
-                <Badge variant="secondary" className="text-xs">
-                  Unsaved Changes
-                </Badge>
-              )}
+      <Card className="shadow-soft border-border">
+        <CardHeader className="pb-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+                Silent Gaps and Narrations
+                {hasUnsavedSilenceChanges && (
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    Unsaved Changes
+                  </Badge>
+                )}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -952,14 +960,11 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Analysis Prompt</label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
-            </p>
+            <label className="text-sm font-medium text-foreground mb-2 block">Analysis Prompt</label>
             <Textarea
               value={silencePrompt}
               onChange={(e) => setSilencePrompt(e.target.value)}
-              className="min-h-32 font-mono text-xs"
+              className="min-h-32 font-mono text-xs bg-muted/30 border-border"
               placeholder="Enter analysis prompt..."
             />
           </div>
