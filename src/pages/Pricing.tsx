@@ -116,27 +116,36 @@ export default function Pricing() {
   const { user } = useAuth();
   const { createCheckout, subscribed, subscription_tier, loading } = useSubscription();
   const navigate = useNavigate();
+  const [planLoading, setPlanLoading] = React.useState<string | null>(null);
 
   const plans = getPlanData(t);
   const comparisonFeatures = getComparisonFeatures(t);
 
   const handlePlanAction = async (planKey: string, planName: string) => {
-    if (planKey === 'starter') {
-      if (user) {
-        await createCheckout('starter');
+    setPlanLoading(planKey);
+    
+    try {
+      if (planKey === 'starter') {
+        if (user) {
+          await createCheckout('starter');
+        } else {
+          navigate('/auth?plan=starter');
+        }
+      } else if (planKey === 'enterprise') {
+        // Contact sales for enterprise
+        window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
       } else {
-        navigate('/auth?plan=starter');
+        // For other paid plans
+        if (user) {
+          await createCheckout(planKey);
+        } else {
+          navigate(`/auth?plan=${planKey}`);
+        }
       }
-    } else if (planKey === 'enterprise') {
-      // Contact sales for enterprise
-      window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
-    } else {
-      // For other paid plans
-      if (user) {
-        await createCheckout(planKey);
-      } else {
-        navigate(`/auth?plan=${planKey}`);
-      }
+    } catch (error) {
+      console.error('Plan action failed:', error);
+    } finally {
+      setPlanLoading(null);
     }
   };
 
@@ -214,9 +223,9 @@ export default function Pricing() {
                   className="w-full" 
                   variant={plan.highlight ? "default" : "outline"}
                   onClick={() => handlePlanAction(plan.key, plan.name)}
-                  disabled={loading || (subscribed && subscription_tier === plan.name)}
+                  disabled={planLoading === plan.key || (subscribed && subscription_tier === plan.name)}
                 >
-                  {loading 
+                  {planLoading === plan.key
                     ? t('pricing.loading')
                     : subscribed && subscription_tier === plan.name 
                     ? t('pricing.currentPlan')
