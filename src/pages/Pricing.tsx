@@ -164,13 +164,13 @@ export default function Pricing() {
       {/* Header */}
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12 max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-light mb-4 leading-tight text-foreground">
             {t('pricing.title')}
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-2 leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground font-light mb-2 leading-relaxed">
             {t('pricing.subtitle')}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground font-light">
             {t('pricing.disclaimer')}
           </p>
         </div>
@@ -202,10 +202,10 @@ export default function Pricing() {
                   {plan.highlight && <Star className="w-5 h-5 text-primary" />}
                 </CardTitle>
                 <div className="mt-4">
-                  <div className="text-3xl md:text-4xl font-bold text-center">{plan.price}</div>
-                  <div className="text-sm text-muted-foreground text-center mt-1">{plan.cadence}</div>
+                  <div className="text-3xl md:text-4xl font-light text-center text-foreground">{plan.price}</div>
+                  <div className="text-sm text-muted-foreground font-light text-center mt-1">{plan.cadence}</div>
                   {plan.trial && (
-                    <div className="text-sm text-primary font-medium text-center mt-1">{plan.trial}</div>
+                    <div className="text-sm text-primary font-light text-center mt-1">{plan.trial}</div>
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground text-center mt-2">
@@ -244,31 +244,31 @@ export default function Pricing() {
         </div>
 
         {/* Feature Comparison Table */}
-        <div className="bg-card rounded-lg border p-6">
-          <h3 className="text-2xl md:text-3xl font-semibold mb-6 text-center">{t('pricing.featureComparison')}</h3>
+        <div className="bg-card rounded-2xl border p-8 shadow-soft">
+          <h3 className="text-2xl md:text-3xl font-light mb-6 text-center text-foreground">{t('pricing.featureComparison')}</h3>
           
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4 font-semibold">{t('common.feature')}</th>
-                   <th className="text-center p-4 font-semibold">{t('pricing.plans.starter.name')}</th>
-                  <th className="text-center p-4 font-semibold">{t('pricing.plans.standard.name')}</th>
-                  <th className="text-center p-4 font-semibold">{t('pricing.plans.advanced.name')}</th>
-                  <th className="text-center p-4 font-semibold">{t('pricing.plans.enterprise.name')}</th>
+                  <th className="text-left p-4 font-light text-foreground">{t('common.feature')}</th>
+                   <th className="text-center p-4 font-light text-foreground">{t('pricing.plans.starter.name')}</th>
+                  <th className="text-center p-4 font-light text-foreground">{t('pricing.plans.standard.name')}</th>
+                  <th className="text-center p-4 font-light text-foreground">{t('pricing.plans.advanced.name')}</th>
+                  <th className="text-center p-4 font-light text-foreground">{t('pricing.plans.enterprise.name')}</th>
                 </tr>
               </thead>
               <tbody>
                 {comparisonFeatures.map((category) => (
                   <tbody key={category.category}>
                     <tr>
-                      <td colSpan={5} className="p-4 font-semibold text-primary bg-muted/50">
+                      <td colSpan={5} className="p-4 font-light text-primary bg-muted/50">
                         {category.category}
                       </td>
                     </tr>
                     {category.features.map((feature, index) => (
                       <tr key={index} className="border-b hover:bg-muted/20">
-                        <td className="p-4 text-sm font-medium">{feature.name}</td>
+                        <td className="p-4 text-sm font-light">{feature.name}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.starter)}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.standard)}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.advanced)}</td>
@@ -284,8 +284,8 @@ export default function Pricing() {
 
         {/* FAQ Section */}
         <div className="mt-16 text-center max-w-2xl mx-auto">
-          <h3 className="text-2xl md:text-3xl font-semibold mb-4">{t('pricing.questionsAboutPricing')}</h3>
-          <p className="text-muted-foreground mb-6 leading-relaxed">
+          <h3 className="text-2xl md:text-3xl font-light mb-4 text-foreground">{t('pricing.questionsAboutPricing')}</h3>
+          <p className="text-muted-foreground font-light mb-6 leading-relaxed">
             {t('pricing.teamHelpChoose')}
           </p>
           <Button 

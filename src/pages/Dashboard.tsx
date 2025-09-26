@@ -23,10 +23,10 @@ const Dashboard = () => {
               <div className="lg:col-span-3 space-y-12">
                 {/* Header */}
                 <div className="text-center">
-                  <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
+                  <h1 className="text-4xl md:text-5xl font-light text-foreground mb-4 leading-tight">
                     {t('dashboard.title')}
                   </h1>
-                  <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  <p className="text-xl text-muted-foreground font-light max-w-3xl mx-auto leading-relaxed">
                     {t('dashboard.subtitle')}
                   </p>
                 </div>
@@ -34,15 +34,15 @@ const Dashboard = () => {
                 {/* Quick Actions */}
                 <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                   <Link to="/upload" className="group">
-                    <Card className="hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                    <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft">
                       <CardHeader className="text-center pb-4">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                          <Upload className="w-6 h-6 text-primary" />
+                        <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:bg-primary/20 transition-colors">
+                          <Upload className="w-10 h-10 text-primary" />
                         </div>
-                        <CardTitle className="text-xl">{t('dashboard.uploadVideo.title')}</CardTitle>
+                        <CardTitle className="text-2xl font-light text-foreground">{t('dashboard.uploadVideo.title')}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground text-center text-sm">
+                        <p className="text-muted-foreground text-center font-light leading-relaxed">
                           {t('dashboard.uploadVideo.description')}
                         </p>
                       </CardContent>
@@ -50,15 +50,15 @@ const Dashboard = () => {
                   </Link>
                   
                   <Link to="/videos" className="group">
-                    <Card className="hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+                    <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft">
                       <CardHeader className="text-center pb-4">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                          <Video className="w-6 h-6 text-primary" />
+                        <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:bg-primary/20 transition-colors">
+                          <Video className="w-10 h-10 text-primary" />
                         </div>
-                        <CardTitle className="text-xl">{t('dashboard.myVideos.title')}</CardTitle>
+                        <CardTitle className="text-2xl font-light text-foreground">{t('dashboard.myVideos.title')}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground text-center text-sm">
+                        <p className="text-muted-foreground text-center font-light leading-relaxed">
                           {t('dashboard.myVideos.description')}
                         </p>
                       </CardContent>

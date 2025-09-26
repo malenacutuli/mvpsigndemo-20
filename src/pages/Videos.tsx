@@ -194,8 +194,8 @@ export default function Videos() {
           <Tabs defaultValue="videos" className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{t('videos.title')}</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-4xl md:text-5xl font-light mb-4 text-foreground leading-tight">{t('videos.title')}</h1>
+                <p className="text-xl text-muted-foreground font-light leading-relaxed">
                   {t('videos.subtitle')}
                 </p>
               </div>
@@ -260,8 +260,8 @@ export default function Videos() {
               {filteredVideos.length === 0 ? (
                 <div className="text-center py-12">
                   <Play className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">{t('videos.empty.title')}</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-xl font-light mb-2 text-foreground">{t('videos.empty.title')}</h3>
+                  <p className="text-muted-foreground font-light mb-4 leading-relaxed">
                     {videos.length === 0 
                       ? t('videos.empty.description')
                       : t('videos.empty.noMatch')}
@@ -320,7 +320,7 @@ export default function Videos() {
                       </CardHeader>
                       
                       <CardContent className="p-4">
-                        <h3 className="font-semibold mb-2 line-clamp-2">{video.title}</h3>
+                        <h3 className="font-light mb-2 line-clamp-2 text-foreground text-lg">{video.title}</h3>
                         
                         {video.description && (
                           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
