@@ -246,7 +246,7 @@ export default function Pricing() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-4 font-semibold">{t('common.feature')}</th>
-                  <th className="text-center p-4 font-semibold">{t('pricing.plans.starter.name')}</th>
+                   <th className="text-center p-4 font-semibold">{t('pricing.plans.starter.name')}</th>
                   <th className="text-center p-4 font-semibold">{t('pricing.plans.standard.name')}</th>
                   <th className="text-center p-4 font-semibold">{t('pricing.plans.advanced.name')}</th>
                   <th className="text-center p-4 font-semibold">{t('pricing.plans.enterprise.name')}</th>
