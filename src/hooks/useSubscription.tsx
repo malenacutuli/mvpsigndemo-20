@@ -112,8 +112,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         throw new Error('No checkout URL received from server');
       }
 
-      // Redirect to Stripe checkout in the same tab (popup blockers won't interfere)
-      window.location.href = data.url;
+      // Redirect to Stripe checkout. If running inside iframe, break out to top; fallback to new tab.
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+      }
     } catch (error) {
       console.error('Failed to create checkout:', error);
       toast({
@@ -146,8 +154,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       if (error) throw error;
 
-      // Redirect to Stripe customer portal in the same tab
-      window.location.href = data.url;
+      // Redirect to Stripe customer portal. If inside iframe, break out to top; fallback to new tab.
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+      }
     } catch (error) {
       console.error('Failed to open customer portal:', error);
       toast({
