@@ -8,7 +8,7 @@ import { TechStack } from '@/components/TechStack';
 import { PatentClaims } from '@/components/PatentClaims';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, Video, DollarSign } from 'lucide-react';
+import { Upload, Video, FolderOpen } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
 import { useTranslation } from 'react-i18next';
 
@@ -66,7 +66,7 @@ const Enterprise = () => {
             <Link to="/videos" className="group">
               <div className="bg-card rounded-2xl p-8 border shadow-soft hover:shadow-elegant transition-shadow text-center space-y-6">
                 <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <Video className="w-10 h-10 text-primary" />
+                  <FolderOpen className="w-10 h-10 text-primary" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('enterprise.quickAccess.manageVideos.title')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">

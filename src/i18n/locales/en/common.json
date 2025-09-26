@@ -201,7 +201,7 @@
       "featureSelection": {
         "title": "Feature Selection",
         "description": "Configure accessibility features for your use case",
-        "features": ["Emotional captions", "Audio descriptions", "Multi-language ASL"]
+        "features": ["Emotional captions", "Audio descriptions"]
       },
       "deployMonitor": {
         "title": "Deploy & Monitor",
@@ -214,7 +214,7 @@
       "userToggleable": "User-Toggleable Features",
       "enterpriseSSO": "Enterprise SSO Ready"
     },
-    "deployMessage": "Deploy to millions of users with Multi-language ASL with our enterprise-grade infrastructure"
+    "deployMessage": "Deploy to millions of users with our enterprise-grade infrastructure"
   },
   "techStack": {
     "badge": "Technology Stack",
@@ -244,21 +244,6 @@
         "title": "Compliance & Security",
         "description": "Accessibility standards adherence",
         "technologies": ["WCAG 2.1 AA", "EAA Compliance", "ADA Standards", "Security Protocols"]
-      }
-    },
-    "architectureHighlights": {
-      "title": "Architecture Highlights",
-      "gpu": {
-        "title": "GPU-Accelerated Processing",
-        "description": "High-performance compute for real-time AI inference and complex ASL generation"
-      },
-      "eventDriven": {
-        "title": "Event-Driven Architecture",
-        "description": "Serverless workflows with robust error handling and automatic retry mechanisms"
-      },
-      "complianceFirst": {
-        "title": "Compliance-First Design",
-        "description": "Built-in accessibility validation and automatic compliance formatting"
       }
     }
   },
@@ -317,18 +302,6 @@
           "Modular processing with error handling"
         ],
         "implementation": "Complete automated workflow orchestration"
-      },
-      "avatarGeneration": {
-        "number": "Claim 2",
-        "title": "Avatar Generation with Timing Sync",
-        "description": "AI-animated ASL avatars with precise speech synchronization",
-        "validatedBy": [
-          "Three distinct children-friendly ASL avatars",
-          "Speech timestamp parsing and gesture mapping",
-          "Timeline-matched animation rendering",
-          "Real-time synchronization with spoken content"
-        ],
-        "implementation": "Advanced ASL generation with pixel-perfect timing"
       },
       "complianceLayer": {
         "number": "Claim 3",
