@@ -8,35 +8,35 @@ export const FeatureBoxes: React.FC = () => {
   const { t } = useTranslation();
   
   return (
-    <section className="py-16 bg-white">
+    <section className="py-32 bg-background">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+        <div className="grid md:grid-cols-3 gap-10 max-w-5xl mx-auto mb-20">
           {/* Compliance Box */}
-          <div className="bg-blue-50 rounded-2xl p-8 text-left">
-            <h3 className="text-xl font-bold text-foreground mb-4">
+          <div className="bg-card rounded-2xl p-8 border shadow-soft hover:shadow-elegant transition-shadow text-left">
+            <h3 className="text-2xl font-light text-foreground mb-6">
               {t('featureBoxes.compliance.title')}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground font-light leading-relaxed">
               {t('featureBoxes.compliance.description')}
             </p>
           </div>
           
           {/* Custom Solutions Box */}
-          <div className="bg-gray-50 rounded-2xl p-8 text-left">
-            <h3 className="text-xl font-bold text-foreground mb-4">
+          <div className="bg-card rounded-2xl p-8 border shadow-soft hover:shadow-elegant transition-shadow text-left">
+            <h3 className="text-2xl font-light text-foreground mb-6">
               {t('featureBoxes.solutions.title')}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground font-light leading-relaxed">
               {t('featureBoxes.solutions.description')}
             </p>
           </div>
           
           {/* Heavy Lifting Box */}
-          <div className="bg-gray-50 rounded-2xl p-8 text-left">
-            <h3 className="text-xl font-bold text-foreground mb-4">
+          <div className="bg-card rounded-2xl p-8 border shadow-soft hover:shadow-elegant transition-shadow text-left">
+            <h3 className="text-2xl font-light text-foreground mb-6">
               {t('featureBoxes.heavyWork.title')}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground font-light leading-relaxed">
               {t('featureBoxes.heavyWork.description')}
             </p>
           </div>
@@ -44,15 +44,12 @@ export const FeatureBoxes: React.FC = () => {
         
         {/* Contact CTA */}
         <div className="text-center">
-          <Link to="/pricing">
-            <Button 
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold rounded-full inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
+          <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto inline-flex items-center gap-2">
+            <Link to="/pricing">
               {t('featureBoxes.contactUs')}
               <ArrowRight className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </section>
