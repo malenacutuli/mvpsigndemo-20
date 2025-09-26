@@ -83,7 +83,7 @@ const getComparisonFeatures = (t: any) => [
         enterprise: t('pricing.comparison.values.custom')
       },
       {
-        name: t('pricing.comparison.features.aslAvatarSupport'),
+        name: t('pricing.comparison.features.signLanguageAvatarSupport'),
         starter: false,
         standard: false,
         advanced: false,

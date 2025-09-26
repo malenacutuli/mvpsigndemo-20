@@ -324,6 +324,29 @@
           "Pubblica il tuo video sulla nostra piattaforma"
         ]
       }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Funzionalità di Accessibilità",
+        "contentStorage": "Contenuti e Archiviazione"
+      },
+      "features": {
+        "axessiblePlayer": "Lettore Axessible (CWI, AD, Lingua dei Segni)",
+        "emotionTaggedCaptions": "Sottotitoli con Tag Emotivi",
+        "aiAudioDescriptions": "Descrizioni Audio",
+        "signLanguageAvatarSupport": "Supporto Avatar Lingua dei Segni",
+        "storage": "Archiviazione",
+        "videoProcessing": "Elaborazione Video"
+      },
+      "values": {
+        "basic": "Base",
+        "advanced": "Avanzato",
+        "custom": "Personalizzato",
+        "standard": "Standard",
+        "priority": "Priorità",
+        "fastTrack": "Corsia Preferenziale",
+        "dedicated": "Dedicato"
+      }
     }
   }
 }

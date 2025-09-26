@@ -324,6 +324,29 @@
           "Publica el teu vídeo a la nostra plataforma"
         ]
       }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "Funcionalitats d'Accessibilitat",
+        "contentStorage": "Contingut i Emmagatzematge"
+      },
+      "features": {
+        "axessiblePlayer": "Reproductor Axessible (CWI, AD, Llengua de Signes)",
+        "emotionTaggedCaptions": "Subtítols amb Etiquetes Emocionals",
+        "aiAudioDescriptions": "Descripcions d'Àudio",
+        "signLanguageAvatarSupport": "Suport d'Avatar de Llengua de Signes",
+        "storage": "Emmagatzematge",
+        "videoProcessing": "Processament de Vídeo"
+      },
+      "values": {
+        "basic": "Bàsic",
+        "advanced": "Avançat",
+        "custom": "Personalitzat",
+        "standard": "Estàndard",
+        "priority": "Prioritat",
+        "fastTrack": "Via Ràpida",
+        "dedicated": "Dedicat"
+      }
     }
   }
 }
