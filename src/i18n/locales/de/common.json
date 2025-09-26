@@ -281,5 +281,49 @@
       "exploreTechnology": "Erkunden Sie Unsere Technologie",
       "contactTeam": "Kontaktieren Sie Unser Team"
     }
+  },
+  "pricing": {
+    "title": "Pläne, die jedes Video Axessible machen",
+    "subtitle": "Wählen Sie den perfekten Plan für Ihre Barrierefreiheitsbedürfnisse",
+    "disclaimer": "Preise exklusive Steuern. Jederzeit kündbar.",
+    "free": "Kostenlos",
+    "starter": "Starter",
+    "standard": "Standard",
+    "advanced": "Erweitert",
+    "enterprise": "Unternehmen",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "save": "20% sparen",
+    "currentPlan": "Aktueller Plan",
+    "mostPopular": "Am beliebtesten",
+    "upgradeNow": "Jetzt upgraden",
+    "downgrade": "Downgraden",
+    "startFree": "Kostenlos starten",
+    "tryStandard": "Standard probieren",
+    "goAdvanced": "Erweitert wählen",
+    "talkToUs": "Mit uns sprechen",
+    "featureComparison": "Funktionsvergleich",
+    "questionsAboutPricing": "Fragen zu Preisen?",
+    "teamHelpChoose": "Unser Team hilft Ihnen dabei, den richtigen Plan für Ihre Bedürfnisse zu wählen.",
+    "plans": {
+      "starter": {
+        "name": "Ersteller",
+        "price": "26€",
+        "cadence": "pro Monat",
+        "trial": "30 Tage kostenlose Testversion",
+        "users": "1 Benutzer",
+        "storage": "100GB Speicher",
+        "cta": "Kostenlose Testversion starten",
+        "features": [
+          "Multifunktions-Axessible-Player",
+          "Bearbeiten Sie Ihre Videos in Ihrer eigenen Content-Bibliothek",
+          "Automatische Bearbeitungstools für Untertitel mit Absicht und Audiobeschreibung",
+          "Videoanalyse zum Suchen und Verstehen von Videoinhalten",
+          "Eingebettete Videolinks",
+          "Engagement-Analysen",
+          "Veröffentlichen Sie Ihr Video auf unserer Plattform"
+        ]
+      }
+    }
   }
 }

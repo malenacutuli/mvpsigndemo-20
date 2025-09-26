@@ -281,5 +281,49 @@
       "exploreTechnology": "Explore Nossa Tecnologia",
       "contactTeam": "Entre em Contato com Nossa Equipe"
     }
+  },
+  "pricing": {
+    "title": "Planos que tornam cada vídeo Axessible",
+    "subtitle": "Escolha o plano perfeito para suas necessidades de acessibilidade",
+    "disclaimer": "Preços excluem impostos. Cancele a qualquer momento.",
+    "free": "Gratuito",
+    "starter": "Iniciante",
+    "standard": "Padrão",
+    "advanced": "Avançado",
+    "enterprise": "Empresarial",
+    "monthly": "Mensal",
+    "yearly": "Anual",
+    "save": "Economize 20%",
+    "currentPlan": "Plano atual",
+    "mostPopular": "Mais popular",
+    "upgradeNow": "Atualizar agora",
+    "downgrade": "Fazer downgrade",
+    "startFree": "Começar grátis",
+    "tryStandard": "Experimentar Padrão",
+    "goAdvanced": "Ir Avançado",
+    "talkToUs": "Fale conosco",
+    "featureComparison": "Comparação de recursos",
+    "questionsAboutPricing": "Dúvidas sobre preços?",
+    "teamHelpChoose": "Nossa equipe está aqui para ajudá-lo a escolher o plano certo para suas necessidades.",
+    "plans": {
+      "starter": {
+        "name": "Criadores",
+        "price": "R$ 26",
+        "cadence": "por mês",
+        "trial": "30 dias de teste gratuito",
+        "users": "1 usuário",
+        "storage": "100GB de armazenamento",
+        "cta": "Iniciar teste gratuito",
+        "features": [
+          "Player Axessible multifuncional",
+          "Edite seus vídeos em sua própria biblioteca de conteúdo",
+          "Ferramentas de edição automática para legendas com intenção e descrição de áudio",
+          "Análise de vídeo para pesquisar e entender conteúdo de vídeo",
+          "Links de vídeo incorporados",
+          "Análises de engajamento",
+          "Publique seu vídeo em nossa plataforma"
+        ]
+      }
+    }
   }
 }

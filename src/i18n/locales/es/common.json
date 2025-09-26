@@ -846,6 +846,7 @@
         "name": "Inicial",
         "price": "26 €",
         "cadence": "por mes",
+        "trial": "30 días de prueba gratuita",
         "users": "1 usuario",
         "storage": "Almacenamiento de 100GB",
         "cta": "Comenzar gratis",

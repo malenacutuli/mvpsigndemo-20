@@ -281,5 +281,49 @@
       "exploreTechnology": "Explora la Nostra Tecnologia",
       "contactTeam": "Contacta el Nostre Equip"
     }
+  },
+  "pricing": {
+    "title": "Plans que fan cada vídeo Axessible",
+    "subtitle": "Tria el pla perfecte per a les teves necessitats d'accessibilitat",
+    "disclaimer": "Preus sense impostos. Cancel·la en qualsevol moment.",
+    "free": "Gratuït",
+    "starter": "Principiant",
+    "standard": "Estàndard",
+    "advanced": "Avançat",
+    "enterprise": "Empresa",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "save": "Estalvia 20%",
+    "currentPlan": "Pla actual",
+    "mostPopular": "Més popular",
+    "upgradeNow": "Actualitzar ara",
+    "downgrade": "Reduir",
+    "startFree": "Començar gratis",
+    "tryStandard": "Provar Estàndard",
+    "goAdvanced": "Anar Avançat",
+    "talkToUs": "Parla amb nosaltres",
+    "featureComparison": "Comparació de característiques",
+    "questionsAboutPricing": "Preguntes sobre preus?",
+    "teamHelpChoose": "El nostre equip està aquí per ajudar-te a triar el pla adequat per a les teves necessitats.",
+    "plans": {
+      "starter": {
+        "name": "Creadors",
+        "price": "26€",
+        "cadence": "per mes",
+        "trial": "30 dies de prova gratuïta",
+        "users": "1 usuari",
+        "storage": "100GB d'emmagatzematge",
+        "cta": "Començar prova gratuïta",
+        "features": [
+          "Reproductor Axessible multifunció",
+          "Edita els teus vídeos a la teva pròpia biblioteca de contingut",
+          "Eines d'edició automàtica per subtítols amb intenció i descripció d'àudio",
+          "Anàlisi de vídeo per cercar i entendre contingut de vídeo",
+          "Enllaços de vídeo incorporats",
+          "Analítiques de compromís",
+          "Publica el teu vídeo a la nostra plataforma"
+        ]
+      }
+    }
   }
 }
