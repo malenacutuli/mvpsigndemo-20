@@ -671,12 +671,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Transcript & Content Generation</CardTitle>
+          <CardTitle className="text-lg font-light text-foreground flex items-center justify-between">
+            Transcript & Content Generation
             <Badge variant="outline">
               {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
             </Badge>
-          </div>
+          </CardTitle>
+          <Card className="border-primary/20 bg-primary/5 mt-3">
+            <CardContent className="p-4">
+              <p className="text-sm font-light leading-relaxed">
+                Edit text and intonation word-by-word. Change speakers and customize voice characteristics for each segment.
+              </p>
+            </CardContent>
+          </Card>
         </CardHeader>
         
         <CardContent className="space-y-4">

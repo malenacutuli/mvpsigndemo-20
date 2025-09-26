@@ -468,26 +468,33 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
           <Palette className="w-5 h-5" />
           Character Color Attribution
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Assign colors to characters following the Captions with Intention protocol
-        </p>
+        <Card className="border-primary/20 bg-primary/5 mt-3">
+          <CardContent className="p-4">
+            <p className="text-sm font-light leading-relaxed">
+              Assign colors to characters following the Captions with Intention protocol.
+            </p>
+          </CardContent>
+        </Card>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Speaker Mapping Section */}
         {characters.length > 0 && (
-          <div className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <h4 className="font-medium text-orange-800">🔗 Speaker Assignment</h4>
-            <p className="text-xs text-orange-700">
-              Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
-            </p>
-            <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded border">
-              <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
-            </div>
-            <div className="space-y-2">
+          <Card className="border-orange-200/50 bg-orange-50/30">
+            <CardContent className="p-4 space-y-3">
+              <h4 className="font-medium text-orange-800 flex items-center gap-2">
+                🔗 Speaker Assignment
+              </h4>
+              <p className="text-sm font-light leading-relaxed text-orange-700">
+                Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
+              </p>
+              <div className="text-xs text-orange-600 bg-orange-100/80 p-3 rounded-lg border border-orange-200">
+                <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
+              </div>
+              <div className="space-y-2">
               {characters.map((char) => {
                 const mappedSpeaker = Object.keys(speakerMappings).find(sp => speakerMappings[sp] === char.name) || 'unassigned';
                 return (
@@ -529,27 +536,33 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 );
               })}
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="flex justify-between items-center p-4 bg-accent/10 rounded-lg">
-          <div>
-            <h4 className="font-medium">Character Management</h4>
-            <p className="text-xs text-muted-foreground">Configure character colors, voices, and speech patterns</p>
-          </div>
-          <Button onClick={saveAllCharacters} size="sm" variant="default">
-            <Save className="w-4 h-4 mr-2" />
-            Save All Changes
-          </Button>
-        </div>
+        <Card className="border-accent/30 bg-accent/5">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="font-medium text-foreground">Character Management</h4>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
+              </div>
+              <Button onClick={saveAllCharacters} size="sm" variant="default">
+                <Save className="w-4 h-4 mr-2" />
+                Save All Changes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Add New Character */}
-        <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
-          <h4 className="font-medium flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add New Character
-          </h4>
-          <div className="grid grid-cols-3 gap-3">
+        <Card className="border-accent/30 bg-accent/5">
+          <CardContent className="p-4 space-y-3">
+            <h4 className="font-medium text-foreground flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add New Character
+            </h4>
+            <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-xs">Name</Label>
               <Input
@@ -582,7 +595,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               </Button>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Character Lists by Type */}
         {['main', 'supporting', 'minor'].map(type => {
