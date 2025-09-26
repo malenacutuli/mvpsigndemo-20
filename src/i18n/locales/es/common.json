@@ -862,7 +862,7 @@
       },
       "standard": {
         "name": "Estándar",
-        "price": "65 €",
+        "price": "$65",
         "cadence": "por mes",
         "users": "5 usuarios",
         "storage": "Almacenamiento de 2TB",
@@ -876,7 +876,7 @@
       },
       "advanced": {
         "name": "Avanzado", 
-        "price": "250 €",
+        "price": "$250",
         "cadence": "por mes",
         "users": "10 usuarios",
         "storage": "Almacenamiento de 7TB",

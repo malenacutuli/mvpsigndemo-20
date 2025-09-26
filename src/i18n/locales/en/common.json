@@ -617,7 +617,7 @@
       },
       "standard": {
         "name": "Standard",
-        "price": "65 €",
+        "price": "$65",
         "cadence": "per month",
         "users": "5 users",
         "storage": "2TB storage",
@@ -630,7 +630,7 @@
       },
       "advanced": {
         "name": "Advanced",
-        "price": "250 €",
+        "price": "$250",
         "cadence": "per month",
         "users": "10 users",
         "storage": "7TB storage",
