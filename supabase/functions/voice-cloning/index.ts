@@ -68,7 +68,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in voice-cloning function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Voice cloning failed' 
+      error: error instanceof Error ? error.message : 'Voice cloning failed' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

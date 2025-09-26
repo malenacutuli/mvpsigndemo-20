@@ -183,7 +183,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("WebSocket setup error:", error);
-    return new Response(`WebSocket error: ${error.message}`, { 
+    return new Response(`WebSocket error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
       status: 500, 
       headers: corsHeaders 
     });

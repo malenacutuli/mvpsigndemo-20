@@ -79,7 +79,7 @@ serve(async (req) => {
           text: description,
           startTime: request.timestamp,
           endTime: request.timestamp + request.duration,
-          voiceStyle: voiceId
+          voiceStyle: 'warm' as const
         })
 
         console.log(`Generated description: "${description}" (voice: ${voiceId})`)
@@ -92,7 +92,7 @@ serve(async (req) => {
           text: getFallbackDescription(detectedLanguage),
           startTime: request.timestamp,
           endTime: request.timestamp + request.duration,
-          voiceStyle: getLanguageNativeVoice(detectedLanguage)
+          voiceStyle: 'warm' as const
         })
       }
     }
@@ -114,7 +114,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         descriptions: []
       }),
       { 
@@ -157,7 +157,7 @@ function getLanguageNativeVoice(language: string): string {
     'ko': 'pFZP5JQG7iQjIQuC4Bku'  // Korean
   }
 
-  return languageVoices[language] || languageVoices['en'] // Default to English
+  return (languageVoices as Record<string, string>)[language] || languageVoices['en'] // Default to English
 }
 
 function getFallbackDescription(language: string): string {
@@ -175,5 +175,5 @@ function getFallbackDescription(language: string): string {
     'ko': '장면이 계속됩니다'
   }
 
-  return fallbacks[language] || fallbacks['en']
+  return (fallbacks as Record<string, string>)[language] || fallbacks['en']
 }

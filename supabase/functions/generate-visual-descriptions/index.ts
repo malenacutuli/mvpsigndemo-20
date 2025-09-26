@@ -66,7 +66,7 @@ serve(async (req) => {
         
         // If frames are provided, use GPT-5 with vision for accurate analysis
         if (request.frameDataUrls && request.frameDataUrls.length > 0) {
-          const imageContents = request.frameDataUrls.map(dataUrl => ({
+          const imageContents = request.frameDataUrls.map((dataUrl: string) => ({
             type: "image_url",
             image_url: { url: dataUrl }
           }));
@@ -202,7 +202,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Generate visual descriptions error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       descriptions: []
     }), {
       status: 500,

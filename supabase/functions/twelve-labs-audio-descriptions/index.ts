@@ -260,7 +260,7 @@ serve(async (req) => {
     console.error('❌ Twelve Labs audio description error:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Audio description generation failed',
+      error: error instanceof Error ? error.message : 'Audio description generation failed',
       errorType: 'twelve_labs_audio_desc_error',
       success: false
     }), {

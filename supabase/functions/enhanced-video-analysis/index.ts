@@ -114,7 +114,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         descriptions: []
       }),
       { 
@@ -262,7 +262,7 @@ function getLanguageNativeVoice(language: string): string {
     'de': 'TxGEqnHWrfWFTfGW9XjX', // Klaus - German
     'it': 'XrExE9yKIg1WjnnlVkGX', // Matilda - Italian
   };
-  return languageVoices[language] || languageVoices['en'];
+  return (languageVoices as Record<string, string>)[language] || languageVoices['en'];
 }
 
 function getFallbackDescription(language: string): string {
@@ -273,5 +273,5 @@ function getFallbackDescription(language: string): string {
     'de': 'Die visuelle Szene geht weiter',
     'it': 'La scena visuale continua'
   };
-  return fallbacks[language] || fallbacks['en'];
+  return (fallbacks as Record<string, string>)[language] || fallbacks['en'];
 }

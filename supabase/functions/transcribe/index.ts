@@ -124,7 +124,7 @@ serve(async (req) => {
             throw new Error("Twelve Labs fallback");
           }
         } catch (error) {
-          console.log("Twelve Labs failed, falling back to AssemblyAI:", error.message);
+          console.log("Twelve Labs failed, falling back to AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
           const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
           if (ASSEMBLYAI_API_KEY) {
             try {
@@ -167,7 +167,7 @@ serve(async (req) => {
             throw new Error("Twelve Labs fallback");
           }
         } catch (error) {
-          console.log("Twelve Labs failed, trying AssemblyAI:", error.message);
+          console.log("Twelve Labs failed, trying AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
           
           // Try AssemblyAI
           const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
@@ -383,7 +383,7 @@ async function transcribeWithChunking(buffer: ArrayBuffer, apiKey: string, langu
         results.push(...adjustedSegments);
       }
     } catch (chunkError) {
-      console.error(`Chunk ${i + 1} failed:`, chunkError.message);
+      console.error(`Chunk ${i + 1} failed:`, chunkError instanceof Error ? chunkError.message : 'Unknown error');
       // Continue with other chunks rather than failing completely
     }
     
@@ -631,7 +631,7 @@ async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, lang
     
   } catch (error) {
     console.error("Twelve Labs analysis failed:", error);
-    return { error: error.message };
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -742,10 +742,10 @@ function validateTranscriptionQuality(result: any): { isValid: boolean; reason?:
     }
     
     // Check for nonsensical word patterns
-    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const words = text.split(/\s+/).filter((w: string) => w.length > 0);
     if (words.length > 5) {
-      const shortWords = words.filter(w => w.length < 3).length;
-      const longRepetitiveWords = words.filter(w => w.length > 8 && /(.{2,})\1{2,}/.test(w)).length;
+      const shortWords = words.filter((w: string) => w.length < 3).length;
+      const longRepetitiveWords = words.filter((w: string) => w.length > 8 && /(.{2,})\1{2,}/.test(w)).length;
       
       if (shortWords / words.length > 0.8) {
         issues.push(`Too many very short words (${shortWords}/${words.length})`);

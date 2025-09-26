@@ -39,7 +39,7 @@ serve(async (req) => {
       thumbnailFileName = `${videoId}-thumbnail.jpg`;
       console.log(`📸 Successfully extracted video frame for ${videoId}`);
     } catch (frameError) {
-      console.warn(`⚠️ Frame extraction failed for ${videoId}, using placeholder:`, frameError.message);
+      console.warn(`⚠️ Frame extraction failed for ${videoId}, using placeholder:`, frameError instanceof Error ? frameError.message : 'Unknown error');
       // Fallback to high-quality placeholder
       const placeholderSvg = createVideoPlaceholder();
       thumbnailData = new TextEncoder().encode(placeholderSvg);
@@ -93,7 +93,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Thumbnail generation error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate thumbnail' 
+      error: error instanceof Error ? error.message : 'Failed to generate thumbnail' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

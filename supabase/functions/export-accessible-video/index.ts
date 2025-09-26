@@ -81,7 +81,7 @@ serve(async (req) => {
     console.error('❌ Export failed:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         details: 'Failed to export accessible video'
       }),
       {
@@ -112,7 +112,7 @@ async function processAccessibleVideo(
 
   } catch (error) {
     console.error('❌ Processing failed:', error);
-    throw new Error(`Video processing failed: ${error.message}`);
+    throw new Error(`Video processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -179,9 +179,9 @@ async function renderVideoWithCaptions(
   } catch (error) {
     console.error('❌ Video rendering failed:', error);
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Error'
     });
     throw error;
   }

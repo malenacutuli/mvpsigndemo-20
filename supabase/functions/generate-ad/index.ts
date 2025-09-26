@@ -95,7 +95,7 @@ For each segment, describe the specific visual actions, people, objects, and set
       parsed = [];
     }
 
-    const descriptions = parsed.map(d => ({
+    const descriptions = parsed.map((d: any) => ({
       text: d.text.slice(0, 400),
       startTime: Math.max(0, Number(d.startTime || 0)),
       endTime: Math.max(Number(d.startTime || 0), Number(d.endTime || 0)),

@@ -217,7 +217,7 @@ serve(async (req) => {
         confidence: segment.confidence || 0.9,
         words: segment.words || []
       };
-    }).filter(segment => segment.text.length > 0); // Filter out empty segments
+    }).filter((segment: any) => segment.text.length > 0); // Filter out empty segments
 
     // Step 7: Cleanup - delete the temporary index
     try {
@@ -248,9 +248,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Twelve Labs analysis error:', error);
     console.error('❌ Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.substring(0, 500) // Truncate stack trace
+      name: error instanceof Error ? error.name : 'Error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined // Truncate stack trace
     });
     
     // Skipping index cleanup on error to avoid scope issues; indexes auto-expire
@@ -258,9 +258,9 @@ serve(async (req) => {
     
     // Return error as 200 response so client can handle gracefully
     return new Response(JSON.stringify({ 
-      error: error.message || 'Twelve Labs analysis failed',
+      error: error instanceof Error ? error.message : 'Twelve Labs analysis failed',
       errorType: 'twelve_labs_error',
-      details: error.toString(),
+      details: error instanceof Error ? error.toString() : String(error),
       fallbackToWhisper: true
     }), {
       status: 200, // Return 200 so client receives the error details

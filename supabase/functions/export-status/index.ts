@@ -158,7 +158,7 @@ serve(async (req) => {
     console.error('❌ Status check failed:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         details: 'Failed to check export status'
       }),
       {
