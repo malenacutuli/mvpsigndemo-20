@@ -889,78 +889,78 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       {/* Silent Gaps and Narrations Section */}
       <Card className="shadow-soft border-border">
         <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
-                Silent Gaps and Narrations
-                {hasUnsavedSilenceChanges && (
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    Unsaved Changes
-                  </Badge>
-                )}
-              </CardTitle>
-              <p className="text-muted-foreground font-light leading-relaxed mt-2">
+          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+            Silent Gaps and Narrations
+            {hasUnsavedSilenceChanges && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                Unsaved Changes
+              </Badge>
+            )}
+          </CardTitle>
+          <Card className="border-primary/20 bg-primary/5 mt-3">
+            <CardContent className="p-4">
+              <p className="text-sm font-light leading-relaxed">
                 Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={analyzeSilences}
-                disabled={status !== 'ready' || analyzingSilence}
-                size="sm"
-              >
-                {analyzingSilence ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 mr-2" />
-                    Run Analysis
-                  </>
-                )}
-              </Button>
-              {silenceRows.length > 0 && (
-                <Button
-                  onClick={saveSilenceResults}
-                  disabled={savingSilenceResults}
-                  size="sm"
-                  variant={hasUnsavedSilenceChanges ? "secondary" : "outline"}
-                >
-                  {savingSilenceResults ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <Edit3 className="w-4 h-4 mr-1" />
-                  )}
-                  {hasUnsavedSilenceChanges ? "Save Changes" : "Save Analysis"}
-                </Button>
-              )}
-              {silenceRows.length > 0 && (
+            </CardContent>
+          </Card>
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            <Button
+              onClick={analyzeSilences}
+              disabled={status !== 'ready' || analyzingSilence}
+              size="sm"
+            >
+              {analyzingSilence ? (
                 <>
-                  <Button
-                    onClick={() => setShowAudioDescriptionDialog(true)}
-                    disabled={!videoId}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <AudioLines className="w-4 h-4 mr-1" />
-                    Use as Audio Description
-                  </Button>
-                  <Button
-                    onClick={downloadSilenceAnalysis}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Download Analysis
-                  </Button>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Run Analysis
                 </>
               )}
-            </div>
+            </Button>
+            {silenceRows.length > 0 && (
+              <Button
+                onClick={saveSilenceResults}
+                disabled={savingSilenceResults}
+                size="sm"
+                variant={hasUnsavedSilenceChanges ? "secondary" : "outline"}
+              >
+                {savingSilenceResults ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Edit3 className="w-4 h-4 mr-1" />
+                )}
+                {hasUnsavedSilenceChanges ? "Save Changes" : "Save Analysis"}
+              </Button>
+            )}
+            {silenceRows.length > 0 && (
+              <>
+                <Button
+                  onClick={() => setShowAudioDescriptionDialog(true)}
+                  disabled={!videoId}
+                  size="sm"
+                  variant="outline"
+                >
+                  <AudioLines className="w-4 h-4 mr-1" />
+                  Use as Audio Description
+                </Button>
+                <Button
+                  onClick={downloadSilenceAnalysis}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Download Analysis
+                </Button>
+              </>
+            )}
           </div>
           {!videoId && silenceRows.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2">
               Video ID required to save as audio descriptions
             </p>
           )}
@@ -1063,59 +1063,64 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       {/* Custom Analysis Insights Section */}
       <Card className="shadow-soft border-border">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg font-light text-foreground">Custom Analysis Insights</CardTitle>
-              {hasUnsavedInsightChanges && (
-                <Badge variant="secondary" className="text-xs font-normal">
-                  Unsaved Changes
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={analyzeInsights}
-                disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
-                size="sm"
-              >
-                {analyzingInsight ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Analyze with Prompt
-                  </>
-                )}
-              </Button>
-              {insightResult && (
+          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+            Custom Analysis Insights
+            {hasUnsavedInsightChanges && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                Unsaved Changes
+              </Badge>
+            )}
+          </CardTitle>
+          <Card className="border-primary/20 bg-primary/5 mt-3">
+            <CardContent className="p-4">
+              <p className="text-sm font-light leading-relaxed">
+                Enter a custom prompt to extract specific insights from your video content (e.g., generate hashtags, identify themes, extract key quotes, summarize main points).
+              </p>
+            </CardContent>
+          </Card>
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            <Button
+              onClick={analyzeInsights}
+              disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
+              size="sm"
+            >
+              {analyzingInsight ? (
                 <>
-                  <Button
-                    onClick={saveInsightResults}
-                    disabled={savingInsightResults}
-                    size="sm"
-                    variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
-                  >
-                    {savingInsightResults ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Edit3 className="w-4 h-4 mr-1" />
-                    )}
-                    {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
-                  </Button>
-                  <Button
-                    onClick={downloadCustomAnalysis}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Download Analysis
-                  </Button>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Analyze with Prompt
                 </>
               )}
-            </div>
+            </Button>
+            {insightResult && (
+              <>
+                <Button
+                  onClick={saveInsightResults}
+                  disabled={savingInsightResults}
+                  size="sm"
+                  variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
+                >
+                  {savingInsightResults ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4 mr-1" />
+                  )}
+                  {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
+                </Button>
+                <Button
+                  onClick={downloadCustomAnalysis}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Download Analysis
+                </Button>
+              </>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
