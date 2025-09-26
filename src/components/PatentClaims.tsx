@@ -17,14 +17,6 @@ export const PatentClaims: React.FC = () => {
       implementation: t('patentClaims.claims.dataProcessing.implementation')
     },
     {
-      icon: <HandHelping className="w-6 h-6" />,
-      number: t('patentClaims.claims.avatarGeneration.number'),
-      title: t('patentClaims.claims.avatarGeneration.title'),
-      description: t('patentClaims.claims.avatarGeneration.description'),
-      validatedBy: t('patentClaims.claims.avatarGeneration.validatedBy', { returnObjects: true }) as string[],
-      implementation: t('patentClaims.claims.avatarGeneration.implementation')
-    },
-    {
       icon: <Shield className="w-6 h-6" />,
       number: t('patentClaims.claims.complianceLayer.number'),
       title: t('patentClaims.claims.complianceLayer.title'),
@@ -52,7 +44,7 @@ export const PatentClaims: React.FC = () => {
         </div>
 
         {/* Patent Claims Grid */}
-        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto mb-16">
+        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
           {patentClaims.map((claim, index) => (
             <Card key={index} className="bg-card border-border hover:shadow-lg transition-all duration-300">
               <CardHeader>
