@@ -799,17 +799,20 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             <Wand2 className="w-5 h-5" />
             Audio Description Editor
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground font-light leading-relaxed">
             Generate and manage audio descriptions to describe visual elements for accessibility.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Basic AI:</strong> Generates simple audio descriptions for common video scenarios.<br/>
-              <strong>Advanced Analysis:</strong> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
-            </p>
-          </div>
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <p className="text-sm font-light leading-relaxed">
+                <span className="font-medium text-primary">Basic AI:</span> Generates simple audio descriptions for common video scenarios.
+                <br />
+                <span className="font-medium text-primary">Advanced Analysis:</span> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Audio Description Voice */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
