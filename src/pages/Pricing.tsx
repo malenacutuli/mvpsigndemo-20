@@ -209,15 +209,17 @@ export default function Pricing() {
                 </div>
               </CardHeader>
 
-              <CardContent className="text-center flex flex-col flex-1 justify-between">
-                <ul className="space-y-3 mb-6 text-left">
-                  {plan.features.map((feature: string, index: number) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="flex flex-col flex-1">
+                <div className="flex-1">
+                  <ul className="space-y-3 mb-6 text-left">
+                    {plan.features.map((feature: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="leading-relaxed">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
                 <Button 
                   className="w-full" 
