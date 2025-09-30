@@ -120,10 +120,11 @@ ${formData.get('message')}
                       <MapPin className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Address</h3>
+                      <h3 className="font-semibold text-foreground">Locations</h3>
                       <p className="text-muted-foreground">
-                        Calle Modolell 23<br />
-                        08021 Barcelona, Spain
+                        Barcelona, Spain • Zurich, Switzerland<br />
+                        London, UK • Miami, USA<br />
+                        Buenos Aires, Argentina • Mexico DF, Mexico
                       </p>
                     </div>
                   </div>
