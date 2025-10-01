@@ -599,11 +599,11 @@
     "plans": {
       "starter": {
         "name": "Creators",
-        "price": "$26",
+        "price": "€26",
         "cadence": "per month",
         "trial": "30-day free trial",
         "users": "1 user",
-        "storage": "100GB storage",
+        "storage": "100GB hosting • 20 minutes processing included",
         "cta": "Start Free Trial",
         "features": [
           "Multi Function Axessible Player",
@@ -612,28 +612,32 @@
           "Video Analysis to Search and Understand Video Content: Find anything, discover deep insights and get support for your social media posting and SEO for emotion tagging",
           "Embed video links",
           "Engagement analytics",
-          "Publish your video on our platform"
+          "Publish your video on our platform",
+          "20 minutes video processing included",
+          "Additional minutes: €11.90/minute"
         ]
       },
       "standard": {
         "name": "Standard",
-        "price": "$65",
+        "price": "€65",
         "cadence": "per month",
         "users": "5 users",
-        "storage": "2TB storage",
+        "storage": "2TB hosting • 50 minutes processing included",
         "cta": "Try Standard",
         "features": [
           "Everything in Creators",
           "Expert team support for accessible video editing up to 5 videos a month",
-          "Accessible Video Download"
+          "Accessible Video Download",
+          "50 minutes video processing included",
+          "Additional minutes: €5.99/minute"
         ]
       },
       "advanced": {
         "name": "Advanced",
-        "price": "$250",
+        "price": "€250",
         "cadence": "per month",
         "users": "10 users",
-        "storage": "7TB storage",
+        "storage": "7TB hosting • 500 minutes processing included",
         "cta": "Go Advanced",
         "features": [
           "Everything in Standard",
@@ -641,7 +645,9 @@
           "Marketing automation integrations",
           "WCAG/ADA compliance reporting",
           "Expert-led accessibility audit for your videos",
-          "Human in the Loop expert support for Creative Storytelling Audio Description with synchronization for up to 15 videos a month"
+          "Human in the Loop expert support for Creative Storytelling Audio Description with synchronization for up to 15 videos a month",
+          "500 minutes video processing included",
+          "Additional minutes: €4.99/minute"
         ]
       },
       "enterprise": {
