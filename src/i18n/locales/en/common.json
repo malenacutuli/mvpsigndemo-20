@@ -603,7 +603,7 @@
         "cadence": "per month",
         "trial": "30-day free trial",
         "users": "1 user",
-        "storage": "100GB hosting • 20 minutes processing included",
+        "storage": "100GB hosting • 5 minutes processing included",
         "cta": "Start Free Trial",
         "features": [
           "Multi Function Axessible Player",
@@ -613,7 +613,7 @@
           "Embed video links",
           "Engagement analytics",
           "Publish your video on our platform",
-          "20 minutes video processing included",
+          "5 minutes video processing included",
           "Additional minutes: €11.90/minute"
         ]
       },
@@ -622,14 +622,14 @@
         "price": "€65",
         "cadence": "per month",
         "users": "5 users",
-        "storage": "2TB hosting • 50 minutes processing included",
+        "storage": "2TB hosting • 15 minutes processing included",
         "cta": "Try Standard",
         "features": [
           "Everything in Creators",
           "Expert team support for accessible video editing up to 5 videos a month",
           "Accessible Video Download",
-          "50 minutes video processing included",
-          "Additional minutes: €5.99/minute"
+          "15 minutes video processing included",
+          "Additional minutes: €8.99/minute"
         ]
       },
       "advanced": {
@@ -637,7 +637,7 @@
         "price": "€250",
         "cadence": "per month",
         "users": "10 users",
-        "storage": "7TB hosting • 500 minutes processing included",
+        "storage": "7TB hosting • 80 minutes processing included",
         "cta": "Go Advanced",
         "features": [
           "Everything in Standard",
@@ -646,8 +646,8 @@
           "WCAG/ADA compliance reporting",
           "Expert-led accessibility audit for your videos",
           "Human in the Loop expert support for Creative Storytelling Audio Description with synchronization for up to 15 videos a month",
-          "500 minutes video processing included",
-          "Additional minutes: €4.99/minute"
+          "80 minutes video processing included",
+          "Additional minutes: €5.99/minute"
         ]
       },
       "enterprise": {
