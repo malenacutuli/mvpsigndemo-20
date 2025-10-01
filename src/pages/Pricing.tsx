@@ -98,7 +98,7 @@ const getComparisonFeatures = (t: any) => [
         name: t('pricing.comparison.features.storage'),
         starter: "100GB",
         standard: "2TB",
-        advanced: "7TB",
+        advanced: "5TB",
         enterprise: t('pricing.comparison.values.custom')
       },
       {

@@ -71,7 +71,7 @@ serve(async (req) => {
       case 'advanced':
         priceAmount = 25000; // €250.00 in cents
         planName = 'Advanced Plan';
-        storageLimit = 7168; // 7TB
+        storageLimit = 5120; // 5TB
         includedMinutes = 80;
         break;
       default:
