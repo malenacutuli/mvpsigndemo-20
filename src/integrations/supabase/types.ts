@@ -585,9 +585,15 @@ export type Database = {
       }
       subscribers: {
         Row: {
+          billing_cycle_start: string | null
           created_at: string
           email: string
           id: string
+          last_usage_reset: string | null
+          minutes_included: number | null
+          minutes_used: number | null
+          storage_limit_gb: number | null
+          storage_used_gb: number | null
           stripe_customer_id: string | null
           subscribed: boolean
           subscription_end: string | null
@@ -596,9 +602,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_cycle_start?: string | null
           created_at?: string
           email: string
           id?: string
+          last_usage_reset?: string | null
+          minutes_included?: number | null
+          minutes_used?: number | null
+          storage_limit_gb?: number | null
+          storage_used_gb?: number | null
           stripe_customer_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
@@ -607,9 +619,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_cycle_start?: string | null
           created_at?: string
           email?: string
           id?: string
+          last_usage_reset?: string | null
+          minutes_included?: number | null
+          minutes_used?: number | null
+          storage_limit_gb?: number | null
+          storage_used_gb?: number | null
           stripe_customer_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
@@ -842,6 +860,50 @@ export type Database = {
           },
         ]
       }
+      usage_records: {
+        Row: {
+          billing_cycle_start: string
+          cost_eur: number | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          minutes_processed: number
+          processing_type: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          billing_cycle_start: string
+          cost_eur?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          minutes_processed: number
+          processing_type: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          billing_cycle_start?: string
+          cost_eur?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          minutes_processed?: number
+          processing_type?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_records_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_analysis_results: {
         Row: {
           asset_id: string
@@ -1065,6 +1127,19 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: string
       }
+      get_current_usage: {
+        Args: { target_user_id: string }
+        Returns: {
+          minutes_included: number
+          minutes_remaining: number
+          minutes_used: number
+          overage_rate_eur: number
+          storage_limit_gb: number
+          storage_remaining_gb: number
+          storage_used_gb: number
+          tier: string
+        }[]
+      }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1123,6 +1198,10 @@ export type Database = {
         Args: { customer_id: string }
         Returns: string
       }
+      reset_monthly_usage: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       secure_check_subscription_status_v2: {
         Args: { channel_uuid: string }
         Returns: boolean
@@ -1147,6 +1226,16 @@ export type Database = {
           tier?: string
         }
         Returns: boolean
+      }
+      track_video_processing_usage: {
+        Args: {
+          meta?: Json
+          minutes_to_add: number
+          proc_type: string
+          target_user_id: string
+          video_uuid: string
+        }
+        Returns: Json
       }
       update_user_subscription_preferences: {
         Args: { email_notifications?: boolean }

@@ -49,28 +49,36 @@ serve(async (req) => {
       logStep("No existing customer found, will create new one");
     }
 
-    // Define pricing based on plan
+    // Define pricing based on plan (in Euro cents)
     let priceAmount: number;
     let planName: string;
+    let storageLimit: number; // in GB
+    let includedMinutes: number;
     
     switch (plan) {
       case 'starter':
         priceAmount = 2600; // €26.00 in cents
         planName = 'Starter Plan';
+        storageLimit = 100;
+        includedMinutes = 20;
         break;
       case 'standard':
         priceAmount = 6500; // €65.00 in cents
         planName = 'Standard Plan';
+        storageLimit = 2048; // 2TB
+        includedMinutes = 50;
         break;
       case 'advanced':
         priceAmount = 25000; // €250.00 in cents
         planName = 'Advanced Plan';
+        storageLimit = 7168; // 7TB
+        includedMinutes = 500;
         break;
       default:
         throw new Error("Invalid plan selected");
     }
 
-    logStep("Creating checkout session", { plan, priceAmount, planName });
+    logStep("Creating checkout session", { plan, priceAmount, planName, storageLimit, includedMinutes });
 
     // Configure trial period for starter plan
     const sessionConfig: any = {
@@ -82,7 +90,7 @@ serve(async (req) => {
             currency: "eur",
             product_data: { 
               name: planName,
-              description: `Axessible ${planName} subscription`
+              description: `${storageLimit}GB hosting • ${includedMinutes} minutes processing included`
             },
             unit_amount: priceAmount,
             recurring: { interval: "month" },
@@ -93,6 +101,11 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?checkout=success`,
       cancel_url: `${req.headers.get("origin")}/pricing?checkout=cancelled`,
+      metadata: {
+        plan: plan,
+        storage_limit_gb: storageLimit.toString(),
+        included_minutes: includedMinutes.toString()
+      }
     };
 
     // Add 30-day trial for starter plan

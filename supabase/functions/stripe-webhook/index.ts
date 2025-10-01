@@ -85,11 +85,13 @@ serve(async (req) => {
 
 async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: Stripe) {
   let subscription;
+  let isNewBillingCycle = false;
   
   if (event.type === 'invoice.payment_succeeded') {
     const invoice = event.data.object;
     if (invoice.subscription) {
       subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+      isNewBillingCycle = true; // Payment succeeded means new billing cycle
     } else {
       logStep("Invoice not related to subscription, skipping");
       return;
@@ -101,7 +103,8 @@ async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: 
   logStep("Processing subscription event", { 
     subscriptionId: subscription.id,
     customerId: subscription.customer,
-    status: subscription.status 
+    status: subscription.status,
+    isNewBillingCycle
   });
 
   // Get customer details
@@ -115,23 +118,32 @@ async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: 
     throw new Error("Customer email not found");
   }
 
-  // Determine subscription tier based on price
+  // Determine subscription tier based on price (in Euro cents)
   const priceId = subscription.items.data[0]?.price.id;
   const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
   
   let subscriptionTier = 'starter';
-  if (priceAmount >= 25000) {
+  if (priceAmount >= 25000) { // €250
     subscriptionTier = 'advanced';
-  } else if (priceAmount >= 6500) {
+  } else if (priceAmount >= 6500) { // €65
     subscriptionTier = 'standard';
-  }
+  } // else stays 'starter' (€26)
 
   // Calculate subscription end date
   const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
+  // First, get the user_id by email
+  const { data: userData, error: userError } = await supabaseClient
+    .from('subscribers')
+    .select('user_id')
+    .eq('email', customerEmail)
+    .single();
+
+  let targetUserId = userData?.user_id || null;
+
   // Use secure system function to manage subscription data
   const { error } = await supabaseClient.rpc('system_manage_subscription', {
-    target_user_id: null, // User ID unknown in webhook context, will be linked when user signs up
+    target_user_id: targetUserId,
     stripe_customer: subscription.customer,
     tier: subscriptionTier,
     is_active: subscription.status === 'active',
@@ -143,10 +155,24 @@ async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: 
     throw error;
   }
 
+  // Reset monthly usage if this is a new billing cycle and we have a user_id
+  if (isNewBillingCycle && targetUserId) {
+    const { error: resetError } = await supabaseClient.rpc('reset_monthly_usage', {
+      target_user_id: targetUserId
+    });
+
+    if (resetError) {
+      logStep("Usage reset failed (non-critical)", { error: resetError.message });
+    } else {
+      logStep("Monthly usage reset successfully", { userId: targetUserId });
+    }
+  }
+
   logStep("Subscription updated successfully", { 
     email: customerEmail, 
     tier: subscriptionTier,
-    active: subscription.status === 'active'
+    active: subscription.status === 'active',
+    usageReset: isNewBillingCycle && targetUserId !== null
   });
 }
 
