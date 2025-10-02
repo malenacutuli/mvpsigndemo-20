@@ -145,9 +145,11 @@ export const Auth = () => {
     } catch (error: any) {
       console.error('Sign in error:', error);
       if (error.message?.includes('Invalid login credentials')) {
-        setError(t('auth.invalidCredentials'));
+        setError('Invalid email or password. Please check your credentials or use "Forgot Password" to reset.');
       } else if (error.message?.includes('Email not confirmed')) {
-        setError(t('auth.emailNotConfirmed'));
+        setError('Please confirm your email address before signing in. Check your inbox for the confirmation link.');
+      } else if (error.message?.includes('Email link is invalid or has expired')) {
+        setError('The confirmation link has expired. Please request a new one or try resetting your password.');
       } else {
         setError(error.message || t('auth.signInError'));
       }
