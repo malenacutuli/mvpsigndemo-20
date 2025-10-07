@@ -82,19 +82,39 @@ export class ExportOrchestrator {
       const localDownloadUrl = URL.createObjectURL(resultBlob);
       let uploadedOk = true;
       let uploadErrMsg: string | null = null;
+      let uploadedUrl: string | null = null;
 
-      // 7. Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('exports')
-        .upload(storagePath, resultBlob, {
-          contentType: 'video/mp4',
-          upsert: true
-        });
-
-      if (uploadError) {
+      // 7. Upload to R2 using multipart uploader for large files
+      try {
+        const uploader = new R2MultipartUploader();
+        
+        // Convert Blob to File if needed
+        const fileToUpload = resultBlob instanceof File 
+          ? resultBlob 
+          : new File([resultBlob], `${exportId}.mp4`, { type: 'video/mp4' });
+        
+        console.log('🚀 Starting R2 multipart upload for export:', exportId);
+        
+        uploadedUrl = await uploader.uploadLargeFile(
+          fileToUpload,
+          storagePath,
+          (progress) => {
+            // Map upload progress to 85-95% range
+            const mappedProgress = 85 + Math.round(progress * 0.1);
+            progressCallback?.({ 
+              stage: 'uploading', 
+              progress: mappedProgress, 
+              message: `Uploading to cloud storage... ${progress}%` 
+            });
+          }
+        );
+        
+        console.log('✅ R2 upload completed:', uploadedUrl);
+        
+      } catch (uploadError) {
         uploadedOk = false;
-        uploadErrMsg = uploadError.message;
-        console.warn('⚠️ Upload failed, will fallback to local download URL:', uploadErrMsg);
+        uploadErrMsg = uploadError instanceof Error ? uploadError.message : 'Upload failed';
+        console.error('⚠️ R2 upload failed, will fallback to local download URL:', uploadErrMsg);
       }
 
       progressCallback?.({ stage: 'finalizing', progress: 95, message: 'Finalizing export...' });
@@ -117,8 +137,8 @@ export class ExportOrchestrator {
 
       progressCallback?.({ stage: 'finalizing', progress: 100, message: uploadedOk ? 'Export completed successfully!' : 'Export ready locally (cloud upload failed)' });
 
-      // 9. Generate download URL (fallback to local if necessary)
-      const downloadUrl = uploadedOk ? await this.getDownloadUrl(storagePath) : localDownloadUrl;
+      // 9. Use uploaded URL or fallback to local
+      const downloadUrl = uploadedOk && uploadedUrl ? uploadedUrl : localDownloadUrl;
 
       return { exportId, downloadUrl };
 
