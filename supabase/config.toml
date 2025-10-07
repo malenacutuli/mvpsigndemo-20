@@ -71,6 +71,3 @@ verify_jwt = true
 
 [functions.get-r2-part-url]
 verify_jwt = true
-
-[functions.upload-direct-to-s3]
-verify_jwt = true

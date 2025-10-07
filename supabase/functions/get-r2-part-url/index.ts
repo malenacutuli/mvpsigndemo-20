@@ -59,12 +59,11 @@ serve(async (req) => {
     const pathParts = key.split('/');
     const fileName = pathParts.pop();
     const path = pathParts.join('/');
-    // endpoint already includes bucket name, so don't add it again
-    const url = `${endpoint}/${path}/${encodeURIComponent(fileName)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
+    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
     console.log('Generated URL:', url);
     
     const auth = await createAwsSignature('PUT', url, accessKeyId, secretAccessKey);
-    return new Response(JSON.stringify({ url, headers: auth }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ presignedUrl: url, headers: auth }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
