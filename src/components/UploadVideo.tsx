@@ -14,7 +14,7 @@ import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
-import { uploadToR2 } from '@/lib/r2Upload';
+import { R2MultipartUploader } from '@/lib/r2-upload-enhanced';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -39,6 +39,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [contentType, setContentType] = useState<string>('education');
   const [selectedVoice, setSelectedVoice] = useState('aria-engaging'); // Default to education voice
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
+  const [uploadedBytes, setUploadedBytes] = useState(0);
+  const [uploadSpeedMbps, setUploadSpeedMbps] = useState(0);
+  const [etaSeconds, setEtaSeconds] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -294,128 +297,79 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let publicUrl = '';
 
       if (useServerSideChunking) {
-        // Use server-side chunked upload for files >1GB
-        console.log('Using server-side chunked upload (100MB chunks)');
+        // Use R2 multipart upload for files >1GB
+        console.log('Using R2 multipart upload (100MB parts)');
         console.log('File details:', {
           name: videoFile.name,
           size: videoFile.size,
           sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
           type: videoFile.type
         });
-        
+
         toast({
-          title: "Large file detected",
-          description: "Using server-side chunked upload...",
+          title: 'Large file detected',
+          description: 'Using R2 multipart upload with auto-resume...'
         });
 
+        // Keep-alive mechanisms
+        const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+          if (uploading) {
+            e.preventDefault();
+            e.returnValue = 'Upload in progress. Are you sure you want to leave?';
+          }
+        };
+        const visibilityHandler = () => {
+          if (document.visibilityState === 'hidden') {
+            console.warn('Tab hidden during upload; browser may throttle network.');
+          } else {
+            console.log('Tab visible again.');
+          }
+        };
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+        document.addEventListener('visibilitychange', visibilityHandler);
+
+        // Progress logging
+        let lastBytes = 0;
+        let lastUpdate = Date.now();
+        let currentProgress = 0;
+        const logInterval = setInterval(() => {
+          console.log(`[Keep-alive] Upload progress: ${currentProgress}% | ${(uploadedBytes/(1024**3)).toFixed(2)} GB of ${(videoFile.size/(1024**3)).toFixed(2)} GB at ${uploadSpeedMbps.toFixed(2)} MB/s`);
+        }, 10000);
+
+        // Resume detection
+        const sessionKey = `upload_session_${videoFile.name}_${videoFile.size}`;
+        if (localStorage.getItem(sessionKey)) {
+          toast({ title: 'Resuming upload', description: 'Found previous session, resuming where it left off.' });
+        }
+
         try {
-          // Step 1: Initialize server-side chunked upload
-          const initUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
-          initUrl.searchParams.set('action', 'init');
-          
-          const initResponse = await fetch(initUrl.toString(), {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              fileName: videoFile.name,
-              fileSize: videoFile.size,
-              videoId: video.id,
-            }),
+          const uploader = new R2MultipartUploader();
+          const result = await uploader.uploadLargeFile(videoFile, (percent) => {
+            currentProgress = percent;
+            setUploadProgress(percent);
+            const bytes = Math.round((percent / 100) * videoFile.size);
+            setUploadedBytes(bytes);
+            const now = Date.now();
+            const deltaBytes = Math.max(0, bytes - lastBytes);
+            const deltaTimeSec = Math.max(1, (now - lastUpdate) / 1000);
+            const speedBps = deltaBytes / deltaTimeSec;
+            const speedMbps = speedBps / (1024 * 1024);
+            setUploadSpeedMbps(speedMbps);
+            const remainingBytes = Math.max(0, videoFile.size - bytes);
+            const eta = speedBps > 0 ? Math.round(remainingBytes / speedBps) : 0;
+            setEtaSeconds(eta);
+            lastBytes = bytes;
+            lastUpdate = now;
           });
 
-          if (!initResponse.ok) {
-            const error = await initResponse.text();
-            console.error('Init error:', error);
-            throw new Error('Failed to initialize server-side upload');
-          }
+          publicUrl = result.url;
+          storagePath = result.key;
 
-          const initData = await initResponse.json();
-          const { uploadId, key, totalChunks, chunkSize } = initData;
-          console.log('Server-side upload initialized:', { uploadId, key, totalChunks, chunkSize });
-
-          // Step 2: Upload chunks sequentially to edge function
-          const uploadedParts: Array<{ partNumber: number; etag: string }> = [];
-          const CHUNK_SIZE = chunkSize; // 100MB chunks
-          
-          for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-            const start = chunkIndex * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE, videoFile.size);
-            const chunk = videoFile.slice(start, end);
-
-            console.log(`Uploading chunk ${chunkIndex + 1}/${totalChunks} (${(chunk.size / 1024 / 1024).toFixed(2)} MB)`);
-
-            // Send chunk to edge function which streams to S3
-            const chunkUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
-            chunkUrl.searchParams.set('action', 'chunk');
-            
-            const chunkResponse = await fetch(chunkUrl.toString(), {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                'Content-Type': 'application/octet-stream',
-                'x-chunk-index': chunkIndex.toString(),
-                'x-upload-id': uploadId,
-                'x-key': key,
-              },
-              body: chunk,
-            });
-
-            if (!chunkResponse.ok) {
-              const error = await chunkResponse.text();
-              console.error(`Chunk ${chunkIndex + 1} upload failed:`, error);
-              throw new Error(`Failed to upload chunk ${chunkIndex + 1}`);
-            }
-
-            const chunkData = await chunkResponse.json();
-            uploadedParts.push({
-              partNumber: chunkData.partNumber,
-              etag: chunkData.etag,
-            });
-
-            // Update progress
-            const progress = Math.round(((chunkIndex + 1) / totalChunks) * 90); // Reserve 10% for finalization
-            setUploadProgress(progress);
-            console.log(`Progress: ${progress}% (${chunkIndex + 1}/${totalChunks} chunks)`);
-          }
-
-          // Step 3: Complete multipart upload
-          setUploadProgress(90);
-          const completeUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
-          completeUrl.searchParams.set('action', 'complete');
-          
-          const completeResponse = await fetch(completeUrl.toString(), {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              uploadId,
-              key,
-              parts: uploadedParts,
-              videoId: video.id,
-            }),
-          });
-
-          if (!completeResponse.ok) {
-            const error = await completeResponse.text();
-            console.error('Complete error:', error);
-            throw new Error('Failed to complete server-side upload');
-          }
-
-          const completeData = await completeResponse.json();
-          publicUrl = completeData.url;
-          storagePath = key;
-          console.log('Server-side chunked upload complete:', publicUrl);
-          
           // Extract thumbnail
           setUploadProgress(95);
           console.log('🎬 Extracting video frame for thumbnail...');
           let thumbnailUrl: string | null = null;
-          
+
           try {
             const extractedFrame = await extractVideoFrame(videoFile, {
               quality: 0.9,
@@ -435,14 +389,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               const { data: { publicUrl: thumbUrl } } = supabase.storage
                 .from('thumbnails')
                 .getPublicUrl(thumbnailFileName);
-              
+
               thumbnailUrl = thumbUrl;
               console.log('✅ Thumbnail uploaded:', thumbnailUrl);
             }
           } catch (frameError) {
             console.warn('⚠️ Frame extraction failed:', frameError);
           }
-          
+
           // Update video record
           const { error: updateError } = await supabase
             .from('videos')
@@ -454,16 +408,19 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             .eq('id', video.id);
 
           if (updateError) throw updateError;
-          
+
           setUploadProgress(100);
           toast({
-            title: "Upload successful",
-            description: "Your video has been uploaded successfully via server-side chunked upload"
+            title: 'Upload successful',
+            description: 'Your video has been uploaded successfully via R2 multipart upload'
           });
-          
         } catch (error) {
-          console.error('Server-side chunked upload failed:', error);
+          console.error('R2 multipart upload failed:', error);
           throw new Error('Failed to upload file. Please try again.');
+        } finally {
+          clearInterval(logInterval);
+          window.removeEventListener('beforeunload', beforeUnloadHandler);
+          document.removeEventListener('visibilitychange', visibilityHandler);
         }
       } else {
         // Use Supabase Storage with TUS for smaller files (<5GB)
@@ -850,6 +807,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
+            {videoFile && (
+              <div className="text-xs text-muted-foreground">
+                {`${(uploadedBytes/(1024**3)).toFixed(2)} GB of ${(videoFile.size/(1024**3)).toFixed(2)} GB uploaded at ${uploadSpeedMbps.toFixed(2)} MB/s`}
+                {etaSeconds > 0 ? ` • ETA ${Math.floor(etaSeconds/60)}m ${etaSeconds%60}s` : ''}
+              </div>
+            )}
           </div>
         )}
 
