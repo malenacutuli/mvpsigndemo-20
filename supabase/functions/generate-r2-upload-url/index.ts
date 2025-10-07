@@ -77,7 +77,7 @@ serve(async (req) => {
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
     const key = `videos/${user.id}/${crypto.randomUUID()}-${fileName}`;
-    const url = `${endpoint}/${bucketName}/${encodeURIComponent(key)}?uploads=`;
+    const url = `${endpoint}/${bucketName}/${key}?uploads=`;
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
