@@ -295,7 +295,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       if (isLargeFile) {
         // Use R2 for large files (>5GB)
-        console.log('Uploading large file to R2...');
+        console.log('Using R2 for large file upload');
+        console.log('File details:', {
+          name: videoFile.name,
+          size: videoFile.size,
+          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          type: videoFile.type
+        });
+        
         toast({
           title: "Large file detected",
           description: "Using optimized upload for large files...",
@@ -303,10 +310,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
         try {
           const result = await uploadToR2(videoFile, (progress) => {
+            console.log('Upload progress:', progress + '%');
             setUploadProgress(progress * 0.9); // Reserve 10% for thumbnail
           });
           
           if (!result.success) {
+            console.error('R2 upload failed:', result.error);
             throw new Error(result.error || 'Upload failed');
           }
           

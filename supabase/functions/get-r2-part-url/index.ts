@@ -37,12 +37,25 @@ serve(async (req) => {
     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: req.headers.get('Authorization')! } } });
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
-    const { key, uploadId, partNumber } = await req.json();
+    
+    const body = await req.json();
+    console.log('Received body:', JSON.stringify(body));
+    
+    const { key, uploadId, partNumber } = body;
+    
+    if (!key || !uploadId || !partNumber) {
+      console.error('Missing required fields:', { key, uploadId, partNumber });
+      throw new Error('key, uploadId and partNumber are required');
+    }
+    
     const endpoint = Deno.env.get('CLOUDFLARE_R2_ENDPOINT')!;
     const accessKeyId = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID')!;
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
+    
     const url = `${endpoint}/${bucketName}/${encodeURIComponent(key)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
+    console.log('Generated URL:', url);
+    
     const auth = await createAwsSignature('PUT', url, accessKeyId, secretAccessKey);
     return new Response(JSON.stringify({ presignedUrl: url, headers: auth }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
