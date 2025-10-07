@@ -82,9 +82,9 @@ serve(async (req) => {
     const key = `videos/${user.id}/${crypto.randomUUID()}-${fileName}`;
     // Encode only the filename (last part), keep path structure intact
     const pathParts = key.split('/');
-    const fileName = pathParts.pop(); // Get last part (filename)
+    const encodedFileName = pathParts.pop(); // Get last part (filename)
     const path = pathParts.join('/'); // Rest of path without encoding
-    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?uploads=`;
+    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(encodedFileName)}?uploads=`;
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
