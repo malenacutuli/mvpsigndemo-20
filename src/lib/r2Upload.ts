@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const CHUNK_SIZE = 10 * 1024 * 1024;
+const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks for better performance
+const MAX_CONCURRENT_UPLOADS = 3; // Upload 3 parts simultaneously
 
 interface UploadPart {
   partNumber: number;
@@ -35,12 +36,12 @@ export async function uploadToR2(file: File, onProgress?: (progress: number) => 
     const totalParts = Math.ceil(file.size / CHUNK_SIZE);
     const uploadedParts: UploadPart[] = [];
     
-    // Step 2: Upload each part
-    for (let i = 0; i < totalParts; i++) {
-      const start = i * CHUNK_SIZE;
+    // Step 2: Upload parts in parallel batches
+    const uploadPart = async (partIndex: number) => {
+      const start = partIndex * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
-      const partNumber = i + 1;
+      const partNumber = partIndex + 1;
       
       console.log(`Uploading part ${partNumber}/${totalParts} (${chunk.size} bytes)`);
       
@@ -50,8 +51,6 @@ export async function uploadToR2(file: File, onProgress?: (progress: number) => 
         uploadId: uploadId,
         partNumber: partNumber
       };
-      
-      console.log('Requesting part URL with body:', JSON.stringify(requestBody));
       
       const { data: urlData, error: urlError } = await supabase.functions.invoke('get-r2-part-url', { 
         body: requestBody
@@ -89,10 +88,22 @@ export async function uploadToR2(file: File, onProgress?: (progress: number) => 
       }
       
       console.log(`Part ${partNumber} uploaded successfully, ETag:`, etag);
-      uploadedParts.push({ partNumber, etag });
+      return { partNumber, etag };
+    };
+    
+    // Process uploads in batches with concurrency limit
+    for (let i = 0; i < totalParts; i += MAX_CONCURRENT_UPLOADS) {
+      const batch = Array.from(
+        { length: Math.min(MAX_CONCURRENT_UPLOADS, totalParts - i) },
+        (_, j) => i + j
+      );
+      
+      console.log(`Uploading batch: parts ${batch.map(b => b + 1).join(', ')}`);
+      const batchResults = await Promise.all(batch.map(partIndex => uploadPart(partIndex)));
+      uploadedParts.push(...batchResults);
       
       // Update progress
-      const progress = ((i + 1) / totalParts) * 95;
+      const progress = ((i + batch.length) / totalParts) * 95;
       onProgress?.(Math.round(progress));
     }
     
