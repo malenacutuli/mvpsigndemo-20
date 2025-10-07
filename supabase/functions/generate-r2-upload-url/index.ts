@@ -84,7 +84,8 @@ serve(async (req) => {
     const pathParts = key.split('/');
     const encodedFileName = pathParts.pop(); // Get last part (filename)
     const path = pathParts.join('/'); // Rest of path without encoding
-    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(encodedFileName)}?uploads=`;
+    // endpoint already includes bucket name, so don't add it again
+    const url = `${endpoint}/${path}/${encodeURIComponent(encodedFileName)}?uploads=`;
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
