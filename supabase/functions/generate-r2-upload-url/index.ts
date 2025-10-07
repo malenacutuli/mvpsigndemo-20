@@ -18,9 +18,12 @@ async function createAwsSignature(method: string, url: string, accessKeyId: stri
     new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(payload)))
   ).map(b => b.toString(16).padStart(2, '0')).join('');
   
+  // Build raw path from the original URL to avoid automatic decoding issues
+  const rawPath = url.substring(url.indexOf('/', url.indexOf('://') + 3)).split('?')[0];
+
   const canonicalRequest = [
     method,
-    urlObj.pathname,
+    rawPath,
     urlObj.search.substring(1),
     `host:${urlObj.host}`,
     `x-amz-content-sha256:${payloadHash}`,
@@ -77,7 +80,9 @@ serve(async (req) => {
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
     const key = `videos/${user.id}/${crypto.randomUUID()}-${fileName}`;
-    const url = `${endpoint}/${bucketName}/${key}?uploads=`;
+    const pathParts = key.split('/');
+    const encodedPath = pathParts.slice(0, -1).join('/') + '/' + encodeURIComponent(pathParts[pathParts.length - 1]);
+    const url = `${endpoint}/${bucketName}/${encodedPath}?uploads=`;
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
