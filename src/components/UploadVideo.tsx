@@ -258,10 +258,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
-    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
-    const S3_DIRECT_THRESHOLD = 1 * 1024 * 1024 * 1024; // 1GB - use S3 direct for files larger than this
-    const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
-    const useS3Direct = videoFile.size > S3_DIRECT_THRESHOLD && videoFile.size <= LARGE_FILE_THRESHOLD;
+    const LARGE_FILE_THRESHOLD = 1 * 1024 * 1024 * 1024; // 1GB - use server-side chunked upload
+    const useServerSideChunking = videoFile.size > LARGE_FILE_THRESHOLD;
 
     try {
       setUploading(true);
@@ -295,9 +293,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let storagePath = '';
       let publicUrl = '';
 
-      if (useS3Direct) {
-        // Use S3 direct multipart upload for files 1GB-5GB
-        console.log('Using S3 direct multipart upload');
+      if (useServerSideChunking) {
+        // Use server-side chunked upload for files >1GB
+        console.log('Using server-side chunked upload (100MB chunks)');
         console.log('File details:', {
           name: videoFile.name,
           size: videoFile.size,
@@ -307,112 +305,111 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         
         toast({
           title: "Large file detected",
-          description: "Using optimized S3 direct upload...",
+          description: "Using server-side chunked upload...",
         });
 
         try {
-          // Step 1: Initiate multipart upload
-          const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
-            body: {
-              action: 'initiate',
+          // Step 1: Initialize server-side chunked upload
+          const initUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
+          initUrl.searchParams.set('action', 'init');
+          
+          const initResponse = await fetch(initUrl.toString(), {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               fileName: videoFile.name,
               fileSize: videoFile.size,
-            }
+              videoId: video.id,
+            }),
           });
 
-          if (initError || !initData?.uploadId) {
-            throw new Error('Failed to initiate S3 upload');
+          if (!initResponse.ok) {
+            const error = await initResponse.text();
+            console.error('Init error:', error);
+            throw new Error('Failed to initialize server-side upload');
           }
 
-          const { uploadId, key } = initData;
-          console.log('S3 upload initiated:', { uploadId, key });
+          const initData = await initResponse.json();
+          const { uploadId, key, totalChunks, chunkSize } = initData;
+          console.log('Server-side upload initialized:', { uploadId, key, totalChunks, chunkSize });
 
-          // Step 2: Get presigned URLs for all parts
-          const { data: urlsData, error: urlsError } = await supabase.functions.invoke('s3-multipart-upload', {
-            body: {
-              action: 'getPresignedUrls',
-              uploadId,
-              key,
-              fileSize: videoFile.size,
-            }
-          });
-
-          if (urlsError || !urlsData?.presignedUrls) {
-            throw new Error('Failed to get presigned URLs');
-          }
-
-          const { presignedUrls } = urlsData;
-          console.log(`Got ${presignedUrls.length} presigned URLs`);
-
-          // Step 3: Upload parts with concurrency control
-          const PART_SIZE = 10 * 1024 * 1024; // 10MB
-          const MAX_CONCURRENT = 10;
-          const uploadedParts: Array<{ PartNumber: number; ETag: string }> = [];
+          // Step 2: Upload chunks sequentially to edge function
+          const uploadedParts: Array<{ partNumber: number; etag: string }> = [];
+          const CHUNK_SIZE = chunkSize; // 100MB chunks
           
-          let uploadedBytes = 0;
-          const totalBytes = videoFile.size;
-
-          const uploadPart = async (partInfo: { partNumber: number; url: string }) => {
-            const start = (partInfo.partNumber - 1) * PART_SIZE;
-            const end = Math.min(start + PART_SIZE, videoFile.size);
+          for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, videoFile.size);
             const chunk = videoFile.slice(start, end);
 
-            const response = await fetch(partInfo.url, {
-              method: 'PUT',
-              body: chunk,
+            console.log(`Uploading chunk ${chunkIndex + 1}/${totalChunks} (${(chunk.size / 1024 / 1024).toFixed(2)} MB)`);
+
+            // Send chunk to edge function which streams to S3
+            const chunkUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
+            chunkUrl.searchParams.set('action', 'chunk');
+            
+            const chunkResponse = await fetch(chunkUrl.toString(), {
+              method: 'POST',
               headers: {
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                 'Content-Type': 'application/octet-stream',
+                'x-chunk-index': chunkIndex.toString(),
+                'x-upload-id': uploadId,
+                'x-key': key,
               },
+              body: chunk,
             });
 
-            if (!response.ok) {
-              throw new Error(`Failed to upload part ${partInfo.partNumber}`);
+            if (!chunkResponse.ok) {
+              const error = await chunkResponse.text();
+              console.error(`Chunk ${chunkIndex + 1} upload failed:`, error);
+              throw new Error(`Failed to upload chunk ${chunkIndex + 1}`);
             }
 
-            const etag = response.headers.get('ETag');
-            if (!etag) {
-              throw new Error(`No ETag received for part ${partInfo.partNumber}`);
-            }
+            const chunkData = await chunkResponse.json();
+            uploadedParts.push({
+              partNumber: chunkData.partNumber,
+              etag: chunkData.etag,
+            });
 
-            uploadedBytes += chunk.size;
-            const progress = Math.round((uploadedBytes / totalBytes) * 90); // Reserve 10% for finalization
+            // Update progress
+            const progress = Math.round(((chunkIndex + 1) / totalChunks) * 90); // Reserve 10% for finalization
             setUploadProgress(progress);
-            console.log(`Part ${partInfo.partNumber} uploaded (${progress}%)`);
-
-            return {
-              PartNumber: partInfo.partNumber,
-              ETag: etag.replace(/"/g, ''), // Remove quotes
-            };
-          };
-
-          // Upload parts with concurrency control
-          for (let i = 0; i < presignedUrls.length; i += MAX_CONCURRENT) {
-            const batch = presignedUrls.slice(i, i + MAX_CONCURRENT);
-            const results = await Promise.all(batch.map(uploadPart));
-            uploadedParts.push(...results);
+            console.log(`Progress: ${progress}% (${chunkIndex + 1}/${totalChunks} chunks)`);
           }
 
-          // Sort parts by part number
-          uploadedParts.sort((a, b) => a.PartNumber - b.PartNumber);
-
-          // Step 4: Complete multipart upload
+          // Step 3: Complete multipart upload
           setUploadProgress(90);
-          const { data: completeData, error: completeError } = await supabase.functions.invoke('s3-multipart-upload', {
-            body: {
-              action: 'complete',
+          const completeUrl = new URL('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/upload-direct-to-s3');
+          completeUrl.searchParams.set('action', 'complete');
+          
+          const completeResponse = await fetch(completeUrl.toString(), {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               uploadId,
               key,
               parts: uploadedParts,
-            }
+              videoId: video.id,
+            }),
           });
 
-          if (completeError || !completeData?.url) {
-            throw new Error('Failed to complete S3 upload');
+          if (!completeResponse.ok) {
+            const error = await completeResponse.text();
+            console.error('Complete error:', error);
+            throw new Error('Failed to complete server-side upload');
           }
 
+          const completeData = await completeResponse.json();
           publicUrl = completeData.url;
-          storagePath = `s3:${publicUrl}`;
-          console.log('S3 direct upload complete:', publicUrl);
+          storagePath = key;
+          console.log('Server-side chunked upload complete:', publicUrl);
           
           // Extract thumbnail
           setUploadProgress(95);
@@ -461,16 +458,15 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           setUploadProgress(100);
           toast({
             title: "Upload successful",
-            description: "Your video has been uploaded successfully via S3 direct upload"
+            description: "Your video has been uploaded successfully via server-side chunked upload"
           });
           
         } catch (error) {
-          console.error('S3 direct upload failed:', error);
-          throw new Error('Failed to upload file via S3. Please try again.');
+          console.error('Server-side chunked upload failed:', error);
+          throw new Error('Failed to upload file. Please try again.');
         }
-      } else if (isLargeFile) {
-        // Use R2 for large files (>5GB)
-        console.log('Using R2 for large file upload');
+      } else {
+        // Use Supabase Storage with TUS for smaller files (<1GB)
         console.log('File details:', {
           name: videoFile.name,
           size: videoFile.size,
