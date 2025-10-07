@@ -1,5 +1,11 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.queue-export-job]
+verify_jwt = true
+
+[functions.get-export-status]
+verify_jwt = true
+
 [functions.create-checkout]
 verify_jwt = true
 
