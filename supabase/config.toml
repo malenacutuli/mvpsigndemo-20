@@ -1,5 +1,8 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.get-s3-multipart-urls]
+verify_jwt = true
+
 [functions.queue-export-job]
 verify_jwt = true
 

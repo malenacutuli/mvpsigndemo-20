@@ -259,7 +259,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
     const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
+    const S3_DIRECT_THRESHOLD = 500 * 1024 * 1024; // 500MB
     const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
+    const useS3Direct = videoFile.size > S3_DIRECT_THRESHOLD && videoFile.size <= LARGE_FILE_THRESHOLD;
 
     try {
       setUploading(true);
@@ -293,7 +295,180 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let storagePath = '';
       let publicUrl = '';
 
-      if (isLargeFile) {
+      if (useS3Direct) {
+        // Use S3 direct multipart upload for files 500MB-5GB
+        console.log('Using S3 direct multipart upload');
+        console.log('File details:', {
+          name: videoFile.name,
+          size: videoFile.size,
+          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          type: videoFile.type
+        });
+        
+        toast({
+          title: "Large file detected",
+          description: "Using optimized S3 direct upload...",
+        });
+
+        try {
+          // Step 1: Initiate multipart upload
+          const { data: initData, error: initError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+            body: {
+              action: 'initiate',
+              fileName: videoFile.name,
+              fileSize: videoFile.size,
+            }
+          });
+
+          if (initError || !initData?.uploadId) {
+            throw new Error('Failed to initiate S3 upload');
+          }
+
+          const { uploadId, key } = initData;
+          console.log('S3 upload initiated:', { uploadId, key });
+
+          // Step 2: Get presigned URLs for all parts
+          const { data: urlsData, error: urlsError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+            body: {
+              action: 'getPresignedUrls',
+              uploadId,
+              key,
+              fileSize: videoFile.size,
+            }
+          });
+
+          if (urlsError || !urlsData?.presignedUrls) {
+            throw new Error('Failed to get presigned URLs');
+          }
+
+          const { presignedUrls } = urlsData;
+          console.log(`Got ${presignedUrls.length} presigned URLs`);
+
+          // Step 3: Upload parts with concurrency control
+          const PART_SIZE = 10 * 1024 * 1024; // 10MB
+          const MAX_CONCURRENT = 10;
+          const uploadedParts: Array<{ PartNumber: number; ETag: string }> = [];
+          
+          let uploadedBytes = 0;
+          const totalBytes = videoFile.size;
+
+          const uploadPart = async (partInfo: { partNumber: number; url: string }) => {
+            const start = (partInfo.partNumber - 1) * PART_SIZE;
+            const end = Math.min(start + PART_SIZE, videoFile.size);
+            const chunk = videoFile.slice(start, end);
+
+            const response = await fetch(partInfo.url, {
+              method: 'PUT',
+              body: chunk,
+              headers: {
+                'Content-Type': 'application/octet-stream',
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to upload part ${partInfo.partNumber}`);
+            }
+
+            const etag = response.headers.get('ETag');
+            if (!etag) {
+              throw new Error(`No ETag received for part ${partInfo.partNumber}`);
+            }
+
+            uploadedBytes += chunk.size;
+            const progress = Math.round((uploadedBytes / totalBytes) * 90); // Reserve 10% for finalization
+            setUploadProgress(progress);
+            console.log(`Part ${partInfo.partNumber} uploaded (${progress}%)`);
+
+            return {
+              PartNumber: partInfo.partNumber,
+              ETag: etag.replace(/"/g, ''), // Remove quotes
+            };
+          };
+
+          // Upload parts with concurrency control
+          for (let i = 0; i < presignedUrls.length; i += MAX_CONCURRENT) {
+            const batch = presignedUrls.slice(i, i + MAX_CONCURRENT);
+            const results = await Promise.all(batch.map(uploadPart));
+            uploadedParts.push(...results);
+          }
+
+          // Sort parts by part number
+          uploadedParts.sort((a, b) => a.PartNumber - b.PartNumber);
+
+          // Step 4: Complete multipart upload
+          setUploadProgress(90);
+          const { data: completeData, error: completeError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+            body: {
+              action: 'complete',
+              uploadId,
+              key,
+              parts: uploadedParts,
+            }
+          });
+
+          if (completeError || !completeData?.url) {
+            throw new Error('Failed to complete S3 upload');
+          }
+
+          publicUrl = completeData.url;
+          storagePath = `s3:${publicUrl}`;
+          console.log('S3 direct upload complete:', publicUrl);
+          
+          // Extract thumbnail
+          setUploadProgress(95);
+          console.log('🎬 Extracting video frame for thumbnail...');
+          let thumbnailUrl: string | null = null;
+          
+          try {
+            const extractedFrame = await extractVideoFrame(videoFile, {
+              quality: 0.9,
+              maxWidth: 1280,
+              maxHeight: 720
+            });
+
+            const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+            const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+              .from('thumbnails')
+              .upload(thumbnailFileName, extractedFrame.blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (!thumbnailUploadError) {
+              const { data: { publicUrl: thumbUrl } } = supabase.storage
+                .from('thumbnails')
+                .getPublicUrl(thumbnailFileName);
+              
+              thumbnailUrl = thumbUrl;
+              console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+            }
+          } catch (frameError) {
+            console.warn('⚠️ Frame extraction failed:', frameError);
+          }
+          
+          // Update video record
+          const { error: updateError } = await supabase
+            .from('videos')
+            .update({
+              storage_path: storagePath,
+              status: 'uploaded' as const,
+              ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+            })
+            .eq('id', video.id);
+
+          if (updateError) throw updateError;
+          
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your video has been uploaded successfully via S3 direct upload"
+          });
+          
+        } catch (error) {
+          console.error('S3 direct upload failed:', error);
+          throw new Error('Failed to upload file via S3. Please try again.');
+        }
+      } else if (isLargeFile) {
         // Use R2 for large files (>5GB)
         console.log('Using R2 for large file upload');
         console.log('File details:', {
