@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Video, FileText, Languages } from 'lucide-react';
+import { Upload, Video, FileText, Languages, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,8 +30,15 @@ interface VideoData {
 }
 
 export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) => {
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB limit
+  const PARALLEL_UPLOADS = 3; // Upload 3 chunks simultaneously
+  
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState<'preparing' | 'uploading' | 'processing' | 'complete'>('preparing');
+  const [uploadSpeed, setUploadSpeed] = useState<string>('');
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [uploadedSize, setUploadedSize] = useState<string>('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,6 +48,20 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  };
+
+  const formatTime = (seconds: number): string => {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${minutes}m ${secs}s`;
+  };
 
   // Voice libraries for audio descriptions by content type
   const voiceOptions: Record<string, Array<{ id: string; name: string; description: string; elevenLabsId: string; isCloned?: boolean }>> = {
@@ -297,113 +318,98 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('Video record created:', video);
 
-      // CLIENT-SIDE VALIDATION FIRST (before calling edge function)
-      const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
-      const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
-
-      if (videoFile.size > MAX_FILE_SIZE) {
-        throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Your file is ${(videoFile.size / (1024 * 1024)).toFixed(2)}MB.`);
-      }
-
-      if (!ALLOWED_TYPES.includes(videoFile.type.toLowerCase())) {
-        throw new Error('Invalid file type. Allowed types: MP4, WebM, QuickTime, Matroska');
-      }
-
-      // Step 1: Get upload URL/method from hybrid upload system
+      // Step 1: Get upload URL/method
       console.log('[UPLOAD] Requesting upload URL...', {
         filename: videoFile.name,
-        size: videoFile.size,
-        sizeMB: (videoFile.size / (1024 * 1024)).toFixed(2),
+        size: formatBytes(videoFile.size),
         type: videoFile.type
       });
+      setCurrentPhase('uploading');
 
-      const { data: uploadConfig, error: uploadConfigError } = await supabase.functions.invoke('generate-upload-url', {
+      const { data: uploadData, error: uploadError } = await supabase.functions.invoke('generate-upload-url', {
         body: {
           filename: videoFile.name,
           contentType: videoFile.type,
           fileSize: videoFile.size,
+          userId: user.id,
         }
       });
 
-      if (uploadConfigError) {
-        console.error('[UPLOAD] Failed to get upload config:', uploadConfigError);
-        throw new Error(uploadConfigError.message || 'Failed to initialize upload');
+      if (uploadError) {
+        throw new Error(`Failed to get upload URL: ${uploadError.message}`);
       }
 
-      console.log('[UPLOAD] Upload config received:', uploadConfig.method);
+      console.log('[UPLOAD] Upload method:', uploadData.method);
 
       let publicUrl = '';
       let storagePath = '';
 
-      if (uploadConfig.method === 'presigned') {
-        // PRESIGNED URL UPLOAD for files < 100MB
-        console.log('[UPLOAD] Using presigned URL upload');
+      if (uploadData.method === 'presigned') {
+        // PRESIGNED URL for small files
+        const startTime = Date.now();
         
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
 
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 85); // Reserve 15% for post-processing
+              const percent = Math.round((e.loaded / e.total) * 85);
               setUploadProgress(percent);
+
+              const elapsedSeconds = (Date.now() - startTime) / 1000;
+              const speedMBps = (e.loaded / elapsedSeconds / 1024 / 1024).toFixed(2);
+              setUploadSpeed(`${speedMBps} MB/s`);
+              setUploadedSize(formatBytes(e.loaded));
+
+              if (speedMBps !== '0.00') {
+                const remainingBytes = e.total - e.loaded;
+                const remainingSeconds = remainingBytes / (e.loaded / elapsedSeconds);
+                setTimeRemaining(formatTime(remainingSeconds));
+              }
             }
           });
 
           xhr.addEventListener('load', () => {
             if (xhr.status === 200) {
-              console.log('[UPLOAD] Presigned upload complete');
               resolve();
             } else {
               reject(new Error(`Upload failed with status ${xhr.status}`));
             }
           });
 
-          xhr.addEventListener('error', () => {
-            reject(new Error('Upload failed'));
-          });
+          xhr.addEventListener('error', () => reject(new Error('Network error')));
 
-          xhr.open('PUT', uploadConfig.uploadUrl);
+          xhr.open('PUT', uploadData.uploadUrl);
           xhr.setRequestHeader('Content-Type', videoFile.type);
           xhr.send(videoFile);
         });
 
-        // Construct R2 public URL
-        const endpoint = 'https://910e9ed45199083ba2001a36025dc5a4.r2.cloudflarestorage.com';
-        const bucketName = 'axessvideo';
-        publicUrl = `${endpoint}/${bucketName}/${uploadConfig.key}`;
-        storagePath = `r2:${uploadConfig.key}`;
+        publicUrl = uploadData.publicUrl;
+        storagePath = `r2:${uploadData.key}`;
         
       } else {
-        // MULTIPART UPLOAD for files >= 100MB
-        console.log('[UPLOAD] Using multipart upload');
+        // MULTIPART UPLOAD with 200MB chunks in parallel
+        console.log('[UPLOAD] Multipart:', uploadData.partCount, 'parts');
         
-        const PART_SIZE = 10 * 1024 * 1024; // 10MB per part
-        const { uploadId, key, partCount } = uploadConfig;
-        const uploadedParts: Array<{ PartNumber: number; ETag: string }> = [];
-        
-        for (let partNumber = 1; partNumber <= partCount; partNumber++) {
-          const start = (partNumber - 1) * PART_SIZE;
-          const end = Math.min(start + PART_SIZE, videoFile.size);
+        const parts: { PartNumber: number; ETag: string }[] = new Array(uploadData.partUrls.length);
+        const totalParts = uploadData.partUrls.length;
+        let completedParts = 0;
+        let uploadedBytes = 0;
+        const startTime = Date.now();
+
+        const uploadPart = async (partNumber: number): Promise<void> => {
+          const start = (partNumber - 1) * uploadData.partSize;
+          const end = Math.min(start + uploadData.partSize, videoFile.size);
           const chunk = videoFile.slice(start, end);
-          
-          // Get presigned URL for this part
-          const { data: partData, error: partError } = await supabase.functions.invoke('get-r2-part-url', {
-            body: { key, uploadId, partNumber },
-          });
 
-          if (partError) {
-            throw new Error(`Failed to get URL for part ${partNumber}: ${partError.message}`);
-          }
-
-          // Upload the part
-          const response = await fetch(partData.url, {
+          const response = await fetch(uploadData.partUrls[partNumber - 1], {
             method: 'PUT',
             body: chunk,
-            headers: partData.headers || {},
+            headers: { 'Content-Type': videoFile.type },
           });
 
           if (!response.ok) {
-            throw new Error(`Part ${partNumber} upload failed with status ${response.status}`);
+            throw new Error(`Part ${partNumber} upload failed`);
           }
 
           const etag = response.headers.get('ETag');
@@ -411,32 +417,60 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             throw new Error(`No ETag for part ${partNumber}`);
           }
 
-          uploadedParts.push({
+          parts[partNumber - 1] = {
             PartNumber: partNumber,
             ETag: etag.replace(/"/g, ''),
-          });
+          };
 
-          const progress = Math.round((partNumber / partCount) * 85); // Reserve 15% for post-processing
-          setUploadProgress(progress);
-          console.log(`[UPLOAD] Part ${partNumber}/${partCount} uploaded (${progress}%)`);
+          completedParts++;
+          uploadedBytes += chunk.size;
+
+          const progressPercent = Math.round((completedParts / totalParts) * 85);
+          setUploadProgress(progressPercent);
+
+          const elapsedSeconds = (Date.now() - startTime) / 1000;
+          const speedMBps = (uploadedBytes / elapsedSeconds / 1024 / 1024).toFixed(2);
+          setUploadSpeed(`${speedMBps} MB/s`);
+          setUploadedSize(formatBytes(uploadedBytes));
+
+          if (speedMBps !== '0.00' && completedParts < totalParts) {
+            const remainingBytes = videoFile.size - uploadedBytes;
+            const remainingSeconds = remainingBytes / (uploadedBytes / elapsedSeconds);
+            setTimeRemaining(formatTime(remainingSeconds));
+          }
+        };
+
+        // Upload parts in parallel batches of 3
+        const uploadQueue = Array.from({ length: totalParts }, (_, i) => i + 1);
+        
+        while (uploadQueue.length > 0) {
+          const batch = uploadQueue.splice(0, PARALLEL_UPLOADS);
+          await Promise.all(batch.map(partNumber => uploadPart(partNumber)));
         }
 
         // Complete multipart upload
         console.log('[UPLOAD] Completing multipart upload...');
-        const { data: completeData, error: completeError } = await supabase.functions.invoke('complete-r2-upload', {
-          body: { key, uploadId, parts: uploadedParts },
+        const { error: completeError } = await supabase.functions.invoke('complete-multipart', {
+          body: {
+            key: uploadData.key,
+            uploadId: uploadData.uploadId,
+            parts: parts.filter(p => p !== undefined),
+          },
         });
 
         if (completeError) {
-          throw new Error(`Failed to complete upload: ${completeError.message}`);
+          throw new Error('Failed to complete multipart upload');
         }
 
-        publicUrl = completeData.url;
-        storagePath = `r2:${key}`;
-        console.log('[UPLOAD] Multipart upload complete');
+        publicUrl = uploadData.publicUrl;
+        storagePath = `r2:${uploadData.key}`;
+        setTimeRemaining('Complete!');
       }
 
-      // Extract thumbnail
+      console.log('[UPLOAD] Upload complete:', publicUrl);
+
+      // Step 2: Extract thumbnail
+      setCurrentPhase('processing');
       setUploadProgress(90);
       console.log('🎬 Extracting video frame for thumbnail...');
       let thumbnailUrl: string | null = null;
@@ -468,7 +502,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         console.warn('⚠️ Frame extraction failed:', frameError);
       }
 
-      // Update video record
+      // Step 3: Update video record
       const { error: updateError } = await supabase
         .from('videos')
         .update({
@@ -480,12 +514,13 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       if (updateError) throw updateError;
       
+      setCurrentPhase('complete');
       setUploadProgress(100);
       
-      const uploadMethod = uploadConfig.method === 'presigned' ? 'presigned URL' : 'multipart';
+      const uploadMethod = uploadData.method === 'presigned' ? 'direct upload' : `multipart (${uploadData.partCount} × 200MB chunks)`;
       toast({
         title: "Upload successful",
-        description: `Your video has been uploaded successfully via ${uploadMethod}`
+        description: `Uploaded via ${uploadMethod}`
       });
 
       // Reset form
@@ -552,7 +587,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div>
               <p className="text-sm font-medium">Drop your video file here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Supports MP4, WebM, QuickTime, Matroska (max 500MB)
+                Supports MP4, WebM, QuickTime, Matroska • Max 10GB • Optimized with 200MB chunks
               </p>
             </div>
           )}
@@ -717,10 +752,13 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
         {/* Upload Progress */}
         {uploading && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Uploading...</span>
-              <span>{uploadProgress}%</span>
+          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 animate-pulse" />
+                <span className="text-sm font-medium">Uploading...</span>
+              </div>
+              {uploadSpeed && <span className="text-sm font-bold text-primary">{uploadSpeed}</span>}
             </div>
             <div className="w-full bg-secondary rounded-full h-2">
               <div
@@ -728,6 +766,16 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{uploadProgress}%</span>
+              {uploadedSize && <span>{uploadedSize}</span>}
+            </div>
+            {timeRemaining && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                <span>Time remaining: {timeRemaining}</span>
+              </div>
+            )}
           </div>
         )}
 
