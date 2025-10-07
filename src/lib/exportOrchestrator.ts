@@ -3,6 +3,7 @@ import { VideoExportProcessor } from './videoExportProcessor';
 import { runBrowserExport } from './browserExportProcessor';
 import { ExportOptions, ExportAssets, VideoExport, ProgressCallback } from '@/types/export';
 import { v4 as uuidv4 } from 'uuid';
+import { R2MultipartUploader } from '@/lib/r2-upload-enhanced';
 
 export class ExportOrchestrator {
   private processor: VideoExportProcessor;
