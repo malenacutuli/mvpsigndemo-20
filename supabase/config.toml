@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.complete-r2-upload]
 verify_jwt = true
+
+[functions.get-r2-part-url]
+verify_jwt = true

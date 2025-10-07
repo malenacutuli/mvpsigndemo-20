@@ -16,8 +16,8 @@ serve(async (req) => {
       return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const { fileName, fileType } = await req.json();
-    if (!fileName) throw new Error("fileName is required");
+    const { key, uploadId, partNumber } = await req.json();
+    if (!key || !uploadId || !partNumber) throw new Error("key, uploadId and partNumber are required");
 
     const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
     const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID");
@@ -38,39 +38,20 @@ serve(async (req) => {
       pathStyle: true,
     });
 
-    const key = `videos/${crypto.randomUUID()}/${fileName}`;
-
-    // Initiate multipart upload: POST ?uploads
-    const headers = new Headers();
-    if (fileType) headers.set("Content-Type", fileType);
-
-    const res = await s3.makeRequest({
-      method: "POST",
+    const url = await s3.getPresignedUrl("PUT", key, {
       bucketName,
-      objectName: key,
-      headers,
-      query: { uploads: "" },
-      returnBody: true,
-      statusCode: 200,
+      parameters: {
+        partNumber: String(partNumber),
+        uploadId: String(uploadId),
+      },
+      expirySeconds: 3600,
     });
 
-    const xml = await res.text();
-    const match = xml.match(/<UploadId>([^<]+)<\/UploadId>/);
-    if (!match) throw new Error("Failed to parse UploadId from R2 response");
-
-    const uploadId = match[1];
-
-    return new Response(
-      JSON.stringify({
-        uploadId,
-        key,
-        bucket: bucketName,
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ url }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err: unknown) {
-    console.error("[generate-r2-upload-url] Error:", err);
+    console.error("[get-r2-part-url] Error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
