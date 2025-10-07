@@ -11,6 +11,7 @@ interface SubscriptionData {
     storage_gb: number;
     videos_per_month: number;
   };
+  max_file_size_gb?: number;
 }
 
 interface SubscriptionContextType extends SubscriptionData {
@@ -37,6 +38,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     subscription_tier: null,
     subscription_end: null,
     features: { storage_gb: 1, videos_per_month: 1 },
+    max_file_size_gb: 5,
   });
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +49,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_tier: null,
         subscription_end: null,
         features: { storage_gb: 1, videos_per_month: 1 },
+        max_file_size_gb: 5,
       });
       return;
     }
@@ -67,6 +70,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_tier: data.subscription_tier || null,
         subscription_end: data.subscription_end || null,
         features: data.features || { storage_gb: 1, videos_per_month: 1 },
+        max_file_size_gb: data.max_file_size_gb ?? 5,
       });
     } catch (error) {
       console.error('Failed to check subscription:', error);
@@ -76,6 +80,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_tier: null,
         subscription_end: null,
         features: { storage_gb: 1, videos_per_month: 1 },
+        max_file_size_gb: 5,
       });
       toast({
         title: "Error",
@@ -186,6 +191,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_tier: null,
         subscription_end: null,
         features: { storage_gb: 1, videos_per_month: 1 },
+        max_file_size_gb: 5,
       });
     }
   }, [user, session]);

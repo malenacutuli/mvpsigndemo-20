@@ -98,12 +98,21 @@ serve(async (req) => {
       hasFeatures: !!result.features_available 
     });
 
+    // Derive max file size per tier without DB changes
+    const tier = result.tier_name || 'free';
+    const maxFileSizeGb = tier === 'premium' ? 100
+      : tier === 'advanced' ? 50
+      : tier === 'standard' ? 20
+      : tier === 'starter' ? 10
+      : 5;
+
     // Return sanitized subscription information
     return new Response(JSON.stringify({
       subscribed: result.is_active,
       subscription_tier: result.tier_name,
       subscription_end: result.expires_at,
-      features: result.features_available
+      features: result.features_available,
+      max_file_size_gb: maxFileSizeGb
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
