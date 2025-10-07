@@ -948,7 +948,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         {/* Info Text */}
         <div className="text-xs text-muted-foreground space-y-1">
           <p>• Your video will be automatically processed for accessibility features</p>
-          <p>• Professional captions, audio descriptions, and ASL support</p>
+          <p>• Professional captions, audio descriptions, and SL support</p>
           <p>• Processing typically takes 2-5 minutes depending on video length</p>
         </div>
       </CardContent>
