@@ -14,7 +14,17 @@ async function createAwsSignature(method: string, url: string, accessKeyId: stri
   const service = 's3';
   const urlObj = new URL(url);
   const payloadHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(payload)))).map(b => b.toString(16).padStart(2, '0')).join('');
-  const canonicalRequest = [method, urlObj.pathname, urlObj.search.substring(1), `host:${urlObj.host}`, `x-amz-content-sha256:${payloadHash}`, `x-amz-date:${dateTime}`, '', 'host;x-amz-content-sha256;x-amz-date', payloadHash].join('\n');
+  const canonicalRequest = [
+    method,
+    urlObj.pathname,
+    urlObj.search.substring(1),
+    `host:${urlObj.host}`,
+    `x-amz-content-sha256:${payloadHash}`,
+    `x-amz-date:${dateTime}`,
+    '',
+    'host;x-amz-content-sha256;x-amz-date',
+    payloadHash
+  ].join('\n');
   const credentialScope = `${date}/${region}/${service}/aws4_request`;
   const canonicalHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(canonicalRequest)))).map(b => b.toString(16).padStart(2, '0')).join('');
   const stringToSign = `AWS4-HMAC-SHA256\n${dateTime}\n${credentialScope}\n${canonicalHash}`;
