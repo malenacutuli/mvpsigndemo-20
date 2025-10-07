@@ -119,7 +119,10 @@ export const BrowserVideoProcessor = ({
       
       // Read the output file
       const outputData = await ffmpeg.readFile('output.mp4');
-      const outputBlob = new Blob([outputData], { type: 'video/mp4' });
+      const outputArray = outputData instanceof Uint8Array 
+        ? new Uint8Array(outputData) 
+        : new TextEncoder().encode(String(outputData));
+      const outputBlob = new Blob([outputArray], { type: 'video/mp4' });
       const outputUrl = URL.createObjectURL(outputBlob);
       
       setProcessedVideoUrl(outputUrl);

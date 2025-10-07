@@ -119,7 +119,10 @@ export class VideoExportManager {
       
       // Read final output
       const data = await this.ffmpeg!.readFile(currentOutput);
-      const blob = new Blob([data as Uint8Array], { type: 'video/mp4' });
+      const dataArray = data instanceof Uint8Array 
+        ? new Uint8Array(data) 
+        : new TextEncoder().encode(String(data));
+      const blob = new Blob([dataArray], { type: 'video/mp4' });
       
       onProgress({ step: 'complete', progress: 100 });
       
