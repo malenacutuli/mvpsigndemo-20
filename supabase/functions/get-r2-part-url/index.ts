@@ -14,7 +14,9 @@ async function createAwsSignature(method: string, url: string, accessKeyId: stri
   const service = 's3';
   const urlObj = new URL(url);
   const payloadHash = 'UNSIGNED-PAYLOAD';
-  const canonicalRequest = [method, urlObj.pathname, urlObj.search.substring(1), `host:${urlObj.host}`, `x-amz-content-sha256:${payloadHash}`, `x-amz-date:${dateTime}`, '', 'host;x-amz-content-sha256;x-amz-date', payloadHash].join('\n');
+  // Build raw path from the original URL to avoid automatic decoding issues
+  const rawPath = url.substring(url.indexOf('/', url.indexOf('://') + 3)).split('?')[0];
+  const canonicalRequest = [method, rawPath, urlObj.search.substring(1), `host:${urlObj.host}`, `x-amz-content-sha256:${payloadHash}`, `x-amz-date:${dateTime}`, '', 'host;x-amz-content-sha256;x-amz-date', payloadHash].join('\n');
   const credentialScope = `${date}/${region}/${service}/aws4_request`;
   const canonicalHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(canonicalRequest)))).map(b => b.toString(16).padStart(2, '0')).join('');
   const stringToSign = `AWS4-HMAC-SHA256\n${dateTime}\n${credentialScope}\n${canonicalHash}`;
@@ -53,7 +55,11 @@ serve(async (req) => {
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
-    const url = `${endpoint}/${bucketName}/${encodeURIComponent(key)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
+    // Encode only the filename (last part), keep path structure intact
+    const pathParts = key.split('/');
+    const fileName = pathParts.pop();
+    const path = pathParts.join('/');
+    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
     console.log('Generated URL:', url);
     
     const auth = await createAwsSignature('PUT', url, accessKeyId, secretAccessKey);

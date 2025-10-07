@@ -80,9 +80,11 @@ serve(async (req) => {
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
     const key = `videos/${user.id}/${crypto.randomUUID()}-${fileName}`;
+    // Encode only the filename (last part), keep path structure intact
     const pathParts = key.split('/');
-    const encodedPath = pathParts.slice(0, -1).join('/') + '/' + encodeURIComponent(pathParts[pathParts.length - 1]);
-    const url = `${endpoint}/${bucketName}/${encodedPath}?uploads=`;
+    const fileName = pathParts.pop(); // Get last part (filename)
+    const path = pathParts.join('/'); // Rest of path without encoding
+    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?uploads=`;
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
