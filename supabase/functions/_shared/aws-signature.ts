@@ -36,8 +36,9 @@ export async function generatePresignedUrl(
   contentType: string,
   expiresIn: number = 3600
 ): Promise<string> {
-  const { accountId, accessKeyId, secretAccessKey, bucketName } = R2_CONFIG;
-  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const { endpoint, accessKeyId, secretAccessKey, bucketName } = R2_CONFIG;
+  const url = new URL(endpoint);
+  const host = url.hostname;
   const region = 'auto';
   const service = 's3';
   
@@ -85,16 +86,17 @@ export async function generatePresignedUrl(
 
   const signature = toHex(await hmacSha256(kSigning, stringToSign));
 
-  return `https://${host}${canonicalUri}?${canonicalQuerystring}&X-Amz-Signature=${signature}`;
+  return `${endpoint}${canonicalUri}?${canonicalQuerystring}&X-Amz-Signature=${signature}`;
 }
 
 export async function initiateMultipartUpload(
   key: string,
   contentType: string
 ): Promise<string> {
-  const { accountId, accessKeyId, secretAccessKey, bucketName } = R2_CONFIG;
-  const host = `${accountId}.r2.cloudflarestorage.com`;
-  const url = `https://${host}/${bucketName}/${key}?uploads`;
+  const { endpoint, accessKeyId, secretAccessKey, bucketName } = R2_CONFIG;
+  const urlObj = new URL(endpoint);
+  const host = urlObj.hostname;
+  const url = `${endpoint}/${bucketName}/${key}?uploads`;
   
   const amzDate = getAmzDate();
   const dateStamp = getDateStamp(amzDate);

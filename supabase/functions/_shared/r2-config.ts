@@ -3,7 +3,7 @@ export const R2_CONFIG = {
   accessKeyId: Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID')!,
   secretAccessKey: Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!,
   bucketName: Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!,
-  endpoint: `https://${Deno.env.get('CLOUDFLARE_R2_ACCOUNT_ID')}.r2.cloudflarestorage.com`,
+  endpoint: Deno.env.get('CLOUDFLARE_R2_ENDPOINT')!,
   publicUrl: 'https://pub-39b722100bf84ae6bb7fee3bbbdb93bb.r2.dev',
 };
 
