@@ -21,21 +21,40 @@ serve(async (req) => {
   }
 
   try {
+    // Get authorization header (case-insensitive)
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      console.error('[S3-UPLOAD] No authorization header found');
+      throw new Error('Unauthorized: Missing authorization header');
+    }
+
+    console.log('[S3-UPLOAD] Auth header present, verifying user...');
+
     // Authenticate user
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('Unauthorized');
+    
+    if (authError) {
+      console.error('[S3-UPLOAD] Auth error:', authError);
+      throw new Error('Unauthorized: ' + authError.message);
     }
+    
+    if (!user) {
+      console.error('[S3-UPLOAD] No user found');
+      throw new Error('Unauthorized: User not found');
+    }
+
+    console.log('[S3-UPLOAD] User authenticated:', user.id);
 
     const action = new URL(req.url).searchParams.get('action');
 
@@ -53,10 +72,18 @@ serve(async (req) => {
       const AWS_ACCESS_KEY = Deno.env.get('AWS_ACCESS_KEY_ID');
       const AWS_SECRET_KEY = Deno.env.get('AWS_SECRET_ACCESS_KEY');
       const AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-1';
-      const S3_BUCKET = Deno.env.get('S3_BUCKET');
+      // Try both S3_BUCKET and common alternatives
+      const S3_BUCKET = Deno.env.get('S3_BUCKET') || Deno.env.get('AWS_S3_BUCKET');
+
+      console.log('[S3-UPLOAD] AWS Config check:', {
+        hasAccessKey: !!AWS_ACCESS_KEY,
+        hasSecretKey: !!AWS_SECRET_KEY,
+        region: AWS_REGION,
+        bucket: S3_BUCKET
+      });
 
       if (!AWS_ACCESS_KEY || !AWS_SECRET_KEY || !S3_BUCKET) {
-        throw new Error('AWS credentials not configured');
+        throw new Error('AWS credentials not configured properly');
       }
 
       const url = `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${encodeURIComponent(key)}?uploads`;
