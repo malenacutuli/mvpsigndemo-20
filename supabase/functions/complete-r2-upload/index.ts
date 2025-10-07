@@ -16,9 +16,9 @@ serve(async (req) => {
       return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const { uploadId, key, parts } = await req.json();
-    if (!uploadId || !key || !Array.isArray(parts) || !parts.length) {
-      throw new Error("uploadId, key and parts[] are required");
+    const { uploadId, key } = await req.json();
+    if (!uploadId || !key) {
+      throw new Error("uploadId and key are required");
     }
 
     const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
@@ -40,29 +40,16 @@ serve(async (req) => {
       pathStyle: true,
     });
 
-    // Build XML body for completing multipart upload
-    const partsXml = parts
-      .sort((a: any, b: any) => a.PartNumber - b.PartNumber)
-      .map((p: any) => `\n    <Part><PartNumber>${p.PartNumber}</PartNumber><ETag>${p.ETag}</ETag></Part>`) // ETag should include quotes
-      .join("");
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<CompleteMultipartUpload>${partsXml}\n</CompleteMultipartUpload>`;
-
-    const headers = new Headers({ "Content-Type": "application/xml" });
-
-    await s3.makeRequest({
-      method: "POST",
+    // Generate a presigned URL for completing the multipart upload (POST ?uploadId=...)
+    const completeUrl = await (s3 as any).getPresignedUrl("POST", key, {
       bucketName,
-      objectName: key,
-      headers,
-      query: { uploadId: String(uploadId) },
-      payload: xml,
-      statusCode: 200,
+      parameters: { uploadId: String(uploadId) },
+      expirySeconds: 3600,
     });
 
     const url = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`;
 
-    return new Response(JSON.stringify({ success: true, url }), {
+    return new Response(JSON.stringify({ completeUrl, url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: unknown) {

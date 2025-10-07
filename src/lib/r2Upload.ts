@@ -8,13 +8,12 @@ export async function uploadLargeVideoToR2(
   file: File,
   onProgress: (progress: number) => void
 ): Promise<string> {
-  // 1) Initiate multipart upload
+  // 1) Initiate multipart upload (get presigned init URL, then call it from browser)
   const { data: initData, error: initError } = await supabase.functions.invoke(
     "generate-r2-upload-url",
     {
       body: {
         fileName: file.name,
-        fileType: file.type,
       },
     }
   );
@@ -22,7 +21,16 @@ export async function uploadLargeVideoToR2(
   if (initError) throw initError;
   if (!initData) throw new Error("No upload initiation data received");
 
-  const { uploadId, key } = initData as { uploadId: string; key: string };
+  const { initUrl, key } = initData as { initUrl: string; key: string };
+
+  const initRes = await fetch(initUrl, { method: "POST" });
+  if (!initRes.ok) {
+    throw new Error(`Failed to initiate multipart upload (${initRes.status})`);
+  }
+  const initXml = await initRes.text();
+  const match = initXml.match(/<UploadId>([^<]+)<\/UploadId>/);
+  if (!match) throw new Error("No UploadId returned by storage");
+  const uploadId = match[1];
 
   // 2) Split file into chunks and upload each part via presigned URL
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
@@ -58,6 +66,9 @@ export async function uploadLargeVideoToR2(
     }
 
     const etag = putRes.headers.get("ETag");
+    if (!etag) {
+      throw new Error("Missing ETag from R2 response. Please enable CORS to expose ETag on your R2 bucket.");
+    }
     parts.push({ PartNumber: partNumber, ETag: etag });
 
     onProgress(Math.round(((i + 1) / totalParts) * 100));

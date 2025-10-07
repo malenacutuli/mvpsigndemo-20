@@ -16,7 +16,7 @@ serve(async (req) => {
       return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const { fileName, fileType } = await req.json();
+    const { fileName } = await req.json();
     if (!fileName) throw new Error("fileName is required");
 
     const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
@@ -40,29 +40,16 @@ serve(async (req) => {
 
     const key = `videos/${crypto.randomUUID()}/${fileName}`;
 
-    // Initiate multipart upload: POST ?uploads
-    const headers = new Headers();
-    if (fileType) headers.set("Content-Type", fileType);
-
-    const res = await s3.makeRequest({
-      method: "POST",
+    // Generate a presigned URL for initiating multipart upload (POST ?uploads)
+    const initUrl = await (s3 as any).getPresignedUrl("POST", key, {
       bucketName,
-      objectName: key,
-      headers,
-      query: { uploads: "" },
-      returnBody: true,
-      statusCode: 200,
+      parameters: { uploads: "" },
+      expirySeconds: 3600,
     });
-
-    const xml = await res.text();
-    const match = xml.match(/<UploadId>([^<]+)<\/UploadId>/);
-    if (!match) throw new Error("Failed to parse UploadId from R2 response");
-
-    const uploadId = match[1];
 
     return new Response(
       JSON.stringify({
-        uploadId,
+        initUrl,
         key,
         bucket: bucketName,
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
