@@ -14,7 +14,7 @@ import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
-import { uploadLargeVideoToR2 } from '@/lib/r2Upload';
+import { uploadToR2 } from '@/lib/r2Upload';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -302,9 +302,15 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         });
 
         try {
-          publicUrl = await uploadLargeVideoToR2(videoFile, (progress) => {
+          const result = await uploadToR2(videoFile, (progress) => {
             setUploadProgress(progress * 0.9); // Reserve 10% for thumbnail
           });
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Upload failed');
+          }
+          
+          publicUrl = result.url!;
           storagePath = `r2:${publicUrl}`;
           console.log('R2 upload complete:', publicUrl);
           

@@ -1,93 +1,41 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB per part
+const CHUNK_SIZE = 10 * 1024 * 1024;
 
-type UploadedPart = { PartNumber: number; ETag: string | null };
+interface UploadPart {
+  partNumber: number;
+  etag: string;
+}
 
-export async function uploadLargeVideoToR2(
-  file: File,
-  onProgress: (progress: number) => void
-): Promise<string> {
-  // 1) Initiate multipart upload (get presigned init URL, then call it from browser)
-  const { data: initData, error: initError } = await supabase.functions.invoke(
-    "generate-r2-upload-url",
-    {
-      body: {
-        fileName: file.name,
-      },
+export async function uploadToR2(file: File, onProgress?: (progress: number) => void): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    console.log('Starting R2 upload:', file.name, file.size);
+    const { data: initData, error: initError } = await supabase.functions.invoke('generate-r2-upload-url', { body: { fileName: file.name, fileType: file.type } });
+    if (initError) throw new Error(initError.message);
+    const { uploadId, key } = initData;
+    console.log('Upload initiated:', uploadId, key);
+    const totalParts = Math.ceil(file.size / CHUNK_SIZE);
+    const uploadedParts: UploadPart[] = [];
+    for (let i = 0; i < totalParts; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const partNumber = i + 1;
+      const { data: urlData, error: urlError } = await supabase.functions.invoke('get-r2-part-url', { body: { key, uploadId, partNumber } });
+      if (urlError) throw new Error(urlError.message);
+      const uploadResponse = await fetch(urlData.presignedUrl, { method: 'PUT', body: chunk, headers: urlData.headers });
+      if (!uploadResponse.ok) throw new Error(`Failed part ${partNumber}: ${uploadResponse.status}`);
+      const etag = uploadResponse.headers.get('ETag')?.replace(/"/g, '') || '';
+      if (!etag) throw new Error(`No ETag for part ${partNumber}`);
+      uploadedParts.push({ partNumber, etag });
+      onProgress?.(Math.round(((i + 1) / totalParts) * 95));
     }
-  );
-
-  if (initError) throw initError;
-  if (!initData) throw new Error("No upload initiation data received");
-
-  const { initUrl, key } = initData as { initUrl: string; key: string };
-
-  const initRes = await fetch(initUrl, { method: "POST" });
-  if (!initRes.ok) {
-    throw new Error(`Failed to initiate multipart upload (${initRes.status})`);
+    const { data: completeData, error: completeError } = await supabase.functions.invoke('complete-r2-upload', { body: { key, uploadId, parts: uploadedParts, fileName: file.name, fileSize: file.size } });
+    if (completeError) throw new Error(completeError.message);
+    onProgress?.(100);
+    return { success: true, url: completeData.url };
+  } catch (error) {
+    console.error('R2 error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
-  const initXml = await initRes.text();
-  const match = initXml.match(/<UploadId>([^<]+)<\/UploadId>/);
-  if (!match) throw new Error("No UploadId returned by storage");
-  const uploadId = match[1];
-
-  // 2) Split file into chunks and upload each part via presigned URL
-  const totalParts = Math.ceil(file.size / CHUNK_SIZE);
-  const parts: UploadedPart[] = [];
-
-  for (let i = 0; i < totalParts; i++) {
-    const start = i * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, file.size);
-    const chunk = file.slice(start, end);
-    const partNumber = i + 1;
-
-    // Get a presigned URL for this part
-    const { data: partUrlData, error: partUrlError } = await supabase.functions.invoke(
-      "get-r2-part-url",
-      {
-        body: { key, uploadId, partNumber },
-      }
-    );
-    if (partUrlError) throw partUrlError;
-
-    const { url } = partUrlData as { url: string };
-
-    const putRes = await fetch(url, {
-      method: "PUT",
-      body: chunk,
-      headers: {
-        "Content-Type": file.type || "application/octet-stream",
-      },
-    });
-
-    if (!putRes.ok) {
-      throw new Error(`Failed to upload part ${partNumber} (${putRes.status})`);
-    }
-
-    const etag = putRes.headers.get("ETag");
-    if (!etag) {
-      throw new Error("Missing ETag from R2 response. Please enable CORS to expose ETag on your R2 bucket.");
-    }
-    parts.push({ PartNumber: partNumber, ETag: etag });
-
-    onProgress(Math.round(((i + 1) / totalParts) * 100));
-  }
-
-  // 3) Complete multipart upload
-  const { data: completeData, error: completeError } = await supabase.functions.invoke(
-    "complete-r2-upload",
-    {
-      body: {
-        uploadId,
-        key,
-        parts,
-      },
-    }
-  );
-
-  if (completeError) throw completeError;
-  if (!completeData || !completeData.url) throw new Error("Failed to complete upload");
-
-  return completeData.url as string;
 }
