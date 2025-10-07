@@ -1,5 +1,8 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.s3-multipart-upload]
+verify_jwt = true
+
 [functions.get-s3-multipart-urls]
 verify_jwt = true
 

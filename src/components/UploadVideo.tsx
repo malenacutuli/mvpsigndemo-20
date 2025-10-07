@@ -259,7 +259,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
     const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
-    const S3_DIRECT_THRESHOLD = 500 * 1024 * 1024; // 500MB
+    const S3_DIRECT_THRESHOLD = 1 * 1024 * 1024 * 1024; // 1GB - use S3 direct for files larger than this
     const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
     const useS3Direct = videoFile.size > S3_DIRECT_THRESHOLD && videoFile.size <= LARGE_FILE_THRESHOLD;
 
@@ -296,7 +296,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let publicUrl = '';
 
       if (useS3Direct) {
-        // Use S3 direct multipart upload for files 500MB-5GB
+        // Use S3 direct multipart upload for files 1GB-5GB
         console.log('Using S3 direct multipart upload');
         console.log('File details:', {
           name: videoFile.name,
@@ -312,7 +312,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
         try {
           // Step 1: Initiate multipart upload
-          const { data: initData, error: initError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+          const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
             body: {
               action: 'initiate',
               fileName: videoFile.name,
@@ -328,7 +328,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           console.log('S3 upload initiated:', { uploadId, key });
 
           // Step 2: Get presigned URLs for all parts
-          const { data: urlsData, error: urlsError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+          const { data: urlsData, error: urlsError } = await supabase.functions.invoke('s3-multipart-upload', {
             body: {
               action: 'getPresignedUrls',
               uploadId,
@@ -397,7 +397,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
           // Step 4: Complete multipart upload
           setUploadProgress(90);
-          const { data: completeData, error: completeError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+          const { data: completeData, error: completeError } = await supabase.functions.invoke('s3-multipart-upload', {
             body: {
               action: 'complete',
               uploadId,
