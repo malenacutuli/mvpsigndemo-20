@@ -50,3 +50,9 @@ verify_jwt = true
 
 [functions.video-analysis-analyze]
 verify_jwt = true
+
+[functions.generate-r2-upload-url]
+verify_jwt = true
+
+[functions.complete-r2-upload]
+verify_jwt = true

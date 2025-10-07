@@ -14,6 +14,7 @@ import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
+import { uploadLargeVideoToR2 } from '@/lib/r2Upload';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -257,6 +258,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
+    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
+    const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
 
     try {
       setUploading(true);
@@ -287,16 +290,89 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('Video record created:', video);
 
-      // Upload video file to storage
-      const fileExt = videoFile.name.split('.').pop();
-      const fileName = `${video.id}.${fileExt}`;
-      
-      console.log('Uploading file to storage...');
-      
-      // For files larger than 6MB, use resumable upload
-      let uploadData, uploadError;
-      
-      if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
+      let storagePath = '';
+      let publicUrl = '';
+
+      if (isLargeFile) {
+        // Use R2 for large files (>5GB)
+        console.log('Uploading large file to R2...');
+        toast({
+          title: "Large file detected",
+          description: "Using optimized upload for large files...",
+        });
+
+        try {
+          publicUrl = await uploadLargeVideoToR2(videoFile, (progress) => {
+            setUploadProgress(progress * 0.9); // Reserve 10% for thumbnail
+          });
+          storagePath = `r2:${publicUrl}`;
+          console.log('R2 upload complete:', publicUrl);
+          
+          // Extract thumbnail
+          setUploadProgress(90);
+          console.log('🎬 Extracting video frame for thumbnail...');
+          let thumbnailUrl: string | null = null;
+          
+          try {
+            const extractedFrame = await extractVideoFrame(videoFile, {
+              quality: 0.9,
+              maxWidth: 1280,
+              maxHeight: 720
+            });
+
+            const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+            const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+              .from('thumbnails')
+              .upload(thumbnailFileName, extractedFrame.blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (!thumbnailUploadError) {
+              const { data: { publicUrl: thumbUrl } } = supabase.storage
+                .from('thumbnails')
+                .getPublicUrl(thumbnailFileName);
+              
+              thumbnailUrl = thumbUrl;
+              console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+            }
+          } catch (frameError) {
+            console.warn('⚠️ Frame extraction failed:', frameError);
+          }
+          
+          // Update video record
+          const { error: updateError } = await supabase
+            .from('videos')
+            .update({
+              storage_path: storagePath,
+              status: 'uploaded' as const,
+              ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+            })
+            .eq('id', video.id);
+
+          if (updateError) throw updateError;
+          
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your large video has been uploaded successfully"
+          });
+          
+        } catch (error) {
+          console.error('R2 upload failed:', error);
+          throw new Error('Failed to upload large file. Please try again.');
+        }
+      } else {
+        // Use Supabase Storage with TUS for smaller files (<5GB)
+        const fileExt = videoFile.name.split('.').pop();
+        const fileName = `${video.id}.${fileExt}`;
+        
+        console.log('Uploading file to Supabase Storage...');
+        
+        // For files larger than 6MB, use resumable upload
+        let uploadData, uploadError;
+        
+        if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
         console.log('Using resumable upload for large file...');
         
         // Use Supabase Storage TUS (resumable) upload for large files
@@ -379,15 +455,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let thumbnailUrl: string | null = null;
       
       try {
-        // Extract frame from the middle of the video for better quality
         const extractedFrame = await extractVideoFrame(videoFile, {
-          // Use middle of video for clearer frame (no timeInSeconds = auto middle)
           quality: 0.9,
           maxWidth: 1280,
           maxHeight: 720
         });
 
-        // Upload thumbnail to Supabase Storage
         const thumbnailFileName = `${video.id}-thumbnail.jpg`;
         const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
           .from('thumbnails')
@@ -399,7 +472,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         if (thumbnailUploadError) {
           console.warn('⚠️ Thumbnail upload failed:', thumbnailUploadError);
         } else {
-          // Get public URL for the thumbnail
           const { data: { publicUrl: thumbUrl } } = supabase.storage
             .from('thumbnails')
             .getPublicUrl(thumbnailFileName);
@@ -413,18 +485,13 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       setUploadProgress(90);
 
-      // Get video URL for fallback thumbnail generation
-      const { data: { publicUrl: videoUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(uploadData.path);
-
       // Update video record with storage path and thumbnail URL
       const { error: updateError } = await supabase
         .from('videos')
         .update({
           storage_path: uploadData.path,
           status: 'uploaded' as const,
-          ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }) // Add thumbnail URL if extracted
+          ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
         })
         .eq('id', video.id);
 
@@ -438,6 +505,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           "Your video and thumbnail have been uploaded successfully" :
           "Your video has been uploaded successfully"
       });
+      } // Close the else block for Supabase Storage
 
       // Reset form
       setVideoFile(null);
