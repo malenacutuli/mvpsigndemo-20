@@ -12,7 +12,6 @@ import { VoiceSelector } from '@/components/VoiceSelector';
 import { SignLanguageAvatarSelector } from '@/components/SignLanguageAvatarSelector';
 import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
 
@@ -41,10 +40,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
   const { toast } = useToast();
   const { user } = useAuth();
-  const { max_file_size_gb, subscription_tier } = useSubscription();
-  const tierFallbackGb = subscription_tier === 'premium' ? 100 : subscription_tier === 'advanced' ? 50 : subscription_tier === 'standard' ? 20 : subscription_tier === 'starter' ? 10 : 5;
-  const effectiveMaxGb = (max_file_size_gb ?? tierFallbackGb);
-  const maxFileSizeBytes = effectiveMaxGb * 1024 * 1024 * 1024;
 
   // Voice libraries for audio descriptions by content type
   const voiceOptions: Record<string, Array<{ id: string; name: string; description: string; elevenLabsId: string; isCloned?: boolean }>> = {
@@ -212,16 +207,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       });
       
       if (file.type.startsWith('video/')) {
-        // Check file size based on plan
-        if (file.size > maxFileSizeBytes) {
-          toast({
-            title: "File too large",
-            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Your plan allows up to ${effectiveMaxGb}GB per file.`,
-            variant: "destructive"
-          });
-          return;
-        }
-        
         setVideoFile(file);
         if (!title) {
           setTitle(file.name.replace(/\.[^/.]+$/, ''));
@@ -248,16 +233,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       });
       
       if (file.type.startsWith('video/')) {
-        // Check file size based on plan
-        if (file.size > maxFileSizeBytes) {
-          toast({
-            title: "File too large",
-            description: `File size is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Your plan allows up to ${effectiveMaxGb}GB per file.`,
-            variant: "destructive"
-          });
-          return;
-        }
-        
         setVideoFile(file);
         if (!title) {
           setTitle(file.name.replace(/\.[^/.]+$/, ''));
