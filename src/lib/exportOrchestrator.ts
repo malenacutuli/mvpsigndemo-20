@@ -95,9 +95,8 @@ export class ExportOrchestrator {
         
         console.log('🚀 Starting R2 multipart upload for export:', exportId);
         
-        uploadedUrl = await uploader.uploadLargeFile(
+        const result = await uploader.uploadLargeFile(
           fileToUpload,
-          storagePath,
           (progress) => {
             // Map upload progress to 85-95% range
             const mappedProgress = 85 + Math.round(progress * 0.1);
@@ -108,6 +107,8 @@ export class ExportOrchestrator {
             });
           }
         );
+        
+        uploadedUrl = result.url; // Extract the URL from the result object
         
         console.log('✅ R2 upload completed:', uploadedUrl);
         
