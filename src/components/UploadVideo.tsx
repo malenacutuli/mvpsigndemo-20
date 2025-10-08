@@ -311,13 +311,22 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         });
 
         try {
+          // Ensure auth token for function call
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+          if (!accessToken) {
+            throw new Error('You must be signed in to upload via S3.');
+          }
           // Step 1: Initiate multipart upload
           const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
             body: {
               action: 'initiate',
               fileName: videoFile.name,
               fileSize: videoFile.size,
-            }
+            },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+            },
           });
 
           if (initError || !initData?.uploadId) {
@@ -334,7 +343,10 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               uploadId,
               key,
               fileSize: videoFile.size,
-            }
+            },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+            },
           });
 
           if (urlsError || !urlsData?.presignedUrls) {
@@ -403,7 +415,10 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               uploadId,
               key,
               parts: uploadedParts,
-            }
+            },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+            },
           });
 
           if (completeError || !completeData?.url) {
