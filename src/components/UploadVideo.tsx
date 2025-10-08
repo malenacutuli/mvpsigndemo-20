@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Video, FileText, Languages, Clock } from 'lucide-react';
+import { Upload, Video, FileText, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,15 +30,8 @@ interface VideoData {
 }
 
 export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) => {
-  const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB limit
-  const PARALLEL_UPLOADS = 3; // Upload 3 chunks simultaneously
-  
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentPhase, setCurrentPhase] = useState<'preparing' | 'uploading' | 'processing' | 'complete'>('preparing');
-  const [uploadSpeed, setUploadSpeed] = useState<string>('');
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
-  const [uploadedSize, setUploadedSize] = useState<string>('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,20 +41,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [selectedASL, setSelectedASL] = useState('teacher-professional'); // Default to education ASL
   const { toast } = useToast();
   const { user } = useAuth();
-
-  const formatBytes = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-  };
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return `${minutes}m ${secs}s`;
-  };
 
   // Voice libraries for audio descriptions by content type
   const voiceOptions: Record<string, Array<{ id: string; name: string; description: string; elevenLabsId: string; isCloned?: boolean }>> = {
@@ -277,17 +256,12 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       return;
     }
 
-    // Use authenticated user ID
-    const userId = user?.id;
-    
-    if (!userId) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upload videos",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Use authenticated user ID or demo UUID if not authenticated
+    const userId = user?.id || crypto.randomUUID();
+    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
+    const S3_DIRECT_THRESHOLD = 1 * 1024 * 1024 * 1024; // 1GB - use S3 direct for files larger than this
+    const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
+    const useS3Direct = videoFile.size > S3_DIRECT_THRESHOLD && videoFile.size <= LARGE_FILE_THRESHOLD;
 
     try {
       setUploading(true);
@@ -318,160 +292,355 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('Video record created:', video);
 
-      // Step 1: Get upload URL/method
-      console.log('[UPLOAD] Requesting upload URL...', {
-        filename: videoFile.name,
-        size: formatBytes(videoFile.size),
-        type: videoFile.type
-      });
-      setCurrentPhase('uploading');
-
-      const { data: uploadData, error: uploadError } = await supabase.functions.invoke('generate-upload-url', {
-        body: {
-          filename: videoFile.name,
-          contentType: videoFile.type,
-          fileSize: videoFile.size,
-          userId: user.id,
-        }
-      });
-
-      if (uploadError) {
-        throw new Error(`Failed to get upload URL: ${uploadError.message}`);
-      }
-
-      console.log('[UPLOAD] Upload method:', uploadData.method);
-
-      let publicUrl = '';
       let storagePath = '';
+      let publicUrl = '';
 
-      if (uploadData.method === 'presigned') {
-        // PRESIGNED URL for small files
-        const startTime = Date.now();
+      if (useS3Direct) {
+        // Use S3 direct multipart upload for files 1GB-5GB
+        console.log('Using S3 direct multipart upload');
+        console.log('File details:', {
+          name: videoFile.name,
+          size: videoFile.size,
+          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          type: videoFile.type
+        });
         
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-
-          xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 85);
-              setUploadProgress(percent);
-
-              const elapsedSeconds = (Date.now() - startTime) / 1000;
-              const speedMBps = (e.loaded / elapsedSeconds / 1024 / 1024).toFixed(2);
-              setUploadSpeed(`${speedMBps} MB/s`);
-              setUploadedSize(formatBytes(e.loaded));
-
-              if (speedMBps !== '0.00') {
-                const remainingBytes = e.total - e.loaded;
-                const remainingSeconds = remainingBytes / (e.loaded / elapsedSeconds);
-                setTimeRemaining(formatTime(remainingSeconds));
-              }
-            }
-          });
-
-          xhr.addEventListener('load', () => {
-            if (xhr.status === 200) {
-              resolve();
-            } else {
-              reject(new Error(`Upload failed with status ${xhr.status}`));
-            }
-          });
-
-          xhr.addEventListener('error', () => reject(new Error('Network error')));
-
-          xhr.open('PUT', uploadData.uploadUrl);
-          xhr.setRequestHeader('Content-Type', videoFile.type);
-          xhr.send(videoFile);
+        toast({
+          title: "Large file detected",
+          description: "Using optimized S3 direct upload...",
         });
 
-        publicUrl = uploadData.publicUrl;
-        storagePath = `r2:${uploadData.key}`;
-        
-      } else {
-        // MULTIPART UPLOAD with 200MB chunks in parallel
-        console.log('[UPLOAD] Multipart:', uploadData.partCount, 'parts');
-        
-        const parts: { PartNumber: number; ETag: string }[] = new Array(uploadData.partUrls.length);
-        const totalParts = uploadData.partUrls.length;
-        let completedParts = 0;
-        let uploadedBytes = 0;
-        const startTime = Date.now();
-
-        const uploadPart = async (partNumber: number): Promise<void> => {
-          const start = (partNumber - 1) * uploadData.partSize;
-          const end = Math.min(start + uploadData.partSize, videoFile.size);
-          const chunk = videoFile.slice(start, end);
-
-          const response = await fetch(uploadData.partUrls[partNumber - 1], {
-            method: 'PUT',
-            body: chunk,
-            headers: { 'Content-Type': videoFile.type },
+        try {
+          // Step 1: Initiate multipart upload
+          const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
+            body: {
+              action: 'initiate',
+              fileName: videoFile.name,
+              fileSize: videoFile.size,
+            }
           });
 
-          if (!response.ok) {
-            throw new Error(`Part ${partNumber} upload failed`);
+          if (initError || !initData?.uploadId) {
+            throw new Error('Failed to initiate S3 upload');
           }
 
-          const etag = response.headers.get('ETag');
-          if (!etag) {
-            throw new Error(`No ETag for part ${partNumber}`);
+          const { uploadId, key } = initData;
+          console.log('S3 upload initiated:', { uploadId, key });
+
+          // Step 2: Get presigned URLs for all parts
+          const { data: urlsData, error: urlsError } = await supabase.functions.invoke('s3-multipart-upload', {
+            body: {
+              action: 'getPresignedUrls',
+              uploadId,
+              key,
+              fileSize: videoFile.size,
+            }
+          });
+
+          if (urlsError || !urlsData?.presignedUrls) {
+            throw new Error('Failed to get presigned URLs');
           }
 
-          parts[partNumber - 1] = {
-            PartNumber: partNumber,
-            ETag: etag.replace(/"/g, ''),
+          const { presignedUrls } = urlsData;
+          console.log(`Got ${presignedUrls.length} presigned URLs`);
+
+          // Step 3: Upload parts with concurrency control
+          const PART_SIZE = 10 * 1024 * 1024; // 10MB
+          const MAX_CONCURRENT = 10;
+          const uploadedParts: Array<{ PartNumber: number; ETag: string }> = [];
+          
+          let uploadedBytes = 0;
+          const totalBytes = videoFile.size;
+
+          const uploadPart = async (partInfo: { partNumber: number; url: string }) => {
+            const start = (partInfo.partNumber - 1) * PART_SIZE;
+            const end = Math.min(start + PART_SIZE, videoFile.size);
+            const chunk = videoFile.slice(start, end);
+
+            const response = await fetch(partInfo.url, {
+              method: 'PUT',
+              body: chunk,
+              headers: {
+                'Content-Type': 'application/octet-stream',
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to upload part ${partInfo.partNumber}`);
+            }
+
+            const etag = response.headers.get('ETag');
+            if (!etag) {
+              throw new Error(`No ETag received for part ${partInfo.partNumber}`);
+            }
+
+            uploadedBytes += chunk.size;
+            const progress = Math.round((uploadedBytes / totalBytes) * 90); // Reserve 10% for finalization
+            setUploadProgress(progress);
+            console.log(`Part ${partInfo.partNumber} uploaded (${progress}%)`);
+
+            return {
+              PartNumber: partInfo.partNumber,
+              ETag: etag.replace(/"/g, ''), // Remove quotes
+            };
           };
 
-          completedParts++;
-          uploadedBytes += chunk.size;
-
-          const progressPercent = Math.round((completedParts / totalParts) * 85);
-          setUploadProgress(progressPercent);
-
-          const elapsedSeconds = (Date.now() - startTime) / 1000;
-          const speedMBps = (uploadedBytes / elapsedSeconds / 1024 / 1024).toFixed(2);
-          setUploadSpeed(`${speedMBps} MB/s`);
-          setUploadedSize(formatBytes(uploadedBytes));
-
-          if (speedMBps !== '0.00' && completedParts < totalParts) {
-            const remainingBytes = videoFile.size - uploadedBytes;
-            const remainingSeconds = remainingBytes / (uploadedBytes / elapsedSeconds);
-            setTimeRemaining(formatTime(remainingSeconds));
+          // Upload parts with concurrency control
+          for (let i = 0; i < presignedUrls.length; i += MAX_CONCURRENT) {
+            const batch = presignedUrls.slice(i, i + MAX_CONCURRENT);
+            const results = await Promise.all(batch.map(uploadPart));
+            uploadedParts.push(...results);
           }
-        };
 
-        // Upload parts in parallel batches of 3
-        const uploadQueue = Array.from({ length: totalParts }, (_, i) => i + 1);
-        
-        while (uploadQueue.length > 0) {
-          const batch = uploadQueue.splice(0, PARALLEL_UPLOADS);
-          await Promise.all(batch.map(partNumber => uploadPart(partNumber)));
+          // Sort parts by part number
+          uploadedParts.sort((a, b) => a.PartNumber - b.PartNumber);
+
+          // Step 4: Complete multipart upload
+          setUploadProgress(90);
+          const { data: completeData, error: completeError } = await supabase.functions.invoke('s3-multipart-upload', {
+            body: {
+              action: 'complete',
+              uploadId,
+              key,
+              parts: uploadedParts,
+            }
+          });
+
+          if (completeError || !completeData?.url) {
+            throw new Error('Failed to complete S3 upload');
+          }
+
+          publicUrl = completeData.url;
+          storagePath = `s3:${publicUrl}`;
+          console.log('S3 direct upload complete:', publicUrl);
+          
+          // Extract thumbnail
+          setUploadProgress(95);
+          console.log('🎬 Extracting video frame for thumbnail...');
+          let thumbnailUrl: string | null = null;
+          
+          try {
+            const extractedFrame = await extractVideoFrame(videoFile, {
+              quality: 0.9,
+              maxWidth: 1280,
+              maxHeight: 720
+            });
+
+            const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+            const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+              .from('thumbnails')
+              .upload(thumbnailFileName, extractedFrame.blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (!thumbnailUploadError) {
+              const { data: { publicUrl: thumbUrl } } = supabase.storage
+                .from('thumbnails')
+                .getPublicUrl(thumbnailFileName);
+              
+              thumbnailUrl = thumbUrl;
+              console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+            }
+          } catch (frameError) {
+            console.warn('⚠️ Frame extraction failed:', frameError);
+          }
+          
+          // Update video record
+          const { error: updateError } = await supabase
+            .from('videos')
+            .update({
+              storage_path: storagePath,
+              status: 'uploaded' as const,
+              ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+            })
+            .eq('id', video.id);
+
+          if (updateError) throw updateError;
+          
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your video has been uploaded successfully via S3 direct upload"
+          });
+          
+        } catch (error) {
+          console.error('S3 direct upload failed:', error);
+          throw new Error('Failed to upload file via S3. Please try again.');
         }
-
-        // Complete multipart upload
-        console.log('[UPLOAD] Completing multipart upload...');
-        const { error: completeError } = await supabase.functions.invoke('complete-multipart', {
-          body: {
-            key: uploadData.key,
-            uploadId: uploadData.uploadId,
-            parts: parts.filter(p => p !== undefined),
-          },
+      } else if (isLargeFile) {
+        // Use R2 for large files (>5GB)
+        console.log('Using R2 for large file upload');
+        console.log('File details:', {
+          name: videoFile.name,
+          size: videoFile.size,
+          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          type: videoFile.type
+        });
+        
+        toast({
+          title: "Large file detected",
+          description: "Using optimized upload for large files...",
         });
 
-        if (completeError) {
-          throw new Error('Failed to complete multipart upload');
+        try {
+          const result = await uploadToR2(videoFile, (progress) => {
+            console.log('Upload progress:', progress + '%');
+            setUploadProgress(progress * 0.9); // Reserve 10% for thumbnail
+          });
+          
+          if (!result.success) {
+            console.error('R2 upload failed:', result.error);
+            throw new Error(result.error || 'Upload failed');
+          }
+          
+          publicUrl = result.url!;
+          storagePath = `r2:${publicUrl}`;
+          console.log('R2 upload complete:', publicUrl);
+          
+          // Extract thumbnail
+          setUploadProgress(90);
+          console.log('🎬 Extracting video frame for thumbnail...');
+          let thumbnailUrl: string | null = null;
+          
+          try {
+            const extractedFrame = await extractVideoFrame(videoFile, {
+              quality: 0.9,
+              maxWidth: 1280,
+              maxHeight: 720
+            });
+
+            const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+            const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+              .from('thumbnails')
+              .upload(thumbnailFileName, extractedFrame.blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (!thumbnailUploadError) {
+              const { data: { publicUrl: thumbUrl } } = supabase.storage
+                .from('thumbnails')
+                .getPublicUrl(thumbnailFileName);
+              
+              thumbnailUrl = thumbUrl;
+              console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+            }
+          } catch (frameError) {
+            console.warn('⚠️ Frame extraction failed:', frameError);
+          }
+          
+          // Update video record
+          const { error: updateError } = await supabase
+            .from('videos')
+            .update({
+              storage_path: storagePath,
+              status: 'uploaded' as const,
+              ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+            })
+            .eq('id', video.id);
+
+          if (updateError) throw updateError;
+          
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your large video has been uploaded successfully"
+          });
+          
+        } catch (error) {
+          console.error('R2 upload failed:', error);
+          throw new Error('Failed to upload large file. Please try again.');
+        }
+      } else {
+        // Use Supabase Storage with TUS for smaller files (<5GB)
+        const fileExt = videoFile.name.split('.').pop();
+        const fileName = `${video.id}.${fileExt}`;
+        
+        console.log('Uploading file to Supabase Storage...');
+        
+        // For files larger than 6MB, use resumable upload
+        let uploadData, uploadError;
+        
+        if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
+        console.log('Using resumable upload for large file...');
+        
+        // Use Supabase Storage TUS (resumable) upload for large files
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+          throw new Error('You must be signed in to upload large files.');
         }
 
-        publicUrl = uploadData.publicUrl;
-        storagePath = `r2:${uploadData.key}`;
-        setTimeRemaining('Complete!');
+        const endpoint = `https://faeyekynudyzeotbjfsj.storage.supabase.co/storage/v1/upload/resumable`;
+        const objectPath = `originals/${fileName}`;
+
+        await new Promise<void>((resolve, reject) => {
+          const upload = new TusUpload(videoFile, {
+            endpoint,
+            retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              'x-upsert': 'false',
+            },
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            metadata: {
+              bucketName: 'videos',
+              objectName: objectPath,
+              contentType: videoFile.type || 'video/mp4',
+              cacheControl: '3600',
+            },
+            chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
+            onError: (err) => {
+              console.error('Resumable upload error:', err);
+              reject(err);
+            },
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const pct = Math.min(60, Math.round((bytesUploaded / bytesTotal) * 60)); // cap at 60% until post-processing
+              setUploadProgress(pct);
+            },
+            onSuccess: () => {
+              console.log('Resumable upload completed.');
+              resolve();
+            },
+          });
+
+          upload.findPreviousUploads().then((previous) => {
+            if (previous.length) {
+              upload.resumeFromPreviousUpload(previous[0]);
+            }
+            upload.start();
+          });
+        });
+
+        // Mimic Supabase upload response
+        uploadData = { path: objectPath } as any;
+        uploadError = null;
+      } else {
+        console.log('Using standard upload for small file...');
+        
+        // Use standard upload for small files
+        const { data, error } = await supabase.storage
+          .from('videos')
+          .upload(`originals/${fileName}`, videoFile, {
+            contentType: videoFile.type,
+            upsert: false
+          });
+          
+        uploadData = data;
+        uploadError = error;
       }
 
-      console.log('[UPLOAD] Upload complete:', publicUrl);
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
-      // Step 2: Extract thumbnail
-      setCurrentPhase('processing');
-      setUploadProgress(90);
+      console.log('File uploaded successfully:', uploadData);
+
+      // Extract video frame for thumbnail
+      setUploadProgress(75);
       console.log('🎬 Extracting video frame for thumbnail...');
       let thumbnailUrl: string | null = null;
       
@@ -490,38 +659,43 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             upsert: true
           });
 
-        if (!thumbnailUploadError) {
+        if (thumbnailUploadError) {
+          console.warn('⚠️ Thumbnail upload failed:', thumbnailUploadError);
+        } else {
           const { data: { publicUrl: thumbUrl } } = supabase.storage
             .from('thumbnails')
             .getPublicUrl(thumbnailFileName);
           
           thumbnailUrl = thumbUrl;
-          console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+          console.log('✅ Thumbnail extracted and uploaded:', thumbnailUrl);
         }
       } catch (frameError) {
         console.warn('⚠️ Frame extraction failed:', frameError);
       }
 
-      // Step 3: Update video record
+      setUploadProgress(90);
+
+      // Update video record with storage path and thumbnail URL
       const { error: updateError } = await supabase
         .from('videos')
         .update({
-          storage_path: storagePath,
+          storage_path: uploadData.path,
           status: 'uploaded' as const,
           ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
         })
         .eq('id', video.id);
 
       if (updateError) throw updateError;
-      
-      setCurrentPhase('complete');
+
       setUploadProgress(100);
-      
-      const uploadMethod = uploadData.method === 'presigned' ? 'direct upload' : `multipart (${uploadData.partCount} × 200MB chunks)`;
+
       toast({
         title: "Upload successful",
-        description: `Uploaded via ${uploadMethod}`
+        description: thumbnailUrl ? 
+          "Your video and thumbnail have been uploaded successfully" :
+          "Your video has been uploaded successfully"
       });
+      } // Close the else block for Supabase Storage
 
       // Reset form
       setVideoFile(null);
@@ -587,7 +761,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div>
               <p className="text-sm font-medium">Drop your video file here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Supports MP4, WebM, QuickTime, Matroska • Max 10GB • Optimized with 200MB chunks
+                Supports MP4, MOV, AVI (max 5GB)
               </p>
             </div>
           )}
@@ -752,13 +926,10 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
         {/* Upload Progress */}
         {uploading && (
-          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Upload className="w-4 h-4 animate-pulse" />
-                <span className="text-sm font-medium">Uploading...</span>
-              </div>
-              {uploadSpeed && <span className="text-sm font-bold text-primary">{uploadSpeed}</span>}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Uploading...</span>
+              <span>{uploadProgress}%</span>
             </div>
             <div className="w-full bg-secondary rounded-full h-2">
               <div
@@ -766,16 +937,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{uploadProgress}%</span>
-              {uploadedSize && <span>{uploadedSize}</span>}
-            </div>
-            {timeRemaining && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>Time remaining: {timeRemaining}</span>
-              </div>
-            )}
           </div>
         )}
 
