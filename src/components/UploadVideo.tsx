@@ -429,20 +429,32 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           storagePath = `s3:${publicUrl}`;
           console.log('S3 direct upload complete:', publicUrl);
           
-          // Extract thumbnail
+          // Update video record immediately
           setUploadProgress(95);
-          console.log('🎬 Extracting video frame for thumbnail...');
-          let thumbnailUrl: string | null = null;
-          
-          try {
-            const extractedFrame = await extractVideoFrame(videoFile, {
-              quality: 0.9,
-              maxWidth: 1280,
-              maxHeight: 720
-            });
+          const { error: updateError } = await supabase
+            .from('videos')
+            .update({
+              storage_path: storagePath,
+              status: 'uploaded' as const,
+            })
+            .eq('id', video.id);
 
+          if (updateError) throw updateError;
+          
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your video has been uploaded successfully"
+          });
+          
+          // Extract thumbnail in background (non-blocking)
+          extractVideoFrame(videoFile, {
+            quality: 0.9,
+            maxWidth: 1280,
+            maxHeight: 720
+          }).then(async (extractedFrame) => {
             const thumbnailFileName = `${video.id}-thumbnail.jpg`;
-            const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+            const { error: thumbnailUploadError } = await supabase.storage
               .from('thumbnails')
               .upload(thumbnailFileName, extractedFrame.blob, {
                 contentType: 'image/jpeg',
@@ -454,30 +466,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 .from('thumbnails')
                 .getPublicUrl(thumbnailFileName);
               
-              thumbnailUrl = thumbUrl;
-              console.log('✅ Thumbnail uploaded:', thumbnailUrl);
+              await supabase
+                .from('videos')
+                .update({ thumbnail_url: thumbUrl })
+                .eq('id', video.id);
+              
+              console.log('✅ Thumbnail uploaded:', thumbUrl);
             }
-          } catch (frameError) {
-            console.warn('⚠️ Frame extraction failed:', frameError);
-          }
-          
-          // Update video record
-          const { error: updateError } = await supabase
-            .from('videos')
-            .update({
-              storage_path: storagePath,
-              status: 'uploaded' as const,
-              ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
-            })
-            .eq('id', video.id);
-
-          if (updateError) throw updateError;
-          
-          setUploadProgress(100);
-          toast({
-            title: "Upload successful",
-            description: "Your video has been uploaded successfully via S3 direct upload"
-          });
+          }).catch((err) => console.warn('⚠️ Thumbnail upload failed:', err));
           
         } catch (error) {
           console.error('S3 direct upload failed:', error);
