@@ -432,6 +432,20 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     if (editingIndex === null) return;
     
     const updated = [...editingTranscript];
+    
+    // Check if speaker name changed
+    const speakerChanged = editSpeaker !== originalSpeaker;
+    
+    // If speaker changed, load character colors to ensure we use the right color
+    let characterColor = editSpeakerColor;
+    if (speakerChanged) {
+      const characters = await loadCharacters();
+      const matchingCharacter = characters.find(c => c.name === editSpeaker);
+      if (matchingCharacter) {
+        characterColor = matchingCharacter.color;
+      }
+    }
+    
     // Apply edits to the current segment
     updated[editingIndex] = {
       ...updated[editingIndex],
@@ -439,28 +453,47 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       startTime: parseTimeInput(editStartTime),
       endTime: parseTimeInput(editEndTime),
       speaker: editSpeaker,
-      speakerColor: editSpeakerColor,
-      emphasis: useWordLevelEditing ? 'normal' : editEmphasis, // Use word-level if enabled
+      speakerColor: characterColor,
+      emphasis: useWordLevelEditing ? 'normal' : editEmphasis,
       pitch: useWordLevelEditing ? 'normal' : editPitch,
-      words: useWordLevelEditing ? editWords : undefined, // Save word-level data if enabled
+      words: useWordLevelEditing ? editWords : undefined,
     };
 
-    // Optionally propagate to all matching segments only if explicitly enabled
+    // ALWAYS propagate speaker name changes to all matching segments
     let nextSegments = updated;
-    if (editApplyToAll) {
-      const propagated = updated.map((seg, idx) => {
+    if (speakerChanged) {
+      nextSegments = updated.map((seg, idx) => {
+        const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
+        const matchesColor = originalColor && seg.speakerColor === originalColor;
+        if (matchesSpeaker || matchesColor) {
+          return {
+            ...seg,
+            speaker: editSpeaker,
+            speakerColor: characterColor,
+          };
+        }
+        return seg;
+      });
+      
+      const updateCount = nextSegments.filter(s => s.speaker === editSpeaker).length;
+      toast({
+        title: "Speaker Updated",
+        description: `Updated ${updateCount} segment(s) from "${originalSpeaker}" to "${editSpeaker}" with color assignment`,
+      });
+    } else if (editApplyToAll) {
+      // Only propagate other changes if explicitly enabled
+      nextSegments = updated.map((seg, idx) => {
         const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
         const matchesColor = originalColor && seg.speakerColor === originalColor;
         if ((matchesSpeaker || matchesColor) && idx !== editingIndex) {
           return {
             ...seg,
             speaker: editSpeaker,
-            speakerColor: editSpeakerColor,
+            speakerColor: characterColor,
           };
         }
         return seg;
       });
-      nextSegments = propagated;
     }
     
     // Sort segments by time after editing timing
@@ -469,7 +502,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     // Save immediately to database with proper transcript record
     await saveTranscriptData(sortedSegments, selectedLanguage);
-    onTranscriptUpdate?.(sortedSegments, selectedLanguage); // Immediately apply to video player
+    onTranscriptUpdate?.(sortedSegments, selectedLanguage);
     resetEditState();
   };
 
