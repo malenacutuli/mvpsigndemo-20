@@ -6,12 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Merge, X } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -102,9 +101,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
-  const [speakerStats, setSpeakerStats] = useState<Record<string, { segments: number; duration: number }>>({});
-  const [mergeSpeakers, setMergeSpeakers] = useState<string[]>([]);
-  const [showMergeDialog, setShowMergeDialog] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
 
   // Load existing characters on mount
@@ -228,134 +224,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   // Track if we've loaded mappings for this video/language once to avoid overwriting user selections on re-renders
   const loadedMappingsKeyRef = useRef<string | null>(null);
 
-  // Load speaker statistics (segment count and duration)
-  const loadSpeakerStatistics = async () => {
-    try {
-      const { data: segments } = await supabase
-        .from('transcript_segments')
-        .select('speaker, start_time, end_time')
-        .eq('video_id', videoId)
-        .eq('language', language);
-
-      if (segments && segments.length > 0) {
-        const stats: Record<string, { segments: number; duration: number }> = {};
-        
-        segments.forEach((seg: any) => {
-          if (!seg.speaker) return;
-          if (!stats[seg.speaker]) {
-            stats[seg.speaker] = { segments: 0, duration: 0 };
-          }
-          stats[seg.speaker].segments++;
-          stats[seg.speaker].duration += (seg.end_time - seg.start_time);
-        });
-        
-        setSpeakerStats(stats);
-        console.log('📊 Speaker statistics loaded:', stats);
-      }
-    } catch (error) {
-      console.error('Failed to load speaker statistics:', error);
-    }
-  };
-
-  // Merge multiple speakers into one
-  const handleMergeSpeakers = async (targetSpeaker: string, speakersToMerge: string[]) => {
-    if (speakersToMerge.length === 0) {
-      toast({
-        title: "No Speakers Selected",
-        description: "Please select speakers to merge",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Update all segments with the merged speakers to use the target speaker
-      const { error } = await supabase
-        .from('transcript_segments')
-        .update({ speaker: targetSpeaker })
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .in('speaker', speakersToMerge);
-
-      if (error) throw error;
-
-      // Update available speakers list
-      const updatedSpeakers = availableSpeakers.filter(s => !speakersToMerge.includes(s));
-      setAvailableSpeakers(updatedSpeakers);
-      sessionStorage.setItem(`speakers_${videoId}_${language}`, updatedSpeakers.join('\n'));
-      
-      // Reload statistics
-      await loadSpeakerStatistics();
-      
-      setMergeSpeakers([]);
-      setShowMergeDialog(false);
-      
-      toast({
-        title: "Speakers Merged",
-        description: `Merged ${speakersToMerge.length} speakers into ${targetSpeaker}`
-      });
-    } catch (error) {
-      console.error('Failed to merge speakers:', error);
-      toast({
-        title: "Merge Failed",
-        description: "Failed to merge speakers",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Delete/filter speakers with minimal duration
-  const handleFilterLowDurationSpeakers = async (minDurationSeconds: number = 5) => {
-    try {
-      const speakersToRemove = Object.entries(speakerStats)
-        .filter(([_, stats]) => stats.duration < minDurationSeconds)
-        .map(([speaker]) => speaker);
-
-      if (speakersToRemove.length === 0) {
-        toast({
-          title: "No Speakers to Remove",
-          description: `All speakers have at least ${minDurationSeconds} seconds of speaking time`
-        });
-        return;
-      }
-
-      // Delete segments for low-duration speakers
-      const { error } = await supabase
-        .from('transcript_segments')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .in('speaker', speakersToRemove);
-
-      if (error) throw error;
-
-      // Update available speakers list
-      const updatedSpeakers = availableSpeakers.filter(s => !speakersToRemove.includes(s));
-      setAvailableSpeakers(updatedSpeakers);
-      sessionStorage.setItem(`speakers_${videoId}_${language}`, updatedSpeakers.join('\n'));
-      
-      // Reload statistics
-      await loadSpeakerStatistics();
-      
-      toast({
-        title: "Low Duration Speakers Removed",
-        description: `Removed ${speakersToRemove.length} speakers with less than ${minDurationSeconds} seconds of speaking time`
-      });
-    } catch (error) {
-      console.error('Failed to filter speakers:', error);
-      toast({
-        title: "Filter Failed",
-        description: "Failed to remove low duration speakers",
-        variant: "destructive"
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (availableSpeakers.length > 0) {
-      loadSpeakerStatistics();
-    }
-  }, [availableSpeakers.length, videoId, language]);
 
   useEffect(() => {
     const key = `${videoId}:${language}`;
@@ -486,12 +354,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
-      // Update both speaker mappings AND unmapped segments
+      // Update transcript segments based on character assignments
       for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
         const character = characters.find(c => c.name === characterName);
         if (character) {
-          // Update all transcript segments with this original speaker name to new character
-          const { data, error } = await supabase
+          // Update all transcript segments with matching speaker to use character name and color
+          const { error } = await supabase
             .from('transcript_segments')
             .update({
               speaker: characterName,
