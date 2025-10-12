@@ -107,6 +107,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
+  // Load characters from localStorage
+  useEffect(() => {
+    const loadCharactersFromStorage = async () => {
+      try {
+        const characters = await loadCharacters();
+        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+      } catch (error) {
+        console.error('Failed to load characters:', error);
+      }
+    };
+    loadCharactersFromStorage();
+  }, []);
+
   // Load saved transcript on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
@@ -433,68 +446,20 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     const updated = [...editingTranscript];
     
-    // Check if speaker name changed
-    const speakerChanged = editSpeaker !== originalSpeaker;
-    
-    // If speaker changed, load character colors to ensure we use the right color
-    let characterColor = editSpeakerColor;
-    if (speakerChanged) {
-      const characters = await loadCharacters();
-      const matchingCharacter = characters.find(c => c.name === editSpeaker);
-      if (matchingCharacter) {
-        characterColor = matchingCharacter.color;
-      }
-    }
-    
-    // Apply edits to the current segment
+    // Apply edits to the current segment only (no automatic propagation)
     updated[editingIndex] = {
       ...updated[editingIndex],
       text: editText,
       startTime: parseTimeInput(editStartTime),
       endTime: parseTimeInput(editEndTime),
       speaker: editSpeaker,
-      speakerColor: characterColor,
+      speakerColor: editSpeakerColor,
       emphasis: useWordLevelEditing ? 'normal' : editEmphasis,
       pitch: useWordLevelEditing ? 'normal' : editPitch,
       words: useWordLevelEditing ? editWords : undefined,
     };
 
-    // ALWAYS propagate speaker name changes to all matching segments
-    let nextSegments = updated;
-    if (speakerChanged) {
-      nextSegments = updated.map((seg, idx) => {
-        const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
-        const matchesColor = originalColor && seg.speakerColor === originalColor;
-        if (matchesSpeaker || matchesColor) {
-          return {
-            ...seg,
-            speaker: editSpeaker,
-            speakerColor: characterColor,
-          };
-        }
-        return seg;
-      });
-      
-      const updateCount = nextSegments.filter(s => s.speaker === editSpeaker).length;
-      toast({
-        title: "Speaker Updated",
-        description: `Updated ${updateCount} segment(s) from "${originalSpeaker}" to "${editSpeaker}" with color assignment`,
-      });
-    } else if (editApplyToAll) {
-      // Only propagate other changes if explicitly enabled
-      nextSegments = updated.map((seg, idx) => {
-        const matchesSpeaker = originalSpeaker && seg.speaker === originalSpeaker;
-        const matchesColor = originalColor && seg.speakerColor === originalColor;
-        if ((matchesSpeaker || matchesColor) && idx !== editingIndex) {
-          return {
-            ...seg,
-            speaker: editSpeaker,
-            speakerColor: characterColor,
-          };
-        }
-        return seg;
-      });
-    }
+    const nextSegments = updated;
     
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(nextSegments);
@@ -1020,32 +985,53 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                       </div>
                     </div>
                     
-                    {/* Speaker & Styling */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          Speaker
-                        </Label>
-                        <Input
-                          value={editSpeaker}
-                          onChange={(e) => setEditSpeaker(e.target.value)}
-                          placeholder="Speaker name (e.g., Teacher, Chef, Host)"
-                          className="text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
-                          <Palette className="w-3 h-3" />
-                          Color
-                        </Label>
-                        <Input
-                          type="color"
-                          value={editSpeakerColor}
-                          onChange={(e) => setEditSpeakerColor(e.target.value)}
-                          className="h-8 p-1"
-                        />
-                      </div>
+                    {/* Speaker Selection */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        Character / Speaker
+                      </Label>
+                      <Select
+                        value={editSpeaker}
+                        onValueChange={(value) => {
+                          setEditSpeaker(value);
+                          const character = availableCharacters.find(c => c.name === value);
+                          if (character) {
+                            setEditSpeakerColor(character.color);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full border" 
+                                style={{ backgroundColor: editSpeakerColor }}
+                              />
+                              <span className="text-xs">{editSpeaker || 'Select character...'}</span>
+                            </div>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCharacters.length === 0 ? (
+                            <div className="p-2 text-xs text-muted-foreground">
+                              No characters assigned yet. Use the Speaker Assignment section below to create characters.
+                            </div>
+                          ) : (
+                            availableCharacters.map((char) => (
+                              <SelectItem key={char.name} value={char.name}>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full border" 
+                                    style={{ backgroundColor: char.color }}
+                                  />
+                                  <span className="text-xs">{char.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     {/* Emphasis & Pitch - Only show if not using word-level editing */}
