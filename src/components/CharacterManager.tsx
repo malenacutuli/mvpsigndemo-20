@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Merge, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -101,6 +102,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
+  const [speakerStats, setSpeakerStats] = useState<Record<string, { segments: number; duration: number }>>({});
+  const [mergeSpeakers, setMergeSpeakers] = useState<string[]>([]);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
 
   // Load existing characters on mount
@@ -223,6 +227,135 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   // Load speaker mappings from database on mount
   // Track if we've loaded mappings for this video/language once to avoid overwriting user selections on re-renders
   const loadedMappingsKeyRef = useRef<string | null>(null);
+
+  // Load speaker statistics (segment count and duration)
+  const loadSpeakerStatistics = async () => {
+    try {
+      const { data: segments } = await supabase
+        .from('transcript_segments')
+        .select('speaker, start_time, end_time')
+        .eq('video_id', videoId)
+        .eq('language', language);
+
+      if (segments && segments.length > 0) {
+        const stats: Record<string, { segments: number; duration: number }> = {};
+        
+        segments.forEach((seg: any) => {
+          if (!seg.speaker) return;
+          if (!stats[seg.speaker]) {
+            stats[seg.speaker] = { segments: 0, duration: 0 };
+          }
+          stats[seg.speaker].segments++;
+          stats[seg.speaker].duration += (seg.end_time - seg.start_time);
+        });
+        
+        setSpeakerStats(stats);
+        console.log('📊 Speaker statistics loaded:', stats);
+      }
+    } catch (error) {
+      console.error('Failed to load speaker statistics:', error);
+    }
+  };
+
+  // Merge multiple speakers into one
+  const handleMergeSpeakers = async (targetSpeaker: string, speakersToMerge: string[]) => {
+    if (speakersToMerge.length === 0) {
+      toast({
+        title: "No Speakers Selected",
+        description: "Please select speakers to merge",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Update all segments with the merged speakers to use the target speaker
+      const { error } = await supabase
+        .from('transcript_segments')
+        .update({ speaker: targetSpeaker })
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .in('speaker', speakersToMerge);
+
+      if (error) throw error;
+
+      // Update available speakers list
+      const updatedSpeakers = availableSpeakers.filter(s => !speakersToMerge.includes(s));
+      setAvailableSpeakers(updatedSpeakers);
+      sessionStorage.setItem(`speakers_${videoId}_${language}`, updatedSpeakers.join('\n'));
+      
+      // Reload statistics
+      await loadSpeakerStatistics();
+      
+      setMergeSpeakers([]);
+      setShowMergeDialog(false);
+      
+      toast({
+        title: "Speakers Merged",
+        description: `Merged ${speakersToMerge.length} speakers into ${targetSpeaker}`
+      });
+    } catch (error) {
+      console.error('Failed to merge speakers:', error);
+      toast({
+        title: "Merge Failed",
+        description: "Failed to merge speakers",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Delete/filter speakers with minimal duration
+  const handleFilterLowDurationSpeakers = async (minDurationSeconds: number = 5) => {
+    try {
+      const speakersToRemove = Object.entries(speakerStats)
+        .filter(([_, stats]) => stats.duration < minDurationSeconds)
+        .map(([speaker]) => speaker);
+
+      if (speakersToRemove.length === 0) {
+        toast({
+          title: "No Speakers to Remove",
+          description: `All speakers have at least ${minDurationSeconds} seconds of speaking time`
+        });
+        return;
+      }
+
+      // Delete segments for low-duration speakers
+      const { error } = await supabase
+        .from('transcript_segments')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .in('speaker', speakersToRemove);
+
+      if (error) throw error;
+
+      // Update available speakers list
+      const updatedSpeakers = availableSpeakers.filter(s => !speakersToRemove.includes(s));
+      setAvailableSpeakers(updatedSpeakers);
+      sessionStorage.setItem(`speakers_${videoId}_${language}`, updatedSpeakers.join('\n'));
+      
+      // Reload statistics
+      await loadSpeakerStatistics();
+      
+      toast({
+        title: "Low Duration Speakers Removed",
+        description: `Removed ${speakersToRemove.length} speakers with less than ${minDurationSeconds} seconds of speaking time`
+      });
+    } catch (error) {
+      console.error('Failed to filter speakers:', error);
+      toast({
+        title: "Filter Failed",
+        description: "Failed to remove low duration speakers",
+        variant: "destructive"
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (availableSpeakers.length > 0) {
+      loadSpeakerStatistics();
+    }
+  }, [availableSpeakers.length, videoId, language]);
 
   useEffect(() => {
     const key = `${videoId}:${language}`;
@@ -536,6 +669,148 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 );
               })}
             </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Speaker Management Section */}
+        {availableSpeakers.length > 0 && (
+          <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                <Users className="w-5 h-5" />
+                Speaker Management
+                <Badge variant="outline" className="ml-auto">{availableSpeakers.length} Detected</Badge>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Refine detected speakers by merging false positives or removing low-duration speakers
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Speaker Statistics */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Detected Speakers</h4>
+                <div className="grid gap-2">
+                  {availableSpeakers.map((speaker) => {
+                    const stats = speakerStats[speaker];
+                    const duration = stats?.duration || 0;
+                    const segments = stats?.segments || 0;
+                    const minutes = Math.floor(duration / 60);
+                    const seconds = Math.floor(duration % 60);
+                    
+                    return (
+                      <div 
+                        key={speaker}
+                        className="flex items-center justify-between p-2 border rounded bg-white dark:bg-gray-900"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: characters.find(c => speakerMappings[speaker] === c.name)?.color || '#ccc' }}
+                          />
+                          <span className="font-medium">{speaker}</span>
+                          {speakerMappings[speaker] && (
+                            <Badge variant="outline" className="text-xs">
+                              → {speakerMappings[speaker]}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant="secondary">{segments} segments</Badge>
+                          <Badge variant="secondary">
+                            {minutes}:{seconds.toString().padStart(2, '0')}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowMergeDialog(true)}
+                  disabled={availableSpeakers.length < 2}
+                >
+                  <Merge className="w-4 h-4 mr-2" />
+                  Merge Speakers
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleFilterLowDurationSpeakers(5)}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Remove Low Duration (&lt; 5s)
+                </Button>
+              </div>
+
+              {/* Merge Dialog */}
+              <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Merge Speakers</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Select speakers to merge and choose the target speaker name
+                    </p>
+                    
+                    <div className="space-y-2">
+                      <Label>Speakers to Merge</Label>
+                      <div className="space-y-1">
+                        {availableSpeakers.map((speaker) => (
+                          <div key={speaker} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={mergeSpeakers.includes(speaker)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setMergeSpeakers([...mergeSpeakers, speaker]);
+                                } else {
+                                  setMergeSpeakers(mergeSpeakers.filter(s => s !== speaker));
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm">{speaker}</span>
+                            {speakerStats[speaker] && (
+                              <span className="text-xs text-muted-foreground">
+                                ({Math.floor(speakerStats[speaker].duration)}s)
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {mergeSpeakers.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Merge Into</Label>
+                        <Select 
+                          onValueChange={(value) => {
+                            handleMergeSpeakers(value, mergeSpeakers);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select target speaker..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSpeakers.filter(s => !mergeSpeakers.includes(s)).map(speaker => (
+                              <SelectItem key={speaker} value={speaker}>
+                                {speaker}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         )}
