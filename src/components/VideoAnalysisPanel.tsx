@@ -330,9 +330,19 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     } catch (error: any) {
       console.error('Indexing error:', error);
       setStatus('failed');
+      
+      // Check for specific error types
+      let errorMessage = error.message || 'Failed to start video indexing';
+      
+      if (errorMessage.includes('video_duration_too_long') || errorMessage.includes('too long')) {
+        errorMessage = 'Video exceeds 60-minute limit for AI analysis. Please use a shorter video or trim it first.';
+      } else if (errorMessage.includes('non-2xx status code')) {
+        errorMessage = 'Video analysis service is unavailable. The video may be too long (max 60 minutes) or the service may be temporarily down.';
+      }
+      
       toast({
         title: "Indexing Failed",
-        description: error.message || 'Failed to start video indexing',
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

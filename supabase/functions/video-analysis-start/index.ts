@@ -101,9 +101,24 @@ const mappingData = {
 
   } catch (error: any) {
     console.error('Video analysis start error:', error);
+    
+    // Extract detailed error from Twelve Labs API response
+    let errorMessage = error.message;
+    let statusCode = 500;
+    
+    if (errorMessage.includes('video_duration_too_long')) {
+      statusCode = 400;
+      errorMessage = 'Video exceeds the 60-minute duration limit for indexing';
+    } else if (errorMessage.includes('Failed to create indexing task')) {
+      statusCode = 400;
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.message 
+      }),
+      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
