@@ -13,6 +13,7 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
+import { TranscriptEditor } from "@/components/TranscriptEditor";
 
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
@@ -512,6 +513,28 @@ const VideoDetail = () => {
                       <p className="text-muted-foreground">{video.description}</p>
                     </div>
                   )}
+                  
+                  {/* Transcript Editor - Editable transcript with timestamps */}
+                  <div className="mt-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="w-5 h-5" />
+                          {t('videoDetail.transcript.title', 'Transcript Editor')}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <TranscriptEditor
+                          videoUrl={videoUrl}
+                          videoId={video.id}
+                          initialLanguage={video.language}
+                          onTranscriptUpdate={(segments, language) => {
+                            console.log('📝 Transcript updated:', segments.length, 'segments in', language);
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               ) : (
                 <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">

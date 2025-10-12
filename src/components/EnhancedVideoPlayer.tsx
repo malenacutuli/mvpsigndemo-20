@@ -518,51 +518,25 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // First, detect what languages actually exist for this video
-        const { data: availableLanguages, error: langError } = await supabase
+        // Auto-detect available transcript language for this video
+        const { data: availableTranscripts } = await supabase
           .from('transcript_segments')
           .select('language')
           .eq('video_id', videoId)
-          .limit(1);
+          .limit(5);
         
-        let effectiveLanguage = currentLanguage;
-        
-        // If current language is 'auto' or doesn't exist, find first available
-        if (currentLanguage === 'auto' || (availableLanguages && availableLanguages.length > 0 && 
-            !availableLanguages.some((l: any) => l.language === currentLanguage))) {
-          const { data: firstAvailable } = await supabase
-            .from('transcript_segments')
-            .select('language')
-            .eq('video_id', videoId)
-            .limit(1)
-            .single();
-          
-          if (firstAvailable?.language) {
-            effectiveLanguage = firstAvailable.language;
-            console.log('🌐 ENHANCED PLAYER: Auto-detected language:', effectiveLanguage);
-            setCurrentLanguage(effectiveLanguage);
-          }
+        // Find first available language
+        let detectedLanguage = currentLanguage;
+        if (availableTranscripts && availableTranscripts.length > 0) {
+          const uniqueLanguages = [...new Set(availableTranscripts.map((t: any) => t.language))];
+          detectedLanguage = uniqueLanguages[0] || currentLanguage;
+          console.log('🌐 ENHANCED PLAYER: Auto-detected available language:', detectedLanguage);
+          setCurrentLanguage(detectedLanguage);
         }
         
-        // Try to load saved transcript from database with detected language
-        let segments = await loadTranscriptSegments(effectiveLanguage);
-        console.log('📖 ENHANCED PLAYER: Loaded transcript segments from database:', segments.length, 'segments for language:', effectiveLanguage);
-        
-        // If no segments found, try common fallbacks
-        if (segments.length === 0) {
-          const fallbackLanguages = ['en', 'es', 'fr', 'de'];
-          for (const lang of fallbackLanguages) {
-            if (lang !== effectiveLanguage) {
-              console.log('🔄 ENHANCED PLAYER: No segments found for', effectiveLanguage, ', trying', lang);
-              segments = await loadTranscriptSegments(lang);
-              if (segments.length > 0) {
-                console.log('✅ ENHANCED PLAYER: Found transcript in', lang);
-                setCurrentLanguage(lang);
-                break;
-              }
-            }
-          }
-        }
+        // Load transcript segments with detected language
+        const segments = await loadTranscriptSegments(detectedLanguage);
+        console.log('📖 ENHANCED PLAYER: Loaded transcript segments:', segments.length, 'segments for language:', detectedLanguage);
         setTranscriptSegments(segments);
         
         if (segments.length > 0) {
