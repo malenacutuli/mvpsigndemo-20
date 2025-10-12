@@ -308,7 +308,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     
     try {
       const { data, error } = await supabase.functions.invoke('video-analysis-start', {
-        body: { assetId, playbackUrl }
+        body: { assetId, playbackUrl, videoId }
       });
 
       if (error) throw error;

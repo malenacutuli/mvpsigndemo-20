@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assetId, playbackUrl } = await req.json();
+    const { assetId, playbackUrl, videoId } = await req.json();
     
     if (!assetId || !playbackUrl) {
       return new Response(
@@ -34,6 +34,28 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Check video duration BEFORE attempting indexing (60 minutes = 3600 seconds max)
+    if (videoId) {
+      const { data: videoData } = await supabase
+        .from('videos')
+        .select('duration')
+        .eq('id', videoId)
+        .single();
+      
+      if (videoData?.duration && videoData.duration > 3600) {
+        const durationMinutes = Math.round(videoData.duration / 60);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Video exceeds maximum duration',
+            details: `Video is ${durationMinutes} minutes long. Maximum supported duration is 60 minutes for video analysis. Transcription will still work for the first 60 minutes.`,
+            duration_seconds: videoData.duration,
+            max_duration_seconds: 3600
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Check if we already have a mapping for this asset
     const { data: existingMapping } = await supabase
