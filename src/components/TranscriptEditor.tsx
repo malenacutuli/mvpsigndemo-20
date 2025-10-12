@@ -204,7 +204,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
             language: selectedLanguage, // Use selected language from dropdown
             fullTranscript: true, // Request complete transcript
-            wordTimestamps: true // Request word-level timing
+            wordTimestamps: true, // Request word-level timing
+            maxDurationMinutes: 60 // Index up to 60 minutes by default
           }
         });
 

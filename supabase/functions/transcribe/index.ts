@@ -30,7 +30,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -39,7 +39,8 @@ serve(async (req) => {
       forceReExtract: !!forceReExtract,
       fullTranscript: !!fullTranscript,
       wordTimestamps: !!wordTimestamps,
-      rangeBytes: rangeBytes || 'default'
+      rangeBytes: rangeBytes || 'default',
+      maxDurationMinutes: maxDurationMinutes || 60
     });
     
     const origin = req.headers.get("origin") || "";
@@ -96,7 +97,7 @@ serve(async (req) => {
       if (ASSEMBLYAI_API_KEY) {
         console.log("Using AssemblyAI for large video transcription...");
         try {
-          transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+          transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
           console.log("✅ AssemblyAI transcription successful!");
         } catch (assemblyError) {
           console.log("AssemblyAI failed:", (assemblyError as any).message);
@@ -433,8 +434,8 @@ function deduplicateSegments(segments: any[]): any[] {
 }
 
 // Fallback: Use AssemblyAI for URL-based long-form transcription
-async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Promise<any> {
-  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl });
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number): Promise<any> {
+  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes });
 
   const apiKey = Deno.env.get("ASSEMBLYAI_API_KEY");
   if (!apiKey) {
@@ -508,18 +509,29 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
 
   // Build segments from utterances when available
   const segments: any[] = [];
+  const maxDurationSeconds = (maxDurationMinutes || 60) * 60; // Default to 60 minutes
+  
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
     for (const u of resultData.utterances) {
+      const startTime = (u.start || 0) / 1000;
+      const endTime = (u.end || 0) / 1000;
+      
+      // Skip segments that start after the max duration
+      if (startTime > maxDurationSeconds) {
+        console.log(`⏭️ Skipping segment starting at ${startTime}s (exceeds ${maxDurationSeconds}s limit)`);
+        continue;
+      }
+      
       segments.push({
         text: u.text,
-        start: (u.start || 0) / 1000,
-        end: (u.end || 0) / 1000,
+        start: startTime,
+        end: Math.min(endTime, maxDurationSeconds), // Cap end time to max duration
         words: (u.words || []).map((w: any) => ({
           start: (w.start || 0) / 1000,
-          end: (w.end || 0) / 1000,
+          end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
           word: w.text ?? w.word,
           confidence: w.confidence,
-        })),
+        })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
         speaker: u.speaker || undefined,
       });
     }
@@ -529,10 +541,14 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
     for (const w of resultData.words) {
       const ws = (w.start || 0) / 1000;
       const we = (w.end || 0) / 1000;
+      
+      // Skip words that start after the max duration
+      if (ws > maxDurationSeconds) break;
+      
       if (current.start === null) current.start = ws;
-      current.end = we;
+      current.end = Math.min(we, maxDurationSeconds);
       current.text += (w.text ?? w.word ?? "") + " ";
-      current.words.push({ start: ws, end: we, word: w.text ?? w.word, confidence: w.confidence });
+      current.words.push({ start: ws, end: Math.min(we, maxDurationSeconds), word: w.text ?? w.word, confidence: w.confidence });
       if ((current.end - current.start) >= 5 || /[.?!]$/.test(current.text.trim())) {
         segments.push({ text: current.text.trim(), start: current.start, end: current.end, words: current.words });
         current = { text: "", start: null, end: null, words: [] };
@@ -542,8 +558,15 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string): Pr
       segments.push({ text: current.text.trim(), start: current.start, end: current.end, words: current.words });
     }
   } else {
-    segments.push({ text: resultData.text || "", start: 0, end: (resultData.audio_duration || resultData.duration || 0) });
+    const audioDuration = resultData.audio_duration || resultData.duration || 0;
+    segments.push({ 
+      text: resultData.text || "", 
+      start: 0, 
+      end: Math.min(audioDuration, maxDurationSeconds)
+    });
   }
+  
+  console.log(`📊 Processed ${segments.length} segments within ${maxDurationSeconds}s (${maxDurationMinutes || 60} minutes) limit`);
 
   const fullText = (resultData.text as string) || segments.map((s) => s.text).join(" ");
   

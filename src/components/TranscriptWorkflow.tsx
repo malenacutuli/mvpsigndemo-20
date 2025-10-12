@@ -276,7 +276,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             rangeBytes: 200000000,
             fullTranscript: true,
             forceReExtract: true,
-            language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+            language: detectedLanguage === 'auto' ? undefined : detectedLanguage,
+            maxDurationMinutes: 60 // Index up to 60 minutes by default
           }
         });
         
