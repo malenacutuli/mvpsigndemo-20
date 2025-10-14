@@ -39,7 +39,7 @@ export class ExportOrchestrator {
       this.validateAssets(assets, options);
 
       // 4. Create export record
-      const storagePath = `exports/${userId}/${videoId}/${exportId}.mp4`;
+      let storagePath = `exports/${userId}/${videoId}/${exportId}.mp4`;
       
       const { error: insertError } = await supabase
         .from('video_exports')
@@ -71,6 +71,22 @@ export class ExportOrchestrator {
       );
       console.log('✅ Video processing completed, blob size:', (resultBlob.size / 1024 / 1024).toFixed(2), 'MB');
       
+      // Decide final container/extension based on blob MIME
+      const isMp4 = (resultBlob.type || '').includes('mp4');
+      const decidedExt = isMp4 ? 'mp4' : 'webm';
+      if (!storagePath.endsWith(`.${decidedExt}`)) {
+        const newPath = `exports/${userId}/${videoId}/${exportId}.${decidedExt}`;
+        const { error: pathUpdateError } = await supabase
+          .from('video_exports')
+          .update({ storage_path: newPath })
+          .eq('id', exportId);
+        if (pathUpdateError) {
+          console.warn('Failed to update storage_path to match container:', pathUpdateError);
+        } else {
+          storagePath = newPath;
+        }
+      }
+      
       // Log export metadata
       if (meta.warning) {
         console.warn('Export warning:', meta.warning);
@@ -91,7 +107,7 @@ export class ExportOrchestrator {
         // Convert Blob to File if needed
         const fileToUpload = resultBlob instanceof File 
           ? resultBlob 
-          : new File([resultBlob], `${exportId}.mp4`, { type: 'video/mp4' });
+          : new File([resultBlob], `${exportId}.${decidedExt}`, { type: resultBlob.type || (isMp4 ? 'video/mp4' : 'video/webm') });
         
         console.log('🚀 Starting R2 multipart upload for export:', exportId);
         

@@ -13,7 +13,7 @@ export interface BrowserExportMeta {
 }
 
 // Global timeout for entire export process
-const EXPORT_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes max
+const EXPORT_TIMEOUT_MS = 6 * 60 * 60 * 1000; // 6 hours max to avoid interrupting long renders
 const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step (for non-caption steps)
 
 // Calculate dynamic timeout for caption rendering based on video duration
@@ -21,8 +21,7 @@ function getCaptionTimeout(durationSeconds: number): number {
   // Caption rendering plays video in real-time + 50% buffer for encoding
   const baseTime = (durationSeconds || 120) * 1.5 * 1000;
   const minTimeout = 2 * 60 * 1000; // At least 2 minutes
-  const maxTimeout = 10 * 60 * 1000; // Max 10 minutes
-  return Math.max(minTimeout, Math.min(maxTimeout, baseTime));
+  return Math.max(minTimeout, baseTime); // No upper cap to support very long videos
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stepName: string): Promise<T> {
