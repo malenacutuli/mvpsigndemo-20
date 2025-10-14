@@ -20,6 +20,7 @@ interface TranslatedContent {
 
 interface LanguageSelectorProps {
   currentLanguage: string;
+  originalLanguage: string; // The video's original language
   originalCaptions?: CaptionSegment[];
   originalAudioDescription?: Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }>;
   onLanguageChange: (language: string, translatedContent?: TranslatedContent) => void;
@@ -41,13 +42,25 @@ const LANGUAGES: LanguageOption[] = [
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   currentLanguage,
+  originalLanguage,
   originalCaptions,
   originalAudioDescription,
   onLanguageChange,
   onTranslatedContentUpdate,
 }) => {
-  const [translatedContent, setTranslatedContent] = useState<TranslatedContent[]>([]);
+  const [translatedContent, setTranslatedContent] = useState<TranslatedContent[]>(() => {
+    // Try to restore from sessionStorage
+    const saved = sessionStorage.getItem('translatedContent');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isTranslating, setIsTranslating] = useState(false);
+
+  // Persist translated content to sessionStorage
+  useEffect(() => {
+    if (translatedContent.length > 0) {
+      sessionStorage.setItem('translatedContent', JSON.stringify(translatedContent));
+    }
+  }, [translatedContent]);
 
   const translateContent = async (targetLanguage: string) => {
     if (!originalCaptions?.length && !originalAudioDescription?.length) {
@@ -147,8 +160,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const handleLanguageChange = async (language: string) => {
     onLanguageChange(language);
 
-    if (language === 'en') {
-      // Return to original content
+    // If switching back to the original language, return to original content
+    if (language === originalLanguage) {
+      setTranslatedContent([]); // Clear translations when returning to original
+      sessionStorage.removeItem('translatedContent');
       return;
     }
 
@@ -168,7 +183,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return LANGUAGES.find(l => l.code === code)?.name || code;
   };
 
-  const needsTranslation = currentLanguage !== 'en' && !translatedContent.find(t => t.language === currentLanguage);
+  const needsTranslation = currentLanguage !== originalLanguage && !translatedContent.find(t => t.language === currentLanguage);
 
   return (
     <div className="flex items-center gap-2">

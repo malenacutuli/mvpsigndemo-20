@@ -39,7 +39,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a professional translator. Translate the following text to ${getLanguageName(targetLanguage)}. Keep the meaning and tone accurate. Only return the translation, nothing else.`
+            content: `You are a professional translator. Translate the following text to ${getLanguageName(targetLanguage)}. Preserve the exact structure, line breaks, and separators (like ---). Keep the meaning and tone accurate. Return ONLY the translated text with the same structure, nothing else.`
           },
           { role: 'user', content: text }
         ],
@@ -130,6 +130,7 @@ serve(async (req) => {
 
 function getLanguageName(code: string): string {
   const languages: Record<string, string> = {
+    'en': 'English',
     'es': 'Spanish',
     'fr': 'French',
     'de': 'German',
@@ -138,7 +139,8 @@ function getLanguageName(code: string): string {
     'ru': 'Russian',
     'ja': 'Japanese',
     'ko': 'Korean',
-    'zh': 'Chinese'
+    'zh': 'Chinese',
+    'ar': 'Arabic'
   };
   return languages[code] || 'English';
 }

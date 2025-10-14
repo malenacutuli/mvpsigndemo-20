@@ -889,6 +889,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         onTranscriptUpdate={handleTranscriptUpdate}
         isPublic={isPublic}
         videoStatus={videoStatus}
+        originalLanguage={currentLanguage}
       />
       
       {/* Content Generation and Management Controls */}

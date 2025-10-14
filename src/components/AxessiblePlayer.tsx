@@ -45,6 +45,7 @@ interface AxessiblePlayerProps {
   isPublic?: boolean;
   videoStatus?: string;
   showSignLanguageProp?: boolean; // optional external control
+  originalLanguage?: string; // Original language of the video
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -62,6 +63,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   isPublic,
   videoStatus,
   showSignLanguageProp,
+  originalLanguage = 'en', // Default to English
 }) => {
   // Update captions when initialCaptions changes (from database)
   useEffect(() => {
@@ -119,7 +121,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(originalLanguage);
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
@@ -1344,6 +1346,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   <h3 className="text-lg font-medium">Multi-Language Settings</h3>
                   <LanguageSelector
                     currentLanguage={currentLanguage}
+                    originalLanguage={originalLanguage}
                     originalCaptions={initialCaptions}
                     originalAudioDescription={generatedAD || undefined}
                     onLanguageChange={handleLanguageChange}
