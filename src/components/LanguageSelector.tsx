@@ -60,26 +60,42 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       // Translate captions if available
       let translatedCaptions: CaptionSegment[] = [];
       if (originalCaptions?.length) {
-        const captionTexts = originalCaptions.map(cap => cap.text);
-        const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-dubbing', {
-          body: {
-            text: captionTexts.join('\n'),
-            targetLanguage,
-            translateOnly: true
-          }
-        });
+        // Translate in batches to preserve segment count
+        const batchSize = 10;
+        const captionBatches: CaptionSegment[][] = [];
+        
+        for (let i = 0; i < originalCaptions.length; i += batchSize) {
+          captionBatches.push(originalCaptions.slice(i, i + batchSize));
+        }
 
-        if (captionError) throw captionError;
+        for (const batch of captionBatches) {
+          const captionTexts = batch.map(cap => cap.text);
+          const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-dubbing', {
+            body: {
+              text: captionTexts.join('\n---\n'), // Use clear separator
+              targetLanguage,
+              translateOnly: true
+            }
+          });
 
-        const translatedTexts = captionData.translatedText.split('\n');
-        translatedCaptions = originalCaptions.map((caption, index) => ({
-          ...caption,
-          text: translatedTexts[index] || caption.text,
-          words: caption.words.map(word => ({
-            ...word,
-            text: translatedTexts[index] || word.text // Simplified word translation
-          }))
-        }));
+          if (captionError) throw captionError;
+
+          const translatedTexts = captionData.translatedText
+            .split('\n---\n')
+            .map((t: string) => t.trim())
+            .filter((t: string) => t.length > 0);
+
+          const batchTranslated = batch.map((caption, index) => ({
+            ...caption,
+            text: translatedTexts[index] || caption.text,
+            words: caption.words?.map(word => ({
+              ...word,
+              text: translatedTexts[index] || word.text
+            })) || []
+          }));
+
+          translatedCaptions.push(...batchTranslated);
+        }
       }
 
       // Translate audio description if available
@@ -88,7 +104,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         const adTexts = originalAudioDescription.map(ad => ad.text);
         const { data: adData, error: adError } = await supabase.functions.invoke('generate-dubbing', {
           body: {
-            text: adTexts.join('\n'),
+            text: adTexts.join('\n---\n'), // Use clear separator
             targetLanguage,
             translateOnly: true
           }
@@ -96,7 +112,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
         if (adError) throw adError;
 
-        const translatedADTexts = adData.translatedText.split('\n');
+        const translatedADTexts = adData.translatedText
+          .split('\n---\n')
+          .map((t: string) => t.trim())
+          .filter((t: string) => t.length > 0);
+          
         translatedAD = originalAudioDescription.map((ad, index) => ({
           ...ad,
           text: translatedADTexts[index] || ad.text

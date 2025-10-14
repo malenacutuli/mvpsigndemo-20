@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, targetLanguage, voiceId } = await req.json();
+    const { text, targetLanguage, voiceId, translateOnly } = await req.json();
 
     if (!text || !targetLanguage) {
       throw new Error('Text and target language are required');
@@ -54,9 +54,20 @@ serve(async (req) => {
     }
 
     const translationData = await translationResponse.json();
-    const translatedText = translationData.choices[0].message.content;
+    const translatedText = translationData.choices[0].message.content.trim();
 
     console.log('Translation completed:', translatedText.substring(0, 100));
+
+    // If translateOnly mode, return just the translation
+    if (translateOnly) {
+      return new Response(JSON.stringify({
+        originalText: text,
+        translatedText,
+        language: targetLanguage
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Step 2: Generate speech using ElevenLabs
     const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId || 'EXAVITQu4vr4xnSDxMaL'}`, {
