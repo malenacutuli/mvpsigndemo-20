@@ -23,6 +23,8 @@ interface ExportModalProps {
   downloadUrl?: string;
   originalDownloadUrl?: string;
   currentLanguage?: string;
+  previousExports?: any[];
+  onDownloadPrevious?: (exportItem: any) => void;
 }
 
 export function ExportModal({
@@ -35,7 +37,9 @@ export function ExportModal({
   isProcessing,
   downloadUrl,
   originalDownloadUrl,
-  currentLanguage = 'en'
+  currentLanguage = 'en',
+  previousExports = [],
+  onDownloadPrevious
 }: ExportModalProps) {
   console.log('🎭 ExportModal rendered with:', { open, isProcessing, availableFeatures });
   
@@ -183,6 +187,42 @@ export function ExportModal({
                 For best results, use a desktop computer.
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Previous Exports - Recovery */}
+          {previousExports.length > 0 && !isProcessing && !downloadUrl && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Previously Exported Versions</h4>
+              <div className="space-y-2">
+                {previousExports.map((exp) => (
+                  <Alert key={exp.id}>
+                    <Download className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          {new Date(exp.created_at).toLocaleDateString()} - 
+                          {exp.file_size_bytes ? ` ${(exp.file_size_bytes / 1024 / 1024).toFixed(1)}MB` : ''}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {exp.export_options?.captions && '✓ Captions '}
+                          {exp.export_options?.audioDescription && '✓ Audio Description '}
+                          {exp.export_options?.signLanguage && '✓ Sign Language'}
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => onDownloadPrevious?.(exp)}
+                        className="ml-2"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Always-available original download */}

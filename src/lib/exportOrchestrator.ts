@@ -313,9 +313,23 @@ export class ExportOrchestrator {
   }
 
   async getDownloadUrl(storagePath: string): Promise<string> {
+    // For R2 storage paths (exports/user_id/video_id/export_id.mp4)
+    if (storagePath.startsWith('exports/')) {
+      const { data, error } = await supabase.storage
+        .from('videos') // R2 bucket
+        .createSignedUrl(storagePath, 7200); // 2 hour expiry for large downloads
+
+      if (error) {
+        throw new Error(`Failed to generate download URL: ${error.message}`);
+      }
+
+      return data.signedUrl;
+    }
+    
+    // Fallback for legacy paths
     const { data, error } = await supabase.storage
       .from('exports')
-      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+      .createSignedUrl(storagePath, 7200);
 
     if (error) {
       throw new Error(`Failed to generate download URL: ${error.message}`);

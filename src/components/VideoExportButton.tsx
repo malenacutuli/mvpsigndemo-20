@@ -20,6 +20,7 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
   const [progress, setProgress] = useState<RenderProgress>();
   const [downloadUrl, setDownloadUrl] = useState<string>();
   const [originalUrl, setOriginalUrl] = useState<string>();
+  const [previousExports, setPreviousExports] = useState<any[]>([]);
   const [availableFeatures, setAvailableFeatures] = useState({
     hasTranscript: false,
     hasAudioDescriptions: false,
@@ -30,6 +31,7 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
 
   useEffect(() => {
     checkAvailableFeatures();
+    checkPreviousExports();
   }, [videoId]);
 
   useEffect(() => {
@@ -54,6 +56,29 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
     };
     if (isModalOpen) fetchOriginal();
   }, [isModalOpen, videoId]);
+
+  const checkPreviousExports = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: exports, error } = await supabase
+        .from('video_exports')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!error && exports) {
+        setPreviousExports(exports);
+        console.log('Found previous exports:', exports.length);
+      }
+    } catch (error) {
+      console.error('Failed to check previous exports:', error);
+    }
+  };
 
   const checkAvailableFeatures = async () => {
     try {
@@ -147,11 +172,40 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
     }
   };
 
+  const handleDownloadPrevious = async (exportItem: any) => {
+    try {
+      const orchestrator = new ExportOrchestrator();
+      const downloadUrl = await orchestrator.getDownloadUrl(exportItem.storage_path);
+      
+      // Force download with proper streaming
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${videoTitle}-export-${new Date(exportItem.created_at).toLocaleDateString()}.mp4`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      toast({
+        title: 'Download Started',
+        description: 'Your previously exported video is downloading...',
+      });
+    } catch (error) {
+      console.error('Failed to download previous export:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Could not retrieve the exported video.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleClose = () => {
     setIsModalOpen(false);
     setProgress(undefined);
     setDownloadUrl(undefined);
   };
+  
   return (
     <>
       <Button onClick={() => setIsModalOpen(true)} className="gap-2">
@@ -170,6 +224,8 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
         downloadUrl={downloadUrl}
         originalDownloadUrl={originalUrl}
         currentLanguage={currentLanguage}
+        previousExports={previousExports}
+        onDownloadPrevious={handleDownloadPrevious}
       />
     </>
   );

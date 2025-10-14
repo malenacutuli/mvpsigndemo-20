@@ -21,102 +21,75 @@ export class R2MultipartUploader {
     key: string,
     onProgress?: (percent: number) => void
   ): Promise<string> {
-    console.log(`Starting upload for ${file.name}, size: ${(file.size / 1024 / 1024 / 1024).toFixed(2)}GB`);
+    console.log(`Starting upload for ${file.name}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
     
-    // For files over 5GB, use different strategy
-    if (file.size > 5 * 1024 * 1024 * 1024) {
-      return this.uploadVeryLargeFile(file, key, onProgress);
-    }
-    
-    // Initiate multipart upload
-    const uploadId = await this.initiateUpload(key, file.type);
-    
-    // Calculate parts
-    const parts = this.calculateParts(file);
-    const completedParts: any[] = [];
-    let uploadedBytes = 0;
+    // ALWAYS use session recovery for resumability
+    const sessionKey = `upload_session_${key}`;
+    let session = this.loadSession(sessionKey);
     
     try {
-      // Upload parts with controlled concurrency
-      for (let i = 0; i < parts.length; i += this.MAX_CONCURRENT) {
-        const batch = parts.slice(i, i + this.MAX_CONCURRENT);
+      // Check for existing session
+      if (!session || !session.uploadId) {
+        console.log('No existing session, initiating new upload...');
+        const uploadId = await this.initiateUpload(key, file.type);
+        session = {
+          uploadId,
+          key,
+          fileSize: file.size,
+          completedParts: [],
+          uploadedBytes: 0,
+          startTime: Date.now()
+        };
+        this.saveSession(sessionKey, session);
+      } else {
+        console.log(`Resuming upload from ${session.completedParts.length} completed parts`);
+      }
+      
+      // Calculate all parts
+      const allParts = this.calculateParts(file);
+      const remainingParts = allParts.filter(part => 
+        !session.completedParts.some((cp: any) => cp.PartNumber === part.partNumber)
+      );
+      
+      console.log(`Total parts: ${allParts.length}, Remaining: ${remainingParts.length}`);
+      
+      // Upload remaining parts with controlled concurrency
+      for (let i = 0; i < remainingParts.length; i += this.MAX_CONCURRENT) {
+        const batch = remainingParts.slice(i, i + this.MAX_CONCURRENT);
         
         const results = await Promise.all(
-          batch.map(part => this.uploadPartWithRetry(file, key, uploadId, part))
+          batch.map(part => this.uploadPartWithRetry(file, key, session.uploadId, part))
         );
         
-        completedParts.push(...results);
-        uploadedBytes += batch.reduce((sum, part) => sum + part.size, 0);
+        session.completedParts.push(...results);
+        session.uploadedBytes += batch.reduce((sum, part) => sum + part.size, 0);
+        this.saveSession(sessionKey, session);
         
         if (onProgress) {
-          onProgress(Math.round((uploadedBytes / file.size) * 100));
+          const progress = Math.round((session.uploadedBytes / file.size) * 100);
+          onProgress(progress);
         }
         
-        // Add small delay between batches to prevent overwhelming R2
-        await this.delay(500);
+        // Small delay between batches
+        await this.delay(300);
       }
       
       // Complete upload
-      const location = await this.completeUpload(key, uploadId, completedParts);
+      const location = await this.completeUpload(key, session.uploadId, session.completedParts);
       console.log('Upload completed:', location);
+      
+      // Clear session on success
+      this.clearSession(sessionKey);
       return location;
       
     } catch (error) {
-      console.error('Upload failed, aborting:', error);
-      await this.abortUpload(key, uploadId);
+      console.error('Upload failed:', error);
+      // Keep session for retry - don't clear it
+      console.log('Session preserved for retry. Use same key to resume.');
       throw error;
     }
   }
   
-  private async uploadVeryLargeFile(
-    file: File,
-    key: string,
-    onProgress?: (percent: number) => void
-  ): Promise<string> {
-    // For 5GB+ files, use chunked approach with session recovery
-    const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB chunks
-    const sessionKey = `upload_session_${key}`;
-    
-    // Check for existing session
-    let session = this.loadSession(sessionKey);
-    if (!session) {
-      const uploadId = await this.initiateUpload(key, file.type);
-      session = {
-        uploadId,
-        completedParts: [],
-        uploadedBytes: 0
-      };
-      this.saveSession(sessionKey, session);
-    }
-    
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    
-    for (let i = session.completedParts.length; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, file.size);
-      const chunk = file.slice(start, end);
-      
-      const part = await this.uploadPartWithRetry(
-        chunk,
-        key,
-        session.uploadId,
-        { partNumber: i + 1, startByte: start, endByte: end, size: end - start, attempts: 0 }
-      );
-      
-      session.completedParts.push(part);
-      session.uploadedBytes = end;
-      this.saveSession(sessionKey, session);
-      
-      if (onProgress) {
-        onProgress(Math.round((session.uploadedBytes / file.size) * 100));
-      }
-    }
-    
-    // Complete and cleanup
-    const location = await this.completeUpload(key, session.uploadId, session.completedParts);
-    this.clearSession(sessionKey);
-    return location;
-  }
   
   private async uploadPartWithRetry(
     file: File | Blob,
