@@ -182,6 +182,7 @@ export class ExportOrchestrator {
         .from('transcript_segments')
         .select('id, start_time, end_time, text, speaker, speaker_color, emphasis, words')
         .eq('video_id', videoId)
+        .eq('language', options.language || video.language)
         .order('start_time');
 
       if (segmentsError) {

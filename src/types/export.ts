@@ -2,6 +2,7 @@ export interface ExportOptions {
   captions: boolean;
   audioDescription: boolean;
   signLanguage: boolean;
+  language?: string;
 }
 
 export interface VideoExport {
