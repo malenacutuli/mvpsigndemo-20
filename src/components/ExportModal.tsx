@@ -72,7 +72,7 @@ export function ExportModal({
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      const suggestedName = `${fileNameSafe || 'export'}-accessible.mp4`;
+      const suggestedName = `${fileNameSafe || 'export'}-accessible.webm`;
       const a = document.createElement('a');
       a.href = downloadUrl;
       a.download = suggestedName;
