@@ -69,9 +69,9 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
 
   const syncCharacterColors = async () => {
     try {
-      console.log('🎨 CI Character Sync: Starting color synchronization');
+      console.log('🎨 CI Character Sync: Starting color synchronization from DATABASE');
       
-      // Get all characters for this video
+      // ALWAYS fetch from database - never trust localStorage alone
       const { data: characters, error: charError } = await supabase
         .from('characters')
         .select('name, color')
@@ -94,10 +94,10 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
         return;
       }
 
-      // Build unified color mapping
+      // Build unified color mapping from SERVER data
       const colorMapping: Record<string, string> = {};
 
-      // Priority 1: Character definitions
+      // Priority 1: Character definitions from database
       if (characters) {
         characters.forEach(char => {
           if (char.name && char.color) {
@@ -115,15 +115,16 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
         });
       }
 
-      // Update localStorage for instant access across components
+      // Update localStorage ONLY as read-through cache (database is source of truth)
       localStorage.setItem('character-colors', JSON.stringify(colorMapping));
+      localStorage.setItem('character-colors-timestamp', Date.now().toString());
       
-      // Dispatch event to notify all components
+      // Dispatch event to notify all components of SERVER-synced data
       window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: colorMapping, videoId, language } 
+        detail: { colors: colorMapping, videoId, language, source: 'database' } 
       }));
 
-      console.log('✅ CI Character Sync: Color mapping updated', colorMapping);
+      console.log('✅ CI Character Sync: Synced from database across all devices', colorMapping);
 
     } catch (error) {
       console.error('❌ CI Character Sync: Synchronization failed', error);

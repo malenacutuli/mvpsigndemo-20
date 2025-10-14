@@ -1,3 +1,29 @@
+/**
+ * TranscriptEditor Component
+ * 
+ * CRITICAL: Database-First Architecture for Cross-Device Sync
+ * ============================================================
+ * 
+ * This component uses the Supabase database as the single source of truth for all
+ * transcript data. All changes are immediately saved to the database to ensure
+ * seamless synchronization across devices and browser sessions.
+ * 
+ * Key Design Principles:
+ * - All transcript segments are saved to `transcript_segments` table via `saveTranscriptData()`
+ * - All segments are loaded from database via `loadTranscriptSegments()`
+ * - localStorage is only used as a read-through cache for character colors
+ * - No sessionStorage is used to prevent stale data
+ * - Changes trigger `character-colors-updated` events for real-time UI sync
+ * 
+ * Cross-Device Behavior:
+ * - User edits on Device A → Saved to database → Visible on Device B after refresh/load
+ * - Character assignments synced via `CICharacterSync` component
+ * - Translations saved per-language in database for reuse
+ * 
+ * @see CICharacterSync for character color synchronization
+ * @see useVideoStorage for database operations
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -141,10 +167,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     window.addEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
     return () => window.removeEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
   }, [videoId]);
-  // Load saved transcript when language changes (but warn if there are unsaved edits)
+  // Load saved transcript from DATABASE when video or language changes
   useEffect(() => {
     const loadTranscriptData = async () => {
-      // Warn if user has unsaved edits and language is changing
+      console.log('📥 Loading transcript from DATABASE for', videoId, 'language:', selectedLanguage);
+      
+      // Warn if user has unsaved edits
       if (editingTranscript.length > 0 && originalTranscript.length > 0) {
         const hasChanges = JSON.stringify(editingTranscript) !== JSON.stringify(originalTranscript);
         if (hasChanges) {
@@ -157,6 +185,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         }
       }
       
+      // Always fetch from database for cross-device sync
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
@@ -166,30 +195,17 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         setEditingTranscript(convertedSegments);
         setOriginalTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+        console.log('✅ Loaded', segments.length, 'segments from database');
+      } else {
+        console.log('ℹ️ No segments found in database for language:', selectedLanguage);
       }
     };
     loadTranscriptData();
-  }, [videoId]);
+  }, [videoId, selectedLanguage]);
 
-  // Load saved transcript when language changes
-  useEffect(() => {
-    const loadTranscriptData = async () => {
-      const segments = await loadTranscriptSegments(selectedLanguage);
-      if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
-        }));
-        setEditingTranscript(convertedSegments);
-        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
-      }
-    };
-    loadTranscriptData();
-  }, [selectedLanguage]);
-
-  // Save transcript when it changes - database-first approach
+  // Save transcript to DATABASE - source of truth for cross-device sync
   const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
-    console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to database for video:', videoId);
+    console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
     const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
       text: segment.text,
@@ -207,10 +223,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     try {
       await saveTranscriptSegments(storageSegments, language);
-      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to database with proper transcript record');
+      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to DATABASE - synced across all devices');
+      
+      // Update local state to reflect saved changes
+      setOriginalTranscript([...segments]);
+      
+      toast({
+        title: "Changes saved",
+        description: "Your transcript is now synced across all devices"
+      });
     } catch (error) {
       console.error('❌ TRANSCRIPT EDITOR: Database save failed:', error);
-      throw error; // Re-throw to show user the error
+      toast({
+        title: "Save failed",
+        description: error instanceof Error ? error.message : "Failed to save changes",
+        variant: "destructive"
+      });
+      throw error;
     }
   };
 

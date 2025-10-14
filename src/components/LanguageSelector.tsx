@@ -48,19 +48,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
   onTranslatedContentUpdate,
 }) => {
-  const [translatedContent, setTranslatedContent] = useState<TranslatedContent[]>(() => {
-    // Try to restore from sessionStorage
-    const saved = sessionStorage.getItem('translatedContent');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [translatedContent, setTranslatedContent] = useState<TranslatedContent[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
-
-  // Persist translated content to sessionStorage
-  useEffect(() => {
-    if (translatedContent.length > 0) {
-      sessionStorage.setItem('translatedContent', JSON.stringify(translatedContent));
-    }
-  }, [translatedContent]);
 
   const translateContent = async (targetLanguage: string) => {
     if (!originalCaptions?.length && !originalAudioDescription?.length) {
@@ -163,7 +152,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     // If switching back to the original language, return to original content
     if (language === originalLanguage) {
       setTranslatedContent([]); // Clear translations when returning to original
-      sessionStorage.removeItem('translatedContent');
       return;
     }
 
