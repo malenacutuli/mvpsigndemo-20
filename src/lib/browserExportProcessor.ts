@@ -13,7 +13,7 @@ export interface BrowserExportMeta {
 }
 
 // Global timeout for entire export process
-const EXPORT_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes max
+const EXPORT_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes max
 const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step (for non-caption steps)
 
 // Calculate dynamic timeout for caption rendering based on video duration

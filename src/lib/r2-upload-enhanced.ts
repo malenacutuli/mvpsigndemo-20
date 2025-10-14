@@ -14,7 +14,7 @@ export class R2MultipartUploader {
   private MAX_CONCURRENT = 2; // Reduced for stability
   private MAX_RETRIES = 5;
   private RETRY_DELAY = 2000; // Start with 2 seconds
-  private PART_TIMEOUT = 60000; // 60 seconds per part
+  private PART_TIMEOUT = 300000; // 5 minutes per part for large files
   
   async uploadLargeFile(
     file: File,
