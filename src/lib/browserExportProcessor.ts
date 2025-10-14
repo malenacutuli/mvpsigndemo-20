@@ -71,22 +71,38 @@ export async function runBrowserExport(
     let previousUrl = videoUrl;
   
     try {
-    // 1) CAPTIONS (Canvas rendering)
+    // 1) CAPTIONS (Canvas rendering with CWI)
     if (options.captions && assets.transcriptSegments?.length) {
-      progressAggregator({ stage: 'captions', progress: 0, msg: 'Rendering captions via Canvas...' });
+      progressAggregator({ stage: 'captions', progress: 0, msg: 'Rendering captions with word-by-word sync...' });
       
+      // PHASE 1: Pass complete CWI data to canvas renderer
       const captionsForCanvas = assets.transcriptSegments.map(segment => ({
         startTime: segment.start_time,
         endTime: segment.end_time,
         text: segment.text,
-        speakerColor: segment.speaker_color || '#ffffff'
+        speaker: segment.speaker,
+        speakerColor: segment.speaker_color || '#ffffff',
+        words: segment.words || [], // CRITICAL: Include word timing
+        vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
+        intensity_confidence: (segment as any).intensity_confidence as number | undefined,
+        emphasis: segment.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling' | undefined,
+        pitch: (segment as any).pitch as number | 'high' | 'low' | 'normal' | undefined,
+        volume: (segment as any).volume as number | undefined
       }));
       
       currentUrl = await withTimeout(
         canvasCaptionRenderer.renderCaptionsOnCanvas(
           currentUrl,
           captionsForCanvas,
-          { fontSize: 24, bg: true }
+          { fontSize: 24, bg: true },
+          (percent) => {
+            // PHASE 4: Show detailed caption rendering progress
+            progressAggregator({ 
+              stage: 'captions', 
+              progress: percent, 
+              msg: `Rendering word-by-word captions: ${percent.toFixed(0)}%` 
+            });
+          }
         ),
         STEP_TIMEOUT_MS,
         'Caption rendering'
