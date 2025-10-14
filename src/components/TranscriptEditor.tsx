@@ -120,6 +120,25 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     loadCharactersFromStorage();
   }, []);
 
+  // Keep character list in sync when CharacterManager saves or CI sync updates
+  useEffect(() => {
+    const handleCharactersUpdated = async (e: any) => {
+      try {
+        // Prefer characters passed via event detail to avoid an extra DB read
+        if (e?.detail?.characters && Array.isArray(e.detail.characters)) {
+          setAvailableCharacters(e.detail.characters.map((c: any) => ({ name: c.name, color: c.color })));
+        } else {
+          const characters = await loadCharacters();
+          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        }
+      } catch (err) {
+        console.error('Failed to refresh characters after update event:', err);
+      }
+    };
+
+    window.addEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
+    return () => window.removeEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
+  }, [videoId]);
   // Load saved transcript on component mount
   useEffect(() => {
     const loadTranscriptData = async () => {
@@ -191,6 +210,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
   ];
+
+  // Normalize translated chunks that accidentally repeat sentences (e.g., triplicated output)
+  const dedupeSentences = (text: string): string => {
+    try {
+      if (!text) return text;
+      const parts = text
+        .split(/(?<=[.!?])\s+/)
+        .map(p => p.trim())
+        .filter(Boolean);
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const p of parts) {
+        const norm = p.toLowerCase();
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          out.push(p);
+        }
+      }
+      return out.join(' ');
+    } catch {
+      return text;
+    }
+  };
 
   // Generate original transcript and save to database with proper transcript record
   const generateOriginalTranscript = async () => {
