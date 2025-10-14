@@ -82,13 +82,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage);
   
-  // Sync selectedLanguage with initialLanguage prop changes
+  // Sync selectedLanguage with initialLanguage prop changes ONLY on mount, not during edits
   useEffect(() => {
-    if (initialLanguage && initialLanguage !== selectedLanguage) {
-      console.log('🌐 TranscriptEditor: Updating language from', selectedLanguage, 'to', initialLanguage);
+    if (initialLanguage && editingTranscript.length === 0) {
+      console.log('🌐 TranscriptEditor: Initial language set to', initialLanguage);
       setSelectedLanguage(initialLanguage);
     }
-  }, [initialLanguage]);
+  }, []);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editStartTime, setEditStartTime] = useState('');
@@ -141,9 +141,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     window.addEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
     return () => window.removeEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
   }, [videoId]);
-  // Load saved transcript on component mount
+  // Load saved transcript when language changes (but warn if there are unsaved edits)
   useEffect(() => {
     const loadTranscriptData = async () => {
+      // Warn if user has unsaved edits and language is changing
+      if (editingTranscript.length > 0 && originalTranscript.length > 0) {
+        const hasChanges = JSON.stringify(editingTranscript) !== JSON.stringify(originalTranscript);
+        if (hasChanges) {
+          console.warn('⚠️ Language changed with unsaved edits - changes may be lost');
+          toast({
+            title: "Unsaved changes",
+            description: "Your edits will be lost if you don't save them first",
+            variant: "destructive"
+          });
+        }
+      }
+      
       const segments = await loadTranscriptSegments(selectedLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({

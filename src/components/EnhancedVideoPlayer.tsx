@@ -293,25 +293,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   }, [characters, videoId, currentLanguage]);
 
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
-    console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'auto-detect');
+    console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'current');
     
-  // Auto-detect language if not provided, but prefer explicit prop
-  const autoDetectedLang = detectedLang || detectLanguageFromCaptions(segments);
-  const preferredLang = language || autoDetectedLang;
+  // ONLY use detectedLang if explicitly provided - don't auto-detect to avoid discarding user's language choice
+  const preferredLang = detectedLang || language || currentLanguage;
   
   console.log('🌐 Language resolution debug:', {
     propLanguage: language,
     detectedLang,
-    autoDetectedLang,
     preferredLang,
     currentLanguage,
     willUpdate: preferredLang !== currentLanguage
   });
   
-  // Update current language if preferred language is different
-  if (preferredLang !== currentLanguage) {
-    console.log('🌐 Language resolved:', preferredLang, 'changing from:', currentLanguage);
-    setCurrentLanguage(preferredLang);
+  // Only update language if explicitly provided (not auto-detected)
+  if (detectedLang && detectedLang !== currentLanguage) {
+    console.log('🌐 Language explicitly changed to:', detectedLang, 'from:', currentLanguage);
+    setCurrentLanguage(detectedLang);
   }
     
     console.log('🔍 ENHANCED PLAYER: First segment in handleTranscriptUpdate:', segments[0] ? {
