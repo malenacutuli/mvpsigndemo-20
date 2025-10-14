@@ -391,6 +391,30 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
     setIsTranslating(true);
     try {
+      // CACHE CHECK: Load existing translation from database first to avoid redundant API calls
+      console.log('🔍 Checking for existing translation in', targetLanguage);
+      const existingSegments = await loadTranscriptSegments(targetLanguage);
+      
+      if (existingSegments.length > 0) {
+        console.log('✅ Found cached translation:', existingSegments.length, 'segments');
+        const convertedSegments = existingSegments.map(seg => ({
+          ...seg,
+          id: seg.id || `segment-${Date.now()}-${Math.random()}`
+        }));
+        setEditingTranscript(convertedSegments);
+        setSelectedLanguage(targetLanguage);
+        onTranscriptUpdate?.(convertedSegments, targetLanguage);
+        
+        toast({
+          title: 'Translation Loaded',
+          description: `Loaded existing ${languages.find(l => l.code === targetLanguage)?.name} translation from database`
+        });
+        setIsTranslating(false);
+        return; // Exit early - no API call needed
+      }
+      
+      console.log('🌐 No cached translation found, calling translation API for', targetLanguage);
+      
       // 1: Join segments with a strong separator to preserve 1:1 mapping
       const SEPARATOR = '\n---\n';
       const joined = originalTranscript.map(s => (s.text || '').trim()).join(SEPARATOR);
@@ -416,11 +440,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         if (alt.length >= originalTranscript.length) translatedArray = alt;
       }
 
-      // 4: Map 1:1 to original segments (preserve timing)
-      const translatedSegments = originalTranscript.map((segment, index) => ({
-        ...segment,
-        text: translatedArray[index] || segment.text
-      }));
+      // 4: Map 1:1 to original segments (preserve exact timing) and dedupe any repeated sentences
+      const translatedSegments = originalTranscript.map((segment, index) => {
+        const translatedText = translatedArray[index] || segment.text;
+        return {
+          ...segment,
+          text: dedupeSentences(translatedText) // Remove accidental duplicates
+        };
+      });
 
       // 5: Generate word timings for each segment from translated text
       const captions = translatedSegments.map(segment => {
@@ -753,9 +780,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           
           <Select
             value={selectedLanguage}
-            onValueChange={(value) => {
+            onValueChange={async (value) => {
               if (value !== selectedLanguage) {
-                generateTranslatedContent(value);
+                // Try to load cached translation first, only translate if not cached
+                const cached = await loadTranscriptSegments(value);
+                if (cached.length > 0) {
+                  console.log('📂 Loading cached translation for', value);
+                  const convertedCached: TranscriptSegment[] = cached.map(s => ({ 
+                    ...s, 
+                    id: s.id || `seg-${Date.now()}-${Math.random()}` 
+                  }));
+                  setEditingTranscript(convertedCached);
+                  setSelectedLanguage(value);
+                  onTranscriptUpdate?.(convertedCached, value);
+                } else {
+                  console.log('🌐 No cache, translating to', value);
+                  generateTranslatedContent(value);
+                }
               }
             }}
             disabled={isTranslating || originalTranscript.length === 0}
