@@ -13,8 +13,17 @@ export interface BrowserExportMeta {
 }
 
 // Global timeout for entire export process
-const EXPORT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max
-const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step
+const EXPORT_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes max
+const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step (for non-caption steps)
+
+// Calculate dynamic timeout for caption rendering based on video duration
+function getCaptionTimeout(durationSeconds: number): number {
+  // Caption rendering plays video in real-time + 50% buffer for encoding
+  const baseTime = (durationSeconds || 120) * 1.5 * 1000;
+  const minTimeout = 2 * 60 * 1000; // At least 2 minutes
+  const maxTimeout = 10 * 60 * 1000; // Max 10 minutes
+  return Math.max(minTimeout, Math.min(maxTimeout, baseTime));
+}
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stepName: string): Promise<T> {
   return Promise.race([
@@ -90,6 +99,10 @@ export async function runBrowserExport(
         volume: (segment as any).volume as number | undefined
       }));
       
+      // Use dynamic timeout based on video duration
+      const captionTimeout = getCaptionTimeout(videoMeta.durationSec || 0);
+      console.log(`[Export] Caption rendering timeout set to ${Math.round(captionTimeout / 1000)}s for ${Math.round(videoMeta.durationSec || 0)}s video`);
+      
       currentUrl = await withTimeout(
         canvasCaptionRenderer.renderCaptionsOnCanvas(
           currentUrl,
@@ -104,7 +117,7 @@ export async function runBrowserExport(
             });
           }
         ),
-        STEP_TIMEOUT_MS,
+        captionTimeout,
         'Caption rendering'
       );
       
