@@ -10,10 +10,11 @@ import { supabase } from '@/integrations/supabase/client';
 interface VideoExportButtonProps {
   videoId: string;
   videoTitle: string;
+  currentLanguage: string;
   onExportComplete?: () => void;
 }
 
-export function VideoExportButton({ videoId, videoTitle, onExportComplete }: VideoExportButtonProps) {
+export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExportComplete }: VideoExportButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<RenderProgress>();
@@ -75,6 +76,7 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
   const handleExport = async (options: ExportOptions) => {
     try {
       console.log('🚀 Export started with options:', options);
+      console.log('🌍 Exporting with language:', currentLanguage);
       setIsProcessing(true);
       setProgress({ stage: 'preparing', progress: 0, message: 'Starting export...' });
 
@@ -88,11 +90,16 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
       console.log('🎬 Creating export orchestrator...');
       const orchestrator = new ExportOrchestrator(setProgress);
       
-      console.log('⚡ Starting finalize and export process...');
+      const exportOptionsWithLanguage = {
+        ...options,
+        language: currentLanguage
+      };
+      
+      console.log('⚡ Starting finalize and export process with language:', exportOptionsWithLanguage);
       const result = await orchestrator.finalizeAndExport(
         videoId,
         user.id,
-        options,
+        exportOptionsWithLanguage,
         setProgress
       );
 
@@ -101,7 +108,7 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
       
       toast({
         title: 'Export Complete!',
-        description: 'Your accessible video export is ready for download.',
+        description: `Your video with ${currentLanguage.toUpperCase()} captions is ready for download.`,
       });
 
     } catch (error: any) {
@@ -162,6 +169,7 @@ export function VideoExportButton({ videoId, videoTitle, onExportComplete }: Vid
         isProcessing={isProcessing}
         downloadUrl={downloadUrl}
         originalDownloadUrl={originalUrl}
+        currentLanguage={currentLanguage}
       />
     </>
   );

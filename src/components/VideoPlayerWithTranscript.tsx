@@ -23,6 +23,7 @@ interface VideoPlayerWithTranscriptProps {
   className?: string;
   isPublic?: boolean;
   videoStatus?: string;
+  onLanguageChange?: (language: string) => void;
 }
 
 export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps> = ({
@@ -36,7 +37,8 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
   contentType = 'education',
   className = "",
   isPublic,
-  videoStatus
+  videoStatus,
+  onLanguageChange
 }) => {
   // This component is a simple wrapper - the AxessiblePlayer handles all transcript logic
   return (
@@ -52,6 +54,7 @@ export const VideoPlayerWithTranscript: React.FC<VideoPlayerWithTranscriptProps>
       className={className}
       isPublic={isPublic}
       videoStatus={videoStatus}
+      onLanguageChange={onLanguageChange}
     />
   );
 };

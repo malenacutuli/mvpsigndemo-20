@@ -22,6 +22,7 @@ interface ExportModalProps {
   isProcessing: boolean;
   downloadUrl?: string;
   originalDownloadUrl?: string;
+  currentLanguage?: string;
 }
 
 export function ExportModal({
@@ -33,7 +34,8 @@ export function ExportModal({
   progress,
   isProcessing,
   downloadUrl,
-  originalDownloadUrl
+  originalDownloadUrl,
+  currentLanguage = 'en'
 }: ExportModalProps) {
   console.log('🎭 ExportModal rendered with:', { open, isProcessing, availableFeatures });
   

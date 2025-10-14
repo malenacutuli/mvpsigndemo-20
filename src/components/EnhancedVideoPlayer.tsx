@@ -33,6 +33,7 @@ interface EnhancedVideoPlayerProps {
   onTranscriptUpdate?: (segments: CaptionSegment[], language: string) => void;
   isPublic?: boolean;
   videoStatus?: string;
+  onLanguageChange?: (language: string) => void;
 }
 
 export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
@@ -47,7 +48,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   className = "",
   onTranscriptUpdate,
   isPublic,
-  videoStatus
+  videoStatus,
+  onLanguageChange
 }) => {
   console.log('🚨 ENHANCED VIDEO PLAYER LOADED - videoId:', videoId, 'language:', language);
   
@@ -929,6 +931,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 initialLanguage={currentLanguage}
                 onTranscriptUpdate={handleTranscriptUpdate}
                 onContentGenerated={handleContentGenerated}
+                onLanguageChange={(lang) => {
+                  setCurrentLanguage(lang);
+                  onLanguageChange?.(lang);
+                }}
               />
             </CardContent>
           </Card>

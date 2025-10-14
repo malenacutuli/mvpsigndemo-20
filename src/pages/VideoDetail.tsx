@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
 import { EmbedSettings } from "@/components/EmbedSettings";
 import { EmbedAnalytics } from "@/components/EmbedAnalytics";
-import { AccessibleVideoExporter } from "@/components/AccessibleVideoExporter";
+import { VideoExportButton } from "@/components/VideoExportButton";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
 
@@ -56,7 +56,13 @@ const VideoDetail = () => {
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [deletingVideo, setDeletingVideo] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const { toast } = useToast();
+  
+  const handleLanguageChange = (newLanguage: string) => {
+    console.log('🌍 Language changed to:', newLanguage);
+    setCurrentLanguage(newLanguage);
+  };
   
   // Voice and Sign Language Avatar options for accessibility
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>('gordon-ramsay');
@@ -503,6 +509,7 @@ const VideoDetail = () => {
                     className="w-full"
                     isPublic={video.is_public}
                     videoStatus={video.status}
+                    onLanguageChange={handleLanguageChange}
                   />
                   
                   {/* Video Description - Now below the video */}
@@ -571,19 +578,28 @@ const VideoDetail = () => {
           </Card>
 
 
-          {/* Export Accessible Video - Temporarily Hidden */}
-          {/* {captions.length > 0 && videoUrl && (
-            <AccessibleVideoExporter
-              videoUrl={videoUrl}
-              videoId={video.id}
-              captions={captions}
-              characterColors={characterColors}
-              currentLanguage={video.language}
-              onExportComplete={(downloadUrl) => {
-                console.log('✅ Export complete:', downloadUrl);
-              }}
-            />
-          )} */}
+          {/* Export Accessible Video with Current Language */}
+          {video.status === 'ready' && videoUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Export Accessible Video</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Download your video with burned-in captions in the currently selected language ({currentLanguage.toUpperCase()}).
+                  </p>
+                  <VideoExportButton
+                    videoId={video.id}
+                    videoTitle={video.title}
+                    currentLanguage={currentLanguage}
+                    onExportComplete={fetchVideo}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
 
           {/* Embed Settings and Analytics */}
           {showEmbedSettings && (

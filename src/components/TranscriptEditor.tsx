@@ -65,6 +65,7 @@ interface TranscriptEditorProps {
     captions: any[];
     dubbing: any;
   }) => void;
+  onLanguageChange?: (language: string) => void;
 }
 
 export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
@@ -72,7 +73,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   videoId,
   initialLanguage = 'en',
   onTranscriptUpdate,
-  onContentGenerated
+  onContentGenerated,
+  onLanguageChange
 }) => {
   const [originalTranscript, setOriginalTranscript] = useState<TranscriptSegment[]>([]);
   const [editingTranscript, setEditingTranscript] = useState<TranscriptSegment[]>([]);
@@ -782,6 +784,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             value={selectedLanguage}
             onValueChange={async (value) => {
               if (value !== selectedLanguage) {
+                onLanguageChange?.(value); // Notify parent of language change
                 // Try to load cached translation first, only translate if not cached
                 const cached = await loadTranscriptSegments(value);
                 if (cached.length > 0) {
