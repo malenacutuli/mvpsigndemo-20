@@ -1,4 +1,7 @@
 // Canvas-based caption rendering to avoid FFmpeg subtitle filter issues
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
+
 export interface WordSegment {
   text: string;
   startTime: number;
@@ -172,7 +175,6 @@ export class CanvasCaptionRenderer {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
 
-    // PHASE 3: Enhanced audio pipeline with proper state management
     // Wait for video to be fully ready
     await new Promise<void>((resolve) => {
       if (video.readyState >= 3) {
@@ -182,84 +184,143 @@ export class CanvasCaptionRenderer {
       }
     });
 
-    // Create audio context with proper state management
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // Ensure context is running
-    if (audioCtx.state === 'suspended') {
-      console.log('[Audio] Resuming suspended AudioContext');
-      await audioCtx.resume();
-    }
-    
-    // Add state change monitoring
-    audioCtx.addEventListener('statechange', () => {
-      console.log('[Audio] Context state changed to:', audioCtx.state);
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(err => console.error('[Audio] Resume failed:', err));
-      }
-    });
-
-    let source: MediaElementAudioSourceNode;
-    let dest: MediaStreamAudioDestinationNode;
-    
-    try {
-      source = audioCtx.createMediaElementSource(video);
-      dest = audioCtx.createMediaStreamDestination();
-      source.connect(dest);
-      
-      // Add analyzer for audio signal verification
-      const analyzer = audioCtx.createAnalyser();
-      source.connect(analyzer);
-      
-      // Check for audio signal periodically
-      const checkAudio = () => {
-        const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-        analyzer.getByteFrequencyData(dataArray);
-        const hasSignal = dataArray.some(value => value > 0);
-        console.log('[Audio] Signal detected:', hasSignal);
-      };
-      
-      const audioCheckInterval = setInterval(checkAudio, 2000);
-      video.addEventListener('ended', () => clearInterval(audioCheckInterval), { once: true });
-      
-      console.log('[Audio] Pipeline setup complete');
-    } catch (error) {
-      console.error('[Audio] Pipeline setup failed:', error);
-      throw new Error('Audio setup failed - try re-exporting');
-    }
-
     const canvasStream = (canvas as any).captureStream(30);
-    const mixedStream = new MediaStream([
-      ...canvasStream.getVideoTracks(),
-      ...dest.stream.getAudioTracks(),
-    ]);
+    let mixedStream: MediaStream;
+    let audioPath: 'captureStream' | 'webAudio' | 'videoOnly' = 'videoOnly';
 
-    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9'
-      : 'video/webm;codecs=vp8';
+    // PATH 1: Try to capture audio directly from video element (most reliable)
+    try {
+      console.log('[Audio] Attempting captureStream path...');
+      video.muted = false; // Required for captureStream to include audio
+      video.volume = 0; // Silent to user, but audio track is active
+      
+      const videoStream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
+      const audioTracks = videoStream?.getAudioTracks() || [];
+      
+      console.log('[Audio] captureStream audio tracks:', audioTracks.length);
+      
+      if (audioTracks.length > 0) {
+        mixedStream = new MediaStream([
+          canvasStream.getVideoTracks()[0],
+          ...audioTracks
+        ]);
+        audioPath = 'captureStream';
+        console.log('[Audio] ✓ Using captureStream path');
+      } else {
+        throw new Error('No audio tracks in captureStream');
+      }
+    } catch (captureErr) {
+      console.warn('[Audio] captureStream failed:', captureErr);
+      
+      // PATH 2: Fallback to WebAudio with keepalive
+      try {
+        console.log('[Audio] Attempting WebAudio path...');
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        if (audioCtx.state === 'suspended') {
+          console.log('[Audio] Resuming suspended AudioContext');
+          await audioCtx.resume();
+        }
+        
+        const source = audioCtx.createMediaElementSource(video);
+        const dest = audioCtx.createMediaStreamDestination();
+        
+        // Add keepalive gain node to prevent AudioContext suspension
+        const zeroGain = audioCtx.createGain();
+        zeroGain.gain.value = 0.00001; // Nearly silent but keeps context alive
+        source.connect(zeroGain);
+        zeroGain.connect(audioCtx.destination);
+        
+        // Also connect to destination for recording
+        source.connect(dest);
+        
+        console.log('[Audio] WebAudio pipeline setup complete');
+        
+        mixedStream = new MediaStream([
+          canvasStream.getVideoTracks()[0],
+          ...dest.stream.getAudioTracks()
+        ]);
+        audioPath = 'webAudio';
+        console.log('[Audio] ✓ Using WebAudio path');
+      } catch (webAudioErr) {
+        console.warn('[Audio] WebAudio failed:', webAudioErr);
+        
+        // PATH 3: Video-only, will mux audio later with FFmpeg
+        console.log('[Audio] Will use FFmpeg muxing fallback');
+        mixedStream = new MediaStream([canvasStream.getVideoTracks()[0]]);
+        audioPath = 'videoOnly';
+      }
+    }
+
+    // Smart MIME type selection
+    const mimeTypes = [
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',  // Safari/iOS
+      'video/webm;codecs=vp9,opus',               // Modern Chrome/Firefox
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
     
-    // Verify tracks before recording
+    const mime = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'video/webm';
+    console.log('[Export] Selected MIME type:', mime);
+    
+    // Diagnostics
     console.log('[Export] Video tracks:', mixedStream.getVideoTracks().length);
     console.log('[Export] Audio tracks:', mixedStream.getAudioTracks().length);
-    
-    if (mixedStream.getAudioTracks().length === 0) {
-      throw new Error('No audio tracks available for recording');
-    }
+    console.log('[Export] Audio path:', audioPath);
     
     const recorder = new MediaRecorder(mixedStream, {
       mimeType: mime,
       videoBitsPerSecond: 4_000_000,
-      audioBitsPerSecond: 128_000, // Explicit audio bitrate
+      audioBitsPerSecond: 128_000,
     });
 
     const chunks: BlobPart[] = [];
     recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
 
-    return new Promise<string>((resolve, reject) => {
-      recorder.onstop = () => {
+    return new Promise<string>(async (resolve, reject) => {
+      recorder.onstop = async () => {
         const out = new Blob(chunks, { type: mime });
-        const url = URL.createObjectURL(out);
-        resolve(url);
+        
+        // PATH 3 FALLBACK: If we recorded video-only, mux original audio with FFmpeg
+        if (audioPath === 'videoOnly') {
+          try {
+            console.log('[FFmpeg] Muxing original audio into video...');
+            const ffmpeg = new FFmpeg();
+            await ffmpeg.load();
+            
+            // Write files
+            await ffmpeg.writeFile('canvas.webm', await fetchFile(URL.createObjectURL(out)));
+            await ffmpeg.writeFile('original.mp4', await fetchFile(videoBlob));
+            
+            // Mux: take video from canvas, audio from original
+            // Use Opus codec for WebM compatibility (transcode AAC if needed)
+            await ffmpeg.exec([
+              '-i', 'canvas.webm',
+              '-i', 'original.mp4',
+              '-map', '0:v:0',
+              '-map', '1:a:0',
+              '-c:v', 'copy',
+              '-c:a', 'libopus',
+              '-b:a', '128k',
+              'output.webm'
+            ]);
+            
+            const data = await ffmpeg.readFile('output.webm');
+            const finalBlob = new Blob([data as any], { type: 'video/webm' });
+            const url = URL.createObjectURL(finalBlob);
+            
+            console.log('[FFmpeg] ✓ Muxing complete');
+            resolve(url);
+          } catch (ffmpegErr) {
+            console.error('[FFmpeg] Muxing failed:', ffmpegErr);
+            // Return video-only as last resort
+            const url = URL.createObjectURL(out);
+            resolve(url);
+          }
+        } else {
+          const url = URL.createObjectURL(out);
+          resolve(url);
+        }
       };
 
       // PHASE 2: CWI Caption drawing with word-by-word highlighting
