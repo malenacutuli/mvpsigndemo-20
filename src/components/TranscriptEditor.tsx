@@ -549,12 +549,31 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     // Sort segments by time after editing timing
     const sortedSegments = sortSegmentsByTime(nextSegments);
-    setEditingTranscript(sortedSegments);
     
     // Save immediately to database with proper transcript record
     await saveTranscriptData(sortedSegments, selectedLanguage);
-    onTranscriptUpdate?.(sortedSegments, selectedLanguage);
+    
+    // CRITICAL: Reload from database to ensure UI shows saved data
+    const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
+    if (reloadedSegments.length > 0) {
+      const convertedSegments = reloadedSegments.map(s => ({
+        ...s,
+        id: s.id || `segment-${Date.now()}-${Math.random()}`
+      }));
+      setEditingTranscript(convertedSegments);
+      onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+    } else {
+      // Fallback if reload fails
+      setEditingTranscript(sortedSegments);
+      onTranscriptUpdate?.(sortedSegments, selectedLanguage);
+    }
+    
     resetEditState();
+    
+    toast({
+      title: "Segment Updated",
+      description: "Changes saved and reloaded from database"
+    });
   };
 
   const saveAllChanges = () => {

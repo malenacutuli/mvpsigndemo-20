@@ -282,39 +282,47 @@ export class CanvasCaptionRenderer {
         const out = new Blob(chunks, { type: mime });
         
         // PATH 3 FALLBACK: If we recorded video-only, mux original audio with FFmpeg
-        if (audioPath === 'videoOnly') {
+        if (audioPath === 'videoOnly' && videoBlob) {
           try {
             console.log('[FFmpeg] Muxing original audio into video...');
             const ffmpeg = new FFmpeg();
             await ffmpeg.load();
             
-            // Write files
-            await ffmpeg.writeFile('canvas.webm', await fetchFile(URL.createObjectURL(out)));
-            await ffmpeg.writeFile('original.mp4', await fetchFile(videoBlob));
+            // Convert blobs to Uint8Array for FFmpeg
+            const canvasBuffer = await out.arrayBuffer();
+            const originalBuffer = await videoBlob.arrayBuffer();
+            
+            await ffmpeg.writeFile('canvas.webm', new Uint8Array(canvasBuffer));
+            await ffmpeg.writeFile('original.mp4', new Uint8Array(originalBuffer));
             
             // Mux: take video from canvas, audio from original
-            // Use Opus codec for WebM compatibility (transcode AAC if needed)
+            // Use AAC codec for MP4 for better compatibility
             await ffmpeg.exec([
               '-i', 'canvas.webm',
               '-i', 'original.mp4',
               '-map', '0:v:0',
               '-map', '1:a:0',
               '-c:v', 'copy',
-              '-c:a', 'libopus',
+              '-c:a', 'aac',
               '-b:a', '128k',
-              'output.webm'
+              '-shortest',
+              'output.mp4'
             ]);
             
-            const data = await ffmpeg.readFile('output.webm');
-            const finalBlob = new Blob([data as any], { type: 'video/webm' });
+            const outputData = await ffmpeg.readFile('output.mp4');
+            // Convert FileData to ArrayBuffer for Blob
+            const uint8Data = outputData instanceof Uint8Array ? outputData : new Uint8Array();
+            const arrayBuffer = uint8Data.slice().buffer; // Create a new ArrayBuffer
+            const finalBlob = new Blob([arrayBuffer], { type: 'video/mp4' });
             const url = URL.createObjectURL(finalBlob);
             
-            console.log('[FFmpeg] ✓ Muxing complete');
+            console.log('[FFmpeg] ✓ Muxing complete, size:', (finalBlob.size / 1024 / 1024).toFixed(2), 'MB');
             resolve(url);
           } catch (ffmpegErr) {
             console.error('[FFmpeg] Muxing failed:', ffmpegErr);
             // Return video-only as last resort
             const url = URL.createObjectURL(out);
+            console.warn('[FFmpeg] Returning video without audio due to muxing failure');
             resolve(url);
           }
         } else {
