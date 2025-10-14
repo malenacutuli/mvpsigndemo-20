@@ -5,7 +5,8 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play, Share, Edit, Mic } from "lucide-react";
+import { ArrowLeft, Play, Share, Edit, Mic, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
 import { EmbedSettings } from "@/components/EmbedSettings";
@@ -579,7 +580,7 @@ const VideoDetail = () => {
 
 
           {/* Export Accessible Video with Current Language */}
-          {video.status === 'ready' && videoUrl && (
+          {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Export Accessible Video</CardTitle>
@@ -587,7 +588,12 @@ const VideoDetail = () => {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Download your video with burned-in captions in the currently selected language ({currentLanguage.toUpperCase()}).
+                    Download your video with accessibility features burned-in.
+                    {captions.length > 0 && (
+                      <span className="block mt-1">
+                        Current language: <strong>{currentLanguage.toUpperCase()}</strong>
+                      </span>
+                    )}
                   </p>
                   <VideoExportButton
                     videoId={video.id}
@@ -596,6 +602,23 @@ const VideoDetail = () => {
                     onExportComplete={fetchVideo}
                   />
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Warning for Videos Without Transcripts */}
+          {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length === 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Export Accessible Video</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Generate a transcript first to enable export with captions.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
           )}
