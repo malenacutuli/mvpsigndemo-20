@@ -98,8 +98,12 @@ export const useVideoStorage = (videoId: string) => {
         confidence: segment.confidence || 0.95
       }));
 
-      // Create checksum for change detection
-      const checksum = btoa(JSON.stringify(dbSegments));
+      // Create checksum for change detection (handle UTF-8 safely)
+      const json = JSON.stringify(dbSegments);
+      const utf8 = new TextEncoder().encode(json);
+      let binary = '';
+      for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
+      const checksum = btoa(binary);
 
       const { error } = await supabase.rpc('upsert_transcript_segments', {
         p_video_id: videoId,

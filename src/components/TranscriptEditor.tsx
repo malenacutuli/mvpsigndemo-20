@@ -349,76 +349,77 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
     setIsTranslating(true);
     try {
-      // Translate transcript
-      const transcriptText = originalTranscript.map(s => s.text).join(' ');
+      // 1: Join segments with a strong separator to preserve 1:1 mapping
+      const SEPARATOR = '\n---\n';
+      const joined = originalTranscript.map(s => (s.text || '').trim()).join(SEPARATOR);
       
+      // 2: Translate ONLY (no TTS) to avoid failures and speed up
       const { data: translationData, error: translationError } = await supabase.functions.invoke('generate-dubbing', {
         body: {
-          text: transcriptText,
-          targetLanguage: targetLanguage
+          text: joined,
+          targetLanguage,
+          translateOnly: true
         }
       });
 
       if (translationError) throw new Error(translationError.message || 'Translation failed');
 
-      // Create translated segments by splitting the translated text
-      let translatedSegments = originalTranscript;
-      if (translationData.translatedText) {
-        // Split translated text proportionally to original segments
-        const translatedSentences = translationData.translatedText.split(/[.!?]+/).filter(s => s.trim());
-        const segmentRatio = translatedSentences.length / originalTranscript.length;
-        
-        translatedSegments = originalTranscript.map((segment, index) => {
-          const translatedIndex = Math.floor(index * segmentRatio);
-          const translatedText = translatedSentences[translatedIndex] || segment.text;
-          return {
-            ...segment,
-            text: translatedText.trim()
-          };
-        });
+      // 3: Split back using the same separator to keep segment alignment
+      const raw = (translationData?.translatedText || '').trim();
+      let translatedArray = raw.split(SEPARATOR).map((t: string) => t.trim());
+      
+      // Fallback: if model collapsed separators, try splitting on newlines first
+      if (translatedArray.length < originalTranscript.length) {
+        const alt = raw.split('\n').map((t: string) => t.trim()).filter(Boolean);
+        if (alt.length >= originalTranscript.length) translatedArray = alt;
       }
 
-      // Generate captions from translated segments
-      const captions = translatedSegments.map(segment => ({
-        text: segment.text,
-        speaker: segment.speaker || 'narrator',
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        words: segment.text.split(' ').map((word, wordIndex, wordArray) => {
-          const wordDuration = (segment.endTime - segment.startTime) / wordArray.length;
-          return {
-            text: word,
-            startTime: segment.startTime + (wordIndex * wordDuration),
-            endTime: segment.startTime + ((wordIndex + 1) * wordDuration),
+      // 4: Map 1:1 to original segments (preserve timing)
+      const translatedSegments = originalTranscript.map((segment, index) => ({
+        ...segment,
+        text: translatedArray[index] || segment.text
+      }));
+
+      // 5: Generate word timings for each segment from translated text
+      const captions = translatedSegments.map(segment => {
+        const wordsList = (segment.text || '').split(/\s+/).filter(Boolean);
+        const dur = Math.max(0.1, (segment.endTime - segment.startTime));
+        const wordDur = Math.max(0.05, dur / Math.max(1, wordsList.length));
+        return {
+          text: segment.text,
+          speaker: segment.speaker || 'Speaker',
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          words: wordsList.map((w, i) => ({
+            text: w,
+            startTime: segment.startTime + i * wordDur,
+            endTime: Math.min(segment.endTime, segment.startTime + (i + 1) * wordDur),
             emphasis: segment.emphasis || 'normal' as const,
             pitch: segment.pitch || 'normal' as const,
-          };
-        })
-      }));
+          }))
+        };
+      });
 
       setEditingTranscript(translatedSegments);
       setSelectedLanguage(targetLanguage);
       
-      // Save translated transcript to database with proper transcript record
+      // 6: Persist translated transcript to database (per-language)
       await saveTranscriptData(translatedSegments, targetLanguage);
       
       onTranscriptUpdate?.(translatedSegments, targetLanguage);
-      onContentGenerated?.({
-        captions,
-        dubbing: translationData
-      });
+      onContentGenerated?.({ captions, dubbing: translationData });
 
       toast({
-        title: "Content Generated",
+        title: 'Content Generated',
         description: `Transcript and captions generated for ${languages.find(l => l.code === targetLanguage)?.name}`
       });
 
     } catch (error) {
       console.error('Translation error:', error);
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate translated content",
-        variant: "destructive"
+        title: 'Generation Failed',
+        description: error instanceof Error ? error.message : 'Failed to generate translated content',
+        variant: 'destructive'
       });
     } finally {
       setIsTranslating(false);
