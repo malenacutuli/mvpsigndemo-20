@@ -62,6 +62,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       // Translate captions if available
       let translatedCaptions: CaptionSegment[] = [];
       if (originalCaptions?.length) {
+        console.log('🌍 Starting translation of', originalCaptions.length, 'captions to', targetLanguage);
+        
         // Translate in batches to preserve segment count
         const batchSize = 10;
         const captionBatches: CaptionSegment[][] = [];
@@ -70,59 +72,97 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           captionBatches.push(originalCaptions.slice(i, i + batchSize));
         }
 
-        for (const batch of captionBatches) {
-          const captionTexts = batch.map(cap => cap.text);
-          const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-dubbing', {
-            body: {
-              text: captionTexts.join('\n---\n'), // Use clear separator
-              targetLanguage,
-              translateOnly: true
+        console.log('📦 Created', captionBatches.length, 'batches for translation');
+        
+        let successfulBatches = 0;
+        let failedBatches = 0;
+
+        for (let batchIndex = 0; batchIndex < captionBatches.length; batchIndex++) {
+          const batch = captionBatches[batchIndex];
+          
+          try {
+            console.log(`🔄 Translating batch ${batchIndex + 1}/${captionBatches.length} (${batch.length} captions)`);
+            
+            const captionTexts = batch.map(cap => cap.text);
+            const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-dubbing', {
+              body: {
+                text: captionTexts.join('\n---\n'),
+                targetLanguage,
+                translateOnly: true
+              }
+            });
+
+            if (captionError) {
+              console.error(`❌ Batch ${batchIndex + 1} failed:`, captionError);
+              failedBatches++;
+              // Keep original text for failed batches
+              translatedCaptions.push(...batch);
+              continue;
             }
-          });
 
-          if (captionError) throw captionError;
+            const translatedTexts = captionData.translatedText
+              .split('\n---\n')
+              .map((t: string) => t.trim())
+              .filter((t: string) => t.length > 0);
 
-          const translatedTexts = captionData.translatedText
-            .split('\n---\n')
-            .map((t: string) => t.trim())
-            .filter((t: string) => t.length > 0);
+            const batchTranslated = batch.map((caption, index) => ({
+              ...caption,
+              text: translatedTexts[index] || caption.text,
+              words: caption.words?.map(word => ({
+                ...word,
+                text: translatedTexts[index] || word.text
+              })) || []
+            }));
 
-          const batchTranslated = batch.map((caption, index) => ({
-            ...caption,
-            text: translatedTexts[index] || caption.text,
-            words: caption.words?.map(word => ({
-              ...word,
-              text: translatedTexts[index] || word.text
-            })) || []
-          }));
+            translatedCaptions.push(...batchTranslated);
+            successfulBatches++;
+            console.log(`✅ Batch ${batchIndex + 1} completed successfully`);
+          } catch (batchError: any) {
+            console.error(`❌ Batch ${batchIndex + 1} exception:`, batchError);
+            failedBatches++;
+            // Keep original text for failed batches
+            translatedCaptions.push(...batch);
+          }
+        }
 
-          translatedCaptions.push(...batchTranslated);
+        console.log(`📊 Translation complete: ${successfulBatches} successful, ${failedBatches} failed out of ${captionBatches.length} batches`);
+        
+        if (failedBatches > 0) {
+          toast.warning(`Translation completed with ${failedBatches} failed batches. Some segments may be in original language.`);
         }
       }
 
       // Translate audio description if available
       let translatedAD: Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> = [];
       if (originalAudioDescription?.length) {
-        const adTexts = originalAudioDescription.map(ad => ad.text);
-        const { data: adData, error: adError } = await supabase.functions.invoke('generate-dubbing', {
-          body: {
-            text: adTexts.join('\n---\n'), // Use clear separator
-            targetLanguage,
-            translateOnly: true
+        try {
+          const adTexts = originalAudioDescription.map(ad => ad.text);
+          const { data: adData, error: adError } = await supabase.functions.invoke('generate-dubbing', {
+            body: {
+              text: adTexts.join('\n---\n'),
+              targetLanguage,
+              translateOnly: true
+            }
+          });
+
+          if (adError) {
+            console.error('❌ Audio description translation failed:', adError);
+            translatedAD = originalAudioDescription;
+          } else {
+            const translatedADTexts = adData.translatedText
+              .split('\n---\n')
+              .map((t: string) => t.trim())
+              .filter((t: string) => t.length > 0);
+              
+            translatedAD = originalAudioDescription.map((ad, index) => ({
+              ...ad,
+              text: translatedADTexts[index] || ad.text
+            }));
           }
-        });
-
-        if (adError) throw adError;
-
-        const translatedADTexts = adData.translatedText
-          .split('\n---\n')
-          .map((t: string) => t.trim())
-          .filter((t: string) => t.length > 0);
-          
-        translatedAD = originalAudioDescription.map((ad, index) => ({
-          ...ad,
-          text: translatedADTexts[index] || ad.text
-        }));
+        } catch (adError: any) {
+          console.error('❌ Audio description translation exception:', adError);
+          translatedAD = originalAudioDescription;
+        }
       }
 
       const newTranslatedContent: TranslatedContent = {
