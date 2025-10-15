@@ -471,18 +471,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       console.log('🎨 First initial caption details:', initialCaptions[0] ? {
         speaker: initialCaptions[0].speaker,
         color: initialCaptions[0].speakerColor,
-        emphasis: initialCaptions[0].words?.[0]?.emphasis,
-        pitch: initialCaptions[0].words?.[0]?.pitch,
-        hasUpdateKey: !!(initialCaptions[0] as any)._updateKey,
-        source: 'database'
+        text: initialCaptions[0].text?.substring(0, 30),
+        currentLang: currentLanguage,
+        originalLang: originalLanguage
       } : 'No caption');
       
-      // Only update generatedCaptions if we don't have database captions already
-      // This prevents overriding database captions with generated ones
-      if (!generatedCaptions || generatedCaptions.length === 0 || 
-          (initialCaptions[0] as any)._updateKey) {
-        console.log('✅ Setting generatedCaptions from database initialCaptions');
-        setGeneratedCaptions(initialCaptions);
+      // CRITICAL: Only update if we're on the original language OR if we don't have captions yet
+      // Don't override translated captions when user has switched languages
+      const shouldUpdate = (
+        currentLanguage === originalLanguage || // User is viewing original language
+        !generatedCaptions || // No captions yet
+        generatedCaptions.length === 0 || // Empty captions
+        (initialCaptions[0] as any)._updateKey // Explicit database update
+      );
+      
+      if (shouldUpdate) {
+        console.log('✅ Setting generatedCaptions from initialCaptions (lang match or initial load)');
+        setGeneratedCaptions([...initialCaptions]);
         
         // Generate transcript text for dubbing from initial captions
         const transcriptText = initialCaptions
@@ -491,10 +496,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           .join(' ');
         setGeneratedTranscript(transcriptText);
       } else {
-        console.log('🚫 Keeping existing generatedCaptions, not overriding with initialCaptions');
+        console.log('⏭️ Skipping initialCaptions update - user is viewing translated content (current:', currentLanguage, 'original:', originalLanguage, ')');
       }
     }
-  }, [initialCaptions?.length, (initialCaptions?.[0] as any)?._updateKey]);
+  }, [initialCaptions, currentLanguage, originalLanguage]);
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {
@@ -610,8 +615,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const handleLanguageChange = async (language: string, content?: any) => {
-    console.log('🌍 AxessiblePlayer: Language changed to:', language, 'with content:', !!content);
+    console.log('🌍 AxessiblePlayer: Language changed to:', language, 'from:', currentLanguage, 'with content:', !!content);
+    
+    // Update current language FIRST to prevent initialCaptions from overriding
     setCurrentLanguage(language);
+    
     const isDubbingActive = language !== originalLanguage;
     setIsDubbing(isDubbingActive);
     
@@ -621,6 +629,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       // Apply translated captions directly from LanguageSelector
       if (content.captions && content.captions.length > 0) {
         console.log('✅ Applying translated captions:', content.captions.length, 'segments');
+        console.log('🔍 First translated caption:', content.captions[0]?.text?.substring(0, 50));
         setGeneratedCaptions([...content.captions]);
       }
       
@@ -633,6 +642,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       // Reset to original content when switching back to original language
       console.log('↩️ Restoring original captions');
       if (initialCaptions && initialCaptions.length > 0) {
+        console.log('📥 Restoring from initialCaptions:', initialCaptions.length);
         setGeneratedCaptions([...initialCaptions]);
       }
       setTranslatedContent(null);
