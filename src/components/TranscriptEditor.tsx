@@ -884,6 +884,20 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             </SelectContent>
           </Select>
 
+          {selectedLanguage !== initialLanguage && (
+            <Button
+              onClick={() => {
+                console.log('🔄 Re-translating to', selectedLanguage);
+                generateTranslatedContent(selectedLanguage);
+              }}
+              disabled={isTranslating || originalTranscript.length === 0}
+              size="sm"
+              variant="ghost"
+            >
+              {isTranslating ? 'Translating...' : 'Re-translate'}
+            </Button>
+          )}
+
           <Button
             onClick={() => addNewSegment()}
             disabled={editingTranscript.length === 0}
