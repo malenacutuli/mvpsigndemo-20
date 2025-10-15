@@ -239,7 +239,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         </SelectContent>
       </Select>
 
-      {needsTranslation && !isTranslating && (
+      {currentLanguage !== originalLanguage && (
         <Button
           variant="ghost"
           size="sm"
@@ -247,7 +247,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           className="text-white hover:bg-white/20 text-xs"
           disabled={isTranslating}
         >
-          Translate
+          {isTranslating ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              Translating...
+            </>
+          ) : (
+            <>Re-translate</>
+          )}
         </Button>
       )}
     </div>
