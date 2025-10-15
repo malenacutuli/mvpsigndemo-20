@@ -605,32 +605,42 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     });
   };
 
-  const saveAllChanges = () => {
-    saveTranscriptData(editingTranscript, selectedLanguage);
-    
-    // Immediately update the video player with changes
-    console.log('💾 Saving all transcript changes and updating video player:', editingTranscript.length, 'segments');
-    console.log('📝 Transcript segments being saved with properties:', editingTranscript.map(s => ({
-      speaker: s.speaker,
-      text: s.text.substring(0, 30) + '...',
-      startTime: s.startTime,
-      endTime: s.endTime,
-      speakerColor: s.speakerColor,
-      emphasis: s.emphasis,
-      pitch: s.pitch
-    })));
-    
-    // Force update by creating new array with timestamp to ensure re-render
-    const updatedSegments = editingTranscript.map((segment, index) => ({
-      ...segment,
-      _lastModified: Date.now() + index // Add timestamp to force updates
-    }));
-    onTranscriptUpdate?.(updatedSegments, selectedLanguage);
-    
-    toast({
-      title: "All Changes Saved",
-      description: "Transcript edits have been saved and applied to the video player."
-    });
+  const saveAllChanges = async () => {
+    try {
+      // Save to database first
+      await saveTranscriptData(editingTranscript, selectedLanguage);
+      
+      // Immediately update the video player with changes
+      console.log('💾 Saving all transcript changes with speaker info:', editingTranscript.length, 'segments');
+      console.log('📝 Transcript segments being saved:', editingTranscript.map(s => ({
+        speaker: s.speaker,
+        speakerColor: s.speakerColor,
+        text: s.text.substring(0, 30) + '...',
+        startTime: s.startTime,
+        endTime: s.endTime,
+        emphasis: s.emphasis,
+        pitch: s.pitch
+      })));
+      
+      // Force update by creating new array with timestamp to ensure re-render
+      const updatedSegments = editingTranscript.map((segment, index) => ({
+        ...segment,
+        _lastModified: Date.now() + index // Add timestamp to force updates
+      }));
+      onTranscriptUpdate?.(updatedSegments, selectedLanguage);
+      
+      toast({
+        title: "All Changes Saved",
+        description: "Transcript edits including speaker information have been saved and synced."
+      });
+    } catch (error) {
+      console.error('Error saving transcript changes:', error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save changes",
+        variant: "destructive"
+      });
+    }
   };
 
   const cancelEdit = () => {
