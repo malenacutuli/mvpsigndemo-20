@@ -132,7 +132,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [originalSpeaker, setOriginalSpeaker] = useState<string>('');
   const [originalColor, setOriginalColor] = useState<string>('');
   const { toast } = useToast();
-  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters } = useVideoStorage(videoId);
+  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // Load characters from localStorage
@@ -223,7 +223,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     try {
       await saveTranscriptSegments(storageSegments, language);
-      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to DATABASE - synced across all devices');
+      
+      // CRITICAL: Update speaker mappings when speaker names change
+      // This ensures character-to-speaker mapping persists across all languages
+      await updateSpeakerMappingsFromSegments(segments, language);
+      
+      console.log('✅ TRANSCRIPT EDITOR: Successfully saved to DATABASE with speaker mappings - synced across all devices');
       
       // Update local state to reflect saved changes
       setOriginalTranscript([...segments]);
@@ -240,6 +245,99 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         variant: "destructive"
       });
       throw error;
+    }
+  };
+
+  // Update speaker mappings based on current segment speakers
+  const updateSpeakerMappingsFromSegments = async (segments: TranscriptSegment[], language: string) => {
+    try {
+      // Extract unique speakers from segments
+      const uniqueSpeakers = Array.from(new Set(segments.map(s => s.speaker).filter(Boolean)));
+      
+      // Load existing mappings
+      const existingMappings = await loadSpeakerMappings(language);
+      
+      // Create updated mappings - preserve existing, add new identity mappings for any new speakers
+      const updatedMappings: Record<string, string> = { ...existingMappings };
+      
+      for (const speaker of uniqueSpeakers) {
+        if (speaker && !updatedMappings[speaker]) {
+          // New speaker detected - create identity mapping
+          updatedMappings[speaker] = speaker;
+        }
+      }
+      
+      // Save updated mappings for this language
+      await saveSpeakerMappings(updatedMappings, language);
+      
+      console.log('🔄 Updated speaker mappings for', uniqueSpeakers.length, 'speakers in', language);
+      
+      // CRITICAL: Sync speaker info across ALL languages for consistency
+      await syncSpeakerInfoAcrossLanguages(segments, language);
+    } catch (error) {
+      console.error('Failed to update speaker mappings:', error);
+      // Don't throw - this is non-critical for transcript saving
+    }
+  };
+
+  // Sync speaker names and colors across all transcript languages
+  const syncSpeakerInfoAcrossLanguages = async (sourceSegments: TranscriptSegment[], sourceLanguage: string) => {
+    try {
+      // Build speaker info map from source segments
+      const speakerInfo = new Map<string, { color: string, name: string }>();
+      sourceSegments.forEach(seg => {
+        if (seg.speaker && seg.speakerColor) {
+          speakerInfo.set(seg.speaker, { 
+            color: seg.speakerColor, 
+            name: seg.speaker 
+          });
+        }
+      });
+
+      if (speakerInfo.size === 0) return;
+
+      // Get all languages that have transcripts for this video
+      const { data: existingLanguages } = await supabase
+        .from('transcript_segments')
+        .select('language')
+        .eq('video_id', videoId)
+        .neq('language', sourceLanguage);
+
+      if (!existingLanguages || existingLanguages.length === 0) return;
+
+      const languagesToUpdate = Array.from(new Set(existingLanguages.map(l => l.language)));
+      
+      console.log(`🌐 Syncing speaker info from ${sourceLanguage} to ${languagesToUpdate.length} other languages`);
+
+      // Update each language's segments with consistent speaker colors
+      for (const targetLang of languagesToUpdate) {
+        for (const [speakerName, info] of speakerInfo.entries()) {
+          await supabase
+            .from('transcript_segments')
+            .update({ 
+              speaker_color: info.color 
+            })
+            .eq('video_id', videoId)
+            .eq('language', targetLang)
+            .eq('speaker', speakerName);
+        }
+        
+        // Also update speaker mappings for target language
+        const targetMappings = await loadSpeakerMappings(targetLang);
+        const updatedTargetMappings = { ...targetMappings };
+        
+        for (const [speakerName] of speakerInfo.entries()) {
+          if (!updatedTargetMappings[speakerName]) {
+            updatedTargetMappings[speakerName] = speakerName;
+          }
+        }
+        
+        await saveSpeakerMappings(updatedTargetMappings, targetLang);
+      }
+
+      console.log('✅ Speaker info synced across all languages');
+    } catch (error) {
+      console.error('Failed to sync speaker info across languages:', error);
     }
   };
 
@@ -470,6 +568,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       for (let b = 0; b < batches.length; b++) {
         const batch = batches[b];
+        const batchStartIndex = b * batchSize;
         try {
           console.log(`🔄 Translating batch ${b + 1}/${batches.length} (${batch.length} segments)`);
           const joined = batch.map(s => (s.text || '').trim()).join(SEPARATOR);
