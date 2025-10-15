@@ -423,7 +423,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
-  const generateTranslatedContent = async (targetLanguage: string) => {
+  const generateTranslatedContent = async (targetLanguage: string, force: boolean = false) => {
     if (originalTranscript.length === 0) {
       toast({
         title: "No Original Transcript",
@@ -435,65 +435,71 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
     setIsTranslating(true);
     try {
-      // CACHE CHECK: Load existing translation from database first to avoid redundant API calls
-      console.log('🔍 Checking for existing translation in', targetLanguage);
-      const existingSegments = await loadTranscriptSegments(targetLanguage);
-      
-      if (existingSegments.length > 0) {
-        console.log('✅ Found cached translation:', existingSegments.length, 'segments');
-        const convertedSegments = existingSegments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
-        }));
-        setEditingTranscript(convertedSegments);
-        setSelectedLanguage(targetLanguage);
-        onTranscriptUpdate?.(convertedSegments, targetLanguage);
-        
-        toast({
-          title: 'Translation Loaded',
-          description: `Loaded existing ${languages.find(l => l.code === targetLanguage)?.name} translation from database`
-        });
-        setIsTranslating(false);
-        return; // Exit early - no API call needed
-      }
-      
-      console.log('🌐 No cached translation found, calling translation API for', targetLanguage);
-      
-      // 1: Join segments with a strong separator to preserve 1:1 mapping
-      const SEPARATOR = '\n---\n';
-      const joined = originalTranscript.map(s => (s.text || '').trim()).join(SEPARATOR);
-      
-      // 2: Translate ONLY (no TTS) to avoid failures and speed up
-      const { data: translationData, error: translationError } = await supabase.functions.invoke('generate-dubbing', {
-        body: {
-          text: joined,
-          targetLanguage,
-          translateOnly: true
+      // If not forcing, try to load existing translation from DB to avoid redundant API calls
+      if (!force) {
+        console.log('🔍 Checking for existing translation in', targetLanguage);
+        const existingSegments = await loadTranscriptSegments(targetLanguage);
+        if (existingSegments.length > 0) {
+          console.log('✅ Found cached translation:', existingSegments.length, 'segments');
+          const convertedSegments = existingSegments.map(seg => ({
+            ...seg,
+            id: seg.id || `segment-${Date.now()}-${Math.random()}`
+          }));
+          setEditingTranscript(convertedSegments);
+          setSelectedLanguage(targetLanguage);
+          onTranscriptUpdate?.(convertedSegments, targetLanguage);
+          toast({ title: 'Translation Loaded', description: `Loaded existing ${languages.find(l => l.code === targetLanguage)?.name} translation` });
+          setIsTranslating(false);
+          return;
         }
-      });
-
-      if (translationError) throw new Error(translationError.message || 'Translation failed');
-
-      // 3: Split back using the same separator to keep segment alignment
-      const raw = (translationData?.translatedText || '').trim();
-      let translatedArray = raw.split(SEPARATOR).map((t: string) => t.trim());
-      
-      // Fallback: if model collapsed separators, try splitting on newlines first
-      if (translatedArray.length < originalTranscript.length) {
-        const alt = raw.split('\n').map((t: string) => t.trim()).filter(Boolean);
-        if (alt.length >= originalTranscript.length) translatedArray = alt;
       }
 
-      // 4: Map 1:1 to original segments (preserve exact timing) and dedupe any repeated sentences
-      const translatedSegments = originalTranscript.map((segment, index) => {
-        const translatedText = translatedArray[index] || segment.text;
-        return {
-          ...segment,
-          text: dedupeSentences(translatedText) // Remove accidental duplicates
-        };
-      });
+      console.log(force ? '🔄 Forcing fresh translation' : '🌐 No cached translation found, translating now', '→', targetLanguage);
 
-      // 5: Generate word timings for each segment from translated text
+      // Translate in batches to avoid token/length limits and preserve order
+      const SEPARATOR = '\n---\n';
+      const batchSize = 12; // keep small to stay under model limits
+      const batches: TranscriptSegment[][] = [];
+      for (let i = 0; i < originalTranscript.length; i += batchSize) {
+        batches.push(originalTranscript.slice(i, i + batchSize));
+      }
+      console.log('📦 Created', batches.length, 'batches for translation');
+
+      let successful = 0; let failed = 0;
+      const translatedSegments: TranscriptSegment[] = [];
+
+      for (let b = 0; b < batches.length; b++) {
+        const batch = batches[b];
+        try {
+          console.log(`🔄 Translating batch ${b + 1}/${batches.length} (${batch.length} segments)`);
+          const joined = batch.map(s => (s.text || '').trim()).join(SEPARATOR);
+          const { data, error } = await supabase.functions.invoke('generate-dubbing', {
+            body: { text: joined, targetLanguage, translateOnly: true }
+          });
+          if (error) throw new Error(error.message || 'Batch translate failed');
+          const raw: string = (data?.translatedText || '').trim();
+          let pieces = raw.split(SEPARATOR).map((t: string) => t.trim()).filter(Boolean);
+          if (pieces.length < batch.length) {
+            // Fallback split on newline when separators collapsed
+            const alt = raw.split('\n').map((t: string) => t.trim()).filter(Boolean);
+            if (alt.length >= batch.length) pieces = alt;
+          }
+          const mapped = batch.map((seg, i) => ({
+            ...seg,
+            text: dedupeSentences(pieces[i] || seg.text)
+          }));
+          translatedSegments.push(...mapped);
+          successful++;
+        } catch (e) {
+          console.error(`❌ Batch ${b + 1} failed:`, e);
+          translatedSegments.push(...batch); // keep originals for failed batch
+          failed++;
+        }
+      }
+
+      console.log(`📊 Translation summary: ${successful} successful, ${failed} failed`);
+
+      // Build captions with basic word timings
       const captions = translatedSegments.map(segment => {
         const wordsList = (segment.text || '').split(/\s+/).filter(Boolean);
         const dur = Math.max(0.1, (segment.endTime - segment.startTime));
@@ -515,25 +521,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
       setEditingTranscript(translatedSegments);
       setSelectedLanguage(targetLanguage);
-      
-      // 6: Persist translated transcript to database (per-language)
+
       await saveTranscriptData(translatedSegments, targetLanguage);
-      
       onTranscriptUpdate?.(translatedSegments, targetLanguage);
-      onContentGenerated?.({ captions, dubbing: translationData });
+      onContentGenerated?.({ captions, dubbing: null });
 
-      toast({
-        title: 'Content Generated',
-        description: `Transcript and captions generated for ${languages.find(l => l.code === targetLanguage)?.name}`
-      });
-
+      if (failed > 0) {
+        toast({ title: 'Translation completed with warnings', description: `${failed} batch(es) kept original text due to errors.` });
+      } else {
+        toast({ title: 'Translation complete', description: `Translated ${translatedSegments.length} segments to ${languages.find(l => l.code === targetLanguage)?.name}` });
+      }
     } catch (error) {
       console.error('Translation error:', error);
-      toast({
-        title: 'Generation Failed',
-        description: error instanceof Error ? error.message : 'Failed to generate translated content',
-        variant: 'destructive'
-      });
+      toast({ title: 'Generation Failed', description: error instanceof Error ? error.message : 'Failed to generate translated content', variant: 'destructive' });
     } finally {
       setIsTranslating(false);
     }
@@ -887,7 +887,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           <Button
             onClick={() => {
               console.log('🔄 Re-translating to', selectedLanguage);
-              generateTranslatedContent(selectedLanguage);
+              generateTranslatedContent(selectedLanguage, true);
             }}
             disabled={isTranslating || originalTranscript.length === 0}
             size="sm"
