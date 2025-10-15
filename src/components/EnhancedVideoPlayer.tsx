@@ -59,6 +59,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
+  const [translatedCaptions, setTranslatedCaptions] = useState<CaptionSegment[] | null>(null);
   const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
@@ -437,6 +438,47 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleAudioDescriptionsUpdate = (descriptions: any[]) => {
     console.log('📢 Audio descriptions updated in EnhancedVideoPlayer:', descriptions.length);
     setAudioDescriptions([...descriptions]);
+  };
+
+  const handleTranslatedContentUpdate = (content: any) => {
+    console.log('🌍 ENHANCED PLAYER: Translated content received:', content.language, 'captions:', content.captions?.length || 0);
+    if (content.captions && content.captions.length > 0) {
+      setTranslatedCaptions(content.captions);
+      setCaptions(content.captions);
+    }
+    if (content.audioDescription && content.audioDescription.length > 0) {
+      setAudioDescriptions(content.audioDescription);
+    }
+  };
+
+  const handleLanguageChange = (newLanguage: string) => {
+    console.log('🌍 ENHANCED PLAYER: Language changed to:', newLanguage);
+    setCurrentLanguage(newLanguage);
+    
+    if (newLanguage === (language || 'en')) {
+      console.log('↩️ Restoring original captions');
+      setTranslatedCaptions(null);
+      loadTranscriptSegments(newLanguage).then(segments => {
+        if (segments && segments.length > 0) {
+          const converted: CaptionSegment[] = segments.map((seg: any) => ({
+            text: seg.text || '',
+            speaker: seg.speaker || 'Speaker',
+            speakerColor: seg.speaker_color || '#3B82F6',
+            startTime: Number(seg.start_time || seg.startTime || 0),
+            endTime: Number(seg.end_time || seg.endTime || 0),
+            words: seg.words || [],
+            emphasis: seg.emphasis || 'normal',
+            pitch: seg.pitch || 'normal',
+            isOffCamera: seg.is_off_camera || seg.isOffCamera || false,
+          }));
+          setCaptions(converted);
+        }
+      });
+    }
+    
+    if (onLanguageChange) {
+      onLanguageChange(newLanguage);
+    }
   };
 
   // Load saved audio descriptions from database
@@ -884,12 +926,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         selectedSignLanguageAvatar={selectedSignLanguageAvatar}
         contentType={contentType}
         className={className}
-        initialCaptions={captions}
+        initialCaptions={translatedCaptions || captions}
         dynamicDescriptions={audioDescriptions}
         onTranscriptUpdate={handleTranscriptUpdate}
         isPublic={isPublic}
         videoStatus={videoStatus}
-        originalLanguage={currentLanguage}
+        originalLanguage={language || 'en'}
+        currentLanguage={currentLanguage}
+        onLanguageChange={handleLanguageChange}
+        onTranslatedContentUpdate={handleTranslatedContentUpdate}
       />
       
       {/* Content Generation and Management Controls */}

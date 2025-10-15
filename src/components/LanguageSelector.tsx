@@ -147,11 +147,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleLanguageChange = async (language: string) => {
-    onLanguageChange(language);
-
     // If switching back to the original language, return to original content
     if (language === originalLanguage) {
       setTranslatedContent([]); // Clear translations when returning to original
+      onLanguageChange(language); // Notify parent to use original content
       return;
     }
 
@@ -161,8 +160,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     if (!existing) {
       // Generate translation if it doesn't exist
       await translateContent(language);
+      // The onTranslatedContentUpdate is called inside translateContent after success
     } else {
-      // Use existing translation
+      // Use existing translation immediately
+      onLanguageChange(language);
       onTranslatedContentUpdate(existing);
     }
   };

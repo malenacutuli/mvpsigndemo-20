@@ -40,12 +40,15 @@ interface AxessiblePlayerProps {
   contentType?: 'recipe' | 'education';
   initialCaptions?: CaptionSegment[];
   dynamicDescriptions?: any[];
-  videoId?: string; // Add video ID for database operations
+  videoId?: string;
   onTranscriptUpdate?: (segments: any[], language: string) => void;
   isPublic?: boolean;
   videoStatus?: string;
-  showSignLanguageProp?: boolean; // optional external control
-  originalLanguage?: string; // Original language of the video
+  showSignLanguageProp?: boolean;
+  originalLanguage?: string;
+  currentLanguage?: string;
+  onLanguageChange?: (language: string) => void;
+  onTranslatedContentUpdate?: (content: any) => void;
 }
 
 export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
@@ -63,7 +66,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   isPublic,
   videoStatus,
   showSignLanguageProp,
-  originalLanguage = 'en', // Default to English
+  originalLanguage = 'en',
+  currentLanguage: externalCurrentLanguage,
+  onLanguageChange: externalOnLanguageChange,
+  onTranslatedContentUpdate: externalOnTranslatedContentUpdate,
 }) => {
   // Update captions when initialCaptions changes (from database)
   useEffect(() => {
@@ -121,8 +127,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
-  const [currentLanguage, setCurrentLanguage] = useState(originalLanguage);
+  const [currentLanguage, setCurrentLanguage] = useState(externalCurrentLanguage || originalLanguage);
   const [translatedContent, setTranslatedContent] = useState<any>(null);
+  
+  // Sync with external language changes
+  useEffect(() => {
+    if (externalCurrentLanguage && externalCurrentLanguage !== currentLanguage) {
+      console.log('🌍 AxessiblePlayer syncing with external language:', externalCurrentLanguage);
+      setCurrentLanguage(externalCurrentLanguage);
+    }
+  }, [externalCurrentLanguage]);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
@@ -596,69 +610,30 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const handleLanguageChange = async (language: string, content?: any) => {
+    console.log('🌍 AxessiblePlayer: Language changed to:', language, 'with content:', !!content);
     setCurrentLanguage(language);
-    const isDubbingActive = language !== 'en';
+    const isDubbingActive = language !== originalLanguage;
     setIsDubbing(isDubbingActive);
     
     if (content) {
       setTranslatedContent(content);
       
-      // Translate captions with intention when dubbing is active
-      if (content.captions || isDubbingActive) {
-        const captionsToTranslate = content.captions || generatedCaptions;
-        if (captionsToTranslate && isDubbingActive) {
-          try {
-            // Generate translated captions with intention
-            const captionText = captionsToTranslate.map((c: any) => c.text).join(' ');
-            const { data: translatedCaptions } = await supabase.functions.invoke('generate-dubbing', {
-              body: { text: captionText, targetLanguage: language }
-            });
-            
-            if (translatedCaptions?.translatedText) {
-              const translatedCaptionSegments = captionsToTranslate.map((caption: any, index: number) => ({
-                ...caption,
-                text: translatedCaptions.translatedText.split('. ')[index] || caption.text
-              }));
-              setGeneratedCaptions(translatedCaptionSegments);
-            }
-          } catch (error) {
-            console.error('Caption translation error:', error);
-            if (content.captions) setGeneratedCaptions(content.captions);
-          }
-        } else if (content.captions) {
-          setGeneratedCaptions(content.captions);
-        }
+      // Apply translated captions directly from LanguageSelector
+      if (content.captions && content.captions.length > 0) {
+        console.log('✅ Applying translated captions:', content.captions.length, 'segments');
+        setGeneratedCaptions([...content.captions]);
       }
       
-      // Translate audio descriptions when dubbing is active
-      if (content.audioDescription || isDubbingActive) {
-        const audioDescToTranslate = content.audioDescription || generatedAD;
-        if (audioDescToTranslate && isDubbingActive) {
-          try {
-            const adText = audioDescToTranslate.map((ad: any) => ad.text).join(' ');
-            const { data: translatedAD } = await supabase.functions.invoke('generate-dubbing', {
-              body: { text: adText, targetLanguage: language }
-            });
-            
-            if (translatedAD?.translatedText) {
-              const translatedADSegments = audioDescToTranslate.map((ad: any, index: number) => ({
-                ...ad,
-                text: translatedAD.translatedText.split('. ')[index] || ad.text
-              }));
-              setGeneratedAD(translatedADSegments);
-            }
-          } catch (error) {
-            console.error('Audio description translation error:', error);
-            if (content.audioDescription) setGeneratedAD(content.audioDescription);
-          }
-        } else if (content.audioDescription) {
-          setGeneratedAD(content.audioDescription);
-        }
+      // Apply translated audio descriptions
+      if (content.audioDescription && content.audioDescription.length > 0) {
+        console.log('✅ Applying translated audio descriptions:', content.audioDescription.length);
+        setGeneratedAD([...content.audioDescription]);
       }
-    } else if (language === 'en') {
-      // Reset to original content
-      if (initialCaptions) {
-        setGeneratedCaptions(initialCaptions);
+    } else if (language === originalLanguage) {
+      // Reset to original content when switching back to original language
+      console.log('↩️ Restoring original captions');
+      if (initialCaptions && initialCaptions.length > 0) {
+        setGeneratedCaptions([...initialCaptions]);
       }
       setTranslatedContent(null);
       setOriginalAudioMuted(false);
@@ -677,6 +652,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       if (video) {
         video.volume = 0; // Mute original video audio when dubbing is active
       }
+    }
+    
+    // Notify external handler
+    if (externalOnLanguageChange) {
+      externalOnLanguageChange(language);
     }
   };
 
@@ -1349,8 +1329,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                     originalLanguage={originalLanguage}
                     originalCaptions={initialCaptions}
                     originalAudioDescription={generatedAD || undefined}
-                    onLanguageChange={handleLanguageChange}
-                    onTranslatedContentUpdate={handleTranslatedContentUpdate}
+                    onLanguageChange={(lang) => handleLanguageChange(lang)}
+                    onTranslatedContentUpdate={(content) => handleLanguageChange(content.language, content)}
                   />
                   <div className="p-4 border border-muted/20 rounded-lg">
                     <h4 className="font-medium mb-2">Language Features</h4>
