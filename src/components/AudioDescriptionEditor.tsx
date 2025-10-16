@@ -19,6 +19,9 @@ interface AudioDescriptionSegment {
   endTime: number;
   voiceStyle: string;
   timestamp?: number;
+  audio_url?: string;
+  audio_generation_status?: string;
+  originalText?: string; // Track original text to detect changes
 }
 
 interface AudioDescriptionEditorProps {
@@ -93,7 +96,10 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           text: desc.description,
           startTime: Number(desc.start_time),
           endTime: Number(desc.end_time),
-          voiceStyle: 'warm'
+          voiceStyle: 'warm',
+          audio_url: (desc as any).audio_url,
+          audio_generation_status: (desc as any).audio_generation_status,
+          originalText: desc.description // Track original for change detection
         }));
         
         // Load audio generation status
@@ -140,7 +146,11 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               start_time: desc.startTime,
               end_time: desc.endTime,
               language: detectedLanguage,
-              description_type: 'visual'
+              description_type: 'visual',
+              // Preserve audio URL and status only if text hasn't changed
+              audio_url: desc.text === desc.originalText ? desc.audio_url : null,
+              audio_generation_status: desc.text === desc.originalText ? desc.audio_generation_status : null,
+              audio_generated_at: desc.text === desc.originalText && desc.audio_url ? new Date().toISOString() : null
             }))
           );
 
@@ -732,12 +742,18 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     if (editingIndex === null) return;
 
     const updatedDescriptions = [...descriptions];
+    const textChanged = descriptions[editingIndex].text !== editText;
+    
     updatedDescriptions[editingIndex] = {
       ...updatedDescriptions[editingIndex],
       text: editText,
       voiceStyle: editVoiceStyle,
       startTime: parseTimeInput(editStartTime),
-      endTime: parseTimeInput(editEndTime)
+      endTime: parseTimeInput(editEndTime),
+      // Clear audio if text changed, otherwise preserve
+      audio_url: textChanged ? undefined : updatedDescriptions[editingIndex].audio_url,
+      audio_generation_status: textChanged ? undefined : updatedDescriptions[editingIndex].audio_generation_status,
+      originalText: editText // Update original text
     };
 
     setDescriptions(updatedDescriptions);
