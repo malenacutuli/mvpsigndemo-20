@@ -209,13 +209,16 @@ export class VideoExportManager {
       const outputFile = `asl_${Date.now()}.mp4`;
       
       // Load all ASL clips with retry logic
+      console.log(`📥 Downloading ${signLanguageClips.length} ASL clips...`);
       for (let i = 0; i < signLanguageClips.length; i++) {
         const clip = signLanguageClips[i];
         const clipUrl = clip.url || clip.clip_url;
         if (clipUrl) {
           try {
+            console.log(`📥 Downloading ASL clip ${i + 1} of ${signLanguageClips.length}...`);
             const clipData = await fetchFileWithRetry(clipUrl, 3);
             await this.ffmpeg!.writeFile(`asl_${i}.mp4`, clipData);
+            console.log(`✅ ASL clip ${i + 1} downloaded successfully`);
           } catch (error: any) {
             throw new Error(
               `Failed to download sign language clip ${i + 1}: ${error.message}. ` +
@@ -224,6 +227,7 @@ export class VideoExportManager {
           }
         }
       }
+      console.log(`✅ All ASL clips downloaded successfully`);
       
       // Build complex filter for overlays
       const filterComplex = await this.buildASLFilterGraph(
@@ -264,12 +268,29 @@ export class VideoExportManager {
   ): Promise<string> {
     let filterSteps = [];
     let lastOutput = '0:v';
+    let validClipsCount = 0;
+    
+    console.log('🎬 Building ASL filter graph...');
+    console.log(`📊 Total clips: ${signLanguageClips.length}, Total segments: ${transcriptSegments.length}`);
     
     for (let i = 0; i < signLanguageClips.length; i++) {
       const clip = signLanguageClips[i];
+      
+      // Validate transcript_segment_id exists
+      if (!clip.transcript_segment_id) {
+        console.warn(`⚠️ ASL clip ${i + 1} is missing transcript_segment_id, skipping`);
+        continue;
+      }
+      
       const segment = transcriptSegments.find(s => s.id === clip.transcript_segment_id);
       
-      if (!segment) continue;
+      if (!segment) {
+        console.warn(`⚠️ ASL clip ${i + 1} (ID: ${clip.id}) cannot find matching transcript segment (${clip.transcript_segment_id}), skipping`);
+        continue;
+      }
+      
+      console.log(`✅ ASL clip ${i + 1} matched to segment: "${segment.text.substring(0, 30)}..."`);
+      validClipsCount++;
       
       const startTime = (segment.start_time_ms || segment.start_time * 1000) / 1000;
       const endTime = (segment.end_time_ms || segment.end_time * 1000) / 1000;
@@ -294,6 +315,14 @@ export class VideoExportManager {
       lastOutput = overlayOutput;
     }
     
+    if (validClipsCount === 0) {
+      throw new Error(
+        'No valid ASL clips found. All clips are missing transcript segment associations. ' +
+        'Please ensure sign language clips are properly linked to transcript segments.'
+      );
+    }
+    
+    console.log(`✅ ASL filter graph built with ${validClipsCount} valid clips`);
     return filterSteps.join('');
   }
 

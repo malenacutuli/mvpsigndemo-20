@@ -44,6 +44,7 @@ export interface ExportAssets {
   }>;
   signLanguageClips: Array<{
     id: string;
+    transcript_segment_id?: string;
     start_time_ms: number;
     end_time_ms: number;
     clip_url: string;

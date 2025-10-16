@@ -136,11 +136,16 @@ export async function runBrowserExport(
     if (options.signLanguage && assets.signLanguageClips?.length) {
       progressAggregator({ stage: 'asl', progress: 0, msg: 'Processing ASL overlays...' });
       
+      // Calculate dynamic timeout based on number of clips (30 seconds per clip minimum)
+      const aslTimeout = Math.max(STEP_TIMEOUT_MS, assets.signLanguageClips.length * 30000);
+      console.log(`[Export] ASL processing timeout set to ${Math.round(aslTimeout / 1000)}s for ${assets.signLanguageClips.length} clips`);
+      
       const ffmpeg = await getFFmpeg();
       
       // Convert assets for FFmpeg processing
       const signLanguageForFFmpeg = assets.signLanguageClips.map(clip => ({
         id: clip.id,
+        transcript_segment_id: clip.transcript_segment_id,
         start_time_ms: clip.start_time_ms,
         end_time_ms: clip.end_time_ms,
         clip_url: clip.clip_url
@@ -155,16 +160,20 @@ export async function runBrowserExport(
         end_time_ms: segment.end_time * 1000
       }));
       
-      const aslBlob = await exportManager.exportVideo({
-        videoFile: currentUrl,
-        transcriptSegments: transcriptForFFmpeg,
-        signLanguageClips: signLanguageForFFmpeg,
-        audioDescriptions: [],
-        features: { captions: false, signLanguage: true, audioDescription: false },
-        onProgress: (progress) => {
-          progressAggregator({ stage: 'asl', progress: progress.progress, msg: `ASL: ${progress.step}` });
-        }
-      });
+      const aslBlob = await withTimeout(
+        exportManager.exportVideo({
+          videoFile: currentUrl,
+          transcriptSegments: transcriptForFFmpeg,
+          signLanguageClips: signLanguageForFFmpeg,
+          audioDescriptions: [],
+          features: { captions: false, signLanguage: true, audioDescription: false },
+          onProgress: (progress) => {
+            progressAggregator({ stage: 'asl', progress: progress.progress, msg: `ASL: ${progress.step}` });
+          }
+        }),
+        aslTimeout,
+        'ASL overlay processing'
+      );
       
       // Update to new blob URL
       if (previousUrl !== videoUrl && previousUrl.startsWith('blob:')) {

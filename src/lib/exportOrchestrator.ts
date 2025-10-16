@@ -247,7 +247,7 @@ export class ExportOrchestrator {
     if (options.signLanguage) {
       const { data: clips, error: clipsError } = await supabase
         .from('sign_language_clips')
-        .select('id, start_time_ms, end_time_ms, clip_url')
+        .select('id, transcript_segment_id, start_time_ms, end_time_ms, clip_url')
         .eq('video_id', videoId)
         .order('start_time_ms');
 
