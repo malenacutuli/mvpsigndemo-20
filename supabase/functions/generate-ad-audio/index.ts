@@ -178,17 +178,17 @@ serve(async (req) => {
         try {
           console.log('🔊 [Hume AI] Attempting fallback TTS generation...');
           
-          // Voice prompts by language for Hume AI
-          const voicePrompts: Record<string, string> = {
-            'en': 'Patient, clear narrator with warm and calm tone for audio description',
-            'es': 'Narrador profesional con tono cálido y paciente para descripción de audio',
-            'fr': 'Narrateur professionnel avec ton chaleureux et patient pour audiodescription',
-            'de': 'Professioneller Erzähler mit warmem und geduldigen Ton für Audiodeskription',
-            'it': 'Narratore professionale con tono caldo e paziente per audiodescrizione',
-            'pt': 'Narrador profissional com tom caloroso e paciente para audiodescrição'
+          // Voice names by language for Hume AI
+          const voiceNames: Record<string, string> = {
+            'en': 'Calm English Narrator',
+            'es': 'Spanish Professional Narrator',
+            'fr': 'French Professional Narrator',
+            'de': 'German Professional Narrator',
+            'it': 'Italian Professional Narrator',
+            'pt': 'Portuguese Professional Narrator'
           };
 
-          const humeTtsResponse = await fetch('https://api.hume.ai/v0/tts', {
+          const humeTtsResponse = await fetch('https://api.hume.ai/v0/tts/stream/file', {
             method: 'POST',
             headers: {
               'X-Hume-Api-Key': HUME_API_KEY,
@@ -198,11 +198,14 @@ serve(async (req) => {
               utterances: [{
                 text: text,
                 voice: {
-                  provider: 'HUME_AI',
-                  voice_prompt: voicePrompts[language] || voicePrompts['en']
+                  name: voiceNames[language] || voiceNames['en'],
+                  provider: 'HUME_AI'
                 }
               }],
-              acting_instruction: 'Describe visual elements clearly and objectively with appropriate emotional tone for the scene context'
+              format: {
+                type: 'mp3'
+              },
+              strip_headers: true
             }),
           });
 
