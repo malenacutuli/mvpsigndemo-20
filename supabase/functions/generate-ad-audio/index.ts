@@ -57,7 +57,8 @@ serve(async (req) => {
     );
   }
 
-  const { description_id, video_id, text, language, voice_id } = requestBody;
+  try {
+    const { description_id, video_id, text, language, voice_id } = requestBody;
     
     console.log('🎙️ [Generate AD Audio] Starting generation:', {
       description_id,
