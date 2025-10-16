@@ -4,13 +4,14 @@ import { toBlobURL } from '@ffmpeg/util';
 
 /**
  * IMPORTANT:
- * - Make sure package.json has "@ffmpeg/ffmpeg": "0.12.15" (exact or ^0.12.15)
- * - This loader fetches the matching @ffmpeg/core v0.12.15 from CDN.
+ * - Uses local ffmpeg core files from public/ffmpeg/0.12.6/
+ * - Fallback to CDN version 0.12.6 if local files fail
  */
-const CORE_VERSION = '0.12.15';
+const CORE_VERSION = '0.12.6';
 
-// Strict, ordered fallbacks: jsDelivr → unpkg
+// Use local files first, then CDN fallback
 const SOURCES = [
+  `/ffmpeg/${CORE_VERSION}`,
   `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/umd`,
   `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`,
 ];
