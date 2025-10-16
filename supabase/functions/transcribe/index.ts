@@ -90,27 +90,41 @@ serve(async (req) => {
     
     // Strategy 1: For large videos (>100MB), use URL-based processing only
     if (sizeMB > 100) {
-      console.log(`🚀 Large video detected (${sizeMB}MB). Using URL-based processing only.`);
+      console.log(`🚀 Large video detected (${sizeMB}MB). Using URL-based processing (Twelve Labs → AssemblyAI).`);
       
-      // Try AssemblyAI first for large videos (most reliable for large files)
-      const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-      if (ASSEMBLYAI_API_KEY) {
-        console.log("Using AssemblyAI for large video transcription...");
-        try {
-          transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
-          console.log("✅ AssemblyAI transcription successful!");
-        } catch (assemblyError) {
-          console.log("AssemblyAI failed:", (assemblyError as any).message);
+      // Try Twelve Labs first for large videos (more cost-effective)
+      try {
+        console.log("Trying Twelve Labs for large video transcription...");
+        const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+        if (twelveLabsResult && !twelveLabsResult.error) {
+          console.log("✅ Twelve Labs analysis successful for large video!");
+          transcriptionResult = twelveLabsResult;
+        } else {
+          throw new Error("Twelve Labs returned error or no result");
+        }
+      } catch (twelveLabsError) {
+        console.log("Twelve Labs failed for large video, falling back to AssemblyAI:", twelveLabsError instanceof Error ? twelveLabsError.message : 'Unknown error');
+        
+        // Fallback to AssemblyAI for large videos
+        const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+        if (ASSEMBLYAI_API_KEY) {
+          console.log("Using AssemblyAI fallback for large video transcription...");
+          try {
+            transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
+            console.log("✅ AssemblyAI transcription successful!");
+          } catch (assemblyError) {
+            console.log("AssemblyAI failed:", (assemblyError as any).message);
+            transcriptionResult = { 
+              error: 'large_video_failed', 
+              message: `Large video (${sizeMB}MB) processing failed. Both Twelve Labs and AssemblyAI experienced issues. Please try again later or check video format.` 
+            };
+          }
+        } else {
           transcriptionResult = { 
-            error: 'large_video_failed', 
-            message: `Large video (${sizeMB}MB) processing failed. AssemblyAI may be experiencing issues. Please try again later or use a smaller video file.` 
+            error: 'no_large_video_support', 
+            message: 'Large videos require AssemblyAI when Twelve Labs fails. Please add ASSEMBLYAI_API_KEY to process videos over 100MB.' 
           };
         }
-      } else {
-        transcriptionResult = { 
-          error: 'no_large_video_support', 
-          message: 'Large videos require AssemblyAI. Please add ASSEMBLYAI_API_KEY to process videos over 100MB.' 
-        };
       }
     } else {
       // Strategy 2: For medium videos (25-100MB), try Twelve Labs then AssemblyAI
