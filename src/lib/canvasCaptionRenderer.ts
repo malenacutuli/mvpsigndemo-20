@@ -253,33 +253,39 @@ export class CanvasCaptionRenderer {
     }
 
     // Smart MIME type selection
+    // Smart MIME type selection with robust fallback
     const mimeTypes = [
-      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',  // Safari/iOS
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',  // Safari/iOS (may still be unsupported by MediaRecorder)
       'video/webm;codecs=vp9,opus',               // Modern Chrome/Firefox
       'video/webm;codecs=vp8,opus',
       'video/webm'
     ];
     
-    const mime = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'video/webm';
-    console.log('[Export] Selected MIME type:', mime);
-    
-    // Diagnostics
-    console.log('[Export] Video tracks:', mixedStream.getVideoTracks().length);
-    console.log('[Export] Audio tracks:', mixedStream.getAudioTracks().length);
-    console.log('[Export] Audio path:', audioPath);
-    
-    const recorder = new MediaRecorder(mixedStream, {
-      mimeType: mime,
-      videoBitsPerSecond: 4_000_000,
-      audioBitsPerSecond: 128_000,
+    const supportedMime = mimeTypes.find(type => {
+      try { return (window as any).MediaRecorder?.isTypeSupported?.(type); } catch { return false; }
     });
+    
+    let recorder: MediaRecorder;
+    const recorderOptions: MediaRecorderOptions = supportedMime
+      ? { mimeType: supportedMime, videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 }
+      : { videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 } as any;
+    
+    try {
+      recorder = new MediaRecorder(mixedStream, recorderOptions);
+      console.log('[Export] Selected MIME type:', supportedMime || '(default)');
+    } catch (e) {
+      console.warn('[Export] MediaRecorder init failed with options, retrying with defaults:', e);
+      recorder = new MediaRecorder(mixedStream);
+    }
 
     const chunks: BlobPart[] = [];
     recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
 
     return new Promise<string>(async (resolve, reject) => {
       recorder.onstop = async () => {
-        const out = new Blob(chunks, { type: mime });
+        const recordedType = (recorder as any).mimeType || supportedMime || 'video/webm';
+        const container = typeof recordedType === 'string' ? recordedType.split(';')[0] : 'video/webm';
+        const out = new Blob(chunks, { type: container });
         
         // PATH 3 FALLBACK: If we recorded video-only, mux original audio with FFmpeg
         if (audioPath === 'videoOnly' && videoBlob) {
@@ -460,17 +466,43 @@ export class CanvasCaptionRenderer {
         }
       };
 
+      let safetyTimeout: number | undefined;
+
       recorder.start(500);
       video.currentTime = 0;
+      
+      // Safety: stop when playback reaches end or after max duration + buffer
+      const scheduleSafetyStop = () => {
+        const totalMs = Math.ceil(((video.duration || 0) * 1000)) + 5000;
+        if (totalMs > 0) {
+          safetyTimeout = window.setTimeout(() => {
+            if (recorder.state === 'recording') {
+              console.warn('[Export] Safety stop triggered after max duration buffer');
+              recorder.stop();
+            }
+          }, totalMs);
+        }
+      };
+
+      video.addEventListener('timeupdate', () => {
+        if (video.duration && video.currentTime >= video.duration - 0.05 && recorder.state === 'recording') {
+          console.log('[Export] Reached end of video, stopping recorder');
+          recorder.stop();
+        }
+      });
+
       video.play().then(() => {
+        scheduleSafetyStop();
         requestAnimationFrame(renderLoop);
       }).catch(reject);
 
       video.onended = () => {
+        if (safetyTimeout) clearTimeout(safetyTimeout);
         recorder.stop();
       };
 
       video.onerror = () => {
+        if (safetyTimeout) clearTimeout(safetyTimeout);
         reject(new Error('Video playback error during caption rendering'));
       };
     });
