@@ -213,53 +213,32 @@ export class ExportOrchestrator {
     if (options.audioDescription) {
       const { data: ads, error: adsError } = await supabase
         .from('audio_descriptions')
-        .select('start_time, end_time, description')
+        .select('start_time, end_time, description, audio_url, audio_generation_status')
         .eq('video_id', videoId)
         .order('start_time');
 
       if (adsError) {
         console.warn('Failed to load audio descriptions:', adsError);
       } else {
+        // Query for descriptions that ALREADY have pre-generated audio_url
         const rawAds = ads || [];
-        // Generate TTS audio for each description via Edge Function
-        try {
-          audioDescriptions = await Promise.all(
-            rawAds.map(async (ad) => {
-              try {
-                const { data, error } = await supabase.functions.invoke('tts', {
-                  body: { text: ad.description, language: video.language || 'en' }
-                });
-                if (error) throw error;
-                const blob = data instanceof ArrayBuffer
-                  ? new Blob([data], { type: 'audio/mpeg' })
-                  : new Blob([data as any], { type: 'audio/mpeg' });
-                const url = URL.createObjectURL(blob);
-                return {
-                  start_time: ad.start_time,
-                  end_time: ad.end_time,
-                  description: ad.description,
-                  audio_url: url
-                };
-              } catch (ttsErr) {
-                console.warn('TTS generation failed for AD segment:', ttsErr);
-                return {
-                  start_time: ad.start_time,
-                  end_time: ad.end_time,
-                  description: ad.description,
-                  audio_url: undefined
-                };
-              }
-            })
-          );
-        } catch (e) {
-          console.warn('Bulk TTS generation failed, proceeding without audio URLs');
-          audioDescriptions = rawAds.map(ad => ({
+        console.log('📢 Loading audio descriptions with pre-generated audio files...');
+        
+        audioDescriptions = rawAds
+          .filter(ad => ad.audio_url && ad.audio_url.length > 0) // Only include descriptions with audio
+          .map(ad => ({
             start_time: ad.start_time,
             end_time: ad.end_time,
             description: ad.description,
-            audio_url: undefined
+            audio_url: ad.audio_url
           }));
+        
+        const missingAudio = rawAds.length - audioDescriptions.length;
+        if (missingAudio > 0) {
+          console.warn(`⚠️ ${missingAudio} audio descriptions are missing pre-generated audio files`);
         }
+        
+        console.log(`✅ Loaded ${audioDescriptions.length} audio descriptions with audio files`);
       }
     }
 
@@ -287,23 +266,95 @@ export class ExportOrchestrator {
     };
   }
 
-  private validateAssets(assets: ExportAssets, options: ExportOptions) {
+  private async validateAssets(assets: ExportAssets, options: ExportOptions) {
     if (options.captions && assets.transcriptSegments.length === 0) {
       throw new Error('No transcript segments available for captions');
     }
 
     if (options.audioDescription) {
-      const adWithAudio = (assets.audioDescriptions || []).filter(ad => !!ad.audio_url);
+      const adsWithAudio = (assets.audioDescriptions || []).filter(ad => 
+        ad.audio_url && ad.audio_url.startsWith('http')
+      );
+      const adsMissingAudio = (assets.audioDescriptions || []).length - adsWithAudio.length;
+      
       if ((assets.audioDescriptions || []).length === 0) {
-        throw new Error('No audio descriptions available');
+        throw new Error('No audio descriptions available. Please create audio descriptions in the Audio Description Editor first.');
       }
-      if (adWithAudio.length === 0) {
-        throw new Error('Audio descriptions selected but no audio files found. Please generate TTS for descriptions first.');
+      
+      if (adsMissingAudio > 0) {
+        throw new Error(
+          `${adsMissingAudio} audio description(s) are missing audio files. ` +
+          `Please generate audio for all descriptions in the Audio Description Editor ` +
+          `before exporting with audio descriptions.`
+        );
       }
+      
+      if (adsWithAudio.length === 0) {
+        throw new Error(
+          'No audio descriptions with generated audio files found. ' +
+          'Please generate audio for your descriptions using the "Generate Audio" button first.'
+        );
+      }
+      
+      // Pre-validate that audio URLs are accessible
+      console.log('🔍 Validating audio description files...');
+      for (const ad of adsWithAudio) {
+        try {
+          const response = await fetch(ad.audio_url, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`Audio file not accessible: ${response.status}`);
+          }
+        } catch (error) {
+          throw new Error(
+            `Audio description file is not accessible. Please regenerate audio files.`
+          );
+        }
+      }
+      console.log('✅ All audio description files validated');
     }
 
-    if (options.signLanguage && assets.signLanguageClips.length === 0) {
-      throw new Error('No sign language clips available');
+    if (options.signLanguage) {
+      const clips = assets.signLanguageClips || [];
+      
+      if (clips.length === 0) {
+        throw new Error('No sign language clips available');
+      }
+      
+      // Pre-validate sign language clips
+      console.log('🔍 Validating sign language clips...');
+      for (const clip of clips) {
+        const clipUrl = clip.clip_url || (clip as any).url;
+        if (!clipUrl) {
+          throw new Error(`Sign language clip ${clip.id} is missing clip_url`);
+        }
+        
+        try {
+          const response = await fetch(clipUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(
+              `Sign language clip ${clip.id} not accessible (HTTP ${response.status}). ` +
+              `Please re-upload the clip.`
+            );
+          }
+          
+          // Verify content type is video
+          const contentType = response.headers.get('content-type');
+          if (!contentType?.startsWith('video/')) {
+            throw new Error(
+              `Sign language clip ${clip.id} is not a valid video file (${contentType})`
+            );
+          }
+        } catch (error: any) {
+          if (error instanceof TypeError) {
+            throw new Error(
+              `Network error accessing sign language clip ${clip.id}. ` +
+              `Please check your internet connection and try again.`
+            );
+          }
+          throw error;
+        }
+      }
+      console.log('✅ All sign language clips validated');
     }
 
     if (!assets.video.storage_path) {

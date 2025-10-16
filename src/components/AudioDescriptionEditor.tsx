@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus } from 'lucide-react';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus, Volume2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceOption, getFilteredVoices, getCategoryColor, findVoiceById } from "@/types/voice";
 
@@ -53,6 +53,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
   const detectedLanguage = videoData?.transcript_language || 'en';
 const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
+  const [audioGenerationStatus, setAudioGenerationStatus] = useState<Record<string, string>>({});
+  const [generatingAudioIds, setGeneratingAudioIds] = useState<Set<string>>(new Set());
 
   // Local UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -93,6 +95,15 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           endTime: Number(desc.end_time),
           voiceStyle: 'warm'
         }));
+        
+        // Load audio generation status
+        const statusMap: Record<string, string> = {};
+        data.forEach(desc => {
+          if (desc.id) {
+            statusMap[desc.id] = (desc as any).audio_generation_status || 'pending';
+          }
+        });
+        setAudioGenerationStatus(statusMap);
         
         setDescriptions(loadedDescriptions);
         onDescriptionsUpdate?.(loadedDescriptions);
@@ -791,6 +802,102 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     await saveDescriptionsToDatabase(updatedDescriptions);
   };
 
+  // Generate audio for a single description
+  const generateAudioForDescription = async (descId: string, descText: string) => {
+    if (!descId || !videoId) {
+      toast.error('Missing required information');
+      return;
+    }
+
+    setGeneratingAudioIds(prev => new Set(prev).add(descId));
+    setAudioGenerationStatus(prev => ({ ...prev, [descId]: 'processing' }));
+
+    try {
+      console.log('🎙️ Generating audio for description:', descId);
+
+      const { data, error } = await supabase.functions.invoke('generate-ad-audio', {
+        body: {
+          description_id: descId,
+          video_id: videoId,
+          text: descText,
+          language: detectedLanguage,
+          voice_id: selectedVoice?.id
+        }
+      });
+
+      if (error) throw error;
+
+      setAudioGenerationStatus(prev => ({ ...prev, [descId]: 'completed' }));
+      toast.success('Audio generated successfully!');
+      console.log('✅ Audio generated:', data);
+      
+      // Reload descriptions to get the updated audio_url
+      await loadExistingDescriptions();
+    } catch (error: any) {
+      console.error('❌ Audio generation failed:', error);
+      setAudioGenerationStatus(prev => ({ ...prev, [descId]: 'failed' }));
+      toast.error(`Audio generation failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      setGeneratingAudioIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(descId);
+        return newSet;
+      });
+    }
+  };
+
+  // Generate audio for all descriptions
+  const generateAllAudio = async () => {
+    if (descriptions.length === 0) {
+      toast.error('No descriptions to generate audio for');
+      return;
+    }
+
+    toast.info(`Generating audio for ${descriptions.length} descriptions...`);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const desc of descriptions) {
+      if (desc.id) {
+        try {
+          await generateAudioForDescription(desc.id, desc.text);
+          successCount++;
+        } catch (error) {
+          failCount++;
+        }
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Generated audio for ${successCount} descriptions`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to generate audio for ${failCount} descriptions`);
+    }
+  };
+
+  const getAudioStatusIcon = (descId?: string) => {
+    if (!descId) return null;
+    
+    const status = audioGenerationStatus[descId];
+    const isGenerating = generatingAudioIds.has(descId);
+
+    if (isGenerating) {
+      return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+    }
+
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'failed':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'processing':
+        return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+      default:
+        return <Volume2 className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -1057,7 +1164,27 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             <>
               <Separator />
               <div className="space-y-3">
-                <h4 className="font-medium">Audio Descriptions ({descriptions.length})</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Audio Descriptions ({descriptions.length})</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={generateAllAudio}
+                    disabled={isGenerating || descriptions.some(d => d.id && generatingAudioIds.has(d.id))}
+                  >
+                    {descriptions.some(d => d.id && generatingAudioIds.has(d.id)) ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Generate All Audio
+                      </>
+                    )}
+                  </Button>
+                </div>
                 {descriptions.map((desc, index) => (
                   <div key={index} className="border rounded-lg p-3">
                     {editingIndex === index ? (
@@ -1219,11 +1346,39 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                 @{desc.timestamp.toFixed(1)}s
                               </Badge>
                             )}
+                            {desc.id && (
+                              <div className="flex items-center gap-1">
+                                {getAudioStatusIcon(desc.id)}
+                                <span className="text-xs text-muted-foreground">
+                                  {audioGenerationStatus[desc.id] === 'completed' ? 'Audio ready' :
+                                   audioGenerationStatus[desc.id] === 'failed' ? 'Audio failed' :
+                                   audioGenerationStatus[desc.id] === 'processing' ? 'Generating...' :
+                                   'No audio'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <p className="text-sm text-foreground">{desc.text}</p>
                         </div>
                         
                         <div className="flex items-center gap-1 mt-2">
+                          {desc.id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateAudioForDescription(desc.id!, desc.text)}
+                              disabled={desc.id && generatingAudioIds.has(desc.id)}
+                              className="h-8"
+                              title={audioGenerationStatus[desc.id] === 'completed' ? 'Regenerate audio' : 'Generate audio'}
+                            >
+                              {desc.id && generatingAudioIds.has(desc.id) ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Volume2 className="w-3 h-3 mr-1" />
+                              )}
+                              {audioGenerationStatus[desc.id] === 'completed' ? 'Regen' : 'Audio'}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"

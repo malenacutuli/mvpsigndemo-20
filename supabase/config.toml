@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.get-r2-part-url]
 verify_jwt = true
+
+[functions.generate-ad-audio]
+verify_jwt = true

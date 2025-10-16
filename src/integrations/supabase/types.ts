@@ -16,6 +16,10 @@ export type Database = {
     Tables: {
       audio_descriptions: {
         Row: {
+          audio_error_message: string | null
+          audio_generated_at: string | null
+          audio_generation_status: string | null
+          audio_url: string | null
           confidence: number | null
           created_at: string
           description: string
@@ -26,8 +30,14 @@ export type Database = {
           start_time: number
           updated_at: string
           video_id: string
+          voice_id: string | null
+          voice_name: string | null
         }
         Insert: {
+          audio_error_message?: string | null
+          audio_generated_at?: string | null
+          audio_generation_status?: string | null
+          audio_url?: string | null
           confidence?: number | null
           created_at?: string
           description: string
@@ -38,8 +48,14 @@ export type Database = {
           start_time: number
           updated_at?: string
           video_id: string
+          voice_id?: string | null
+          voice_name?: string | null
         }
         Update: {
+          audio_error_message?: string | null
+          audio_generated_at?: string | null
+          audio_generation_status?: string | null
+          audio_url?: string | null
           confidence?: number | null
           created_at?: string
           description?: string
@@ -50,6 +66,8 @@ export type Database = {
           start_time?: number
           updated_at?: string
           video_id?: string
+          voice_id?: string | null
+          voice_name?: string | null
         }
         Relationships: []
       }
@@ -276,6 +294,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "emotion_spans_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          export_options: Json | null
+          id: string
+          output_key: string | null
+          output_url: string | null
+          progress: number | null
+          started_at: string | null
+          status: string | null
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          export_options?: Json | null
+          id?: string
+          output_key?: string | null
+          output_url?: string | null
+          progress?: number | null
+          started_at?: string | null
+          status?: string | null
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          export_options?: Json | null
+          id?: string
+          output_key?: string | null
+          output_url?: string | null
+          progress?: number | null
+          started_at?: string | null
+          status?: string | null
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"

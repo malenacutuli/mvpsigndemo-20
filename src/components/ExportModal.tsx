@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Download, Video, FileText, Volume2, Hand } from 'lucide-react';
+import { AlertTriangle, Download, Video, FileText, Volume2, Hand, CheckCircle2 } from 'lucide-react';
 import { ExportOptions, RenderProgress } from '@/types/export';
 
 interface ExportModalProps {
@@ -17,6 +17,8 @@ interface ExportModalProps {
     hasTranscript: boolean;
     hasAudioDescriptions: boolean;
     hasSignLanguage: boolean;
+    audioDescriptionsReady?: number;
+    audioDescriptionsTotal?: number;
   };
   progress?: RenderProgress;
   isProcessing: boolean;
@@ -147,6 +149,25 @@ export function ExportModal({
             {!available && (
               <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
                 Not available
+              </span>
+            )}
+            {key === 'audioDescription' && available && (availableFeatures as any).audioDescriptionsReady !== undefined && (
+              <span className={`text-xs px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                (availableFeatures as any).audioDescriptionsReady === (availableFeatures as any).audioDescriptionsTotal
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {(availableFeatures as any).audioDescriptionsReady === (availableFeatures as any).audioDescriptionsTotal ? (
+                  <>
+                    <CheckCircle2 className="w-3 h-3" />
+                    Audio ready ({(availableFeatures as any).audioDescriptionsReady}/{(availableFeatures as any).audioDescriptionsTotal})
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3 h-3" />
+                    {(availableFeatures as any).audioDescriptionsReady}/{(availableFeatures as any).audioDescriptionsTotal} audio files ready
+                  </>
+                )}
               </span>
             )}
           </div>

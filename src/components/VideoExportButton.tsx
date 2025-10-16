@@ -84,15 +84,20 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
     try {
       const [transcriptResult, audioDescResult, aslResult] = await Promise.all([
         supabase.from('transcript_segments').select('id').eq('video_id', videoId).limit(1),
-        supabase.from('audio_descriptions').select('id').eq('video_id', videoId).limit(1),
+        supabase.from('audio_descriptions').select('id, audio_generation_status, audio_url').eq('video_id', videoId),
         supabase.from('sign_language_clips').select('id').eq('video_id', videoId).limit(1),
       ]);
 
+      const audioDescs = audioDescResult.data || [];
+      const audioReady = audioDescs.filter(ad => ad.audio_generation_status === 'completed' && ad.audio_url).length;
+
       setAvailableFeatures({
         hasTranscript: (transcriptResult.data?.length || 0) > 0,
-        hasAudioDescriptions: (audioDescResult.data?.length || 0) > 0,
-        hasSignLanguage: (aslResult.data?.length || 0) > 0
-      });
+        hasAudioDescriptions: audioDescs.length > 0,
+        hasSignLanguage: (aslResult.data?.length || 0) > 0,
+        audioDescriptionsReady: audioReady,
+        audioDescriptionsTotal: audioDescs.length
+      } as any);
     } catch (error) {
       console.error('Failed to check available features:', error);
     }
@@ -138,9 +143,24 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
 
     } catch (error: any) {
       console.error('❌ Export failed:', error);
+      
+      // Provide specific error messages and guidance
+      let userMessage = error?.message || 'An error occurred during export.';
+      
+      if (error.message?.includes('audio description')) {
+        userMessage = 'Some audio descriptions are missing audio files. ' +
+                      'Please open the Audio Description Editor and click "Generate Audio" ' +
+                      'for all descriptions before exporting.';
+      } else if (error.message?.includes('sign language clip')) {
+        userMessage = 'Failed to access sign language clips. ' +
+                      'Please verify all clips are uploaded correctly in the Transcript Editor.';
+      } else if (error.message?.includes('network') || error.message?.includes('Failed to download')) {
+        userMessage = 'Network error during export. Please check your connection and try again.';
+      }
+      
       toast({
         title: 'Export Failed',
-        description: error?.message || 'An error occurred during export.',
+        description: userMessage,
         variant: 'destructive',
       });
 

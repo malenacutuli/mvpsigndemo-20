@@ -2,6 +2,43 @@ import { getFFmpeg } from './ffmpegLoader';
 import { fetchFile } from '@ffmpeg/util';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
+// Helper function to fetch files with retry logic
+async function fetchFileWithRetry(url: string, maxRetries = 3): Promise<Uint8Array> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📥 Downloading file (attempt ${attempt}/${maxRetries}): ${url}`);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      console.log(`✅ Downloaded ${uint8Array.length} bytes`);
+      return uint8Array;
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`❌ Download attempt ${attempt} failed:`, lastError.message);
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw new Error(
+    `Failed to download file after ${maxRetries} attempts: ${lastError?.message}`
+  );
+}
+
 interface ExportFeatures {
   captions: boolean;
   signLanguage: boolean;
@@ -171,13 +208,20 @@ export class VideoExportManager {
     try {
       const outputFile = `asl_${Date.now()}.mp4`;
       
-      // Load all ASL clips
+      // Load all ASL clips with retry logic
       for (let i = 0; i < signLanguageClips.length; i++) {
         const clip = signLanguageClips[i];
         const clipUrl = clip.url || clip.clip_url;
         if (clipUrl) {
-          const clipData = await fetchFile(clipUrl);
-          await this.ffmpeg!.writeFile(`asl_${i}.mp4`, clipData);
+          try {
+            const clipData = await fetchFileWithRetry(clipUrl, 3);
+            await this.ffmpeg!.writeFile(`asl_${i}.mp4`, clipData);
+          } catch (error: any) {
+            throw new Error(
+              `Failed to download sign language clip ${i + 1}: ${error.message}. ` +
+              `Please check the clip is accessible and try again.`
+            );
+          }
         }
       }
       
@@ -260,13 +304,20 @@ export class VideoExportManager {
     try {
       const outputFile = `described_${Date.now()}.mp4`;
       
-      // Load audio description files
+      // Load audio description files with retry logic
       for (let i = 0; i < audioDescriptions.length; i++) {
         const desc = audioDescriptions[i];
         const audioUrl = desc.url || desc.audio_url;
         if (audioUrl) {
-          const audioData = await fetchFile(audioUrl);
-          await this.ffmpeg!.writeFile(`desc_${i}.mp3`, audioData);
+          try {
+            const audioData = await fetchFileWithRetry(audioUrl, 3);
+            await this.ffmpeg!.writeFile(`desc_${i}.mp3`, audioData);
+          } catch (error: any) {
+            throw new Error(
+              `Failed to download audio description ${i + 1}: ${error.message}. ` +
+              `Please regenerate the audio file.`
+            );
+          }
         }
       }
       
