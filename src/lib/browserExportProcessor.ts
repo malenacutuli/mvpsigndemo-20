@@ -134,11 +134,11 @@ export async function runBrowserExport(
     
     // 2) SIGN LANGUAGE (FFmpeg overlay)
     if (options.signLanguage && assets.signLanguageClips?.length) {
-      progressAggregator({ stage: 'asl', progress: 0, msg: 'Processing ASL overlays...' });
+      progressAggregator({ stage: 'asl', progress: 0, msg: 'Processing sign language overlays...' });
       
       // Calculate dynamic timeout based on number of clips (30 seconds per clip minimum)
       const aslTimeout = Math.max(STEP_TIMEOUT_MS, assets.signLanguageClips.length * 30000);
-      console.log(`[Export] ASL processing timeout set to ${Math.round(aslTimeout / 1000)}s for ${assets.signLanguageClips.length} clips`);
+      console.log(`[Export] Sign language processing timeout set to ${Math.round(aslTimeout / 1000)}s for ${assets.signLanguageClips.length} clips`);
       
       const ffmpeg = await getFFmpeg();
       
@@ -168,11 +168,11 @@ export async function runBrowserExport(
           audioDescriptions: [],
           features: { captions: false, signLanguage: true, audioDescription: false },
           onProgress: (progress) => {
-            progressAggregator({ stage: 'asl', progress: progress.progress, msg: `ASL: ${progress.step}` });
+            progressAggregator({ stage: 'asl', progress: progress.progress, msg: `Sign language: ${progress.step}` });
           }
         }),
         aslTimeout,
-        'ASL overlay processing'
+        'Sign language overlay processing'
       );
       
       // Update to new blob URL
@@ -184,7 +184,7 @@ export async function runBrowserExport(
       
       // Cleanup FFmpeg memory
       gcFFmpeg(ffmpeg);
-      console.log('✅ ASL overlay completed');
+      console.log('✅ Sign language overlay completed');
     }
     
     // 3) AUDIO DESCRIPTIONS (FFmpeg mixing)

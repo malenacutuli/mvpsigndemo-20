@@ -132,12 +132,13 @@ export class VideoExportManager {
       // Step 2: Add Sign Language Overlay
       if (features.signLanguage && signLanguageClips.length > 0) {
         console.log('Processing sign language overlay...');
-        onProgress({ step: 'signLanguage', progress: (stepCount / totalSteps) * 100 });
+        onProgress({ step: 'signLanguage: preparing', progress: Math.max(1, Math.round((stepCount / totalSteps) * 100)) });
         
         currentOutput = await this.addSignLanguageOverlay(
           currentOutput, 
           signLanguageClips,
-          transcriptSegments
+          transcriptSegments,
+          onProgress
         );
         stepCount++;
       }
@@ -203,22 +204,24 @@ export class VideoExportManager {
   private async addSignLanguageOverlay(
     inputFile: string, 
     signLanguageClips: SignLanguageClip[], 
-    transcriptSegments: TranscriptSegment[]
+    transcriptSegments: TranscriptSegment[],
+    onProgress?: (progress: ExportProgress) => void
   ): Promise<string> {
     try {
       const outputFile = `asl_${Date.now()}.mp4`;
       
-      // Load all ASL clips with retry logic
-      console.log(`📥 Downloading ${signLanguageClips.length} ASL clips...`);
+      // Load all sign language clips with retry logic
+      console.log(`📥 Downloading ${signLanguageClips.length} sign language clips...`);
       for (let i = 0; i < signLanguageClips.length; i++) {
         const clip = signLanguageClips[i];
         const clipUrl = clip.url || clip.clip_url;
         if (clipUrl) {
           try {
-            console.log(`📥 Downloading ASL clip ${i + 1} of ${signLanguageClips.length}...`);
+            onProgress?.({ step: `signLanguage: downloading clip ${i + 1}/${signLanguageClips.length}` , progress: Math.min(70, 10 + Math.round(((i + 1) / Math.max(1, signLanguageClips.length)) * 50)) });
+            console.log(`📥 Downloading sign language clip ${i + 1} of ${signLanguageClips.length}...`);
             const clipData = await fetchFileWithRetry(clipUrl, 3);
             await this.ffmpeg!.writeFile(`asl_${i}.mp4`, clipData);
-            console.log(`✅ ASL clip ${i + 1} downloaded successfully`);
+            console.log(`✅ Sign language clip ${i + 1} downloaded successfully`);
           } catch (error: any) {
             throw new Error(
               `Failed to download sign language clip ${i + 1}: ${error.message}. ` +
@@ -227,7 +230,8 @@ export class VideoExportManager {
           }
         }
       }
-      console.log(`✅ All ASL clips downloaded successfully`);
+      onProgress?.({ step: 'signLanguage: preparing overlays', progress: 75 });
+      console.log(`✅ All sign language clips downloaded successfully`);
       
       // Build complex filter for overlays
       const filterComplex = await this.buildASLFilterGraph(
@@ -241,6 +245,7 @@ export class VideoExportManager {
         inputs.push('-i', `asl_${i}.mp4`);
       });
       
+      onProgress?.({ step: 'signLanguage: rendering overlays', progress: 90 });
       await this.ffmpeg!.exec([
         ...inputs,
         '-filter_complex', filterComplex,
@@ -253,7 +258,7 @@ export class VideoExportManager {
       
       return outputFile;
     } catch (error) {
-      console.error('ASL overlay failed:', error);
+      console.error('Sign language overlay failed:', error);
       throw error;
     }
   }
