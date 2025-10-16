@@ -17,11 +17,22 @@ const EXPORT_TIMEOUT_MS = 6 * 60 * 60 * 1000; // 6 hours max to avoid interrupti
 const STEP_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes per step (for non-caption steps)
 
 // Calculate dynamic timeout for caption rendering based on video duration
-function getCaptionTimeout(durationSeconds: number): number {
-  // Caption rendering plays video in real-time + 50% buffer for encoding
-  const baseTime = (durationSeconds || 120) * 1.5 * 1000;
-  const minTimeout = 2 * 60 * 1000; // At least 2 minutes
-  return Math.max(minTimeout, baseTime); // No upper cap to support very long videos
+function getCaptionTimeout(durationSeconds: number, fileSizeBytes?: number): number {
+  // If duration is unknown but file is large, estimate based on file size
+  let estimatedDuration = durationSeconds;
+  if (!estimatedDuration && fileSizeBytes) {
+    // Rough estimate: 1MB per 10 seconds for compressed video
+    estimatedDuration = (fileSizeBytes / 1024 / 1024) * 10;
+    console.log('[Caption Timeout] Estimated duration from file size:', estimatedDuration, 'seconds');
+  }
+  
+  // Caption rendering plays video in real-time + 100% buffer for large files
+  const baseTime = (estimatedDuration || 300) * 2 * 1000; // Double the time for safety
+  const minTimeout = 5 * 60 * 1000; // At least 5 minutes for any video
+  const timeout = Math.max(minTimeout, baseTime);
+  
+  console.log('[Caption Timeout] Calculated timeout:', Math.round(timeout / 1000), 'seconds for duration:', estimatedDuration);
+  return timeout;
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stepName: string): Promise<T> {
@@ -58,7 +69,7 @@ export async function runBrowserExport(
     
     const videoMeta: VideoMeta = {
       bytes: await withTimeout(fetchHeadSize(videoUrl), 30000, 'Video metadata fetch'),
-      durationSec: await withTimeout(getVideoDuration(videoUrl), 30000, 'Video duration fetch'),
+      durationSec: await withTimeout(getVideoDuration(videoUrl, 120000), 120000, 'Video duration fetch'), // 2 minute timeout for large files
       aslClips: assets.signLanguageClips?.length || 0,
       adTracks: assets.audioDescriptions?.length || 0
     };
@@ -98,8 +109,8 @@ export async function runBrowserExport(
         volume: (segment as any).volume as number | undefined
       }));
       
-      // Use dynamic timeout based on video duration
-      const captionTimeout = getCaptionTimeout(videoMeta.durationSec || 0);
+      // Use dynamic timeout based on video duration and file size
+      const captionTimeout = getCaptionTimeout(videoMeta.durationSec || 0, videoMeta.bytes || undefined);
       console.log(`[Export] Caption rendering timeout set to ${Math.round(captionTimeout / 1000)}s for ${Math.round(videoMeta.durationSec || 0)}s video`);
       
       currentUrl = await withTimeout(

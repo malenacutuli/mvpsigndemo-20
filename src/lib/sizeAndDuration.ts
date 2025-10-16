@@ -37,30 +37,47 @@ export async function fetchHeadSize(url: string): Promise<number | null> {
 
 /**
  * Get video duration from metadata without full download
+ * Uses extended timeout for large files
  */
-export async function getVideoDuration(url: string): Promise<number | null> {
+export async function getVideoDuration(url: string, timeoutMs: number = 60000): Promise<number | null> {
   return new Promise((resolve) => {
     const video = document.createElement('video');
     video.preload = 'metadata';
+    video.crossOrigin = 'anonymous';
+    
+    let resolved = false;
+    const cleanup = () => {
+      if (!resolved) {
+        resolved = true;
+        video.removeAttribute('src');
+        video.load();
+      }
+    };
     
     video.onloadedmetadata = () => {
       const duration = video.duration;
-      video.src = '';
-      resolve(isFinite(duration) ? duration : null);
+      console.log('[Duration] Video metadata loaded, duration:', duration);
+      cleanup();
+      resolve(isFinite(duration) && duration > 0 ? duration : null);
     };
     
-    video.onerror = () => {
-      video.src = '';
+    video.onerror = (e) => {
+      console.warn('[Duration] Video metadata load error:', e);
+      cleanup();
       resolve(null);
     };
     
-    // Set timeout to avoid hanging
-    setTimeout(() => {
-      video.src = '';
+    // Extended timeout for large files
+    const timeout = setTimeout(() => {
+      console.warn('[Duration] Metadata load timeout after', timeoutMs, 'ms');
+      cleanup();
       resolve(null);
-    }, 10000);
+    }, timeoutMs);
     
     video.src = url;
+    
+    // Clear timeout if we resolve early
+    video.addEventListener('loadedmetadata', () => clearTimeout(timeout), { once: true });
   });
 }
 
