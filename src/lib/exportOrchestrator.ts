@@ -191,9 +191,9 @@ export class ExportOrchestrator {
       throw new Error('Video not found');
     }
 
-    // Get transcript segments if captions are requested
+    // Get transcript segments if captions or sign language are requested
     let transcriptSegments: ExportAssets['transcriptSegments'] = [];
-    if (options.captions) {
+    if (options.captions || options.signLanguage) {
       const { data: segments, error: segmentsError } = await supabase
         .from('transcript_segments')
         .select('id, start_time, end_time, text, speaker, speaker_color, emphasis, words')

@@ -246,9 +246,8 @@ export class VideoExportManager {
         '-filter_complex', filterComplex,
         '-map', '[out]',
         '-map', '0:a?',
-        '-c:v', 'libx264',
+        '-c:v', 'mpeg4',
         '-c:a', 'copy',
-        '-preset', 'fast',
         outputFile
       ]);
       
@@ -303,8 +302,7 @@ export class VideoExportManager {
       
       // Handle duration mismatch - loop or freeze last frame if clip is shorter
       filterSteps.push(
-        `[${aslInput}]scale=320:240,setpts=PTS-STARTPTS,` +
-        `loop=loop=-1:size=1:start=0,trim=duration=${duration}[${scaledASL}];`,
+        `[${aslInput}]scale=320:240,setpts=PTS-STARTPTS,trim=duration=${duration}[${scaledASL}];`,
         
         `[${lastOutput}][${scaledASL}]overlay=` +
         `x=W-w-20:y=H-h-20:` +
