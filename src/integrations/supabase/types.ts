@@ -1190,6 +1190,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      consolidate_video_speakers: {
+        Args: { target_language?: string; target_video_id: string }
+        Returns: Json
+      }
       detect_suspicious_subscription_access: {
         Args: { accessing_user_id: string }
         Returns: undefined

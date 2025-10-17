@@ -148,6 +148,45 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     loadCharactersFromStorage();
   }, []);
 
+  // Listen for character mapping updates from CharacterManager
+  useEffect(() => {
+    const handleCharacterMappingsApplied = async (e: CustomEvent) => {
+      const { videoId: eventVideoId, language: eventLanguage, forceReload } = e.detail;
+      
+      if (eventVideoId === videoId && eventLanguage === selectedLanguage && forceReload) {
+        console.log('🔄 TranscriptEditor: Reloading segments after character mapping');
+        
+        try {
+          // Reload segments from database
+          const segments = await loadTranscriptSegments(selectedLanguage);
+          const converted = segments.map((seg: any) => ({
+            ...seg,
+            id: seg.id || `segment-${Date.now()}-${Math.random()}`
+          }));
+          
+          // Update both editing and original state
+          setEditingTranscript(converted);
+          setOriginalTranscript(converted);
+          
+          // Notify parent
+          onTranscriptUpdate?.(converted, selectedLanguage);
+          
+          toast({
+            title: "Transcript updated",
+            description: "Speaker colors and names synced from Character Manager"
+          });
+        } catch (error) {
+          console.error('❌ Error reloading transcript:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('character-mappings-applied', handleCharacterMappingsApplied as EventListener);
+    return () => {
+      window.removeEventListener('character-mappings-applied', handleCharacterMappingsApplied as EventListener);
+    };
+  }, [videoId, selectedLanguage]);
+
   // Keep character list in sync when CharacterManager saves or CI sync updates
   useEffect(() => {
     const handleCharactersUpdated = async (e: any) => {
@@ -1061,15 +1100,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <span className="text-xs text-muted-foreground font-mono">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
-                     {segment.speaker && (
-                       <Badge 
-                         variant="outline" 
-                         className="text-xs px-2 py-0"
-                         style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                       >
-                         {segment.speaker}
-                       </Badge>
-                     )}
+                      {segment.speaker && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs px-2 py-0"
+                          style={{ backgroundColor: segment.speakerColor, color: 'white' }}
+                        >
+                          {segment.speaker}
+                        </Badge>
+                      )}
                      {segment.emphasis !== 'normal' && (
                        <Badge variant="secondary" className="text-xs px-1 py-0">
                          {segment.emphasis}
@@ -1255,53 +1294,39 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                       </div>
                     </div>
                     
-                    {/* Speaker Selection */}
-                    <div className="space-y-1">
+                    {/* Speaker Display - Managed by Character Manager */}
+                    <div className="space-y-2 p-3 border rounded-md bg-muted/30">
                       <Label className="text-xs flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        Character / Speaker
+                        Speaker (managed by Character Manager)
                       </Label>
-                      <Select
-                        value={editSpeaker}
-                        onValueChange={(value) => {
-                          setEditSpeaker(value);
-                          const character = availableCharacters.find(c => c.name === value);
-                          if (character) {
-                            setEditSpeakerColor(character.color);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-3 h-3 rounded-full border" 
-                                style={{ backgroundColor: editSpeakerColor }}
-                              />
-                              <span className="text-xs">{editSpeaker || 'Select character...'}</span>
-                            </div>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCharacters.length === 0 ? (
-                            <div className="p-2 text-xs text-muted-foreground">
-                              No characters assigned yet. Use the Speaker Assignment section below to create characters.
-                            </div>
-                          ) : (
-                            availableCharacters.map((char) => (
-                              <SelectItem key={char.name} value={char.name}>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full border" 
-                                    style={{ backgroundColor: char.color }}
-                                  />
-                                  <span className="text-xs">{char.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-between">
+                        <Badge 
+                          style={{ backgroundColor: editSpeakerColor }}
+                          className="text-white"
+                        >
+                          {editSpeaker || 'No speaker assigned'}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const characterManager = document.getElementById('character-manager-section');
+                            if (characterManager) {
+                              characterManager.scrollIntoView({ behavior: 'smooth' });
+                              toast({
+                                title: "Navigate to Character Manager",
+                                description: "Use Character Manager to assign speakers and colors"
+                              });
+                            }
+                          }}
+                        >
+                          Edit in Character Manager
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        To change speaker name or color, use the Character Manager above
+                      </p>
                     </div>
                     
                     {/* Emphasis & Pitch - Only show if not using word-level editing */}
