@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Calendar, CreditCard, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { UsageDashboard } from './UsageDashboard';
 
 export const SubscriptionManager: React.FC = () => {
   const { 
@@ -41,8 +42,9 @@ export const SubscriptionManager: React.FC = () => {
   };
 
   return (
-    <Card className="min-w-0">
-      <CardHeader>
+    <div className="space-y-4">
+      <Card className="min-w-0">
+        <CardHeader>
         <div className="flex items-center justify-between min-w-0">
           <div className="min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -119,5 +121,8 @@ export const SubscriptionManager: React.FC = () => {
         </div>
       </CardContent>
     </Card>
+    
+    <UsageDashboard />
+    </div>
   );
 };

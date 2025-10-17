@@ -74,3 +74,9 @@ verify_jwt = true
 
 [functions.generate-ad-audio]
 verify_jwt = true
+
+[functions.transcribe-with-deepgram]
+verify_jwt = true
+
+[functions.get-usage-summary]
+verify_jwt = true

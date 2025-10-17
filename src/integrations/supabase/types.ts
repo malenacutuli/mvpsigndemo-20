@@ -1265,6 +1265,10 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: undefined
       }
+      is_test_user: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string

@@ -87,17 +87,36 @@ serve(async (req) => {
     let transcriptionResult;
 
     // MEMORY-EFFICIENT PROCESSING STRATEGY
+    // NEW PRIORITY ORDER: Deepgram (primary, cost-effective) → OpenAI Whisper (small videos) → Twelve Labs → AssemblyAI (last resort)
     
     // Strategy 1: For large videos (>100MB), use URL-based processing only
     if (sizeMB > 100) {
-      console.log(`🚀 Large video detected (${sizeMB}MB). Using URL-based processing (Twelve Labs → AssemblyAI).`);
+      console.log(`🚀 Large video detected (${sizeMB}MB). Using URL-based processing (Deepgram → Twelve Labs → AssemblyAI).`);
       
-      // Try Twelve Labs first for large videos (more cost-effective)
-      try {
-        console.log("Trying Twelve Labs for large video transcription...");
-        const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-        if (twelveLabsResult && !twelveLabsResult.error) {
-          console.log("✅ Twelve Labs analysis successful for large video!");
+      // Try Deepgram first for cost-effectiveness (99% cheaper than AssemblyAI)
+      const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+      if (DEEPGRAM_API_KEY) {
+        try {
+          console.log("Trying Deepgram for large video transcription...");
+          const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
+          if (deepgramResult && !deepgramResult.error) {
+            console.log("✅ Deepgram analysis successful for large video!");
+            transcriptionResult = deepgramResult;
+          } else {
+            throw new Error("Deepgram returned error or no result");
+          }
+        } catch (deepgramError) {
+          console.log("Deepgram failed for large video, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
+        }
+      }
+      
+      // Fallback to Twelve Labs if Deepgram failed or unavailable
+      if (!transcriptionResult || transcriptionResult.error) {
+        try {
+          console.log("Trying Twelve Labs for large video transcription...");
+          const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+          if (twelveLabsResult && !twelveLabsResult.error) {
+            console.log("✅ Twelve Labs analysis successful for large video!");
           transcriptionResult = twelveLabsResult;
         } else {
           throw new Error("Twelve Labs returned error or no result");
@@ -105,19 +124,19 @@ serve(async (req) => {
       } catch (twelveLabsError) {
         console.log("Twelve Labs failed for large video, falling back to AssemblyAI:", twelveLabsError instanceof Error ? twelveLabsError.message : 'Unknown error');
         
-        // Fallback to AssemblyAI for large videos
-        const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-        if (ASSEMBLYAI_API_KEY) {
-          console.log("Using AssemblyAI fallback for large video transcription...");
-          try {
-            transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
-            console.log("✅ AssemblyAI transcription successful!");
-          } catch (assemblyError) {
-            console.log("AssemblyAI failed:", (assemblyError as any).message);
-            transcriptionResult = { 
-              error: 'large_video_failed', 
-              message: `Large video (${sizeMB}MB) processing failed. Both Twelve Labs and AssemblyAI experienced issues. Please try again later or check video format.` 
-            };
+      // Last resort: AssemblyAI (expensive, only use if others fail)
+          const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+          if (ASSEMBLYAI_API_KEY) {
+            console.log("Using AssemblyAI as last resort fallback for large video transcription...");
+            try {
+              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
+              console.log("✅ AssemblyAI transcription successful!");
+            } catch (assemblyError) {
+              console.log("AssemblyAI failed:", (assemblyError as any).message);
+              transcriptionResult = { 
+                error: 'large_video_failed', 
+                message: `Large video (${sizeMB}MB) processing failed. All providers (Deepgram, Twelve Labs, AssemblyAI) experienced issues. Please try again later or check video format.` 
+              };
           }
         } else {
           transcriptionResult = { 
@@ -251,6 +270,68 @@ serve(async (req) => {
         };
       } else {
         console.log("✅ Transcription validation passed");
+      }
+    }
+
+    // TRACK USAGE for successful transcriptions
+    if (transcriptionResult && transcriptionResult.segments && videoId) {
+      try {
+        const authHeader = req.headers.get("authorization");
+        if (authHeader) {
+          const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+          const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+            const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            
+            // Get user from JWT
+            const token = authHeader.replace('Bearer ', '');
+            const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+            
+            if (user) {
+              // Calculate duration in minutes from transcription
+              const duration = transcriptionResult.duration || 
+                             (transcriptionResult.segments[transcriptionResult.segments.length - 1]?.endTime || 0);
+              const durationMinutes = duration / 60;
+              
+              // Determine which provider was used
+              const provider = transcriptionResult.provider || 
+                             (transcriptionResult.segments[0]?.source === 'twelve_labs' ? 'twelve_labs' : 
+                              (transcriptionResult.segments[0]?.source === 'assemblyai' ? 'assemblyai' : 'openai'));
+              
+              console.log(`📊 Tracking usage: ${durationMinutes.toFixed(2)} minutes using ${provider} for user ${user.id}`);
+              
+              // Track usage via database function
+              const { data: trackingData, error: trackingError } = await supabaseAdmin.rpc('track_video_processing_usage', {
+                target_user_id: user.id,
+                video_uuid: videoId,
+                minutes_to_add: durationMinutes,
+                proc_type: `transcription_${provider}`,
+                meta: {
+                  provider: provider,
+                  language: language || 'auto',
+                  videoSize: sizeMB,
+                  duration_seconds: duration,
+                  timestamp: new Date().toISOString()
+                }
+              });
+
+              if (trackingError) {
+                console.error("❌ Usage tracking error:", trackingError);
+              } else {
+                console.log("✅ Usage tracked successfully:", trackingData);
+                
+                // Check if approaching limit
+                if (trackingData && !trackingData.test_user && trackingData.approaching_limit) {
+                  console.warn("⚠️ User approaching usage limit!");
+                }
+              }
+            }
+          }
+        }
+      } catch (trackingError) {
+        console.error("Error during usage tracking:", trackingError);
+        // Don't fail the request if tracking fails
       }
     }
 
@@ -751,6 +832,70 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
   } catch (error) {
     console.error("Database save failed:", error);
   }
+}
+
+// Transcribe with Deepgram (cost-effective primary provider)
+async function transcribeWithDeepgram(videoUrl: string, language?: string): Promise<any> {
+  const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+  if (!DEEPGRAM_API_KEY) {
+    throw new Error("DEEPGRAM_API_KEY not configured");
+  }
+
+  const deepgramParams = new URLSearchParams({
+    model: 'nova-2',
+    smart_format: 'true',
+    punctuate: 'true',
+    paragraphs: 'true',
+    utterances: 'true',
+    diarize: 'true',
+    language: language && language !== 'auto' ? language : 'en',
+  });
+
+  console.log("🔵 Calling Deepgram API...");
+  
+  const response = await fetch(
+    `https://api.deepgram.com/v1/listen?${deepgramParams.toString()}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: videoUrl }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Deepgram API error: ${errorText}`);
+  }
+
+  const result = await response.json();
+  
+  // Transform to standard format
+  const utterances = result.results?.utterances || [];
+  const segments = utterances.map((u: any, idx: number) => ({
+    idx,
+    start: u.start,
+    end: u.end,
+    text: u.transcript,
+    confidence: u.confidence || 0.95,
+    speaker: `Speaker ${u.speaker || 0}`,
+    words: u.words?.map((w: any) => ({
+      word: w.word,
+      start: w.start,
+      end: w.end,
+      confidence: w.confidence
+    }))
+  }));
+
+  return {
+    text: segments.map((s: any) => s.text).join(' '),
+    segments,
+    language: result.results?.channels?.[0]?.detected_language || language || 'en',
+    duration: result.metadata?.duration || 0,
+    provider: 'deepgram'
+  };
 }
 
 // Validate transcription quality to detect gibberish and low-quality outputs
