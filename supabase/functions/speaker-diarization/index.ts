@@ -14,11 +14,33 @@ interface SpeakerSegment {
   confidence: number;
 }
 
-// Color palette for speakers
-const SPEAKER_COLORS = [
-  '#E5E517', '#17E5E5', '#E51717', '#E58017', 
-  '#17E517', '#E517E5', '#47C2EB', '#EBC247', 
-  '#C2EB47', '#EB47C2', '#8C6BED', '#ED5E82'
+// Extended color palette for movies
+const MOVIE_SPEAKER_COLORS = [
+  // Hero/Main (bright, high contrast)
+  '#E5E517', // Yellow
+  '#17E5E5', // Cyan
+  
+  // Supporting (distinct)
+  '#E51717', // Red
+  '#17E517', // Green
+  '#E517E5', // Magenta
+  '#E58017', // Orange
+  
+  // Additional characters (still visible)
+  '#5E82ED', // Blue
+  '#47C2EB', // Light Blue
+  '#EBC247', // Gold
+  '#C2EB47', // Lime
+  '#8C6BED', // Purple
+  '#82ED5E', // Light Green
+  
+  // Minor characters
+  '#CC6BED', // Light Purple
+  '#47EB70', // Mint
+  '#EB47C2', // Pink
+  '#5EEDC9', // Aqua
+  '#ED5E82', // Rose
+  '#E85C2E', // Burnt Orange
 ];
 
 serve(async (req) => {
@@ -27,7 +49,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, mode = 'moderate' } = await req.json();
+    const { videoUrl, videoId, mode = 'moderate', force = false } = await req.json();
 
     if (!videoUrl || !videoId) {
       throw new Error('Video URL and video ID are required');
@@ -114,138 +136,116 @@ serve(async (req) => {
 
 // Deepgram analysis
 async function analyzeWithDeepgram(videoUrl: string) {
-  const deepgramKey = Deno.env.get('DEEPGRAM_API_KEY');
-  if (!deepgramKey) throw new Error('Deepgram API key not configured');
-
-  console.log('🔵 Calling Deepgram API with diarization...');
-
-  const response = await fetch('https://api.deepgram.com/v1/listen', {
+  const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
+  if (!deepgramApiKey) throw new Error('Deepgram API key not configured');
+  
+  // CRITICAL: Use correct endpoint and parameters
+  const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&diarize=true&punctuate=true&utterances=true', {
     method: 'POST',
     headers: {
-      'Authorization': `Token ${deepgramKey}`,
+      'Authorization': `Token ${deepgramApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      url: videoUrl,
-      model: 'nova-2',
-      version: 'latest',
-      language: 'multi', // Auto-detect language (works for Spanish, English, etc.)
-      punctuate: true,
-      diarize: true,
-      diarize_version: 'latest',
-      utterances: true,
-      smart_format: true
+      url: videoUrl
+      // NO OTHER PARAMETERS - Let Deepgram auto-detect everything
     })
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('❌ Deepgram API error:', error);
-    throw new Error(`Deepgram failed: ${error}`);
+    console.error('Deepgram API error:', error);
+    throw new Error(`Deepgram failed: ${response.status}`);
   }
 
   const result = await response.json();
   
-  console.log('📊 Deepgram response structure:', {
-    hasResults: !!result.results,
-    hasUtterances: !!result.results?.utterances,
-    utteranceCount: result.results?.utterances?.length || 0
-  });
-
   // Check if we got utterances
-  if (!result.results?.utterances || result.results.utterances.length === 0) {
-    console.warn('⚠️ Deepgram returned no utterances, checking alternatives...');
-    
-    // Try alternative path: channels -> alternatives -> words with speaker info
-    const words = result.results?.channels?.[0]?.alternatives?.[0]?.words || [];
-    if (words.length === 0) {
-      throw new Error('Deepgram returned no speaker data');
-    }
-    
-    // Build utterances from words
-    console.log('🔄 Building utterances from word-level speaker data...');
-    const utteranceMap = new Map<number, any>();
-    
-    words.forEach((word: any) => {
-      if (word.speaker !== undefined) {
-        const speaker = word.speaker;
-        if (!utteranceMap.has(speaker)) {
-          utteranceMap.set(speaker, {
-            speaker,
-            start: word.start,
-            end: word.end,
-            words: []
-          });
-        }
-        const utt = utteranceMap.get(speaker)!;
-        utt.end = word.end;
-        utt.words.push(word.word);
-      }
-    });
-    
-    // Convert to segments
-    const segments: SpeakerSegment[] = [];
-    utteranceMap.forEach((utt, speakerNum) => {
-      segments.push({
-        speaker: `Speaker ${speakerNum + 1}`,
-        startTime: utt.start,
-        endTime: utt.end,
-        text: utt.words.join(' '),
-        confidence: 0.85
-      });
-    });
-    
-    const speakers = new Set(segments.map(s => s.speaker));
-    const speakerArray = Array.from(speakers);
-    const speakerMetadata = speakerArray.map((speaker, idx) => ({
-      id: `speaker_${idx + 1}`,
-      name: speaker,
-      color: SPEAKER_COLORS[idx % SPEAKER_COLORS.length],
-      segmentCount: segments.filter(s => s.speaker === speaker).length,
-      totalTimeSeconds: segments
-        .filter(s => s.speaker === speaker)
-        .reduce((total, seg) => total + (seg.endTime - seg.startTime), 0)
-    }));
-    
-    console.log(`✅ Built ${speakerArray.length} speakers from word data`);
-    
-    return { segments, speakers: speakerMetadata, confidence: 0.85 };
+  if (!result.results?.channels?.[0]?.alternatives?.[0]?.words) {
+    console.error('Deepgram returned no words data');
+    throw new Error('Deepgram returned empty results');
   }
 
-  // Standard utterance processing
-  const speakers = new Set<string>();
-  const segments: SpeakerSegment[] = [];
-
-  result.results.utterances.forEach((utterance: any) => {
-    const speakerLabel = `Speaker ${utterance.speaker + 1}`;
-    speakers.add(speakerLabel);
-    
-    segments.push({
-      speaker: speakerLabel,
-      startTime: utterance.start,
-      endTime: utterance.end,
-      text: utterance.transcript,
-      confidence: utterance.confidence || 0.9
-    });
+  // Build speakers from words array (more reliable than utterances)
+  const words = result.results.channels[0].alternatives[0].words;
+  const speakerMap = new Map();
+  
+  words.forEach((word: any) => {
+    if (word.speaker !== undefined && word.speaker !== null) {
+      if (!speakerMap.has(word.speaker)) {
+        speakerMap.set(word.speaker, {
+          id: word.speaker,
+          segments: [],
+          totalTime: 0
+        });
+      }
+    }
   });
 
-  const speakerArray = Array.from(speakers);
-  const speakerMetadata = speakerArray.map((speaker, idx) => ({
-    id: `speaker_${idx + 1}`,
-    name: speaker,
-    color: SPEAKER_COLORS[idx % SPEAKER_COLORS.length],
-    segmentCount: segments.filter(s => s.speaker === speaker).length,
-    totalTimeSeconds: segments
-      .filter(s => s.speaker === speaker)
-      .reduce((total, seg) => total + (seg.endTime - seg.startTime), 0)
-  }));
+  // Build segments from consecutive words with same speaker
+  let currentSegment: any = null;
+  
+  words.forEach((word: any) => {
+    const speakerId = word.speaker ?? 0;
+    
+    if (!currentSegment || currentSegment.speaker !== speakerId) {
+      if (currentSegment) {
+        const speaker = speakerMap.get(currentSegment.speaker);
+        speaker.segments.push(currentSegment);
+        speaker.totalTime += currentSegment.endTime - currentSegment.startTime;
+      }
+      
+      currentSegment = {
+        speaker: speakerId,
+        startTime: word.start,
+        endTime: word.end,
+        text: word.punctuated_word || word.word,
+        confidence: word.confidence
+      };
+    } else {
+      currentSegment.endTime = word.end;
+      currentSegment.text += ' ' + (word.punctuated_word || word.word);
+    }
+  });
+  
+  // Add last segment
+  if (currentSegment) {
+    const speaker = speakerMap.get(currentSegment.speaker);
+    if (speaker) {
+      speaker.segments.push(currentSegment);
+      speaker.totalTime += currentSegment.endTime - currentSegment.startTime;
+    }
+  }
 
-  console.log(`✅ Deepgram detected ${speakerArray.length} speakers from utterances`);
-
+  const speakers = Array.from(speakerMap.values());
+  console.log(`✅ Deepgram detected ${speakers.length} speakers from words array`);
+  
+  // Format for return
+  const segments: SpeakerSegment[] = [];
+  speakers.forEach((speaker: any) => {
+    speaker.segments.forEach((seg: any) => {
+      segments.push({
+        speaker: `Speaker ${speaker.id + 1}`,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        text: seg.text,
+        confidence: seg.confidence
+      });
+    });
+  });
+  
+  // Sort segments by time
+  segments.sort((a, b) => a.startTime - b.startTime);
+  
   return {
     segments,
-    speakers: speakerMetadata,
-    confidence: result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0.9
+    speakers: speakers.map((s: any, i: number) => ({
+      id: i,
+      name: `Speaker ${i + 1}`,
+      segmentCount: s.segments.length,
+      totalTimeSeconds: s.totalTime
+    })),
+    confidence: result.results.channels[0].alternatives[0].confidence || 0.8
   };
 }
 
@@ -329,87 +329,115 @@ function validateAndConsolidateSpeakers(
   speakers: any[], 
   mode: string
 ) {
-  const rules = {
-    conservative: { maxSpeakers: 2, overlapThreshold: 0.1 },
-    moderate: { maxSpeakers: 8, overlapThreshold: 0.2 }, // Increased for movies
-    aggressive: { maxSpeakers: 15, overlapThreshold: 0.3 } // Allow many speakers
-  };
+  const config = {
+    conservative: { 
+      maxSpeakers: 2, 
+      overlapThreshold: 0.1,
+      minSegmentsPerSpeaker: 5 
+    },
+    moderate: { 
+      maxSpeakers: 12, // Increased for movies
+      overlapThreshold: 0.3,
+      minSegmentsPerSpeaker: 3 
+    },
+    aggressive: { 
+      maxSpeakers: 20, // Support large casts
+      overlapThreshold: 0.5,
+      minSegmentsPerSpeaker: 2 
+    }
+  }[mode as keyof typeof config] || config.moderate;
 
-  const config = rules[mode as keyof typeof rules] || rules.moderate;
-  
-  console.log(`🔍 Validating ${speakers.length} speakers (mode: ${mode}, max: ${config.maxSpeakers})`);
-  
-  // Don't consolidate if within reasonable range
+  console.log(`🔍 Consolidating ${speakers.length} speakers in ${mode} mode (max: ${config.maxSpeakers})`);
+
+  // Don't over-consolidate if within reasonable limits
   if (speakers.length <= config.maxSpeakers) {
-    console.log(`✅ Speaker count (${speakers.length}) is within limits, no consolidation needed`);
+    console.log('✅ Speaker count within limits, no consolidation needed');
     return { segments, speakers };
   }
 
-  console.log(`⚠️ Over-segmentation detected (${speakers.length} speakers), consolidating...`);
-  
-  // Build overlap matrix - check temporal overlap
+  // Filter out speakers with too few segments (likely noise)
+  const significantSpeakers = speakers.filter((s: any) => 
+    segments.filter(seg => seg.speaker === s.name).length >= config.minSegmentsPerSpeaker
+  );
+
+  if (significantSpeakers.length <= config.maxSpeakers) {
+    console.log(`✅ After filtering, ${significantSpeakers.length} significant speakers remain`);
+    return { 
+      segments, 
+      speakers: significantSpeakers 
+    };
+  }
+
+  // Only consolidate if really necessary
+  // Build temporal overlap matrix
   const overlapMatrix: Record<string, Record<string, boolean>> = {};
+  
   segments.forEach(seg1 => {
     segments.forEach(seg2 => {
       if (seg1.speaker !== seg2.speaker) {
-        // Two segments overlap if they occur at the same time
-        const overlap = seg1.startTime < seg2.endTime && seg1.endTime > seg2.startTime;
-        if (!overlapMatrix[seg1.speaker]) overlapMatrix[seg1.speaker] = {};
+        const overlap = (seg1.startTime < seg2.endTime) && (seg1.endTime > seg2.startTime);
+        
+        if (!overlapMatrix[seg1.speaker]) {
+          overlapMatrix[seg1.speaker] = {};
+        }
         overlapMatrix[seg1.speaker][seg2.speaker] = overlapMatrix[seg1.speaker][seg2.speaker] || overlap;
       }
     });
   });
 
-  // Sort speakers by total speaking time (keep most active speakers)
-  const sortedSpeakers = [...speakers].sort((a, b) => b.totalTimeSeconds - a.totalTimeSeconds);
-  
-  // Keep top speakers that don't overlap
-  const mergeMap: Record<string, string> = {};
-  const consolidated: any[] = [];
+  // Sort speakers by importance (speaking time)
+  const sortedSpeakers = [...significantSpeakers].sort((a: any, b: any) => 
+    b.totalTimeSeconds - a.totalTimeSeconds
+  );
 
-  sortedSpeakers.forEach(speaker => {
-    // Check if this speaker overlaps with any already consolidated speaker
-    const overlapsWithConsolidated = consolidated.some(existing => 
-      overlapMatrix[speaker.name]?.[existing.name] || overlapMatrix[existing.name]?.[speaker.name]
-    );
+  // Keep top speakers up to limit
+  const keepSpeakers = sortedSpeakers.slice(0, config.maxSpeakers);
+  const mergeSpeakers = sortedSpeakers.slice(config.maxSpeakers);
+
+  // Create merge map for excess speakers
+  const mergeMap: Record<string, string> = {};
+  
+  mergeSpeakers.forEach((speaker: any) => {
+    // Find best candidate to merge with (least overlap)
+    let bestCandidate = keepSpeakers[0].name;
+    let minOverlap = true;
     
-    // If we have room AND (speaker overlaps with existing OR we need more speakers)
-    if (consolidated.length < config.maxSpeakers && overlapsWithConsolidated) {
-      // Keep this as a separate speaker
-      consolidated.push(speaker);
-      mergeMap[speaker.name] = speaker.name;
-    } else if (consolidated.length === 0) {
-      // Always keep the first speaker
-      consolidated.push(speaker);
-      mergeMap[speaker.name] = speaker.name;
-    } else {
-      // Merge with the most similar non-overlapping speaker
-      const targetSpeaker = consolidated.find(cs => 
-        !overlapMatrix[speaker.name]?.[cs.name] && !overlapMatrix[cs.name]?.[speaker.name]
-      ) || consolidated[0];
-      
-      mergeMap[speaker.name] = targetSpeaker.name;
+    keepSpeakers.forEach((kept: any) => {
+      const hasOverlap = overlapMatrix[speaker.name]?.[kept.name] || 
+                         overlapMatrix[kept.name]?.[speaker.name];
+      if (!hasOverlap) {
+        bestCandidate = kept.name;
+        minOverlap = false;
+      }
+    });
+    
+    if (!minOverlap) {
+      mergeMap[speaker.name] = bestCandidate;
+      console.log(`🔀 Merging ${speaker.name} into ${bestCandidate} (no overlap)`);
     }
   });
 
-  // Apply merge map to segments
+  // Apply merge map
   const consolidatedSegments = segments.map(seg => ({
     ...seg,
     speaker: mergeMap[seg.speaker] || seg.speaker
   }));
 
-  // Update consolidated speaker metadata
-  const finalSpeakers = consolidated.map(speaker => {
-    const matchedSegs = consolidatedSegments.filter(s => s.speaker === speaker.name);
-    return {
-      ...speaker,
-      segmentCount: matchedSegs.length,
-      totalTimeSeconds: matchedSegs.reduce((total, seg) => total + (seg.endTime - seg.startTime), 0)
-    };
-  });
+  console.log(`✅ Consolidated from ${speakers.length} to ${keepSpeakers.length} speakers`);
 
-  console.log(`✅ Consolidated from ${speakers.length} to ${finalSpeakers.length} speakers`);
-  return { segments: consolidatedSegments, speakers: finalSpeakers };
+  return {
+    segments: consolidatedSegments,
+    speakers: keepSpeakers
+  };
+}
+
+// Assign consistent colors to speakers
+function assignConsistentColors(speakers: any[]) {
+  return speakers.map((speaker: any, index: number) => ({
+    ...speaker,
+    color: MOVIE_SPEAKER_COLORS[index % MOVIE_SPEAKER_COLORS.length],
+    colorIndex: index
+  }));
 }
 
 // Store results in database
@@ -424,6 +452,37 @@ async function storeSpeakerResults(
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  // Assign consistent colors
+  const speakersWithColors = assignConsistentColors(speakers);
+  
+  // Create speaker-color map
+  const colorMap: Record<string, string> = {};
+  speakersWithColors.forEach((s: any) => {
+    colorMap[s.name] = s.color;
+  });
+
+  // Update ALL segments with the SAME speaker to have the SAME color
+  for (const speakerName of Object.keys(colorMap)) {
+    const color = colorMap[speakerName];
+    
+    // Update all segments for this speaker at once
+    const { error } = await supabase
+      .from('transcript_segments')
+      .update({ 
+        speaker: speakerName,
+        speaker_color: color 
+      })
+      .eq('video_id', videoId)
+      .eq('speaker', speakerName);
+    
+    if (error) {
+      console.error(`❌ Failed to update color for ${speakerName}:`, error);
+    } else {
+      console.log(`✅ Updated all ${speakerName} segments to color ${color}`);
+    }
+  }
+  
+  // Store in cache
   await supabase
     .from('content_generation_cache')
     .upsert({
@@ -431,29 +490,14 @@ async function storeSpeakerResults(
       content_type: 'speaker_diarization',
       language: 'en',
       generation_params: { provider, timestamp: Date.now() },
-      result_data: { segments, speakers, total_speakers: speakers.length }
-    }, { onConflict: 'video_id,content_type,language' });
-
-  for (const segment of segments) {
-    const { data: matchingSegments } = await supabase
-      .from('transcript_segments')
-      .select('id')
-      .eq('video_id', videoId)
-      .gte('start_time', segment.startTime - 0.5)
-      .lte('end_time', segment.endTime + 0.5);
-
-    if (matchingSegments?.length) {
-      const speakerIndex = parseInt(segment.speaker.split(' ')[1]) - 1;
-      const color = SPEAKER_COLORS[speakerIndex % SPEAKER_COLORS.length];
-      
-      for (const match of matchingSegments) {
-        await supabase
-          .from('transcript_segments')
-          .update({ speaker: segment.speaker, speaker_color: color })
-          .eq('id', match.id);
+      result_data: { 
+        segments, 
+        speakers: speakersWithColors, 
+        total_speakers: speakersWithColors.length,
+        provider,
+        color_map: colorMap
       }
-    }
-  }
+    }, { onConflict: 'video_id,content_type,language' });
 
   console.log('💾 Results stored in database');
 }

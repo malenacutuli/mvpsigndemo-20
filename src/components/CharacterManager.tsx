@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -449,7 +449,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  const runIntelligentDetection = async () => {
+  const runIntelligentDetection = async (forceReprocess = false) => {
     setIsAnalyzing(true);
     try {
       // Get video URL
@@ -467,12 +467,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('videos')
         .getPublicUrl(videoData.storage_path);
       
-      // Run speaker diarization with mode parameter
+      // Run speaker diarization with mode parameter and force flag
       const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
           videoUrl: publicUrl,
           videoId,
-          mode: detectionMode
+          mode: detectionMode,
+          force: forceReprocess // Add force flag to bypass cache
         }
       });
       
@@ -699,13 +700,28 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="conservative">
-                    Conservative (1-2 speakers) - Best for narration, lectures
+                    <div>
+                      <div className="font-medium">Conservative (1-2 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Narration, monologues, single speaker content
+                      </div>
+                    </div>
                   </SelectItem>
                   <SelectItem value="moderate">
-                    Moderate (2-4 speakers) - Best for interviews, conversations
+                    <div>
+                      <div className="font-medium">Moderate (up to 12 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Movies, TV shows, multi-character scenes
+                      </div>
+                    </div>
                   </SelectItem>
                   <SelectItem value="aggressive">
-                    Aggressive (4+ speakers) - Best for panels, discussions
+                    <div>
+                      <div className="font-medium">Aggressive (up to 20 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Large ensemble casts, crowd scenes
+                      </div>
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -726,7 +742,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             
             <div className="flex gap-2">
               <Button 
-                onClick={runIntelligentDetection}
+                onClick={() => runIntelligentDetection(false)}
                 disabled={isAnalyzing}
                 className="flex-1"
               >
@@ -739,6 +755,23 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
                     Run Intelligent Detection
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={() => runIntelligentDetection(true)}
+                variant="destructive"
+                disabled={isAnalyzing}
+                title="Clear cache and reprocess"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
                   </>
                 )}
               </Button>
