@@ -310,69 +310,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     });
   };
 
-  const consolidateSpeakers = async () => {
-    if (!videoId) return;
-    
-    try {
-      console.log('🔄 Consolidating duplicate speakers...');
-      
-      const { data, error } = await supabase.functions.invoke('consolidate-speakers', {
-        body: { videoId, language }
-      });
-      
-      if (error) throw error;
-      
-      console.log('✅ Speakers consolidated:', data);
-      toast({
-        title: "Speakers consolidated",
-        description: `Updated ${data.segments_updated} segments`
-      });
-      
-      // Reload speakers
-      await loadSpeakersFromDB();
-      
-      // Trigger refresh in transcript editor
-      window.dispatchEvent(new CustomEvent('character-mappings-applied', {
-        detail: {
-          videoId,
-          language,
-          timestamp: Date.now(),
-          forceReload: true
-        }
-      }));
-    } catch (error) {
-      console.error('❌ Error consolidating speakers:', error);
-      toast({
-        title: "Error consolidating speakers",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
   const saveAllCharacters = async () => {
-    // Validate mappings first
-    const usedCharacters = new Set<string>();
-    const errors: string[] = [];
-    
-    for (const [speaker, characterName] of Object.entries(speakerMappings)) {
-      if (characterName !== 'unassigned') {
-        if (usedCharacters.has(characterName)) {
-          errors.push(`Character "${characterName}" is assigned to multiple speakers`);
-        }
-        usedCharacters.add(characterName);
-      }
-    }
-    
-    if (errors.length > 0) {
-      toast({
-        title: "Invalid mappings",
-        description: errors.join(', '),
-        variant: "destructive"
-      });
-      return;
-    }
-    
     try {
       // 1. Save characters to database
       await saveCharacters(characters);
@@ -383,26 +321,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 3. CRITICAL: Apply character settings to all segments in database
       await applyCharacterMappings();
       
-      // 4. Update all segments where speaker matches character name (for color/property sync)
-      for (const character of characters) {
-        const { error: updateError } = await supabase
-          .from('transcript_segments')
-          .update({
-            speaker_color: character.color,
-            is_off_camera: character.isOffCamera || false,
-            emphasis: character.emphasis || 'normal',
-            pitch: character.pitch || 'normal'
-          })
-          .eq('video_id', videoId)
-          .eq('language', language)
-          .eq('speaker', character.name);
-        
-        if (updateError) {
-          console.error(`❌ Error updating segments for character ${character.name}:`, updateError);
-        }
-      }
-      
-      // 5. Update localStorage for instant access (critical for video player)
+      // 4. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
         ...acc, 
         [char.name]: char.color 
@@ -410,23 +329,18 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
       
-      // 6. Trigger parent component update 
+      // 5. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
-      // 7. Trigger real-time update in TranscriptEditor
-      window.dispatchEvent(new CustomEvent('character-mappings-applied', {
-        detail: {
-          videoId,
-          language,
-          characters,
-          timestamp: Date.now(),
-          forceReload: true
-        }
+      // 6. Trigger window event so other components can sync immediately
+      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
+        detail: { colors: characterColorMap, characters } 
       }));
       
       toast({
-        title: "Characters saved",
-        description: "All character settings have been saved and applied to the transcript"
+        title: "Colors synchronized!",
+        description: `${characters.length} characters saved and colors synced across video player and transcript`,
+        variant: "default"
       });
     } catch (error) {
       console.error('❌ Failed to save characters:', error);
@@ -553,21 +467,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     characters.filter(c => c.type === type);
 
   return (
-    <Card className="w-full" id="character-manager-section">
+    <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
-            <Palette className="w-5 h-5" />
-            Character Color Attribution
-          </CardTitle>
-          <Button
-            onClick={consolidateSpeakers}
-            variant="outline"
-            size="sm"
-          >
-            Clean Up Duplicate Speakers
-          </Button>
-        </div>
+        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+          <Palette className="w-5 h-5" />
+          Character Color Attribution
+        </CardTitle>
         <Card className="border-primary/20 bg-primary/5 mt-3">
           <CardContent className="p-4">
             <p className="text-sm font-light leading-relaxed">

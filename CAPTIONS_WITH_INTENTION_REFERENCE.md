@@ -1,7 +1,6 @@
 # Captions with Intention - Reference Implementation Documentation
 
 ## Overview
-
 This document captures the successful implementation of Captions with Intention (CWI) - a word-by-word synchronized caption system with character-specific colors, emphasis detection, and accessibility features. This version works perfectly from t=0:00 and maintains synchronization throughout video playback.
 
 ## Architecture Overview
@@ -9,36 +8,33 @@ This document captures the successful implementation of Captions with Intention 
 ### Core Components
 
 #### 1. CaptionsWithIntention.tsx
-
 **Primary rendering component for word-by-word captions**
 
 **Key Features:**
-
 - **Word-by-word synchronization**: 3ms-60ms precision timing windows
 - **Character color inheritance**: Every word inherits speaker's color from database
-- **Read-ahead system**: Shows upcoming captions up to 2s early
+- **Read-ahead system**: Shows upcoming captions up to 3s early
 - **Emphasis preservation**: Loud/yelling words maintain character colors
 - **Natural word timing synthesis**: Distributes words realistically across segments
 
 **Critical Implementation Details:**
-
 ```typescript
 // Active caption selection with read-ahead fallback
 const SEGMENT_TOLERANCE = 0.05; // 50ms
 const READAHEAD_WINDOW = 3.0; // 3s read-ahead for CI protocol
-const foundActive = captions.find(caption =>
-  currentTime >= (caption.startTime - SEGMENT_TOLERANCE) &&
+const foundActive = captions.find(caption => 
+  currentTime >= (caption.startTime - SEGMENT_TOLERANCE) && 
   currentTime <= (caption.endTime + SEGMENT_TOLERANCE)
 );
 const upcoming = !foundActive
-  ? captions.find(caption => caption.startTime >= currentTime &&
+  ? captions.find(caption => caption.startTime >= currentTime && 
       (caption.startTime - currentTime) <= READAHEAD_WINDOW)
   : undefined;
 const activeCaption = foundActive || upcoming || captions[0];
 
 // Word-level timing with dual activation system
 const WORD_PRECISION = 0.06; // 60ms precision window
-const isActiveByTime = (currentTime >= (word.startTime - WORD_PRECISION) &&
+const isActiveByTime = (currentTime >= (word.startTime - WORD_PRECISION) && 
                        currentTime <= (word.endTime + WORD_PRECISION));
 const isActiveByIndex = index === activeWordIndex;
 const isWordActive = isActiveByTime || isActiveByIndex;
@@ -56,32 +52,29 @@ const getWordColorByState = () => {
 ```
 
 #### 2. AxessiblePlayer.tsx
-
 **Main video player with caption rendering**
 
 **Key Features:**
-
 - **Final mapping gate**: Applies character colors just before render
 - **Database priority**: Always uses initialCaptions from database first
 - **Character synchronization**: Syncs localStorage with database characters
 - **Fallback systems**: Case-insensitive character matching
 
 **Critical Implementation:**
-
 ```typescript
 // FINAL MAPPING GATE: enforce Character Manager mappings just before render
 try {
   const vid = videoId || 'default';
   const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
-  const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) ||
+  const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || 
                                 localStorage.getItem(`characters-${vid}`) || '[]');
   const byName: Record<string, any> = {};
   (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
-
+  
   finalCaptions = finalCaptions.map((s: any, index: number) => {
     const mappedName = mapping?.[s.speaker];
     const char = mappedName ? byName[mappedName] : byName[s.speaker];
-
+    
     if (char) {
       return {
         ...s,
@@ -96,18 +89,15 @@ try {
 ```
 
 #### 3. EnhancedVideoPlayer.tsx
-
 **Database integration and word timing normalization**
 
 **Key Features:**
-
 - **Word timing synthesis**: Creates natural word timings when missing
 - **Database persistence**: Saves normalized timings to transcript_segments.words
 - **Character management**: Loads and applies character mappings from database
 - **Vocal intensity analysis**: Processes emphasis and volume levels
 
 **Critical Implementation:**
-
 ```typescript
 // Word timing synthesis with natural speech patterns
 const baseWPM = 150; // Average words per minute for clear speech
@@ -119,11 +109,11 @@ const avgWordDuration = effectiveDuration / words.length;
 workingCaption.words = words.map((word, index) => {
   const lengthFactor = Math.max(0.7, Math.min(1.5, word.length / 5));
   const wordDuration = Math.max(0.12, avgWordDuration * lengthFactor);
-
+  
   return {
     text: word,
     startTime: workingCaption.startTime + (index * avgWordDuration),
-    endTime: Math.min(workingCaption.endTime,
+    endTime: Math.min(workingCaption.endTime, 
                      workingCaption.startTime + (index * avgWordDuration) + wordDuration),
     emphasis: 'normal' as const,
     pitch: 'normal' as const
@@ -132,8 +122,8 @@ workingCaption.words = words.map((word, index) => {
 
 // Database persistence of normalized word timings
 const persistKey = `words_persisted_${videoId}_${currentLanguage}`;
-const missingWords = captionSegments.some(seg =>
-  !seg.words || !seg.words.every((w: any) =>
+const missingWords = captionSegments.some(seg => 
+  !seg.words || !seg.words.every((w: any) => 
     typeof w.startTime === 'number' && typeof w.endTime === 'number'
   )
 );
@@ -146,7 +136,6 @@ if (missingWords && !sessionStorage.getItem(persistKey)) {
 ### Database Schema
 
 #### transcript_segments table
-
 ```sql
 CREATE TABLE transcript_segments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -166,7 +155,6 @@ CREATE TABLE transcript_segments (
 ```
 
 #### characters table
-
 ```sql
 CREATE TABLE characters (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -186,28 +174,24 @@ CREATE TABLE characters (
 ## Key Success Factors
 
 ### 1. Word-by-word Synchronization
-
 - **Dual activation system**: Words activate by time OR by segment progress
 - **Robust timing windows**: 60ms precision prevents timing gaps
 - **Fallback word selection**: Always activates a word within active segments
 - **Natural word distribution**: Uses speech patterns for realistic timing
 
 ### 2. Character Color Management
-
 - **Database-first approach**: Always prioritizes saved character colors
 - **Consistent color inheritance**: Every word state uses character color
 - **Case-insensitive fallbacks**: Handles speaker name variations
 - **Real-time updates**: Character changes apply immediately
 
 ### 3. Timing Precision
-
 - **Read-ahead system**: Shows captions 3s early per CI protocol
 - **Segment tolerance**: 50ms window prevents caption gaps
 - **Word precision**: 60ms window ensures reliable activation
 - **Progressive word states**: upcoming → active → spoken transitions
 
 ### 4. Database Integration
-
 - **Persistent word timings**: Normalized timings saved to database
 - **Cross-device consistency**: Same experience across all devices
 - **Offline fallbacks**: localStorage backup for character data
