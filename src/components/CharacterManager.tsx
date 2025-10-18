@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -101,6 +102,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
+  const [detectionMode, setDetectionMode] = useState<'conservative' | 'moderate' | 'aggressive'>('conservative');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isConsolidating, setIsConsolidating] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
 
   // Load existing characters on mount
@@ -409,6 +413,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   };
 
   const consolidateSpeakers = async () => {
+    setIsConsolidating(true);
     try {
       toast({
         title: "Consolidating speakers...",
@@ -439,6 +444,61 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         description: "Failed to consolidate speakers. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsConsolidating(false);
+    }
+  };
+
+  const runIntelligentDetection = async () => {
+    setIsAnalyzing(true);
+    try {
+      // Get video URL
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('storage_path')
+        .eq('id', videoId)
+        .single();
+      
+      if (videoError || !videoData?.storage_path) {
+        throw new Error('Video not found');
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(videoData.storage_path);
+      
+      // Run intelligent detection
+      const { data, error } = await supabase.functions.invoke('intelligent-speaker-detection', {
+        body: { 
+          videoUrl: publicUrl,
+          videoId,
+          language,
+          mode: detectionMode
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Reload segments to show updated speakers
+      await loadSpeakersFromDB();
+      
+      // Reload characters
+      const savedCharacters = await loadCharacters();
+      setCharacters(savedCharacters);
+      
+      toast({
+        title: 'Speaker detection complete',
+        description: `Detected ${data.speakers.length} speaker(s) with ${Math.round(data.confidence * 100)}% confidence`,
+      });
+    } catch (error: any) {
+      console.error('Detection failed:', error);
+      toast({
+        title: 'Detection failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -616,15 +676,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             <Palette className="w-5 h-5" />
             Character Color Attribution
           </CardTitle>
-          <Button 
-            onClick={consolidateSpeakers}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <Users className="w-4 h-4" />
-            Clean Up Duplicate Speakers
-          </Button>
         </div>
         <Card className="border-primary/20 bg-primary/5 mt-3">
           <CardContent className="p-4">
@@ -635,6 +686,83 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Intelligent Speaker Detection Section */}
+        <Card className="mb-6 border-blue-200/50 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="text-base font-medium text-blue-800">Intelligent Speaker Detection</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Detection Sensitivity</Label>
+              <Select value={detectionMode} onValueChange={(value: any) => setDetectionMode(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conservative">
+                    Conservative (1-2 speakers) - Best for narration, lectures
+                  </SelectItem>
+                  <SelectItem value="moderate">
+                    Moderate (2-4 speakers) - Best for interviews, conversations
+                  </SelectItem>
+                  <SelectItem value="aggressive">
+                    Aggressive (4+ speakers) - Best for panels, discussions
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Current Status</AlertTitle>
+              <AlertDescription>
+                {availableSpeakers.length} speaker(s) detected.
+                {availableSpeakers.length > 3 && (
+                  <span className="block mt-1 text-yellow-600">
+                    ⚠️ High speaker count detected. Consider running intelligent detection.
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={runIntelligentDetection}
+                disabled={isAnalyzing}
+                className="flex-1"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Run Intelligent Detection
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={consolidateSpeakers}
+                variant="outline"
+                disabled={isConsolidating || availableSpeakers.length <= 1}
+                className="flex-1"
+              >
+                {isConsolidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Consolidating...
+                  </>
+                ) : (
+                  'Quick Consolidation'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Speaker Mapping Section */}
         {characters.length > 0 && (
           <Card className="border-orange-200/50 bg-orange-50/30">

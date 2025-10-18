@@ -1,5 +1,8 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.intelligent-speaker-detection]
+verify_jwt = true
+
 [functions.s3-multipart-upload]
 verify_jwt = true
 

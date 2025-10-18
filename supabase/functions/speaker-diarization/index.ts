@@ -45,7 +45,7 @@ serve(async (req) => {
       body: JSON.stringify({
         audio_url: videoUrl,
         speaker_labels: true, // Enable speaker diarization
-        speakers_expected: 4, // Expect up to 4 speakers (adjustable)
+        // speakers_expected: 4, // REMOVED - let AI auto-detect speaker count
         auto_chapters: false,
         sentiment_analysis: false,
         entity_detection: false,
