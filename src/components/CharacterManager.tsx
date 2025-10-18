@@ -467,12 +467,11 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('videos')
         .getPublicUrl(videoData.storage_path);
       
-      // Run intelligent detection
-      const { data, error } = await supabase.functions.invoke('intelligent-speaker-detection', {
+      // Run speaker diarization with mode parameter
+      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
           videoUrl: publicUrl,
           videoId,
-          language,
           mode: detectionMode
         }
       });
@@ -488,7 +487,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       toast({
         title: 'Speaker detection complete',
-        description: `Detected ${data.speakers.length} speaker(s) with ${Math.round(data.confidence * 100)}% confidence`,
+        description: `Detected ${data.speakers.length} speaker(s) via ${data.provider} (${Math.round(data.confidence * 100)}% confidence)`,
       });
     } catch (error: any) {
       console.error('Detection failed:', error);
