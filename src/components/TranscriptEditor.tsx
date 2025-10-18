@@ -159,14 +159,35 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           const characters = await loadCharacters();
           setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
         }
+
+        // If forceReload flag is set, reload transcript segments from DB
+        if (e?.detail?.forceReload) {
+          console.log('🔄 TranscriptEditor: Force reloading segments from database after character mappings applied');
+          const segments = await loadTranscriptSegments(selectedLanguage);
+          if (segments.length > 0) {
+            const convertedSegments = segments.map(seg => ({
+              ...seg,
+              id: seg.id || `segment-${Date.now()}-${Math.random()}`
+            }));
+            setEditingTranscript(convertedSegments);
+            setOriginalTranscript(convertedSegments);
+            onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+            console.log('✅ Reloaded', segments.length, 'segments from database');
+          }
+        }
       } catch (err) {
         console.error('Failed to refresh characters after update event:', err);
       }
     };
 
     window.addEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
-    return () => window.removeEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
-  }, [videoId]);
+    window.addEventListener('character-mappings-applied', handleCharactersUpdated as EventListener);
+    
+    return () => {
+      window.removeEventListener('character-colors-updated', handleCharactersUpdated as EventListener);
+      window.removeEventListener('character-mappings-applied', handleCharactersUpdated as EventListener);
+    };
+  }, [videoId, selectedLanguage]);
   // Load saved transcript from DATABASE when video or language changes
   useEffect(() => {
     const loadTranscriptData = async () => {

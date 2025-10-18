@@ -318,8 +318,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // 3. CRITICAL: Apply character settings to all segments in database
-      await applyCharacterMappings();
+      // 3. CRITICAL: Apply character settings to all segments and link via character_id
+      await propagateCharacterChanges();
       
       // 4. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
@@ -332,14 +332,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 5. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
-      // 6. Trigger window event so other components can sync immediately
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, characters } 
+      // 6. Trigger window event with forceReload flag for transcript editor
+      window.dispatchEvent(new CustomEvent('character-mappings-applied', { 
+        detail: { colors: characterColorMap, characters, forceReload: true } 
       }));
       
       toast({
-        title: "Colors synchronized!",
-        description: `${characters.length} characters saved and colors synced across video player and transcript`,
+        title: "Characters synchronized!",
+        description: `${characters.length} characters saved and linked to transcript segments`,
         variant: "default"
       });
     } catch (error) {
@@ -347,6 +347,148 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       toast({
         title: "Save failed",
         description: "Failed to save characters. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const propagateCharacterChanges = async () => {
+    console.log('[CHARACTER-MANAGER] Propagating character changes to transcript segments...');
+    
+    try {
+      // For each character, update ALL segments with character_id and settings
+      for (const character of characters) {
+        // Find which speaker this character is mapped to
+        const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
+        
+        if (mappedSpeaker && mappedSpeaker !== 'unassigned') {
+          // Update segments that match the mapped speaker
+          const { error } = await supabase
+            .from('transcript_segments')
+            .update({
+              character_id: character.id,
+              speaker: character.name,
+              speaker_color: character.color,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal',
+              is_off_camera: character.isOffCamera || false
+            })
+            .eq('video_id', videoId)
+            .eq('language', language)
+            .eq('speaker', mappedSpeaker);
+          
+          if (error) {
+            console.error(`❌ Failed to update segments for "${mappedSpeaker}":`, error);
+          } else {
+            console.log(`✅ Updated segments: "${mappedSpeaker}" → "${character.name}" (${character.color})`);
+          }
+        }
+        
+        // Also update any segments that already use this character name (refresh color/settings)
+        const { error: refreshError } = await supabase
+          .from('transcript_segments')
+          .update({
+            character_id: character.id,
+            speaker_color: character.color,
+            emphasis: character.emphasis || 'normal',
+            pitch: character.pitch || 'normal',
+            is_off_camera: character.isOffCamera || false
+          })
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .eq('speaker', character.name);
+        
+        if (refreshError) {
+          console.error(`❌ Failed to refresh character "${character.name}":`, refreshError);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to propagate character changes:', error);
+      throw error;
+    }
+  };
+
+  const consolidateSpeakers = async () => {
+    try {
+      toast({
+        title: "Consolidating speakers...",
+        description: "Cleaning up duplicate speakers and creating characters"
+      });
+
+      const { data, error } = await supabase.functions.invoke('consolidate-speakers', {
+        body: { videoId, language }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Speakers consolidated!",
+        description: data.message,
+        variant: "default"
+      });
+
+      // Reload speakers and characters from database
+      await loadSpeakersFromDB();
+      const savedCharacters = await loadCharacters();
+      setCharacters(savedCharacters);
+
+    } catch (error) {
+      console.error('❌ Failed to consolidate speakers:', error);
+      toast({
+        title: "Consolidation failed",
+        description: "Failed to consolidate speakers. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const applyCharacterToAllSegments = async (characterId: string) => {
+    const character = characters.find(c => c.id === characterId);
+    if (!character) return;
+
+    const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
+    if (!mappedSpeaker || mappedSpeaker === 'unassigned') {
+      toast({
+        title: "No speaker mapping",
+        description: `Please map a detected speaker to "${character.name}" first`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('transcript_segments')
+        .update({
+          character_id: character.id,
+          speaker: character.name,
+          speaker_color: character.color,
+          emphasis: character.emphasis || 'normal',
+          pitch: character.pitch || 'normal',
+          is_off_camera: character.isOffCamera || false
+        })
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .eq('speaker', mappedSpeaker);
+
+      if (error) throw error;
+
+      toast({
+        title: "Character applied!",
+        description: `Applied "${character.name}" to all "${mappedSpeaker}" segments`,
+        variant: "default"
+      });
+
+      // Trigger refresh
+      window.dispatchEvent(new CustomEvent('character-mappings-applied', { 
+        detail: { forceReload: true } 
+      }));
+
+    } catch (error) {
+      console.error('❌ Failed to apply character:', error);
+      toast({
+        title: "Apply failed",
+        description: "Failed to apply character settings",
         variant: "destructive"
       });
     }
@@ -469,10 +611,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
-          <Palette className="w-5 h-5" />
-          Character Color Attribution
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+            <Palette className="w-5 h-5" />
+            Character Color Attribution
+          </CardTitle>
+          <Button 
+            onClick={consolidateSpeakers}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Clean Up Duplicate Speakers
+          </Button>
+        </div>
         <Card className="border-primary/20 bg-primary/5 mt-3">
           <CardContent className="p-4">
             <p className="text-sm font-light leading-relaxed">
@@ -522,7 +675,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           });
                         }}
                       >
-                        <SelectTrigger className="h-7 w-56">
+                        <SelectTrigger className="h-7 w-48">
                           <SelectValue placeholder="Select detected speaker..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -532,6 +685,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button
+                        onClick={() => applyCharacterToAllSegments(char.id)}
+                        size="sm"
+                        variant="secondary"
+                        disabled={mappedSpeaker === 'unassigned'}
+                        className="h-7 text-xs whitespace-nowrap"
+                      >
+                        Apply to All
+                      </Button>
                     </div>
                   </div>
                 );
