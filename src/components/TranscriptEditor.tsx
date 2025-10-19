@@ -62,10 +62,7 @@ const CI_SUPPORTING_COLORS = [
 
 const PRIORITY_COLORS = [...CI_MAIN_COLORS, ...CI_SUPPORTING_COLORS];
 
-// Get next CI color for speaker assignment
-const getNextCISpeakerColor = (index: number): string => {
-  return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
-};
+// Removed getNextCISpeakerColor - now using speaker-name-based color mapping
 
 interface TranscriptSegment {
   id: string;
@@ -134,6 +131,52 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
+  const [speakerColorMap, setSpeakerColorMap] = useState<Map<string, string>>(new Map());
+
+  /**
+   * Get consistent color for a speaker
+   * Uses existing color from segment if available, otherwise assigns new one
+   */
+  const getSpeakerColor = (speaker: string, existingColor?: string): string => {
+    // If segment already has a color from database, use it
+    if (existingColor) {
+      // Make sure it's in the map for consistency
+      if (!speakerColorMap.has(speaker)) {
+        const newMap = new Map(speakerColorMap);
+        newMap.set(speaker, existingColor);
+        setSpeakerColorMap(newMap);
+      }
+      return existingColor;
+    }
+    
+    // Get or create color for this speaker
+    if (!speakerColorMap.has(speaker)) {
+      const colorIndex = speakerColorMap.size % PRIORITY_COLORS.length;
+      const color = PRIORITY_COLORS[colorIndex];
+      const newMap = new Map(speakerColorMap);
+      newMap.set(speaker, color);
+      setSpeakerColorMap(newMap);
+      return color;
+    }
+    
+    return speakerColorMap.get(speaker)!;
+  };
+
+  /**
+   * Get text color that contrasts with background
+   */
+  const getContrastColor = (hexColor: string): string => {
+    // Handle undefined or invalid colors
+    if (!hexColor || hexColor.length < 7) {
+      return '#000000';
+    }
+    
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+  };
 
   // Load characters from localStorage
   useEffect(() => {
@@ -216,7 +259,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         setEditingTranscript(convertedSegments);
         setOriginalTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, selectedLanguage);
-        console.log('✅ Loaded', segments.length, 'segments from database');
+        
+        // Build speaker color map from loaded segments
+        const colorMap = new Map<string, string>();
+        segments.forEach(segment => {
+          if (segment.speaker && segment.speakerColor) {
+            colorMap.set(segment.speaker, segment.speakerColor);
+          }
+        });
+        
+        setSpeakerColorMap(colorMap);
+        console.log(`✅ Loaded ${segments.length} segments with ${colorMap.size} unique speakers`);
+        
+        // Log speaker colors for debugging
+        colorMap.forEach((color, speaker) => {
+          console.log(`  - ${speaker}: ${color}`);
+        });
       } else {
         console.log('ℹ️ No segments found in database for language:', selectedLanguage);
       }
@@ -476,8 +534,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: currentSegment.trim(),
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(segmentIndex),
+              speaker: 'Speaker 1', // Use numbered speaker as default
+              speakerColor: getSpeakerColor('Speaker 1'),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -503,8 +561,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(index),
+              speaker: 'Speaker 1', // Use numbered speaker as default
+              speakerColor: getSpeakerColor('Speaker 1'),
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -665,10 +723,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditText(segment.text);
     setEditStartTime(formatTime(segment.startTime));
     setEditEndTime(formatTime(segment.endTime));
-    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
-    setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
-    setOriginalSpeaker(segment.speaker || 'Speaker');
-    setOriginalColor(segment.speakerColor || getNextCISpeakerColor(index));
+    setEditSpeaker(segment.speaker || 'Speaker 1');
+    setEditSpeakerColor(segment.speakerColor || getSpeakerColor(segment.speaker || 'Speaker 1', segment.speakerColor));
+    setOriginalSpeaker(segment.speaker || 'Speaker 1');
+    setOriginalColor(segment.speakerColor || getSpeakerColor(segment.speaker || 'Speaker 1', segment.speakerColor));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -808,8 +866,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
-      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
-      speakerColor: getNextCISpeakerColor(editingTranscript.length),
+      speaker: 'Speaker 1', // Use 'Speaker 1' as default
+      speakerColor: getSpeakerColor('Speaker 1'),
       emphasis: 'normal',
       pitch: 'normal'
     };
@@ -900,8 +958,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         text: segment.text,
         startTime: segment.start_time || segment.startTime,
         endTime: segment.end_time || segment.endTime,
-        speaker: segment.speaker || 'Speaker',
-        speakerColor: segment.speakerColor || PRIORITY_COLORS[index % PRIORITY_COLORS.length],
+        speaker: segment.speaker || 'Speaker 1',
+        speakerColor: segment.speakerColor || getSpeakerColor(segment.speaker || 'Speaker 1', segment.speakerColor),
         emphasis: segment.emphasis || 'normal' as const,
         pitch: segment.pitch || 'normal' as const,
         vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,
@@ -1082,15 +1140,20 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <span className="text-xs text-muted-foreground font-mono">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
-                     {segment.speaker && (
-                       <Badge 
-                         variant="outline" 
-                         className="text-xs px-2 py-0"
-                         style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                       >
-                         {segment.speaker}
-                       </Badge>
-                     )}
+                      {segment.speaker && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs px-2 py-0"
+                          style={{ 
+                            backgroundColor: getSpeakerColor(segment.speaker || 'Unknown', segment.speakerColor),
+                            color: getContrastColor(getSpeakerColor(segment.speaker || 'Unknown', segment.speakerColor)),
+                            borderColor: getSpeakerColor(segment.speaker || 'Unknown', segment.speakerColor),
+                            fontWeight: 500
+                          }}
+                        >
+                          {segment.speaker}
+                        </Badge>
+                      )}
                      {segment.emphasis !== 'normal' && (
                        <Badge variant="secondary" className="text-xs px-1 py-0">
                          {segment.emphasis}
