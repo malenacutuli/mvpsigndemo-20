@@ -35,14 +35,12 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   /**
-   * Advanced speaker analysis using AssemblyAI's speaker diarization
+   * Advanced speaker analysis with provider priority: Deepgram (primary) -> AssemblyAI (fallback)
    */
   const analyzeSpeakersFromAudio = useCallback(async (videoUrl: string, videoId: string): Promise<SpeakerCluster[]> => {
     setIsAnalyzing(true);
     
     try {
-      console.log('🎤 Starting AssemblyAI speaker diarization for video:', videoId);
-      
       // Check cache first
       const cached = await loadCachedSpeakerAnalysis(videoId);
       if (cached) {
@@ -50,57 +48,79 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
         return cached;
       }
       
-      // Call our speaker diarization edge function
-      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
+      // TRY DEEPGRAM FIRST (primary provider - 60% cheaper, 40x faster)
+      console.log('🚀 Attempting Deepgram speaker diarization...');
+      try {
+        const { data: deepgramData, error: deepgramError } = await supabase.functions.invoke('speaker-diarization-deepgram', {
+          body: { videoUrl, videoId }
+        });
+        
+        if (!deepgramError && deepgramData?.success) {
+          console.log('✅ Deepgram diarization successful');
+          return convertToClusters(deepgramData);
+        }
+        
+        console.warn('⚠️ Deepgram failed, trying AssemblyAI fallback:', deepgramError || deepgramData?.error);
+      } catch (deepgramError) {
+        console.warn('⚠️ Deepgram exception, trying AssemblyAI fallback:', deepgramError);
+      }
+      
+      // FALLBACK TO ASSEMBLYAI
+      console.log('🔄 Falling back to AssemblyAI speaker diarization...');
+      const { data: assemblyData, error: assemblyError } = await supabase.functions.invoke('speaker-diarization', {
         body: { videoUrl, videoId }
       });
       
-      if (error) throw error;
+      if (assemblyError) throw assemblyError;
       
-      if (!data.success) {
-        throw new Error(data.error || 'Speaker diarization failed');
+      if (!assemblyData.success) {
+        throw new Error(assemblyData.error || 'AssemblyAI speaker diarization failed');
       }
       
-      // Convert API response to SpeakerCluster format
-      const clusters: SpeakerCluster[] = data.speakers.map((speaker: any, index: number) => ({
-        id: speaker.id,
-        name: speaker.name,
-        color: speaker.color,
-        fingerprint: {
-          avgPitch: 180, // Default values since we don't have detailed audio analysis
-          pitchVariance: 20,
-          speechRate: 2.5,
-          pausePattern: 0,
-          volumeProfile: [50],
-          textualStyle: 'conversational' as const
-        },
-        segments: data.segments
-          .filter((seg: any) => seg.speaker === speaker.name)
-          .map((seg: any) => ({
-            text: seg.text,
-            speaker: seg.speaker,
-            startTime: seg.startTime,
-            endTime: seg.endTime,
-            words: [], // Will be populated later if needed
-            speakerColor: speaker.color,
-            pitch: 180,
-            volume: 50,
-            type: 'dialogue' as const,
-            isOffCamera: false
-          })),
-        confidence: 0.9
-      }));
-      
-      console.log('✅ AssemblyAI speaker diarization complete:', clusters.length, 'speakers identified');
-      return clusters;
+      console.log('✅ AssemblyAI diarization successful (fallback)');
+      return convertToClusters(assemblyData);
       
     } catch (error) {
-      console.error('❌ AssemblyAI speaker diarization failed:', error);
+      console.error('❌ All speaker diarization providers failed:', error);
       return [];
     } finally {
       setIsAnalyzing(false);
     }
   }, []);
+
+  /**
+   * Convert API response (Deepgram or AssemblyAI) to SpeakerCluster format
+   */
+  const convertToClusters = (data: any): SpeakerCluster[] => {
+    return data.speakers.map((speaker: any) => ({
+      id: speaker.id,
+      name: speaker.name,
+      color: speaker.color,
+      fingerprint: {
+        avgPitch: 180,
+        pitchVariance: 20,
+        speechRate: 2.5,
+        pausePattern: 0,
+        volumeProfile: [50],
+        textualStyle: 'conversational' as const
+      },
+      segments: data.segments
+        .filter((seg: any) => seg.speaker === speaker.name)
+        .map((seg: any) => ({
+          text: seg.text,
+          speaker: seg.speaker,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          words: [],
+          speakerColor: speaker.color,
+          pitch: 180,
+          volume: 50,
+          type: 'dialogue' as const,
+          isOffCamera: false
+        })),
+      confidence: 0.9
+    }));
+  };
 
   /**
    * Advanced speaker analysis with fallback to heuristic analysis
