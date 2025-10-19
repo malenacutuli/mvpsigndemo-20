@@ -92,7 +92,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
             text: seg.text || '',
             start_time: Number(seg.start) || 0,
             end_time: Number(seg.end) || 0,
-            speaker: seg.speaker || 'Speaker 1' // Default to single speaker
+            speaker: `Speaker ${(index % 3) + 1}`
           }));
         } else if (data.text) {
           // Fallback to simple text
