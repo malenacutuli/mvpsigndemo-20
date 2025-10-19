@@ -44,7 +44,10 @@ serve(async (req) => {
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     const partsXml = parts.map((p: { partNumber: number; etag: string }) => `<Part><PartNumber>${p.partNumber}</PartNumber><ETag>${p.etag}</ETag></Part>`).join('');
     const completeBody = `<CompleteMultipartUpload>${partsXml}</CompleteMultipartUpload>`;
-    const url = `${endpoint}/${bucketName}/${encodeURIComponent(key)}?uploadId=${encodeURIComponent(uploadId)}`;
+    const pathParts = key.split('/');
+    const fileName = pathParts.pop()!;
+    const path = pathParts.join('/');
+    const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?uploadId=${encodeURIComponent(uploadId)}`;
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, completeBody);
     const response = await fetch(url, { method: 'POST', headers: { 'Authorization': auth.authorization, 'x-amz-date': auth['x-amz-date'], 'Content-Type': 'application/xml' }, body: completeBody });
     if (!response.ok) throw new Error(`Failed to complete: ${response.status} ${await response.text()}`);
