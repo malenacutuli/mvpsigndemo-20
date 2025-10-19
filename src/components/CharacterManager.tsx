@@ -156,7 +156,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .select('result_data')
         .eq('video_id', videoId)
         .eq('content_type', 'speaker_diarization')
-        .eq('language', language)
+        .eq('language', effectiveLanguage)
         .single();
 
       if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
@@ -196,7 +196,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('speaker_mappings')
         .select('mappings, updated_at')
         .eq('video_id', videoId)
-        .eq('language', language)
+        .eq('language', effectiveLanguage)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -257,7 +257,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
     const loadMappingsFromDatabase = async () => {
       try {
-        const mappings = await loadSpeakerMappings(language);
+        const mappings = await loadSpeakerMappings(effectiveLanguage);
         setSpeakerMappings(mappings || {});
       } catch (error) {
         console.error('Failed to load speaker mappings:', error);
@@ -341,7 +341,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       await saveCharacters(characters);
       
       // 2. Save speaker mappings to database
-      await saveSpeakerMappings(speakerMappings, language);
+      await saveSpeakerMappings(speakerMappings, effectiveLanguage);
       
       // 3. CRITICAL: Apply character settings to all segments and link via character_id
       await propagateCharacterChanges();
@@ -399,7 +399,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               is_off_camera: character.isOffCamera || false
             })
             .eq('video_id', videoId)
-            .eq('language', language)
+            .eq('language', effectiveLanguage)
             .eq('speaker', mappedSpeaker);
           
           if (error) {
@@ -420,7 +420,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             is_off_camera: character.isOffCamera || false
           })
           .eq('video_id', videoId)
-          .eq('language', language)
+          .eq('language', effectiveLanguage)
           .eq('speaker', character.name);
         
         if (refreshError) {
@@ -442,7 +442,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       });
 
       const { data, error } = await supabase.functions.invoke('consolidate-speakers', {
-        body: { videoId, language }
+        body: { videoId, language: effectiveLanguage }
       });
 
       if (error) throw error;
@@ -525,7 +525,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterToAllSegments = async (characterId: string) => {
     const character = characters.find(c => c.id === characterId);
-    if (!character) return;
+    if (!character) {
+      console.error('Character not found:', characterId);
+      return;
+    }
 
     const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
     if (!mappedSpeaker || mappedSpeaker === 'unassigned') {
@@ -538,7 +541,41 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
 
     try {
-      const { error } = await supabase
+      console.log(`\n=== Applying Character to All Segments ===`);
+      console.log(`Character: ${character.name} (${character.id})`);
+      console.log(`Mapped Speaker: ${mappedSpeaker}`);
+      console.log(`Video ID: ${videoId}`);
+      console.log(`Language: ${effectiveLanguage}`);
+      console.log(`Color: ${character.color}`);
+
+      // First, check how many segments will be affected
+      const { data: checkSegments, error: checkError } = await supabase
+        .from('transcript_segments')
+        .select('id, speaker, start_time, end_time')
+        .eq('video_id', videoId)
+        .eq('language', effectiveLanguage)
+        .eq('speaker', mappedSpeaker);
+
+      if (checkError) {
+        console.error('Error checking segments:', checkError);
+        throw checkError;
+      }
+
+      if (!checkSegments || checkSegments.length === 0) {
+        console.error(`No segments found for speaker: ${mappedSpeaker}`);
+        toast({
+          title: "No segments found",
+          description: `No segments found for "${mappedSpeaker}" in ${effectiveLanguage}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log(`Found ${checkSegments.length} segments to update`);
+      console.log('Sample segments:', checkSegments.slice(0, 3));
+
+      // Update all matching segments
+      const { data: updateResult, error } = await supabase
         .from('transcript_segments')
         .update({
           character_id: character.id,
@@ -549,14 +586,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           is_off_camera: character.isOffCamera || false
         })
         .eq('video_id', videoId)
-        .eq('language', language)
-        .eq('speaker', mappedSpeaker);
+        .eq('language', effectiveLanguage)
+        .eq('speaker', mappedSpeaker)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      console.log(`✅ Updated ${updateResult?.length || checkSegments.length} segments`);
+      console.log('=== Apply Complete ===\n');
 
       toast({
         title: "Character applied!",
-        description: `Applied "${character.name}" to all "${mappedSpeaker}" segments`,
+        description: `Applied "${character.name}" to ${updateResult?.length || checkSegments.length} "${mappedSpeaker}" segments`,
         variant: "default"
       });
 
@@ -569,7 +613,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       console.error('❌ Failed to apply character:', error);
       toast({
         title: "Apply failed",
-        description: "Failed to apply character settings",
+        description: error instanceof Error ? error.message : "Failed to apply character settings",
         variant: "destructive"
       });
     }
@@ -590,7 +634,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               is_off_camera: character.isOffCamera || false
             })
             .eq('video_id', videoId)
-            .eq('language', language)
+            .eq('language', effectiveLanguage)
             .eq('speaker', speakerName);
           
           if (error) {
@@ -610,7 +654,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             is_off_camera: character.isOffCamera || false
           })
           .eq('video_id', videoId)
-          .eq('language', language)
+          .eq('language', effectiveLanguage)
           .eq('speaker', character.name);
           
         if (error) {
@@ -1109,7 +1153,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           onVoiceSelect={(voiceId, voiceName, voiceType) => 
                             updateCharacterVoice(character.id, voiceId, voiceName, voiceType)
                           }
-                          language={language} // Use project language for voice filtering
+                          language={effectiveLanguage} // Use detected language for voice filtering
                         />
                       </div>
                     </div>
