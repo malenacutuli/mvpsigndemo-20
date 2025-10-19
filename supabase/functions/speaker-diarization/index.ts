@@ -497,8 +497,5 @@ async function storeSpeakerResults(
         provider,
         color_map: colorMap,
       },
-    }, { onConflict: 'video_id,content_type,language' });
-}
-
-  console.log('💾 Results stored in database');
+     }, { onConflict: 'video_id,content_type,language' });
 }
