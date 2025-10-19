@@ -768,13 +768,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       captions = generatedCaptions;
       console.log('🎯 Using GENERATED captions:', captions.length, 'for language:', currentLanguage);
     }
-    // Priority 3: Initial captions (fallback - only if they match current language)
+    // Priority 3: Initial captions (fallback - only use if we have no other option and they match the current language)
     else if (initialCaptions && initialCaptions.length > 0) {
-      captions = initialCaptions;
-      console.log('📥 Using INITIAL captions:', captions.length);
+      // Only use initial captions if they match current language (check via metadata or assume they're original)
+      if (currentLanguage === originalLanguage) {
+        captions = initialCaptions;
+        console.log('📥 Using INITIAL captions (original language):', captions.length);
+      } else {
+        console.log('⚠️ Initial captions available but language mismatch - waiting for correct language load');
+      }
     }
     else {
-      console.log('⚠️ No captions available');
+      console.log('⚠️ No captions available for language:', currentLanguage);
     }
     
     // STRICT FILTER: remove known conflicting segment reappearing from other sources

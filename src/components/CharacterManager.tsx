@@ -232,8 +232,46 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
     const loadMappingsFromDatabase = async () => {
       try {
+        // First, try to load from speaker_mappings table
         const mappings = await loadSpeakerMappings(language);
-        setSpeakerMappings(mappings || {});
+        
+        // Also reconstruct mappings from transcript_segments to ensure UI shows current state
+        const { data: segments } = await supabase
+          .from('transcript_segments')
+          .select('speaker, character_id')
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .not('character_id', 'is', null);
+        
+        if (segments && segments.length > 0) {
+          // Get character details
+          const charIds = Array.from(new Set(segments.map(s => s.character_id).filter(Boolean)));
+          const { data: chars } = await supabase
+            .from('characters')
+            .select('id, name')
+            .in('id', charIds);
+          
+          const charMap = new Map(chars?.map(c => [c.id, c.name]) || []);
+          
+          // Reconstruct the speaker -> character mapping from segments
+          const reconstructed: Record<string, string> = {};
+          for (const seg of segments) {
+            if (seg.character_id) {
+              const charName = charMap.get(seg.character_id);
+              if (charName && seg.speaker !== charName) {
+                // This segment has a character assignment - remember the original speaker name
+                reconstructed[seg.speaker] = charName;
+              }
+            }
+          }
+          
+          // Merge with loaded mappings (prefer reconstructed as it's current state)
+          const finalMappings = { ...mappings, ...reconstructed };
+          setSpeakerMappings(finalMappings);
+          console.log('📋 Reconstructed speaker mappings from DB:', finalMappings);
+        } else {
+          setSpeakerMappings(mappings || {});
+        }
       } catch (error) {
         console.error('Failed to load speaker mappings:', error);
       }
@@ -354,49 +392,101 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
-      // Update transcript segments based on character assignments
-      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
-        const character = characters.find(c => c.name === characterName);
-        if (character) {
-          // Update all transcript segments with matching speaker to use character name and color
-          const { error } = await supabase
-            .from('transcript_segments')
-            .update({
-              speaker: characterName,
-              speaker_color: character.color,
-              is_off_camera: character.isOffCamera || false
-            })
-            .eq('video_id', videoId)
-            .eq('language', language)
-            .eq('speaker', speakerName);
+      // Get all transcript languages for this video
+      const { data: transcripts } = await supabase
+        .from('transcripts')
+        .select('language')
+        .eq('video_id', videoId);
+      
+      const allLanguages = transcripts?.map(t => t.language) || [language];
+      console.log('🌍 Applying character mappings across all languages:', allLanguages);
+      
+      // First, save characters to database and get their IDs
+      const { data: savedChars, error: saveError } = await supabase
+        .from('characters')
+        .upsert(
+          characters.map(char => ({
+            id: char.id.startsWith('char-') ? undefined : char.id, // Let DB generate ID for new chars
+            video_id: videoId,
+            name: char.name,
+            type: char.type,
+            color: char.color,
+            is_off_camera: char.isOffCamera || false,
+            voice_id: char.voiceId,
+            voice_name: char.voiceName,
+            voice_type: char.voiceType,
+            emphasis: char.emphasis || 'normal',
+            pitch: char.pitch || 'normal'
+          })),
+          { onConflict: 'video_id,name', ignoreDuplicates: false }
+        )
+        .select();
+      
+      if (saveError) {
+        console.error('❌ Failed to save characters:', saveError);
+        return;
+      }
+      
+      // Create a map of character names to IDs
+      const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
+      
+      // Apply mappings across ALL languages
+      for (const lang of allLanguages) {
+        // Update transcript segments based on character assignments for this language
+        for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
+          const characterId = charIdMap.get(characterName);
+          const character = characters.find(c => c.name === characterName);
           
-          if (error) {
-            console.error(`❌ Failed to update segments for speaker "${speakerName}":`, error);
-          } else {
-            console.log(`🔄 CRITICAL COLOR SYNC: Mapped "${speakerName}" → "${characterName}" (${character.color}) in database`);
+          if (character && characterId) {
+            const { error } = await supabase
+              .from('transcript_segments')
+              .update({
+                speaker: characterName,
+                speaker_color: character.color,
+                is_off_camera: character.isOffCamera || false,
+                character_id: characterId,
+                emphasis: character.emphasis || 'normal',
+                pitch: character.pitch || 'normal'
+              })
+              .eq('video_id', videoId)
+              .eq('language', lang)
+              .eq('speaker', speakerName);
+            
+            if (error) {
+              console.error(`❌ [${lang}] Failed to update segments for speaker "${speakerName}":`, error);
+            } else {
+              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
+            }
+          }
+        }
+        
+        // Also update any segments that already have the character name
+        for (const character of characters) {
+          const characterId = charIdMap.get(character.name);
+          if (characterId) {
+            const { error } = await supabase
+              .from('transcript_segments')
+              .update({
+                speaker_color: character.color,
+                is_off_camera: character.isOffCamera || false,
+                character_id: characterId,
+                emphasis: character.emphasis || 'normal',
+                pitch: character.pitch || 'normal'
+              })
+              .eq('video_id', videoId)
+              .eq('language', lang)
+              .eq('speaker', character.name);
+              
+            if (error) {
+              console.error(`❌ [${lang}] Failed to sync color for character "${character.name}":`, error);
+            } else {
+              console.log(`🎨 [${lang}] Updated "${character.name}" → ${character.color}`);
+            }
           }
         }
       }
       
-      // CRITICAL: Also update any segments that already have the character name but wrong color
-      for (const character of characters) {
-        const { data, error } = await supabase
-          .from('transcript_segments')
-          .update({
-            speaker_color: character.color,
-            is_off_camera: character.isOffCamera || false
-          })
-          .eq('video_id', videoId)
-          .eq('language', language)
-          .eq('speaker', character.name);
-          
-        if (error) {
-          console.error(`❌ Failed to sync color for character "${character.name}":`, error);
-        } else {
-          console.log(`🎨 CRITICAL COLOR SYNC: Updated color for "${character.name}" → ${character.color} in database`);
-        }
-      }
-      
+      console.log('✅ Character mappings applied across all languages');
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
     }
