@@ -160,6 +160,55 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   // Hooks
   const isMobile = useIsMobile();
   
+  // Reload captions from database when language changes
+  useEffect(() => {
+    const loadCaptionsForLanguage = async () => {
+      if (!videoId) return;
+      
+      console.log('🔄 Loading captions for language:', currentLanguage);
+      
+      try {
+        const { data: transcripts } = await supabase
+          .from('transcripts')
+          .select('id')
+          .eq('video_id', videoId)
+          .eq('language', currentLanguage)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+        
+        if (transcripts && transcripts.length > 0) {
+          const { data: segments } = await supabase
+            .from('transcript_segments')
+            .select('*')
+            .eq('transcript_id', transcripts[0].id)
+            .order('start_time', { ascending: true });
+          
+          if (segments && segments.length > 0) {
+            const formatted: CaptionSegment[] = segments.map(seg => ({
+              text: seg.text,
+              speaker: seg.speaker,
+              speakerColor: seg.speaker_color,
+              startTime: Number(seg.start_time),
+              endTime: Number(seg.end_time),
+              words: (seg.words as any) || [],
+              emphasis: seg.emphasis as any,
+              pitch: typeof seg.pitch === 'number' ? seg.pitch : undefined,
+              isOffCamera: seg.is_off_camera || false
+            }));
+            setGeneratedCaptions(formatted);
+            console.log('✅ Loaded', formatted.length, 'captions for language:', currentLanguage);
+          }
+        } else {
+          console.log('⚠️ No transcript found for language:', currentLanguage);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load captions for language:', currentLanguage, error);
+      }
+    };
+    
+    loadCaptionsForLanguage();
+  }, [currentLanguage, videoId]);
+  
   // Keyboard shortcut for Sign Language toggle
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -617,7 +666,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const handleLanguageChange = async (language: string, content?: any) => {
     console.log('🌍 AxessiblePlayer: Language changed to:', language, 'from:', currentLanguage, 'with content:', !!content);
     
-    // Update current language FIRST to prevent initialCaptions from overriding
+    // Update current language FIRST - this triggers the useEffect to reload captions
     setCurrentLanguage(language);
     
     const isDubbingActive = language !== originalLanguage;
@@ -640,12 +689,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       }
     } else if (language === originalLanguage) {
       // Reset to original content when switching back to original language
-      console.log('↩️ Restoring original captions');
-      if (initialCaptions && initialCaptions.length > 0) {
-        console.log('📥 Restoring from initialCaptions:', initialCaptions.length);
-        setGeneratedCaptions([...initialCaptions]);
-      }
+      console.log('↩️ Restoring original captions - clearing generatedCaptions to force DB reload');
       setTranslatedContent(null);
+      setGeneratedCaptions(null); // Clear to force reload from database via useEffect
       setOriginalAudioMuted(false);
       
       // Restore original video audio
@@ -710,21 +756,25 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   // Compute final captions with all mappings applied
   const finalCaptions = useMemo(() => {
-    // PRIORITY: Always use initialCaptions (from database) if available, regardless of other sources
     let captions = [] as any[];
     
-    if (initialCaptions && initialCaptions.length > 0) {
-      captions = initialCaptions;
-      console.log('🎯 Using DATABASE captions from initialCaptions:', captions.length, 'segments');
-    } else if (translatedContent?.captions && translatedContent.captions.length > 0) {
+    // Priority 1: Translated content (when actively switching languages via real-time translation)
+    if (translatedContent?.captions && translatedContent.captions.length > 0 && currentLanguage !== originalLanguage) {
       captions = translatedContent.captions;
-      console.log('🌐 Using TRANSLATED captions:', captions.length, 'segments');
-    } else if (generatedCaptions && generatedCaptions.length > 0) {
+      console.log('🌐 Using TRANSLATED captions:', captions.length, 'for language:', currentLanguage);
+    }
+    // Priority 2: Generated captions (from database reload or live generation)
+    else if (generatedCaptions && generatedCaptions.length > 0) {
       captions = generatedCaptions;
-      console.log('🤖 Using GENERATED captions:', captions.length, 'segments');
-    } else {
-      captions = [];
-      console.log('⚠️ No captions available from any source');
+      console.log('🎯 Using GENERATED captions:', captions.length, 'for language:', currentLanguage);
+    }
+    // Priority 3: Initial captions (fallback - only if they match current language)
+    else if (initialCaptions && initialCaptions.length > 0) {
+      captions = initialCaptions;
+      console.log('📥 Using INITIAL captions:', captions.length);
+    }
+    else {
+      console.log('⚠️ No captions available');
     }
     
     // STRICT FILTER: remove known conflicting segment reappearing from other sources

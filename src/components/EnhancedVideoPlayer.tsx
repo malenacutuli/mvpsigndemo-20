@@ -451,29 +451,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   };
 
-  const handleLanguageChange = (newLanguage: string) => {
+  const handleLanguageChange = async (newLanguage: string) => {
     console.log('🌍 ENHANCED PLAYER: Language changed to:', newLanguage);
     setCurrentLanguage(newLanguage);
     
     if (newLanguage === (language || 'en')) {
-      console.log('↩️ Restoring original captions');
+      console.log('↩️ Restoring original captions - reloading from database');
       setTranslatedCaptions(null);
-      loadTranscriptSegments(newLanguage).then(segments => {
-        if (segments && segments.length > 0) {
-          const converted: CaptionSegment[] = segments.map((seg: any) => ({
-            text: seg.text || '',
-            speaker: seg.speaker || 'Speaker',
-            speakerColor: seg.speaker_color || '#3B82F6',
-            startTime: Number(seg.start_time || seg.startTime || 0),
-            endTime: Number(seg.end_time || seg.endTime || 0),
-            words: seg.words || [],
-            emphasis: seg.emphasis || 'normal',
-            pitch: seg.pitch || 'normal',
-            isOffCamera: seg.is_off_camera || seg.isOffCamera || false,
-          }));
-          setCaptions(converted);
-        }
-      });
+      
+      // Reload original language captions from database
+      const segments = await loadTranscriptSegments(newLanguage);
+      if (segments && segments.length > 0) {
+        const converted: CaptionSegment[] = segments.map((seg: any) => ({
+          text: seg.text || '',
+          speaker: seg.speaker || 'Speaker',
+          speakerColor: seg.speakerColor || seg.speaker_color || '#3B82F6',
+          startTime: Number(seg.start_time || seg.startTime || 0),
+          endTime: Number(seg.end_time || seg.endTime || 0),
+          words: (seg.words as any) || [],
+          pitch: typeof seg.pitch === 'number' ? seg.pitch : undefined,
+          isOffCamera: seg.is_off_camera || seg.isOffCamera || false,
+        }));
+        setCaptions(converted);
+        console.log('✅ Restored', converted.length, 'original captions for language:', newLanguage);
+      }
     }
     
     if (onLanguageChange) {
