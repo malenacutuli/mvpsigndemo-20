@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -101,7 +102,31 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
+  const [detectionMode, setDetectionMode] = useState<'conservative' | 'moderate' | 'aggressive'>('conservative');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isConsolidating, setIsConsolidating] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
+  // Auto-detect and use the actual transcript language for this video
+  const [actualLanguage, setActualLanguage] = useState<string>(language);
+  const effectiveLanguage = actualLanguage || language;
+
+  useEffect(() => {
+    const detectLanguage = async () => {
+      try {
+        const { data } = await supabase
+          .from('transcript_segments')
+          .select('language')
+          .eq('video_id', videoId)
+          .limit(1);
+        if (data?.[0]?.language) {
+          setActualLanguage(data[0].language);
+        }
+      } catch (e) {
+        console.warn('Failed to detect transcript language; defaulting to', language);
+      }
+    };
+    detectLanguage();
+  }, [videoId]);
 
   // Load existing characters on mount
   useEffect(() => {
@@ -162,7 +187,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('transcript_segments')
         .select('speaker')
         .eq('video_id', videoId)
-        .eq('language', language)
+        .eq('language', effectiveLanguage)
         .order('start_time');
       (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
 
@@ -318,8 +343,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // 3. CRITICAL: Apply character settings to all segments in database
-      await applyCharacterMappings();
+      // 3. CRITICAL: Apply character settings to all segments and link via character_id
+      await propagateCharacterChanges();
       
       // 4. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
@@ -332,14 +357,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 5. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
-      // 6. Trigger window event so other components can sync immediately
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, characters } 
+      // 6. Trigger window event with forceReload flag for transcript editor
+      window.dispatchEvent(new CustomEvent('character-mappings-applied', { 
+        detail: { colors: characterColorMap, characters, forceReload: true } 
       }));
       
       toast({
-        title: "Colors synchronized!",
-        description: `${characters.length} characters saved and colors synced across video player and transcript`,
+        title: "Characters synchronized!",
+        description: `${characters.length} characters saved and linked to transcript segments`,
         variant: "default"
       });
     } catch (error) {
@@ -347,6 +372,204 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       toast({
         title: "Save failed",
         description: "Failed to save characters. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const propagateCharacterChanges = async () => {
+    console.log('[CHARACTER-MANAGER] Propagating character changes to transcript segments...');
+    
+    try {
+      // For each character, update ALL segments with character_id and settings
+      for (const character of characters) {
+        // Find which speaker this character is mapped to
+        const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
+        
+        if (mappedSpeaker && mappedSpeaker !== 'unassigned') {
+          // Update segments that match the mapped speaker
+          const { error } = await supabase
+            .from('transcript_segments')
+            .update({
+              character_id: character.id,
+              speaker: character.name,
+              speaker_color: character.color,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal',
+              is_off_camera: character.isOffCamera || false
+            })
+            .eq('video_id', videoId)
+            .eq('language', language)
+            .eq('speaker', mappedSpeaker);
+          
+          if (error) {
+            console.error(`❌ Failed to update segments for "${mappedSpeaker}":`, error);
+          } else {
+            console.log(`✅ Updated segments: "${mappedSpeaker}" → "${character.name}" (${character.color})`);
+          }
+        }
+        
+        // Also update any segments that already use this character name (refresh color/settings)
+        const { error: refreshError } = await supabase
+          .from('transcript_segments')
+          .update({
+            character_id: character.id,
+            speaker_color: character.color,
+            emphasis: character.emphasis || 'normal',
+            pitch: character.pitch || 'normal',
+            is_off_camera: character.isOffCamera || false
+          })
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .eq('speaker', character.name);
+        
+        if (refreshError) {
+          console.error(`❌ Failed to refresh character "${character.name}":`, refreshError);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to propagate character changes:', error);
+      throw error;
+    }
+  };
+
+  const consolidateSpeakers = async () => {
+    setIsConsolidating(true);
+    try {
+      toast({
+        title: "Consolidating speakers...",
+        description: "Cleaning up duplicate speakers and creating characters"
+      });
+
+      const { data, error } = await supabase.functions.invoke('consolidate-speakers', {
+        body: { videoId, language }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Speakers consolidated!",
+        description: data.message,
+        variant: "default"
+      });
+
+      // Reload speakers and characters from database
+      await loadSpeakersFromDB();
+      const savedCharacters = await loadCharacters();
+      setCharacters(savedCharacters);
+
+    } catch (error) {
+      console.error('❌ Failed to consolidate speakers:', error);
+      toast({
+        title: "Consolidation failed",
+        description: "Failed to consolidate speakers. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConsolidating(false);
+    }
+  };
+
+  const runIntelligentDetection = async (forceReprocess = false) => {
+    setIsAnalyzing(true);
+    try {
+      // Get video URL
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('storage_path')
+        .eq('id', videoId)
+        .single();
+      
+      if (videoError || !videoData?.storage_path) {
+        throw new Error('Video not found');
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(videoData.storage_path);
+      
+      // Run speaker diarization with mode parameter and force flag
+      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
+        body: { 
+          videoUrl: publicUrl,
+          videoId,
+          mode: detectionMode,
+          force: forceReprocess // Add force flag to bypass cache
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Reload segments to show updated speakers
+      await loadSpeakersFromDB();
+      
+      // Reload characters
+      const savedCharacters = await loadCharacters();
+      setCharacters(savedCharacters);
+      
+      toast({
+        title: 'Speaker detection complete',
+        description: `Detected ${data.speakers.length} speaker(s) via ${data.provider} (${Math.round(data.confidence * 100)}% confidence)`,
+      });
+    } catch (error: any) {
+      console.error('Detection failed:', error);
+      toast({
+        title: 'Detection failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const applyCharacterToAllSegments = async (characterId: string) => {
+    const character = characters.find(c => c.id === characterId);
+    if (!character) return;
+
+    const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
+    if (!mappedSpeaker || mappedSpeaker === 'unassigned') {
+      toast({
+        title: "No speaker mapping",
+        description: `Please map a detected speaker to "${character.name}" first`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('transcript_segments')
+        .update({
+          character_id: character.id,
+          speaker: character.name,
+          speaker_color: character.color,
+          emphasis: character.emphasis || 'normal',
+          pitch: character.pitch || 'normal',
+          is_off_camera: character.isOffCamera || false
+        })
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .eq('speaker', mappedSpeaker);
+
+      if (error) throw error;
+
+      toast({
+        title: "Character applied!",
+        description: `Applied "${character.name}" to all "${mappedSpeaker}" segments`,
+        variant: "default"
+      });
+
+      // Trigger refresh
+      window.dispatchEvent(new CustomEvent('character-mappings-applied', { 
+        detail: { forceReload: true } 
+      }));
+
+    } catch (error) {
+      console.error('❌ Failed to apply character:', error);
+      toast({
+        title: "Apply failed",
+        description: "Failed to apply character settings",
         variant: "destructive"
       });
     }
@@ -469,10 +692,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
-          <Palette className="w-5 h-5" />
-          Character Color Attribution
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+            <Palette className="w-5 h-5" />
+            Character Color Attribution
+          </CardTitle>
+        </div>
         <Card className="border-primary/20 bg-primary/5 mt-3">
           <CardContent className="p-4">
             <p className="text-sm font-light leading-relaxed">
@@ -482,6 +707,115 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Intelligent Speaker Detection Section */}
+        <Card className="mb-6 border-blue-200/50 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="text-base font-medium text-blue-800">Intelligent Speaker Detection</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Detection Sensitivity</Label>
+              <Select value={detectionMode} onValueChange={(value: any) => setDetectionMode(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conservative">
+                    <div>
+                      <div className="font-medium">Conservative (1-2 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Narration, monologues, single speaker content
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="moderate">
+                    <div>
+                      <div className="font-medium">Moderate (up to 12 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Movies, TV shows, multi-character scenes
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="aggressive">
+                    <div>
+                      <div className="font-medium">Aggressive (up to 20 speakers)</div>
+                      <div className="text-xs text-muted-foreground">
+                        For: Large ensemble casts, crowd scenes
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Current Status</AlertTitle>
+              <AlertDescription>
+                {availableSpeakers.length} speaker(s) detected.
+                {availableSpeakers.length > 3 && (
+                  <span className="block mt-1 text-yellow-600">
+                    ⚠️ High speaker count detected. Consider running intelligent detection.
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => runIntelligentDetection(false)}
+                disabled={isAnalyzing}
+                className="flex-1"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Run Intelligent Detection
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={() => runIntelligentDetection(true)}
+                variant="destructive"
+                disabled={isAnalyzing}
+                title="Clear cache and reprocess"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={consolidateSpeakers}
+                variant="outline"
+                disabled={isConsolidating || availableSpeakers.length <= 1}
+                className="flex-1"
+              >
+                {isConsolidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Consolidating...
+                  </>
+                ) : (
+                  'Quick Consolidation'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Speaker Mapping Section */}
         {characters.length > 0 && (
           <Card className="border-orange-200/50 bg-orange-50/30">
@@ -522,7 +856,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           });
                         }}
                       >
-                        <SelectTrigger className="h-7 w-56">
+                        <SelectTrigger className="h-7 w-48">
                           <SelectValue placeholder="Select detected speaker..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -532,6 +866,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button
+                        onClick={() => applyCharacterToAllSegments(char.id)}
+                        size="sm"
+                        variant="secondary"
+                        disabled={mappedSpeaker === 'unassigned'}
+                        className="h-7 text-xs whitespace-nowrap"
+                      >
+                        Apply to All
+                      </Button>
                     </div>
                   </div>
                 );

@@ -88,38 +88,25 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
       };
     });
 
-    // Fallback: if only one speaker detected, alternate speakers by conversational turns
+    // Conservative fallback: only split speakers if explicitly needed
     const uniqueSpeakers = new Set(updatedSegments.map(s => s.speaker)).size;
-    if (uniqueSpeakers <= 1) {
-      console.log('ℹ️ Speaker ID fallback: alternating speakers by pauses/pitch changes');
-      let currentIdx = 0;
-      const maxSpeakers = 3; // offer up to 3 distinct colors
-      updatedSegments = updatedSegments.map((seg, i, arr) => {
-        if (i > 0) {
-          const prev = arr[i - 1];
-          const gap = seg.startTime - prev.endTime;
-          const punctChange = /[!?]$/.test(prev.text.trim());
-          const prevPitch = typeof prev.pitch === 'number' ? prev.pitch : prev.pitch === 'high' ? 220 : prev.pitch === 'low' ? 100 : 180;
-          const nowPitch = typeof seg.pitch === 'number' ? seg.pitch : seg.pitch === 'high' ? 220 : seg.pitch === 'low' ? 100 : 180;
-          if (gap > 1.2 || punctChange || Math.abs(nowPitch - prevPitch) > 30) {
-            currentIdx = (currentIdx + 1) % maxSpeakers;
-          }
-        }
-        return {
-          ...seg,
-          speaker: `Speaker ${currentIdx + 1}`,
-          speakerColor: CI_SPEAKER_COLORS[currentIdx % CI_SPEAKER_COLORS.length]
-        };
-      });
+    if (uniqueSpeakers <= 1 && segments.length > 10) {
+      console.log('🎯 Single speaker detected - keeping as single speaker');
+      
+      // Keep all segments as Speaker 1 with consistent color
+      updatedSegments = updatedSegments.map(seg => ({
+        ...seg,
+        speaker: 'Speaker 1',
+        speakerColor: CI_SPEAKER_COLORS[0] // Always use first color
+      }));
 
-      const names = Array.from(new Set(updatedSegments.map(s => s.speaker)));
-      setIdentifiedSpeakers(names.map((name, idx) => ({
-        id: `speaker_${idx + 1}`,
-        name,
-        color: CI_SPEAKER_COLORS[idx % CI_SPEAKER_COLORS.length],
+      setIdentifiedSpeakers([{
+        id: 'speaker_1',
+        name: 'Speaker 1',
+        color: CI_SPEAKER_COLORS[0],
         voiceCharacteristics: {},
-        segmentCount: updatedSegments.filter(s => s.speaker === name).length
-      })));
+        segmentCount: updatedSegments.length
+      }]);
     }
 
     return updatedSegments;

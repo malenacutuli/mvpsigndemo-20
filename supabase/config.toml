@@ -80,3 +80,9 @@ verify_jwt = true
 
 [functions.get-usage-summary]
 verify_jwt = true
+
+[functions.consolidate-speakers]
+verify_jwt = true
+
+[functions.speaker-diarization]
+verify_jwt = true
