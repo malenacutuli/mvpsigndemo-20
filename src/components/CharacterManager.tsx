@@ -106,6 +106,27 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConsolidating, setIsConsolidating] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
+  // Auto-detect and use the actual transcript language for this video
+  const [actualLanguage, setActualLanguage] = useState<string>(language);
+  const effectiveLanguage = actualLanguage || language;
+
+  useEffect(() => {
+    const detectLanguage = async () => {
+      try {
+        const { data } = await supabase
+          .from('transcript_segments')
+          .select('language')
+          .eq('video_id', videoId)
+          .limit(1);
+        if (data?.[0]?.language) {
+          setActualLanguage(data[0].language);
+        }
+      } catch (e) {
+        console.warn('Failed to detect transcript language; defaulting to', language);
+      }
+    };
+    detectLanguage();
+  }, [videoId]);
 
   // Load existing characters on mount
   useEffect(() => {
@@ -166,7 +187,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('transcript_segments')
         .select('speaker')
         .eq('video_id', videoId)
-        .eq('language', language)
+        .eq('language', effectiveLanguage)
         .order('start_time');
       (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
 

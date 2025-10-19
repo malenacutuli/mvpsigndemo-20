@@ -49,7 +49,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, mode = 'moderate', force = false } = await req.json();
+    const { videoUrl, videoId, mode = 'moderate', force = false, language = 'en' } = await req.json();
 
     if (!videoUrl || !videoId) {
       throw new Error('Video URL and video ID are required');
@@ -96,7 +96,7 @@ serve(async (req) => {
         speakerMetadata = [{
           id: 'speaker_1',
           name: 'Speaker 1',
-          color: SPEAKER_COLORS[0],
+          color: MOVIE_SPEAKER_COLORS[0],
           segmentCount: 1,
           totalTimeSeconds: 60
         }];
@@ -110,7 +110,7 @@ serve(async (req) => {
     speakerSegments = validated.segments;
     speakerMetadata = validated.speakers;
     // Update database with validated results
-    await storeSpeakerResults(videoId, speakerSegments, speakerMetadata, provider);
+    await storeSpeakerResults(videoId, speakerSegments, speakerMetadata, provider, language);
 
     return new Response(
       JSON.stringify({
@@ -313,7 +313,7 @@ async function analyzeWithAssemblyAI(videoUrl: string) {
   const speakerMetadata = Array.from(speakerMap.entries()).map(([_, idx]) => ({
     id: `speaker_${idx + 1}`,
     name: `Speaker ${idx + 1}`,
-    color: SPEAKER_COLORS[idx % SPEAKER_COLORS.length],
+    color: MOVIE_SPEAKER_COLORS[idx % MOVIE_SPEAKER_COLORS.length],
     segmentCount: segments.filter(s => s.speaker === `Speaker ${idx + 1}`).length,
     totalTimeSeconds: segments
       .filter(s => s.speaker === `Speaker ${idx + 1}`)
@@ -445,59 +445,60 @@ async function storeSpeakerResults(
   videoId: string, 
   segments: SpeakerSegment[], 
   speakers: any[], 
-  provider: string
+  provider: string,
+  language = 'en'
 ) {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  // Assign consistent colors
+  // Assign consistent colors for speakers
   const speakersWithColors = assignConsistentColors(speakers);
-  
-  // Create speaker-color map
+
+  // Build a fast lookup for speaker -> color
   const colorMap: Record<string, string> = {};
   speakersWithColors.forEach((s: any) => {
     colorMap[s.name] = s.color;
   });
 
-  // Update ALL segments with the SAME speaker to have the SAME color
-  for (const speakerName of Object.keys(colorMap)) {
-    const color = colorMap[speakerName];
-    
-    // Update all segments for this speaker at once
+  // CRITICAL: Update segments by time-overlap, not by previous speaker label
+  for (const seg of segments) {
+    const color = colorMap[seg.speaker] || MOVIE_SPEAKER_COLORS[0];
+
     const { error } = await supabase
       .from('transcript_segments')
-      .update({ 
-        speaker: speakerName,
-        speaker_color: color 
+      .update({
+        speaker: seg.speaker,
+        speaker_color: color,
       })
       .eq('video_id', videoId)
-      .eq('speaker', speakerName);
-    
+      .eq('language', language)
+      .lt('start_time', seg.endTime)
+      .gt('end_time', seg.startTime);
+
     if (error) {
-      console.error(`❌ Failed to update color for ${speakerName}:`, error);
-    } else {
-      console.log(`✅ Updated all ${speakerName} segments to color ${color}`);
+      console.error(`❌ Failed to update overlapping segment ${seg.startTime}-${seg.endTime}:`, error);
     }
   }
-  
-  // Store in cache
+
+  // Store in cache with correct language
   await supabase
     .from('content_generation_cache')
     .upsert({
       video_id: videoId,
       content_type: 'speaker_diarization',
-      language: 'en',
+      language: language,
       generation_params: { provider, timestamp: Date.now() },
-      result_data: { 
-        segments, 
-        speakers: speakersWithColors, 
+      result_data: {
+        segments,
+        speakers: speakersWithColors,
         total_speakers: speakersWithColors.length,
         provider,
-        color_map: colorMap
-      }
+        color_map: colorMap,
+      },
     }, { onConflict: 'video_id,content_type,language' });
+}
 
   console.log('💾 Results stored in database');
 }
