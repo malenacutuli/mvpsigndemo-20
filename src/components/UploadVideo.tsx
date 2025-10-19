@@ -561,7 +561,128 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           
         } catch (error) {
           console.error('R2 upload failed:', error);
-          throw new Error('Failed to upload large file. Please try again.');
+          // Fallback: try S3 direct multipart upload for very large files
+          try {
+            toast({
+              title: "R2 upload failed",
+              description: "Falling back to S3 direct upload...",
+            });
+
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (!accessToken) {
+              throw new Error('You must be signed in to upload via S3.');
+            }
+
+            // Step 1: Initiate multipart upload on S3
+            const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
+              body: {
+                action: 'initiate',
+                fileName: videoFile.name,
+                fileSize: videoFile.size,
+              },
+              headers: { authorization: `Bearer ${accessToken}` },
+            });
+            if (initError || !initData?.uploadId) {
+              throw new Error('Failed to initiate S3 upload');
+            }
+            const { uploadId, key } = initData as { uploadId: string; key: string };
+
+            // Step 2: Get presigned URLs for all parts
+            const { data: urlsData, error: urlsError } = await supabase.functions.invoke('s3-multipart-upload', {
+              body: {
+                action: 'getPresignedUrls',
+                uploadId,
+                key,
+                fileSize: videoFile.size,
+              },
+              headers: { authorization: `Bearer ${accessToken}` },
+            });
+            if (urlsError || !urlsData?.presignedUrls) {
+              throw new Error('Failed to get presigned URLs');
+            }
+
+            const { presignedUrls } = urlsData as { presignedUrls: Array<{ partNumber: number; url: string }> };
+            const PART_SIZE = 10 * 1024 * 1024; // 10MB
+            const MAX_CONCURRENT = 8;
+            const uploadedParts: Array<{ PartNumber: number; ETag: string }> = [];
+            let uploadedBytes = 0;
+            const totalBytes = videoFile.size;
+
+            const uploadPart = async (partInfo: { partNumber: number; url: string }) => {
+              const start = (partInfo.partNumber - 1) * PART_SIZE;
+              const end = Math.min(start + PART_SIZE, videoFile.size);
+              const chunk = videoFile.slice(start, end);
+              const response = await fetch(partInfo.url, {
+                method: 'PUT',
+                body: chunk,
+                headers: { 'Content-Type': 'application/octet-stream' },
+              });
+              if (!response.ok) throw new Error(`Failed to upload part ${partInfo.partNumber}`);
+              const etag = response.headers.get('ETag');
+              if (!etag) throw new Error(`No ETag received for part ${partInfo.partNumber}`);
+              uploadedBytes += chunk.size;
+              const progress = Math.round((uploadedBytes / totalBytes) * 90);
+              setUploadProgress(progress);
+              return { PartNumber: partInfo.partNumber, ETag: etag.replace(/"/g, '') };
+            };
+
+            for (let i = 0; i < presignedUrls.length; i += MAX_CONCURRENT) {
+              const batch = presignedUrls.slice(i, i + MAX_CONCURRENT);
+              const results = await Promise.all(batch.map(uploadPart));
+              uploadedParts.push(...results);
+            }
+
+            // Step 3: Complete multipart upload
+            const { data: completeData, error: completeError } = await supabase.functions.invoke('s3-multipart-upload', {
+              body: { action: 'complete', uploadId, key, parts: uploadedParts },
+              headers: { authorization: `Bearer ${accessToken}` },
+            });
+            if (completeError || !completeData?.url) {
+              throw new Error('Failed to complete S3 upload');
+            }
+
+            publicUrl = (completeData as any).url;
+            storagePath = `s3:${publicUrl}`;
+            console.log('S3 fallback upload complete:', publicUrl);
+
+            // Update video record immediately
+            setUploadProgress(95);
+            const { error: updateError } = await supabase
+              .from('videos')
+              .update({ storage_path: storagePath, status: 'uploaded' as const })
+              .eq('id', video.id);
+            if (updateError) throw updateError;
+
+            // Extract thumbnail in background (non-blocking)
+            extractVideoFrame(videoFile, { quality: 0.9, maxWidth: 1280, maxHeight: 720 })
+              .then(async (extractedFrame) => {
+                const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+                const { error: thumbnailUploadError } = await supabase.storage
+                  .from('thumbnails')
+                  .upload(thumbnailFileName, extractedFrame.blob, {
+                    contentType: 'image/jpeg',
+                    upsert: true,
+                  });
+                if (!thumbnailUploadError) {
+                  const { data: { publicUrl: thumbUrl } } = supabase.storage
+                    .from('thumbnails')
+                    .getPublicUrl(thumbnailFileName);
+                  await supabase
+                    .from('videos')
+                    .update({ thumbnail_url: thumbUrl })
+                    .eq('id', video.id);
+                  console.log('✅ Thumbnail uploaded:', thumbUrl);
+                }
+              })
+              .catch((err) => console.warn('⚠️ Thumbnail upload failed:', err));
+
+            setUploadProgress(100);
+            toast({ title: 'Upload successful', description: 'Your large video has been uploaded via S3 fallback' });
+          } catch (fallbackError) {
+            console.error('S3 fallback failed:', fallbackError);
+            throw new Error('Failed to upload large file. Please try again.');
+          }
         }
       } else {
         // Use Supabase Storage with TUS for smaller files (<5GB)
