@@ -117,14 +117,14 @@ serve(async (req) => {
           const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
           if (twelveLabsResult && !twelveLabsResult.error) {
             console.log("✅ Twelve Labs analysis successful for large video!");
-            transcriptionResult = twelveLabsResult;
-          } else {
-            throw new Error("Twelve Labs returned error or no result");
-          }
-        } catch (twelveLabsError) {
-          console.log("Twelve Labs failed for large video, falling back to AssemblyAI:", twelveLabsError instanceof Error ? twelveLabsError.message : 'Unknown error');
-          
-          // Last resort: AssemblyAI (expensive, only use if others fail)
+          transcriptionResult = twelveLabsResult;
+        } else {
+          throw new Error("Twelve Labs returned error or no result");
+        }
+      } catch (twelveLabsError) {
+        console.log("Twelve Labs failed for large video, falling back to AssemblyAI:", twelveLabsError instanceof Error ? twelveLabsError.message : 'Unknown error');
+        
+      // Last resort: AssemblyAI (expensive, only use if others fail)
           const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
           if (ASSEMBLYAI_API_KEY) {
             console.log("Using AssemblyAI as last resort fallback for large video transcription...");
@@ -137,13 +137,12 @@ serve(async (req) => {
                 error: 'large_video_failed', 
                 message: `Large video (${sizeMB}MB) processing failed. All providers (Deepgram, Twelve Labs, AssemblyAI) experienced issues. Please try again later or check video format.` 
               };
-            }
-          } else {
-            transcriptionResult = { 
-              error: 'no_large_video_support', 
-              message: 'Large videos require AssemblyAI when Twelve Labs and Deepgram fail. Please add ASSEMBLYAI_API_KEY to process videos over 100MB.' 
-            };
           }
+        } else {
+          transcriptionResult = { 
+            error: 'no_large_video_support', 
+            message: 'Large videos require AssemblyAI when Twelve Labs fails. Please add ASSEMBLYAI_API_KEY to process videos over 100MB.' 
+          };
         }
       }
     } else {

@@ -784,7 +784,6 @@ export type Database = {
       }
       transcript_segments: {
         Row: {
-          character_id: string | null
           confidence: number | null
           created_at: string
           emphasis: string | null
@@ -804,7 +803,6 @@ export type Database = {
           words: Json | null
         }
         Insert: {
-          character_id?: string | null
           confidence?: number | null
           created_at?: string
           emphasis?: string | null
@@ -824,7 +822,6 @@ export type Database = {
           words?: Json | null
         }
         Update: {
-          character_id?: string | null
           confidence?: number | null
           created_at?: string
           emphasis?: string | null
@@ -844,13 +841,6 @@ export type Database = {
           words?: Json | null
         }
         Relationships: [
-          {
-            foreignKeyName: "transcript_segments_character_id_fkey"
-            columns: ["character_id"]
-            isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "transcript_segments_transcript_id_fkey"
             columns: ["transcript_id"]
@@ -1199,10 +1189,6 @@ export type Database = {
       cleanup_subscription_audit_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      consolidate_video_speakers: {
-        Args: { target_language?: string; target_video_id: string }
-        Returns: Json
       }
       detect_suspicious_subscription_access: {
         Args: { accessing_user_id: string }
