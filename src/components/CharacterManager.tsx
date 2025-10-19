@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -106,27 +106,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConsolidating, setIsConsolidating] = useState(false);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
-  // Auto-detect and use the actual transcript language for this video
-  const [actualLanguage, setActualLanguage] = useState<string>(language);
-  const effectiveLanguage = actualLanguage || language;
-
-  useEffect(() => {
-    const detectLanguage = async () => {
-      try {
-        const { data } = await supabase
-          .from('transcript_segments')
-          .select('language')
-          .eq('video_id', videoId)
-          .limit(1);
-        if (data?.[0]?.language) {
-          setActualLanguage(data[0].language);
-        }
-      } catch (e) {
-        console.warn('Failed to detect transcript language; defaulting to', language);
-      }
-    };
-    detectLanguage();
-  }, [videoId]);
 
   // Load existing characters on mount
   useEffect(() => {
@@ -156,7 +135,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .select('result_data')
         .eq('video_id', videoId)
         .eq('content_type', 'speaker_diarization')
-        .eq('language', effectiveLanguage)
+        .eq('language', language)
         .single();
 
       if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
@@ -187,7 +166,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('transcript_segments')
         .select('speaker')
         .eq('video_id', videoId)
-        .eq('language', effectiveLanguage)
+        .eq('language', language)
         .order('start_time');
       (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
 
@@ -196,7 +175,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('speaker_mappings')
         .select('mappings, updated_at')
         .eq('video_id', videoId)
-        .eq('language', effectiveLanguage)
+        .eq('language', language)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -257,7 +236,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
     const loadMappingsFromDatabase = async () => {
       try {
-        const mappings = await loadSpeakerMappings(effectiveLanguage);
+        const mappings = await loadSpeakerMappings(language);
         setSpeakerMappings(mappings || {});
       } catch (error) {
         console.error('Failed to load speaker mappings:', error);
@@ -341,7 +320,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       await saveCharacters(characters);
       
       // 2. Save speaker mappings to database
-      await saveSpeakerMappings(speakerMappings, effectiveLanguage);
+      await saveSpeakerMappings(speakerMappings, language);
       
       // 3. CRITICAL: Apply character settings to all segments and link via character_id
       await propagateCharacterChanges();
@@ -399,7 +378,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               is_off_camera: character.isOffCamera || false
             })
             .eq('video_id', videoId)
-            .eq('language', effectiveLanguage)
+            .eq('language', language)
             .eq('speaker', mappedSpeaker);
           
           if (error) {
@@ -420,7 +399,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             is_off_camera: character.isOffCamera || false
           })
           .eq('video_id', videoId)
-          .eq('language', effectiveLanguage)
+          .eq('language', language)
           .eq('speaker', character.name);
         
         if (refreshError) {
@@ -442,7 +421,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       });
 
       const { data, error } = await supabase.functions.invoke('consolidate-speakers', {
-        body: { videoId, language: effectiveLanguage }
+        body: { videoId, language }
       });
 
       if (error) throw error;
@@ -470,7 +449,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  const runIntelligentDetection = async (forceReprocess = false) => {
+  const runIntelligentDetection = async () => {
     setIsAnalyzing(true);
     try {
       // Get video URL
@@ -488,13 +467,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('videos')
         .getPublicUrl(videoData.storage_path);
       
-      // Run speaker diarization with mode parameter and force flag
+      // Run speaker diarization with mode parameter
       const { data, error } = await supabase.functions.invoke('speaker-diarization', {
         body: { 
           videoUrl: publicUrl,
           videoId,
-          mode: detectionMode,
-          force: forceReprocess // Add force flag to bypass cache
+          mode: detectionMode
         }
       });
       
@@ -525,10 +503,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterToAllSegments = async (characterId: string) => {
     const character = characters.find(c => c.id === characterId);
-    if (!character) {
-      console.error('Character not found:', characterId);
-      return;
-    }
+    if (!character) return;
 
     const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
     if (!mappedSpeaker || mappedSpeaker === 'unassigned') {
@@ -541,41 +516,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
 
     try {
-      console.log(`\n=== Applying Character to All Segments ===`);
-      console.log(`Character: ${character.name} (${character.id})`);
-      console.log(`Mapped Speaker: ${mappedSpeaker}`);
-      console.log(`Video ID: ${videoId}`);
-      console.log(`Language: ${effectiveLanguage}`);
-      console.log(`Color: ${character.color}`);
-
-      // First, check how many segments will be affected
-      const { data: checkSegments, error: checkError } = await supabase
-        .from('transcript_segments')
-        .select('id, speaker, start_time, end_time')
-        .eq('video_id', videoId)
-        .eq('language', effectiveLanguage)
-        .eq('speaker', mappedSpeaker);
-
-      if (checkError) {
-        console.error('Error checking segments:', checkError);
-        throw checkError;
-      }
-
-      if (!checkSegments || checkSegments.length === 0) {
-        console.error(`No segments found for speaker: ${mappedSpeaker}`);
-        toast({
-          title: "No segments found",
-          description: `No segments found for "${mappedSpeaker}" in ${effectiveLanguage}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log(`Found ${checkSegments.length} segments to update`);
-      console.log('Sample segments:', checkSegments.slice(0, 3));
-
-      // Update all matching segments
-      const { data: updateResult, error } = await supabase
+      const { error } = await supabase
         .from('transcript_segments')
         .update({
           character_id: character.id,
@@ -586,21 +527,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           is_off_camera: character.isOffCamera || false
         })
         .eq('video_id', videoId)
-        .eq('language', effectiveLanguage)
-        .eq('speaker', mappedSpeaker)
-        .select();
+        .eq('language', language)
+        .eq('speaker', mappedSpeaker);
 
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
-      }
-
-      console.log(`✅ Updated ${updateResult?.length || checkSegments.length} segments`);
-      console.log('=== Apply Complete ===\n');
+      if (error) throw error;
 
       toast({
         title: "Character applied!",
-        description: `Applied "${character.name}" to ${updateResult?.length || checkSegments.length} "${mappedSpeaker}" segments`,
+        description: `Applied "${character.name}" to all "${mappedSpeaker}" segments`,
         variant: "default"
       });
 
@@ -613,7 +547,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       console.error('❌ Failed to apply character:', error);
       toast({
         title: "Apply failed",
-        description: error instanceof Error ? error.message : "Failed to apply character settings",
+        description: "Failed to apply character settings",
         variant: "destructive"
       });
     }
@@ -634,7 +568,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               is_off_camera: character.isOffCamera || false
             })
             .eq('video_id', videoId)
-            .eq('language', effectiveLanguage)
+            .eq('language', language)
             .eq('speaker', speakerName);
           
           if (error) {
@@ -654,7 +588,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             is_off_camera: character.isOffCamera || false
           })
           .eq('video_id', videoId)
-          .eq('language', effectiveLanguage)
+          .eq('language', language)
           .eq('speaker', character.name);
           
         if (error) {
@@ -765,28 +699,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="conservative">
-                    <div>
-                      <div className="font-medium">Conservative (1-2 speakers)</div>
-                      <div className="text-xs text-muted-foreground">
-                        For: Narration, monologues, single speaker content
-                      </div>
-                    </div>
+                    Conservative (1-2 speakers) - Best for narration, lectures
                   </SelectItem>
                   <SelectItem value="moderate">
-                    <div>
-                      <div className="font-medium">Moderate (up to 12 speakers)</div>
-                      <div className="text-xs text-muted-foreground">
-                        For: Movies, TV shows, multi-character scenes
-                      </div>
-                    </div>
+                    Moderate (2-4 speakers) - Best for interviews, conversations
                   </SelectItem>
                   <SelectItem value="aggressive">
-                    <div>
-                      <div className="font-medium">Aggressive (up to 20 speakers)</div>
-                      <div className="text-xs text-muted-foreground">
-                        For: Large ensemble casts, crowd scenes
-                      </div>
-                    </div>
+                    Aggressive (4+ speakers) - Best for panels, discussions
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -807,7 +726,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             
             <div className="flex gap-2">
               <Button 
-                onClick={() => runIntelligentDetection(false)}
+                onClick={runIntelligentDetection}
                 disabled={isAnalyzing}
                 className="flex-1"
               >
@@ -820,23 +739,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
                     Run Intelligent Detection
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                onClick={() => runIntelligentDetection(true)}
-                variant="destructive"
-                disabled={isAnalyzing}
-                title="Clear cache and reprocess"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4" />
                   </>
                 )}
               </Button>
@@ -1153,7 +1055,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           onVoiceSelect={(voiceId, voiceName, voiceType) => 
                             updateCharacterVoice(character.id, voiceId, voiceName, voiceType)
                           }
-                          language={effectiveLanguage} // Use detected language for voice filtering
+                          language={language} // Use project language for voice filtering
                         />
                       </div>
                     </div>

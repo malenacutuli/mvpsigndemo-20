@@ -650,40 +650,61 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
       console.log('File uploaded successfully:', uploadData);
 
-      // Update database status IMMEDIATELY after upload - don't wait for thumbnail
+      // Extract video frame for thumbnail
       setUploadProgress(75);
-      console.log('✅ File uploaded successfully to storage');
+      console.log('🎬 Extracting video frame for thumbnail...');
+      let thumbnailUrl: string | null = null;
+      
+      try {
+        const extractedFrame = await extractVideoFrame(videoFile, {
+          quality: 0.9,
+          maxWidth: 1280,
+          maxHeight: 720
+        });
 
+        const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+        const { data: thumbnailUpload, error: thumbnailUploadError } = await supabase.storage
+          .from('thumbnails')
+          .upload(thumbnailFileName, extractedFrame.blob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (thumbnailUploadError) {
+          console.warn('⚠️ Thumbnail upload failed:', thumbnailUploadError);
+        } else {
+          const { data: { publicUrl: thumbUrl } } = supabase.storage
+            .from('thumbnails')
+            .getPublicUrl(thumbnailFileName);
+          
+          thumbnailUrl = thumbUrl;
+          console.log('✅ Thumbnail extracted and uploaded:', thumbnailUrl);
+        }
+      } catch (frameError) {
+        console.warn('⚠️ Frame extraction failed:', frameError);
+      }
+
+      setUploadProgress(90);
+
+      // Update video record with storage path and thumbnail URL
       const { error: updateError } = await supabase
         .from('videos')
         .update({
           storage_path: uploadData.path,
           status: 'uploaded' as const,
-          updated_at: new Date().toISOString()
+          ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
         })
         .eq('id', video.id);
 
-      if (updateError) {
-        console.error('Failed to update video status:', updateError);
-        throw updateError;
-      }
-
-      setUploadProgress(90);
-      console.log('✅ Database updated - video ready to use');
-
-      // Extract thumbnail in background - non-blocking
-      console.log('🎬 Starting background thumbnail extraction...');
-      extractThumbnailInBackground(videoFile, video.id, supabase).catch(err => {
-        console.warn('Background thumbnail extraction failed (non-critical):', err);
-      });
+      if (updateError) throw updateError;
 
       setUploadProgress(100);
-      console.log('✅ Upload complete! You can start editing now.');
-
 
       toast({
         title: "Upload successful",
-        description: "Your video has been uploaded successfully and is ready to edit"
+        description: thumbnailUrl ? 
+          "Your video and thumbnail have been uploaded successfully" :
+          "Your video has been uploaded successfully"
       });
       } // Close the else block for Supabase Storage
 
@@ -949,85 +970,3 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
     </Card>
   );
 };
-
-/**
- * Extract video thumbnail in background without blocking UI
- * This runs asynchronously after upload completes
- */
-async function extractThumbnailInBackground(
-  videoFile: File,
-  videoId: string,
-  supabase: any
-): Promise<void> {
-  const startTime = Date.now();
-  
-  try {
-    console.log(`🎬 [Background] Starting thumbnail extraction for video ${videoId}`);
-    
-    // Extract frame at 2 seconds into video
-    const extractedFrame = await extractVideoFrame(videoFile, {
-      quality: 0.85,
-      maxWidth: 1280,
-      maxHeight: 720,
-      timeInSeconds: 2.0
-    });
-    
-    if (!extractedFrame) {
-      console.warn('[Background] No frame could be extracted');
-      return;
-    }
-    
-    const extractTime = Date.now() - startTime;
-    console.log(`✅ [Background] Frame extracted in ${(extractTime / 1000).toFixed(1)}s`);
-    
-    // Convert to blob
-    const thumbnailBlob = extractedFrame.blob;
-    const thumbnailPath = `${videoId}-thumbnail.jpg`;
-    
-    console.log(`⬆️ [Background] Uploading thumbnail (${(thumbnailBlob.size / 1024).toFixed(0)} KB)`);
-    
-    // Upload to storage
-    const { error: uploadError } = await supabase.storage
-      .from('thumbnails')
-      .upload(thumbnailPath, thumbnailBlob, {
-        upsert: true,
-        contentType: 'image/jpeg',
-        cacheControl: '3600'
-      });
-      
-    if (uploadError) {
-      console.error('[Background] Thumbnail upload failed:', uploadError);
-      return;
-    }
-    
-    const uploadTime = Date.now() - startTime;
-    console.log(`✅ [Background] Thumbnail uploaded in ${(uploadTime / 1000).toFixed(1)}s`);
-    
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('thumbnails')
-      .getPublicUrl(thumbnailPath);
-    
-    // Update video record with thumbnail URL
-    const { error: updateError } = await supabase
-      .from('videos')
-      .update({
-        thumbnail_url: publicUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', videoId);
-      
-    if (updateError) {
-      console.error('[Background] Failed to save thumbnail URL:', updateError);
-      return;
-    }
-    
-    const totalTime = Date.now() - startTime;
-    console.log(`✅ [Background] Thumbnail complete in ${(totalTime / 1000).toFixed(1)}s total`);
-    
-  } catch (error) {
-    const failTime = Date.now() - startTime;
-    console.error(`❌ [Background] Thumbnail failed after ${(failTime / 1000).toFixed(1)}s:`, error);
-    // Don't throw - this is a non-critical background operation
-  }
-}
