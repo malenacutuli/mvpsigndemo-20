@@ -23,6 +23,8 @@ export interface TranscriptSegment {
   isOffCamera?: boolean;
   segmentType?: 'dialogue' | 'soundeffect' | 'music';
   confidence?: number;
+  characterId?: string | null; // ✅ FIX #1: Link to characters table (camelCase)
+  character_id?: string | null; // ✅ FIX #1: Link to characters table (snake_case)
 }
 
 export interface AudioDescription {
@@ -192,7 +194,9 @@ export const useVideoStorage = (videoId: string) => {
             words: row.words ? parseWordsData(row.words) : undefined,
             isOffCamera: row.is_off_camera,
             segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
-            confidence: row.confidence
+            confidence: row.confidence,
+            characterId: row.character_id, // ✅ FIX #1: Load character_id from database
+            character_id: row.character_id // ✅ FIX #1: Load character_id from database (snake_case for compatibility)
           }));
 
           console.log('✅ DATABASE: Loaded transcript segments:', segments.length, 'segments');

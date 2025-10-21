@@ -209,21 +209,30 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
     console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
-    const storageSegments: StorageTranscriptSegment[] = segments.map((segment, index) => ({
-      idx: index,
-      text: segment.text,
-      startTime: segment.startTime,
-      endTime: segment.endTime,
-      speaker: segment.speaker,
-      speakerColor: segment.speakerColor,
-      emphasis: segment.emphasis,
-      pitch: segment.pitch,
-      words: segment.words,
-      isOffCamera: false,
-      segmentType: 'dialogue' as const,
-      confidence: 0.9,
-      characterId: (segment as any).character_id || (segment as any).characterId || null
-    }));
+    const storageSegments: StorageTranscriptSegment[] = segments.map((segment, index) => {
+      // ✅ FIX #1: Properly extract character_id from segment
+      const charId = (segment as any).character_id || (segment as any).characterId || null;
+      
+      console.log(`💾 Segment ${index}: speaker="${segment.speaker}", character_id="${charId}"`);
+      
+      return {
+        idx: index,
+        text: segment.text,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        speaker: segment.speaker,
+        speakerColor: segment.speakerColor,
+        emphasis: segment.emphasis,
+        pitch: segment.pitch,
+        words: segment.words,
+        isOffCamera: false,
+        segmentType: 'dialogue' as const,
+        confidence: 0.9,
+        characterId: charId
+      };
+    });
+    
+    console.log(`💾 Saving ${storageSegments.length} segments with ${storageSegments.filter(s => s.characterId).length} character links`);
     
     try {
       await saveTranscriptSegments(storageSegments, language);
