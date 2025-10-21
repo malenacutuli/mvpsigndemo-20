@@ -137,6 +137,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
+  // ✅ FIX #4: Auto-save timer - saves changes every 30 seconds
+  useEffect(() => {
+    const autoSaveInterval = setInterval(async () => {
+      const hasChanges = JSON.stringify(editingTranscript) !== JSON.stringify(originalTranscript);
+      
+      if (hasChanges && editingTranscript.length > 0) {
+        console.log('⏰ FIX #4: Auto-save timer triggered - saving unsaved changes...');
+        
+        try {
+          await saveTranscriptData(editingTranscript, selectedLanguage);
+          console.log('✅ Auto-save successful');
+          
+          // Update originalTranscript to prevent re-saving same changes
+          setOriginalTranscript([...editingTranscript]);
+        } catch (error) {
+          console.error('❌ Auto-save failed:', error);
+        }
+      }
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(autoSaveInterval);
+  }, [editingTranscript, originalTranscript, selectedLanguage]);
+
   // ✅ FIX #3: Load characters from DATABASE (not localStorage)
   useEffect(() => {
     const loadCharactersFromStorage = async () => {
