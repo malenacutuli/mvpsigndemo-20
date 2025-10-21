@@ -889,6 +889,7 @@ async function transcribeWithDeepgram(videoUrl: string, language?: string): Prom
     paragraphs: 'true',
     utterances: 'true',
     diarize: 'true',
+    diarize_version: '2023-09-19',
     language: language && language !== 'auto' ? language : 'en',
   });
 
@@ -913,22 +914,50 @@ async function transcribeWithDeepgram(videoUrl: string, language?: string): Prom
 
   const result = await response.json();
   
-  // Transform to standard format
+  // Transform to standard format with proper speaker numbering
   const utterances = result.results?.utterances || [];
-  const segments = utterances.map((u: any, idx: number) => ({
-    idx,
-    start: u.start,
-    end: u.end,
-    text: u.transcript,
-    confidence: u.confidence || 0.95,
-    speaker: `Speaker ${u.speaker || 0}`,
-    words: u.words?.map((w: any) => ({
-      word: w.word,
-      start: w.start,
-      end: w.end,
-      confidence: w.confidence
-    }))
-  }));
+
+  // Log what Deepgram returned
+  console.log('🔍 Deepgram utterances received:', utterances.length);
+  console.log('🔍 Sample utterance:', utterances[0] ? JSON.stringify(utterances[0]).substring(0, 200) : 'none');
+
+  // Check if we have speaker labels
+  const hasSpeakerLabels = utterances.length > 0 && utterances[0].speaker !== undefined;
+  console.log('🔍 Has speaker labels:', hasSpeakerLabels);
+
+  if (!hasSpeakerLabels) {
+    console.warn('⚠️ Deepgram returned utterances but no speaker labels - diarization may not be enabled');
+  }
+
+  // Build speaker mapping: Deepgram speaker ID → Sequential number
+  const deepgramSpeakerIds = Array.from(new Set(utterances.map((u: any) => u.speaker ?? 0)));
+  const speakerMapping = new Map<number, number>();
+  deepgramSpeakerIds.sort((a, b) => a - b).forEach((id, index) => {
+    speakerMapping.set(id, index + 1); // Convert 0,1,2 → 1,2,3
+  });
+
+  console.log('🎯 Speaker mapping:', Object.fromEntries(speakerMapping));
+  console.log('✅ Detected', speakerMapping.size, 'unique speakers');
+
+  const segments = utterances.map((u: any, idx: number) => {
+    const deepgramSpeakerId = u.speaker ?? 0;
+    const speakerNumber = speakerMapping.get(deepgramSpeakerId) || 1;
+    
+    return {
+      idx,
+      start: u.start,
+      end: u.end,
+      text: u.transcript,
+      confidence: u.confidence || 0.95,
+      speaker: `Speaker ${speakerNumber}`,
+      words: u.words?.map((w: any) => ({
+        word: w.word,
+        start: w.start,
+        end: w.end,
+        confidence: w.confidence
+      }))
+    };
+  });
 
   return {
     text: segments.map((s: any) => s.text).join(' '),
