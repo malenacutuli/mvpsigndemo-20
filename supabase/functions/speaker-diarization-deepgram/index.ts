@@ -48,8 +48,10 @@ serve(async (req) => {
         model: 'nova-2',
         smart_format: true,
         punctuate: true,
-        diarize: true,
+        paragraphs: true,
         utterances: true,
+        diarize: true,
+        diarize_version: '2023-09-19',
         language: 'en'
       }),
     });
@@ -61,6 +63,18 @@ serve(async (req) => {
 
     const result = await response.json();
     console.log('✅ Deepgram transcription complete');
+    
+    // Diagnostic logging for diarization response
+    console.log('Deepgram response structure:', JSON.stringify({
+      hasUtterances: !!result.results?.utterances,
+      utteranceCount: result.results?.utterances?.length || 0,
+      hasSpeakers: result.results?.utterances?.[0]?.speaker !== undefined,
+      sampleUtterance: result.results?.utterances?.[0] ? {
+        speaker: result.results.utterances[0].speaker,
+        hasTranscript: !!result.results.utterances[0].transcript,
+        hasTimestamps: result.results.utterances[0].start !== undefined
+      } : null
+    }));
 
     // Process utterances with speaker labels
     const speakerSegments: SpeakerSegment[] = [];
