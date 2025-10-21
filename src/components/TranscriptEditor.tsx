@@ -1037,8 +1037,33 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             value={selectedLanguage}
             onValueChange={async (value) => {
               if (value !== selectedLanguage) {
-                onLanguageChange?.(value); // Notify parent of language change
-                // Try to load cached translation first, only translate if not cached
+                // ✅ FIX #2: Check for unsaved changes FIRST
+                const hasUnsavedChanges = JSON.stringify(editingTranscript) !== JSON.stringify(originalTranscript);
+                
+                if (hasUnsavedChanges) {
+                  console.log('💾 FIX #2: Auto-saving changes before language switch...');
+                  
+                  try {
+                    await saveTranscriptData(editingTranscript, selectedLanguage);
+                    toast({
+                      title: "Changes Auto-Saved",
+                      description: `Your ${languages.find(l => l.code === selectedLanguage)?.name} edits have been saved`
+                    });
+                  } catch (error) {
+                    console.error('❌ Auto-save failed:', error);
+                    toast({
+                      title: "Save Failed",
+                      description: "Cannot switch language - please save manually first",
+                      variant: "destructive"
+                    });
+                    return; // Abort language switch if save fails
+                  }
+                }
+                
+                // Now safe to switch languages
+                onLanguageChange?.(value);
+                
+                // Load target language segments
                 const cached = await loadTranscriptSegments(value);
                 if (cached.length > 0) {
                   console.log('📂 Loading cached translation for', value);
@@ -1047,8 +1072,14 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     id: s.id || `seg-${Date.now()}-${Math.random()}` 
                   }));
                   setEditingTranscript(convertedCached);
+                  setOriginalTranscript(convertedCached); // ✅ IMPORTANT: Update originalTranscript too
                   setSelectedLanguage(value);
                   onTranscriptUpdate?.(convertedCached, value);
+                  
+                  toast({
+                    title: "Language Switched",
+                    description: `Loaded ${convertedCached.length} segments in ${languages.find(l => l.code === value)?.name}`
+                  });
                 } else {
                   console.log('🌐 No cache, translating to', value);
                   generateTranslatedContent(value);
