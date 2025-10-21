@@ -293,6 +293,7 @@ serve(async (req) => {
             }
           }
         }
+      }
     }
 
     // POST-PROCESSING VALIDATION
