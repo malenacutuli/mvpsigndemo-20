@@ -80,6 +80,8 @@ interface TranscriptSegment {
   vocal_intensity?: 'whisper' | 'normal' | 'yell' | 'shout';
   intensity_confidence?: number;
   auto_styling?: any;
+  characterId?: string | null; // Link to characters table (camelCase for frontend)
+  character_id?: string | null; // Link to characters table (snake_case for database)
 }
 
 interface TranscriptEditorProps {
@@ -679,9 +681,56 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveEdit = async () => {
     if (editingIndex === null) return;
     
+    // ✅ CRITICAL FIX: Map speaker name to character ID before saving
+    let characterId: string | null = null;
+    
+    if (editSpeaker && editSpeaker !== 'Speaker') {
+      try {
+        // Query database for matching character
+        const { data: matchingChar, error } = await supabase
+          .from('characters')
+          .select('id')
+          .eq('video_id', videoId)
+          .eq('name', editSpeaker)
+          .maybeSingle();
+        
+        if (!error && matchingChar) {
+          characterId = matchingChar.id;
+          console.log(`✅ Mapped "${editSpeaker}" to character_id: ${characterId}`);
+        } else if (!matchingChar) {
+          // Character doesn't exist - create it
+          console.log(`🆕 Creating new character: "${editSpeaker}"`);
+          const { data: newChar, error: createError } = await supabase
+            .from('characters')
+            .insert({
+              video_id: videoId,
+              name: editSpeaker,
+              color: editSpeakerColor,
+              type: 'supporting',
+              is_off_camera: false,
+              emphasis: 'normal',
+              pitch: 'normal'
+            })
+            .select('id')
+            .single();
+          
+          if (!createError && newChar) {
+            characterId = newChar.id;
+            console.log(`✅ Created character with id: ${characterId}`);
+            
+            // Refresh available characters
+            const updatedCharacters = await loadCharacters();
+            setAvailableCharacters(updatedCharacters.map(c => ({ name: c.name, color: c.color })));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to map character:', error);
+      }
+    }
+    
     const updated = [...editingTranscript];
     
-    // Apply edits to the current segment only (no automatic propagation)
+    // Apply edits to the current segment - NOW WITH characterId!
     updated[editingIndex] = {
       ...updated[editingIndex],
       text: editText,
@@ -692,6 +741,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       emphasis: useWordLevelEditing ? 'normal' : editEmphasis,
       pitch: useWordLevelEditing ? 'normal' : editPitch,
       words: useWordLevelEditing ? editWords : undefined,
+      characterId: characterId,        // ✅ NOW SETS characterId (camelCase)
+      character_id: characterId        // ✅ AND character_id (snake_case) for compatibility
     };
 
     const nextSegments = updated;
@@ -721,7 +772,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     toast({
       title: "Segment Updated",
-      description: "Changes saved and reloaded from database"
+      description: characterId 
+        ? `Changes saved with character link (${editSpeaker})`
+        : "Changes saved (no character link)"
     });
   };
 
