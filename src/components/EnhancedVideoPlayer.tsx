@@ -138,7 +138,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (!segments || segments.length === 0) return segments;
     if (!videoUrl || !videoId) return stabilizeSpeakerColors(segments);
 
-    console.log('🎭 ENHANCED PLAYER: Starting AssemblyAI speaker diarization...');
+    console.log('🎯 Starting speaker diarization with priority cascade (Deepgram → Twelve Labs → OpenAI → AssemblyAI)...');
 
     // Prevent repeated diarization runs in a single session to avoid UI flicker
     const diarKey = `diarized_${videoId}_${currentLanguage}`;
@@ -148,23 +148,27 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
 
     try {
-      // Use the speaker-diarization edge function directly
-      const { data, error } = await supabase.functions.invoke('speaker-diarization', {
+      // ✅ Use unified function with full provider cascade
+      const { data, error } = await supabase.functions.invoke('speaker-diarization-unified', {
         body: { 
           videoUrl,
           videoId,
-          force_reanalysis: false // Use cached results if available
+          force_reanalysis: false
         }
       });
 
-      if (error) throw error;
+      if (error || !data?.success) {
+        console.warn('⚠️ All speaker diarization providers failed, using color stabilization');
+        return stabilizeSpeakerColors(segments);
+      }
       
-      if (!data?.success || !data?.speakers || !data?.segments) {
+      if (!data?.speakers || !data?.segments) {
         console.warn('⚠️ No speaker data returned from diarization');
         return stabilizeSpeakerColors(segments);
       }
 
-      console.log('🎯 ENHANCED PLAYER: AssemblyAI identified', data.speakers.length, 'speakers');
+      console.log(`✅ Speaker diarization succeeded using: ${data.provider_used?.toUpperCase()}`);
+      console.log(`🎯 ENHANCED PLAYER: Identified ${data.speakers.length} speakers via ${data.provider_used}`);
       
       // Map by speaker name for color lookup
       const speakerByName = new Map<string, { name: string; color: string }>();
