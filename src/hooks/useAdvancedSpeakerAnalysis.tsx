@@ -48,37 +48,19 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
         return cached;
       }
       
-      // TRY DEEPGRAM FIRST (primary provider - 60% cheaper, 40x faster)
-      console.log('🚀 Attempting Deepgram speaker diarization...');
-      try {
-        const { data: deepgramData, error: deepgramError } = await supabase.functions.invoke('speaker-diarization-deepgram', {
-          body: { videoUrl, videoId }
-        });
-        
-        if (!deepgramError && deepgramData?.success) {
-          console.log('✅ Deepgram diarization successful');
-          return convertToClusters(deepgramData);
-        }
-        
-        console.warn('⚠️ Deepgram failed, trying AssemblyAI fallback:', deepgramError || deepgramData?.error);
-      } catch (deepgramError) {
-        console.warn('⚠️ Deepgram exception, trying AssemblyAI fallback:', deepgramError);
-      }
-      
-      // FALLBACK TO ASSEMBLYAI
-      console.log('🔄 Falling back to AssemblyAI speaker diarization...');
-      const { data: assemblyData, error: assemblyError } = await supabase.functions.invoke('speaker-diarization', {
+      // ✅ Use unified function with full provider cascade
+      console.log('🎯 Advanced speaker analysis using unified diarization (Deepgram → Twelve Labs → OpenAI → AssemblyAI)...');
+      const { data, error } = await supabase.functions.invoke('speaker-diarization-unified', {
         body: { videoUrl, videoId }
       });
       
-      if (assemblyError) throw assemblyError;
-      
-      if (!assemblyData.success) {
-        throw new Error(assemblyData.error || 'AssemblyAI speaker diarization failed');
+      if (error || !data?.success) {
+        console.warn('⚠️ All diarization providers failed');
+        throw new Error('Speaker diarization failed across all providers');
       }
       
-      console.log('✅ AssemblyAI diarization successful (fallback)');
-      return convertToClusters(assemblyData);
+      console.log(`✅ Diarization succeeded using: ${data.provider_used?.toUpperCase()}`);
+      return convertToClusters(data);
       
     } catch (error) {
       console.error('❌ All speaker diarization providers failed:', error);
