@@ -95,7 +95,8 @@ export const useVideoStorage = (videoId: string) => {
         words: segment.words ? JSON.parse(JSON.stringify(segment.words)) : null,
         isOffCamera: segment.isOffCamera || false,
         segmentType: segment.segmentType || 'dialogue',
-        confidence: segment.confidence || 0.95
+        confidence: segment.confidence || 0.95,
+        characterId: (segment as any).character_id || (segment as any).characterId || null
       }));
 
       // Create checksum for change detection (handle UTF-8 safely)

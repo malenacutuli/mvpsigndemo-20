@@ -832,7 +832,24 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             const missingWords = captionSegments.some(seg => !seg.words || seg.words.length === 0 || !seg.words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number'));
             if (missingWords && !sessionStorage.getItem(persistKey)) {
               console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
-              await saveTranscriptSegments(convertedSegments as any, currentLanguage);
+              
+              // Fetch existing character_id values to preserve them
+              const { data: existingSegments } = await supabase
+                .from('transcript_segments')
+                .select('idx, character_id')
+                .eq('video_id', videoId)
+                .eq('language', currentLanguage);
+              
+              // Merge character_id into segments by array position
+              const segmentsWithCharacters = convertedSegments.map((seg, index) => {
+                const existing = existingSegments?.find(e => e.idx === index);
+                return {
+                  ...seg,
+                  character_id: existing?.character_id || null
+                };
+              });
+              
+              await saveTranscriptSegments(segmentsWithCharacters as any, currentLanguage);
               sessionStorage.setItem(persistKey, 'true');
             }
           } catch (e) {

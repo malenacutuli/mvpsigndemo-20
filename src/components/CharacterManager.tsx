@@ -450,7 +450,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               })
               .eq('video_id', videoId)
               .eq('language', lang)
-              .eq('speaker', speakerName);
+              .or(`speaker.eq.${speakerName},speaker.eq.${characterName}`);
             
             if (error) {
               console.error(`❌ [${lang}] Failed to update segments for speaker "${speakerName}":`, error);
