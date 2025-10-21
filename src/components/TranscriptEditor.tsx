@@ -351,22 +351,11 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
-  // Sync speaker names and colors across all transcript languages
+  // ✅ FIX #5: Sync speaker names, colors, AND character_id across all transcript languages using TIME MATCHING
   const syncSpeakerInfoAcrossLanguages = async (sourceSegments: TranscriptSegment[], sourceLanguage: string) => {
     try {
-      // Build speaker info map from source segments
-      const speakerInfo = new Map<string, { color: string, name: string }>();
-      sourceSegments.forEach(seg => {
-        if (seg.speaker && seg.speakerColor) {
-          speakerInfo.set(seg.speaker, { 
-            color: seg.speakerColor, 
-            name: seg.speaker 
-          });
-        }
-      });
-
-      if (speakerInfo.size === 0) return;
-
+      console.log(`🌐 FIX #5: Starting cross-language character sync from ${sourceLanguage}`);
+      
       // Get all languages that have transcripts for this video
       const { data: existingLanguages } = await supabase
         .from('transcript_segments')
@@ -374,41 +363,75 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         .eq('video_id', videoId)
         .neq('language', sourceLanguage);
 
-      if (!existingLanguages || existingLanguages.length === 0) return;
+      if (!existingLanguages || existingLanguages.length === 0) {
+        console.log('ℹ️ No other languages to sync');
+        return;
+      }
 
       const languagesToUpdate = Array.from(new Set(existingLanguages.map(l => l.language)));
-      
-      console.log(`🌐 Syncing speaker info from ${sourceLanguage} to ${languagesToUpdate.length} other languages`);
+      console.log(`🎯 Syncing to ${languagesToUpdate.length} languages: ${languagesToUpdate.join(', ')}`);
 
-      // Update each language's segments with consistent speaker colors
+      // For each target language, sync speaker info based on time matching
       for (const targetLang of languagesToUpdate) {
-        for (const [speakerName, info] of speakerInfo.entries()) {
-          await supabase
-            .from('transcript_segments')
-            .update({ 
-              speaker_color: info.color 
-            })
-            .eq('video_id', videoId)
-            .eq('language', targetLang)
-            .eq('speaker', speakerName);
+        console.log(`🔄 Syncing ${sourceLanguage} → ${targetLang}`);
+        
+        // Load all segments for target language
+        const { data: targetSegments, error: loadError } = await supabase
+          .from('transcript_segments')
+          .select('id, start_time, end_time, speaker, speaker_color, character_id')
+          .eq('video_id', videoId)
+          .eq('language', targetLang)
+          .order('start_time', { ascending: true });
+        
+        if (loadError || !targetSegments) {
+          console.error(`❌ Failed to load ${targetLang} segments:`, loadError);
+          continue;
         }
         
-        // Also update speaker mappings for target language
-        const targetMappings = await loadSpeakerMappings(targetLang);
-        const updatedTargetMappings = { ...targetMappings };
+        let updated = 0;
         
-        for (const [speakerName] of speakerInfo.entries()) {
-          if (!updatedTargetMappings[speakerName]) {
-            updatedTargetMappings[speakerName] = speakerName;
+        // Match each source segment to target segments by timestamp overlap
+        for (const sourceSegment of sourceSegments) {
+          // Skip if source segment doesn't have character mapping
+          const characterId = (sourceSegment as any).characterId || (sourceSegment as any).character_id;
+          if (!characterId) {
+            continue;
+          }
+          
+          // Find matching target segments (allow 0.5s tolerance for timestamp differences)
+          const matchingTargets = targetSegments.filter(target => {
+            const overlap = Math.min(target.end_time, sourceSegment.endTime) - 
+                           Math.max(target.start_time, sourceSegment.startTime);
+            return overlap > 0.5; // At least 0.5 seconds of overlap
+          });
+          
+          // Update all matching segments
+          for (const target of matchingTargets) {
+            const { error: updateError } = await supabase
+              .from('transcript_segments')
+              .update({
+                speaker: sourceSegment.speaker,
+                speaker_color: sourceSegment.speakerColor,
+                character_id: characterId
+              })
+              .eq('id', target.id);
+            
+            if (!updateError) {
+              updated++;
+              console.log(`✅ Updated segment at ${target.start_time}s: "${target.speaker}" → "${sourceSegment.speaker}" (character_id: ${characterId})`);
+            } else {
+              console.error(`❌ Failed to update segment ${target.id}:`, updateError);
+            }
           }
         }
         
-        await saveSpeakerMappings(updatedTargetMappings, targetLang);
+        console.log(`✅ Synced ${updated} segments in ${targetLang}`);
       }
-
-      console.log('✅ Speaker info synced across all languages');
+      
+      console.log('✅ Cross-language character sync complete');
+      
     } catch (error) {
-      console.error('Failed to sync speaker info across languages:', error);
+      console.error('❌ Failed to sync speaker info across languages:', error);
     }
   };
 
