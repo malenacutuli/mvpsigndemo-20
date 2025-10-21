@@ -437,51 +437,46 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           const characterId = charIdMap.get(characterName);
           const character = characters.find(c => c.name === characterName);
           
-          if (character && characterId) {
-            const { error } = await supabase
-              .from('transcript_segments')
-              .update({
-                speaker: characterName,
-                speaker_color: character.color,
-                is_off_camera: character.isOffCamera || false,
-                character_id: characterId,
-                emphasis: character.emphasis || 'normal',
-                pitch: character.pitch || 'normal'
-              })
-              .eq('video_id', videoId)
-              .eq('language', lang)
-              .or(`speaker.eq.${speakerName},speaker.eq.${characterName}`);
-            
-            if (error) {
-              console.error(`❌ [${lang}] Failed to update segments for speaker "${speakerName}":`, error);
-            } else {
-              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
-            }
+          if (!character || !characterId) continue;
+          
+          // Query 1: Update segments that currently have the speaker label
+          const { error: err1 } = await supabase
+            .from('transcript_segments')
+            .update({
+              speaker: characterName,
+              speaker_color: character.color,
+              character_id: characterId,
+              is_off_camera: character.isOffCamera || false,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal'
+            })
+            .eq('video_id', videoId)
+            .eq('language', lang)
+            .eq('speaker', speakerName);
+          
+          if (err1) {
+            console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
+          } else {
+            console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
           }
-        }
-        
-        // Also update any segments that already have the character name
-        for (const character of characters) {
-          const characterId = charIdMap.get(character.name);
-          if (characterId) {
-            const { error } = await supabase
-              .from('transcript_segments')
-              .update({
-                speaker_color: character.color,
-                is_off_camera: character.isOffCamera || false,
-                character_id: characterId,
-                emphasis: character.emphasis || 'normal',
-                pitch: character.pitch || 'normal'
-              })
-              .eq('video_id', videoId)
-              .eq('language', lang)
-              .eq('speaker', character.name);
-              
-            if (error) {
-              console.error(`❌ [${lang}] Failed to sync color for character "${character.name}":`, error);
-            } else {
-              console.log(`🎨 [${lang}] Updated "${character.name}" → ${character.color}`);
-            }
+          
+          // Query 2: Update segments that already have the character name
+          // (for idempotency - if user saves multiple times)
+          const { error: err2 } = await supabase
+            .from('transcript_segments')
+            .update({
+              speaker_color: character.color,
+              character_id: characterId,
+              is_off_camera: character.isOffCamera || false,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal'
+            })
+            .eq('video_id', videoId)
+            .eq('language', lang)
+            .eq('speaker', characterName);
+          
+          if (err2) {
+            console.error(`❌ [${lang}] Failed to sync "${characterName}":`, err2);
           }
         }
       }
