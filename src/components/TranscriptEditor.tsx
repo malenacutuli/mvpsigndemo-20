@@ -380,20 +380,39 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
   // Generate original transcript and save to database with proper transcript record
   const generateOriginalTranscript = async () => {
-      setIsGenerating(true);
-      try {
-        console.log('🌐 TRANSCRIPT EDITOR: Extracting transcript in language:', selectedLanguage);
-        const response = await supabase.functions.invoke('transcribe', {
-          body: { 
-            videoUrl: videoUrl,
-            videoId: videoId, // Pass videoId for database saving
-            rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-            language: selectedLanguage, // Use selected language from dropdown
-            fullTranscript: true, // Request complete transcript
-            wordTimestamps: true, // Request word-level timing
-            maxDurationMinutes: 60 // Index up to 60 minutes by default
-          }
-        });
+    // Check for existing transcript before re-extracting
+    const existingSegments = await loadTranscriptSegments(selectedLanguage);
+    
+    if (existingSegments.length > 0) {
+      const confirmed = window.confirm(
+        `⚠️ This video already has a transcript with ${existingSegments.length} segments in ${selectedLanguage}.\n\n` +
+        `Re-extracting will:\n` +
+        `• Cost API credits ($0.04-$1.50 depending on video size)\n` +
+        `• Overwrite any custom edits you've made\n` +
+        `• Take 2-5 minutes to complete\n\n` +
+        `Continue with re-extraction?`
+      );
+      
+      if (!confirmed) {
+        console.log('🚫 Re-extraction cancelled by user');
+        return;
+      }
+    }
+    
+    setIsGenerating(true);
+    try {
+      console.log('🌐 TRANSCRIPT EDITOR: Extracting transcript in language:', selectedLanguage);
+      const response = await supabase.functions.invoke('transcribe', {
+        body: { 
+          videoUrl: videoUrl,
+          videoId: videoId, // Pass videoId for database saving
+          rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
+          language: selectedLanguage, // Use selected language from dropdown
+          fullTranscript: true, // Request complete transcript
+          wordTimestamps: true, // Request word-level timing
+          maxDurationMinutes: 60 // Index up to 60 minutes by default
+        }
+      });
 
       // Check for errors - the response might have error info in data even if no error object
       if (response.error || response.data?.error) {
