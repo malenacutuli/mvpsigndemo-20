@@ -830,27 +830,48 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           try {
             const persistKey = `words_persisted_${videoId}_${currentLanguage}`;
             const missingWords = captionSegments.some(seg => !seg.words || seg.words.length === 0 || !seg.words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number'));
+            
             if (missingWords && !sessionStorage.getItem(persistKey)) {
               console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
               
-              // Fetch existing character_id values to preserve them
-              const { data: existingSegments } = await supabase
+              // Fetch existing character_id values from database
+              const { data: dbSegments } = await supabase
                 .from('transcript_segments')
-                .select('idx, character_id')
+                .select('idx, start_time, end_time, character_id')
                 .eq('video_id', videoId)
-                .eq('language', currentLanguage);
+                .eq('language', currentLanguage)
+                .order('start_time');
               
-              // Merge character_id into segments by array position
-              const segmentsWithCharacters = convertedSegments.map((seg, index) => {
-                const existing = existingSegments?.find(e => e.idx === index);
+              if (!dbSegments || dbSegments.length === 0) {
+                console.warn('⚠️ No existing segments in database, saving without character_id preservation');
+                await saveTranscriptSegments(convertedSegments as any, currentLanguage);
+                sessionStorage.setItem(persistKey, 'true');
+                return;
+              }
+              
+              // Match segments by time proximity to preserve character_id
+              const segmentsWithCharIds = convertedSegments.map((seg, index) => {
+                // Find closest database segment by start_time
+                const closest = dbSegments.reduce((prev, curr) => {
+                  const prevDiff = Math.abs(prev.start_time - seg.startTime);
+                  const currDiff = Math.abs(curr.start_time - seg.startTime);
+                  return currDiff < prevDiff ? curr : prev;
+                });
+                
+                // Only use character_id if time match is within 0.5 seconds
+                const timeDiff = Math.abs(closest.start_time - seg.startTime);
+                const characterId = timeDiff < 0.5 ? closest.character_id : null;
+                
                 return {
                   ...seg,
-                  character_id: existing?.character_id || null
+                  idx: index,
+                  characterId: characterId
                 };
               });
               
-              await saveTranscriptSegments(segmentsWithCharacters as any, currentLanguage);
+              await saveTranscriptSegments(segmentsWithCharIds as any, currentLanguage);
               sessionStorage.setItem(persistKey, 'true');
+              console.log('✅ ENHANCED PLAYER: Persisted word timings with character_id preservation');
             }
           } catch (e) {
             console.warn('⚠️ ENHANCED PLAYER: Could not persist word timings (possibly offline/anon):', e);
