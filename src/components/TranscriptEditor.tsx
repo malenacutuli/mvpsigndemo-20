@@ -207,7 +207,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
     console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
-    const storageSegments: StorageTranscriptSegment[] = segments.map(segment => ({
+    const storageSegments: StorageTranscriptSegment[] = segments.map((segment, index) => ({
+      idx: index,
       text: segment.text,
       startTime: segment.startTime,
       endTime: segment.endTime,
@@ -218,7 +219,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       words: segment.words,
       isOffCamera: false,
       segmentType: 'dialogue' as const,
-      confidence: 0.9
+      confidence: 0.9,
+      characterId: (segment as any).character_id || (segment as any).characterId || null
     }));
     
     try {
