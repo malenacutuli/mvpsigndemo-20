@@ -213,68 +213,86 @@ serve(async (req) => {
         videoBuffer = await videoResponse.arrayBuffer();
         console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
         
-        // Try Twelve Labs first
-        try {
-          const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-          if (twelveLabsResult && !twelveLabsResult.error) {
-            console.log("✅ Twelve Labs analysis successful!");
-            transcriptionResult = twelveLabsResult;
-          } else {
-            throw new Error("Twelve Labs fallback");
+        // Try Deepgram first for cost efficiency
+        const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+        if (DEEPGRAM_API_KEY) {
+          try {
+            console.log("💾 Small video detected. Trying Deepgram first...");
+            const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
+            if (deepgramResult && !deepgramResult.error) {
+              console.log("✅ Deepgram successful for small video!");
+              transcriptionResult = deepgramResult;
+            } else {
+              throw new Error("Deepgram fallback");
+            }
+          } catch (deepgramError) {
+            console.log("⚠️ Deepgram failed, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
           }
-        } catch (error) {
-          console.log("Twelve Labs failed, trying AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
-          
-          // Try AssemblyAI
-          const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-          if (ASSEMBLYAI_API_KEY) {
-            try {
-              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-              console.log("✅ AssemblyAI transcription successful!");
-            } catch (assemblyError) {
-              console.log("AssemblyAI failed, trying OpenAI:", (assemblyError as any).message);
-              
-              // Final fallback to OpenAI
+        }
+        
+        // Fallback to Twelve Labs if Deepgram unavailable or failed
+        if (!transcriptionResult || transcriptionResult.error) {
+          try {
+            const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+            if (twelveLabsResult && !twelveLabsResult.error) {
+              console.log("✅ Twelve Labs analysis successful!");
+              transcriptionResult = twelveLabsResult;
+            } else {
+              throw new Error("Twelve Labs fallback");
+            }
+          } catch (error) {
+            console.log("Twelve Labs failed, trying AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
+            
+            // Try AssemblyAI
+            const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+            if (ASSEMBLYAI_API_KEY) {
+              try {
+                transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+                console.log("✅ AssemblyAI transcription successful!");
+              } catch (assemblyError) {
+                console.log("AssemblyAI failed, trying OpenAI:", (assemblyError as any).message);
+                
+                // Final fallback to OpenAI
+                if (videoBuffer) {
+                  try {
+                    transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+                    console.log("✅ OpenAI direct processing successful!");
+                  } catch (openaiError) {
+                    console.log("All providers failed:", (openaiError as any).message);
+                    transcriptionResult = { 
+                      error: 'all_providers_failed', 
+                      message: 'All transcription providers failed. Please check video format and API keys.' 
+                    };
+                  }
+                } else {
+                  transcriptionResult = { 
+                    error: 'all_providers_failed', 
+                    message: 'All transcription providers failed and video buffer not available.' 
+                  };
+                }
+              }
+            } else {
+              // No AssemblyAI, try OpenAI directly
               if (videoBuffer) {
                 try {
                   transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
                   console.log("✅ OpenAI direct processing successful!");
                 } catch (openaiError) {
-                  console.log("All providers failed:", (openaiError as any).message);
+                  console.log("OpenAI failed:", (openaiError as any).message);
                   transcriptionResult = { 
-                    error: 'all_providers_failed', 
-                    message: 'All transcription providers failed. Please check video format and API keys.' 
+                    error: 'openai_only_failed', 
+                    message: 'OpenAI failed and no AssemblyAI key configured. Please add ASSEMBLYAI_API_KEY for better reliability.' 
                   };
                 }
               } else {
                 transcriptionResult = { 
-                  error: 'all_providers_failed', 
-                  message: 'All transcription providers failed and video buffer not available.' 
+                  error: 'no_video_buffer', 
+                  message: 'Video buffer not available and no AssemblyAI key configured.' 
                 };
               }
-            }
-          } else {
-            // No AssemblyAI, try OpenAI directly
-            if (videoBuffer) {
-              try {
-                transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-                console.log("✅ OpenAI direct processing successful!");
-              } catch (openaiError) {
-                console.log("OpenAI failed:", (openaiError as any).message);
-                transcriptionResult = { 
-                  error: 'openai_only_failed', 
-                  message: 'OpenAI failed and no AssemblyAI key configured. Please add ASSEMBLYAI_API_KEY for better reliability.' 
-                };
-              }
-            } else {
-              transcriptionResult = { 
-                error: 'no_video_buffer', 
-                message: 'Video buffer not available and no AssemblyAI key configured.' 
-              };
             }
           }
         }
-      }
     }
 
     // POST-PROCESSING VALIDATION
