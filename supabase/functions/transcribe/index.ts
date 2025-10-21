@@ -147,36 +147,57 @@ serve(async (req) => {
         }
       }
     } else {
-      // Strategy 2: For medium videos (25-100MB), try Twelve Labs then AssemblyAI
+      // Strategy 2: For medium videos (25-100MB), try Deepgram first for cost efficiency
       if (sizeMB > 25) {
-        console.log(`📹 Medium video detected (${sizeMB}MB). Trying Twelve Labs first...`);
-        try {
-          const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-          if (twelveLabsResult && !twelveLabsResult.error) {
-            console.log("✅ Twelve Labs analysis successful!");
-            transcriptionResult = twelveLabsResult;
-          } else {
-            throw new Error("Twelve Labs fallback");
+        console.log(`📹 Medium video detected (${sizeMB}MB). Trying Deepgram first for cost efficiency...`);
+        
+        // Try Deepgram first for 97% cost savings
+        const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+        if (DEEPGRAM_API_KEY) {
+          try {
+            console.log("Attempting Deepgram for medium video transcription...");
+            const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
+            if (deepgramResult && !deepgramResult.error) {
+              console.log("✅ Deepgram successful for medium video!");
+              transcriptionResult = deepgramResult;
+            } else {
+              throw new Error("Deepgram returned error, falling back");
+            }
+          } catch (deepgramError) {
+            console.log("⚠️ Deepgram failed for medium video, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
           }
-        } catch (error) {
-          console.log("Twelve Labs failed, falling back to AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
-          const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-          if (ASSEMBLYAI_API_KEY) {
-            try {
-              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-              console.log("✅ AssemblyAI transcription successful!");
-            } catch (assemblyError) {
-              console.log("AssemblyAI failed:", (assemblyError as any).message);
+        }
+        
+        // Fallback to Twelve Labs if Deepgram unavailable or failed
+        if (!transcriptionResult || transcriptionResult.error) {
+          try {
+            const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+            if (twelveLabsResult && !twelveLabsResult.error) {
+              console.log("✅ Twelve Labs analysis successful!");
+              transcriptionResult = twelveLabsResult;
+            } else {
+              throw new Error("Twelve Labs fallback");
+            }
+          } catch (error) {
+            console.log("Twelve Labs failed, falling back to AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
+            const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+            if (ASSEMBLYAI_API_KEY) {
+              try {
+                transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
+                console.log("✅ AssemblyAI transcription successful!");
+              } catch (assemblyError) {
+                console.log("AssemblyAI failed:", (assemblyError as any).message);
+                transcriptionResult = { 
+                  error: 'medium_video_failed', 
+                  message: 'All providers failed. Please check video format and try again.' 
+                };
+              }
+            } else {
               transcriptionResult = { 
-                error: 'medium_video_failed', 
-                message: 'Both Twelve Labs and AssemblyAI failed. Please check video format and try again.' 
+                error: 'no_medium_video_support', 
+                message: 'Medium videos require AssemblyAI when Deepgram and Twelve Labs fail. Please add ASSEMBLYAI_API_KEY.' 
               };
             }
-          } else {
-            transcriptionResult = { 
-              error: 'no_medium_video_support', 
-              message: 'Medium videos require AssemblyAI when Twelve Labs fails. Please add ASSEMBLYAI_API_KEY.' 
-            };
           }
         }
       } else {
