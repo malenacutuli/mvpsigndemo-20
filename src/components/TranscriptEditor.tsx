@@ -137,32 +137,67 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
-  // Load characters from localStorage
+  // ✅ FIX #3: Load characters from DATABASE (not localStorage)
   useEffect(() => {
     const loadCharactersFromStorage = async () => {
       try {
-        const characters = await loadCharacters();
-        setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        console.log('📋 FIX #3: Loading characters from database for video:', videoId);
+        
+        // Load directly from database for accuracy
+        const { data: characters, error } = await supabase
+          .from('characters')
+          .select('id, name, color, type')
+          .eq('video_id', videoId)
+          .order('name', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Failed to load characters:', error);
+          return;
+        }
+        
+        console.log(`✅ Loaded ${characters?.length || 0} characters for dropdown:`, characters?.map(c => c.name));
+        
+        if (characters) {
+          setAvailableCharacters(characters.map(c => ({ 
+            name: c.name, 
+            color: c.color 
+          })));
+        }
       } catch (error) {
-        console.error('Failed to load characters:', error);
+        console.error('❌ Failed to load characters:', error);
       }
     };
+    
     loadCharactersFromStorage();
-  }, []);
+  }, [videoId]); // ✅ Added videoId dependency
 
-  // Keep character list in sync when CharacterManager saves or CI sync updates
+  // ✅ FIX #3B: Refresh dropdown when characters are updated (direct database query)
   useEffect(() => {
     const handleCharactersUpdated = async (e: any) => {
       try {
-        // Prefer characters passed via event detail to avoid an extra DB read
-        if (e?.detail?.characters && Array.isArray(e.detail.characters)) {
-          setAvailableCharacters(e.detail.characters.map((c: any) => ({ name: c.name, color: c.color })));
-        } else {
-          const characters = await loadCharacters();
-          setAvailableCharacters(characters.map(c => ({ name: c.name, color: c.color })));
+        console.log('🔄 FIX #3B: Character list updated, refreshing dropdown...');
+        
+        // Load directly from database for accuracy
+        const { data: characters, error } = await supabase
+          .from('characters')
+          .select('id, name, color')
+          .eq('video_id', videoId)
+          .order('name', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Failed to refresh characters:', error);
+          return;
+        }
+        
+        if (characters) {
+          setAvailableCharacters(characters.map(c => ({ 
+            name: c.name, 
+            color: c.color 
+          })));
+          console.log(`✅ Dropdown refreshed with ${characters.length} characters`);
         }
       } catch (err) {
-        console.error('Failed to refresh characters after update event:', err);
+        console.error('❌ Failed to refresh characters after update event:', err);
       }
     };
 
