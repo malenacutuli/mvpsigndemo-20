@@ -16,12 +16,14 @@ interface SpeakerInfo {
 interface SpeakerIdentificationPanelProps {
   videoUrl?: string;
   videoId?: string;
+  language?: string;
   onSpeakersIdentified?: (speakers: SpeakerInfo[]) => void;
 }
 
 export const SpeakerIdentificationPanel: React.FC<SpeakerIdentificationPanelProps> = ({
   videoUrl,
   videoId,
+  language = 'en',
   onSpeakersIdentified
 }) => {
   const [speakers, setSpeakers] = useState<SpeakerInfo[]>([]);
@@ -41,7 +43,7 @@ export const SpeakerIdentificationPanel: React.FC<SpeakerIdentificationPanelProp
 
     try {
       console.log('🎤 Starting speaker identification...');
-      const clusters = await analyzeSpeakersFromAudio(videoUrl, videoId);
+      const clusters = await analyzeSpeakersFromAudio(videoUrl, videoId, language);
       
       if (clusters.length === 0) {
         setError('No speakers could be identified in this video');

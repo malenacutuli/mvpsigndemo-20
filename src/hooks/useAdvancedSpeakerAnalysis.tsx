@@ -21,8 +21,8 @@ interface SpeakerCluster {
 }
 
 interface UseAdvancedSpeakerAnalysisReturn {
-  analyzeSpeakers: (segments: CaptionSegment[], videoUrl?: string, videoId?: string) => Promise<SpeakerCluster[]>;
-  analyzeSpeakersFromAudio: (videoUrl: string, videoId: string) => Promise<SpeakerCluster[]>;
+  analyzeSpeakers: (segments: CaptionSegment[], videoUrl?: string, videoId?: string, language?: string) => Promise<SpeakerCluster[]>;
+  analyzeSpeakersFromAudio: (videoUrl: string, videoId: string, targetLanguage?: string) => Promise<SpeakerCluster[]>;
   isAnalyzing: boolean;
 }
 
@@ -35,9 +35,13 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   /**
-   * Advanced speaker analysis with provider priority: Deepgram (primary) -> AssemblyAI (fallback)
+   * Advanced speaker analysis with provider priority: Twelve Labs (primary) -> Deepgram -> OpenAI -> AssemblyAI (fallback)
    */
-  const analyzeSpeakersFromAudio = useCallback(async (videoUrl: string, videoId: string): Promise<SpeakerCluster[]> => {
+  const analyzeSpeakersFromAudio = useCallback(async (
+    videoUrl: string, 
+    videoId: string,
+    targetLanguage: string = 'en'
+  ): Promise<SpeakerCluster[]> => {
     setIsAnalyzing(true);
     
     try {
@@ -48,10 +52,10 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
         return cached;
       }
       
-      // ✅ Use unified function with full provider cascade
-      console.log('🎯 Advanced speaker analysis using unified diarization (Deepgram → Twelve Labs → OpenAI → AssemblyAI)...');
+      // ✅ Use unified function with full provider cascade (Twelve Labs first)
+      console.log(`🎯 Advanced speaker analysis using unified diarization (target: ${targetLanguage})...`);
       const { data, error } = await supabase.functions.invoke('speaker-diarization-unified', {
-        body: { videoUrl, videoId }
+        body: { videoUrl, videoId, targetLanguage }
       });
       
       if (error || !data?.success) {
@@ -60,6 +64,7 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
       }
       
       console.log(`✅ Diarization succeeded using: ${data.provider_used?.toUpperCase()}`);
+      console.log(`   Source language: ${data.sourceLanguage}, Target: ${data.targetLanguage}`);
       return convertToClusters(data);
       
     } catch (error) {
@@ -107,16 +112,21 @@ export const useAdvancedSpeakerAnalysis = (): UseAdvancedSpeakerAnalysisReturn =
   /**
    * Advanced speaker analysis with fallback to heuristic analysis
    */
-  const analyzeSpeakers = useCallback(async (segments: CaptionSegment[], videoUrl?: string, videoId?: string): Promise<SpeakerCluster[]> => {
-    // If we have video URL and ID, use AssemblyAI for superior results
+  const analyzeSpeakers = useCallback(async (
+    segments: CaptionSegment[], 
+    videoUrl?: string, 
+    videoId?: string,
+    language?: string
+  ): Promise<SpeakerCluster[]> => {
+    // If we have video URL and ID, use unified diarization for superior results
     if (videoUrl && videoId) {
       try {
-        const clusters = await analyzeSpeakersFromAudio(videoUrl, videoId);
+        const clusters = await analyzeSpeakersFromAudio(videoUrl, videoId, language || 'en');
         if (clusters.length > 0) {
           return clusters;
         }
       } catch (error) {
-        console.warn('🔄 AssemblyAI failed, falling back to heuristic analysis:', error);
+        console.warn('🔄 Unified diarization failed, falling back to heuristic analysis:', error);
       }
     }
     

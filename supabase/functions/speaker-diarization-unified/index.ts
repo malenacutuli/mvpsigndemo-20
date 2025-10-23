@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, force_reanalysis } = await req.json();
+    const { videoUrl, videoId, force_reanalysis, targetLanguage = 'en' } = await req.json();
     
     console.log("=== UNIFIED SPEAKER DIARIZATION ===");
     console.log("Priority: Twelve Labs (FIRST) → Deepgram → OpenAI → AssemblyAI (last resort)");
@@ -29,24 +29,84 @@ serve(async (req) => {
     // PRIORITY 1: TWELVE LABS (Best quality for speaker ID + visual context)
     // ============================================================================
     const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    
     if (TWELVE_LABS_API_KEY) {
       try {
-        console.log("🟣 PRIORITY 1: Trying Twelve Labs speaker analysis (English)...");
+        console.log("🟣 PRIORITY 1: Trying Twelve Labs speaker analysis (original language)...");
         
         const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
           body: { 
             videoUrl, 
             videoId,
-            language: 'en' // Request English explicitly
+            language: 'auto' // Extract in original language
           }
         });
         
         if (!error && data?.segments) {
-          console.log("✅ Twelve Labs succeeded!");
+          console.log(`✅ Twelve Labs succeeded! Detected language: ${data.language || 'unknown'}`);
+          
+          let segments = data.segments;
+          const sourceLanguage = data.language || 'unknown';
+          
+          // Translate if needed and OpenAI is available
+          if (sourceLanguage !== targetLanguage && targetLanguage !== 'auto' && OPENAI_API_KEY) {
+            console.log(`🔄 Translating from ${sourceLanguage} to ${targetLanguage}...`);
+            
+            try {
+              // Translate segments in batches to preserve context
+              const translatedSegments = [];
+              const batchSize = 10;
+              
+              for (let i = 0; i < segments.length; i += batchSize) {
+                const batch = segments.slice(i, i + batchSize);
+                const textsToTranslate = batch.map((seg: any) => seg.text).join('\n---\n');
+                
+                const translateResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                      {
+                        role: 'system',
+                        content: `Translate the following text from ${sourceLanguage} to ${targetLanguage}. Preserve the meaning and tone. Return ONLY the translated text, separated by ---`
+                      },
+                      {
+                        role: 'user',
+                        content: textsToTranslate
+                      }
+                    ],
+                    temperature: 0.3
+                  })
+                });
+                
+                const translateData = await translateResponse.json();
+                const translatedTexts = translateData.choices[0].message.content.split('---').map((t: string) => t.trim());
+                
+                batch.forEach((seg: any, idx: number) => {
+                  translatedSegments.push({
+                    ...seg,
+                    text: translatedTexts[idx] || seg.text,
+                    originalText: seg.text,
+                    originalLanguage: sourceLanguage
+                  });
+                });
+              }
+              
+              segments = translatedSegments;
+              console.log(`✅ Translation complete: ${segments.length} segments translated`);
+            } catch (translateError) {
+              console.warn(`⚠️ Translation failed, using original language: ${translateError.message}`);
+            }
+          }
           
           // Extract unique speakers from segments
           const speakerMap = new Map();
-          data.segments.forEach((seg: any) => {
+          segments.forEach((seg: any) => {
             if (seg.speaker && !speakerMap.has(seg.speaker)) {
               speakerMap.set(seg.speaker, {
                 name: seg.speaker,
@@ -58,18 +118,21 @@ serve(async (req) => {
           result = {
             success: true,
             speakers: Array.from(speakerMap.values()),
-            segments: data.segments.map((seg: any) => ({
+            segments: segments.map((seg: any) => ({
               text: seg.text,
               startTime: seg.startTime,
               endTime: seg.endTime,
-              start: seg.startTime, // Duplicate for compatibility
+              start: seg.startTime,
               end: seg.endTime,
               speaker: seg.speaker || 'Speaker',
               speakerColor: seg.speakerColor || '#3B82F6',
-              words: seg.words
+              words: seg.words,
+              originalText: seg.originalText,
+              originalLanguage: seg.originalLanguage
             })),
             provider: 'twelve_labs',
-            language: data.language || 'en'
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage
           };
           provider = 'twelve_labs';
         } else {
