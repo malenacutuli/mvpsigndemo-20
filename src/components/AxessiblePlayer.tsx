@@ -1136,30 +1136,31 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           />
         )}
 
-      {/* Control Overlay - Always visible on mobile for accessibility */}
-      <div 
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent ${
-          isMobile ? 'pb-safe-bottom pt-12 px-4 z-[60]' : 'pb-2 pt-8 px-2'
-        } opacity-100 transition-all duration-300`}
-        style={{ 
-          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '8px'
-        }}
-      >
-        {/* Progress Bar - Extra space from captions */}
-        <div className="mb-4">
-          <Slider
-            value={[progressPercentage]}
-            onValueChange={handleSeek}
-            max={100}
-            step={0.1}
-            className="w-full"
-            aria-label="Video progress"
-          />
-          <div className="flex justify-between text-xs text-primary-foreground mt-1">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+      {/* Control Overlay - Hidden in fullscreen mode */}
+      {!isFullscreen && (
+        <div 
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent ${
+            isMobile ? 'pb-safe-bottom pt-12 px-4 z-[60]' : 'pb-2 pt-8 px-2'
+          } opacity-100 transition-all duration-300`}
+          style={{ 
+            paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '8px'
+          }}
+        >
+          {/* Progress Bar - Extra space from captions */}
+          <div className="mb-4">
+            <Slider
+              value={[progressPercentage]}
+              onValueChange={handleSeek}
+              max={100}
+              step={0.1}
+              className="w-full"
+              aria-label="Video progress"
+            />
+            <div className="flex justify-between text-xs text-primary-foreground mt-1">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
-        </div>
 
         {/* Single Controls Row - Specified Requirements Only */}
         <div className="flex items-center justify-between">
@@ -1337,6 +1338,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* Accessibility Panel */}
       {showAccessibilityPanel && (
