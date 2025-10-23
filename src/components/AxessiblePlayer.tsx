@@ -309,36 +309,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, [isMobileFullscreen]);
 
-  // Auto-hide controls in fullscreen after 3 seconds of inactivity
-  useEffect(() => {
-    if (!isFullscreen && !isMobileFullscreen) return;
-    
-    let hideTimer: NodeJS.Timeout;
-    
-    const resetTimer = () => {
-      setShowControls(true);
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => {
-        setShowControls(false);
-      }, 3000); // Hide after 3 seconds
-    };
-    
-    const handleMouseMove = resetTimer;
-    const handleTouchStart = resetTimer;
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchstart', handleTouchStart);
-    
-    // Initial timer
-    resetTimer();
-    
-    return () => {
-      clearTimeout(hideTimer);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchstart', handleTouchStart);
-    };
-  }, [isFullscreen, isMobileFullscreen]);
-
   const activeCaption = useMemo(() => {
     if (!generatedCaptions || generatedCaptions.length === 0) return null;
     return (
@@ -917,12 +887,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           : ''
       } ${className}`}
       onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => {
-        // Auto-hide controls in fullscreen only
-        if (isFullscreen || isMobileFullscreen) {
-          setShowControls(false);
-        }
-      }}
+      onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
     >
       {/* CI Character Synchronization - Headless component for real-time sync */}
       <CICharacterSync videoId={videoId} language={currentLanguage} />
@@ -1171,12 +1136,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           />
         )}
 
-      {/* Control Overlay - Auto-hides in fullscreen */}
-      {showControls && (
-        <div 
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent ${
-            isMobile ? 'pb-safe-bottom pt-12 px-4 z-[60]' : 'pb-2 pt-8 px-2'
-          } transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      {/* Control Overlay - Always visible on mobile for accessibility */}
+      <div 
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent ${
+          isMobile ? 'pb-safe-bottom pt-12 px-4 z-[60]' : 'pb-2 pt-8 px-2'
+        } opacity-100 transition-all duration-300`}
         style={{ 
           paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '8px'
         }}
@@ -1373,7 +1337,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           </div>
         </div>
       </div>
-      )}
 
       {/* Accessibility Panel */}
       {showAccessibilityPanel && (
