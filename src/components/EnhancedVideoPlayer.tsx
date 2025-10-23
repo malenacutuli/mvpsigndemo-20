@@ -586,6 +586,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           // User has explicit preference - RESPECT IT
           detectedLanguage = language || currentLanguage;
           console.log('✅ Using explicit language preference:', detectedLanguage);
+          setCurrentLanguage(detectedLanguage);
         }
         
         // Load transcript segments with the determined language

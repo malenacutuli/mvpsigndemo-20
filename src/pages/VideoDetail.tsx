@@ -117,6 +117,8 @@ const VideoDetail = () => {
       
       console.log('✅ Video data loaded successfully:', data);
       setVideo(data);
+      // Initialize current language from video metadata
+      if (data?.language) setCurrentLanguage(data.language);
       
       // Get public URL for video since the videos bucket is now public
       if (data.storage_path) {
@@ -503,7 +505,7 @@ const VideoDetail = () => {
                     posterSrc={video.thumbnail_url || undefined}
                     title={video.title}
                     videoId={video.id}
-                    language={video.language}
+                    language={currentLanguage || video.language}
                     selectedVoice={findVoiceById(selectedVoiceId) || { id: selectedVoiceId, name: selectedVoiceId, description: '' }}
                     selectedSignLanguageAvatar={selectedSignLanguageAvatar}
                     contentType={['education','children','kids'].includes(video.content_type) ? 'education' : 'recipe'}
