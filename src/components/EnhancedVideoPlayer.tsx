@@ -60,6 +60,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
   const [translatedCaptions, setTranslatedCaptions] = useState<CaptionSegment[] | null>(null);
+  const [hasUserSelectedLanguage, setHasUserSelectedLanguage] = useState(false);
   const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
@@ -243,9 +244,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         console.log('🔄 Converting generated captions to transcript segments:', captions.length);
         console.log('📋 First caption for conversion:', captions[0]);
         
-        const detectedLang = detectLanguageFromCaptions(captions);
-        console.log('🌐 Auto-detected language from captions:', detectedLang);
-        
         // Convert captions to transcript segment format
         const convertedSegments = captions.map(caption => ({
           ...caption,
@@ -257,7 +255,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         }));
         
         console.log('✅ Converted segments for AudioDescriptionEditor:', convertedSegments.length);
-        await handleTranscriptUpdate(convertedSegments, detectedLang);
+        // Do NOT pass detectedLang to avoid overriding user's explicit language choice
+        await handleTranscriptUpdate(convertedSegments);
       }
     };
     
@@ -300,22 +299,33 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'current');
     
-  // ONLY use detectedLang if explicitly provided - don't auto-detect to avoid discarding user's language choice
-  const preferredLang = detectedLang || language || currentLanguage;
-  
-  console.log('🌐 Language resolution debug:', {
-    propLanguage: language,
-    detectedLang,
-    preferredLang,
-    currentLanguage,
-    willUpdate: preferredLang !== currentLanguage
-  });
-  
-  // Only update language if explicitly provided (not auto-detected)
-  if (detectedLang && detectedLang !== currentLanguage) {
-    console.log('🌐 Language explicitly changed to:', detectedLang, 'from:', currentLanguage);
-    setCurrentLanguage(detectedLang);
-  }
+    // Respect user's explicit language choice - NEVER override it with auto-detection
+    const preferredLang = language || currentLanguage;
+    
+    console.log('🌐 Language resolution debug:', {
+      propLanguage: language,
+      detectedLang,
+      preferredLang,
+      currentLanguage,
+      hasUserSelectedLanguage,
+      willAutoDetect: !language && !hasUserSelectedLanguage && (!currentLanguage || currentLanguage === 'auto')
+    });
+    
+    // Only update language if ALL these conditions are met:
+    // 1. No explicit language prop
+    // 2. User hasn't explicitly chosen a language
+    // 3. Current language is empty or 'auto'
+    // 4. detectedLang is provided and different from current
+    if (detectedLang && 
+        !language && 
+        !hasUserSelectedLanguage && 
+        (!currentLanguage || currentLanguage === 'auto') && 
+        detectedLang !== currentLanguage) {
+      console.log('🌐 Auto-detected language (no user preference):', detectedLang);
+      setCurrentLanguage(detectedLang);
+    } else if (hasUserSelectedLanguage || language) {
+      console.log('✅ Using explicit language preference:', preferredLang, '(auto-detect blocked)');
+    }
     
     console.log('🔍 ENHANCED PLAYER: First segment in handleTranscriptUpdate:', segments[0] ? {
       speaker: segments[0].speaker,
@@ -458,6 +468,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const handleLanguageChange = async (newLanguage: string) => {
     console.log('🌍 ENHANCED PLAYER: Language changed to:', newLanguage);
     setCurrentLanguage(newLanguage);
+    setHasUserSelectedLanguage(true); // Mark that user has explicitly chosen a language
     
     if (newLanguage === (language || 'en')) {
       console.log('↩️ Restoring original captions - reloading from database');
@@ -565,10 +576,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // Only auto-detect language if user hasn't explicitly chosen one
+        // Determine the language to use - prioritize explicit prop, then user selection, then auto-detect
         let detectedLanguage = currentLanguage;
-        if (!language && (!currentLanguage || currentLanguage === 'auto')) {
-          // Only auto-detect if no explicit language preference
+        
+        if (language) {
+          // Explicit language prop always wins
+          detectedLanguage = language;
+          console.log('✅ Using language prop:', detectedLanguage);
+          setCurrentLanguage(detectedLanguage);
+        } else if (hasUserSelectedLanguage && currentLanguage) {
+          // User has explicitly chosen a language - RESPECT IT
+          detectedLanguage = currentLanguage;
+          console.log('✅ Using user-selected language:', detectedLanguage, '(auto-detect blocked)');
+        } else if (!currentLanguage || currentLanguage === 'auto') {
+          // Only auto-detect if no explicit language preference exists
           const { data: availableTranscripts } = await supabase
             .from('transcript_segments')
             .select('language')
@@ -579,14 +600,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             const uniqueLanguages = [...new Set(availableTranscripts.map((t: any) => t.language))];
             // Prefer 'en' if available, otherwise take first
             detectedLanguage = uniqueLanguages.includes('en') ? 'en' : uniqueLanguages[0];
-            console.log('🌐 Auto-detected language (no preference):', detectedLanguage);
+            console.log('🌐 Auto-detected language (no user preference):', detectedLanguage);
             setCurrentLanguage(detectedLanguage);
           }
-        } else {
-          // User has explicit preference - RESPECT IT
-          detectedLanguage = language || currentLanguage;
-          console.log('✅ Using explicit language preference:', detectedLanguage);
-          setCurrentLanguage(detectedLanguage);
         }
         
         // Load transcript segments with the determined language

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,11 +58,13 @@ const VideoDetail = () => {
   const [deletingVideo, setDeletingVideo] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
+  const languageInitializedRef = useRef(false);
   const { toast } = useToast();
   
   const handleLanguageChange = (newLanguage: string) => {
-    console.log('🌍 Language changed to:', newLanguage);
+    console.log('🌍 VIDEO DETAIL: User changed language to:', newLanguage);
     setCurrentLanguage(newLanguage);
+    languageInitializedRef.current = true; // Mark that user has chosen a language
   };
   
   // Voice and Sign Language Avatar options for accessibility
@@ -117,8 +119,11 @@ const VideoDetail = () => {
       
       console.log('✅ Video data loaded successfully:', data);
       setVideo(data);
-      // Initialize current language from video metadata
-      if (data?.language) setCurrentLanguage(data.language);
+      // Initialize current language from video metadata only on first load
+      if (!languageInitializedRef.current && data?.language) {
+        setCurrentLanguage(data.language);
+        languageInitializedRef.current = true;
+      }
       
       // Get public URL for video since the videos bucket is now public
       if (data.storage_path) {
