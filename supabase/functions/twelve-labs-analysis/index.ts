@@ -141,8 +141,8 @@ serve(async (req) => {
       throw new Error('Video ID could not be retrieved after processing');
     }
 
-    // Step 4: Get transcript with speaker identification
-    const transcriptResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${videoId}/conversation`, {
+    // Step 4a: Get full transcript (complete coverage)
+    const transcriptResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${videoId}/transcription`, {
       headers: {
         'x-api-key': twelveLabsApiKey,
       },
@@ -154,7 +154,26 @@ serve(async (req) => {
     }
 
     const transcriptData = await transcriptResponse.json();
-    console.log('📝 Retrieved transcript data');
+    console.log('📝 Retrieved full transcript data:', {
+      segments: transcriptData.segments?.length || 0
+    });
+
+    // Step 4b: Get conversation data for speaker identification
+    const conversationResponse = await fetch(`${baseUrl}/indexes/${indexId}/videos/${videoId}/conversation`, {
+      headers: {
+        'x-api-key': twelveLabsApiKey,
+      },
+    });
+
+    let conversationData: any = { conversation: [] };
+    if (conversationResponse.ok) {
+      conversationData = await conversationResponse.json();
+      console.log('🗣️ Retrieved speaker conversation data:', {
+        utterances: conversationData.conversation?.length || 0
+      });
+    } else {
+      console.warn('⚠️ Could not retrieve speaker data, will use generic speakers');
+    }
 
     // Step 5: Generate creative audio descriptions using comprehensive AI analysis
     const videoDescriptionResponse = await fetch(`${baseUrl}/indexes/${indexId}/search`, {
@@ -183,7 +202,7 @@ serve(async (req) => {
       // Process visual analysis into timed audio descriptions
       audioDescriptions = await generateTimedAudioDescriptions(
         descriptionData.data || [],
-        transcriptData.conversation || [],
+        conversationData.conversation || [],
         twelveLabsApiKey
       );
     } else {
@@ -194,8 +213,37 @@ serve(async (req) => {
     const speakerColors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
     const speakerMap = new Map<string, { color: string; displayName: string }>();
     
-    const segments = (transcriptData.conversation || []).map((segment: any, index: number) => {
-      const speakerKey = segment.speaker || 'Unknown';
+    // Create a mapping of time ranges to speakers from conversation data
+    const speakerTimeRanges: Array<{ start: number; end: number; speaker: string }> = 
+      (conversationData.conversation || []).map((utterance: any) => ({
+        start: utterance.start,
+        end: utterance.end,
+        speaker: utterance.speaker || 'Unknown'
+      }));
+
+    // Function to find speaker for a given time range
+    const findSpeakerForTime = (start: number, end: number): string => {
+      // Find the conversation segment that best overlaps with this time range
+      let bestMatch = null;
+      let maxOverlap = 0;
+      
+      for (const range of speakerTimeRanges) {
+        const overlapStart = Math.max(start, range.start);
+        const overlapEnd = Math.min(end, range.end);
+        const overlap = Math.max(0, overlapEnd - overlapStart);
+        
+        if (overlap > maxOverlap) {
+          maxOverlap = overlap;
+          bestMatch = range.speaker;
+        }
+      }
+      
+      return bestMatch || 'Unknown';
+    };
+
+    // Process all transcript segments and assign speakers based on timing overlap
+    const segments = (transcriptData.segments || []).map((segment: any, index: number) => {
+      const speakerKey = findSpeakerForTime(segment.start, segment.end);
       
       // Assign speaker colors and names
       if (!speakerMap.has(speakerKey)) {
@@ -209,15 +257,19 @@ serve(async (req) => {
       const speaker = speakerMap.get(speakerKey)!;
       
       return {
-        text: segment.text,
+        text: segment.value || segment.text,
+        startTime: segment.start,
+        endTime: segment.end,
         start: segment.start,
         end: segment.end,
         speaker: speaker.displayName,
         speakerColor: speaker.color,
         confidence: segment.confidence || 0.9,
-        words: segment.words || []
+        words: []
       };
-    }).filter((segment: any) => segment.text.length > 0); // Filter out empty segments
+    }).filter((segment: any) => segment.text && segment.text.length > 0);
+
+    console.log(`✅ Processed ${segments.length} transcript segments with speaker identification`);
 
     // Step 7: Cleanup - delete the temporary index
     try {
