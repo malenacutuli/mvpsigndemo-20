@@ -224,7 +224,7 @@ export type Database = {
           duration_watched: number | null
           embed_token: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_viewed_at: string
           referrer_domain: string | null
           user_agent: string | null
@@ -236,7 +236,7 @@ export type Database = {
           duration_watched?: number | null
           embed_token?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_viewed_at?: string
           referrer_domain?: string | null
           user_agent?: string | null
@@ -248,7 +248,7 @@ export type Database = {
           duration_watched?: number | null
           embed_token?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_viewed_at?: string
           referrer_domain?: string | null
           user_agent?: string | null
@@ -441,7 +441,7 @@ export type Database = {
           user_agent: string | null
           video_id: string
           view_duration_seconds: number | null
-          viewer_ip: unknown | null
+          viewer_ip: unknown
           watched_percentage: number | null
         }
         Insert: {
@@ -453,7 +453,7 @@ export type Database = {
           user_agent?: string | null
           video_id: string
           view_duration_seconds?: number | null
-          viewer_ip?: unknown | null
+          viewer_ip?: unknown
           watched_percentage?: number | null
         }
         Update: {
@@ -465,7 +465,7 @@ export type Database = {
           user_agent?: string | null
           video_id?: string
           view_duration_seconds?: number | null
-          viewer_ip?: unknown | null
+          viewer_ip?: unknown
           watched_percentage?: number | null
         }
         Relationships: [
@@ -484,7 +484,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string
           success: boolean | null
@@ -496,7 +496,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type: string
           success?: boolean | null
@@ -508,7 +508,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string
           success?: boolean | null
@@ -522,7 +522,7 @@ export type Database = {
           details: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           timestamp: string | null
           user_id: string | null
@@ -531,7 +531,7 @@ export type Database = {
           details?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           timestamp?: string | null
           user_id?: string | null
@@ -540,7 +540,7 @@ export type Database = {
           details?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           timestamp?: string | null
           user_id?: string | null
@@ -628,7 +628,7 @@ export type Database = {
           accessed_subscriber_id: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string | null
         }
@@ -638,7 +638,7 @@ export type Database = {
           accessed_subscriber_id: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -648,7 +648,7 @@ export type Database = {
           accessed_subscriber_id?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -714,7 +714,7 @@ export type Database = {
           channel_id: string | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_id: string | null
         }
         Insert: {
@@ -722,7 +722,7 @@ export type Database = {
           channel_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_id?: string | null
         }
         Update: {
@@ -730,7 +730,7 @@ export type Database = {
           channel_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_id?: string | null
         }
         Relationships: []
@@ -1162,10 +1162,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      anonymize_ip_address: {
-        Args: { ip_addr: unknown }
-        Returns: unknown
-      }
+      anonymize_ip_address: { Args: { ip_addr: unknown }; Returns: unknown }
       anonymize_user_agent: {
         Args: { user_agent_str: string }
         Returns: string
@@ -1185,21 +1182,15 @@ export type Database = {
         }[]
       }
       check_user_subscription_status: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           is_subscribed: boolean
           subscription_end: string
           subscription_tier: string
         }[]
       }
-      cleanup_old_analytics_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_subscription_audit_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_analytics_data: { Args: never; Returns: undefined }
+      cleanup_subscription_audit_data: { Args: never; Returns: undefined }
       consolidate_video_speakers: {
         Args: { target_language?: string; target_video_id: string }
         Returns: Json
@@ -1208,10 +1199,7 @@ export type Database = {
         Args: { accessing_user_id: string }
         Returns: undefined
       }
-      generate_embed_token: {
-        Args: { video_uuid: string }
-        Returns: string
-      }
+      generate_embed_token: { Args: { video_uuid: string }; Returns: string }
       get_current_usage: {
         Args: { target_user_id: string }
         Returns: {
@@ -1225,10 +1213,7 @@ export type Database = {
           tier: string
         }[]
       }
-      get_current_user_email: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_email: { Args: never; Returns: string }
       get_masked_subscriber_data: {
         Args: { target_user_id?: string }
         Returns: {
@@ -1258,7 +1243,7 @@ export type Database = {
         }[]
       }
       get_secure_subscription_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           expires_at: string
           features_available: Json
@@ -1267,7 +1252,7 @@ export type Database = {
         }[]
       }
       get_user_subscription_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           expires_at: string
           features_available: Json
@@ -1279,10 +1264,7 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: undefined
       }
-      is_test_user: {
-        Args: { user_email: string }
-        Returns: boolean
-      }
+      is_test_user: { Args: { user_email: string }; Returns: boolean }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string
