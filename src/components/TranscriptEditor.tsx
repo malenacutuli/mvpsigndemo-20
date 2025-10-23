@@ -343,8 +343,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       
       console.log('🔄 Updated speaker mappings for', uniqueSpeakers.length, 'speakers in', language);
       
-      // ❌ DISABLED - was overwriting manual edits with cross-language sync
-      // await syncSpeakerInfoAcrossLanguages(segments, language);
+      // CRITICAL: Sync speaker info across ALL languages for consistency
+      await syncSpeakerInfoAcrossLanguages(segments, language);
     } catch (error) {
       console.error('Failed to update speaker mappings:', error);
       // Don't throw - this is non-critical for transcript saving
@@ -870,36 +870,32 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
   const saveAllChanges = async () => {
     try {
-      // Step 1: Save to database
+      // Save to database first
       await saveTranscriptData(editingTranscript, selectedLanguage);
       
-      // Step 2: Reload from database to get fresh saved data
-      console.log('🔄 Reloading from database after save...');
-      const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
+      // Immediately update the video player with changes
+      console.log('💾 Saving all transcript changes with speaker info:', editingTranscript.length, 'segments');
+      console.log('📝 Transcript segments being saved:', editingTranscript.map(s => ({
+        speaker: s.speaker,
+        speakerColor: s.speakerColor,
+        text: s.text.substring(0, 30) + '...',
+        startTime: s.startTime,
+        endTime: s.endTime,
+        emphasis: s.emphasis,
+        pitch: s.pitch
+      })));
       
-      if (reloadedSegments.length > 0) {
-        // Step 3: Add force update flags
-        const freshSegments = reloadedSegments.map((seg, idx) => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${idx}`,
-          _updateKey: Date.now() + idx,
-          _forcePlayerUpdate: true // Tell player to update NOW
-        }));
-        
-        // Step 4: Update local state with fresh data
-        setEditingTranscript(freshSegments);
-        setOriginalTranscript(freshSegments);
-        
-        // Step 5: Force player update
-        console.log('✅ Forcing video player to update with', freshSegments.length, 'segments');
-        onTranscriptUpdate?.(freshSegments, selectedLanguage);
-        
-        toast({
-          title: "✅ All Changes Saved & Applied to Video",
-          description: `${freshSegments.length} segments saved and video updated`,
-          duration: 3000
-        });
-      }
+      // Force update by creating new array with timestamp to ensure re-render
+      const updatedSegments = editingTranscript.map((segment, index) => ({
+        ...segment,
+        _lastModified: Date.now() + index // Add timestamp to force updates
+      }));
+      onTranscriptUpdate?.(updatedSegments, selectedLanguage);
+      
+      toast({
+        title: "All Changes Saved",
+        description: "Transcript edits including speaker information have been saved and synced."
+      });
     } catch (error) {
       console.error('Error saving transcript changes:', error);
       toast({
