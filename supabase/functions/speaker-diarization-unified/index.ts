@@ -16,7 +16,7 @@ serve(async (req) => {
     const { videoUrl, videoId, force_reanalysis } = await req.json();
     
     console.log("=== UNIFIED SPEAKER DIARIZATION ===");
-    console.log("Priority: Deepgram → Twelve Labs → OpenAI → AssemblyAI (last resort)");
+    console.log("Priority: Twelve Labs (FIRST) → Deepgram → OpenAI → AssemblyAI (last resort)");
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -26,62 +26,86 @@ serve(async (req) => {
     let provider = 'none';
     
     // ============================================================================
-    // PRIORITY 1: DEEPGRAM (Fastest, Cheapest - $0.043/hour)
+    // PRIORITY 1: TWELVE LABS (Best quality for speaker ID + visual context)
     // ============================================================================
-    const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
-    if (DEEPGRAM_API_KEY) {
+    const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
+    if (TWELVE_LABS_API_KEY) {
       try {
-        console.log("🔵 PRIORITY 1: Trying Deepgram speaker diarization...");
-        const { data, error } = await supabase.functions.invoke('speaker-diarization-deepgram', {
-          body: { videoUrl, videoId, force_reanalysis }
+        console.log("🟣 PRIORITY 1: Trying Twelve Labs speaker analysis (English)...");
+        
+        const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
+          body: { 
+            videoUrl, 
+            videoId,
+            language: 'en' // Request English explicitly
+          }
         });
         
-        if (!error && data?.success) {
-          console.log("✅ Deepgram succeeded!");
-          result = data;
-          provider = 'deepgram';
+        if (!error && data?.segments) {
+          console.log("✅ Twelve Labs succeeded!");
+          
+          // Extract unique speakers from segments
+          const speakerMap = new Map();
+          data.segments.forEach((seg: any) => {
+            if (seg.speaker && !speakerMap.has(seg.speaker)) {
+              speakerMap.set(seg.speaker, {
+                name: seg.speaker,
+                color: seg.speakerColor || '#3B82F6'
+              });
+            }
+          });
+          
+          result = {
+            success: true,
+            speakers: Array.from(speakerMap.values()),
+            segments: data.segments.map((seg: any) => ({
+              text: seg.text,
+              startTime: seg.startTime,
+              endTime: seg.endTime,
+              start: seg.startTime, // Duplicate for compatibility
+              end: seg.endTime,
+              speaker: seg.speaker || 'Speaker',
+              speakerColor: seg.speakerColor || '#3B82F6',
+              words: seg.words
+            })),
+            provider: 'twelve_labs',
+            language: data.language || 'en'
+          };
+          provider = 'twelve_labs';
         } else {
-          throw new Error(error?.message || data?.error || "Deepgram failed");
+          throw new Error(error?.message || "Twelve Labs failed");
         }
-      } catch (deepgramError) {
-        console.warn("⚠️ Deepgram failed:", deepgramError.message);
+      } catch (twelveLabsError) {
+        console.warn("⚠️ Twelve Labs failed:", twelveLabsError.message);
       }
     } else {
-      console.log("⏭️ Deepgram API key not configured, skipping");
+      console.log("⏭️ Twelve Labs API key not configured, skipping");
     }
     
     // ============================================================================
-    // PRIORITY 2: TWELVE LABS (Good quality, moderate cost)
+    // PRIORITY 2: DEEPGRAM (Fastest, Cheapest - $0.043/hour)
     // ============================================================================
     if (!result) {
-      const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
-      if (TWELVE_LABS_API_KEY) {
+      const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+      if (DEEPGRAM_API_KEY) {
         try {
-          console.log("🟣 PRIORITY 2: Trying Twelve Labs speaker analysis...");
-          
-          // Twelve Labs doesn't have a dedicated diarization function yet,
-          // but we can extract speaker info from video analysis
-          const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
-            body: { videoUrl, videoId }
+          console.log("🔵 PRIORITY 2: Trying Deepgram speaker diarization...");
+          const { data, error } = await supabase.functions.invoke('speaker-diarization-deepgram', {
+            body: { videoUrl, videoId, force_reanalysis }
           });
           
-          if (!error && data?.speakers) {
-            console.log("✅ Twelve Labs succeeded!");
-            result = {
-              success: true,
-              speakers: data.speakers,
-              segments: data.segments,
-              provider: 'twelve_labs'
-            };
-            provider = 'twelve_labs';
+          if (!error && data?.success) {
+            console.log("✅ Deepgram succeeded!");
+            result = data;
+            provider = 'deepgram';
           } else {
-            throw new Error(error?.message || "Twelve Labs failed");
+            throw new Error(error?.message || data?.error || "Deepgram failed");
           }
-        } catch (twelveLabsError) {
-          console.warn("⚠️ Twelve Labs failed:", twelveLabsError.message);
+        } catch (deepgramError) {
+          console.warn("⚠️ Deepgram failed:", deepgramError.message);
         }
       } else {
-        console.log("⏭️ Twelve Labs API key not configured, skipping");
+        console.log("⏭️ Deepgram API key not configured, skipping");
       }
     }
     
