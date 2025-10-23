@@ -527,14 +527,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       // CRITICAL: Only update if we're on the original language OR if we don't have captions yet
       // Don't override translated captions when user has switched languages
+      // Check for forced update from "Save All Changes"
+      const hasForcedUpdate = initialCaptions.some((cap: any) => cap._forcePlayerUpdate);
+      const hasUpdateKey = initialCaptions.some((cap: any) => cap._updateKey);
+
       const shouldUpdate = (
+        hasForcedUpdate ||     // HIGHEST PRIORITY: Direct save
+        hasUpdateKey ||        // HIGH PRIORITY: Database reload
         currentLanguage === originalLanguage || // User is viewing original language
         !generatedCaptions || // No captions yet
-        generatedCaptions.length === 0 || // Empty captions
-        (initialCaptions[0] as any)._updateKey // Explicit database update
+        generatedCaptions.length === 0 // Empty captions
       );
       
       if (shouldUpdate) {
+        if (hasForcedUpdate) {
+          console.log('🔥 FORCED UPDATE: Applying fresh data from "Save All Changes"');
+        }
         console.log('✅ Setting generatedCaptions from initialCaptions (lang match or initial load)');
         setGeneratedCaptions([...initialCaptions]);
         
