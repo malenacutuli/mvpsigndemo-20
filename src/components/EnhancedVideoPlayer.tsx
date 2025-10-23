@@ -565,23 +565,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // Auto-detect available transcript language for this video
-        const { data: availableTranscripts } = await supabase
-          .from('transcript_segments')
-          .select('language')
-          .eq('video_id', videoId)
-          .limit(5);
-        
-        // Find first available language
+        // Only auto-detect language if user hasn't explicitly chosen one
         let detectedLanguage = currentLanguage;
-        if (availableTranscripts && availableTranscripts.length > 0) {
-          const uniqueLanguages = [...new Set(availableTranscripts.map((t: any) => t.language))];
-          detectedLanguage = uniqueLanguages[0] || currentLanguage;
-          console.log('🌐 ENHANCED PLAYER: Auto-detected available language:', detectedLanguage);
-          setCurrentLanguage(detectedLanguage);
+        if (!language && (!currentLanguage || currentLanguage === 'auto')) {
+          // Only auto-detect if no explicit language preference
+          const { data: availableTranscripts } = await supabase
+            .from('transcript_segments')
+            .select('language')
+            .eq('video_id', videoId)
+            .limit(5);
+          
+          if (availableTranscripts && availableTranscripts.length > 0) {
+            const uniqueLanguages = [...new Set(availableTranscripts.map((t: any) => t.language))];
+            // Prefer 'en' if available, otherwise take first
+            detectedLanguage = uniqueLanguages.includes('en') ? 'en' : uniqueLanguages[0];
+            console.log('🌐 Auto-detected language (no preference):', detectedLanguage);
+            setCurrentLanguage(detectedLanguage);
+          }
+        } else {
+          // User has explicit preference - RESPECT IT
+          detectedLanguage = language || currentLanguage;
+          console.log('✅ Using explicit language preference:', detectedLanguage);
         }
         
-        // Load transcript segments with detected language
+        // Load transcript segments with the determined language
         const segments = await loadTranscriptSegments(detectedLanguage);
         console.log('📖 ENHANCED PLAYER: Loaded transcript segments:', segments.length, 'segments for language:', detectedLanguage);
         setTranscriptSegments(segments);
