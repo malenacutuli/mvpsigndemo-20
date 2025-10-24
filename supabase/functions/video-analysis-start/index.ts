@@ -149,33 +149,55 @@ async function createIndex() {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
   if (!twelveLabsApiKey) throw new Error('TWELVELABS_API_KEY not configured');
 
-  // List indexes on a single, stable base (v1.3)
-  const listResponse = await fetch(`${TL_BASE}/indexes`, {
-    headers: { 'x-api-key': `${twelveLabsApiKey}`, 'Accept': 'application/json' }
-  });
+  // Helper to list and find existing index
+  const findExistingIndex = async () => {
+    const listResponse = await fetch(`${TL_BASE}/indexes`, {
+      headers: { 'x-api-key': `${twelveLabsApiKey}`, 'Accept': 'application/json' }
+    });
 
-  if (listResponse.ok) {
-    const indexList = await listResponse.json();
-    const list = Array.isArray(indexList?.data)
-      ? indexList.data
-      : (Array.isArray(indexList?.items)
-        ? indexList.items
-        : (Array.isArray(indexList) ? indexList : []));
+    if (listResponse.ok) {
+      const indexList = await listResponse.json();
+      const list = Array.isArray(indexList?.data)
+        ? indexList.data
+        : (Array.isArray(indexList?.items)
+          ? indexList.items
+          : (Array.isArray(indexList) ? indexList : []));
 
-    const existingIndex = list.find((i: any) => (
-      i.index_name === 'axessible-video-analysis' || i.name === 'axessible-video-analysis'
-    ));
+      const existingIndex = list.find((i: any) => (
+        i.index_name === 'axessible-video-analysis' || 
+        i.name === 'axessible-video-analysis'
+      ));
 
-    if (existingIndex) {
-      return existingIndex._id || existingIndex.id;
+      if (existingIndex) {
+        const indexId = existingIndex._id || existingIndex.id;
+        console.log(`✅ Reusing existing index: ${indexId}`);
+        return indexId;
+      }
+    } else {
+      const errorText = await listResponse.text();
+      console.log('⚠️ List indexes failed:', errorText);
     }
-  } else {
-    const errorText = await listResponse.text();
-    console.log('List indexes failed:', errorText);
-  }
+    return null;
+  };
 
-  // Create new index on v1.3
-  return await createNewIndex(TL_BASE, twelveLabsApiKey);
+  // First, try to find existing index
+  const existingIndexId = await findExistingIndex();
+  if (existingIndexId) return existingIndexId;
+
+  // Try to create new index
+  try {
+    console.log('📝 Creating new index: axessible-video-analysis');
+    return await createNewIndex(TL_BASE, twelveLabsApiKey);
+  } catch (error: any) {
+    // Handle 409 conflict - index already exists
+    if (error.message.includes('409') || error.message.includes('index_name_already_exists')) {
+      console.log('⚠️ Index creation returned 409 - falling back to existing index');
+      const fallbackIndexId = await findExistingIndex();
+      if (fallbackIndexId) return fallbackIndexId;
+      throw new Error('Index exists but could not be retrieved');
+    }
+    throw error;
+  }
 }
 
 async function createNewIndex(endpoint: string, apiKey: string) {
@@ -209,23 +231,26 @@ async function createNewIndex(endpoint: string, apiKey: string) {
 async function createIndexingTask(indexId: string, videoUrl: string) {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
 
+  // Validate video URL format early
+  if (!/(\.mp4|\.mov|\.webm|\.mkv)(\?|$)/i.test(videoUrl)) {
+    console.log('⚠️ Warning: videoUrl may not be a direct file URL (HLS/pages will fail):', videoUrl);
+  }
+
   const formData = new FormData();
   formData.append('index_id', indexId);
   formData.append('video_url', videoUrl);
 
-  // Warn if the URL doesn't look like a direct file URL
-  if (!/(\.mp4|\.mov|\.webm|\.mkv)(\?|$)/i.test(videoUrl)) {
-    console.log('Warning: videoUrl may not be a direct file URL (HLS/pages will fail):', videoUrl);
-  }
+  console.log(`📤 Submitting indexing task for index: ${indexId}`);
 
   const response = await fetch(`${TL_BASE}/tasks`, {
     method: 'POST',
-    headers: { 'x-api-key': `${twelveLabsApiKey}` }, // Don't set Content-Type for FormData
+    headers: { 'x-api-key': `${twelveLabsApiKey}` }, // Don't set Content-Type - let browser set it for FormData
     body: formData
   });
 
   const text = await response.text();
   if (!response.ok) {
+    console.error(`❌ Task creation failed (${response.status}):`, text);
     throw new Error(`Failed to create indexing task: ${response.status}: ${text}`);
   }
 
@@ -233,8 +258,14 @@ async function createIndexingTask(indexId: string, videoUrl: string) {
   try {
     result = JSON.parse(text);
   } catch {
+    console.error('❌ Failed to parse response as JSON:', text);
     throw new Error(`Failed to parse task response as JSON: ${text}`);
   }
-  console.log('Task created successfully:', result);
+  
+  console.log('✅ Task created successfully:', {
+    taskId: result._id || result.id || result.task_id,
+    videoId: result.video_id
+  });
+  
   return result;
 }

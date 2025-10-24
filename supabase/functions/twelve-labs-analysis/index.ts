@@ -67,22 +67,25 @@ serve(async (req) => {
     const indexId = indexData._id;
     console.log('✅ Created Twelve Labs index:', indexId);
 
-    // Step 2: Create video indexing task
+    // Step 2: Create video indexing task using FormData (required by Twelve Labs API)
+    const taskFormData = new FormData();
+    taskFormData.append('index_id', indexId);
+    taskFormData.append('video_url', videoUrl);
+    
+    console.log('📤 Submitting indexing task with FormData');
+
     const taskCreateResponse = await fetch(`${baseUrl}/tasks`, {
       method: 'POST',
       headers: {
         'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json',
+        // Don't set Content-Type - let browser set it for FormData with boundary
       },
-      body: JSON.stringify({
-        index_id: indexId,
-        video_url: videoUrl,
-        enable_video_stream: false
-      }),
+      body: taskFormData,
     });
 
     if (!taskCreateResponse.ok) {
       const error = await taskCreateResponse.text();
+      console.error(`❌ Task creation failed (${taskCreateResponse.status}):`, error);
       throw new Error(`Failed to create indexing task: ${error}`);
     }
 
