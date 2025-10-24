@@ -72,7 +72,7 @@ serve(async (req) => {
     }
 
     // Create or get index
-    const indexId = existingMapping?.index_id || await createIndex();
+    const indexId = existingMapping?.index_id || await createIndex(supabase);
     
     // Create indexing task
     const task = await createIndexingTask(indexId, playbackUrl);
@@ -145,44 +145,62 @@ const mappingData = {
   }
 });
 
-async function createIndex() {
+async function createIndex(supabase: any) {
   const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
   if (!twelveLabsApiKey) throw new Error('TWELVELABS_API_KEY not configured');
 
-  // Helper to list and find existing index
-  const findExistingIndex = async () => {
-    const listResponse = await fetch(`${TL_BASE}/indexes`, {
+  // Helper to list and find existing index (try with large page size first)
+  const tryList = async (suffix: string) => {
+    const resp = await fetch(`${TL_BASE}/indexes${suffix}`, {
       headers: { 'x-api-key': `${twelveLabsApiKey}`, 'Accept': 'application/json' }
     });
-
-    if (listResponse.ok) {
-      const indexList = await listResponse.json();
-      const list = Array.isArray(indexList?.data)
-        ? indexList.data
-        : (Array.isArray(indexList?.items)
-          ? indexList.items
-          : (Array.isArray(indexList) ? indexList : []));
-
-      const existingIndex = list.find((i: any) => (
-        i.index_name === 'axessible-video-analysis' || 
-        i.name === 'axessible-video-analysis'
-      ));
-
-      if (existingIndex) {
-        const indexId = existingIndex._id || existingIndex.id;
-        console.log(`✅ Reusing existing index: ${indexId}`);
-        return indexId;
+    if (!resp.ok) return { ok: false, text: await resp.text() };
+    const json = await resp.json();
+    const list = Array.isArray(json?.data)
+      ? json.data
+      : (Array.isArray(json?.items)
+        ? json.items
+        : (Array.isArray(json) ? json : []));
+    const existing = list.find((i: any) => {
+      const names = [i.index_name, i.name, i.indexName].filter(Boolean);
+      if (names.includes('axessible-video-analysis')) return true;
+      // Fallback: scan any string fields
+      for (const k of Object.keys(i)) {
+        const v = (i as any)[k];
+        if (typeof v === 'string' && v === 'axessible-video-analysis') return true;
       }
-    } else {
-      const errorText = await listResponse.text();
-      console.log('⚠️ List indexes failed:', errorText);
+      return false;
+    });
+    if (existing) {
+      const indexId = existing._id || existing.id || existing.index_id;
+      console.log(`✅ Reusing existing index: ${indexId}`);
+      return { ok: true, id: indexId };
     }
-    return null;
+    return { ok: true, id: null };
   };
 
-  // First, try to find existing index
-  const existingIndexId = await findExistingIndex();
-  if (existingIndexId) return existingIndexId;
+  // First, try to find existing index via API
+  const viaApiLarge = await tryList('?page_limit=1000');
+  if (viaApiLarge.ok && viaApiLarge.id) return viaApiLarge.id;
+  const viaApi = await tryList('');
+  if (viaApi.ok && viaApi.id) return viaApi.id;
+
+  // Fallback: reuse last known index_id from database mappings
+  try {
+    const { data: recent } = await supabase
+      .from('twelve_labs_mappings')
+      .select('index_id')
+      .not('index_id', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (recent?.index_id) {
+      console.log(`♻️ Reusing index from DB mappings: ${recent.index_id}`);
+      return recent.index_id as string;
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not query DB for existing index_id', e);
+  }
 
   // Try to create new index
   try {
@@ -192,8 +210,10 @@ async function createIndex() {
     // Handle 409 conflict - index already exists
     if (error.message.includes('409') || error.message.includes('index_name_already_exists')) {
       console.log('⚠️ Index creation returned 409 - falling back to existing index');
-      const fallbackIndexId = await findExistingIndex();
-      if (fallbackIndexId) return fallbackIndexId;
+      const retry = await tryList('?page_limit=1000');
+      if (retry.ok && retry.id) return retry.id;
+      const fallback = await tryList('');
+      if (fallback.ok && fallback.id) return fallback.id;
       throw new Error('Index exists but could not be retrieved');
     }
     throw error;
