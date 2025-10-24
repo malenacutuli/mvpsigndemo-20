@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -188,11 +188,23 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [hasUnsavedSilenceChanges, setHasUnsavedSilenceChanges] = useState(false);
   const [hasUnsavedInsightChanges, setHasUnsavedInsightChanges] = useState(false);
   const { toast } = useToast();
+  
+  // Store polling interval reference for proper cleanup
+  const pollingIntervalRef = useRef<number | null>(null);
 
-  // Check existing mapping on mount
+  // Check existing mapping on mount and cleanup on unmount
   useEffect(() => {
     checkExistingMapping();
     loadExistingResults();
+    
+    // Cleanup function to clear polling interval when component unmounts
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        console.log('🧹 Cleared polling interval on component unmount');
+      }
+    };
   }, [assetId]);
 
   // Reload results when prompts change
@@ -302,6 +314,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   };
 
   const startIndexing = async () => {
+    // Clear any existing polling interval before starting new indexing
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      console.log('🧹 Cleared existing polling interval before new indexing');
+    }
+    
     setIndexing(true);
     setSilenceResult(null);
     setInsightResult(null);
@@ -351,6 +370,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   };
 
   const startPolling = () => {
+    // Clear any existing interval before starting a new one
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      console.log('🧹 Cleared existing polling interval before starting new one');
+    }
+    
     const pollInterval = setInterval(async () => {
       try {
         const { data, error } = await supabase.functions.invoke('video-analysis-status', {
@@ -361,14 +387,20 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
         const mapping = data?.mapping;
         if (mapping?.status === 'ready') {
-          clearInterval(pollInterval);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
           setStatus('ready');
           toast({
             title: "Video Indexed",
             description: "Video is ready for analysis"
           });
         } else if (mapping?.status === 'failed') {
-          clearInterval(pollInterval);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
           setStatus('failed');
           toast({
             title: "Indexing Failed",
@@ -378,12 +410,24 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         }
       } catch (error) {
         console.error('Polling error:', error);
-        clearInterval(pollInterval);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
       }
     }, 3000);
+    
+    // Store the interval reference
+    pollingIntervalRef.current = pollInterval as unknown as number;
 
     // Stop polling after 10 minutes
-    setTimeout(() => clearInterval(pollInterval), 600000);
+    setTimeout(() => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        console.log('🕐 Polling timeout reached - cleared interval');
+      }
+    }, 600000);
   };
 
   const analyzeSilences = async () => {
