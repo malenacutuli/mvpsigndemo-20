@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Play, Upload, Eye, Ear, Hand } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -24,6 +25,14 @@ const Index = () => {
               <p className="text-base sm:text-lg md:text-xl text-foreground font-light leading-relaxed max-w-3xl mx-auto px-4">
                 {t('hero.subtitle')}
               </p>
+              
+              <div className="w-full max-w-2xl mx-auto py-8">
+                <img 
+                  src={accessibilityCircle} 
+                  alt="Accessibility features connecting people through video" 
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
                 <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
