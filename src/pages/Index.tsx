@@ -92,7 +92,7 @@ const Index = () => {
               {t('sections.axessibleExperience.title')}
             </h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
+            <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
               <div className="text-center space-y-6 group">
                 <div className="flex items-center justify-center mx-auto">
                   <img src={captionsWithIntention} alt="Captions with Intention" className="w-64 h-64 object-contain" />
