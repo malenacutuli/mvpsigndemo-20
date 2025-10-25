@@ -1,11 +1,12 @@
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Play, Upload, Hand } from 'lucide-react';
+import { Play, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 import captionsWithIntention from '@/assets/captions-with-intention.jpg';
 import audioDescriptions from '@/assets/audio-descriptions.jpg';
+import signLanguage from '@/assets/sign-language.jpg';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -113,8 +114,8 @@ const Index = () => {
               </div>
               
               <div className="text-center space-y-6 group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <Hand className="w-10 h-10 text-primary" />
+                <div className="flex items-center justify-center mx-auto">
+                  <img src={signLanguage} alt="Sign Language Descriptions" className="w-48 h-48 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.signLanguageTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
