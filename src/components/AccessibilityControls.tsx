@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { HandHelping, Mic, Subtitles } from 'lucide-react';
+import { HandHelping, Mic } from 'lucide-react';
+import captionsIntention from '@/assets/captions-intention.jpg';
 import {
   Tooltip,
   TooltipContent,
@@ -40,7 +41,7 @@ export const AccessibilityControls: React.FC<AccessibilityControlsProps> = ({
                 showCaptions ? 'bg-primary/30 text-primary' : ''
               }`}
             >
-              <Subtitles className="w-4 h-4" />
+              <img src={captionsIntention} alt="Captions with Intention" className="w-4 h-4 object-contain" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>

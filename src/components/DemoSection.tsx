@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping, Subtitles } from 'lucide-react';
+import { ChefHat, GraduationCap, Play, Sparkles, Volume2, HandHelping } from 'lucide-react';
+import captionsIntention from '@/assets/captions-intention.jpg';
 import { SignLanguageAvatarSelector } from './SignLanguageAvatarSelector';
 
 export const DemoSection: React.FC = () => {
@@ -245,7 +246,7 @@ export const DemoSection: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
-                  <p className="flex items-center gap-2"><Subtitles className="w-4 h-4 text-primary" /><strong>CC:</strong> Captions with Intention</p>
+                  <p className="flex items-center gap-2"><img src={captionsIntention} alt="Captions with Intention" className="w-4 h-4 object-contain" /><strong>CC:</strong> Captions with Intention</p>
                   <p className="flex items-center gap-2"><HandHelping className="w-4 h-4 text-primary" /><strong>ASL:</strong> AI-Animated ASL Avatar</p>
                   <p className="flex items-center gap-2"><Volume2 className="w-4 h-4 text-primary" /><strong>Audio:</strong> Audio Descriptions</p>
                   <p className="text-xs text-muted-foreground mt-3">

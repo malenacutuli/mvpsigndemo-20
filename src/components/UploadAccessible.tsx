@@ -14,7 +14,8 @@ import { WebinarHost } from "./WebinarHost";
 import { RealtimeChat } from "./RealtimeChat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, ShieldCheck, Languages, Subtitles, HandHelping, Settings, Video, MessageSquare } from "lucide-react";
+import { Upload, ShieldCheck, Languages, HandHelping, Settings, Video, MessageSquare } from "lucide-react";
+import captionsIntention from '@/assets/captions-intention.jpg';
 import type { CaptionSegment } from "./CaptionsWithIntention";
 
 // Updated content-type and voice/avatar presets matching DemoSection
@@ -262,7 +263,7 @@ export const UploadAccessible: React.FC = () => {
                       
                       <div className="grid gap-4 text-left max-w-md mx-auto bg-card/50 p-6 rounded-lg">
                         <h4 className="font-semibold text-center">What You'll Experience:</h4>
-                        <div className="flex items-center gap-3"><Subtitles className="w-5 h-5 text-primary"/> Auto-generated Captions with Intention</div>
+                        <div className="flex items-center gap-3"><img src={captionsIntention} alt="Captions with Intention" className="w-5 h-5 object-contain"/> Auto-generated Captions with Intention</div>
                         <div className="flex items-center gap-3"><HandHelping className="w-5 h-5 text-accent"/> ASL Avatar Overlay (Placeholder)</div>
                         <div className="flex items-center gap-3"><Languages className="w-5 h-5 text-destructive"/> Audio Descriptions</div>
                         <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5 text-green-600"/> Full ADA/EAA Compliance</div>
