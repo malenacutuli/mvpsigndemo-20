@@ -4,9 +4,10 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { StorageIndicator } from '@/components/StorageIndicator';
 import { SubscriptionManager } from '@/components/SubscriptionManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Video } from 'lucide-react';
+import { Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import uploadVideoIcon from '@/assets/upload-video-icon.jpg';
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -36,8 +37,8 @@ const Dashboard = () => {
                   <Link to="/upload" className="group">
                     <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft">
                       <CardHeader className="text-center pb-4">
-                        <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:bg-primary/20 transition-colors">
-                          <Upload className="w-10 h-10 text-primary" />
+                        <div className="w-20 h-20 flex items-center justify-center mb-6 mx-auto">
+                          <img src={uploadVideoIcon} alt="Upload video" className="w-20 h-20 object-contain" />
                         </div>
                         <CardTitle className="text-2xl font-light text-foreground">{t('dashboard.uploadVideo.title')}</CardTitle>
                       </CardHeader>
