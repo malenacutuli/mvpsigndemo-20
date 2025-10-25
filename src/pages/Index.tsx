@@ -1,10 +1,11 @@
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Play, Upload, Ear, Hand } from 'lucide-react';
+import { Play, Upload, Hand } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 import captionsWithIntention from '@/assets/captions-with-intention.jpg';
+import audioDescriptions from '@/assets/audio-descriptions.jpg';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -102,8 +103,8 @@ const Index = () => {
               </div>
               
               <div className="text-center space-y-6 group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <Ear className="w-10 h-10 text-primary" />
+                <div className="flex items-center justify-center mx-auto">
+                  <img src={audioDescriptions} alt="Creative Audio Descriptions" className="w-32 h-32 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.audioDescTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
