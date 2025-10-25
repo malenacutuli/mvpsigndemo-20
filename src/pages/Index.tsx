@@ -9,11 +9,11 @@ import captionsWithIntention from '@/assets/captions-with-intention.jpg';
 const Index = () => {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative bg-background py-20 sm:py-28 lg:py-40 overflow-hidden">
+      <section className="relative bg-white py-20 sm:py-28 lg:py-40 overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
@@ -83,7 +83,7 @@ const Index = () => {
       </section>
 
       {/* Section 2: The Axessible Experience */}
-      <section className="py-32 bg-background">
+      <section className="py-32 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
@@ -93,7 +93,7 @@ const Index = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
               <div className="text-center space-y-6 group">
                 <div className="flex items-center justify-center mx-auto">
-                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-24 h-24 object-contain" />
+                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-32 h-32 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.captionsTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
@@ -155,7 +155,7 @@ const Index = () => {
       </section>
 
       {/* Section 4: For Creators */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
@@ -209,7 +209,7 @@ const Index = () => {
       </section>
 
       {/* Section 6: Impact Statistics */}
-      <section className="py-32 bg-background">
+      <section className="py-32 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
@@ -275,7 +275,7 @@ const Index = () => {
       </section>
 
       {/* Section 7: Closing CTA */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-light text-foreground mb-6">
