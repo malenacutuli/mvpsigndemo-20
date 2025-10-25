@@ -1,13 +1,14 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Mic, Volume2, Globe, HandHelping } from 'lucide-react';
+import { Volume2, Globe, HandHelping } from 'lucide-react';
+import captionsIntention from '@/assets/captions-intention.jpg';
 
 export const FeatureExplanation: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <Card className="p-4 bg-blue-600/10 border-blue-600/20">
         <div className="flex items-center gap-2 mb-2">
-          <Mic className="w-5 h-5 text-blue-400" />
+          <img src={captionsIntention} alt="Captions with intention" className="w-5 h-5 object-contain" />
           <h3 className="font-medium text-blue-400">AI CC (Closed Captions)</h3>
         </div>
         <p className="text-sm text-blue-200">
