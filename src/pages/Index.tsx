@@ -95,7 +95,7 @@ const Index = () => {
             <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
               <div className="text-center space-y-6 group">
                 <div className="flex items-center justify-center mx-auto">
-                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-64 h-64 object-contain" />
+                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-80 h-80 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.captionsTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
@@ -115,7 +115,7 @@ const Index = () => {
               
               <div className="text-center space-y-6 group">
                 <div className="flex items-center justify-center mx-auto">
-                  <img src={signLanguage} alt="Sign Language Descriptions" className="w-64 h-64 object-contain" />
+                  <img src={signLanguage} alt="Sign Language Descriptions" className="w-80 h-80 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.signLanguageTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
