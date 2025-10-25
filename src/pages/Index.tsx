@@ -92,8 +92,8 @@ const Index = () => {
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
               <div className="text-center space-y-6 group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-10 h-10 object-contain" />
+                <div className="flex items-center justify-center mx-auto">
+                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-24 h-24 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.captionsTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
