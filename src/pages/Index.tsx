@@ -110,16 +110,6 @@ const Index = () => {
                   {t('sections.axessibleExperience.signLanguageDesc')}
                 </p>
               </div>
-              
-              <div className="text-center space-y-6 group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <Play className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.playerTitle')}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">
-                  {t('sections.axessibleExperience.playerDesc')}
-                </p>
-              </div>
             </div>
           </div>
         </div>
