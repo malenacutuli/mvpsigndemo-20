@@ -571,8 +571,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         {characters.length > 0 && (
           <Card className="border-orange-200/50 bg-orange-50/30">
             <CardContent className="p-4 space-y-3">
-              <h4 className="font-medium text-orange-800 flex items-center gap-2">
-                🔗 Speaker Assignment
+              <h4 className="font-medium text-orange-800">
+                Speaker Assignment
               </h4>
               <p className="text-sm font-light leading-relaxed text-orange-700">
                 Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
