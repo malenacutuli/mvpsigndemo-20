@@ -66,15 +66,6 @@ export const Navigation: React.FC = () => {
               {t('nav.pricing')}
             </Link>
             
-            <a 
-              href="https://axessplayer.com" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-base font-light transition-colors hover:text-primary text-slate-600"
-            >
-              Our Lab
-            </a>
-            
             {user && (
               <>
                 <Link 
