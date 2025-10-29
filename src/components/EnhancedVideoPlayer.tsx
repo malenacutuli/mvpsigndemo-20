@@ -565,25 +565,37 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // Auto-detect available transcript language for this video
-        const { data: availableTranscripts } = await supabase
-          .from('transcript_segments')
-          .select('language')
-          .eq('video_id', videoId)
-          .limit(5);
+        // Auto-detect available transcript language ONLY if no language was specified
+        let targetLanguage = currentLanguage;
         
-        // Find first available language
-        let detectedLanguage = currentLanguage;
-        if (availableTranscripts && availableTranscripts.length > 0) {
-          const uniqueLanguages = [...new Set(availableTranscripts.map((t: any) => t.language))];
-          detectedLanguage = uniqueLanguages[0] || currentLanguage;
-          console.log('🌐 ENHANCED PLAYER: Auto-detected available language:', detectedLanguage);
-          setCurrentLanguage(detectedLanguage);
+        // Only auto-detect if currentLanguage is not set or is 'auto'
+        if (!currentLanguage || currentLanguage === 'auto') {
+          const { data: availableTranscripts } = await supabase
+            .from('transcript_segments')
+            .select('language')
+            .eq('video_id', videoId)
+            .limit(10);
+          
+          if (availableTranscripts && availableTranscripts.length > 0) {
+            // Filter out 'auto' language and get unique valid languages
+            const uniqueLanguages = [...new Set(
+              availableTranscripts
+                .map((t: any) => t.language)
+                .filter((lang: string) => lang && lang !== 'auto')
+            )];
+            
+            // Prefer 'en' if available, otherwise take first valid language
+            targetLanguage = uniqueLanguages.includes('en') ? 'en' : uniqueLanguages[0];
+            console.log('🌐 ENHANCED PLAYER: Auto-detected language (no explicit choice):', targetLanguage);
+            setCurrentLanguage(targetLanguage);
+          }
+        } else {
+          console.log('✅ ENHANCED PLAYER: Using explicitly selected language:', targetLanguage);
         }
         
-        // Load transcript segments with detected language
-        const segments = await loadTranscriptSegments(detectedLanguage);
-        console.log('📖 ENHANCED PLAYER: Loaded transcript segments:', segments.length, 'segments for language:', detectedLanguage);
+        // Load transcript segments with the correct target language
+        const segments = await loadTranscriptSegments(targetLanguage);
+        console.log('📖 ENHANCED PLAYER: Loaded transcript segments:', segments.length, 'segments for language:', targetLanguage);
         setTranscriptSegments(segments);
         
         if (segments.length > 0) {

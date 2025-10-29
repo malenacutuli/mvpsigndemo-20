@@ -526,16 +526,15 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       } : 'No caption');
       
       // CRITICAL: Only update if we're on the original language OR if we don't have captions yet
-      // Don't override translated captions when user has switched languages
+      // Translated captions from LanguageSelector take absolute priority
       const shouldUpdate = (
         currentLanguage === originalLanguage || // User is viewing original language
         !generatedCaptions || // No captions yet
-        generatedCaptions.length === 0 || // Empty captions
-        (initialCaptions[0] as any)._updateKey // Explicit database update
+        generatedCaptions.length === 0 // Empty captions
       );
       
       if (shouldUpdate) {
-        console.log('✅ Setting generatedCaptions from initialCaptions (lang match or initial load)');
+        console.log('✅ Setting generatedCaptions from initialCaptions (lang:', currentLanguage, ')');
         setGeneratedCaptions([...initialCaptions]);
         
         // Generate transcript text for dubbing from initial captions
@@ -545,7 +544,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           .join(' ');
         setGeneratedTranscript(transcriptText);
       } else {
-        console.log('⏭️ Skipping initialCaptions update - user is viewing translated content (current:', currentLanguage, 'original:', originalLanguage, ')');
+        console.log('⏭️ Preserving existing captions - current lang:', currentLanguage, 'original:', originalLanguage);
       }
     }
   }, [initialCaptions, currentLanguage, originalLanguage]);
