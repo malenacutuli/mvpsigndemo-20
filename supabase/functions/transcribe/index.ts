@@ -748,24 +748,8 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
 
   const fullText = (resultData.text as string) || segments.map((s) => s.text).join(" ");
   
-  // Validate transcription quality and detect refusal/error responses
-  const suspiciousPatterns = [
-    /lo siento.*no puedo.*ayudar/i,
-    /i.*sorry.*can.*t.*help/i,
-    /cannot.*transcribe/i,
-    /unable.*to.*process/i,
-    /error.*processing/i,
-    /^(i'm sorry|lo siento)/i
-  ];
-  
-  const isSuspiciousResponse = suspiciousPatterns.some(pattern => pattern.test(fullText));
-  
-  if (isSuspiciousResponse || fullText.length < 10) {
-    console.warn("⚠️ Detected suspicious or low-quality transcription response:", fullText);
-    throw new Error(`Transcription quality issue: The audio may be unclear, contain unsupported content, or have technical issues. Response: "${fullText.substring(0, 100)}..."`);
-  }
-  
-  console.log("✅ AssemblyAI transcription validated successfully!");
+  // Validation is now non-blocking and handled later in the flow
+  console.log(`✅ AssemblyAI transcription complete: ${segments.length} segments, ${fullText.length} chars`);
   
   return {
     text: fullText,
