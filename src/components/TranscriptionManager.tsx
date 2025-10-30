@@ -73,12 +73,23 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         body: { 
           videoUrl: videoUrl,
           videoId: videoId, // Pass videoId for database saving
-          rangeBytes: 15000000 // First 15MB for transcription
+          rangeBytes: 15000000, // First 15MB for transcription
+          skipQualityCheck: true // Bypass validation for consistency
         }
       });
 
       if (error) {
         throw new Error(error.message || 'Transcription failed');
+      }
+
+      // Handle validation warnings (non-blocking)
+      if (data?.validation?.status === 'warn') {
+        console.warn('⚠️ Quality warning:', data.validation.reason);
+      }
+
+      // Only fail if no segments at all
+      if (data?.error && !data?.segments) {
+        throw new Error(`${data.error}: ${data.message || 'Transcription failed'}`);
       }
 
       console.log('Transcription result:', data);

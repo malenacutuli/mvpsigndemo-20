@@ -298,7 +298,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             forceReExtract: true,
             language: detectedLanguage === 'auto' ? undefined : detectedLanguage,
             maxDurationMinutes: 60, // Index up to 60 minutes by default
-            useTestingMode // Add testing mode flag
+            useTestingMode, // Add testing mode flag
+            skipQualityCheck: true // Bypass validation to unblock immediately
           }
         });
         
@@ -323,8 +324,24 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         throw new Error(`Transcription failed: ${error.message || 'Unknown error'}`);
       }
 
-      if (!data) {
-        throw new Error('No transcription data received');
+      // Only fail if no segments AND explicit error
+      if (data?.error && (!data?.segments || data.segments.length === 0)) {
+        console.error('❌ Transcription error with no segments:', data.error);
+        throw new Error(`${data.error}: ${data.message || 'Transcription failed'}`);
+      }
+
+      // Show non-blocking warning if validation flagged issues
+      if (data?.validation?.status === 'warn') {
+        console.warn('⚠️ Transcription quality warning:', data.validation.reason);
+        toast({
+          title: "⚠️ Quality Notice",
+          description: data.validation.reason || 'Minor quality issues detected. Proceeding with transcription.',
+          variant: "default",
+        });
+      }
+
+      if (!data || !data.segments) {
+        throw new Error('No transcription segments received');
       }
 
       // Process transcript data

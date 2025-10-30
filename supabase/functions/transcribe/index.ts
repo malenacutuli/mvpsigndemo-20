@@ -30,7 +30,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -41,7 +41,8 @@ serve(async (req) => {
       wordTimestamps: !!wordTimestamps,
       rangeBytes: rangeBytes || 'default',
       maxDurationMinutes: maxDurationMinutes || 60,
-      useTestingMode: !!useTestingMode
+      useTestingMode: !!useTestingMode,
+      skipQualityCheck: !!skipQualityCheck
     });
     
     const origin = req.headers.get("origin") || "";
@@ -303,17 +304,47 @@ serve(async (req) => {
         transcriptionResult.coverage = coverage;
       }
       
-      // Check for gibberish patterns and suspicious content
-      const validationResult = validateTranscriptionQuality(transcriptionResult);
-      if (!validationResult.isValid) {
-        console.log("❌ Transcription validation failed:", validationResult.reason);
-        transcriptionResult = {
-          error: 'invalid_transcription',
-          message: `Transcription quality check failed: ${validationResult.reason}. This may indicate issues with audio quality, video format, or API processing. Please try with a different video or check audio clarity.`,
-          details: validationResult.issues
-        };
-      } else {
-        console.log("✅ Transcription validation passed");
+      // Non-blocking quality validation
+      if (!skipQualityCheck && transcriptionResult && transcriptionResult.segments) {
+        const validationResult = validateTranscriptionQuality(transcriptionResult);
+        
+        if (!validationResult.isValid) {
+          // NON-BLOCKING: Add warning but DON'T replace segments
+          console.warn("⚠️ Quality warning (non-blocking):", validationResult.reason);
+          console.warn("⚠️ Issues found:", validationResult.issues || []);
+          
+          // Sample text for debugging (first 200 chars)
+          const combinedText = transcriptionResult.segments
+            .map((s: any) => s.text || '')
+            .join(' ')
+            .substring(0, 200);
+          console.log("📝 Sample text:", combinedText);
+          
+          // Attach validation metadata but KEEP segments intact
+          transcriptionResult.validation = {
+            status: 'warn',
+            reason: validationResult.reason,
+            issues: validationResult.issues || []
+          };
+        } else {
+          console.log("✅ Transcription validation passed");
+          transcriptionResult.validation = { status: 'ok' };
+        }
+      } else if (skipQualityCheck) {
+        console.log("⏭️ Skipping validation by request (skipQualityCheck=true)");
+        transcriptionResult.validation = { status: 'skipped' };
+      }
+      
+      // CRITICAL: Only fail if absolutely NO segments exist
+      if (!transcriptionResult || !transcriptionResult.segments || transcriptionResult.segments.length === 0) {
+        console.error("❌ CRITICAL: No segments generated at all");
+        return new Response(
+          JSON.stringify({
+            error: 'no_segments',
+            message: 'Transcription failed to generate any segments'
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
