@@ -50,9 +50,10 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
     { code: 'ko', name: 'Korean' },
   ];
 
-  const getSpeakerColor = (index: number) => {
-    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
-    return colors[index % colors.length];
+  // Use unified color palette from cwiPalette
+  const getSpeakerColor = (speakerName: string) => {
+    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
+    return getColor(speakerName);
   };
 
   // Convert timestamp formats to seconds
@@ -115,7 +116,7 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
           startTime,
           endTime,
           speaker: `Speaker ${(index % 3) + 1}`,
-          speakerColor: getSpeakerColor(index),
+          speakerColor: getSpeakerColor(`Speaker ${(index % 3) + 1}`),
           emphasis: 'normal',
           pitch: 'normal'
         });
@@ -149,7 +150,7 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
             startTime: currentSegment.startTime || 0,
             endTime: currentSegment.endTime || 0,
             speaker: `Speaker ${(segmentIndex % 3) + 1}`,
-            speakerColor: getSpeakerColor(segmentIndex),
+            speakerColor: getSpeakerColor(`Speaker ${(segmentIndex % 3) + 1}`),
             emphasis: 'normal',
             pitch: 'normal'
           });
@@ -176,7 +177,7 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
         startTime: currentSegment.startTime || 0,
         endTime: currentSegment.endTime || 0,
         speaker: `Speaker ${(segmentIndex % 3) + 1}`,
-        speakerColor: getSpeakerColor(segmentIndex),
+        speakerColor: getSpeakerColor(`Speaker ${(segmentIndex % 3) + 1}`),
         emphasis: 'normal',
         pitch: 'normal'
       });
@@ -233,7 +234,7 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
           startTime,
           endTime,
           speaker: `Speaker ${(index % 3) + 1}`,
-          speakerColor: getSpeakerColor(index),
+          speakerColor: getSpeakerColor(`Speaker ${(index % 3) + 1}`),
           emphasis: 'normal',
           pitch: 'normal'
         });

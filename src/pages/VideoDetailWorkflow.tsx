@@ -86,7 +86,7 @@ export default function VideoDetailWorkflow() {
           pitch: seg.pitch === 'high' ? 200 : seg.pitch === 'low' ? 120 : 160,
           type: 'dialogue',
           isOffCamera: seg.is_off_camera || false,
-          speakerColor: seg.speaker_color || getSpeakerColor(index), // Load saved speaker color
+          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`), // Load saved speaker color
         }));
         setCaptions(captionSegments);
         // Keep workflow visible so users can always edit transcript and manage characters
@@ -97,9 +97,10 @@ export default function VideoDetailWorkflow() {
     }
   };
 
-  const getSpeakerColor = (index: number) => {
-    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
-    return colors[index % colors.length];
+  // Use unified color palette from cwiPalette
+  const getSpeakerColor = (speakerName: string) => {
+    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
+    return getColor(speakerName);
   };
 
   const fetchVideo = async (videoId: string) => {

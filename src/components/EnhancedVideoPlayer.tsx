@@ -11,6 +11,8 @@ import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { useAdvancedSpeakerAnalysis } from '@/hooks/useAdvancedSpeakerAnalysis';
+import { getSpeakerColor as getSpeakerColorFromPalette } from '@/lib/cwiPalette';
+import { injectSyllables } from '@/lib/syllables';
 
 interface EnhancedVideoPlayerProps {
   videoSrc: string;
@@ -70,34 +72,35 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
     return unique;
   }, [transcriptSegments]);
-  // Stable speaker color assignment function (using full 18-color palette)
+  // Stable speaker color assignment using cwiPalette and character colors
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
-    // Create consistent speaker color mapping based on speaker names
-    const speakerColorMap = new Map<string, string>();
-    const availableColors = [
-      // Main (6)
-      '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
-      // Supporting (12)
-      '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
-      '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
-    ];
-    
-    let colorIndex = 0;
-    
-    // First pass: identify unique speakers and assign consistent colors
-    segments.forEach(segment => {
-      const speakerName = segment.speaker || 'Speaker';
-      if (!speakerColorMap.has(speakerName)) {
-        speakerColorMap.set(speakerName, availableColors[colorIndex % availableColors.length]);
-        colorIndex++;
+    // Build character color map
+    const characterColorMap: Record<string, string> = {};
+    characters.forEach(char => {
+      if (char.name && char.color) {
+        characterColorMap[char.name] = char.color;
       }
     });
     
-    // Second pass: apply consistent colors to all segments
-    return segments.map(segment => ({
-      ...segment,
-      speakerColor: speakerColorMap.get(segment.speaker || 'Speaker') || availableColors[0]
-    }));
+    // Normalize speaker names consistently for color assignment
+    const normalizeSpeaker = (name: string) => {
+      return name.trim().toLowerCase().replace(/\s+/g, '_');
+    };
+    
+    // Apply colors using unified source (cwiPalette + characters)
+    return segments.map(segment => {
+      const speaker = segment.speaker || 'Speaker';
+      const normalizedSpeaker = normalizeSpeaker(speaker);
+      
+      // Priority 1: Character color from CharacterManager
+      if (characterColorMap[speaker]) {
+        return { ...segment, speaker, speakerColor: characterColorMap[speaker] };
+      }
+      
+      // Priority 2: Use cwiPalette auto-assignment
+      const color = getSpeakerColorFromPalette(speaker, characterColorMap, segment.speakerColor);
+      return { ...segment, speaker, speakerColor: color };
+    });
   };
 
   // Fallback speaker color assignment for error cases

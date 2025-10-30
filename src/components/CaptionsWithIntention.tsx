@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { getSpeakerColor as getColorFromPalette } from '@/lib/cwiPalette';
+import { syllabify, injectSyllables } from '@/lib/syllables';
 
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
@@ -78,21 +79,7 @@ interface CaptionsWithIntentionProps {
   screenHeight?: number;
 }
 
-/**
- * Syllabify word into syllables for long words (>10 characters)
- * Uses vowel-cluster detection heuristic
- */
-const syllabify = (word: string): string[] => {
-  if (word.length <= 10) return [word];
-  
-  // Simple syllable detection: split before vowel clusters
-  const parts = word.split(/(?=[aeiouAEIOU]+)/i).filter(p => p.length > 0);
-  
-  // If no vowels or only one part, return as-is
-  if (parts.length <= 1) return [word];
-  
-  return parts;
-};
+// Syllabify utility moved to src/lib/syllables.ts for reuse
 
 /**
  * Calculate font size based on vocal intensity, volume, or emphasis - REDUCED SIZES
@@ -355,7 +342,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         startTime + wordDuration
       );
       
-      // Syllabify long words (>10 chars)
+      // Syllabify long words (>= 6 chars, lowered threshold)
       const syllables = syllabify(word);
       const syllableData = syllables.length > 1 ? syllables.map((syl, sylIdx) => {
         const sylDuration = wordDuration / syllables.length;
@@ -377,6 +364,20 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
     
     console.log('✅ CAPTIONS: Synthesized', words.length, 'words with natural timing for segment', workingCaption.startTime.toFixed(2) + 's');
+  } else {
+    // Words exist from provider: inject syllables for words >= 6 chars that don't have them
+    const beforeCount = workingCaption.words.filter(w => w.syllables && w.syllables.length > 0).length;
+    const injectedWords = injectSyllables(workingCaption.words);
+    // Ensure proper typing after injection
+    workingCaption.words = injectedWords.map(w => ({
+      ...w,
+      emphasis: (w.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling') || 'normal',
+      pitch: (w.pitch as 'high' | 'low' | 'normal') || 'normal'
+    }));
+    const afterCount = workingCaption.words.filter(w => w.syllables && w.syllables.length > 0).length;
+    if (afterCount > beforeCount) {
+      console.log(`SYL: added syllables to ${afterCount - beforeCount} words`);
+    }
   }
   
   let activeWordIndex = workingCaption.words?.findIndex(word => 

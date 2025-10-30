@@ -72,7 +72,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     const speakers = Array.from(new Set(segments.map(seg => seg.speaker)));
     return speakers.map(speaker => ({
       name: speaker,
-      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || getSpeakerColor(speakers.indexOf(speaker))
+      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || getSpeakerColor(speaker)
     }));
   };
 
@@ -156,7 +156,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           startTime: Number(seg.start_time),
           endTime: Number(seg.end_time),
           speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          speakerColor: seg.speaker_color || getSpeakerColor(index),
+          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
           emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
           pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
         }));
@@ -181,9 +181,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     }
   };
 
-  const getSpeakerColor = (index: number) => {
-    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5'];
-    return colors[index % colors.length];
+  // Use unified color palette from cwiPalette
+  const getSpeakerColor = (speakerName: string) => {
+    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
+    return getColor(speakerName);
   };
 
   const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
@@ -312,7 +313,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       if (data.segments && Array.isArray(data.segments)) {
         extractedSegments = data.segments.map((segment: any, index: number) => {
           const speaker = segment.speaker || `Speaker ${(index % 3) + 1}`;
-          const speakerColor = getSpeakerColor(index);
+          const speakerColor = getSpeakerColor(speaker);
           
           return {
             id: `segment-${index}`,
@@ -320,7 +321,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             startTime: Number(segment.startTime || segment.start || 0),
             endTime: Number(segment.endTime || segment.end || 0),
             speaker,
-            speakerColor,
+            speakerColor: getSpeakerColor(speaker),
             emphasis: segment.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling' || 'normal',
             pitch: segment.pitch as 'normal' | 'high' | 'low' || 'normal',
             words: segment.words || []
