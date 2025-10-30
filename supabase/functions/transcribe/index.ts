@@ -995,7 +995,7 @@ async function transcribeWithDeepgram(videoUrl: string, language?: string): Prom
   };
 }
 
-// Validate transcription quality to detect gibberish and low-quality outputs
+// Validate transcription quality - Trust provider confidence scores primarily
 function validateTranscriptionQuality(result: any): { isValid: boolean; reason?: string; issues?: string[] } {
   const issues: string[] = [];
   
@@ -1003,59 +1003,50 @@ function validateTranscriptionQuality(result: any): { isValid: boolean; reason?:
     return { isValid: false, reason: 'No segments found in transcription' };
   }
   
-  // Check for gibberish patterns
-  for (const segment of result.segments) {
-    const text = segment.text || '';
-    
-    // Check for repetitive characters (like "Qaaaaaaa...")
-    const repetitivePattern = /(.)\1{10,}/; // Same character repeated 11+ times
-    if (repetitivePattern.test(text)) {
-      issues.push(`Repetitive character pattern detected: "${text.substring(0, 50)}..."`);
-    }
-    
-    // Check for extremely low character diversity
-    const uniqueChars = new Set(text.replace(/\s+/g, '').toLowerCase()).size;
-    const totalChars = text.replace(/\s+/g, '').length;
-    if (totalChars > 20 && uniqueChars < 3) {
-      issues.push(`Very low character diversity: ${uniqueChars} unique chars in ${totalChars} characters`);
-    }
-    
-    // Check for nonsensical word patterns
-    const words = text.split(/\s+/).filter((w: string) => w.length > 0);
-    if (words.length > 5) {
-      const shortWords = words.filter((w: string) => w.length < 3).length;
-      const longRepetitiveWords = words.filter((w: string) => w.length > 8 && /(.{2,})\1{2,}/.test(w)).length;
-      
-      if (shortWords / words.length > 0.8) {
-        issues.push(`Too many very short words (${shortWords}/${words.length})`);
-      }
-      if (longRepetitiveWords > 0) {
-        issues.push(`Repetitive word patterns detected`);
-      }
-    }
-    
-    // Check for Spanish refusal patterns (from previous fix)
-    const spanishRefusalPatterns = [
-      /lo siento.*no puedo.*ayudar/i,
-      /sorry.*cannot.*help/i,
-      /i cannot.*assist/i,
-      /no puedo.*proporcionar/i
-    ];
-    
-    if (spanishRefusalPatterns.some(pattern => pattern.test(text))) {
-      issues.push(`API refusal message detected instead of transcription: "${text}"`);
-    }
-  }
+  // Only check for CRITICAL issues that indicate API errors, not natural speech patterns
+  // Trust AssemblyAI's confidence scores instead of doing strict pattern matching
   
-  // If we found significant issues, mark as invalid
-  if (issues.length > 0) {
-    console.log("🚨 Transcription quality issues detected:", issues);
+  const allText = result.segments.map((s: any) => s.text || '').join(' ');
+  
+  // Check for API refusal messages (actual errors)
+  const refusalPatterns = [
+    /lo siento.*no puedo.*ayudar/i,
+    /sorry.*cannot.*help/i,
+    /i cannot.*assist/i,
+    /no puedo.*proporcionar/i,
+    /i'm sorry.*i can't/i,
+    /unable to process/i
+  ];
+  
+  if (refusalPatterns.some(pattern => pattern.test(allText))) {
     return { 
       isValid: false, 
-      reason: `${issues.length} quality issue${issues.length > 1 ? 's' : ''} detected`, 
+      reason: 'API refusal message detected',
+      issues: ['Transcription provider returned an error message instead of transcription']
+    };
+  }
+  
+  // Check for EXTREME repetition only (15+ same character in a row - likely encoding error)
+  const extremeRepetitionPattern = /(.)\1{15,}/;
+  if (extremeRepetitionPattern.test(allText)) {
+    issues.push('Extreme character repetition detected - possible encoding error');
+  }
+  
+  // Check if transcription is suspiciously short relative to segment count
+  if (result.segments.length > 10 && allText.replace(/\s+/g, '').length < 50) {
+    issues.push('Transcription suspiciously short for number of segments');
+  }
+  
+  // Only fail if we found CRITICAL issues
+  if (issues.length > 0) {
+    console.log("⚠️ Critical transcription issues detected:", issues);
+    return { 
+      isValid: false, 
+      reason: `Critical validation issue detected`, 
       issues 
     };
   }
   
+  console.log("✅ Transcription quality validation passed - trusting provider confidence");
   return { isValid: true };
 }

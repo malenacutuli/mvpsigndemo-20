@@ -299,8 +299,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   if (!activeCaption) return null;
 
-  // Enhanced word timing and highlighting logic with better early-video sync
-  const TIMING_TOLERANCE = 0.06; // 60ms tolerance for reliable sync across browsers
+  // Enhanced word timing with provider-aware precision
+  const hasProviderTimings = activeCaption.words && activeCaption.words.length > 0 && 
+    activeCaption.words.some((w: any) => w.startTime !== undefined);
+  
+  // Tighter tolerance for provider data (AssemblyAI/Deepgram), looser for synthesized
+  const TIMING_TOLERANCE = hasProviderTimings ? 0.03 : 0.06; // 30ms vs 60ms
+  const READAHEAD_BUFFER = 0.025; // Start highlighting 25ms early for better perceived sync
   
   // Truncate text for mobile portrait to prevent excessive screen coverage
   const isMobilePortrait = window.innerWidth < 640 && window.innerHeight > window.innerWidth;
@@ -314,7 +319,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   // Track if we synthesized data (for persistence flag)
   let synthesizedWords = false;
   
-  // Synthesize word-level timing if missing with improved accuracy
+  // Synthesize word-level timing if missing with IMPROVED accuracy
   let workingCaption = { ...activeCaption, text: captionText };
   if (!workingCaption.words || workingCaption.words.length === 0) {
     synthesizedWords = true;
@@ -322,27 +327,39 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
     
-    // More natural word timing based on word length and common speech patterns
-    const baseWPM = 150; // Average words per minute for clear speech
-    const wordsPerSecond = baseWPM / 60;
-    const naturalDuration = words.length / wordsPerSecond;
+    // Adaptive speech rate based on actual segment duration
+    const measuredWPM = (words.length / duration) * 60;
+    const baseWPM = Math.max(120, Math.min(180, measuredWPM)); // Clamp to realistic range
     
-    // Use actual segment duration but respect natural speech timing
-    const effectiveDuration = Math.max(duration, naturalDuration * 0.8);
-    const avgWordDuration = effectiveDuration / words.length;
+    // Account for punctuation pauses
+    let currentTime = workingCaption.startTime;
+    const pauseAfterPeriod = 0.15; // 150ms after period
+    const pauseAfterComma = 0.08; // 80ms after comma
     
     workingCaption.words = words.map((word, index) => {
-      // Vary word duration slightly based on word length for realism
+      // Word complexity scoring: longer/harder words get more time
       const lengthFactor = Math.max(0.7, Math.min(1.5, word.length / 5));
-      const wordDuration = Math.max(0.12, avgWordDuration * lengthFactor); // Min 120ms per word
+      const hasCapital = /[A-Z]/.test(word);
+      const complexityBonus = hasCapital ? 1.1 : 1.0;
       
-      const startTime = workingCaption.startTime + (index * avgWordDuration);
-      const endTime = Math.min(
-        workingCaption.endTime, 
-        startTime + wordDuration
-      );
+      // Calculate word duration with natural variation
+      const baseWordDuration = (60 / baseWPM) * lengthFactor * complexityBonus;
+      const wordDuration = Math.max(0.15, baseWordDuration); // Min 150ms
       
-      // Syllabify long words (>= 6 chars, lowered threshold)
+      const startTime = currentTime;
+      const endTime = Math.min(workingCaption.endTime, startTime + wordDuration);
+      
+      // Advance time
+      currentTime = endTime;
+      
+      // Add natural pauses after punctuation
+      if (word.endsWith('.') || word.endsWith('!') || word.endsWith('?')) {
+        currentTime += pauseAfterPeriod;
+      } else if (word.endsWith(',')) {
+        currentTime += pauseAfterComma;
+      }
+      
+      // Syllabify long words
       const syllables = syllabify(word);
       const syllableData = syllables.length > 1 ? syllables.map((syl, sylIdx) => {
         const sylDuration = wordDuration / syllables.length;
@@ -363,7 +380,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       };
     });
     
-    console.log('✅ CAPTIONS: Synthesized', words.length, 'words with natural timing for segment', workingCaption.startTime.toFixed(2) + 's');
+    console.log('✅ CAPTIONS: Synthesized', words.length, 'words with adaptive timing (', baseWPM.toFixed(0), 'WPM ) for segment', workingCaption.startTime.toFixed(2) + 's');
   } else {
     // Words exist from provider: inject syllables for words >= 6 chars that don't have them
     const beforeCount = workingCaption.words.filter(w => w.syllables && w.syllables.length > 0).length;
@@ -380,14 +397,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }
   
+  // Apply read-ahead buffer to account for audio processing latency
+  const adjustedTime = currentTime + READAHEAD_BUFFER;
+  
   let activeWordIndex = workingCaption.words?.findIndex(word => 
-    currentTime >= (word.startTime - TIMING_TOLERANCE) && 
-    currentTime <= (word.endTime + TIMING_TOLERANCE)
+    adjustedTime >= (word.startTime - TIMING_TOLERANCE) && 
+    adjustedTime <= (word.endTime + TIMING_TOLERANCE)
   ) ?? -1;
   
   // Fallback: if within segment but no word matches, pick by proportional progress
-  if (activeWordIndex < 0 && currentTime >= workingCaption.startTime - TIMING_TOLERANCE && currentTime <= workingCaption.endTime + TIMING_TOLERANCE) {
-    const progress = (currentTime - workingCaption.startTime) / Math.max(0.001, (workingCaption.endTime - workingCaption.startTime));
+  if (activeWordIndex < 0 && adjustedTime >= workingCaption.startTime - TIMING_TOLERANCE && adjustedTime <= workingCaption.endTime + TIMING_TOLERANCE) {
+    const progress = (adjustedTime - workingCaption.startTime) / Math.max(0.001, (workingCaption.endTime - workingCaption.startTime));
     activeWordIndex = Math.min(workingCaption.words.length - 1, Math.max(0, Math.floor(progress * workingCaption.words.length)));
   }
   const activeWord = activeWordIndex >= 0 ? workingCaption.words?.[activeWordIndex] : undefined;
