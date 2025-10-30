@@ -296,9 +296,24 @@ serve(async (req) => {
       }
     }
 
-    // POST-PROCESSING VALIDATION
+    // POST-PROCESSING VALIDATION AND COVERAGE CHECK
     if (transcriptionResult && transcriptionResult.segments) {
-      console.log("🔍 Validating transcription quality...");
+      console.log("🔍 Validating transcription quality and coverage...");
+      
+      // Calculate coverage
+      const lastSegment = transcriptionResult.segments[transcriptionResult.segments.length - 1];
+      const lastSegmentEnd = lastSegment?.end || lastSegment?.endTime || 0;
+      const duration = transcriptionResult.duration || lastSegmentEnd || 0;
+      const coverage = duration > 0 ? lastSegmentEnd / duration : 1;
+      
+      console.log(`📊 Coverage check: lastSegmentEnd=${lastSegmentEnd}s, duration=${duration}s, coverage=${(coverage * 100).toFixed(1)}%`);
+      
+      // For videos >60s, require 80% coverage
+      if (duration > 60 && coverage < 0.8) {
+        console.warn(`⚠️ Low coverage detected (${(coverage * 100).toFixed(1)}%), treating as partial transcription`);
+        transcriptionResult.partial = true;
+        transcriptionResult.coverage = coverage;
+      }
       
       // Check for gibberish patterns and suspicious content
       const validationResult = validateTranscriptionQuality(transcriptionResult);

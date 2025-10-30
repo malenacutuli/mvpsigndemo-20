@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
+import { getSpeakerColor as getColorFromPalette } from '@/lib/cwiPalette';
 
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
@@ -49,7 +50,7 @@ export interface WordSegment {
   endTime: number;
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
-  syllables?: string[];
+  syllables?: Array<{ text: string; startTime: number; endTime: number }>;
 }
 
 export interface CaptionSegment {
@@ -78,59 +79,19 @@ interface CaptionsWithIntentionProps {
 }
 
 /**
- * Get speaker color with proper fallback to segment's assigned color
+ * Syllabify word into syllables for long words (>10 characters)
+ * Uses vowel-cluster detection heuristic
  */
-const getSpeakerColor = (speaker: string, customColors?: Record<string, string>, segmentColor?: string): string => {
-  // CRITICAL: This is the final mapping gate - ensure all sources are checked in order
+const syllabify = (word: string): string[] => {
+  if (word.length <= 10) return [word];
   
-  // 1. FIRST PRIORITY: Direct segment color from database (speaker_color column)
-  if (segmentColor && segmentColor !== '#3B82F6') {
-    console.log('🎨 Using database speaker_color for', speaker, ':', segmentColor);
-    return segmentColor;
-  }
+  // Simple syllable detection: split before vowel clusters
+  const parts = word.split(/(?=[aeiouAEIOU]+)/i).filter(p => p.length > 0);
   
-  // 2. SECOND PRIORITY: Character Manager mapping from localStorage
-  if (customColors && customColors[speaker]) {
-    console.log('🎨 Using Character Manager color for', speaker, ':', customColors[speaker]);
-    return customColors[speaker];
-  }
+  // If no vowels or only one part, return as-is
+  if (parts.length <= 1) return [word];
   
-  // 3. THIRD PRIORITY: Check localStorage for direct character-colors mapping  
-  const characterColors = localStorage.getItem('character-colors');
-  if (characterColors) {
-    try {
-      const colors = JSON.parse(characterColors);
-      if (colors[speaker]) {
-        console.log('🎨 Using localStorage character-colors for', speaker, ':', colors[speaker]);
-        return colors[speaker];
-      }
-    } catch (e) {
-      console.warn('⚠️ Failed to parse character-colors from localStorage');
-    }
-  }
-  
-  // 4. FINAL FALLBACK: Auto-assign from FULL 18-color palette (6 main + 12 supporting)
-  const ALL_COLORS = [
-    // Main Characters (6 colors)
-    '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
-    // Supporting Characters (12 colors) - NOW ENABLED
-    '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
-    '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
-  ];
-  
-  // Create consistent hash from speaker name
-  let hash = 0;
-  for (let i = 0; i < speaker.length; i++) {
-    const char = speaker.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  
-  const colorIndex = Math.abs(hash) % ALL_COLORS.length;
-  const fallbackColor = ALL_COLORS[colorIndex];
-  
-  console.log('🎨 Using CI fallback color (18 palette) for', speaker, ':', fallbackColor, '(index:', colorIndex, ')');
-  return fallbackColor;
+  return parts;
 };
 
 /**
@@ -363,9 +324,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     captionText = captionText.substring(0, truncateAt) + '...';
   }
   
+  // Track if we synthesized data (for persistence flag)
+  let synthesizedWords = false;
+  
   // Synthesize word-level timing if missing with improved accuracy
   let workingCaption = { ...activeCaption, text: captionText };
   if (!workingCaption.words || workingCaption.words.length === 0) {
+    synthesizedWords = true;
     console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
     const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
@@ -390,12 +355,24 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         startTime + wordDuration
       );
       
+      // Syllabify long words (>10 chars)
+      const syllables = syllabify(word);
+      const syllableData = syllables.length > 1 ? syllables.map((syl, sylIdx) => {
+        const sylDuration = wordDuration / syllables.length;
+        return {
+          text: syl,
+          startTime: startTime + (sylIdx * sylDuration),
+          endTime: startTime + ((sylIdx + 1) * sylDuration)
+        };
+      }) : undefined;
+      
       return {
         text: word,
         startTime: startTime,
         endTime: endTime,
         emphasis: 'normal' as const,
-        pitch: 'normal' as const
+        pitch: 'normal' as const,
+        syllables: syllableData
       };
     });
     
@@ -435,7 +412,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  const speakerColor = getSpeakerColor(activeCaption.speaker, customSpeakerColors, activeCaption.speakerColor);
+  const speakerColor = getColorFromPalette(activeCaption.speaker, customSpeakerColors, activeCaption.speakerColor);
   const volume = (activeCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 
@@ -730,7 +707,48 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       };
                     };
                    
-                     return (
+                      // Render syllables if present (for long words)
+                      if (word.syllables && word.syllables.length > 1) {
+                        return (
+                          <span
+                            key={`${workingCaption.startTime}-${index}`}
+                            className="inline-block caption-word"
+                            style={{ marginRight: '0.3em' }}
+                          >
+                            {word.syllables.map((syl, sylIdx) => {
+                              const sylState = currentTime >= syl.startTime && currentTime <= syl.endTime ? 'active' 
+                                : currentTime > syl.endTime ? 'spoken' 
+                                : 'upcoming';
+                              
+                              return (
+                                <span
+                                  key={`${index}-syl-${sylIdx}`}
+                                  className={`
+                                    inline-block syllable-${sylState}
+                                    transition-all duration-150 ease-out
+                                  `}
+                                  style={{
+                                    color: sylState === 'active' ? getWordColorByState() : (sylState === 'spoken' ? speakerColor : 'rgba(255,255,255,0.7)'),
+                                    fontSize: `${wordFontSize}px`,
+                                    ...wordPitchStyle,
+                                    ...(sylState === 'active' && {
+                                      transform: 'scale(1.15) translateY(-2px)',
+                                      textShadow: `0 0 10px ${getWordColorByState()}40`,
+                                      zIndex: 10,
+                                      position: 'relative'
+                                    })
+                                  }}
+                                >
+                                  {syl.text}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        );
+                      }
+                      
+                      // Regular word rendering (no syllables)
+                      return (
                         <span
                           key={`${workingCaption.startTime}-${index}`}
                           className={`
@@ -750,8 +768,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                          cursor: 'default',
                          ...wordPitchStyle,
                          ...getWordIntensityStyle(),
-                         // Active word gets enhanced glow and jump
+                         // Active word gets 15% pop and enhanced glow
                          ...(wordState === 'active' && {
+                           transform: 'scale(1.15) translateY(-2px)',
                            textShadow: `0 0 10px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.2)`,
                            zIndex: 10,
                            position: 'relative'

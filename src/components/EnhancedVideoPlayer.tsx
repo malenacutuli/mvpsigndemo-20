@@ -70,23 +70,16 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
     return unique;
   }, [transcriptSegments]);
-  // Stable speaker color assignment function
+  // Stable speaker color assignment function (using full 18-color palette)
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
     // Create consistent speaker color mapping based on speaker names
     const speakerColorMap = new Map<string, string>();
     const availableColors = [
-      '#E5E517', // CI Main Yellow
-      '#17E5E5', // CI Main Blue  
-      '#E51717', // CI Main Red
-      '#E58017', // CI Main Orange
-      '#17E517', // CI Main Green
-      '#E517E5', // CI Main Pink
-      '#E85C2E', // CI Support Orange
-      '#47C2EB', // CI Support Blue I
-      '#EBC247', // CI Support Yellow
-      '#5E82ED', // CI Support Blue II
-      '#C2EB47', // CI Support Green I
-      '#8C6BED'  // CI Support Purple I
+      // Main (6)
+      '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
+      // Supporting (12)
+      '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
+      '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
     ];
     
     let colorIndex = 0;
@@ -174,25 +167,68 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const speakerByName = new Map<string, { name: string; color: string }>();
       data.speakers.forEach((s: any) => speakerByName.set(s.name, { name: s.name, color: s.color }));
 
-      const updatedSegments = segments.map(segment => {
-        let bestName = segment.speaker;
-        let bestColor = segment.speakerColor;
-        let bestOv = 0;
+      // Build speaker timeline for dominance-based assignment
+      const speakerTimeline = (data.segments as Array<any>).map(seg => ({
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        speaker: seg.speaker,
+        color: speakerByName.get(seg.speaker)?.color
+      }));
 
-        for (const diar of data.segments as Array<any>) {
+      const updatedSegments: CaptionSegment[] = [];
+      
+      for (const segment of segments) {
+        // Calculate per-speaker overlap
+        const overlapMap = new Map<string, number>();
+        let totalOverlap = 0;
+        
+        for (const diar of speakerTimeline) {
           const ov = computeOverlap(segment.startTime, segment.endTime, diar.startTime, diar.endTime);
-          if (ov > bestOv) {
-            bestOv = ov;
-            const meta = speakerByName.get(diar.speaker);
-            bestName = meta?.name || diar.speaker || bestName;
-            bestColor = meta?.color || bestColor;
+          if (ov > 0) {
+            overlapMap.set(diar.speaker, (overlapMap.get(diar.speaker) || 0) + ov);
+            totalOverlap += ov;
           }
         }
+        
+        // Find dominant speaker (≥60% overlap)
+        let dominantSpeaker: string | null = null;
+        let maxOverlap = 0;
+        
+        for (const [speaker, overlap] of overlapMap.entries()) {
+          const dominance = totalOverlap > 0 ? overlap / totalOverlap : 0;
+          if (dominance >= 0.6 && overlap > maxOverlap) {
+            dominantSpeaker = speaker;
+            maxOverlap = overlap;
+          }
+        }
+        
+        // Assign speaker if dominant, otherwise keep original
+        if (dominantSpeaker) {
+          const meta = speakerByName.get(dominantSpeaker);
+          updatedSegments.push({
+            ...segment,
+            speaker: meta?.name || dominantSpeaker,
+            speakerColor: meta?.color || segment.speakerColor
+          });
+        } else {
+          // No dominant speaker (multi-speaker segment)
+          // Keep original assignment or use first overlapping speaker
+          const firstSpeaker = Array.from(overlapMap.keys())[0];
+          if (firstSpeaker) {
+            const meta = speakerByName.get(firstSpeaker);
+            updatedSegments.push({
+              ...segment,
+              speaker: meta?.name || firstSpeaker,
+              speakerColor: meta?.color || segment.speakerColor
+            });
+          } else {
+            updatedSegments.push(segment);
+          }
+        }
+      }
 
-        return { ...segment, speaker: bestName, speakerColor: bestColor };
-      });
-
-      console.log('✅ ENHANCED PLAYER: Applied speaker assignments to', updatedSegments.length, 'segments');
+      console.log('✅ ENHANCED PLAYER: Applied speaker assignments with 60% dominance to', updatedSegments.length, 'segments');
+      sessionStorage.setItem(diarKey, 'done');
       return updatedSegments;
       
     } catch (error) {
