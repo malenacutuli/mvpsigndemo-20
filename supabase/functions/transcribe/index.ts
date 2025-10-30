@@ -190,140 +190,42 @@ serve(async (req) => {
     }
 
     // MEMORY-EFFICIENT PROCESSING STRATEGY
-    // NEW PRIORITY ORDER: Deepgram (primary, cost-effective) → OpenAI Whisper (small videos) → Twelve Labs → AssemblyAI (last resort)
+    // TEMPORARY: AssemblyAI as PRIMARY provider for testing
+    console.log("🔄 TEMPORARY: Using AssemblyAI as PRIMARY provider");
     
-    // Strategy 1: For large videos (>100MB), use URL-based processing only
-    if (sizeMB > 100) {
-      console.log(`🚀 Large video detected (${sizeMB}MB). Using URL-based processing (Deepgram → Twelve Labs → AssemblyAI).`);
+    // Strategy 1: For all videos, try AssemblyAI FIRST
+    if (sizeMB > 0) {
+      console.log(`🚀 Video detected (${sizeMB}MB). Trying AssemblyAI first (TEMPORARY PRIMARY)...`);
       
-      // Try Deepgram first for cost-effectiveness (99% cheaper than AssemblyAI)
-      const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
-      if (DEEPGRAM_API_KEY) {
+      // PRIORITY 1: AssemblyAI (Temporarily primary)
+      const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
+      if (ASSEMBLYAI_API_KEY) {
         try {
-          console.log("Trying Deepgram for large video transcription...");
-          const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
-          if (deepgramResult && !deepgramResult.error) {
-            console.log("✅ Deepgram analysis successful for large video!");
-            transcriptionResult = deepgramResult;
-          } else {
-            throw new Error("Deepgram returned error or no result");
-          }
-        } catch (deepgramError) {
-          console.log("Deepgram failed for large video, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
-        }
-      }
-      
-      // Fallback to Twelve Labs if Deepgram failed or unavailable
-      if (!transcriptionResult || transcriptionResult.error) {
-        try {
-          console.log("Trying Twelve Labs for large video transcription...");
-          const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-          if (twelveLabsResult && !twelveLabsResult.error) {
-            console.log("✅ Twelve Labs analysis successful for large video!");
-            transcriptionResult = twelveLabsResult;
-          } else {
-            throw new Error("Twelve Labs returned error or no result");
-          }
-        } catch (twelveLabsError) {
-          console.log("Twelve Labs failed for large video, falling back to AssemblyAI:", twelveLabsError instanceof Error ? twelveLabsError.message : 'Unknown error');
-          
-          // Last resort: AssemblyAI (expensive, only use if others fail)
-          const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-          if (ASSEMBLYAI_API_KEY) {
-            console.log("Using AssemblyAI as last resort fallback for large video transcription...");
-            try {
-              transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes);
-              console.log("✅ AssemblyAI transcription successful!");
-            } catch (assemblyError) {
-              console.log("AssemblyAI failed:", (assemblyError as any).message);
-              transcriptionResult = { 
-                error: 'large_video_failed', 
-                message: `Large video (${sizeMB}MB) processing failed. All providers (Deepgram, Twelve Labs, AssemblyAI) experienced issues. Please try again later or check video format.` 
-              };
-            }
-          } else {
-            transcriptionResult = { 
-              error: 'no_large_video_support', 
-              message: 'Large videos require AssemblyAI when Twelve Labs and Deepgram fail. Please add ASSEMBLYAI_API_KEY to process videos over 100MB.' 
+          console.log("🟣 PRIORITY 1: Trying AssemblyAI (PRIMARY)...");
+          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false);
+          if (assemblyResult && !assemblyResult.error) {
+            console.log("✅ AssemblyAI analysis successful!");
+            transcriptionResult = {
+              ...assemblyResult,
+              provider: 'AssemblyAI'
             };
+          } else {
+            throw new Error("AssemblyAI returned error or no result");
           }
+        } catch (assemblyError) {
+          console.log("AssemblyAI failed, trying Deepgram fallback:", assemblyError instanceof Error ? assemblyError.message : 'Unknown error');
         }
       }
-    } else {
-      // Strategy 2: For medium videos (25-100MB), try Deepgram first for cost efficiency
-      if (sizeMB > 25) {
-        console.log(`📹 Medium video detected (${sizeMB}MB). Trying Deepgram first for cost efficiency...`);
-        
-        // Try Deepgram first for 97% cost savings
+      
+      // PRIORITY 2: Deepgram fallback
+      if (!transcriptionResult || transcriptionResult.error) {
         const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
         if (DEEPGRAM_API_KEY) {
           try {
-            console.log("Attempting Deepgram for medium video transcription...");
+            console.log("🟢 PRIORITY 2 (Fallback): Trying Deepgram...");
             const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
             if (deepgramResult && !deepgramResult.error) {
-              console.log("✅ Deepgram successful for medium video!");
-              transcriptionResult = deepgramResult;
-            } else {
-              throw new Error("Deepgram returned error, falling back");
-            }
-          } catch (deepgramError) {
-            console.log("⚠️ Deepgram failed for medium video, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
-          }
-        }
-        
-        // Fallback to Twelve Labs if Deepgram unavailable or failed
-        if (!transcriptionResult || transcriptionResult.error) {
-          try {
-            const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-            if (twelveLabsResult && !twelveLabsResult.error) {
-              console.log("✅ Twelve Labs analysis successful!");
-              transcriptionResult = twelveLabsResult;
-            } else {
-              throw new Error("Twelve Labs fallback");
-            }
-          } catch (error) {
-            console.log("Twelve Labs failed, falling back to AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
-            const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-            if (ASSEMBLYAI_API_KEY) {
-              try {
-                transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-                console.log("✅ AssemblyAI transcription successful!");
-              } catch (assemblyError) {
-                console.log("AssemblyAI failed:", (assemblyError as any).message);
-                transcriptionResult = { 
-                  error: 'medium_video_failed', 
-                  message: 'All providers failed. Please check video format and try again.' 
-                };
-              }
-            } else {
-              transcriptionResult = { 
-                error: 'no_medium_video_support', 
-                message: 'Medium videos require AssemblyAI when Deepgram and Twelve Labs fail. Please add ASSEMBLYAI_API_KEY.' 
-              };
-            }
-          }
-        }
-      } else {
-        // Strategy 3: For small videos (≤25MB), download and try all providers
-        console.log(`💾 Small video detected (${sizeMB}MB). Downloading for full processing...`);
-        
-        // Now we download the video since it's small enough
-        console.log("Downloading video...");
-        const videoResponse = await fetch(resolvedVideoUrl);
-        if (!videoResponse.ok) {
-          throw new Error(`Failed to download video: ${videoResponse.status}`);
-        }
-        videoBuffer = await videoResponse.arrayBuffer();
-        console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
-        
-        // Try Deepgram first for cost efficiency
-        const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
-        if (DEEPGRAM_API_KEY) {
-          try {
-            console.log("💾 Small video detected. Trying Deepgram first...");
-            const deepgramResult = await transcribeWithDeepgram(resolvedVideoUrl, language);
-            if (deepgramResult && !deepgramResult.error) {
-              console.log("✅ Deepgram successful for small video!");
+              console.log("✅ Deepgram successful!");
               transcriptionResult = deepgramResult;
             } else {
               throw new Error("Deepgram fallback");
@@ -332,68 +234,51 @@ serve(async (req) => {
             console.log("⚠️ Deepgram failed, trying Twelve Labs:", deepgramError instanceof Error ? deepgramError.message : 'Unknown error');
           }
         }
-        
-        // Fallback to Twelve Labs if Deepgram unavailable or failed
-        if (!transcriptionResult || transcriptionResult.error) {
-          try {
-            const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
-            if (twelveLabsResult && !twelveLabsResult.error) {
-              console.log("✅ Twelve Labs analysis successful!");
-              transcriptionResult = twelveLabsResult;
-            } else {
-              throw new Error("Twelve Labs fallback");
-            }
-          } catch (error) {
-            console.log("Twelve Labs failed, trying AssemblyAI:", error instanceof Error ? error.message : 'Unknown error');
-            
-            // Try AssemblyAI
-            const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
-            if (ASSEMBLYAI_API_KEY) {
+      }
+      
+      // PRIORITY 3: Twelve Labs fallback
+      if (!transcriptionResult || transcriptionResult.error) {
+        try {
+          console.log("🟣 PRIORITY 3 (Fallback): Trying Twelve Labs...");
+          const twelveLabsResult = await transcribeWithTwelveLabs(resolvedVideoUrl, videoId, language);
+          if (twelveLabsResult && !twelveLabsResult.error) {
+            console.log("✅ Twelve Labs analysis successful!");
+            transcriptionResult = twelveLabsResult;
+          } else {
+            throw new Error("Twelve Labs fallback");
+          }
+        } catch (error) {
+          console.log("Twelve Labs failed:", error instanceof Error ? error.message : 'Unknown error');
+          
+          // PRIORITY 4: OpenAI fallback (only for small videos)
+          if (sizeMB <= 25) {
+            console.log("Downloading video for OpenAI processing...");
+            const videoResponse = await fetch(resolvedVideoUrl);
+            if (videoResponse.ok) {
+              videoBuffer = await videoResponse.arrayBuffer();
+              console.log(`Downloaded ${Math.round(videoBuffer.byteLength / 1024 / 1024)}MB video`);
+              
               try {
-                transcriptionResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language);
-                console.log("✅ AssemblyAI transcription successful!");
-              } catch (assemblyError) {
-                console.log("AssemblyAI failed, trying OpenAI:", (assemblyError as any).message);
-                
-                // Final fallback to OpenAI
-                if (videoBuffer) {
-                  try {
-                    transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-                    console.log("✅ OpenAI direct processing successful!");
-                  } catch (openaiError) {
-                    console.log("All providers failed:", (openaiError as any).message);
-                    transcriptionResult = { 
-                      error: 'all_providers_failed', 
-                      message: 'All transcription providers failed. Please check video format and API keys.' 
-                    };
-                  }
-                } else {
-                  transcriptionResult = { 
-                    error: 'all_providers_failed', 
-                    message: 'All transcription providers failed and video buffer not available.' 
-                  };
-                }
-              }
-            } else {
-              // No AssemblyAI, try OpenAI directly
-              if (videoBuffer) {
-                try {
-                  transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
-                  console.log("✅ OpenAI direct processing successful!");
-                } catch (openaiError) {
-                  console.log("OpenAI failed:", (openaiError as any).message);
-                  transcriptionResult = { 
-                    error: 'openai_only_failed', 
-                    message: 'OpenAI failed and no AssemblyAI key configured. Please add ASSEMBLYAI_API_KEY for better reliability.' 
-                  };
-                }
-              } else {
+                transcriptionResult = await transcribeBuffer(videoBuffer, OPENAI_API_KEY, language);
+                console.log("✅ OpenAI direct processing successful!");
+              } catch (openaiError) {
+                console.log("All providers failed:", (openaiError as any).message);
                 transcriptionResult = { 
-                  error: 'no_video_buffer', 
-                  message: 'Video buffer not available and no AssemblyAI key configured.' 
+                  error: 'all_providers_failed', 
+                  message: 'All transcription providers failed. Please check video format and API keys.' 
                 };
               }
+            } else {
+              transcriptionResult = { 
+                error: 'all_providers_failed', 
+                message: 'All transcription providers failed.' 
+              };
             }
+          } else {
+            transcriptionResult = { 
+              error: 'all_providers_failed', 
+              message: `All providers failed for ${sizeMB}MB video. Please check video format and API keys.` 
+            };
           }
         }
       }

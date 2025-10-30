@@ -73,223 +73,220 @@ serve(async (req) => {
     
     // Continue with normal provider logic only if NOT in testing mode
     if (!useTestingMode) {
-      // ============================================================================
-      // PRIORITY 1: TWELVE LABS (Best quality for speaker ID + visual context)
-      // ============================================================================
-      const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
-      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      console.log("🔄 TEMPORARY: Using AssemblyAI as PRIMARY provider for diarization");
       
-      if (TWELVE_LABS_API_KEY) {
-      try {
-        console.log("🟣 PRIORITY 1: Trying Twelve Labs speaker analysis (original language)...");
-        
-        const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
-          body: { 
-            videoUrl, 
-            videoId,
-            language: 'auto' // Extract in original language
-          }
-        });
-        
-        if (!error && data?.segments) {
-          console.log(`✅ Twelve Labs succeeded! Detected language: ${data.language || 'unknown'}`);
-          
-          let segments = data.segments;
-          const sourceLanguage = data.language || 'unknown';
-          
-          // Translate if needed and OpenAI is available
-          if (sourceLanguage !== targetLanguage && targetLanguage !== 'auto' && OPENAI_API_KEY) {
-            console.log(`🔄 Translating from ${sourceLanguage} to ${targetLanguage}...`);
-            
-            try {
-              // Translate segments in batches to preserve context
-              const translatedSegments = [];
-              const batchSize = 10;
-              
-              for (let i = 0; i < segments.length; i += batchSize) {
-                const batch = segments.slice(i, i + batchSize);
-                const textsToTranslate = batch.map((seg: any) => seg.text).join('\n---\n');
-                
-                const translateResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                      {
-                        role: 'system',
-                        content: `Translate the following text from ${sourceLanguage} to ${targetLanguage}. Preserve the meaning and tone. Return ONLY the translated text, separated by ---`
-                      },
-                      {
-                        role: 'user',
-                        content: textsToTranslate
-                      }
-                    ],
-                    temperature: 0.3
-                  })
-                });
-                
-                const translateData = await translateResponse.json();
-                const translatedTexts = translateData.choices[0].message.content.split('---').map((t: string) => t.trim());
-                
-                batch.forEach((seg: any, idx: number) => {
-                  translatedSegments.push({
-                    ...seg,
-                    text: translatedTexts[idx] || seg.text,
-                    originalText: seg.text,
-                    originalLanguage: sourceLanguage
-                  });
-                });
-              }
-              
-              segments = translatedSegments;
-              console.log(`✅ Translation complete: ${segments.length} segments translated`);
-            } catch (translateError) {
-              console.warn(`⚠️ Translation failed, using original language: ${translateError.message}`);
-            }
-          }
-          
-          // Extract unique speakers from segments
-          const speakerMap = new Map();
-          segments.forEach((seg: any) => {
-            if (seg.speaker && !speakerMap.has(seg.speaker)) {
-              speakerMap.set(seg.speaker, {
-                name: seg.speaker,
-                color: seg.speakerColor || '#3B82F6'
-              });
-            }
-          });
-          
-          result = {
-            success: true,
-            speakers: Array.from(speakerMap.values()),
-            segments: segments.map((seg: any) => ({
-              text: seg.text,
-              startTime: seg.startTime,
-              endTime: seg.endTime,
-              start: seg.startTime,
-              end: seg.endTime,
-              speaker: seg.speaker || 'Speaker',
-              speakerColor: seg.speakerColor || '#3B82F6',
-              words: seg.words,
-              originalText: seg.originalText,
-              originalLanguage: seg.originalLanguage
-            })),
-            provider: 'twelve_labs',
-            sourceLanguage: sourceLanguage,
-            targetLanguage: targetLanguage
-          };
-          provider = 'twelve_labs';
-        } else {
-          throw new Error(error?.message || "Twelve Labs failed");
-        }
-      } catch (twelveLabsError) {
-        console.warn("⚠️ Twelve Labs failed:", twelveLabsError.message);
-      }
-    } else {
-      console.log("⏭️ Twelve Labs API key not configured, skipping");
-    }
-    
-    // ============================================================================
-    // PRIORITY 2: DEEPGRAM (Fastest, Cheapest - $0.043/hour)
-    // ============================================================================
-    if (!result) {
-      const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
-      if (DEEPGRAM_API_KEY) {
-        try {
-          console.log("🔵 PRIORITY 2: Trying Deepgram speaker diarization...");
-          const { data, error } = await supabase.functions.invoke('speaker-diarization-deepgram', {
-            body: { videoUrl, videoId, force_reanalysis }
-          });
-          
-          if (!error && data?.success) {
-            console.log("✅ Deepgram succeeded!");
-            result = data;
-            provider = 'deepgram';
-          } else {
-            throw new Error(error?.message || data?.error || "Deepgram failed");
-          }
-        } catch (deepgramError) {
-          console.warn("⚠️ Deepgram failed:", deepgramError.message);
-        }
-      } else {
-        console.log("⏭️ Deepgram API key not configured, skipping");
-      }
-    }
-    
-    // ============================================================================
-    // PRIORITY 3: OPENAI WHISPER (Good quality, moderate cost)
-    // ============================================================================
-    if (!result) {
-      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-      if (OPENAI_API_KEY) {
-        try {
-          console.log("🟢 PRIORITY 3: Trying OpenAI Whisper with speaker detection...");
-          
-          // OpenAI Whisper doesn't have native speaker diarization,
-          // but we can use timestamps to cluster speakers heuristically
-          const { data, error } = await supabase.functions.invoke('transcribe', {
-            body: { 
-              videoUrl, 
-              videoId, 
-              language: 'auto',
-              wordTimestamps: true 
-            }
-          });
-          
-          if (!error && data?.segments) {
-            console.log("✅ OpenAI succeeded! Using heuristic speaker clustering...");
-            
-            // Simple heuristic: cluster by pause duration
-            const clusteredSegments = clusterSpeakersByPauses(data.segments);
-            
-            result = {
-              success: true,
-              speakers: extractUniqueSpeakers(clusteredSegments),
-              segments: clusteredSegments,
-              provider: 'openai_heuristic'
-            };
-            provider = 'openai';
-          } else {
-            throw new Error(error?.message || "OpenAI failed");
-          }
-        } catch (openaiError) {
-          console.warn("⚠️ OpenAI failed:", openaiError.message);
-        }
-      } else {
-        console.log("⏭️ OpenAI API key not configured, skipping");
-      }
-    }
-    
-    // ============================================================================
-    // PRIORITY 4: ASSEMBLYAI (LAST RESORT - Most expensive, $1.50/hour)
-    // ============================================================================
-    if (!result) {
+      // ============================================================================
+      // PRIORITY 1: ASSEMBLYAI (Temporarily primary)
+      // ============================================================================
       const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
       if (ASSEMBLYAI_API_KEY) {
         try {
-          console.log("🔴 LAST RESORT: Trying AssemblyAI (expensive!)...");
+          console.log("🟣 PRIORITY 1: Trying AssemblyAI diarization (PRIMARY)...");
           const { data, error } = await supabase.functions.invoke('speaker-diarization', {
             body: { videoUrl, videoId, force_reanalysis }
           });
           
           if (!error && data?.success) {
-            console.log("✅ AssemblyAI succeeded (but expensive!)");
+            console.log("✅ AssemblyAI diarization succeeded!");
             result = data;
             provider = 'assemblyai';
           } else {
             throw new Error(error?.message || data?.error || "AssemblyAI failed");
           }
         } catch (assemblyError) {
-          console.error("❌ AssemblyAI (last resort) failed:", assemblyError.message);
+          console.warn("⚠️ AssemblyAI failed, trying Deepgram:", assemblyError.message);
         }
       } else {
-        console.log("⏭️ AssemblyAI API key not configured");
+        console.log("⏭️ AssemblyAI API key not configured, skipping");
       }
-    }
+      
+      // ============================================================================
+      // PRIORITY 2: DEEPGRAM (Fallback)
+      // ============================================================================
+      if (!result) {
+        const DEEPGRAM_API_KEY = Deno.env.get("DEEPGRAM_API_KEY");
+        if (DEEPGRAM_API_KEY) {
+          try {
+            console.log("🔵 PRIORITY 2 (Fallback): Trying Deepgram speaker diarization...");
+            const { data, error } = await supabase.functions.invoke('speaker-diarization-deepgram', {
+              body: { videoUrl, videoId, force_reanalysis }
+            });
+            
+            if (!error && data?.success) {
+              console.log("✅ Deepgram succeeded!");
+              result = data;
+              provider = 'deepgram';
+            } else {
+              throw new Error(error?.message || data?.error || "Deepgram failed");
+            }
+          } catch (deepgramError) {
+            console.warn("⚠️ Deepgram failed:", deepgramError.message);
+          }
+        } else {
+          console.log("⏭️ Deepgram API key not configured, skipping");
+        }
+      }
+      
+      // ============================================================================
+      // PRIORITY 3: TWELVE LABS (Fallback)
+      // ============================================================================
+      if (!result) {
+        const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
+        const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+        
+        if (TWELVE_LABS_API_KEY) {
+          try {
+            console.log("🟣 PRIORITY 3 (Fallback): Trying Twelve Labs speaker analysis...");
+            
+            const { data, error } = await supabase.functions.invoke('twelve-labs-analysis', {
+              body: { 
+                videoUrl, 
+                videoId,
+                language: 'auto'
+              }
+            });
+            
+            if (!error && data?.segments) {
+              console.log(`✅ Twelve Labs succeeded! Detected language: ${data.language || 'unknown'}`);
+              
+              let segments = data.segments;
+              const sourceLanguage = data.language || 'unknown';
+              
+              // Translate if needed
+              if (sourceLanguage !== targetLanguage && targetLanguage !== 'auto' && OPENAI_API_KEY) {
+                console.log(`🔄 Translating from ${sourceLanguage} to ${targetLanguage}...`);
+                
+                try {
+                  const translatedSegments = [];
+                  const batchSize = 10;
+                  
+                  for (let i = 0; i < segments.length; i += batchSize) {
+                    const batch = segments.slice(i, i + batchSize);
+                    const textsToTranslate = batch.map((seg: any) => seg.text).join('\n---\n');
+                    
+                    const translateResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                          {
+                            role: 'system',
+                            content: `Translate the following text from ${sourceLanguage} to ${targetLanguage}. Preserve the meaning and tone. Return ONLY the translated text, separated by ---`
+                          },
+                          {
+                            role: 'user',
+                            content: textsToTranslate
+                          }
+                        ],
+                        temperature: 0.3
+                      })
+                    });
+                    
+                    const translateData = await translateResponse.json();
+                    const translatedTexts = translateData.choices[0].message.content.split('---').map((t: string) => t.trim());
+                    
+                    batch.forEach((seg: any, idx: number) => {
+                      translatedSegments.push({
+                        ...seg,
+                        text: translatedTexts[idx] || seg.text,
+                        originalText: seg.text,
+                        originalLanguage: sourceLanguage
+                      });
+                    });
+                  }
+                  
+                  segments = translatedSegments;
+                  console.log(`✅ Translation complete: ${segments.length} segments translated`);
+                } catch (translateError) {
+                  console.warn(`⚠️ Translation failed, using original language: ${translateError.message}`);
+                }
+              }
+              
+              const speakerMap = new Map();
+              segments.forEach((seg: any) => {
+                if (seg.speaker && !speakerMap.has(seg.speaker)) {
+                  speakerMap.set(seg.speaker, {
+                    name: seg.speaker,
+                    color: seg.speakerColor || '#3B82F6'
+                  });
+                }
+              });
+              
+              result = {
+                success: true,
+                speakers: Array.from(speakerMap.values()),
+                segments: segments.map((seg: any) => ({
+                  text: seg.text,
+                  startTime: seg.startTime,
+                  endTime: seg.endTime,
+                  start: seg.startTime,
+                  end: seg.endTime,
+                  speaker: seg.speaker || 'Speaker',
+                  speakerColor: seg.speakerColor || '#3B82F6',
+                  words: seg.words,
+                  originalText: seg.originalText,
+                  originalLanguage: seg.originalLanguage
+                })),
+                provider: 'twelve_labs',
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+              };
+              provider = 'twelve_labs';
+            } else {
+              throw new Error(error?.message || "Twelve Labs failed");
+            }
+          } catch (twelveLabsError) {
+            console.warn("⚠️ Twelve Labs failed:", twelveLabsError.message);
+          }
+        } else {
+          console.log("⏭️ Twelve Labs API key not configured, skipping");
+        }
+      }
+      
+      // ============================================================================
+      // PRIORITY 4: OPENAI WHISPER (Last fallback)
+      // ============================================================================
+      if (!result) {
+        const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+        if (OPENAI_API_KEY) {
+          try {
+            console.log("🟢 PRIORITY 4 (Fallback): Trying OpenAI Whisper with speaker detection...");
+            
+            const { data, error } = await supabase.functions.invoke('transcribe', {
+              body: { 
+                videoUrl, 
+                videoId, 
+                language: 'auto',
+                wordTimestamps: true 
+              }
+            });
+            
+            if (!error && data?.segments) {
+              console.log("✅ OpenAI succeeded! Using heuristic speaker clustering...");
+              
+              const clusteredSegments = clusterSpeakersByPauses(data.segments);
+              
+              result = {
+                success: true,
+                speakers: extractUniqueSpeakers(clusteredSegments),
+                segments: clusteredSegments,
+                provider: 'openai_heuristic'
+              };
+              provider = 'openai';
+            } else {
+              throw new Error(error?.message || "OpenAI failed");
+            }
+          } catch (openaiError) {
+            console.warn("⚠️ OpenAI failed:", openaiError.message);
+          }
+        } else {
+          console.log("⏭️ OpenAI API key not configured, skipping");
+        }
+      }
     } // End of !useTestingMode block
     
     // ============================================================================
