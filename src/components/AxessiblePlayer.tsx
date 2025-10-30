@@ -328,12 +328,57 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     video.addEventListener('timeupdate', updateTime);
     video.addEventListener('loadedmetadata', updateDuration);
 
-    // Enhanced timing synchronization using requestAnimationFrame for smoother updates
+    // Precise timing using requestVideoFrameCallback with requestAnimationFrame fallback
     let animationFrame: number;
-    const updateTimeWithAnimation = () => {
+    let lastPerformanceTime = performance.now();
+    let lastVideoTime = 0;
+    let timingDeltas: number[] = [];
+    let diagnosticSamples = 0;
+    const MAX_DIAGNOSTIC_SAMPLES = 100;
+    
+    const updateTimeWithPrecision = (nowPerf?: number, metadata?: any) => {
       if (video && !video.paused && !video.ended) {
-        setCurrentTime(video.currentTime);
-        animationFrame = requestAnimationFrame(updateTimeWithAnimation);
+        // Use metadata.mediaTime if available (rVFC), otherwise video.currentTime
+        const videoTime = metadata?.mediaTime ?? video.currentTime;
+        setCurrentTime(videoTime);
+        
+        // Diagnostic: measure timing accuracy
+        if (diagnosticSamples < MAX_DIAGNOSTIC_SAMPLES && nowPerf) {
+          const perfDelta = nowPerf - lastPerformanceTime;
+          const videoDelta = videoTime - lastVideoTime;
+          
+          if (videoDelta > 0 && perfDelta > 0) {
+            const clockDriftMs = Math.abs(videoDelta * 1000 - perfDelta);
+            timingDeltas.push(videoTime);
+            
+            if (timingDeltas.length >= MAX_DIAGNOSTIC_SAMPLES) {
+              // Calculate timing analysis
+              const firstDelta = timingDeltas[0];
+              const lastDelta = timingDeltas[timingDeltas.length - 1];
+              const totalDrift = lastDelta - firstDelta;
+              const avgTime = timingDeltas.reduce((a, b) => a + b, 0) / timingDeltas.length;
+              
+              console.log('📊 TIMING ANALYSIS (100 samples):', {
+                avgVideoTime: avgTime.toFixed(3) + 's',
+                totalDrift: (totalDrift * 1000).toFixed(2) + 'ms',
+                diagnosis: Math.abs(totalDrift) < 0.05 ? 'EXCELLENT SYNC ✅' : 'MINOR DRIFT ⚠️'
+              });
+              diagnosticSamples = MAX_DIAGNOSTIC_SAMPLES + 1; // Stop logging
+            } else {
+              diagnosticSamples++;
+            }
+          }
+          
+          lastPerformanceTime = nowPerf;
+          lastVideoTime = videoTime;
+        }
+        
+        // Continue loop
+        if ('requestVideoFrameCallback' in video) {
+          (video as any).requestVideoFrameCallback(updateTimeWithPrecision);
+        } else {
+          animationFrame = requestAnimationFrame((time) => updateTimeWithPrecision(time));
+        }
       }
     };
 
@@ -344,31 +389,41 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
+    const handlePlay = () => {
+      lastPerformanceTime = performance.now();
+      lastVideoTime = video.currentTime;
+      
+      if ('requestVideoFrameCallback' in video) {
+        console.log('⏱️ Using requestVideoFrameCallback for frame-accurate timing');
+        (video as any).requestVideoFrameCallback(updateTimeWithPrecision);
+      } else {
+        console.log('⏱️ Using requestAnimationFrame fallback (rVFC not supported)');
+        animationFrame = requestAnimationFrame((time) => updateTimeWithPrecision(time));
+      }
+    };
+    
+    const handlePause = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+
+    const handleEnded = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
     return () => {
       video.removeEventListener('timeupdate', updateTime);
       video.removeEventListener('loadedmetadata', updateDuration);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       if (animationFrame) {
         cancelAnimationFrame(animationFrame);
       }
-    };
-
-    video.addEventListener('play', () => {
-      animationFrame = requestAnimationFrame(updateTimeWithAnimation);
-    });
-    
-    video.addEventListener('pause', () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    });
-
-    video.addEventListener('ended', () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    });
-
-    return () => {
-      video.removeEventListener('timeupdate', updateTime);
-      video.removeEventListener('loadedmetadata', updateDuration);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
     };
   }, []);
 
