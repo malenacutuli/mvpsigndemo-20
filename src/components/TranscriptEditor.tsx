@@ -751,21 +751,43 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     }
   };
 
-  const startEditing = (index: number) => {
+  const startEditing = async (index: number) => {
     const segment = editingTranscript[index];
+    
+    // Pre-select character name if character_id exists
+    let speakerName = segment.speaker || 'Speaker';
+    const characterId = (segment as any).character_id || (segment as any).characterId;
+    
+    if (characterId) {
+      try {
+        const { data: char, error } = await supabase
+          .from('characters')
+          .select('name, color, emphasis, pitch')
+          .eq('id', characterId)
+          .single();
+        
+        if (!error && char) {
+          speakerName = char.name;
+          console.log(`✅ Pre-selected character: "${char.name}" from character_id`);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch character for pre-selection:', error);
+      }
+    }
+    
     setEditingIndex(index);
     setEditText(segment.text);
     setEditStartTime(formatTime(segment.startTime));
     setEditEndTime(formatTime(segment.endTime));
-    setEditSpeaker(segment.speaker || 'Speaker'); // Use 'Speaker' as default instead of 'narrator'
+    setEditSpeaker(speakerName);
     setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
-    setOriginalSpeaker(segment.speaker || 'Speaker');
+    setOriginalSpeaker(speakerName);
     setOriginalColor(segment.speakerColor || getNextCISpeakerColor(index));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
-    setUseWordLevelEditing(false); // Reset to segment-level editing by default
-    setEditApplyToAll(false); // Default: do NOT propagate changes unless explicitly enabled
+    setUseWordLevelEditing(false);
+    setEditApplyToAll(false);
   };
 
   const saveEdit = async () => {

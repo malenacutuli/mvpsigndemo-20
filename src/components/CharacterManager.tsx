@@ -235,7 +235,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         // First, try to load from speaker_mappings table
         const mappings = await loadSpeakerMappings(language);
         
-        // Also reconstruct mappings from transcript_segments to ensure UI shows current state
+        // Reconstruct mappings from transcript_segments with character_id
         const { data: segments } = await supabase
           .from('transcript_segments_clean')
           .select('speaker, character_id')
@@ -253,22 +253,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           
           const charMap = new Map(chars?.map(c => [c.id, c.name]) || []);
           
-          // Reconstruct the speaker -> character mapping from segments
-          const reconstructed: Record<string, string> = {};
+          // Auto-populate: Reconstruct speaker -> character mapping from character_id links
+          const autoMappings: Record<string, string> = {};
           for (const seg of segments) {
-            if (seg.character_id) {
+            if (seg.character_id && seg.speaker) {
               const charName = charMap.get(seg.character_id);
-              if (charName && seg.speaker !== charName) {
-                // This segment has a character assignment - remember the original speaker name
-                reconstructed[seg.speaker] = charName;
+              if (charName) {
+                autoMappings[seg.speaker] = charName;
               }
             }
           }
           
-          // Merge with loaded mappings (prefer reconstructed as it's current state)
-          const finalMappings = { ...mappings, ...reconstructed };
+          // Merge with loaded mappings (prefer auto-reconstructed as current state)
+          const finalMappings = { ...mappings, ...autoMappings };
           setSpeakerMappings(finalMappings);
-          console.log('📋 Reconstructed speaker mappings from DB:', finalMappings);
+          console.log('✅ Auto-populated speaker mappings:', finalMappings);
         } else {
           setSpeakerMappings(mappings || {});
         }

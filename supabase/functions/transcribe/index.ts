@@ -838,6 +838,68 @@ function assignSpeakerColor(speakerLabel: string | undefined, allSegments: any[]
   return CI_SPEAKER_COLORS[speakerIndex % CI_SPEAKER_COLORS.length];
 }
 
+// Auto-create characters for detected speakers
+async function autoCreateCharacters(videoId: string, segments: any[], supabaseClient: any): Promise<Map<string, string>> {
+  const CI_SPEAKER_COLORS = [
+    '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
+    '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED'
+  ];
+  
+  // Get unique speakers from segments
+  const uniqueSpeakers = Array.from(new Set(
+    segments.map(s => s.speaker).filter(Boolean)
+  )).sort();
+  
+  console.log(`🎭 Auto-creating ${uniqueSpeakers.length} characters for speakers:`, uniqueSpeakers);
+  
+  const speakerToCharIdMap = new Map<string, string>();
+  
+  for (let i = 0; i < uniqueSpeakers.length; i++) {
+    const speaker = uniqueSpeakers[i];
+    const characterName = `Speaker ${speaker}`; // "Speaker A", "Speaker B", etc.
+    const color = CI_SPEAKER_COLORS[i % CI_SPEAKER_COLORS.length];
+    
+    // Check if character already exists
+    const { data: existingChar } = await supabaseClient
+      .from('characters')
+      .select('id')
+      .eq('video_id', videoId)
+      .eq('name', characterName)
+      .single();
+    
+    if (existingChar) {
+      speakerToCharIdMap.set(speaker, existingChar.id);
+      console.log(`✅ Using existing character: "${characterName}" → ID: ${existingChar.id}`);
+      continue;
+    }
+    
+    // Create new character
+    const { data: character, error } = await supabaseClient
+      .from('characters')
+      .insert({
+        video_id: videoId,
+        name: characterName,
+        type: i === 0 ? 'main' : (i === 1 ? 'supporting' : 'minor'),
+        color: color,
+        is_off_camera: false,
+        emphasis: 'normal',
+        pitch: 'normal'
+      })
+      .select('id')
+      .single();
+    
+    if (error) {
+      console.error(`❌ Failed to create character for ${speaker}:`, error);
+      continue;
+    }
+    
+    speakerToCharIdMap.set(speaker, character.id);
+    console.log(`✅ Created character: "${characterName}" (${color}) → ID: ${character.id}`);
+  }
+  
+  return speakerToCharIdMap;
+}
+
 // Save transcript to database
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
@@ -861,6 +923,9 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         .eq('video_id', videoId);
       console.log("Cleared existing segments");
     }
+    
+    // Auto-create characters for detected speakers
+    const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
     
     // Prepare segments for database with proper text sanitization AND word timings
     const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
@@ -895,6 +960,8 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         }
       }
       
+      const characterId = speakerToCharIdMap.get(segment.speaker) || null;
+      
       return {
         video_id: videoId,
         text: sanitizedText,
@@ -908,7 +975,8 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         emphasis: 'normal',
         pitch: 'normal',
         is_off_camera: false,
-        words: words // Save provider word timings as JSON
+        words: words, // Save provider word timings as JSON
+        character_id: characterId // Link to auto-created character
       };
     });
     
