@@ -820,6 +820,24 @@ async function transcribeWithTwelveLabs(videoUrl: string, videoId?: string, lang
   }
 }
 
+// Map AssemblyAI speaker labels to CI color palette
+function assignSpeakerColor(speakerLabel: string | undefined, allSegments: any[]): string {
+  const CI_SPEAKER_COLORS = [
+    '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
+    '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED'
+  ];
+  
+  if (!speakerLabel) return CI_SPEAKER_COLORS[0]; // Default to yellow
+  
+  // Get all unique speakers from segments
+  const uniqueSpeakers = Array.from(new Set(
+    allSegments.map(s => s.speaker).filter(Boolean)
+  )).sort(); // Sort for consistency: ["A", "B", "C"]
+  
+  const speakerIndex = uniqueSpeakers.indexOf(speakerLabel);
+  return CI_SPEAKER_COLORS[speakerIndex % CI_SPEAKER_COLORS.length];
+}
+
 // Save transcript to database
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
@@ -886,7 +904,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         language: transcriptionResult.language || 'en',
         segment_type: 'dialogue',
         speaker: segment.speaker || `Speaker ${(index % 3) + 1}`,
-        speaker_color: '#3B82F6',
+        speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
         emphasis: 'normal',
         pitch: 'normal',
         is_off_camera: false,
