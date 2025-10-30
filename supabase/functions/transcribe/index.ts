@@ -995,30 +995,28 @@ async function transcribeWithDeepgram(videoUrl: string, language?: string): Prom
   };
 }
 
-// Validate transcription quality - Trust provider confidence scores primarily
+// Validate transcription quality - MINIMAL checks, trust provider confidence
 function validateTranscriptionQuality(result: any): { isValid: boolean; reason?: string; issues?: string[] } {
-  const issues: string[] = [];
-  
   if (!result.segments || result.segments.length === 0) {
     return { isValid: false, reason: 'No segments found in transcription' };
   }
   
-  // Only check for CRITICAL issues that indicate API errors, not natural speech patterns
-  // Trust AssemblyAI's confidence scores instead of doing strict pattern matching
+  // ONLY check for explicit API error responses - not content patterns
+  // AssemblyAI/Deepgram return structured data, so trust their output
   
   const allText = result.segments.map((s: any) => s.text || '').join(' ');
   
-  // Check for API refusal messages (actual errors)
-  const refusalPatterns = [
-    /lo siento.*no puedo.*ayudar/i,
-    /sorry.*cannot.*help/i,
-    /i cannot.*assist/i,
-    /no puedo.*proporcionar/i,
-    /i'm sorry.*i can't/i,
-    /unable to process/i
-  ];
+  // Only fail if we detect EXPLICIT API error messages (must contain multiple keywords)
+  const isAPIError = (
+    // Spanish API errors (multiple conditions required)
+    (allText.toLowerCase().includes('lo siento') && allText.toLowerCase().includes('no puedo') && allText.toLowerCase().includes('ayudar')) ||
+    // English API errors (multiple conditions required)  
+    (allText.toLowerCase().includes("i'm sorry") && allText.toLowerCase().includes("cannot") && allText.toLowerCase().includes("assist")) ||
+    (allText.toLowerCase().includes("unable to process") && allText.toLowerCase().includes("request"))
+  );
   
-  if (refusalPatterns.some(pattern => pattern.test(allText))) {
+  if (isAPIError) {
+    console.log("🚨 CRITICAL: API error message detected in transcription");
     return { 
       isValid: false, 
       reason: 'API refusal message detected',
@@ -1026,27 +1024,16 @@ function validateTranscriptionQuality(result: any): { isValid: boolean; reason?:
     };
   }
   
-  // Check for EXTREME repetition only (15+ same character in a row - likely encoding error)
-  const extremeRepetitionPattern = /(.)\1{15,}/;
-  if (extremeRepetitionPattern.test(allText)) {
-    issues.push('Extreme character repetition detected - possible encoding error');
-  }
-  
-  // Check if transcription is suspiciously short relative to segment count
-  if (result.segments.length > 10 && allText.replace(/\s+/g, '').length < 50) {
-    issues.push('Transcription suspiciously short for number of segments');
-  }
-  
-  // Only fail if we found CRITICAL issues
-  if (issues.length > 0) {
-    console.log("⚠️ Critical transcription issues detected:", issues);
+  // Check for encoding errors (20+ same character in a row)
+  if (/(.)\1{20,}/.test(allText)) {
+    console.log("🚨 CRITICAL: Encoding error detected (extreme repetition)");
     return { 
       isValid: false, 
-      reason: `Critical validation issue detected`, 
-      issues 
+      reason: 'Encoding error detected',
+      issues: ['Extreme character repetition suggests encoding failure']
     };
   }
   
-  console.log("✅ Transcription quality validation passed - trusting provider confidence");
+  console.log("✅ Transcription validation passed - provider data accepted");
   return { isValid: true };
 }
