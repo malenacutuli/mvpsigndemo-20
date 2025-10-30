@@ -1,122 +1,153 @@
+export interface NormalizedTranscript {
+  utterances?: Array<{
+    speaker: string;
+    speaker_id?: string | number;
+    start: number;
+    end: number;
+    text: string;
+    confidence?: number;
+    words?: Array<{
+      word: string;
+      start: number;
+      end: number;
+      confidence?: number;
+    }>;
+  }>;
+  segments?: Array<{
+    speaker: string;
+    speaker_id?: string | number;
+    start: number;
+    end: number;
+    text?: string;
+    transcript?: string;
+    confidence?: number;
+    words?: Array<{
+      word: string;
+      start: number;
+      end: number;
+      confidence?: number;
+    }>;
+  }>;
+  metadata?: {
+    duration?: number;
+    language?: string;
+    speaker_count?: number;
+  };
+}
+
 /**
- * Normalize transcript data from various provider formats
+ * Normalize transcript data from various providers
  */
-export function normalizeTranscript(data: any): any {
-  if (!data) {
-    throw new Error('Transcript data is required');
-  }
-
-  // Already normalized
-  if (data.normalized === true) {
-    return data;
-  }
-
+export function normalizeTranscript(data: any): NormalizedTranscript {
+  const normalized: NormalizedTranscript = {
+    metadata: {}
+  };
+  
   // Handle AssemblyAI format
   if (data.utterances && Array.isArray(data.utterances)) {
-    return {
-      normalized: true,
-      utterances: data.utterances.map((u: any) => ({
-        speaker: u.speaker || `SPEAKER_${u.speaker_id || '0'}`,
-        speaker_id: u.speaker_id,
-        start: u.start / 1000, // Convert ms to seconds if needed
-        end: u.end / 1000,
-        text: u.text,
-        confidence: u.confidence || 1.0,
-        words: u.words?.map((w: any) => ({
-          word: w.text || w.word,
-          start: w.start / 1000,
-          end: w.end / 1000,
-          confidence: w.confidence || 1.0
-        }))
+    normalized.utterances = data.utterances.map((u: any) => ({
+      speaker: u.speaker || `SPEAKER_${u.speaker_label || u.speaker_id || 'UNKNOWN'}`,
+      speaker_id: u.speaker_id || u.speaker_label,
+      start: u.start / 1000, // Convert to seconds if needed
+      end: u.end / 1000,
+      text: u.text || u.transcript || '',
+      confidence: u.confidence || 1.0,
+      words: u.words?.map((w: any) => ({
+        word: w.text || w.word,
+        start: w.start / 1000,
+        end: w.end / 1000,
+        confidence: w.confidence || 1.0
       }))
-    };
+    }));
   }
-
+  
   // Handle Deepgram format
-  if (data.results?.channels?.[0]?.alternatives?.[0]) {
-    const alternative = data.results.channels[0].alternatives[0];
+  if (data.results?.channels?.[0]?.alternatives?.[0]?.paragraphs) {
+    const paragraphs = data.results.channels[0].alternatives[0].paragraphs;
+    normalized.segments = [];
     
-    // Group words by speaker if available
-    const segments = [];
-    let currentSegment: any = null;
-
-    for (const word of alternative.words || []) {
-      const speaker = word.speaker !== undefined ? `SPEAKER_${word.speaker}` : 'SPEAKER_0';
-      
-      if (!currentSegment || currentSegment.speaker !== speaker) {
-        if (currentSegment) {
-          segments.push(currentSegment);
-        }
-        currentSegment = {
-          speaker,
-          start: word.start,
-          end: word.end,
-          text: word.punctuated_word || word.word,
-          confidence: word.confidence || 1.0,
-          words: []
-        };
-      } else {
-        currentSegment.text += ' ' + (word.punctuated_word || word.word);
-        currentSegment.end = word.end;
-      }
-
-      currentSegment.words.push({
-        word: word.word,
-        start: word.start,
-        end: word.end,
-        confidence: word.confidence || 1.0
+    paragraphs.paragraphs?.forEach((paragraph: any) => {
+      paragraph.sentences?.forEach((sentence: any) => {
+        normalized.segments!.push({
+          speaker: `SPEAKER_${paragraph.speaker || 0}`,
+          speaker_id: paragraph.speaker || 0,
+          start: sentence.start,
+          end: sentence.end,
+          text: sentence.text,
+          confidence: data.results.channels[0].alternatives[0].confidence || 1.0
+        });
       });
-    }
-
+    });
+  }
+  
+  // Handle Whisper/OpenAI format
+  if (data.segments && Array.isArray(data.segments) && !normalized.segments) {
+    normalized.segments = data.segments.map((s: any) => ({
+      speaker: s.speaker || `SPEAKER_${s.speaker_id || 0}`,
+      speaker_id: s.speaker_id || 0,
+      start: s.start,
+      end: s.end,
+      text: s.text,
+      confidence: 1.0,
+      words: s.words?.map((w: any) => ({
+        word: w.word || w.text,
+        start: typeof w.start === 'number' ? w.start : parseFloat(w.start || '0'),
+        end: typeof w.end === 'number' ? w.end : parseFloat(w.end || '0'),
+        confidence: w.confidence || 1.0
+      }))
+    }));
+  }
+  
+  // Handle AWS Transcribe format
+  if (data.results?.items) {
+    const items = data.results.items;
+    const segments: any[] = [];
+    let currentSegment: any = null;
+    
+    items.forEach((item: any) => {
+      if (item.type === 'pronunciation') {
+        if (!currentSegment || item.speaker_label !== currentSegment.speaker_id) {
+          if (currentSegment) {
+            segments.push(currentSegment);
+          }
+          currentSegment = {
+            speaker: `SPEAKER_${item.speaker_label || 0}`,
+            speaker_id: item.speaker_label || 0,
+            start: parseFloat(item.start_time),
+            end: parseFloat(item.end_time),
+            text: item.alternatives[0].content,
+            confidence: parseFloat(item.alternatives[0].confidence || 1)
+          };
+        } else {
+          currentSegment.end = parseFloat(item.end_time);
+          currentSegment.text += ' ' + item.alternatives[0].content;
+        }
+      }
+    });
+    
     if (currentSegment) {
       segments.push(currentSegment);
     }
-
-    return {
-      normalized: true,
-      segments
-    };
+    
+    normalized.segments = segments;
   }
-
-  // Handle generic segments format
-  if (data.segments && Array.isArray(data.segments)) {
-    return {
-      normalized: true,
-      segments: data.segments.map((s: any) => ({
-        speaker: s.speaker || `SPEAKER_${s.speaker_id || '0'}`,
-        speaker_id: s.speaker_id,
-        start: typeof s.start === 'number' ? s.start : parseFloat(s.start || '0'),
-        end: typeof s.end === 'number' ? s.end : parseFloat(s.end || '0'),
-        text: s.text || s.transcript || '',
-        confidence: s.confidence || 1.0,
-        words: s.words?.map((w: any) => ({
-          word: w.word || w.text,
-          start: typeof w.start === 'number' ? w.start : parseFloat(w.start || '0'),
-          end: typeof w.end === 'number' ? w.end : parseFloat(w.end || '0'),
-          confidence: w.confidence || 1.0
-        }))
-      }))
-    };
+  
+  // Extract metadata
+  if (data.duration) {
+    normalized.metadata!.duration = data.duration;
   }
-
-  // Handle plain text with no speaker info
-  if (typeof data === 'string' || data.text) {
-    const text = typeof data === 'string' ? data : data.text;
-    return {
-      normalized: true,
-      segments: [{
-        speaker: 'SPEAKER_0',
-        speaker_id: 0,
-        start: 0,
-        end: 0,
-        text,
-        confidence: 1.0,
-        words: []
-      }]
-    };
+  if (data.language || data.language_code) {
+    normalized.metadata!.language = data.language || data.language_code;
   }
-
-  throw new Error('Unsupported transcript format');
+  
+  // Count speakers
+  const speakerSet = new Set();
+  (normalized.utterances || normalized.segments || []).forEach((item: any) => {
+    speakerSet.add(item.speaker);
+  });
+  normalized.metadata!.speaker_count = speakerSet.size;
+  
+  return normalized;
 }
 
 /**
@@ -144,6 +175,37 @@ export function mergeConsecutiveSpeakerSegments(segments: any[]): any[] {
     }
   }
 
+  merged.push(current);
+  return merged;
+}
+
+/**
+ * Merge consecutive segments with configurable gap tolerance
+ */
+export function mergeConsecutiveSegments(segments: any[], maxGap: number = 1.0): any[] {
+  if (!segments || segments.length === 0) return [];
+  
+  const merged: any[] = [];
+  let current = { ...segments[0] };
+  
+  for (let i = 1; i < segments.length; i++) {
+    const segment = segments[i];
+    
+    if (segment.speaker === current.speaker && 
+        segment.start - current.end <= maxGap) {
+      // Merge with current segment
+      current.end = segment.end;
+      current.text = (current.text + ' ' + segment.text).trim();
+      if (segment.words && current.words) {
+        current.words = [...current.words, ...segment.words];
+      }
+    } else {
+      // Start new segment
+      merged.push(current);
+      current = { ...segment };
+    }
+  }
+  
   merged.push(current);
   return merged;
 }
