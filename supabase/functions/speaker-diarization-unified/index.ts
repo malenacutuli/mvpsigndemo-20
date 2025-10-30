@@ -13,10 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId, force_reanalysis, targetLanguage = 'en' } = await req.json();
+    const { videoUrl, videoId, force_reanalysis, targetLanguage = 'en', useTestingMode = false } = await req.json();
     
     console.log("=== UNIFIED SPEAKER DIARIZATION ===");
-    console.log("Priority: Twelve Labs (FIRST) → Deepgram → OpenAI → AssemblyAI (last resort)");
+    if (useTestingMode) {
+      console.log("🧪 TESTING MODE: Will use AssemblyAI-TEST for speaker diarization");
+    }
+    console.log("Priority: Twelve Labs (FIRST) → Deepgram → OpenAI → AssemblyAI");
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -24,14 +27,59 @@ serve(async (req) => {
     
     let result = null;
     let provider = 'none';
+
+    // TESTING MODE OVERRIDE
+    if (useTestingMode) {
+      console.log("🧪 TESTING MODE: Forcing AssemblyAI-TEST for speaker diarization");
+      
+      const ASSEMBLYAI_API_KEY_TEST = Deno.env.get("ASSEMBLYAI_API_KEY_TEST");
+      if (!ASSEMBLYAI_API_KEY_TEST) {
+        return new Response(JSON.stringify({ 
+          error: "ASSEMBLYAI_API_KEY_TEST not configured" 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      try {
+        const { data: testData, error: testError } = await supabase.functions.invoke('transcribe', {
+          body: { 
+            videoUrl, 
+            videoId,
+            language: targetLanguage,
+            useTestingMode: true
+          }
+        });
+        
+        if (!testError && testData?.segments) {
+          result = testData;
+          provider = 'AssemblyAI-TEST';
+          console.log(`✅ AssemblyAI TEST diarization complete: ${testData.segments.length} segments`);
+        } else {
+          throw new Error(testError?.message || 'Test failed');
+        }
+      } catch (error) {
+        console.error("🧪 Testing mode failed:", error);
+        return new Response(JSON.stringify({ 
+          error: "test_failed",
+          message: error instanceof Error ? error.message : "Unknown error"
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     
-    // ============================================================================
-    // PRIORITY 1: TWELVE LABS (Best quality for speaker ID + visual context)
-    // ============================================================================
-    const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    
-    if (TWELVE_LABS_API_KEY) {
+    // Continue with normal provider logic only if NOT in testing mode
+    if (!useTestingMode) {
+      // ============================================================================
+      // PRIORITY 1: TWELVE LABS (Best quality for speaker ID + visual context)
+      // ============================================================================
+      const TWELVE_LABS_API_KEY = Deno.env.get("TWELVE_LABS_API_KEY");
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      
+      if (TWELVE_LABS_API_KEY) {
       try {
         console.log("🟣 PRIORITY 1: Trying Twelve Labs speaker analysis (original language)...");
         
@@ -242,6 +290,7 @@ serve(async (req) => {
         console.log("⏭️ AssemblyAI API key not configured");
       }
     }
+    } // End of !useTestingMode block
     
     // ============================================================================
     // FINAL RESULT

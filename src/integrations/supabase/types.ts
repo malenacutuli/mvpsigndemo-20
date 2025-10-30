@@ -955,6 +955,71 @@ export type Database = {
           },
         ]
       }
+      transcription_test_results: {
+        Row: {
+          api_key_used: string | null
+          avg_confidence: number | null
+          created_at: string | null
+          estimated_cost_usd: number | null
+          has_word_timings: boolean | null
+          id: string
+          language: string | null
+          processing_time_ms: number | null
+          provider: string
+          raw_result: Json | null
+          segment_count: number | null
+          speaker_count: number | null
+          video_duration_sec: number | null
+          video_id: string
+          video_size_mb: number | null
+          word_count: number | null
+        }
+        Insert: {
+          api_key_used?: string | null
+          avg_confidence?: number | null
+          created_at?: string | null
+          estimated_cost_usd?: number | null
+          has_word_timings?: boolean | null
+          id?: string
+          language?: string | null
+          processing_time_ms?: number | null
+          provider: string
+          raw_result?: Json | null
+          segment_count?: number | null
+          speaker_count?: number | null
+          video_duration_sec?: number | null
+          video_id: string
+          video_size_mb?: number | null
+          word_count?: number | null
+        }
+        Update: {
+          api_key_used?: string | null
+          avg_confidence?: number | null
+          created_at?: string | null
+          estimated_cost_usd?: number | null
+          has_word_timings?: boolean | null
+          id?: string
+          language?: string | null
+          processing_time_ms?: number | null
+          provider?: string
+          raw_result?: Json | null
+          segment_count?: number | null
+          speaker_count?: number | null
+          video_duration_sec?: number | null
+          video_id?: string
+          video_size_mb?: number | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcription_test_results_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transcripts: {
         Row: {
           checksum: string | null

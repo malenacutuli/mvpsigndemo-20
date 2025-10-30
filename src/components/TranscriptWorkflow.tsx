@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mic, Save, Edit, Play, Download, CheckCircle, Users, Volume2, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Mic, Save, Edit, Play, Download, CheckCircle, Users, Volume2, Info, Beaker } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CaptionSegment } from './CaptionsWithIntention';
@@ -14,6 +15,7 @@ import { CharacterManager } from './CharacterManager';
 import { WordLevelEditor } from './WordLevelEditor';
 import { TranscriptUploader } from './TranscriptUploader';
 import { VideoAnalysisPanel } from './VideoAnalysisPanel';
+import { TestResultsComparison } from './TestResultsComparison';
 
 interface TranscriptSegment {
   id: string;
@@ -66,6 +68,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'transcript'>('transcript');
+  const [useTestingMode, setUseTestingMode] = useState(false);
+  const [videoSizeMB, setVideoSizeMB] = useState<number>(0);
 
   // Get unique detected speakers from segments
   const getDetectedSpeakers = () => {
@@ -93,7 +97,22 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     
     // Load existing data for this video
     loadExistingTranscript();
+    
+    // Get video size
+    checkVideoSize();
   }, [videoId, videoLanguage]);
+
+  const checkVideoSize = async () => {
+    try {
+      const response = await fetch(videoUrl, { method: 'HEAD' });
+      const contentLength = parseInt(response.headers.get('content-length') || '0');
+      const sizeMB = Math.round(contentLength / 1024 / 1024);
+      setVideoSizeMB(sizeMB);
+      console.log(`📏 Video size: ${sizeMB}MB`);
+    } catch (error) {
+      console.warn('Could not determine video size:', error);
+    }
+  };
 
   useEffect(() => {
     // Auto-convert segments to captions when they're loaded/updated
@@ -278,7 +297,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             fullTranscript: true,
             forceReExtract: true,
             language: detectedLanguage === 'auto' ? undefined : detectedLanguage,
-            maxDurationMinutes: 60 // Index up to 60 minutes by default
+            maxDurationMinutes: 60, // Index up to 60 minutes by default
+            useTestingMode // Add testing mode flag
           }
         });
         
@@ -618,6 +638,36 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           </TabsList>
 
           <TabsContent value="transcript" className="space-y-6">
+              {/* Testing Mode Toggle */}
+              <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Beaker className="h-5 w-5 text-amber-600" />
+                  <div>
+                    <p className="font-semibold text-amber-900 dark:text-amber-100">
+                      AssemblyAI Testing Mode
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Use test API key for quality/cost comparison (videos &gt;25MB)
+                      {videoSizeMB > 0 && (
+                        <span className="block mt-1">
+                          Video size: {videoSizeMB}MB
+                          {videoSizeMB < 25 && useTestingMode && (
+                            <span className="text-amber-600 ml-2">
+                              ⚠️ Testing mode only applies to videos &gt;25MB
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={useTestingMode}
+                  onCheckedChange={setUseTestingMode}
+                  disabled={isExtracting}
+                />
+              </div>
+
               {/* Toolbar: Language + Primary Actions */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -639,7 +689,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                     onClick={extractTranscript}
                     disabled={isExtracting || !videoUrl}
                   >
-                    {isExtracting ? 'Extracting…' : 'Extract Complete Transcript'}
+                    {isExtracting ? (useTestingMode ? '🧪 Testing...' : 'Extracting…') : 'Extract Complete Transcript'}
                   </Button>
                   <Button 
                     variant="secondary" 
@@ -650,6 +700,11 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   </Button>
                 </div>
               </div>
+
+              {/* Test Results Comparison */}
+              {useTestingMode && (
+                <TestResultsComparison videoId={videoId} />
+              )}
 
               {/* Speaker & Character Management Section (always shown) */}
               <Card>

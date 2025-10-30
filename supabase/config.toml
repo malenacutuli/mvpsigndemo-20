@@ -83,3 +83,9 @@ verify_jwt = true
 
 [functions.get-usage-summary]
 verify_jwt = true
+
+[functions.transcribe]
+verify_jwt = true
+
+[functions.speaker-diarization-unified]
+verify_jwt = true

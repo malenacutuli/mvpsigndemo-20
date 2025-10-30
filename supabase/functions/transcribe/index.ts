@@ -30,7 +30,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -40,7 +40,8 @@ serve(async (req) => {
       fullTranscript: !!fullTranscript,
       wordTimestamps: !!wordTimestamps,
       rangeBytes: rangeBytes || 'default',
-      maxDurationMinutes: maxDurationMinutes || 60
+      maxDurationMinutes: maxDurationMinutes || 60,
+      useTestingMode: !!useTestingMode
     });
     
     const origin = req.headers.get("origin") || "";
@@ -85,6 +86,108 @@ serve(async (req) => {
     let videoBuffer: ArrayBuffer | null = null;
 
     let transcriptionResult;
+    const startTime = Date.now();
+
+    // TESTING MODE OVERRIDE: Force AssemblyAI for videos >25MB
+    if (useTestingMode && sizeMB > 25) {
+      console.log(`🧪 TESTING MODE ENABLED: Forcing AssemblyAI for ${sizeMB}MB video`);
+      const ASSEMBLYAI_API_KEY_TEST = Deno.env.get("ASSEMBLYAI_API_KEY_TEST");
+      
+      if (!ASSEMBLYAI_API_KEY_TEST) {
+        return new Response(JSON.stringify({ 
+          error: "ASSEMBLYAI_API_KEY_TEST not configured",
+          message: "Testing mode requires ASSEMBLYAI_API_KEY_TEST to be set"
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      try {
+        console.log("🧪 Testing with AssemblyAI using test API key...");
+        const testResult = await transcribeWithAssemblyAI(
+          resolvedVideoUrl, 
+          language, 
+          maxDurationMinutes,
+          true  // Use test key
+        );
+        
+        if (testResult && !testResult.error) {
+          const processingTimeMs = Date.now() - startTime;
+          console.log("✅ AssemblyAI TEST successful!");
+          console.log("📊 Test metrics:", {
+            provider: 'AssemblyAI-TEST',
+            segments: testResult.segments?.length || 0,
+            words: testResult.words?.length || 0,
+            confidence: testResult.confidence || 'N/A',
+            language: testResult.language || language,
+            processingTimeMs
+          });
+          
+          transcriptionResult = {
+            ...testResult,
+            provider: 'AssemblyAI-TEST',
+            testMode: true,
+            processingTimeMs
+          };
+
+          // Log test results to database
+          if (videoId) {
+            const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+            const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+            const supabase = createClient(supabaseUrl, supabaseKey);
+
+            const segmentCount = testResult.segments?.length || 0;
+            const wordCount = testResult.words?.length || 0;
+            const speakerSet = new Set(testResult.segments?.map((s: any) => s.speaker) || []);
+            
+            const { error: logError } = await supabase
+              .from('transcription_test_results')
+              .insert({
+                video_id: videoId,
+                provider: 'AssemblyAI-TEST',
+                segment_count: segmentCount,
+                word_count: wordCount,
+                speaker_count: speakerSet.size,
+                avg_confidence: testResult.confidence || null,
+                has_word_timings: wordCount > 0,
+                api_key_used: 'TEST',
+                estimated_cost_usd: (sizeMB * 0.00025),
+                processing_time_ms: processingTimeMs,
+                video_duration_sec: testResult.duration || null,
+                raw_result: testResult,
+                video_size_mb: sizeMB,
+                language: testResult.language || language || 'en'
+              });
+            
+            if (logError) {
+              console.warn('Failed to log test results:', logError);
+            } else {
+              console.log('✅ Test results logged successfully');
+            }
+          }
+
+          // Continue to save and return
+          if (videoId) {
+            await saveTranscriptToDatabase(videoId, transcriptionResult, !!forceReExtract);
+          }
+
+          return new Response(JSON.stringify(transcriptionResult), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } catch (testError) {
+        console.error("🧪 AssemblyAI TEST failed:", testError);
+        return new Response(JSON.stringify({ 
+          error: "test_failed",
+          message: testError instanceof Error ? testError.message : "Unknown test error",
+          provider: "AssemblyAI-TEST"
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // MEMORY-EFFICIENT PROCESSING STRATEGY
     // NEW PRIORITY ORDER: Deepgram (primary, cost-effective) → OpenAI Whisper (small videos) → Twelve Labs → AssemblyAI (last resort)
@@ -585,13 +688,21 @@ function deduplicateSegments(segments: any[]): any[] {
 }
 
 // Fallback: Use AssemblyAI for URL-based long-form transcription
-async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number): Promise<any> {
-  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes });
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false): Promise<any> {
+  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes, useTestKey });
 
-  const apiKey = Deno.env.get("ASSEMBLYAI_API_KEY");
+  const apiKey = useTestKey 
+    ? Deno.env.get("ASSEMBLYAI_API_KEY_TEST")
+    : Deno.env.get("ASSEMBLYAI_API_KEY");
+  
   if (!apiKey) {
-    throw new Error("ASSEMBLYAI_API_KEY not configured");
+    throw new Error(useTestKey 
+      ? "ASSEMBLYAI_API_KEY_TEST not configured" 
+      : "ASSEMBLYAI_API_KEY not configured"
+    );
   }
+
+  console.log(`🔑 Using ${useTestKey ? 'TEST' : 'PRODUCTION'} AssemblyAI API key`);
 
   const headers = {
     authorization: apiKey,
