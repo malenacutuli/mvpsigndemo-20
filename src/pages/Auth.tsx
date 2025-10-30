@@ -205,22 +205,22 @@ export const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-background/50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <Card className="w-full max-w-md shadow-soft">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-3xl font-light text-center text-foreground">
             {t('auth.welcomeToAxessible')}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center font-light text-muted-foreground">
             {t('auth.signInDescription')}
           </CardDescription>
           {selectedPlan === 'starter' && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
               <div className="flex items-center gap-2 text-green-800">
                 <Gift className="w-4 h-4" />
-                <span className="text-sm font-medium">{t('auth.freeStarterPlan')}</span>
+                <span className="text-sm font-light">{t('auth.freeStarterPlan')}</span>
               </div>
-              <p className="text-xs text-green-700 mt-1">
+              <p className="text-xs text-green-700 font-light mt-1">
                 {t('auth.starterPlanDescription')}
               </p>
             </div>
@@ -228,11 +228,11 @@ export const Auth = () => {
           {selectedPlan && selectedPlan !== 'starter' && (
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 mt-2">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="capitalize">
+                <Badge variant="secondary" className="capitalize font-light">
                   {selectedPlan} Plan
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground font-light mt-1">
                 {t('auth.createAccountForPlan', { plan: selectedPlan })}
               </p>
             </div>
@@ -305,7 +305,7 @@ export const Auth = () => {
                     </Button>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full rounded-full font-light" disabled={loading}>
                     <LogIn className="w-4 h-4 mr-2" />
                     {loading ? t('auth.signingIn') : t('auth.signIn')}
                   </Button>
@@ -328,7 +328,7 @@ export const Auth = () => {
                     </div>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-light">
                     {t('auth.resetPasswordDescription')}
                   </p>
 
@@ -336,7 +336,7 @@ export const Auth = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 rounded-full font-light"
                       onClick={() => {
                         setShowForgotPassword(false);
                         setError('');
@@ -344,7 +344,7 @@ export const Auth = () => {
                     >
                       {t('auth.backToSignIn')}
                     </Button>
-                    <Button type="submit" className="flex-1" disabled={resetLoading}>
+                    <Button type="submit" className="flex-1 rounded-full font-light" disabled={resetLoading}>
                       {resetLoading ? t('auth.sendingReset') : t('auth.sendResetEmail')}
                     </Button>
                   </div>
@@ -437,7 +437,7 @@ export const Auth = () => {
                   </Label>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading || !acceptedTerms}>
+                <Button type="submit" className="w-full rounded-full font-light" disabled={loading || !acceptedTerms}>
                   <User className="w-4 h-4 mr-2" />
                   {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                 </Button>
@@ -459,7 +459,7 @@ export const Auth = () => {
           <Button
             onClick={handleGoogleSignIn}
             variant="outline"
-            className="w-full group hover:bg-accent transition-colors"
+            className="w-full rounded-full font-light group hover:bg-accent transition-colors"
             disabled={loading}
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
