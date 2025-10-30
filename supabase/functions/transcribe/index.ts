@@ -827,7 +827,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
     // Clear existing segments if force re-extract
     if (forceReExtract) {
       await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .delete()
         .eq('video_id', videoId);
       console.log("Cleared existing segments");
@@ -873,7 +873,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
       
       const { error } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .insert(batch);
         
       if (error) {

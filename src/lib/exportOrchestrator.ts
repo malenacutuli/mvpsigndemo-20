@@ -195,7 +195,7 @@ export class ExportOrchestrator {
     let transcriptSegments: ExportAssets['transcriptSegments'] = [];
     if (options.captions || options.signLanguage) {
       const { data: segments, error: segmentsError } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('id, start_time, end_time, text, speaker, speaker_color, emphasis, words')
         .eq('video_id', videoId)
         .eq('language', options.language || video.language)

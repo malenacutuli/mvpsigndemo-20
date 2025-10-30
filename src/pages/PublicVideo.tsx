@@ -117,7 +117,7 @@ const PublicVideo = () => {
       
       // First, try to get segments from any transcript for this video
       const { data: segs, error: segErr } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('*')
         .eq('video_id', id)
         .order('start_time', { ascending: true });

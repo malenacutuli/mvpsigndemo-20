@@ -133,7 +133,7 @@ const Embed = () => {
       if (transcripts && transcripts.length > 0) {
         const transcriptId = transcripts[0].id;
         const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('*')
           .eq('transcript_id', transcriptId)
           .order('idx', { ascending: true })
@@ -146,7 +146,7 @@ const Embed = () => {
       } else {
         // Fallback to base video-level segments for the language
         const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('*')
           .eq('video_id', videoId)
           .eq('language', lang)

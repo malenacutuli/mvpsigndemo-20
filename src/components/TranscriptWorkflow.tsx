@@ -143,7 +143,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       // Load from database
       const { data: dbData, error: dbError } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('*')  
         .eq('video_id', videoId)
         .eq('language', detectedLanguage)

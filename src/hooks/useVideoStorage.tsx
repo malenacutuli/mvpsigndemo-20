@@ -108,13 +108,32 @@ export const useVideoStorage = (videoId: string) => {
       for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
       const checksum = btoa(binary);
 
-      const { error } = await supabase.rpc('upsert_transcript_segments', {
-        p_video_id: videoId,
-        p_language: language,
-        p_created_by: user.id,
-        p_segments: dbSegments,
-        p_checksum: checksum
-      });
+      // Use direct insert with upsert for clean table
+      const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => ({
+        transcript_id: null,
+        video_id: videoId,
+        language,
+        idx: index,
+        start_time: seg.startTime,
+        end_time: seg.endTime,
+        text: seg.text,
+        speaker: seg.speaker || 'Speaker',
+        speaker_color: seg.speakerColor || '#3B82F6',
+        character_id: seg.characterId || seg.character_id || null,
+        emphasis: seg.emphasis || 'normal',
+        pitch: seg.pitch || 'normal',
+        confidence: seg.confidence || 0.95,
+        segment_type: seg.segmentType || 'dialogue',
+        is_off_camera: seg.isOffCamera || false,
+        words: seg.words ? JSON.parse(JSON.stringify(seg.words)) : null
+      }));
+
+      const { error } = await supabase
+        .from('transcript_segments_clean')
+        .upsert(segmentsToInsert, {
+          onConflict: 'video_id,language,start_time,end_time,text',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
@@ -157,7 +176,7 @@ export const useVideoStorage = (videoId: string) => {
           // Use ONLY the latest edited transcript's segments
           const transcriptId = transcripts[0].id;
           const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .select('*')
             .eq('transcript_id', transcriptId)
             .order('idx', { ascending: true })
@@ -169,7 +188,7 @@ export const useVideoStorage = (videoId: string) => {
         } else {
           // No edited transcript found; fall back to base video-level segments only
           const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .select('*')
             .eq('video_id', videoId)
             .eq('language', language)

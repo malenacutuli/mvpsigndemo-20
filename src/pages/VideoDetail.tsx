@@ -305,7 +305,7 @@ const VideoDetail = () => {
         // Use ONLY the edited transcript's segments
         const transcriptId = transcripts[0].id;
         const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('*')
           .eq('transcript_id', transcriptId)
           .order('idx', { ascending: true })
@@ -317,7 +317,7 @@ const VideoDetail = () => {
       } else {
         // Fallback: base video-level segments only (exclude other transcripts)
         const { data: segs, error: segErr } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('*')
           .eq('video_id', id)
           .eq('language', lang)

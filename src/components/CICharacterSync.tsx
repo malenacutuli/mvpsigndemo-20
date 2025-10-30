@@ -30,7 +30,7 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
         {
           event: '*',
           schema: 'public',
-          table: 'transcript_segments',
+          table: 'transcript_segments_clean',
           filter: `video_id=eq.${videoId}`
         },
         (payload) => {
@@ -84,7 +84,7 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
 
       // Get all unique speakers from transcript segments
       const { data: segments, error: segError } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('speaker, speaker_color')
         .eq('video_id', videoId)
         .eq('language', language);

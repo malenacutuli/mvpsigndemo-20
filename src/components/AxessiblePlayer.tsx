@@ -178,7 +178,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         
         if (transcripts && transcripts.length > 0) {
           const { data: segments } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .select('*')
             .eq('transcript_id', transcripts[0].id)
             .order('start_time', { ascending: true });

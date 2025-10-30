@@ -280,7 +280,7 @@ serve(async (req) => {
         // Update the transcript segment with intensity data
         if (segment.id) {
           await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .update({
               metadata: {
                 ...(segment.metadata || {}),

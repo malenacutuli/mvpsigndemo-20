@@ -62,7 +62,7 @@ export default function VideoDetailWorkflow() {
   const loadExistingCaptions = async (videoId: string) => {
     try {
       const { data, error } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('*')
         .eq('video_id', videoId)
         .order('start_time', { ascending: true });

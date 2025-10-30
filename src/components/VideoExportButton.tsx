@@ -83,7 +83,7 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
   const checkAvailableFeatures = async () => {
     try {
       const [transcriptResult, audioDescResult, aslResult] = await Promise.all([
-        supabase.from('transcript_segments').select('id').eq('video_id', videoId).limit(1),
+        supabase.from('transcript_segments_clean').select('id').eq('video_id', videoId).limit(1),
         supabase.from('audio_descriptions').select('id, audio_generation_status, audio_url').eq('video_id', videoId),
         supabase.from('sign_language_clips').select('id').eq('video_id', videoId).limit(1),
       ]);

@@ -9,7 +9,7 @@
  * seamless synchronization across devices and browser sessions.
  * 
  * Key Design Principles:
- * - All transcript segments are saved to `transcript_segments` table via `saveTranscriptData()`
+ * - All transcript segments are saved to `transcript_segments_clean` table via `saveTranscriptData()`
  * - All segments are loaded from database via `loadTranscriptSegments()`
  * - localStorage is only used as a read-through cache for character colors
  * - No sessionStorage is used to prevent stale data
@@ -358,7 +358,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       
       // Get all languages that have transcripts for this video
       const { data: existingLanguages } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('language')
         .eq('video_id', videoId)
         .neq('language', sourceLanguage);
@@ -377,7 +377,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         
         // Load all segments for target language
         const { data: targetSegments, error: loadError } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('id, start_time, end_time, speaker, speaker_color, character_id')
           .eq('video_id', videoId)
           .eq('language', targetLang)
@@ -408,7 +408,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           // Update all matching segments
           for (const target of matchingTargets) {
             const { error: updateError } = await supabase
-              .from('transcript_segments')
+              .from('transcript_segments_clean')
               .update({
                 speaker: sourceSegment.speaker,
                 speaker_color: sourceSegment.speakerColor,

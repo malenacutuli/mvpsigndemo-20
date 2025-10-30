@@ -607,7 +607,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         // Only auto-detect if currentLanguage is not set or is 'auto'
         if (!currentLanguage || currentLanguage === 'auto') {
           const { data: availableTranscripts } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .select('language')
             .eq('video_id', videoId)
             .limit(10);
@@ -888,7 +888,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               
               // Fetch existing character_id values from database
               const { data: dbSegments } = await supabase
-                .from('transcript_segments')
+                .from('transcript_segments_clean')
                 .select('idx, start_time, end_time, character_id')
                 .eq('video_id', videoId)
                 .eq('language', currentLanguage)

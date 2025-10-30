@@ -163,7 +163,7 @@ serve(async (req) => {
       
       for (const segment of speakerSegments) {
         const { data: matchingSegments } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('id, start_time, end_time')
           .eq('video_id', videoId)
           .gte('start_time', segment.startTime - 0.5)
@@ -175,7 +175,7 @@ serve(async (req) => {
           
           for (const matchingSegment of matchingSegments) {
             await supabase
-              .from('transcript_segments')
+              .from('transcript_segments_clean')
               .update({
                 speaker: segment.speaker,
                 speaker_color: speakerColor

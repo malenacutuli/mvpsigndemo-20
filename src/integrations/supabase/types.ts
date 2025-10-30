@@ -867,6 +867,94 @@ export type Database = {
           },
         ]
       }
+      transcript_segments_clean: {
+        Row: {
+          character_id: string | null
+          confidence: number | null
+          created_at: string
+          emphasis: string | null
+          end_time: number
+          id: string
+          idx: number | null
+          is_off_camera: boolean | null
+          language: string
+          pitch: string | null
+          segment_type: string | null
+          speaker: string | null
+          speaker_color: string | null
+          speaker_normalized: string | null
+          start_time: number
+          text: string
+          transcript_id: string | null
+          video_id: string
+          words: Json | null
+        }
+        Insert: {
+          character_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          emphasis?: string | null
+          end_time: number
+          id?: string
+          idx?: number | null
+          is_off_camera?: boolean | null
+          language?: string
+          pitch?: string | null
+          segment_type?: string | null
+          speaker?: string | null
+          speaker_color?: string | null
+          speaker_normalized?: string | null
+          start_time: number
+          text: string
+          transcript_id?: string | null
+          video_id: string
+          words?: Json | null
+        }
+        Update: {
+          character_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          emphasis?: string | null
+          end_time?: number
+          id?: string
+          idx?: number | null
+          is_off_camera?: boolean | null
+          language?: string
+          pitch?: string | null
+          segment_type?: string | null
+          speaker?: string | null
+          speaker_color?: string | null
+          speaker_normalized?: string | null
+          start_time?: number
+          text?: string
+          transcript_id?: string | null
+          video_id?: string
+          words?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_segments_clean_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_segments_clean_transcript_id_fkey"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "transcripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_segments_clean_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transcripts: {
         Row: {
           checksum: string | null

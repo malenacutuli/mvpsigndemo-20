@@ -159,7 +159,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       const speakersSet = new Set<string>();
       // From transcript segments
       const { data: segs } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('speaker')
         .eq('video_id', videoId)
         .eq('language', language)
@@ -237,7 +237,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         
         // Also reconstruct mappings from transcript_segments to ensure UI shows current state
         const { data: segments } = await supabase
-          .from('transcript_segments')
+          .from('transcript_segments_clean')
           .select('speaker, character_id')
           .eq('video_id', videoId)
           .eq('language', language)
@@ -441,7 +441,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           
           // Query 1: Update segments that currently have the speaker label
           const { error: err1 } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .update({
               speaker: characterName,
               speaker_color: character.color,
@@ -463,7 +463,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           // Query 2: Update segments that already have the character name
           // (for idempotency - if user saves multiple times)
           const { error: err2 } = await supabase
-            .from('transcript_segments')
+            .from('transcript_segments_clean')
             .update({
               speaker_color: character.color,
               character_id: characterId,
