@@ -672,38 +672,77 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               if ((!words || words.length === 0) && typeof segment.text === 'string' && segment.text.trim().length > 0) {
                 const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
                 const tokenCount = tokens.length;
-                // Ensure duration is enough; if invalid or too short, expand proportionally
-                const minPerWord = 0.18; // ~180ms per word baseline
-                const minDuration = Math.max(1, tokenCount * minPerWord);
+                // Natural word timing: shorter baseline + variance by word length + lead-in offset
+                const LEAD_IN_OFFSET = -0.1; // 100ms lead-in so captions appear before speech
+                const getWordDuration = (word: string) => {
+                  const len = word.length;
+                  if (len <= 3) return 0.08; // 80ms for short words
+                  if (len <= 6) return 0.12; // 120ms for medium words
+                  return 0.18; // 180ms for long words
+                };
+                
+                const totalDuration = tokens.reduce((sum, t) => sum + getWordDuration(t), 0);
+                const minDuration = Math.max(1, totalDuration);
                 if (!isFinite(end) || end <= start || (end - start) < minDuration) {
                   end = start + minDuration;
                 }
-                const step = (end - start) / Math.max(1, tokenCount);
-                words = tokens.map((t, i) => ({
-                  text: t,
-                  startTime: start + i * step,
-                  endTime: start + (i + 1) * step,
-                }));
-                // Debug once per synthesized segment
-                if (segIdx < 5) {
-                  console.log(`🧩 ENHANCED PLAYER: Synthesized ${tokenCount} words for segment ${segIdx}`);
+                
+                let currentTime = start + LEAD_IN_OFFSET;
+                words = tokens.map((t, i) => {
+                  const duration = getWordDuration(t);
+                  const wordStart = currentTime;
+                  const wordEnd = currentTime + duration;
+                  currentTime = wordEnd;
+                  return {
+                    text: t,
+                    startTime: wordStart,
+                    endTime: wordEnd,
+                  };
+                });
+                
+                if (segIdx < 3) {
+                  console.log(`🔄 SYNC: fallback synthesized ${tokenCount} words for segment ${segIdx} (natural timing + lead-in)`);
                 }
               }
 
-              // If words exist but missing timings, distribute uniformly
-              const needsDistribution = words.length > 0 && !words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
-              if (words.length > 0 && needsDistribution) {
-                const total = Math.max(end - start, Math.max(1, words.length * 0.3));
-                const step = total / words.length;
-                words = words.map((w: any, i: number) => ({
-                  text: w.text,
-                  startTime: typeof w.startTime === 'number' ? w.startTime : start + i * step,
-                  endTime: typeof w.endTime === 'number' ? w.endTime : start + (i + 1) * step,
-                  emphasis: w.emphasis,
-                  pitch: w.pitch
-                }));
-                // Ensure segment end matches last word end
-                end = words[words.length - 1].endTime;
+              // Check if we're using provider timings or need to distribute
+              const hasProviderTimings = words.length > 0 && words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+              
+              if (hasProviderTimings && segIdx < 3) {
+                console.log(`✅ SYNC: using provider word timings for segment ${segIdx} (${words.length} words)`);
+              }
+              
+              // If words exist but missing timings, distribute with natural variance
+              const needsDistribution = words.length > 0 && !hasProviderTimings;
+              if (needsDistribution) {
+                const LEAD_IN_OFFSET = -0.1;
+                const getWordDuration = (wordOrText: any) => {
+                  const text = typeof wordOrText === 'string' ? wordOrText : (wordOrText.text || '');
+                  const len = text.length;
+                  if (len <= 3) return 0.08;
+                  if (len <= 6) return 0.12;
+                  return 0.18;
+                };
+                
+                let currentTime = start + LEAD_IN_OFFSET;
+                words = words.map((w: any, i: number) => {
+                  const duration = getWordDuration(w);
+                  const wordStart = typeof w.startTime === 'number' ? w.startTime : currentTime;
+                  const wordEnd = typeof w.endTime === 'number' ? w.endTime : currentTime + duration;
+                  currentTime = wordEnd;
+                  return {
+                    text: typeof w === 'string' ? w : w.text,
+                    startTime: wordStart,
+                    endTime: wordEnd,
+                    emphasis: typeof w === 'object' ? w.emphasis : undefined,
+                    pitch: typeof w === 'object' ? w.pitch : undefined
+                  };
+                });
+                end = Math.max(end, words[words.length - 1].endTime);
+                
+                if (segIdx < 3) {
+                  console.log(`🔄 SYNC: distributed timings for segment ${segIdx} (natural variance + lead-in)`);
+                }
               }
 
               // Normalize relative word timings to absolute timeline if needed

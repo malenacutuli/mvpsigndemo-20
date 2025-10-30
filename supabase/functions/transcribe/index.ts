@@ -833,7 +833,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       console.log("Cleared existing segments");
     }
     
-    // Prepare segments for database with proper text sanitization
+    // Prepare segments for database with proper text sanitization AND word timings
     const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
       // Sanitize text to handle special characters and remove invalid ones
       let sanitizedText = segment.text || '';
@@ -851,6 +851,21 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
       }
       
+      // Transform provider word timings to our format: { text, startTime, endTime, confidence? }
+      let words = null;
+      if (segment.words && Array.isArray(segment.words) && segment.words.length > 0) {
+        words = segment.words.map((w: any) => ({
+          text: w.word || w.text || '',
+          startTime: Number(w.start || w.startTime) || 0,
+          endTime: Number(w.end || w.endTime) || 0,
+          confidence: w.confidence || null
+        }));
+        
+        if (index < 3) {
+          console.log(`💾 Saving ${words.length} provider word timings for segment ${index}`);
+        }
+      }
+      
       return {
         video_id: videoId,
         text: sanitizedText,
@@ -859,11 +874,12 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         confidence: segment.confidence || null,
         language: transcriptionResult.language || 'en',
         segment_type: 'dialogue',
-        speaker: `Speaker ${(index % 3) + 1}`,
+        speaker: segment.speaker || `Speaker ${(index % 3) + 1}`,
         speaker_color: '#3B82F6',
         emphasis: 'normal',
         pitch: 'normal',
-        is_off_camera: false
+        is_off_camera: false,
+        words: words // Save provider word timings as JSON
       };
     });
     

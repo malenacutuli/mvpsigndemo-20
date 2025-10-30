@@ -546,10 +546,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                      word.emphasis
                    );
                    
-                    // Ultra-precise word timing with robust tolerance for reliable activation
-                    const WORD_PRECISION = 0.06; // 60ms precision window
-                    const isActiveByTime = (currentTime >= (word.startTime - WORD_PRECISION) && 
-                                           currentTime <= (word.endTime + WORD_PRECISION));
+                    // Increased tolerance + lead-in offset for better sync with speech
+                    const WORD_PRECISION = 0.12; // 120ms precision window for browser timing variance
+                    const LEAD_IN_OFFSET = -0.1; // 100ms early activation to match audio
+                    const isActiveByTime = (currentTime >= (word.startTime + LEAD_IN_OFFSET - WORD_PRECISION) && 
+                                           currentTime <= (word.endTime + LEAD_IN_OFFSET + WORD_PRECISION));
                     const isActiveByIndex = index === activeWordIndex;
                     const isWordActive = isActiveByTime || isActiveByIndex;
                     const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
