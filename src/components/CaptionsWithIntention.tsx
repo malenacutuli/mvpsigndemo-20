@@ -84,7 +84,7 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>,
   // CRITICAL: This is the final mapping gate - ensure all sources are checked in order
   
   // 1. FIRST PRIORITY: Direct segment color from database (speaker_color column)
-  if (segmentColor) {
+  if (segmentColor && segmentColor !== '#3B82F6') {
     console.log('🎨 Using database speaker_color for', speaker, ':', segmentColor);
     return segmentColor;
   }
@@ -109,14 +109,13 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>,
     }
   }
   
-  // 4. FINAL FALLBACK: Consistent color based on speaker name using CI colors
-  const CI_MAIN_COLORS = [
-    '#E5E517', // Yellow (Main)
-    '#17E5E5', // Cyan (Main) 
-    '#E51717', // Red (Main)
-    '#17E517', // Green (Main)
-    '#E517E5', // Magenta (Main)
-    '#E58017', // Orange (Main)
+  // 4. FINAL FALLBACK: Auto-assign from FULL 18-color palette (6 main + 12 supporting)
+  const ALL_COLORS = [
+    // Main Characters (6 colors)
+    '#E5E517', '#17E5E5', '#E51717', '#E58017', '#17E517', '#E517E5',
+    // Supporting Characters (12 colors) - NOW ENABLED
+    '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
+    '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
   ];
   
   // Create consistent hash from speaker name
@@ -127,10 +126,10 @@ const getSpeakerColor = (speaker: string, customColors?: Record<string, string>,
     hash = hash & hash; // Convert to 32bit integer
   }
   
-  const colorIndex = Math.abs(hash) % CI_MAIN_COLORS.length;
-  const fallbackColor = CI_MAIN_COLORS[colorIndex];
+  const colorIndex = Math.abs(hash) % ALL_COLORS.length;
+  const fallbackColor = ALL_COLORS[colorIndex];
   
-  console.log('🎨 Using CI fallback color for', speaker, ':', fallbackColor, '(index:', colorIndex, ')');
+  console.log('🎨 Using CI fallback color (18 palette) for', speaker, ':', fallbackColor, '(index:', colorIndex, ')');
   return fallbackColor;
 };
 
@@ -143,9 +142,14 @@ const getIntonationBasedFontSize = (
   volume?: number,
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'
 ): number => {
-  const baseSize = Math.max(20, screenHeight * 0.0286); // Increased by 30% (0.022 * 1.3)
-  const minSize = Math.max(12, screenHeight * 0.015);   // Keep whisper size unchanged
-  const maxSize = Math.max(31, screenHeight * 0.0455);  // Increased by 30% (0.035 * 1.3)
+  // Design Guide: Type size = % of screen height (3-12%)
+  const BASELINE_PERCENT = 0.045;  // 4.5% baseline
+  const MIN_PERCENT = 0.03;        // 3% whisper
+  const MAX_PERCENT = 0.12;        // 12% shout
+  
+  const baseSize = screenHeight * BASELINE_PERCENT;
+  const minSize = screenHeight * MIN_PERCENT;
+  const maxSize = screenHeight * MAX_PERCENT;
   
   // Priority 1: Use vocal intensity analysis if available
   if (vocalIntensity) {
@@ -153,9 +157,9 @@ const getIntonationBasedFontSize = (
       case 'whisper':
         return minSize;
       case 'yell':
-        return baseSize * 1.2; // Reduced from 1.4x
+        return Math.min(maxSize, baseSize * 1.3);
       case 'shout':
-        return baseSize * 1.4; // Reduced from maxSize
+        return Math.min(maxSize, baseSize * 1.5);
       case 'normal':
       default:
         return baseSize;
@@ -168,9 +172,9 @@ const getIntonationBasedFontSize = (
       case 'quiet':
         return minSize;
       case 'loud':
-        return baseSize * 1.2; // Reduced from 1.3x
+        return Math.min(maxSize, baseSize * 1.3);
       case 'yelling':
-        return baseSize * 1.4; // Reduced from maxSize
+        return Math.min(maxSize, baseSize * 1.5);
       case 'normal':
       default:
         return baseSize;
@@ -180,8 +184,8 @@ const getIntonationBasedFontSize = (
   // Fallback: Use volume level
   if (volume !== undefined) {
     if (volume <= 30) return minSize + ((volume / 30) * (baseSize - minSize));
-    if (volume >= 85) return baseSize * 1.4; // Reduced from maxSize
-    return baseSize + (((volume - 30) / 55) * (baseSize * 1.4 - baseSize));
+    if (volume >= 85) return Math.min(maxSize, baseSize * 1.5);
+    return baseSize + (((volume - 30) / 55) * (Math.min(maxSize, baseSize * 1.5) - baseSize));
   }
   
   return baseSize;
@@ -223,32 +227,31 @@ const getPitchBasedStyle = (pitch?: number | 'high' | 'low' | 'normal'): React.C
     pitchHz = pitch || 180; // Default to normal range
   }
   
-  // Baseline: 160-200 Hz uses Regular 400 weight
+  // Baseline: 160-200 Hz uses Regular 400 weight, 100% width
   if (pitchHz >= 160 && pitchHz <= 200) {
     return {
-      fontWeight: 400,
-      fontStretch: 'normal'
+      fontVariationSettings: "'wght' 400, 'wdth' 100, 'opsz' 24"
     };
   }
   
-  // Lower pitch (80-160 Hz): heavier weight, expanded width
+  // Lower pitch (80-160 Hz): heavier weight, wider width
   if (pitchHz < 160) {
-    const weight = Math.max(500, 700 - ((pitchHz - 80) / 80) * 200); // 500-700 weight
-    const stretch = 100 + ((160 - pitchHz) / 80) * 25; // 100-125% width
+    const normalized = Math.max(0, Math.min(1, (160 - pitchHz) / 80));
+    const weight = Math.round(400 + (normalized * 300)); // 400-700
+    const width = Math.round(100 + (normalized * 25));   // 100-125
     
     return {
-      fontWeight: weight,
-      fontStretch: `${stretch}%`
+      fontVariationSettings: `'wght' ${weight}, 'wdth' ${width}, 'opsz' 24`
     };
   }
   
-  // Higher pitch (200+ Hz): lighter weight, condensed width
-  const weight = Math.max(200, 400 - ((pitchHz - 200) / 50) * 200); // 200-400 weight
-  const stretch = Math.max(75, 100 - ((pitchHz - 200) / 50) * 25); // 75-100% width
+  // Higher pitch (200+ Hz): lighter weight, narrower width
+  const normalized = Math.max(0, Math.min(1, (pitchHz - 200) / 50));
+  const weight = Math.round(400 - (normalized * 200)); // 200-400
+  const width = Math.round(100 - (normalized * 25));   // 75-100
   
   return {
-    fontWeight: weight,
-    fontStretch: `${stretch}%`
+    fontVariationSettings: `'wght' ${weight}, 'wdth' ${width}, 'opsz' 24`
   };
 };
 
@@ -461,14 +464,31 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const isMusic = (activeCaption as any)?.type === 'music';
 
   return (
-    <div 
-      className={`
-        relative flex items-end justify-center pointer-events-none w-full
-        ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
-      `}
-      style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
-      key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`} // Force re-render for animations
-    >
+    <div className="relative w-full">
+      {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
+      {upcoming && !foundActive && (
+        <div 
+          className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
+                     text-white/90 text-base font-light text-center pointer-events-none"
+          style={{
+            maxWidth: '92vw',
+            fontFamily: 'Roboto Flex, system-ui, sans-serif',
+            zIndex: 5
+          }}
+        >
+          {upcoming.text}
+        </div>
+      )}
+
+      {/* ACTIVE CAPTION: Colored word-by-word rendering */}
+      <div 
+        className={`
+          relative flex items-end justify-center pointer-events-none w-full
+          ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
+        `}
+        style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
+        key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
+      >
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
@@ -583,12 +603,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     };
                    
                     // Enhanced vocal intensity styling with word-level precision and emotional expressions
-                    const getWordIntensityStyle = (): React.CSSProperties => {
-                      const baseStyle: React.CSSProperties = {
-                        transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth but quick transitions
-                        willChange: 'transform, opacity, color, font-size',
-                        transformOrigin: 'center bottom' // Jump from bottom like axs.so
-                      };
+                     const getWordIntensityStyle = (): React.CSSProperties => {
+                       const baseStyle: React.CSSProperties = {
+                         transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bounce easing for 15% pop
+                         willChange: 'transform, opacity, color, font-size',
+                         transformOrigin: 'center bottom',
+                         // 15% pop animation on active word (Design Guide)
+                         ...(wordState === 'active' && {
+                           transform: 'scale(1.15) translateY(-2px)',
+                           zIndex: 10
+                         })
+                       };
                       
                       // Check for emotional expressions in the segment
                       const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
@@ -754,6 +779,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             </span>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
