@@ -52,7 +52,22 @@ export interface WordSegment {
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   syllables?: Array<{ text: string; startTime: number; endTime: number }>;
+  confidence?: number;
 }
+
+// Helper to detect real provider timings (they ALWAYS include confidence scores)
+const hasProviderWordTimings = (words?: WordSegment[]): boolean => {
+  if (!words || words.length === 0) return false;
+  
+  const firstWord = words[0];
+  // Provider timings (AssemblyAI/Deepgram) ALWAYS have confidence scores
+  return (
+    typeof firstWord.startTime === 'number' &&
+    typeof firstWord.endTime === 'number' &&
+    firstWord.confidence !== undefined &&
+    firstWord.confidence !== null
+  );
+};
 
 export interface CaptionSegment {
   text: string;
@@ -321,7 +336,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   
   // Synthesize word-level timing if missing with IMPROVED accuracy
   let workingCaption = { ...activeCaption, text: captionText };
-  if (!workingCaption.words || workingCaption.words.length === 0) {
+  if (!hasProviderWordTimings(workingCaption.words)) {
     synthesizedWords = true;
     console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
     const words = captionText.trim().split(/\s+/).filter(Boolean);
@@ -380,20 +395,25 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       };
     });
     
-    console.log('✅ CAPTIONS: Synthesized', words.length, 'words with adaptive timing (', baseWPM.toFixed(0), 'WPM ) for segment', workingCaption.startTime.toFixed(2) + 's');
+    console.log('⚠️ CWI: Synthesized', words.length, 'words with adaptive timing (', baseWPM.toFixed(0), 'WPM) - no provider timings found');
   } else {
-    // Words exist from provider: inject syllables for words >= 6 chars that don't have them
-    const beforeCount = workingCaption.words.filter(w => w.syllables && w.syllables.length > 0).length;
-    const injectedWords = injectSyllables(workingCaption.words);
+    // Provider timings detected - use them directly and only inject syllables
+    console.log(`✅ CWI: Using PROVIDER timings for ${workingCaption.words!.length} words with confidence scores`);
+    
+    // Only inject syllables for long words, don't modify timings
+    const beforeCount = workingCaption.words!.filter(w => w.syllables && w.syllables.length > 0).length;
+    const injectedWords = injectSyllables(workingCaption.words!);
+    
     // Ensure proper typing after injection
     workingCaption.words = injectedWords.map(w => ({
       ...w,
       emphasis: (w.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling') || 'normal',
       pitch: (w.pitch as 'high' | 'low' | 'normal') || 'normal'
     }));
-    const afterCount = workingCaption.words.filter(w => w.syllables && w.syllables.length > 0).length;
+    
+    const afterCount = workingCaption.words!.filter(w => w.syllables && w.syllables.length > 0).length;
     if (afterCount > beforeCount) {
-      console.log(`SYL: added syllables to ${afterCount - beforeCount} words`);
+      console.log(`✅ CWI: Injected syllables into ${afterCount - beforeCount} words`);
     }
   }
   
