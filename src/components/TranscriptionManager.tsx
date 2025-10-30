@@ -92,7 +92,15 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
             text: seg.text || '',
             start_time: Number(seg.start) || 0,
             end_time: Number(seg.end) || 0,
-            speaker: `Speaker ${(index % 3) + 1}`
+            speaker: `Speaker ${(index % 3) + 1}`,
+            words: Array.isArray(seg.words)
+              ? seg.words.map((w: any) => ({
+                  text: w.word || w.text,
+                  startTime: Number(w.start || w.startTime),
+                  endTime: Number(w.end || w.endTime),
+                  confidence: w.confidence
+                }))
+              : undefined
           }));
         } else if (data.text) {
           // Fallback to simple text
@@ -118,7 +126,8 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
             speaker: seg.speaker,
             speakerColor: '#3B82F6',
             emphasis: 'normal' as const,
-            pitch: 'normal' as const
+            pitch: 'normal' as const,
+            words: seg.words
           }));
           
           await saveTranscriptSegments(transcriptSegments, data.language || 'en');

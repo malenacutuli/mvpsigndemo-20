@@ -335,6 +335,22 @@ const VideoDetail = () => {
           if (segErr) throw segErr;
           data = segs || [];
           console.log('🎯 VIDEO DETAIL: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+          
+          // If edited transcript has no segments, fall back to base video-level
+          if (!data || data.length === 0) {
+            console.log('⚠️ Edited transcript has no segments, falling back to base video-level');
+            const { data: baseSegs, error: baseErr } = await supabase
+              .from('transcript_segments_clean')
+              .select('*')
+              .eq('video_id', id)
+              .eq('language', lang)
+              .is('transcript_id', null)
+              .order('start_time', { ascending: true });
+            
+            if (baseErr) throw baseErr;
+            data = baseSegs || [];
+            console.log('🗄️ VIDEO DETAIL: Fallback to base video-level segments. Count:', data.length);
+          }
         } else {
           // Fallback: base video-level segments only (exclude other transcripts)
           const { data: segs, error: segErr } = await supabase

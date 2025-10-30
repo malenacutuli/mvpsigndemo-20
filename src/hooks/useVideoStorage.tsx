@@ -94,7 +94,7 @@ export const useVideoStorage = (videoId: string) => {
         speakerColor: segment.speakerColor || '#3B82F6',
         emphasis: segment.emphasis || 'normal',
         pitch: segment.pitch || 'normal',
-        words: segment.words ? JSON.parse(JSON.stringify(segment.words)) : null,
+        ...(segment.words && segment.words.length > 0 ? { words: JSON.parse(JSON.stringify(segment.words)) } : {}),
         isOffCamera: segment.isOffCamera || false,
         segmentType: segment.segmentType || 'dialogue',
         confidence: segment.confidence || 0.95,
@@ -125,7 +125,7 @@ export const useVideoStorage = (videoId: string) => {
         confidence: seg.confidence || 0.95,
         segment_type: seg.segmentType || 'dialogue',
         is_off_camera: seg.isOffCamera || false,
-        words: seg.words ? JSON.parse(JSON.stringify(seg.words)) : null
+        ...(seg.words && seg.words.length > 0 ? { words: JSON.parse(JSON.stringify(seg.words)) } : {})
       }));
 
       const { error } = await supabase
@@ -198,6 +198,19 @@ export const useVideoStorage = (videoId: string) => {
           if (segErr) throw segErr;
           data = segs || [];
           console.log('🗄️ DATABASE: Using base video-level transcript segments. Count:', data.length);
+          
+          // Prefer segments with provider word timings
+          if (data && data.length > 0) {
+            const withTimings = data.filter(row => {
+              if (!row.words || !Array.isArray(row.words) || row.words.length === 0) return false;
+              return row.words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+            });
+            
+            if (withTimings.length > 0) {
+              console.log('✅ Prioritizing segments with provider word timings:', withTimings.length, 'of', data.length);
+              data = withTimings;
+            }
+          }
         }
 
         if (data && data.length > 0) {
