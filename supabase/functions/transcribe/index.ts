@@ -650,7 +650,15 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     punctuate: true,
     format_text: true,
     speaker_labels: true,
-    // enable_word_timestamps: true // (AssemblyAI words are included by default when available)
+    speakers_expected: 6, // Detect up to 6 speakers for better diarization
+    speech_model: 'best', // Use the most accurate model
+    auto_chapters: false,
+    sentiment_analysis: false,
+    entity_detection: false,
+    iab_categories: false,
+    content_safety: false,
+    auto_highlights: false,
+    dual_channel: false,
   };
   if (languageCode) {
     body.language_code = languageCode;
