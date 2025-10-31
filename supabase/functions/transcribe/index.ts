@@ -991,10 +991,16 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         transcriptionResult.language || 'en'
       );
       
-      // Save processed segments
+      // Save processed segments server-side (NEVER send identity to frontend)
       await service.saveSegmentsToDatabase(processedSegments);
       
       console.log(`✅ Saved ${processedSegments.length} segments with proper character assignment`);
+      
+      // Replace segments with metadata to prevent frontend overwrites
+      transcriptionResult.segments = undefined;
+      transcriptionResult.utterances = undefined;
+      transcriptionResult.segmentsProcessed = processedSegments.length;
+      transcriptionResult.serverSaved = true;
     } else {
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
@@ -1102,6 +1108,11 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       }
       
       console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
+      
+      // Replace segments with metadata to prevent frontend overwrites
+      transcriptionResult.segments = undefined;
+      transcriptionResult.segmentsProcessed = segmentsToSave.length;
+      transcriptionResult.serverSaved = true;
     }
     
   } catch (error) {
