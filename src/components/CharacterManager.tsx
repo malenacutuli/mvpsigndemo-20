@@ -12,6 +12,18 @@ import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
 
+// Generic speaker patterns to filter out from mappings and dropdowns
+const GENERIC_PATTERNS = [
+  /^speaker(\s*\d+)?$/i,
+  /^speaker\s*[A-Z]$/i,
+  /^unknown$/i,
+  /^unassigned$/i
+];
+
+const isGenericSpeaker = (speaker: string): boolean => {
+  return GENERIC_PATTERNS.some(pattern => pattern.test(speaker?.trim() ?? ''));
+};
+
 // Captions with Intention color palette
 const CI_COLORS = {
   // Main Characters (6 primary colors)
@@ -137,15 +149,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
         const resultData = data.result_data as any;
         if (resultData.speakers && Array.isArray(resultData.speakers)) {
-          const cachedSpeakers = resultData.speakers.map((s: any) => s.name);
-          // Merge into stable list
-          const merged = Array.from(new Set([...
-            (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []),
-            ...cachedSpeakers,
-          ].filter(Boolean))).sort();
+          const cachedSpeakers = resultData.speakers
+            .map((s: any) => s.name)
+            .filter((name: string) => !isGenericSpeaker(name));
+          
+          const merged = Array.from(new Set<string>(cachedSpeakers)).sort();
           setAvailableSpeakers(merged);
-          sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
-          console.log('📋 Loaded cached speakers:', merged);
+          console.log('📋 Loaded cached speakers (generics filtered):', merged);
         }
       }
     } catch (error) {
@@ -153,40 +163,41 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  // Load speakers from DB (transcript + mappings) and stabilize the list
+  // Load speakers from DB (transcript + mappings) and stabilize the list - filter generics
   const loadSpeakersFromDB = async () => {
     try {
       const speakersSet = new Set<string>();
+      
       // From transcript segments
       const { data: segs } = await supabase
         .from('transcript_segments_clean')
         .select('speaker')
         .eq('video_id', videoId)
-        .eq('language', language)
-        .order('start_time');
-      (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
+        .eq('language', language);
+      
+      (segs || []).forEach((r: any) => {
+        if (r?.speaker && !isGenericSpeaker(r.speaker)) {
+          speakersSet.add(r.speaker);
+        }
+      });
 
-      // From latest speaker mappings (keys)
-      const { data: mapRow } = await supabase
+      // From speaker mappings (asr_label column)
+      const { data: maps } = await supabase
         .from('speaker_mappings')
-        .select('mappings, updated_at')
+        .select('asr_label')
         .eq('video_id', videoId)
-        .eq('language', language)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const mappings = (mapRow?.mappings as Record<string, string>) || {};
-      Object.keys(mappings).forEach(k => speakersSet.add(k));
-
-      // Merge with cache and any previous stable list
-      const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
-      stable.forEach(s => speakersSet.add(s));
+        .eq('language', language);
+      
+      (maps || []).forEach((r: any) => {
+        if (r?.asr_label && !isGenericSpeaker(r.asr_label)) {
+          speakersSet.add(r.asr_label);
+        }
+      });
 
       const merged = Array.from(speakersSet).filter(Boolean).sort();
       if (merged.length > 0) {
         setAvailableSpeakers(merged);
-        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
-        console.log('💿 Loaded speakers from DB/cache:', merged);
+        console.log('💿 Loaded speakers from DB (generics filtered):', merged);
       }
     } catch (e) {
       console.warn('⚠️ Failed loading speakers from DB:', e);
@@ -405,7 +416,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('characters')
         .upsert(
           characters.map(char => ({
-            id: char.id.startsWith('char-') ? undefined : char.id, // Let DB generate ID for new chars
+            id: char.id.startsWith('char-') ? undefined : char.id,
             video_id: videoId,
             name: char.name,
             type: char.type,
@@ -429,58 +440,41 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // Create a map of character names to IDs
       const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
       
-      // Apply mappings across ALL languages
-      for (const lang of allLanguages) {
-        // Update transcript segments based on character assignments for this language
-        for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
-          const characterId = charIdMap.get(characterName);
-          const character = characters.find(c => c.name === characterName);
-          
-          if (!character || !characterId) continue;
-          
-          // Query 1: Update segments that currently have the speaker label
-          const { error: err1 } = await supabase
-            .from('transcript_segments_clean')
-            .update({
-              speaker: characterName,
-              speaker_color: character.color,
-              character_id: characterId,
-              is_off_camera: character.isOffCamera || false,
-              emphasis: character.emphasis || 'normal',
-              pitch: character.pitch || 'normal'
-            })
-            .eq('video_id', videoId)
-            .eq('language', lang)
-            .eq('speaker', speakerName);
-          
-          if (err1) {
-            console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
-          } else {
-            console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
-          }
-          
-          // Query 2: Update segments that already have the character name
-          // (for idempotency - if user saves multiple times)
-          const { error: err2 } = await supabase
-            .from('transcript_segments_clean')
-            .update({
-              speaker_color: character.color,
-              character_id: characterId,
-              is_off_camera: character.isOffCamera || false,
-              emphasis: character.emphasis || 'normal',
-              pitch: character.pitch || 'normal'
-            })
-            .eq('video_id', videoId)
-            .eq('language', lang)
-            .eq('speaker', characterName);
-          
-          if (err2) {
-            console.error(`❌ [${lang}] Failed to sync "${characterName}":`, err2);
-          }
+      // Apply mappings using server RPC (blocks generics automatically)
+      let mappedCount = 0;
+      let skippedCount = 0;
+      
+      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
+        // Skip generic speaker labels
+        if (isGenericSpeaker(speakerName)) {
+          console.warn(`⚠️ Skipping generic speaker mapping: "${speakerName}"`);
+          skippedCount++;
+          continue;
+        }
+        
+        const character = characters.find(c => c.name === characterName);
+        if (!character) continue;
+        
+        const characterId = charIdMap.get(characterName);
+        if (!characterId) continue;
+        
+        // Use RPC function that safely applies mapping (blocks generics on server too)
+        const { data: count, error } = await supabase.rpc('map_label_to_character', {
+          p_video_id: videoId,
+          p_language: language,
+          p_asr_label: speakerName,
+          p_character_id: characterId
+        });
+        
+        if (error) {
+          console.error(`❌ Failed to map "${speakerName}" → "${characterName}":`, error);
+        } else {
+          console.log(`✅ Mapped "${speakerName}" → "${characterName}" (${count} segments)`);
+          mappedCount += (count || 0);
         }
       }
       
-      console.log('✅ Character mappings applied across all languages');
+      console.log(`✅ Character mappings complete: ${mappedCount} segments updated, ${skippedCount} generic labels skipped`);
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
     }
