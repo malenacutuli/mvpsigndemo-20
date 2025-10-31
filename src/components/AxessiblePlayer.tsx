@@ -145,6 +145,26 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       v.removeEventListener('volumechange', disableTracks);
     };
   }, []);
+
+  // MutationObserver to remove dynamically added <track> elements
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !v.parentElement) return;
+
+    const obs = new MutationObserver(muts => {
+      muts.forEach(m => {
+        m.addedNodes.forEach(node => {
+          if (node.nodeName === 'TRACK') {
+            node.parentNode?.removeChild(node);
+          }
+        });
+      });
+    });
+
+    obs.observe(v, { childList: true });
+    return () => obs.disconnect();
+  }, []);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
