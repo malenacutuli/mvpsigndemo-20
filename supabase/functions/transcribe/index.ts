@@ -718,7 +718,17 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
   const segments: any[] = [];
   const maxDurationSeconds = (maxDurationMinutes || 60) * 60; // Default to 60 minutes
   
+  console.log(`📊 AssemblyAI Response Structure:`, {
+    hasUtterances: !!resultData.utterances,
+    utteranceCount: resultData.utterances?.length || 0,
+    hasWords: !!resultData.words,
+    wordCount: resultData.words?.length || 0,
+    firstUtteranceSpeaker: resultData.utterances?.[0]?.speaker || 'none',
+    status: resultData.status
+  });
+  
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
+    console.log(`🎯 Processing ${resultData.utterances.length} utterances with speaker labels...`);
     for (const u of resultData.utterances) {
       const startTime = (u.start || 0) / 1000;
       const endTime = (u.end || 0) / 1000;
@@ -729,19 +739,23 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         continue;
       }
       
+      console.log(`   📍 Utterance: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
+      
       segments.push({
         text: u.text,
         start: startTime,
-        end: Math.min(endTime, maxDurationSeconds), // Cap end time to max duration
+        end: Math.min(endTime, maxDurationSeconds),
         words: (u.words || []).map((w: any) => ({
           start: (w.start || 0) / 1000,
           end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
           word: w.text ?? w.word,
           confidence: w.confidence,
-        })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
-        speaker: u.speaker || undefined,
+        })).filter((w: any) => w.start <= maxDurationSeconds),
+        speaker: u.speaker || undefined, // ✅ PRESERVE speaker label (A, B, C, etc.)
+        confidence: u.confidence || 0.95
       });
     }
+    console.log(`✅ Built ${segments.length} segments from utterances with speakers`);
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
     // Group words into ~5s sentences
     let current: any = { text: "", start: null as number | null, end: null as number | null, words: [] as any[] };
@@ -933,6 +947,14 @@ async function autoCreateCharacters(videoId: string, segments: any[], supabaseCl
 // Save transcript to database with enhanced speaker assignment
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`💾 Saving ${transcriptionResult.segments.length} segments to database with speaker assignment service...`);
+  console.log(`📊 Transcription format check:`, {
+    hasUtterances: !!transcriptionResult.utterances,
+    utteranceCount: transcriptionResult.utterances?.length || 0,
+    hasSegments: !!transcriptionResult.segments,
+    segmentCount: transcriptionResult.segments?.length || 0,
+    firstSegmentSpeaker: transcriptionResult.segments?.[0]?.speaker || 'none',
+    firstUtteranceSpeaker: transcriptionResult.utterances?.[0]?.speaker || 'none'
+  });
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -945,21 +967,30 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Clear existing segments if force re-extract
-    if (forceReExtract) {
-      await supabase
-        .from('transcript_segments_clean')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', transcriptionResult.language || 'en');
-      console.log("✅ Cleared existing segments for language:", transcriptionResult.language || 'en');
+    // ALWAYS clear existing base segments (transcript_id IS NULL) for this video/language
+    // This prevents the uq_transcript_pos constraint violation
+    console.log('🗑️ Clearing existing base segments for video:', videoId, 'language:', transcriptionResult.language || 'en');
+    const { error: deleteError } = await supabase
+      .from('transcript_segments_clean')
+      .delete()
+      .eq('video_id', videoId)
+      .eq('language', transcriptionResult.language || 'en')
+      .is('transcript_id', null);
+    
+    if (deleteError) {
+      console.error('⚠️ Failed to clear existing segments:', deleteError);
+    } else {
+      console.log('✅ Cleared existing base segments');
     }
     
     // Check if we have AssemblyAI utterances format (with speaker labels)
-    const hasUtteranceFormat = transcriptionResult.utterances && Array.isArray(transcriptionResult.utterances);
+    const hasUtteranceFormat = transcriptionResult.utterances && 
+                               Array.isArray(transcriptionResult.utterances) && 
+                               transcriptionResult.utterances.length > 0;
     
     if (hasUtteranceFormat) {
       console.log('🎭 Using SpeakerAssignmentService for proper character linking...');
+      console.log(`📊 Processing ${transcriptionResult.utterances.length} utterances...`);
       
       // Use the new service for proper speaker assignment
       const service = new SpeakerAssignmentService(supabase, videoId);
@@ -975,6 +1006,20 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
     } else {
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
+      console.log('⚠️ This means speaker labels may not be properly assigned!');
+      
+      // ALWAYS clear existing base segments to avoid constraint violations
+      console.log('🗑️ Legacy method: Clearing existing base segments...');
+      const { error: legacyDeleteError } = await supabase
+        .from('transcript_segments_clean')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', transcriptionResult.language || 'en')
+        .is('transcript_id', null);
+      
+      if (legacyDeleteError) {
+        console.error('⚠️ Failed to clear existing segments (legacy):', legacyDeleteError);
+      }
       
       // Auto-create characters for detected speakers (old method)
       const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
@@ -1012,7 +1057,17 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           }
         }
         
-        const characterId = speakerToCharIdMap.get(segment.speaker) || null;
+        // ✅ CRITICAL FIX: Preserve speaker labels from AssemblyAI segments
+        // Use speaker label from segment (A, B, C, etc.) to look up character
+        const speakerLabel = segment.speaker || 'Unassigned';
+        const characterId = speakerToCharIdMap.get(speakerLabel) || null;
+        
+        // Build proper speaker name for display
+        const displaySpeaker = speakerLabel !== 'Unassigned' ? `Speaker ${speakerLabel}` : 'Unassigned';
+        
+        if (index < 5) {
+          console.log(`   📍 Segment ${index}: speaker="${speakerLabel}" → display="${displaySpeaker}" charId=${characterId?.substring(0, 8)}...`);
+        }
         
         return {
           video_id: videoId,
@@ -1023,13 +1078,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker: segment.speaker || 'Unassigned',
-          speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
+          speaker: displaySpeaker, // ✅ Use proper speaker name
+          speaker_color: assignSpeakerColor(speakerLabel, transcriptionResult.segments),
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
           words: words, // Save provider word timings as JSON
-          character_id: characterId // Link to auto-created character
+          character_id: characterId // ✅ Link to auto-created character
         };
       });
       

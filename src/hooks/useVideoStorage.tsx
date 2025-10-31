@@ -108,7 +108,20 @@ export const useVideoStorage = (videoId: string) => {
       for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
       const checksum = btoa(binary);
 
-      // Use direct insert with upsert for clean table
+      // Delete existing segments for this video/language first to avoid constraint issues
+      console.log('🗑️ Deleting existing segments for video:', videoId, 'language:', language);
+      const { error: deleteError } = await supabase
+        .from('transcript_segments_clean')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .is('transcript_id', null);
+
+      if (deleteError) {
+        console.error('Failed to delete existing segments:', deleteError);
+      }
+
+      // Use direct insert for clean table
       const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => ({
         transcript_id: null,
         video_id: videoId,
@@ -130,10 +143,7 @@ export const useVideoStorage = (videoId: string) => {
 
       const { error } = await supabase
         .from('transcript_segments_clean')
-        .upsert(segmentsToInsert, {
-          onConflict: 'video_id,language,start_time,end_time,text',
-          ignoreDuplicates: false
-        });
+        .insert(segmentsToInsert);
 
       if (error) throw error;
 
