@@ -405,7 +405,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .from('characters')
         .upsert(
           characters.map(char => ({
-            id: char.id.startsWith('char-') ? undefined : char.id, // Let DB generate ID for new chars
+            id: char.id.startsWith('char-') ? undefined : char.id,
             video_id: videoId,
             name: char.name,
             type: char.type,
@@ -429,58 +429,94 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // Create a map of character names to IDs
       const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
       
+      // Identify manually-overridden segments
+      const { data: allSegments } = await supabase
+        .from('transcript_segments_clean')
+        .select('id, character_id, speaker')
+        .eq('video_id', videoId)
+        .not('character_id', 'is', null);
+      
+      const manuallyChangedSegments = new Set<string>();
+      allSegments?.forEach(seg => {
+        const expectedCharId = charIdMap.get(seg.speaker);
+        if (expectedCharId && seg.character_id !== expectedCharId) {
+          manuallyChangedSegments.add(seg.id);
+        }
+      });
+      
+      console.log(`🔒 Found ${manuallyChangedSegments.size} manually-overridden segments`);
+      
       // Apply mappings across ALL languages
       for (const lang of allLanguages) {
-        // Update transcript segments based on character assignments for this language
         for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
           const characterId = charIdMap.get(characterName);
           const character = characters.find(c => c.name === characterName);
           
           if (!character || !characterId) continue;
           
-          // Query 1: Update segments that currently have the speaker label
-          const { error: err1 } = await supabase
+          // Update auto-assigned segments (not manual overrides)
+          if (manuallyChangedSegments.size > 0) {
+            const { error: err1 } = await supabase
+              .from('transcript_segments_clean')
+              .update({
+                speaker: characterName,
+                speaker_color: character.color,
+                character_id: characterId,
+                is_off_camera: character.isOffCamera || false,
+                emphasis: character.emphasis || 'normal',
+                pitch: character.pitch || 'normal'
+              })
+              .eq('video_id', videoId)
+              .eq('language', lang)
+              .eq('speaker', speakerName)
+              .not('id', 'in', `(${Array.from(manuallyChangedSegments).join(',')})`);
+            
+            if (err1) {
+              console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
+            } else {
+              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (preserved overrides)`);
+            }
+          } else {
+            const { error: err1 } = await supabase
+              .from('transcript_segments_clean')
+              .update({
+                speaker: characterName,
+                speaker_color: character.color,
+                character_id: characterId,
+                is_off_camera: character.isOffCamera || false,
+                emphasis: character.emphasis || 'normal',
+                pitch: character.pitch || 'normal'
+              })
+              .eq('video_id', videoId)
+              .eq('language', lang)
+              .eq('speaker', speakerName);
+            
+            if (err1) {
+              console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
+            }
+          }
+          
+          // Sync colors/properties for ALL segments with this character_id
+          const { error: err2 } = await supabase
             .from('transcript_segments_clean')
             .update({
               speaker: characterName,
               speaker_color: character.color,
-              character_id: characterId,
               is_off_camera: character.isOffCamera || false,
               emphasis: character.emphasis || 'normal',
               pitch: character.pitch || 'normal'
             })
             .eq('video_id', videoId)
             .eq('language', lang)
-            .eq('speaker', speakerName);
-          
-          if (err1) {
-            console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
-          } else {
-            console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
-          }
-          
-          // Query 2: Update segments that already have the character name
-          // (for idempotency - if user saves multiple times)
-          const { error: err2 } = await supabase
-            .from('transcript_segments_clean')
-            .update({
-              speaker_color: character.color,
-              character_id: characterId,
-              is_off_camera: character.isOffCamera || false,
-              emphasis: character.emphasis || 'normal',
-              pitch: character.pitch || 'normal'
-            })
-            .eq('video_id', videoId)
-            .eq('language', lang)
-            .eq('speaker', characterName);
+            .eq('character_id', characterId);
           
           if (err2) {
-            console.error(`❌ [${lang}] Failed to sync "${characterName}":`, err2);
+            console.error(`❌ [${lang}] Failed to sync character "${characterName}":`, err2);
           }
         }
       }
       
-      console.log('✅ Character mappings applied across all languages');
+      console.log('✅ Character mappings applied (manual overrides preserved)');
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
     }

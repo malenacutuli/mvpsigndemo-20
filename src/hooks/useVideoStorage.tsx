@@ -17,7 +17,7 @@ export interface TranscriptSegment {
   endTime: number;
   speaker?: string;
   speakerColor?: string;
-  speakerOriginalLabel?: string; // Original AssemblyAI label (A, B, C)
+  speakerAsrLabel?: string; // Original AssemblyAI label (A, B, C)
   emphasis?: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch?: 'normal' | 'high' | 'low';
   words?: WordData[];
@@ -232,7 +232,7 @@ export const useVideoStorage = (videoId: string) => {
             endTime: row.end_time,
             speaker: row.speaker,
             speakerColor: row.speaker_color,
-            speakerOriginalLabel: row.speaker_original_label,
+            speakerAsrLabel: row.speaker_asr_label,
             emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
             pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
             words: row.words ? parseWordsData(row.words) : undefined,

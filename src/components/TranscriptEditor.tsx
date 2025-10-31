@@ -74,7 +74,7 @@ interface TranscriptSegment {
   endTime: number;
   speaker?: string;
   speakerColor?: string;
-  speakerOriginalLabel?: string; // Original AssemblyAI label (A, B, C)
+  speakerAsrLabel?: string; // Original AssemblyAI label (A, B, C)
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   words?: WordData[]; // Add word-level data support
@@ -130,7 +130,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const [showIntensity, setShowIntensity] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [availableCharacters, setAvailableCharacters] = useState<{ name: string; color: string }[]>([]);
+  const [availableCharacters, setAvailableCharacters] = useState<Array<{
+    id: string;
+    name: string;
+    color: string;
+    type?: string;
+  }>>([]);
   const [editApplyToAll, setEditApplyToAll] = useState(false);
   const [originalSpeaker, setOriginalSpeaker] = useState<string>('');
   const [originalColor, setOriginalColor] = useState<string>('');
@@ -182,10 +187,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         console.log(`✅ Loaded ${characters?.length || 0} characters for dropdown:`, characters?.map(c => c.name));
         
         if (characters) {
-          setAvailableCharacters(characters.map(c => ({ 
-            name: c.name, 
-            color: c.color 
-          })));
+          setAvailableCharacters(characters);
         }
       } catch (error) {
         console.error('❌ Failed to load characters:', error);
@@ -214,10 +216,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         }
         
         if (characters) {
-          setAvailableCharacters(characters.map(c => ({ 
-            name: c.name, 
-            color: c.color 
-          })));
+          setAvailableCharacters(characters);
           console.log(`✅ Dropdown refreshed with ${characters.length} characters`);
         }
       } catch (err) {
@@ -819,50 +818,32 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveEdit = async () => {
     if (editingIndex === null) return;
     
-    // ✅ CRITICAL FIX: Map speaker name to character ID before saving
+    // Find character by selected name and link via character_id
     let characterId: string | null = null;
+    const selectedChar = availableCharacters.find(c => c.name === editSpeaker);
     
-    if (editSpeaker && editSpeaker !== 'Speaker') {
-      try {
-        // Query database for matching character
-        const { data: matchingChar, error } = await supabase
-          .from('characters')
-          .select('id')
-          .eq('video_id', videoId)
-          .eq('name', editSpeaker)
-          .maybeSingle();
-        
-        if (!error && matchingChar) {
-          characterId = matchingChar.id;
-          console.log(`✅ Mapped "${editSpeaker}" to character_id: ${characterId}`);
-        } else if (!matchingChar) {
-          // Character doesn't exist - create it
-          console.log(`🆕 Creating new character: "${editSpeaker}"`);
-          const { data: newChar, error: createError } = await supabase
-            .from('characters')
-            .insert({
-              video_id: videoId,
-              name: editSpeaker,
-              color: editSpeakerColor,
-              type: 'supporting',
-              is_off_camera: false,
-              emphasis: 'normal',
-              pitch: 'normal'
-            })
-            .select('id')
-            .single();
-          
-          if (!createError && newChar) {
-            characterId = newChar.id;
-            console.log(`✅ Created character with id: ${characterId}`);
-            
-            // Refresh available characters
-            const updatedCharacters = await loadCharacters();
-            setAvailableCharacters(updatedCharacters.map(c => ({ name: c.name, color: c.color })));
-          }
-        }
-      } catch (error) {
-        console.error('❌ Failed to map character:', error);
+    if (selectedChar) {
+      characterId = selectedChar.id;
+      console.log(`✅ Linking segment to character: ${editSpeaker} (${characterId})`);
+    } else if (editSpeaker && editSpeaker !== 'Speaker') {
+      // Character doesn't exist, create it
+      const { data: newChar } = await supabase
+        .from('characters')
+        .insert({
+          video_id: videoId,
+          name: editSpeaker,
+          type: 'minor',
+          color: editSpeakerColor || '#9CA3AF',
+          emphasis: 'normal',
+          pitch: 'normal'
+        })
+        .select('id')
+        .single();
+      
+      if (newChar) {
+        characterId = newChar.id;
+        const updatedChars = await loadCharacters();
+        setAvailableCharacters(updatedChars);
       }
     }
     
@@ -875,12 +856,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       startTime: parseTimeInput(editStartTime),
       endTime: parseTimeInput(editEndTime),
       speaker: editSpeaker,
-      speakerColor: editSpeakerColor,
-      emphasis: useWordLevelEditing ? 'normal' : editEmphasis,
-      pitch: useWordLevelEditing ? 'normal' : editPitch,
-      words: useWordLevelEditing ? editWords : undefined,
-      characterId: characterId,        // ✅ NOW SETS characterId (camelCase)
-      character_id: characterId        // ✅ AND character_id (snake_case) for compatibility
+      speakerColor: selectedChar?.color || editSpeakerColor,
+      characterId: characterId || undefined,
+      character_id: characterId || undefined,
+      emphasis: editEmphasis,
+      pitch: editPitch,
+      words: editWords
     };
 
     const nextSegments = updated;
@@ -1305,17 +1286,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
                       {segment.speaker && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs px-2 py-0"
-                          style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                        >
-                          {/* Show "Speaker A", "Speaker B" etc. if no character assigned but has original label */}
-                          {!segment.characterId && !segment.character_id && segment.speakerOriginalLabel 
-                            ? `Speaker ${segment.speakerOriginalLabel}`
-                            : segment.speaker
-                          }
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs px-2 py-0"
+                            style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                          >
+                            {!segment.characterId && !segment.character_id && segment.speakerAsrLabel 
+                              ? `Speaker ${segment.speakerAsrLabel}`
+                              : segment.speaker
+                            }
+                          </Badge>
+                          {segment.speakerAsrLabel && (segment.characterId || segment.character_id) && (
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                              ✏️
+                            </Badge>
+                          )}
+                        </div>
                       )}
                      {segment.emphasis !== 'normal' && (
                        <Badge variant="secondary" className="text-xs px-1 py-0">
@@ -1532,17 +1519,22 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         <SelectContent>
                           {availableCharacters.length === 0 ? (
                             <div className="p-2 text-xs text-muted-foreground">
-                              No characters assigned yet. Use the Speaker Assignment section below to create characters.
+                              No characters assigned yet. Use Character Manager to create characters.
                             </div>
                           ) : (
                             availableCharacters.map((char) => (
-                              <SelectItem key={char.name} value={char.name}>
+                              <SelectItem key={char.id} value={char.name}>
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-3 h-3 rounded-full border" 
                                     style={{ backgroundColor: char.color }}
                                   />
                                   <span className="text-xs">{char.name}</span>
+                                  {char.type && (
+                                    <Badge variant="outline" className="text-[10px] ml-auto">
+                                      {char.type}
+                                    </Badge>
+                                  )}
                                 </div>
                               </SelectItem>
                             ))
