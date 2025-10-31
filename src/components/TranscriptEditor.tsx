@@ -847,6 +847,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditApplyToAll(false);
   };
 
+  // Helper to check if string is a valid UUID
+  const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
   const saveEdit = async () => {
     if (editingIndex === null) return;
     
@@ -857,24 +860,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     const selectedChar = availableCharacters.find(c => c.name === editSpeaker);
     
     try {
-      // Update identity separately via RPC (preserves word timing)
-      if (editSpeaker && editSpeaker !== currentSegment.speaker) {
-        await updateSegmentIdentity({
-          segmentId,
-          videoId,
-          language: selectedLanguage,
-          characterId: selectedChar?.id,
-          characterName: selectedChar ? undefined : editSpeaker,
-        });
-        
-        // Refresh characters if we created a new one
-        if (!selectedChar) {
-          const updatedChars = await loadCharacters();
-          setAvailableCharacters(updatedChars);
-        }
-      }
-      
-      // Update text/timing/emphasis/pitch via bulk save
+      // 1️⃣ FIRST: Update text/timing/emphasis/pitch via bulk save
       const updated = [...editingTranscript];
       updated[editingIndex] = {
         ...updated[editingIndex],
@@ -889,10 +875,31 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       // Sort segments by time after editing timing
       const sortedSegments = sortSegmentsByTime(updated);
       
-      // Save text/timing changes to database
+      // Save text/timing changes to database (creates segment if new)
       await saveTranscriptData(sortedSegments, selectedLanguage);
       
-      // Reload from database to get updated identity from view
+      // 2️⃣ THEN: Update identity via RPC (now segment exists in DB)
+      if (editSpeaker && editSpeaker !== currentSegment.speaker) {
+        // Compute stable idx for RPC fallback (for new segments with temp IDs)
+        const idxForRPC = (currentSegment as any).idx ?? sortedSegments.findIndex(s => s.id === segmentId);
+        
+        await updateSegmentIdentity({
+          segmentId: isUUID(segmentId) ? segmentId : undefined,
+          videoId,
+          language: selectedLanguage,
+          idx: !isUUID(segmentId) ? idxForRPC : undefined,
+          characterId: selectedChar?.id,
+          characterName: selectedChar ? undefined : editSpeaker,
+        });
+        
+        // Refresh characters if we created a new one
+        if (!selectedChar) {
+          const updatedChars = await loadCharacters();
+          setAvailableCharacters(updatedChars);
+        }
+      }
+      
+      // 3️⃣ Reload from database to get updated identity from view
       const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
       if (reloadedSegments.length > 0) {
         const convertedSegments = reloadedSegments.map(s => ({
