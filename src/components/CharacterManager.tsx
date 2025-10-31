@@ -169,11 +169,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // From latest speaker mappings (keys)
       const { data: mapRow } = await supabase
         .from('speaker_mappings')
-        .select('mappings, updated_at')
+        .select('mappings')
         .eq('video_id', videoId)
         .eq('language', language)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
       const mappings = (mapRow?.mappings as Record<string, string>) || {};
       Object.keys(mappings).forEach(k => speakersSet.add(k));

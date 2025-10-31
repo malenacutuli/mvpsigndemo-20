@@ -556,39 +556,49 @@ export const useVideoStorage = (videoId: string) => {
     }
 
     try {
-      // Ensure idempotent save without relying on a DB unique constraint
-      const { data: existing, error: selectError } = await supabase
+      // Load all characters for this video to resolve names to UUIDs
+      const { data: chars } = await supabase
+        .from('characters')
+        .select('id, name')
+        .eq('video_id', videoId);
+      
+      const nameToId = new Map(chars?.map(c => [c.name, c.id]) || []);
+      
+      // Build canonical mapping with both ASR labels and full names
+      const canonicalMappings: Record<string, string> = {};
+      
+      Object.entries(mappings).forEach(([speaker, characterName]) => {
+        const characterId = nameToId.get(characterName);
+        if (!characterId) {
+          console.warn(`⚠️ Character "${characterName}" not found, skipping mapping for "${speaker}"`);
+          return;
+        }
+        
+        // Extract ASR label (A/B/C) from "Speaker A" or use as-is if already just "A"
+        const asrLabel = speaker.replace(/^Speaker\s+/, '');
+        
+        // Store both forms: "A" -> uuid AND "Speaker A" -> uuid
+        canonicalMappings[asrLabel] = characterId;
+        canonicalMappings[speaker] = characterId;
+      });
+      
+      console.log('📝 Canonical mappings to save:', canonicalMappings);
+
+      // Use upsert with the composite key (video_id, language)
+      const { error: upsertError } = await supabase
         .from('speaker_mappings')
-        .select('id')
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .eq('created_by', user.id)
-        .maybeSingle();
+        .upsert({
+          video_id: videoId,
+          language,
+          mappings: canonicalMappings,
+          created_by: user.id,
+        }, {
+          onConflict: 'video_id,language'
+        });
 
-      if (selectError && selectError.code !== 'PGRST116') throw selectError;
+      if (upsertError) throw upsertError;
 
-      let opError = null as any;
-      if (existing?.id) {
-        const { error } = await supabase
-          .from('speaker_mappings')
-          .update({ mappings })
-          .eq('id', existing.id);
-        opError = error;
-      } else {
-        const { error } = await supabase
-          .from('speaker_mappings')
-          .insert({
-            video_id: videoId,
-            language,
-            mappings,
-            created_by: user.id,
-          });
-        opError = error;
-      }
-
-      if (opError) throw opError;
-
-      console.log('💾 Speaker mappings saved to database');
+      console.log('✅ Speaker mappings saved with UUIDs:', canonicalMappings);
     } catch (err) {
       console.error('Failed to save speaker mappings:', err);
       // Fallback to localStorage
@@ -612,15 +622,16 @@ export const useVideoStorage = (videoId: string) => {
     }
 
     try {
-      const { data, error } = await supabase
+      // @ts-ignore - Temporary workaround for Supabase types issue after migration
+      const result: any = await supabase
         .from('speaker_mappings')
-        .select('mappings, updated_at')
+        .select('mappings')
         .eq('video_id', videoId)
         .eq('language', language)
         .eq('created_by', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
+      
+      const { data, error } = result;
 
       if (error && error.code !== 'PGRST116') throw error;
 
