@@ -100,12 +100,12 @@ export const useVideoStorage = (videoId: string) => {
       const rows = segments.map((seg: TranscriptSegment, i: number) => ({
         video_id: videoId,
         language,
-        idx: i,
+        idx: (seg as any).idx ?? i,
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
         words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null
-        // ✅ NO speaker/speaker_color/character_id - leave those to edge function
+        // ⚠️ do NOT write speaker or character_id here
       }));
 
       // Use upsert to avoid deleting server-authored data
