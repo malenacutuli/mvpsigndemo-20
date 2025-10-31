@@ -30,12 +30,10 @@ interface ProcessedSegment {
   text: string;
   start_time: number;
   end_time: number;
-  speaker: string;
-  speaker_color: string;
+  speaker_asr_label: string | null; // Keep exact diarization label (e.g., "Speaker A")
   character_id: string | null;
   language: string;
   confidence: number;
-  speaker_original_label?: string;
   words?: any[];
 }
 
@@ -303,70 +301,51 @@ export class SpeakerAssignmentService {
     const segments: ProcessedSegment[] = [];
 
     for (const utterance of utterances) {
-      // Determine speaker and character
-      let speakerLabel: string;
+      // Determine ASR label and character_id
+      let asrLabel: string | null = null;
       let characterId: string | null = null;
-      let speakerColor: string;
-      let originalLabel: string | undefined;
 
       if (utterance.speaker) {
-        // Has detected speaker (A, B, C)
-        originalLabel = utterance.speaker;
+        // Keep exact diarization label (e.g., "Speaker A", "Speaker B")
+        asrLabel = `Speaker ${utterance.speaker}`;
         
         // Check if there's an existing mapping for this ASR label
         const mappedCharacterName = this.speakerMappings.get(utterance.speaker);
-        const char = mappedCharacterName 
-          ? this.characterMap.get(mappedCharacterName)
-          : this.characterMap.get(utterance.speaker);
-        
-        if (char) {
-          speakerLabel = char.name; // Use mapped character name (e.g., "David" or "Speaker A")
-          characterId = char.id;
-          speakerColor = char.color;
-          console.log(`🎯 Segment mapped: "${utterance.speaker}" → "${char.name}"`);
-        } else {
-          // Fallback if character creation failed
-          speakerLabel = `Speaker ${utterance.speaker}`;
-          speakerColor = '#9CA3AF';
-        }
-      } else {
-        // No detected speaker - assign to "Unassigned"
-        speakerLabel = 'Unassigned';
-        const unassignedChar = this.characterMap.get('Unassigned');
-        if (unassignedChar) {
-          characterId = unassignedChar.id;
-          speakerColor = unassignedChar.color;
-        } else {
-          speakerColor = '#9CA3AF';
+        if (mappedCharacterName) {
+          const char = this.characterMap.get(mappedCharacterName);
+          if (char) {
+            characterId = char.id;
+            console.log(`🎯 Segment mapped: "${asrLabel}" → character "${char.name}"`);
+          }
         }
       }
+      // If no speaker detected, leave asrLabel as null (will show as "Unassigned" in view)
 
       // Transform word timings - preserve all provider data
       const words = utterance.words?.map(w => ({
         text: w.text,
         startTime: w.start / 1000, // Convert ms to seconds
         endTime: w.end / 1000,
-        confidence: w.confidence,
-        speaker: w.speaker // Preserve word-level speaker if available
+        confidence: w.confidence
       })) || [];
 
       segments.push({
         text: utterance.text,
         start_time: utterance.start / 1000, // Convert ms to seconds
         end_time: utterance.end / 1000,
-        speaker: speakerLabel,
-        speaker_color: speakerColor,
-        character_id: characterId,
-        language: language, // Use detected language, NOT 'auto'
+        speaker_asr_label: asrLabel, // ✅ Keep exact diarization label
+        character_id: characterId, // ✅ Set only if explicitly mapped
+        language: language,
         confidence: utterance.confidence || 0,
-        speaker_original_label: originalLabel,
+        // DO NOT set speaker_color here; resolved view will supply from character or palette
+        // DO NOT default speaker to 'Speaker'
         words: words.length > 0 ? words : undefined
       });
     }
 
-    console.log(`✅ Processed ${segments.length} segments with character links`);
-    console.log(`   - ${segments.filter(s => s.character_id && s.speaker !== 'Unassigned').length} assigned to detected speakers`);
-    console.log(`   - ${segments.filter(s => s.speaker === 'Unassigned').length} unassigned (need manual assignment)`);
+    console.log(`✅ Processed ${segments.length} segments with ASR labels`);
+    console.log(`   - ${segments.filter(s => s.character_id).length} mapped to characters`);
+    console.log(`   - ${segments.filter(s => !s.speaker_asr_label).length} unassigned (no ASR label)`);
 
     return segments;
   }
@@ -418,9 +397,8 @@ export class SpeakerAssignmentService {
           text: seg.text,
           start_time: seg.start_time,
           end_time: seg.end_time,
-          speaker: seg.speaker,
-          speaker_color: seg.speaker_color,
-          character_id: seg.character_id,
+          speaker_asr_label: seg.speaker_asr_label, // ✅ Keep exact ASR label
+          character_id: seg.character_id, // ✅ Set only if explicitly mapped
           language: seg.language,
           confidence: seg.confidence,
           words: seg.words,
@@ -428,6 +406,7 @@ export class SpeakerAssignmentService {
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
+          // DO NOT set speaker or speaker_color - view will resolve them
           created_at: new Date().toISOString()
         })));
 
