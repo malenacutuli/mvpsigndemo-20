@@ -944,47 +944,32 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             if (missingWords && !sessionStorage.getItem(persistKey)) {
               console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
               
-              // ✅ FIX: Retry fetching existing segments to avoid race condition with edge function save
               const tryFetchExisting = async () => {
                 for (let i = 0; i < 3; i++) {
-                  const { data: dbSegments } = await supabase
+                  const { data } = await supabase
                     .from('transcript_segments_clean')
-                    .select('*')
+                    .select('idx, start_time, end_time, speaker_asr_label, words')
                     .eq('video_id', videoId)
                     .eq('language', currentLanguage)
                     .order('start_time');
-                  
-                  if (dbSegments && dbSegments.length > 0) {
-                    console.log(`✅ Found ${dbSegments.length} existing segments on attempt ${i + 1}`);
-                    return dbSegments as any[];
-                  }
-                  
-                  console.log(`⏳ Attempt ${i + 1}/3: No segments yet, waiting 300ms...`);
+                  if (data?.length) return data as any[];
                   await new Promise(r => setTimeout(r, 300));
                 }
-                return [] as any[];
+                return [];
               };
-              
-              const dbSegments = await tryFetchExisting();
-              
-              // ✅ IMPROVED: Check if ANY segment has labels or provider words
-              const hasSpeakerLabels = dbSegments.some((s: any) => s.speaker_asr_label);
-              const hasProviderWords = dbSegments.some((s: any) => s.words && Array.isArray(s.words) && s.words.length > 0);
-              
-              if (dbSegments.length > 0 && (hasSpeakerLabels || hasProviderWords)) {
-                console.log('✅ Existing segments have speaker labels or provider words; skip persistence');
+
+              const rows = await tryFetchExisting();
+              const hasLabels = rows.some(r => r.speaker_asr_label);
+              const hasWords = rows.some(r => Array.isArray(r.words) && r.words.length > 0);
+
+              if (rows.length > 0) {
+                // If anything exists, assume edge is the source of truth and DO NOT persist locally
+                console.log('✅ Skipping local persistence; rows already exist.', { hasLabels, hasWords });
                 sessionStorage.setItem(persistKey, 'true');
                 return;
               }
               
-              // ✅ NEW: If base segments exist with no labels, don't overwrite either (mid-save state)
-              if (dbSegments.length > 0) {
-                console.log('⚠️ Base segments exist without labels - likely mid-save, skipping persistence');
-                sessionStorage.setItem(persistKey, 'true');
-                return;
-              }
-              
-              // If no segments exist at all, we can safely save
+              // No segments exist - safe to save synthesized timings
               console.log('💾 No existing segments found, saving synthesized word timings');
               await saveTranscriptSegments(convertedSegments as any, currentLanguage);
               sessionStorage.setItem(persistKey, 'true');
