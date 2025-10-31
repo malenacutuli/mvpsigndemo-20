@@ -132,7 +132,7 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
-  // Load transcript segments from database (database-first approach)
+  // Load transcript segments from database using view for display
   const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
     setLoading(true);
     setError(null);
@@ -140,97 +140,54 @@ export const useVideoStorage = (videoId: string) => {
     try {
       // For authenticated users, always prioritize database
       if (user) {
-        // 1) Look for user-edited transcript for this video/language
-        const { data: transcripts, error: txError } = await supabase
-          .from('transcripts')
-          .select('id, updated_at')
+        console.log('🔍 Loading transcript segments from v_transcript_segments_resolved for display');
+        
+        // Query the view for display data (character names, colors)
+        const { data: viewSegs, error: viewErr } = await supabase
+          .from('v_transcript_segments_resolved' as any)
+          .select('id, idx, start_time, end_time, text, display_speaker, display_color, character_id, confidence, emphasis, pitch, segment_type, is_off_camera, speaker_asr_label')
           .eq('video_id', videoId)
           .eq('language', language)
-          .order('updated_at', { ascending: false })
-          .limit(1);
+          .order('idx', { ascending: true });
 
-        if (txError) throw txError;
+        if (viewErr) throw viewErr;
 
-        let data: any[] | null = null;
-
-        if (transcripts && transcripts.length > 0) {
-          // Use ONLY the latest edited transcript's segments
-          const transcriptId = transcripts[0].id;
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('transcript_id', transcriptId)
-            .order('idx', { ascending: true })
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🎯 DATABASE: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+        if (viewSegs && viewSegs.length > 0) {
+          // Fetch words from base table if needed for word-level timing
+          const ids = viewSegs.map((s: any) => s.id);
+          const wordsById = new Map<string, any>();
           
-          // ✅ FIX: If transcript header exists but has no linked segments, fall back to base rows
-          if (!data || data.length === 0) {
-            console.log('⚠️ Transcript header exists but no segments found, falling back to base rows');
-            const { data: baseSegs, error: baseErr } = await supabase
+          if (ids.length > 0) {
+            const { data: baseRows } = await supabase
               .from('transcript_segments_clean')
-              .select('*')
-              .eq('video_id', videoId)
-              .eq('language', language)
-              .is('transcript_id', null)
-              .order('start_time', { ascending: true });
+              .select('id, words')
+              .in('id', ids);
             
-            if (baseErr) throw baseErr;
-            data = baseSegs || [];
-            console.log('🗄️ DATABASE: Loaded base rows as fallback. Count:', data.length);
-          }
-        } else {
-          // No edited transcript found; fall back to base video-level segments only
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('video_id', videoId)
-            .eq('language', language)
-            .is('transcript_id', null)
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🗄️ DATABASE: Using base video-level transcript segments. Count:', data.length);
-          
-          // Prefer segments with provider word timings
-          if (data && data.length > 0) {
-            const withTimings = data.filter(row => {
-              if (!row.words || !Array.isArray(row.words) || row.words.length === 0) return false;
-              return row.words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+            baseRows?.forEach((r: any) => {
+              if (r.words) wordsById.set(r.id, r.words);
             });
-            
-            if (withTimings.length > 0) {
-              console.log('✅ Prioritizing segments with provider word timings:', withTimings.length, 'of', data.length);
-              data = withTimings;
-            }
           }
-        }
 
-        if (data && data.length > 0) {
-          const segments: TranscriptSegment[] = data.map(row => ({
+          // Map view data + words to TranscriptSegment format
+          const segments: TranscriptSegment[] = viewSegs.map((row: any) => ({
             id: row.id,
             text: row.text,
             startTime: row.start_time,
             endTime: row.end_time,
-            speaker: row.speaker,
-            speakerColor: row.speaker_color,
+            speaker: row.display_speaker, // Use display_speaker from view
+            speakerColor: row.display_color, // Use display_color from view
             speakerAsrLabel: row.speaker_asr_label,
             emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
             pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
-            words: row.words ? parseWordsData(row.words) : undefined,
+            words: wordsById.has(row.id) ? parseWordsData(wordsById.get(row.id)) : undefined,
             isOffCamera: row.is_off_camera,
             segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
             confidence: row.confidence,
-            characterId: row.character_id, // ✅ FIX #1: Load character_id from database
-            character_id: row.character_id // ✅ FIX #1: Load character_id from database (snake_case for compatibility)
+            characterId: row.character_id,
+            character_id: row.character_id
           }));
 
-          console.log('✅ DATABASE: Loaded transcript segments:', segments.length, 'segments');
-          // Clear localStorage since we have database data
+          console.log('✅ VIEW: Loaded transcript segments from view:', segments.length, 'segments');
           localStorage.removeItem(`transcript_${videoId}_${language}`);
           return segments;
         }

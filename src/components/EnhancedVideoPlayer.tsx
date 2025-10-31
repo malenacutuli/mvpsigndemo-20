@@ -620,7 +620,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         // Only auto-detect if currentLanguage is not set or is 'auto'
         if (!currentLanguage || currentLanguage === 'auto') {
           const { data: availableTranscripts } = await supabase
-            .from('transcript_segments_clean')
+            .from('v_transcript_segments_resolved' as any)
             .select('language')
             .eq('video_id', videoId)
             .limit(10);
@@ -947,11 +947,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               const tryFetchExisting = async () => {
                 for (let i = 0; i < 3; i++) {
                   const { data } = await supabase
-                    .from('transcript_segments_clean')
-                    .select('idx, start_time, end_time, speaker_asr_label, words')
+                    .from('v_transcript_segments_resolved' as any)
+                    .select('id, idx, start_time, end_time, display_speaker, display_color')
                     .eq('video_id', videoId)
                     .eq('language', currentLanguage)
-                    .order('start_time');
+                    .order('idx');
                   if (data?.length) return data as any[];
                   await new Promise(r => setTimeout(r, 300));
                 }
@@ -959,12 +959,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               };
 
               const rows = await tryFetchExisting();
-              const hasLabels = rows.some(r => r.speaker_asr_label);
-              const hasWords = rows.some(r => Array.isArray(r.words) && r.words.length > 0);
 
               if (rows.length > 0) {
-                // If anything exists, assume edge is the source of truth and DO NOT persist locally
-                console.log('✅ Skipping local persistence; rows already exist.', { hasLabels, hasWords });
+                // If anything exists in the view, assume edge function saved correctly - DO NOT persist locally
+                console.log('✅ Skipping local persistence; segments already exist in view.');
                 sessionStorage.setItem(persistKey, 'true');
                 return;
               }
