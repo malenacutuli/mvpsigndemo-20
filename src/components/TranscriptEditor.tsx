@@ -304,6 +304,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             // Override speaker/color with character data if linked
             speaker: character?.name || seg.speaker,
             speakerColor: character?.color || seg.speakerColor,
+            speakerAsrLabel: seg.speakerAsrLabel || (seg as any).speaker_asr_label, // ✅ Preserve ASR label
             characterId: characterId
           };
         });
@@ -774,7 +775,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         const wordDur = Math.max(0.05, dur / Math.max(1, wordsList.length));
         return {
           text: segment.text,
-          speaker: segment.speaker || 'Speaker',
+          speaker: segment.speaker || (segment as any).speakerAsrLabel || (segment as any).speaker_asr_label || 'Unknown',
           startTime: segment.startTime,
           endTime: segment.endTime,
           words: wordsList.map((w, i) => ({
@@ -811,7 +812,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     const segment = editingTranscript[index];
     
     // Pre-select character name if character_id exists
-    let speakerName = segment.speaker || 'Speaker';
+    let speakerName = segment.speaker || (segment as any).speakerAsrLabel || 'Unknown';
     const characterId = (segment as any).character_id || (segment as any).characterId;
     
     if (characterId) {
@@ -1103,7 +1104,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         text: segment.text,
         startTime: segment.start_time || segment.startTime,
         endTime: segment.end_time || segment.endTime,
-        speaker: segment.speaker || 'Speaker',
+        speaker: segment.speaker || segment.speakerAsrLabel || segment.speaker_asr_label || 'Unknown',
         speakerColor: segment.speakerColor || PRIORITY_COLORS[index % PRIORITY_COLORS.length],
         emphasis: segment.emphasis || 'normal' as const,
         pitch: segment.pitch || 'normal' as const,
