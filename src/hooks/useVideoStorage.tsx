@@ -69,7 +69,6 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
-  // Save transcript segments to database with proper transaction handling
   const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
     if (!user) {
       console.warn('⚠️ User not authenticated - transcript changes will be lost on page refresh');
@@ -97,43 +96,29 @@ export const useVideoStorage = (videoId: string) => {
 
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // Prepare segments with proper field mapping
-      const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => {
-        // Extract speaker_asr_label from speakerAsrLabel or from speaker format "Speaker X"
-        const asr = (seg as any).speakerAsrLabel || 
-                    (typeof seg.speaker === 'string' && seg.speaker.match(/^Speaker\s+([A-Z])$/)?.[1]);
-        
-        return {
-          transcript_id: null,
-          video_id: videoId,
-          language,
-          idx: index,
-          start_time: seg.startTime,
-          end_time: seg.endTime,
-          text: seg.text,
-          speaker: seg.speaker || 'Speaker',
-          speaker_asr_label: asr || null,
-          speaker_color: seg.speakerColor || '#3B82F6',
-          character_id: seg.characterId || seg.character_id || null,
-          emphasis: seg.emphasis || 'normal',
-          pitch: seg.pitch || 'normal',
-          confidence: seg.confidence || 0.95,
-          segment_type: seg.segmentType || 'dialogue',
-          is_off_camera: seg.isOffCamera || false,
-          ...(seg.words && seg.words.length > 0 ? { words: JSON.parse(JSON.stringify(seg.words)) } : {})
-        };
-      });
+      // Prepare segments with minimal fields - preserve text/timing/words only
+      const rows = segments.map((seg: TranscriptSegment, i: number) => ({
+        video_id: videoId,
+        language,
+        idx: i,
+        start_time: seg.startTime,
+        end_time: seg.endTime,
+        text: seg.text,
+        words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null
+        // ✅ NO speaker/speaker_color/character_id - leave those to edge function
+      }));
 
       // Use upsert to avoid deleting server-authored data
       const { error } = await supabase
         .from('transcript_segments_clean')
-        .upsert(segmentsToInsert, {
-          onConflict: 'video_id,language,idx'
+        .upsert(rows, {
+          onConflict: 'video_id,language,idx',
+          ignoreDuplicates: false
         });
 
       if (error) throw error;
 
-      console.log('✅ Transcript saved to database with proper transcript record:', segments.length, 'segments');
+      console.log('✅ Transcript saved to database:', segments.length, 'segments');
       
       // Clear any localStorage fallback since we have database record
       localStorage.removeItem(`transcript_${videoId}_${language}`);
