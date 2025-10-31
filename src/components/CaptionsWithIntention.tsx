@@ -501,15 +501,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
       )}
 
-      {/* ACTIVE CAPTION: Colored word-by-word rendering */}
-      <div 
-        className={`
-          relative flex items-end justify-center pointer-events-none w-full
-          ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
-        `}
-        style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
-        key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
-      >
+      {/* ACTIVE CAPTION: Colored word-by-word rendering - ONLY when foundActive */}
+      {foundActive && (
+        <div 
+          className={`
+            relative flex items-end justify-center pointer-events-none w-full
+            animate-caption-enter
+          `}
+          style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
+          key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
+        >
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
@@ -545,9 +546,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           </div>
         )}
         
-        {/* Single caption display with proper color synchronization */}
+        {/* Single caption display with proper color synchronization - MAX 2 LINES */}
         <div
-          className="relative text-center leading-tight break-words px-1"
+          className="relative text-center leading-tight break-words px-1 line-clamp-2"
           style={{
             fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
             ...pitchStyle,
@@ -558,7 +559,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3', // Tighter line height for mobile
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}
         >
           {/* Sound effects and music formatting */}
@@ -845,6 +851,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
       </div>
       </div>
+      )}
     </div>
   );
 };
