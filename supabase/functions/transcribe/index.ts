@@ -1076,37 +1076,49 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker_asr_label: speakerAsrLabel, // Only save ASR label
-          character_id: null, // Mapping is view-resolved
+          speaker_asr_label: speakerAsrLabel, // ✅ Only save ASR label (identity resolved by view)
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
           words: words // Save provider word timings as JSON
+          // ❌ DO NOT set: speaker, speaker_color, character_id
         };
       });
       
-      // Save in batches
+      // Idempotent save: ignore duplicates on conflict
       const BATCH_SIZE = 50;
+      let insertedCount = 0;
+      let duplicateCount = 0;
+      
       for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
         const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
         
-        const { error } = await supabase
+        const { error, count } = await supabase
           .from('transcript_segments_clean')
-          .insert(batch);
+          .upsert(batch, {
+            onConflict: 'video_id,language,start_time,end_time,text',
+            ignoreDuplicates: true // ✅ DO NOTHING on conflict
+          })
+          .select();
           
         if (error) {
           console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
         } else {
-          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
+          const actualInserted = count || 0;
+          insertedCount += actualInserted;
+          duplicateCount += batch.length - actualInserted;
+          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${actualInserted} new, ${batch.length - actualInserted} duplicates ignored`);
         }
       }
       
-      console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
+      console.log(`✅ Database save complete: ${insertedCount} new segments, ${duplicateCount} duplicates ignored (legacy method)`);
       
       // Replace segments with metadata to prevent frontend overwrites
       transcriptionResult.segments = undefined;
       transcriptionResult.segmentsProcessed = segmentsToSave.length;
       transcriptionResult.serverSaved = true;
+      transcriptionResult.insertedCount = insertedCount;
+      transcriptionResult.duplicateCount = duplicateCount;
     }
     
   } catch (error) {

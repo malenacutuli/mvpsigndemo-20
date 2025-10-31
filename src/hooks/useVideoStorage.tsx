@@ -69,6 +69,7 @@ export const useVideoStorage = (videoId: string) => {
   };
 
   // Save transcript segments to database with proper transaction handling
+  // ❌ NEVER write speaker, speaker_color, or character_id - only timing/text/words
   const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
     if (!user) {
       console.warn('⚠️ User not authenticated - transcript changes will be lost on page refresh');
@@ -81,31 +82,9 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      // Use the RPC function that creates proper transcript records
-      console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
+      console.log('💾 Saving transcript segments (text and timings only - no identity):', segments.length, 'segments');
       
-      // Convert segments to the format expected by the database function
-      const dbSegments = segments.map((segment, index) => ({
-        idx: index,
-        text: segment.text,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        emphasis: segment.emphasis || 'normal',
-        pitch: segment.pitch || 'normal',
-        ...(segment.words && segment.words.length > 0 ? { words: JSON.parse(JSON.stringify(segment.words)) } : {}),
-        isOffCamera: segment.isOffCamera || false,
-        segmentType: segment.segmentType || 'dialogue',
-        confidence: segment.confidence || 0.95
-      }));
-
-      // Create checksum for change detection (handle UTF-8 safely)
-      const json = JSON.stringify(dbSegments);
-      const utf8 = new TextEncoder().encode(json);
-      let binary = '';
-      for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
-      const checksum = btoa(binary);
-
-      // Use direct insert with upsert for clean table
+      // Use direct insert with upsert for clean table - IDENTITY-FREE
       const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => ({
         transcript_id: null,
         video_id: videoId,
@@ -120,6 +99,8 @@ export const useVideoStorage = (videoId: string) => {
         segment_type: seg.segmentType || 'dialogue',
         is_off_camera: seg.isOffCamera || false,
         ...(seg.words && seg.words.length > 0 ? { words: JSON.parse(JSON.stringify(seg.words)) } : {})
+        // ❌ DO NOT write: speaker, speaker_color, character_id
+        // ✅ speaker_asr_label is set only by the edge function
       }));
 
       const { error } = await supabase
@@ -131,7 +112,7 @@ export const useVideoStorage = (videoId: string) => {
 
       if (error) throw error;
 
-      console.log('✅ Transcript saved to database with proper transcript record:', segments.length, 'segments');
+      console.log('✅ Transcript saved to database (identity-free):', segments.length, 'segments');
       
       // Clear any localStorage fallback since we have database record
       localStorage.removeItem(`transcript_${videoId}_${language}`);
@@ -146,6 +127,7 @@ export const useVideoStorage = (videoId: string) => {
   };
 
   // Load transcript segments from database (database-first approach)
+  // 🔐 ALWAYS read from v_transcript_segments_resolved view to get correct speaker identity
   const loadTranscriptSegments = async (language: string = 'en'): Promise<TranscriptSegment[]> => {
     setLoading(true);
     setError(null);
@@ -153,59 +135,19 @@ export const useVideoStorage = (videoId: string) => {
     try {
       // For authenticated users, always prioritize database
       if (user) {
-        // 1) Look for user-edited transcript for this video/language
-        const { data: transcripts, error: txError } = await supabase
-          .from('transcripts')
-          .select('id, updated_at')
+        // Read from the resolved view to get display_speaker and display_color
+        const { data, error: dbError } = await supabase
+          .from('v_transcript_segments_resolved')
+          .select(`
+            id, video_id, language, idx,
+            start_time, end_time, text, words,
+            character_id, display_speaker, display_color
+          `)
           .eq('video_id', videoId)
           .eq('language', language)
-          .order('updated_at', { ascending: false })
-          .limit(1);
+          .order('start_time', { ascending: true });
 
-        if (txError) throw txError;
-
-        let data: any[] | null = null;
-
-        if (transcripts && transcripts.length > 0) {
-          // Use ONLY the latest edited transcript's segments
-          const transcriptId = transcripts[0].id;
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('transcript_id', transcriptId)
-            .order('idx', { ascending: true })
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🎯 DATABASE: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
-        } else {
-          // No edited transcript found; fall back to base video-level segments only
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('video_id', videoId)
-            .eq('language', language)
-            .is('transcript_id', null)
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🗄️ DATABASE: Using base video-level transcript segments. Count:', data.length);
-          
-          // Prefer segments with provider word timings
-          if (data && data.length > 0) {
-            const withTimings = data.filter(row => {
-              if (!row.words || !Array.isArray(row.words) || row.words.length === 0) return false;
-              return row.words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number');
-            });
-            
-            if (withTimings.length > 0) {
-              console.log('✅ Prioritizing segments with provider word timings:', withTimings.length, 'of', data.length);
-              data = withTimings;
-            }
-          }
-        }
+        if (dbError) throw dbError;
 
         if (data && data.length > 0) {
           const segments: TranscriptSegment[] = data.map(row => ({
@@ -213,19 +155,22 @@ export const useVideoStorage = (videoId: string) => {
             text: row.text,
             startTime: row.start_time,
             endTime: row.end_time,
-            speaker: row.speaker,
-            speakerColor: row.speaker_color,
-            emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-            pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
+            // 🔐 Identity comes solely from the view
+            speaker: row.display_speaker || 'Unassigned',
+            speakerColor: row.display_color || '#3B82F6',
+            characterId: row.character_id || null,
+            character_id: row.character_id || null,
             words: row.words ? parseWordsData(row.words) : undefined,
-            isOffCamera: row.is_off_camera,
-            segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
-            confidence: row.confidence,
-            characterId: row.character_id, // ✅ FIX #1: Load character_id from database
-            character_id: row.character_id // ✅ FIX #1: Load character_id from database (snake_case for compatibility)
+            // Default emphasis/pitch since view doesn't include them
+            emphasis: 'normal',
+            pitch: 'normal',
+            // Default other fields
+            isOffCamera: false,
+            segmentType: 'dialogue',
+            confidence: 0.95
           }));
 
-          console.log('✅ DATABASE: Loaded transcript segments:', segments.length, 'segments');
+          console.log('✅ DATABASE: Loaded transcript segments from resolved view:', segments.length, 'segments');
           // Clear localStorage since we have database data
           localStorage.removeItem(`transcript_${videoId}_${language}`);
           return segments;

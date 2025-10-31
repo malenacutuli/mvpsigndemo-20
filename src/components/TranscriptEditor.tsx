@@ -513,132 +513,47 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setIsGenerating(true);
     try {
       console.log('🌐 TRANSCRIPT EDITOR: Extracting transcript in language:', selectedLanguage);
-      const response = await supabase.functions.invoke('transcribe', {
+      const { data, error } = await supabase.functions.invoke('transcribe', {
         body: { 
           videoUrl: videoUrl,
-          videoId: videoId, // Pass videoId for database saving
-          rangeBytes: 200000000, // Increased to 200MB for full transcript extraction
-          language: selectedLanguage, // Use selected language from dropdown
-          fullTranscript: true, // Request complete transcript
-          wordTimestamps: true, // Request word-level timing
-          maxDurationMinutes: 60 // Index up to 60 minutes by default
+          videoId: videoId,
+          language: selectedLanguage,
+          fullTranscript: true,
+          wordTimestamps: true,
+          maxDurationMinutes: 60
         }
       });
 
-      // Check for errors - the response might have error info in data even if no error object
-      if (response.error || response.data?.error) {
-        let errorMessage = 'Transcription failed';
-        let errorDetails = '';
-        
-        // If there's response data with error info, use that
-        if (response.data?.error) {
-          errorMessage = response.data.error;
-          errorDetails = response.data.details || '';
-          
-          // Add size info if available
-          if (response.data.sizeMB && response.data.maxSizeMB) {
-            errorDetails = `Video size: ${response.data.sizeMB}MB. Maximum supported: ${response.data.maxSizeMB}MB. Please compress your video.`;
-          }
-        }
-        // Otherwise use the error object
-        else if (response.error?.message) {
-          try {
-            // Try parsing as JSON first
-            const parsed = JSON.parse(response.error.message);
-            errorMessage = parsed.error || response.error.message;
-            errorDetails = parsed.details || '';
-          } catch {
-            // If not JSON, use the message directly
-            errorMessage = response.error.message;
-            if (response.error.message.includes('413') || response.error.message.includes('too large')) {
-              errorDetails = 'Maximum supported size is 5GB. Please compress your video if it exceeds this limit.';
-            }
-          }
-        }
-        
-        throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
-      }
+      if (error) throw error;
 
-      const { data, error } = response;
-
-      // Convert to segments format using actual timing from Whisper API
-      const segments: TranscriptSegment[] = [];
-      if (data?.words && Array.isArray(data.words)) {
-        // Group words into sentences for better readability
-        let currentSegment = '';
-        let segmentStart = 0;
-        let segmentIndex = 0;
-        
-        data.words.forEach((word: any, index: number) => {
-          if (index === 0) {
-            segmentStart = word.start || 0;
-          }
-          
-          currentSegment += (currentSegment ? ' ' : '') + word.word;
-          
-          // End segment on sentence boundaries or every 10-15 words
-          const isEndOfSentence = /[.!?]$/.test(word.word);
-          const isLongSegment = currentSegment.split(' ').length >= 12;
-          const isLastWord = index === data.words.length - 1;
-          
-          if (isEndOfSentence || isLongSegment || isLastWord) {
-            segments.push({
-              id: `segment-${segmentIndex}`,
-              text: currentSegment.trim(),
-              startTime: segmentStart,
-              endTime: word.end || (segmentStart + 3),
-              speaker: 'Unassigned',
-              speakerColor: '#3B82F6',
-              emphasis: 'normal',
-              pitch: 'normal'
-            });
-            
-            currentSegment = '';
-            segmentIndex++;
-            // Next segment starts after current word
-            if (index < data.words.length - 1) {
-              segmentStart = data.words[index + 1]?.start || (word.end || segmentStart + 3);
-            }
-          }
-        });
-      } else if (data?.text) {
-        // Fallback to basic segmentation if word-level timing isn't available
-        const sentences = data.text.split(/[.!?]+/).filter(s => s.trim());
-        const totalDuration = data.duration || 120; // Use actual duration or fallback
-        const segmentDuration = totalDuration / sentences.length;
-        
-        sentences.forEach((sentence, index) => {
-          if (sentence.trim()) {
-            segments.push({
-              id: `segment-${index}`,
-              text: sentence.trim(),
-              startTime: index * segmentDuration,
-              endTime: (index + 1) * segmentDuration,
-              speaker: 'Unassigned',
-              speakerColor: '#3B82F6',
-              emphasis: 'normal',
-              pitch: 'normal'
-            });
-          }
-        });
-      }
-
-      console.log('✅ TRANSCRIPT EDITOR: Transcript extracted successfully in', selectedLanguage, 'with', segments.length, 'segments');
+      // ❌ Do NOT build placeholder segments from data
+      // ✅ Always reload from DB (the view) to get proper identity resolution
+      console.log('✅ TRANSCRIPT EDITOR: Transcription complete, reloading from database...');
       
-      setOriginalTranscript(segments);
-      setEditingTranscript([...segments]);
+      const fresh = await loadTranscriptSegments(selectedLanguage);
+      
+      if (fresh.length === 0) {
+        throw new Error('No segments found after transcription. Please try again.');
+      }
+      
+      // Map to ensure id is always present (required by TranscriptEditor's type)
+      const freshSegments = fresh.map(seg => ({
+        ...seg,
+        id: seg.id || `segment-${seg.startTime}`
+      })) as TranscriptSegment[];
+      
+      setOriginalTranscript(freshSegments);
+      setEditingTranscript([...freshSegments]);
       
       // Detect language from response and update state
-      const detectedLanguage = data?.language || 'en';
+      const detectedLanguage = data?.language || selectedLanguage;
       setSelectedLanguage(detectedLanguage);
       
-      // Save to database with proper transcript record (not just localStorage)
-      await saveTranscriptData(segments, detectedLanguage);
-      onTranscriptUpdate?.(segments, detectedLanguage);
+      onTranscriptUpdate?.(freshSegments, detectedLanguage);
 
       toast({
         title: "Transcript Generated",
-        description: `Generated ${segments.length} segments and saved to database`
+        description: `Generated ${fresh.length} segments with speaker detection`
       });
 
     } catch (error) {
