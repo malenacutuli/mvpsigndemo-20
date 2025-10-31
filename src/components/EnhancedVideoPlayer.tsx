@@ -774,11 +774,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 }
               }
 
-              // ✅ FIX: Prefer speaker_asr_label for AssemblyAI format
-              const asr = (segment as any).speakerAsrLabel || (segment as any).speaker_asr_label;
-              const speaker = 
-                (typeof segment.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(segment.speaker)) ? segment.speaker
-                : (asr ? `Speaker ${asr}` : (segment.speaker || 'Speaker'));
+              // Trust what the DB view already decided (character name or "Speaker A/B/C")
+              const speaker = (segment as any).speaker || 'Unknown';
 
               return {
                 text: segment.text,
