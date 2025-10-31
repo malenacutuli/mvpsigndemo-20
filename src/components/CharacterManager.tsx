@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Info } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -97,16 +97,18 @@ interface CharacterManagerProps {
   videoId: string;
   onCharactersUpdate?: (characters: Character[]) => void;
   existingCharacters?: Character[];
-  language?: string; // Add language prop for multilingual support
-  existingSpeakers?: string[]; // Optional list of detected speakers to map
+  language?: string;
+  existingSpeakers?: string[];
+  isFrozen?: boolean;
 }
 
 export const CharacterManager: React.FC<CharacterManagerProps> = ({ 
   videoId, 
   onCharactersUpdate, 
   existingCharacters = [],
-  language = 'en', // Default to English
-  existingSpeakers
+  language = 'en',
+  existingSpeakers,
+  isFrozen = false
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
@@ -625,8 +627,26 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Freeze Warning */}
+        {isFrozen && (
+          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100">Transcript Frozen</h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-200">
+                    Character mappings cannot be changed after transcript finalization. 
+                    Speaker identities are locked to preserve accuracy.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Speaker Mapping Section */}
-        {characters.length > 0 && (
+        {characters.length > 0 && !isFrozen && (
           <Card className="border-orange-200/50 bg-orange-50/30">
             <CardContent className="p-4 space-y-3">
               <h4 className="font-medium text-orange-800">
@@ -707,7 +727,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 <h4 className="font-medium text-foreground">Character Management</h4>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
               </div>
-              <Button onClick={saveAllCharacters} size="sm" variant="default">
+              <Button onClick={saveAllCharacters} size="sm" variant="default" disabled={isFrozen}>
                 <Save className="w-4 h-4 mr-2" />
                 Save All Changes
               </Button>
