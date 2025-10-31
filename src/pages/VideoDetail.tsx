@@ -369,11 +369,8 @@ const VideoDetail = () => {
 
       if (data && data.length > 0) {
         const captionSegments = data.map((seg, index) => {
-          // ✅ FIX: Prioritize speaker_asr_label for AssemblyAI speaker format
-          const asr = seg.speaker_asr_label;
-          const displayedSpeaker = 
-            (typeof seg.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(seg.speaker)) ? seg.speaker
-            : (asr ? `Speaker ${asr}` : (seg.speaker || 'Speaker'));
+          // Trust what the DB view already decided (character name or "Speaker A/B/C")
+          const displayedSpeaker = seg.speaker || seg.speaker_asr_label || 'Unknown';
           
           return {
             text: seg.text,

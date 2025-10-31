@@ -83,7 +83,7 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
       
       return {
         ...segment,
-        speaker: speaker?.name || segment.speaker || 'Speaker',
+        speaker: speaker?.name || segment.speaker || (segment as any).speakerAsrLabel || 'Unknown',
         speakerColor: speaker?.color || CI_SPEAKER_COLORS[0]
       };
     });
@@ -281,10 +281,10 @@ export const useSpeakerIdentification = (): UseSpeakerIdentificationReturn => {
     const existingColors = localStorage.getItem('character-colors');
     const characterColors: Record<string, string> = existingColors ? JSON.parse(existingColors) : {};
     
-    const uniqueSpeakers = [...new Set(segments.map(s => s.speaker || 'Speaker'))];
+    const uniqueSpeakers = [...new Set(segments.map(s => s.speaker || (s as any).speakerAsrLabel || 'Unknown'))];
     
     return segments.map(segment => {
-      const speaker = segment.speaker || 'Speaker';
+      const speaker = segment.speaker || (segment as any).speakerAsrLabel || 'Unknown';
       
       // Priority 1: Use existing character color if available
       if (characterColors[speaker]) {

@@ -644,7 +644,6 @@ export const useVideoStorage = (videoId: string) => {
         .select('mappings')
         .eq('video_id', videoId)
         .eq('language', language)
-        .eq('created_by', user.id)
         .maybeSingle();
       
       const { data, error } = result;

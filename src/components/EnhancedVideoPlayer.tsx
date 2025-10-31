@@ -91,7 +91,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     
     // Apply colors using unified source (cwiPalette + characters)
     return segments.map(segment => {
-      const speaker = segment.speaker || 'Speaker';
+      const speaker = segment.speaker || (segment as any).speakerAsrLabel || 'Unknown';
       const normalizedSpeaker = normalizeSpeaker(speaker);
       
       // Priority 1: Character color from CharacterManager
@@ -293,7 +293,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           startTime: caption.startTime || 0,
           endTime: caption.endTime || 0,
           text: caption.text || '',
-          speaker: caption.speaker || 'Speaker',
+          speaker: caption.speaker || (caption as any).speakerAsrLabel || 'Unknown',
           speakerColor: caption.speakerColor || '#3B82F6'
         }));
         
@@ -508,10 +508,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const segments = await loadTranscriptSegments(newLanguage);
       if (segments && segments.length > 0) {
         const converted: CaptionSegment[] = segments.map((seg: any) => {
-          const asr = (seg as any).speakerAsrLabel || (seg as any).speaker_asr_label;
-          const speaker = 
-            (typeof seg.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(seg.speaker)) ? seg.speaker
-            : (asr ? `Speaker ${asr}` : (seg.speaker || 'Speaker'));
+          // Trust what the DB view already decided (character name or "Speaker A/B/C")
+          const speaker = seg.speaker || seg.speakerAsrLabel || 'Unknown';
           const speakerColor = (seg.speakerColor || (seg as any).speaker_color) || '#3B82F6';
           
           return {
@@ -898,7 +896,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             // Fallback: convert with basic speaker colors
             captionSegments = applyFallbackSpeakerColors(segments.map(segment => ({
               text: segment.text,
-              speaker: segment.speaker || 'Speaker',
+              speaker: segment.speaker || (segment as any).speakerAsrLabel || 'Unknown',
               startTime: segment.startTime,
               endTime: segment.endTime,
               words: (segment.words || []).map(word => ({

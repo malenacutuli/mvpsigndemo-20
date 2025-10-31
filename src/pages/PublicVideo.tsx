@@ -145,7 +145,7 @@ const PublicVideo = () => {
       if (segments && segments.length > 0) {
         const formattedCaptions: CaptionSegment[] = segments.map(segment => ({
           text: segment.text,
-          speaker: segment.speaker || 'Speaker',
+          speaker: segment.speaker || segment.speaker_asr_label || 'Unknown',
           startTime: segment.start_time,
           endTime: segment.end_time,
           words: Array.isArray(segment.words) 

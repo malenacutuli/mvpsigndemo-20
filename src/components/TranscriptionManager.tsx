@@ -173,7 +173,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
           text: seg.text,
           start_time: seg.startTime,
           end_time: seg.endTime,
-          speaker: seg.speaker || 'Speaker'
+          speaker: seg.speaker || (seg as any).speakerAsrLabel || 'Unknown'
         }));
         
         setTranscripts(displaySegments);
