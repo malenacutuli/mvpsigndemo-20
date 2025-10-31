@@ -44,6 +44,7 @@ export class SpeakerAssignmentService {
   private videoId: string;
   private characterMap: Map<string, Character> = new Map();
   private speakerToCharacterMap: Map<string, string> = new Map();
+  private speakerMappings: Map<string, string> = new Map(); // ASR label -> character name
   
   // Stable color palette for consistency (CI colors)
   private readonly COLOR_PALETTE = [
@@ -72,6 +73,9 @@ export class SpeakerAssignmentService {
   ): Promise<ProcessedSegment[]> {
     console.log(`🎭 SpeakerAssignmentService: Processing ${utterances.length} utterances...`);
     
+    // 0. Load existing speaker mappings (user-created)
+    await this.loadExistingSpeakerMappings(detectedLanguage);
+    
     // 1. Analyze speaker distribution
     const speakerStats = this.analyzeSpeakers(utterances);
     console.log('📊 Speaker Analysis:', speakerStats);
@@ -85,7 +89,7 @@ export class SpeakerAssignmentService {
     // 4. Load any manually created characters (Photographer, Housekeeper, etc.)
     await this.loadManualCharacters();
 
-    // 5. Process segments with proper character assignment
+    // 5. Process segments with proper character assignment (respects mappings)
     const processedSegments = await this.processSegments(
       utterances,
       detectedLanguage
@@ -95,6 +99,35 @@ export class SpeakerAssignmentService {
     await this.updateVideoMetadata(speakerStats);
 
     return processedSegments;
+  }
+
+  /**
+   * Load existing speaker mappings from database
+   */
+  private async loadExistingSpeakerMappings(language: string) {
+    const { data: mappings } = await this.supabase
+      .from('speaker_mappings')
+      .select('asr_label, character_id')
+      .eq('video_id', this.videoId)
+      .eq('language', language);
+
+    if (mappings && mappings.length > 0) {
+      // Load the character details for each mapping
+      for (const mapping of mappings) {
+        const { data: char } = await this.supabase
+          .from('characters')
+          .select('*')
+          .eq('id', mapping.character_id)
+          .single();
+
+        if (char) {
+          this.speakerMappings.set(mapping.asr_label, char.name);
+          this.characterMap.set(char.name, char);
+          this.speakerToCharacterMap.set(mapping.asr_label, char.id);
+          console.log(`✅ Loaded mapping: "${mapping.asr_label}" → "${char.name}"`);
+        }
+      }
+    }
   }
 
   /**
@@ -261,7 +294,7 @@ export class SpeakerAssignmentService {
   }
 
   /**
-   * Process segments with proper character assignment
+   * Process segments with proper character assignment (respects existing mappings)
    */
   private async processSegments(
     utterances: AssemblyAIUtterance[],
@@ -279,11 +312,18 @@ export class SpeakerAssignmentService {
       if (utterance.speaker) {
         // Has detected speaker (A, B, C)
         originalLabel = utterance.speaker;
-        const char = this.characterMap.get(utterance.speaker);
+        
+        // Check if there's an existing mapping for this ASR label
+        const mappedCharacterName = this.speakerMappings.get(utterance.speaker);
+        const char = mappedCharacterName 
+          ? this.characterMap.get(mappedCharacterName)
+          : this.characterMap.get(utterance.speaker);
+        
         if (char) {
-          speakerLabel = char.name; // Use character name (e.g., "Speaker A")
+          speakerLabel = char.name; // Use mapped character name (e.g., "David" or "Speaker A")
           characterId = char.id;
           speakerColor = char.color;
+          console.log(`🎯 Segment mapped: "${utterance.speaker}" → "${char.name}"`);
         } else {
           // Fallback if character creation failed
           speakerLabel = `Speaker ${utterance.speaker}`;
@@ -301,12 +341,13 @@ export class SpeakerAssignmentService {
         }
       }
 
-      // Transform word timings
+      // Transform word timings - preserve all provider data
       const words = utterance.words?.map(w => ({
         text: w.text,
         startTime: w.start / 1000, // Convert ms to seconds
         endTime: w.end / 1000,
-        confidence: w.confidence
+        confidence: w.confidence,
+        speaker: w.speaker // Preserve word-level speaker if available
       })) || [];
 
       segments.push({

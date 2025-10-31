@@ -920,6 +920,39 @@ async function autoCreateCharacters(videoId: string, segments: any[], supabaseCl
   return speakerToCharIdMap;
 }
 
+// Load existing speaker mappings from database
+async function loadSpeakerMappings(videoId: string, language: string, supabaseClient: any): Promise<Map<string, any>> {
+  const mappingsMap = new Map<string, any>();
+  
+  const { data: mappings } = await supabaseClient
+    .from('speaker_mappings')
+    .select('asr_label, character_id')
+    .eq('video_id', videoId)
+    .eq('language', language);
+
+  if (mappings && mappings.length > 0) {
+    // Load character details for each mapping
+    for (const mapping of mappings) {
+      const { data: char } = await supabaseClient
+        .from('characters')
+        .select('*')
+        .eq('id', mapping.character_id)
+        .maybeSingle();
+
+      if (char) {
+        mappingsMap.set(mapping.asr_label, {
+          characterId: char.id,
+          characterName: char.name,
+          characterColor: char.color
+        });
+        console.log(`✅ Loaded mapping: "${mapping.asr_label}" → "${char.name}"`);
+      }
+    }
+  }
+  
+  return mappingsMap;
+}
+
 // Save transcript to database with enhanced speaker assignment
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`💾 Saving ${transcriptionResult.segments.length} segments to database with speaker assignment service...`);
@@ -966,6 +999,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
       
+      // Load existing speaker mappings first
+      const speakerMappingsMap = await loadSpeakerMappings(
+        videoId, 
+        transcriptionResult.language || 'en', 
+        supabase
+      );
+      
       // Auto-create characters for detected speakers (old method)
       const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
       
@@ -987,14 +1027,15 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
         }
         
-        // Transform provider word timings to our format: { text, startTime, endTime, confidence? }
+        // Transform provider word timings to our format: { text, startTime, endTime, confidence?, speaker? }
         let words = null;
         if (segment.words && Array.isArray(segment.words) && segment.words.length > 0) {
           words = segment.words.map((w: any) => ({
             text: w.word || w.text || '',
             startTime: Number(w.start || w.startTime) || 0,
             endTime: Number(w.end || w.endTime) || 0,
-            confidence: w.confidence || null
+            confidence: w.confidence || null,
+            speaker: w.speaker || null // Preserve word-level speaker if available
           }));
           
           if (index < 3) {
@@ -1002,7 +1043,28 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           }
         }
         
-        const characterId = speakerToCharIdMap.get(segment.speaker) || null;
+        // Check if there's a mapping for this speaker
+        const speakerLabel = segment.speaker || 'Unassigned';
+        const mapping = speakerMappingsMap.get(speakerLabel);
+        
+        let finalSpeaker: string;
+        let finalColor: string;
+        let finalCharacterId: string | null;
+        
+        if (mapping) {
+          // Use mapped character
+          finalSpeaker = mapping.characterName;
+          finalColor = mapping.characterColor;
+          finalCharacterId = mapping.characterId;
+          if (index < 3) {
+            console.log(`🎯 Segment mapped: "${speakerLabel}" → "${finalSpeaker}"`);
+          }
+        } else {
+          // Use auto-created character or fallback
+          finalSpeaker = speakerLabel;
+          finalColor = assignSpeakerColor(segment.speaker, transcriptionResult.segments);
+          finalCharacterId = speakerToCharIdMap.get(segment.speaker) || null;
+        }
         
         return {
           video_id: videoId,
@@ -1013,13 +1075,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker: segment.speaker || 'Unassigned',
-          speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
+          speaker: finalSpeaker,
+          speaker_color: finalColor,
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
           words: words, // Save provider word timings as JSON
-          character_id: characterId // Link to auto-created character
+          character_id: finalCharacterId // Link to mapped or auto-created character
         };
       });
       
