@@ -1469,6 +1469,15 @@ export type Database = {
         Args: { target_language?: string; target_video_id: string }
         Returns: Json
       }
+      create_character_if_missing: {
+        Args: {
+          p_color?: string
+          p_name: string
+          p_type?: string
+          p_video_id: string
+        }
+        Returns: string
+      }
       detect_suspicious_subscription_access: {
         Args: { accessing_user_id: string }
         Returns: undefined
@@ -1593,6 +1602,17 @@ export type Database = {
           video_uuid: string
         }
         Returns: Json
+      }
+      update_segment_identity: {
+        Args: {
+          p_character_id?: string
+          p_character_name?: string
+          p_idx?: number
+          p_language?: string
+          p_segment_id?: string
+          p_video_id?: string
+        }
+        Returns: boolean
       }
       update_user_subscription_preferences: {
         Args: { email_notifications?: boolean }
