@@ -368,12 +368,12 @@ const VideoDetail = () => {
       }
 
       if (data && data.length > 0) {
-        const captionSegments = data.map((seg, index) => ({
+        const captionSegments = data.map((seg) => ({
           text: seg.text,
-          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          speaker: seg.speaker || 'Unassigned',
           startTime: Number(seg.start_time),
           endTime: Number(seg.end_time),
-          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
+          speakerColor: seg.speaker_color || '#3B82F6',
           words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
             ? seg.words
             : seg.text.split(' ').map((word: string, i: number) => ({
@@ -405,12 +405,6 @@ const VideoDetail = () => {
     } catch (error) {
       console.error('Error loading captions:', error);
     }
-  };
-
-  // Use unified color palette from cwiPalette
-  const getSpeakerColor = (speakerName: string) => {
-    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
-    return getColor(speakerName, characterColors);
   };
 
   const formatDuration = (seconds: number | null) => {

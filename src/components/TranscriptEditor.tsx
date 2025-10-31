@@ -60,12 +60,8 @@ const CI_SUPPORTING_COLORS = [
   '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82'
 ];
 
-const PRIORITY_COLORS = [...CI_MAIN_COLORS, ...CI_SUPPORTING_COLORS];
-
-// Get next CI color for speaker assignment
-const getNextCISpeakerColor = (index: number): string => {
-  return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
-};
+// Do NOT generate colors or speaker names in FE
+// The view will resolve display_speaker and display_color
 
 interface TranscriptSegment {
   id: string;
@@ -591,8 +587,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: currentSegment.trim(),
               startTime: segmentStart,
               endTime: word.end || (segmentStart + 3),
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(segmentIndex),
+              speaker: 'Unassigned',
+              speakerColor: '#3B82F6',
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -618,8 +614,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               text: sentence.trim(),
               startTime: index * segmentDuration,
               endTime: (index + 1) * segmentDuration,
-              speaker: 'Speaker', // Use editable default name instead of 'narrator'
-              speakerColor: getNextCISpeakerColor(index),
+              speaker: 'Unassigned',
+              speakerColor: '#3B82F6',
               emphasis: 'normal',
               pitch: 'normal'
             });
@@ -803,9 +799,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setEditStartTime(formatTime(segment.startTime));
     setEditEndTime(formatTime(segment.endTime));
     setEditSpeaker(speakerName);
-    setEditSpeakerColor(segment.speakerColor || getNextCISpeakerColor(index));
+    setEditSpeakerColor(segment.speakerColor || '#3B82F6');
     setOriginalSpeaker(speakerName);
-    setOriginalColor(segment.speakerColor || getNextCISpeakerColor(index));
+    setOriginalColor(segment.speakerColor || '#3B82F6');
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
     setEditWords(segment.words || []);
@@ -996,8 +992,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
-      speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
-      speakerColor: getNextCISpeakerColor(editingTranscript.length),
+      speaker: 'Unassigned',
+      speakerColor: '#3B82F6',
       emphasis: 'normal',
       pitch: 'normal'
     };
@@ -1088,8 +1084,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         text: segment.text,
         startTime: segment.start_time || segment.startTime,
         endTime: segment.end_time || segment.endTime,
-        speaker: segment.speaker || 'Speaker',
-        speakerColor: segment.speakerColor || PRIORITY_COLORS[index % PRIORITY_COLORS.length],
+        speaker: segment.speaker || 'Unassigned',
+        speakerColor: segment.speakerColor || '#3B82F6',
         emphasis: segment.emphasis || 'normal' as const,
         pitch: segment.pitch || 'normal' as const,
         vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,

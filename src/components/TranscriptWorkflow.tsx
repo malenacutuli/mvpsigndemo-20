@@ -74,12 +74,12 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [videoSizeMB, setVideoSizeMB] = useState<number>(0);
   const [isFrozen, setIsFrozen] = useState(false);
 
-  // Get unique detected speakers from segments
+  // Get unique detected speakers from segments (uses display values from view)
   const getDetectedSpeakers = () => {
     const speakers = Array.from(new Set(segments.map(seg => seg.speaker)));
     return speakers.map(speaker => ({
       name: speaker,
-      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || getSpeakerColor(speaker)
+      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || '#3B82F6'
     }));
   };
 
@@ -225,12 +225,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.error('❌ TranscriptWorkflow - Failed to load existing transcript:', error);
       setIsLoadingExisting(false);
     }
-  };
-
-  // Use unified color palette from cwiPalette
-  const getSpeakerColor = (speakerName: string) => {
-    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
-    return getColor(speakerName);
   };
 
   const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
