@@ -371,7 +371,7 @@ export class SpeakerAssignmentService {
       
       const { error } = await this.supabase
         .from('transcript_segments_clean')
-        .insert(batch.map((seg, idx) => ({
+        .upsert(batch.map((seg, idx) => ({
           video_id: this.videoId,
           idx: i + idx,
           text: seg.text,
@@ -389,7 +389,10 @@ export class SpeakerAssignmentService {
           pitch: 'normal',
           is_off_camera: false,
           created_at: new Date().toISOString()
-        })));
+        })), {
+          onConflict: 'video_id,language,idx',
+          ignoreDuplicates: false
+        });
 
       if (error) {
         console.error(`❌ Error saving batch ${i / batchSize + 1}:`, error);
