@@ -31,7 +31,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false, speakersExpected = 4 } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -129,7 +129,8 @@ serve(async (req) => {
           resolvedVideoUrl, 
           language, 
           maxDurationMinutes,
-          true  // Use test key
+          true,  // Use test key
+          speakersExpected
         );
         
         if (testResult && !testResult.error) {
@@ -222,7 +223,7 @@ serve(async (req) => {
       if (ASSEMBLYAI_API_KEY) {
         try {
           console.log("🟣 PRIORITY 1: Trying AssemblyAI (PRIMARY)...");
-          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false);
+          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false, speakersExpected);
           if (assemblyResult && !assemblyResult.error) {
             console.log("✅ AssemblyAI analysis successful!");
             transcriptionResult = {
@@ -623,7 +624,7 @@ function deduplicateSegments(segments: any[]): any[] {
 }
 
 // Fallback: Use AssemblyAI for URL-based long-form transcription
-async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false): Promise<any> {
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false, speakersExpected = 4): Promise<any> {
   console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes, useTestKey });
 
   const apiKey = useTestKey 
@@ -650,6 +651,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     punctuate: true,
     format_text: true,
     speaker_labels: true,
+    speakers_expected: speakersExpected,
     // enable_word_timestamps: true // (AssemblyAI words are included by default when available)
   };
   if (languageCode) {
