@@ -430,20 +430,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             return overlap > 0.5; // At least 0.5 seconds of overlap
           });
           
-          // Update all matching segments
+          // Update all matching segments - only sync character mapping
           for (const target of matchingTargets) {
             const { error: updateError } = await supabase
               .from('transcript_segments_clean')
               .update({
-                speaker: sourceSegment.speaker,
-                speaker_color: sourceSegment.speakerColor,
                 character_id: characterId
               })
               .eq('id', target.id);
             
             if (!updateError) {
               updated++;
-              console.log(`✅ Updated segment at ${target.start_time}s: "${target.speaker}" → "${sourceSegment.speaker}" (character_id: ${characterId})`);
+              console.log(`✅ Updated segment at ${target.start_time}s: character_id → ${characterId}`);
             } else {
               console.error(`❌ Failed to update segment ${target.id}:`, updateError);
             }

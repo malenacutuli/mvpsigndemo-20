@@ -489,12 +489,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           startTime: segment.startTime,
           endTime: segment.endTime,
           text: segment.text,
-          speaker: segment.speaker,
-          speakerColor: segment.speakerColor,
           emphasis: segment.emphasis,
           pitch: segment.pitch,
-          segmentType: 'dialogue',
-          isOffCamera: false,
           words: segment.words
         }));
 
