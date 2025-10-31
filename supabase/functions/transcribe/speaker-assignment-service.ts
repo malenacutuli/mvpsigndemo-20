@@ -305,12 +305,28 @@ export class SpeakerAssignmentService {
       let asrLabel: string | null = null;
       let characterId: string | null = null;
 
-      if (utterance.speaker) {
+      // Extract speaker from utterance level OR word level
+      let speakerLabel = utterance.speaker;
+      if (!speakerLabel && utterance.words && utterance.words.length > 0) {
+        // Find the most common speaker in this utterance's words
+        const speakerCounts = new Map<string, number>();
+        utterance.words.forEach(w => {
+          if (w.speaker) {
+            speakerCounts.set(w.speaker, (speakerCounts.get(w.speaker) || 0) + 1);
+          }
+        });
+        if (speakerCounts.size > 0) {
+          speakerLabel = Array.from(speakerCounts.entries())
+            .sort((a, b) => b[1] - a[1])[0][0];
+        }
+      }
+
+      if (speakerLabel) {
         // Keep exact diarization label (e.g., "Speaker A", "Speaker B")
-        asrLabel = `Speaker ${utterance.speaker}`;
+        asrLabel = `Speaker ${speakerLabel}`;
         
         // Check if there's an existing mapping for this ASR label
-        const mappedCharacterName = this.speakerMappings.get(utterance.speaker);
+        const mappedCharacterName = this.speakerMappings.get(speakerLabel);
         if (mappedCharacterName) {
           const char = this.characterMap.get(mappedCharacterName);
           if (char) {

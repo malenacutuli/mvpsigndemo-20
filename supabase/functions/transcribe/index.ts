@@ -709,6 +709,15 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
   const maxDurationSeconds = (maxDurationMinutes || 60) * 60; // Default to 60 minutes
   
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
+    console.log(`📊 AssemblyAI utterances: ${resultData.utterances.length} total`);
+    const firstUtterance = resultData.utterances[0];
+    console.log(`📊 First utterance structure:`, {
+      hasTopLevelSpeaker: !!firstUtterance.speaker,
+      hasWords: !!firstUtterance.words,
+      firstWordSpeaker: firstUtterance.words?.[0]?.speaker,
+      text: firstUtterance.text?.substring(0, 50)
+    });
+    
     for (const u of resultData.utterances) {
       const startTime = (u.start || 0) / 1000;
       const endTime = (u.end || 0) / 1000;
@@ -717,6 +726,22 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       if (startTime > maxDurationSeconds) {
         console.log(`⏭️ Skipping segment starting at ${startTime}s (exceeds ${maxDurationSeconds}s limit)`);
         continue;
+      }
+      
+      // Extract speaker from word-level data if not present at utterance level
+      let speaker = u.speaker;
+      if (!speaker && u.words && u.words.length > 0) {
+        // Use the most common speaker in this utterance's words
+        const speakerCounts = new Map<string, number>();
+        u.words.forEach((w: any) => {
+          if (w.speaker) {
+            speakerCounts.set(w.speaker, (speakerCounts.get(w.speaker) || 0) + 1);
+          }
+        });
+        if (speakerCounts.size > 0) {
+          speaker = Array.from(speakerCounts.entries())
+            .sort((a, b) => b[1] - a[1])[0][0];
+        }
       }
       
       segments.push({
@@ -729,7 +754,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           word: w.text ?? w.word,
           confidence: w.confidence,
         })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
-        speaker: u.speaker || undefined,
+        speaker: speaker || undefined,  // Now properly extracted from words if needed
       });
     }
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
