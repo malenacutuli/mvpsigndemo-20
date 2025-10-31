@@ -730,31 +730,31 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       
       // Extract speaker from word-level data if not present at utterance level
       let speaker = u.speaker;
-      if (!speaker && u.words && u.words.length > 0) {
+      if (!speaker && Array.isArray(u.words) && u.words.length > 0) {
         // Use the most common speaker in this utterance's words
-        const speakerCounts = new Map<string, number>();
-        u.words.forEach((w: any) => {
-          if (w.speaker) {
-            speakerCounts.set(w.speaker, (speakerCounts.get(w.speaker) || 0) + 1);
-          }
-        });
-        if (speakerCounts.size > 0) {
-          speaker = Array.from(speakerCounts.entries())
-            .sort((a, b) => b[1] - a[1])[0][0];
+        const counts = new Map<string, number>();
+        for (const w of u.words) {
+          if (w?.speaker) counts.set(w.speaker, (counts.get(w.speaker) || 0) + 1);
         }
+        if (counts.size) speaker = [...counts.entries()].sort((a,b)=>b[1]-a[1])[0][0];
       }
+      
+      // Save the **human-friendly** label: "Speaker A" instead of "A"
+      const speakerAsrLabel = speaker ? `Speaker ${speaker}` : null;
+      
+      const wordItems = (u.words || []).map((w: any) => ({
+        start: (w.start || 0) / 1000,
+        end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
+        word: w.text ?? w.word,
+        confidence: w.confidence,
+      })).filter((w: any) => w.start <= maxDurationSeconds);
       
       segments.push({
         text: u.text,
         start: startTime,
-        end: Math.min(endTime, maxDurationSeconds), // Cap end time to max duration
-        words: (u.words || []).map((w: any) => ({
-          start: (w.start || 0) / 1000,
-          end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
-          word: w.text ?? w.word,
-          confidence: w.confidence,
-        })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
-        speaker: speaker || undefined,  // Now properly extracted from words if needed
+        end: Math.min(endTime, maxDurationSeconds),
+        words: wordItems,
+        speaker_asr_label: speakerAsrLabel
       });
     }
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
