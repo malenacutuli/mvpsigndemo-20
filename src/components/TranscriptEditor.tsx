@@ -285,10 +285,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       // Always fetch from database for cross-device sync
       const segments = await loadTranscriptSegments(effectiveLanguage);
       if (segments.length > 0) {
-        const convertedSegments = segments.map(seg => ({
-          ...seg,
-          id: seg.id || `segment-${Date.now()}-${Math.random()}`
-        }));
+        // ✅ Load characters to enrich segment display
+        const { data: characters } = await supabase
+          .from('characters')
+          .select('id, name, color')
+          .eq('video_id', videoId);
+        
+        const characterMap = new Map(characters?.map(c => [c.id, c]) || []);
+        
+        const convertedSegments = segments.map(seg => {
+          // ✅ If segment has character_id, use character name and color
+          const characterId = (seg as any).characterId || (seg as any).character_id;
+          const character = characterId ? characterMap.get(characterId) : null;
+          
+          return {
+            ...seg,
+            id: seg.id || `segment-${Date.now()}-${Math.random()}`,
+            // Override speaker/color with character data if linked
+            speaker: character?.name || seg.speaker,
+            speakerColor: character?.color || seg.speakerColor,
+            characterId: characterId
+          };
+        });
+        
         setEditingTranscript(convertedSegments);
         setOriginalTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, effectiveLanguage);
@@ -1300,17 +1319,20 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                        {segment.speaker && (
                         <div className="flex items-center gap-1">
                           {(() => {
-                            // ✅ FIX: Compute displayed speaker and normalized color
-                            const displayedSpeaker = !segment.characterId && !segment.character_id && segment.speakerAsrLabel 
-                              ? `Speaker ${segment.speakerAsrLabel}`
-                              : segment.speaker;
-                            const normalizedColor = getNormalizedSpeakerColor(displayedSpeaker);
+                            // ✅ FIX: Use character name if linked, otherwise show ASR label or generic speaker
+                            const hasCharacter = segment.characterId || segment.character_id;
+                            const displayedSpeaker = hasCharacter 
+                              ? segment.speaker // Already set to character name in loadTranscriptData
+                              : (segment.speakerAsrLabel ? `Speaker ${segment.speakerAsrLabel}` : segment.speaker);
+                            const displayColor = hasCharacter 
+                              ? segment.speakerColor // Use character color
+                              : getNormalizedSpeakerColor(displayedSpeaker);
                             
                             return (
                               <Badge 
                                 variant="outline" 
                                 className="text-xs px-2 py-0"
-                                style={{ borderColor: normalizedColor, color: normalizedColor }}
+                                style={{ borderColor: displayColor, color: displayColor }}
                               >
                                 {displayedSpeaker}
                               </Badge>
