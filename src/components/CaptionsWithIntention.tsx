@@ -486,8 +486,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div className="relative w-full">
-      {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
-      {upcoming && !foundActive && (
+      {/* READ-AHEAD LAYER: Show upcoming caption in white ONLY in 1.5s gap between captions */}
+      {upcoming && !foundActive && currentTime > 0.5 && (upcoming.startTime - currentTime) <= 1.5 && (
         <div 
           className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
                      text-white/90 text-base font-light text-center pointer-events-none"
@@ -501,12 +501,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
       )}
 
-      {/* ACTIVE CAPTION: Colored word-by-word rendering - ONLY when foundActive */}
-      {foundActive && (
+      {/* ACTIVE CAPTION: Colored word-by-word rendering - show when activeCaption exists */}
+      {activeCaption && (
         <div 
           className={`
             relative flex items-end justify-center pointer-events-none w-full
-            animate-caption-enter
+            ${foundActive ? 'animate-caption-enter' : 'opacity-0'}
           `}
           style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
           key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
