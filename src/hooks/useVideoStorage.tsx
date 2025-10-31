@@ -82,68 +82,24 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      // ✅ DEFENSIVE CHECK: Block overwrite if edge function just saved with speaker labels
+      // ✅ DEFENSIVE CHECK: Block overwrite if edge function saved server-authored segments
       const { data: existing } = await supabase
         .from('transcript_segments_clean')
         .select('*')
         .eq('video_id', videoId)
         .eq('language', language)
-        .is('transcript_id', null)
         .limit(5);
-      
-      if (existing && existing.length > 0) {
-        const hasAsrLabels = existing.some((s: any) => s.speaker_asr_label);
-        const hasCharacters = existing.some((s: any) => s.character_id);
-        const hasWords = existing.some((s: any) => s.words && Array.isArray(s.words) && s.words.length > 0);
-        
-        if (hasAsrLabels || hasCharacters || hasWords) {
-          console.log('🛑 BLOCKED: Refusing to overwrite edge function save with speaker labels/characters/words');
-          return;
-        }
+
+      if (existing?.some((r: any) => r.speaker_asr_label || (Array.isArray(r.words) && r.words.length))) {
+        console.log('🛑 Not overwriting server-authored segments.');
+        return;
       }
-      // Use the RPC function that creates proper transcript records
+
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
-      
-      // Convert segments to the format expected by the database function
-      const dbSegments = segments.map((segment, index) => ({
-        idx: index,
-        text: segment.text,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        speaker: segment.speaker || 'Speaker',
-        speakerColor: segment.speakerColor || '#3B82F6',
-        emphasis: segment.emphasis || 'normal',
-        pitch: segment.pitch || 'normal',
-        ...(segment.words && segment.words.length > 0 ? { words: JSON.parse(JSON.stringify(segment.words)) } : {}),
-        isOffCamera: segment.isOffCamera || false,
-        segmentType: segment.segmentType || 'dialogue',
-        confidence: segment.confidence || 0.95,
-        characterId: (segment as any).character_id || (segment as any).characterId || null
-      }));
 
-      // Create checksum for change detection (handle UTF-8 safely)
-      const json = JSON.stringify(dbSegments);
-      const utf8 = new TextEncoder().encode(json);
-      let binary = '';
-      for (let i = 0; i < utf8.length; i++) binary += String.fromCharCode(utf8[i]);
-      const checksum = btoa(binary);
-
-      // Delete existing segments for this video/language first to avoid constraint issues
-      console.log('🗑️ Deleting existing segments for video:', videoId, 'language:', language);
-      const { error: deleteError } = await supabase
-        .from('transcript_segments_clean')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .is('transcript_id', null);
-
-      if (deleteError) {
-        console.error('Failed to delete existing segments:', deleteError);
-      }
-
-      // Use direct insert for clean table
+      // Prepare segments with proper field mapping
       const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => {
-        // ✅ FIX: Extract speaker_asr_label from speakerAsrLabel or from speaker format "Speaker X"
+        // Extract speaker_asr_label from speakerAsrLabel or from speaker format "Speaker X"
         const asr = (seg as any).speakerAsrLabel || 
                     (typeof seg.speaker === 'string' && seg.speaker.match(/^Speaker\s+([A-Z])$/)?.[1]);
         
@@ -168,9 +124,12 @@ export const useVideoStorage = (videoId: string) => {
         };
       });
 
+      // Use upsert to avoid deleting server-authored data
       const { error } = await supabase
         .from('transcript_segments_clean')
-        .insert(segmentsToInsert);
+        .upsert(segmentsToInsert, {
+          onConflict: 'video_id,language,idx'
+        });
 
       if (error) throw error;
 
