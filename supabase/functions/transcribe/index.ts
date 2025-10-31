@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SpeakerAssignmentService } from './speaker-assignment-service.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -772,6 +773,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
   return {
     text: fullText,
     segments,
+    utterances: resultData.utterances || [], // CRITICAL: Include utterances for SpeakerAssignmentService
     language: languageCode || resultData.language_code || "en",
     words: segments.flatMap((s: any) => s.words || []),
   };
@@ -918,9 +920,9 @@ async function autoCreateCharacters(videoId: string, segments: any[], supabaseCl
   return speakerToCharIdMap;
 }
 
-// Save transcript to database
+// Save transcript to database with enhanced speaker assignment
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
-  console.log(`Saving ${transcriptionResult.segments.length} segments to database...`);
+  console.log(`💾 Saving ${transcriptionResult.segments.length} segments to database with speaker assignment service...`);
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -938,83 +940,107 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       await supabase
         .from('transcript_segments_clean')
         .delete()
-        .eq('video_id', videoId);
-      console.log("Cleared existing segments");
+        .eq('video_id', videoId)
+        .eq('language', transcriptionResult.language || 'en');
+      console.log("✅ Cleared existing segments for language:", transcriptionResult.language || 'en');
     }
     
-    // Auto-create characters for detected speakers
-    const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
+    // Check if we have AssemblyAI utterances format (with speaker labels)
+    const hasUtteranceFormat = transcriptionResult.utterances && Array.isArray(transcriptionResult.utterances);
     
-    // Prepare segments for database with proper text sanitization AND word timings
-    const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
-      // Sanitize text to handle special characters and remove invalid ones
-      let sanitizedText = segment.text || '';
-      try {
-        // Ensure proper UTF-8 encoding and remove null bytes or other invalid characters
-        sanitizedText = sanitizedText
-          .replace(/\0/g, '') // Remove null bytes
-          .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters except common ones like newlines
-          .trim();
-        
-        // Test if the text can be properly JSON stringified (final validation)
-        JSON.stringify(sanitizedText);
-      } catch (error) {
-        console.warn(`Text sanitization failed for segment ${index}:`, error);
-        sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
-      }
+    if (hasUtteranceFormat) {
+      console.log('🎭 Using SpeakerAssignmentService for proper character linking...');
       
-      // Transform provider word timings to our format: { text, startTime, endTime, confidence? }
-      let words = null;
-      if (segment.words && Array.isArray(segment.words) && segment.words.length > 0) {
-        words = segment.words.map((w: any) => ({
-          text: w.word || w.text || '',
-          startTime: Number(w.start || w.startTime) || 0,
-          endTime: Number(w.end || w.endTime) || 0,
-          confidence: w.confidence || null
-        }));
+      // Use the new service for proper speaker assignment
+      const service = new SpeakerAssignmentService(supabase, videoId);
+      const processedSegments = await service.processTranscriptionWithManualCharacters(
+        transcriptionResult.utterances,
+        transcriptionResult.language || 'en'
+      );
+      
+      // Save processed segments
+      await service.saveSegmentsToDatabase(processedSegments);
+      
+      console.log(`✅ Saved ${processedSegments.length} segments with proper character assignment`);
+    } else {
+      // Fallback to old method for non-utterance formats
+      console.log('⚠️ Using legacy save method (no utterance format detected)');
+      
+      // Auto-create characters for detected speakers (old method)
+      const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
+      
+      // Prepare segments for database with proper text sanitization AND word timings
+      const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
+        // Sanitize text to handle special characters and remove invalid ones
+        let sanitizedText = segment.text || '';
+        try {
+          // Ensure proper UTF-8 encoding and remove null bytes or other invalid characters
+          sanitizedText = sanitizedText
+            .replace(/\0/g, '') // Remove null bytes
+            .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters except common ones like newlines
+            .trim();
+          
+          // Test if the text can be properly JSON stringified (final validation)
+          JSON.stringify(sanitizedText);
+        } catch (error) {
+          console.warn(`Text sanitization failed for segment ${index}:`, error);
+          sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
+        }
         
-        if (index < 3) {
-          console.log(`💾 Saving ${words.length} provider word timings for segment ${index}`);
+        // Transform provider word timings to our format: { text, startTime, endTime, confidence? }
+        let words = null;
+        if (segment.words && Array.isArray(segment.words) && segment.words.length > 0) {
+          words = segment.words.map((w: any) => ({
+            text: w.word || w.text || '',
+            startTime: Number(w.start || w.startTime) || 0,
+            endTime: Number(w.end || w.endTime) || 0,
+            confidence: w.confidence || null
+          }));
+          
+          if (index < 3) {
+            console.log(`💾 Saving ${words.length} provider word timings for segment ${index}`);
+          }
+        }
+        
+        const characterId = speakerToCharIdMap.get(segment.speaker) || null;
+        
+        return {
+          video_id: videoId,
+          idx: index,
+          text: sanitizedText,
+          start_time: Number(segment.start) || (index * 3),
+          end_time: Number(segment.end) || ((index + 1) * 3),
+          confidence: segment.confidence || null,
+          language: transcriptionResult.language || 'en',
+          segment_type: 'dialogue',
+          speaker: segment.speaker || 'Unassigned',
+          speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
+          emphasis: 'normal',
+          pitch: 'normal',
+          is_off_camera: false,
+          words: words, // Save provider word timings as JSON
+          character_id: characterId // Link to auto-created character
+        };
+      });
+      
+      // Save in batches
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
+        const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
+        
+        const { error } = await supabase
+          .from('transcript_segments_clean')
+          .insert(batch);
+          
+        if (error) {
+          console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
+        } else {
+          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
         }
       }
       
-      const characterId = speakerToCharIdMap.get(segment.speaker) || null;
-      
-      return {
-        video_id: videoId,
-        text: sanitizedText,
-        start_time: Number(segment.start) || (index * 3),
-        end_time: Number(segment.end) || ((index + 1) * 3),
-        confidence: segment.confidence || null,
-        language: transcriptionResult.language || 'en',
-        segment_type: 'dialogue',
-        speaker: segment.speaker || `Speaker ${(index % 3) + 1}`,
-        speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
-        emphasis: 'normal',
-        pitch: 'normal',
-        is_off_camera: false,
-        words: words, // Save provider word timings as JSON
-        character_id: characterId // Link to auto-created character
-      };
-    });
-    
-    // Save in batches
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
-      const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
-      
-      const { error } = await supabase
-        .from('transcript_segments_clean')
-        .insert(batch);
-        
-      if (error) {
-        console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
-      } else {
-        console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
-      }
+      console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
     }
-    
-    console.log(`✅ Database save complete: ${segmentsToSave.length} segments`);
     
   } catch (error) {
     console.error("Database save failed:", error);
