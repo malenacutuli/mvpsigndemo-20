@@ -473,6 +473,24 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       if (error) throw error;
 
       console.log('✅ Transcript saved successfully');
+      
+      // Freeze the transcript to lock speaker identities
+      const { error: freezeError } = await supabase.rpc('freeze_transcript', {
+        p_video_id: videoId,
+        p_language: detectedLanguage
+      });
+      
+      if (freezeError) {
+        console.error('⚠️ Failed to freeze transcript:', freezeError);
+      } else {
+        console.log('🔒 Transcript frozen successfully');
+      }
+      
+      toast({
+        title: "Transcript Finalized",
+        description: "Identity is now locked; only word timing writes are allowed.",
+        variant: "default",
+      });
     } catch (error) {
       console.error('❌ Failed to save transcript:', error);
       toast({
