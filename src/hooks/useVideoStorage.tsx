@@ -196,6 +196,22 @@ export const useVideoStorage = (videoId: string) => {
           if (segErr) throw segErr;
           data = segs || [];
           console.log('🎯 DATABASE: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
+          
+          // ✅ FIX: If transcript header exists but has no linked segments, fall back to base rows
+          if (!data || data.length === 0) {
+            console.log('⚠️ Transcript header exists but no segments found, falling back to base rows');
+            const { data: baseSegs, error: baseErr } = await supabase
+              .from('transcript_segments_clean')
+              .select('*')
+              .eq('video_id', videoId)
+              .eq('language', language)
+              .is('transcript_id', null)
+              .order('start_time', { ascending: true });
+            
+            if (baseErr) throw baseErr;
+            data = baseSegs || [];
+            console.log('🗄️ DATABASE: Loaded base rows as fallback. Count:', data.length);
+          }
         } else {
           // No edited transcript found; fall back to base video-level segments only
           const { data: segs, error: segErr } = await supabase

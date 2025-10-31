@@ -930,16 +930,31 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             if (missingWords && !sessionStorage.getItem(persistKey)) {
               console.log('💾 ENHANCED PLAYER: Persisting synthesized word timings to database...');
               
-              // Fetch existing character_id values from database
-              const { data: dbSegments } = await supabase
-                .from('transcript_segments_clean')
-                .select('idx, start_time, end_time, character_id')
-                .eq('video_id', videoId)
-                .eq('language', currentLanguage)
-                .order('start_time');
+              // ✅ FIX: Retry fetching existing segments to avoid race condition with edge function save
+              const tryFetchExisting = async () => {
+                for (let i = 0; i < 3; i++) {
+                  const { data: dbSegments } = await supabase
+                    .from('transcript_segments_clean')
+                    .select('idx, start_time, end_time, character_id')
+                    .eq('video_id', videoId)
+                    .eq('language', currentLanguage)
+                    .order('start_time');
+                  
+                  if (dbSegments && dbSegments.length > 0) {
+                    console.log(`✅ Found ${dbSegments.length} existing segments on attempt ${i + 1}`);
+                    return dbSegments;
+                  }
+                  
+                  console.log(`⏳ Attempt ${i + 1}/3: No segments yet, waiting 300ms...`);
+                  await new Promise(r => setTimeout(r, 300));
+                }
+                return [];
+              };
+              
+              const dbSegments = await tryFetchExisting();
               
               if (!dbSegments || dbSegments.length === 0) {
-                console.warn('⚠️ No existing segments in database, saving without character_id preservation');
+                console.warn('⚠️ No existing segments in database after retries, saving without character_id preservation');
                 await saveTranscriptSegments(convertedSegments as any, currentLanguage);
                 sessionStorage.setItem(persistKey, 'true');
                 return;

@@ -98,21 +98,26 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         let segments: any[] = [];
         
         if (data.segments && Array.isArray(data.segments)) {
-          // Use structured segments if available
-          segments = data.segments.map((seg: any, index: number) => ({
-            text: seg.text || '',
-            start_time: Number(seg.start) || 0,
-            end_time: Number(seg.end) || 0,
-            speaker: `Speaker ${(index % 3) + 1}`,
-            words: Array.isArray(seg.words)
-              ? seg.words.map((w: any) => ({
-                  text: w.word || w.text,
-                  startTime: Number(w.start || w.startTime),
-                  endTime: Number(w.end || w.endTime),
-                  confidence: w.confidence
-                }))
-              : undefined
-          }));
+          // ✅ FIX: Use provider labels (Speaker A/B/C) instead of generic "Speaker 1/2/3"
+          segments = data.segments.map((seg: any) => {
+            const asrLabel = seg.speaker || seg.speaker_asr_label;
+            const displaySpeaker = asrLabel ? `Speaker ${asrLabel}` : 'Speaker';
+            
+            return {
+              text: seg.text || '',
+              start_time: Number(seg.start) || 0,
+              end_time: Number(seg.end) || 0,
+              speaker: displaySpeaker,
+              words: Array.isArray(seg.words)
+                ? seg.words.map((w: any) => ({
+                    text: w.word || w.text,
+                    startTime: Number(w.start || w.startTime),
+                    endTime: Number(w.end || w.endTime),
+                    confidence: w.confidence
+                  }))
+                : undefined
+            };
+          });
         } else if (data.text) {
           // Fallback to simple text
           segments = [
@@ -128,36 +133,63 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         setTranscripts(segments);
         setHasExistingTranscript(true);
         
-        // Save to database/localStorage using useVideoStorage hook
-        try {
-          const transcriptSegments = segments.map((seg, index) => ({
+        // ✅ FIX: Wait briefly for edge function save, then load from DB
+        await new Promise(r => setTimeout(r, 500));
+        
+        const dbSegments = await loadTranscriptSegments(data.language || 'en');
+        
+        if (dbSegments && dbSegments.length > 0) {
+          console.log('✅ Loaded', dbSegments.length, 'segments from DB after transcription');
+          
+          // Convert DB segments to display format
+          const displaySegments = dbSegments.map(seg => ({
             text: seg.text,
-            startTime: seg.start_time,
-            endTime: seg.end_time,
-            speaker: seg.speaker,
-            speakerColor: '#3B82F6',
-            emphasis: 'normal' as const,
-            pitch: 'normal' as const,
-            words: seg.words
+            start_time: seg.startTime,
+            end_time: seg.endTime,
+            speaker: seg.speaker || 'Speaker'
           }));
           
-          await saveTranscriptSegments(transcriptSegments, data.language || 'en');
+          setTranscripts(displaySegments);
+          onTranscriptUpdate?.(displaySegments);
+          onTranscriptionComplete?.(displaySegments, data.language || 'en');
           
           toast({
             title: "Transcript saved successfully!",
-            description: `Successfully extracted and saved ${segments.length} segments to database`
+            description: `Successfully extracted and saved ${dbSegments.length} segments to database`
           });
-        } catch (saveError) {
-          console.error('Failed to save transcript:', saveError);
-          // Don't show error toast since it falls back to localStorage
-          toast({
-            title: "Transcript extracted",
-            description: `${segments.length} segments extracted (saved locally due to sync issue)`
-          });
+        } else {
+          // ✅ Fallback: Only save if DB is still empty (edge save failed)
+          console.warn('⚠️ No segments found in DB after wait, saving as fallback');
+          
+          try {
+            const transcriptSegments = segments.map((seg) => ({
+              text: seg.text,
+              startTime: seg.start_time,
+              endTime: seg.end_time,
+              speaker: seg.speaker,
+              speakerColor: '#3B82F6',
+              emphasis: 'normal' as const,
+              pitch: 'normal' as const,
+              words: seg.words
+            }));
+            
+            await saveTranscriptSegments(transcriptSegments, data.language || 'en');
+            
+            toast({
+              title: "Transcript saved as fallback",
+              description: `Saved ${segments.length} segments locally`
+            });
+          } catch (saveError) {
+            console.error('Failed to save transcript:', saveError);
+            toast({
+              title: "Transcript extracted",
+              description: `${segments.length} segments extracted (save failed, using local storage)`
+            });
+          }
+          
+          onTranscriptUpdate?.(segments);
+          onTranscriptionComplete?.(segments, data.language || 'en');
         }
-        
-        onTranscriptUpdate?.(segments);
-        onTranscriptionComplete?.(segments, data.language || 'en');
       }
     } catch (error) {
       console.error('Transcription error:', error);
