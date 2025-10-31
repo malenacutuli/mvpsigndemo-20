@@ -855,6 +855,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                   <SelectItem value="lt">Lithuanian</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                💡 Choose the primary language spoken in your video for accurate transcription
+              </p>
             </div>
 
             <div className="space-y-2">
