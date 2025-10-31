@@ -81,22 +81,9 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
-      // ✅ DEFENSIVE CHECK: Block overwrite if edge function saved server-authored segments
-      const { data: existing } = await supabase
-        .from('transcript_segments_clean')
-        .select('*')
-        .eq('video_id', videoId)
-        .eq('language', language)
-        .limit(5);
-
-      if (existing?.some((r: any) => r.speaker_asr_label || (Array.isArray(r.words) && r.words.length))) {
-        console.log('🛑 Not overwriting server-authored segments.');
-        return;
-      }
-
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // Prepare segments with minimal fields - preserve text/timing/words only
+      // Prepare segments - persist text/timing/words/emphasis/pitch but NOT identity
       const rows = segments.map((seg: TranscriptSegment, i: number) => ({
         video_id: videoId,
         language,
@@ -104,8 +91,10 @@ export const useVideoStorage = (videoId: string) => {
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
+        emphasis: (seg as any).emphasis ?? 'normal',
+        pitch: (seg as any).pitch ?? 'normal',
         words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null
-        // ⚠️ do NOT write speaker or character_id here
+        // ✅ DO NOT include speaker/character_id - use updateSegmentIdentity() for that
       }));
 
       // Use upsert to avoid deleting server-authored data
@@ -682,6 +671,43 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // Update a single segment's speaker/character (preserves word timing)
+  const updateSegmentIdentity = async (opts: {
+    segmentId?: string;
+    videoId?: string;
+    language?: string;
+    idx?: number;
+    characterId?: string;
+    characterName?: string;
+  }) => {
+    const { segmentId, videoId: vid, language = 'en', idx, characterId, characterName } = opts;
+
+    // Optional: guard if frozen
+    try {
+      const { data: frozen } = await supabase.rpc('is_frozen', {
+        p_video_id: vid || videoId,
+        p_language: language
+      });
+      if (frozen) {
+        throw new Error('Transcript is frozen. Unfreeze to change speakers.');
+      }
+    } catch (err) {
+      // If is_frozen doesn't exist or fails, continue
+      console.warn('Freeze check skipped:', err);
+    }
+
+    const { error } = await supabase.rpc('update_segment_identity', {
+      p_segment_id: segmentId ?? null,
+      p_video_id: vid || videoId,
+      p_language: language,
+      p_idx: idx ?? null,
+      p_character_id: characterId ?? null,
+      p_character_name: characterName ?? null,
+    });
+
+    if (error) throw error;
+  };
+
   return {
     loading,
     error,
@@ -695,6 +721,7 @@ export const useVideoStorage = (videoId: string) => {
     loadSpeakerMappings,
     saveToCache,
     loadFromCache,
-    hasTranscriptInDB  // ✅ New helper to prevent duplicate caption layers
+    hasTranscriptInDB,
+    updateSegmentIdentity  // ✅ RPC wrapper for safe speaker updates
   };
 };

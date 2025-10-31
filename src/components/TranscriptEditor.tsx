@@ -152,7 +152,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [originalSpeaker, setOriginalSpeaker] = useState<string>('');
   const [originalColor, setOriginalColor] = useState<string>('');
   const { toast } = useToast();
-  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings } = useVideoStorage(videoId);
+  const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings, updateSegmentIdentity } = useVideoStorage(videoId);
   const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // ✅ FIX #4: Auto-save timer - saves changes every 30 seconds
@@ -850,83 +850,78 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveEdit = async () => {
     if (editingIndex === null) return;
     
-    // Find character by selected name and link via character_id
-    let characterId: string | null = null;
+    const currentSegment = editingTranscript[editingIndex];
+    const segmentId = currentSegment.id;
+    
+    // Find character by selected name
     const selectedChar = availableCharacters.find(c => c.name === editSpeaker);
     
-    if (selectedChar) {
-      characterId = selectedChar.id;
-      console.log(`✅ Linking segment to character: ${editSpeaker} (${characterId})`);
-    } else if (editSpeaker && editSpeaker !== 'Speaker') {
-      // Character doesn't exist, create it
-      const { data: newChar } = await supabase
-        .from('characters')
-        .insert({
-          video_id: videoId,
-          name: editSpeaker,
-          type: 'minor',
-          color: editSpeakerColor || '#9CA3AF',
-          emphasis: 'normal',
-          pitch: 'normal'
-        })
-        .select('id')
-        .single();
-      
-      if (newChar) {
-        characterId = newChar.id;
-        const updatedChars = await loadCharacters();
-        setAvailableCharacters(updatedChars);
+    try {
+      // Update identity separately via RPC (preserves word timing)
+      if (editSpeaker && editSpeaker !== currentSegment.speaker) {
+        await updateSegmentIdentity({
+          segmentId,
+          videoId,
+          language: selectedLanguage,
+          characterId: selectedChar?.id,
+          characterName: selectedChar ? undefined : editSpeaker,
+        });
+        
+        // Refresh characters if we created a new one
+        if (!selectedChar) {
+          const updatedChars = await loadCharacters();
+          setAvailableCharacters(updatedChars);
+        }
       }
+      
+      // Update text/timing/emphasis/pitch via bulk save
+      const updated = [...editingTranscript];
+      updated[editingIndex] = {
+        ...updated[editingIndex],
+        text: editText,
+        startTime: parseTimeInput(editStartTime),
+        endTime: parseTimeInput(editEndTime),
+        emphasis: editEmphasis,
+        pitch: editPitch,
+        words: editWords
+      };
+      
+      // Sort segments by time after editing timing
+      const sortedSegments = sortSegmentsByTime(updated);
+      
+      // Save text/timing changes to database
+      await saveTranscriptData(sortedSegments, selectedLanguage);
+      
+      // Reload from database to get updated identity from view
+      const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
+      if (reloadedSegments.length > 0) {
+        const convertedSegments = reloadedSegments.map(s => ({
+          ...s,
+          id: s.id || `segment-${Date.now()}-${Math.random()}`
+        }));
+        setEditingTranscript(convertedSegments);
+        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+      } else {
+        setEditingTranscript(sortedSegments);
+        onTranscriptUpdate?.(sortedSegments, selectedLanguage);
+      }
+      
+      resetEditState();
+      
+      toast({
+        title: "Segment Updated",
+        description: selectedChar 
+          ? `Changes saved with character link (${editSpeaker})`
+          : "Changes saved"
+      });
+    } catch (error) {
+      console.error('❌ Failed to save segment:', error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save changes",
+        variant: "destructive"
+      });
     }
-    
-    const updated = [...editingTranscript];
-    
-    // Apply edits to the current segment - NOW WITH characterId!
-    updated[editingIndex] = {
-      ...updated[editingIndex],
-      text: editText,
-      startTime: parseTimeInput(editStartTime),
-      endTime: parseTimeInput(editEndTime),
-      speaker: editSpeaker,
-      speakerColor: selectedChar?.color || editSpeakerColor,
-      characterId: characterId || undefined,
-      character_id: characterId || undefined,
-      emphasis: editEmphasis,
-      pitch: editPitch,
-      words: editWords
-    };
-
-    const nextSegments = updated;
-    
-    // Sort segments by time after editing timing
-    const sortedSegments = sortSegmentsByTime(nextSegments);
-    
-    // Save immediately to database with proper transcript record
-    await saveTranscriptData(sortedSegments, selectedLanguage);
-    
-    // CRITICAL: Reload from database to ensure UI shows saved data
-    const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
-    if (reloadedSegments.length > 0) {
-      const convertedSegments = reloadedSegments.map(s => ({
-        ...s,
-        id: s.id || `segment-${Date.now()}-${Math.random()}`
-      }));
-      setEditingTranscript(convertedSegments);
-      onTranscriptUpdate?.(convertedSegments, selectedLanguage);
-    } else {
-      // Fallback if reload fails
-      setEditingTranscript(sortedSegments);
-      onTranscriptUpdate?.(sortedSegments, selectedLanguage);
-    }
-    
-    resetEditState();
-    
-    toast({
-      title: "Segment Updated",
-      description: characterId 
-        ? `Changes saved with character link (${editSpeaker})`
-        : "Changes saved (no character link)"
-    });
   };
 
   const saveAllChanges = async () => {
