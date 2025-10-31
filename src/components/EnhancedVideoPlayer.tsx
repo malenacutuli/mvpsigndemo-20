@@ -949,34 +949,27 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 for (let i = 0; i < 3; i++) {
                   const { data: dbSegments } = await supabase
                     .from('transcript_segments_clean')
-                    .select('idx, start_time, end_time, character_id')
+                    .select('*')
                     .eq('video_id', videoId)
                     .eq('language', currentLanguage)
                     .order('start_time');
                   
                   if (dbSegments && dbSegments.length > 0) {
                     console.log(`✅ Found ${dbSegments.length} existing segments on attempt ${i + 1}`);
-                    return dbSegments;
+                    return dbSegments as any[];
                   }
                   
                   console.log(`⏳ Attempt ${i + 1}/3: No segments yet, waiting 300ms...`);
                   await new Promise(r => setTimeout(r, 300));
                 }
-                return [];
+                return [] as any[];
               };
               
               const dbSegments = await tryFetchExisting();
               
-              // ✅ FIX: Check if existing segments already have speaker labels or provider words
-              const { data: fullSegments } = await supabase
-                .from('transcript_segments_clean')
-                .select('*')
-                .eq('video_id', videoId)
-                .eq('language', currentLanguage)
-                .limit(5);
-              
-              const hasSpeakerLabels = Array.isArray(fullSegments) && fullSegments.some((s: any) => s.speaker_asr_label);
-              const hasProviderWords = Array.isArray(fullSegments) && fullSegments.some((s: any) => Array.isArray(s.words) && s.words.length > 0);
+              // ✅ IMPROVED: Check if ANY segment has labels or provider words
+              const hasSpeakerLabels = dbSegments.some((s: any) => s.speaker_asr_label);
+              const hasProviderWords = dbSegments.some((s: any) => s.words && Array.isArray(s.words) && s.words.length > 0);
               
               if (dbSegments.length > 0 && (hasSpeakerLabels || hasProviderWords)) {
                 console.log('✅ Existing segments have speaker labels or provider words; skip persistence');
@@ -984,36 +977,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 return;
               }
               
-              if (!dbSegments || dbSegments.length === 0) {
-                console.warn('⚠️ No existing segments in database after retries, saving without character_id preservation');
-                await saveTranscriptSegments(convertedSegments as any, currentLanguage);
+              // ✅ NEW: If base segments exist with no labels, don't overwrite either (mid-save state)
+              if (dbSegments.length > 0) {
+                console.log('⚠️ Base segments exist without labels - likely mid-save, skipping persistence');
                 sessionStorage.setItem(persistKey, 'true');
                 return;
               }
               
-              // Match segments by time proximity to preserve character_id
-              const segmentsWithCharIds = convertedSegments.map((seg, index) => {
-                // Find closest database segment by start_time
-                const closest = dbSegments.reduce((prev, curr) => {
-                  const prevDiff = Math.abs(prev.start_time - seg.startTime);
-                  const currDiff = Math.abs(curr.start_time - seg.startTime);
-                  return currDiff < prevDiff ? curr : prev;
-                });
-                
-                // Only use character_id if time match is within 0.5 seconds
-                const timeDiff = Math.abs(closest.start_time - seg.startTime);
-                const characterId = timeDiff < 0.5 ? closest.character_id : null;
-                
-                return {
-                  ...seg,
-                  idx: index,
-                  characterId: characterId
-                };
-              });
-              
-              await saveTranscriptSegments(segmentsWithCharIds as any, currentLanguage);
+              // If no segments exist at all, we can safely save
+              console.log('💾 No existing segments found, saving synthesized word timings');
+              await saveTranscriptSegments(convertedSegments as any, currentLanguage);
               sessionStorage.setItem(persistKey, 'true');
-              console.log('✅ ENHANCED PLAYER: Persisted word timings with character_id preservation');
             }
           } catch (e) {
             console.warn('⚠️ ENHANCED PLAYER: Could not persist word timings (possibly offline/anon):', e);

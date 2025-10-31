@@ -133,63 +133,57 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         setTranscripts(segments);
         setHasExistingTranscript(true);
         
-        // ✅ FIX: Wait briefly for edge function save, then load from DB
-        await new Promise(r => setTimeout(r, 500));
+        // ✅ FIX: Poll database to wait for edge function save
+        const lang = data.language || 'en';
+        let dbSegments: any[] = [];
         
-        const dbSegments = await loadTranscriptSegments(data.language || 'en');
-        
-        if (dbSegments && dbSegments.length > 0) {
-          console.log('✅ Loaded', dbSegments.length, 'segments from DB after transcription');
-          
-          // Convert DB segments to display format
-          const displaySegments = dbSegments.map(seg => ({
-            text: seg.text,
-            start_time: seg.startTime,
-            end_time: seg.endTime,
-            speaker: seg.speaker || 'Speaker'
-          }));
-          
-          setTranscripts(displaySegments);
-          onTranscriptUpdate?.(displaySegments);
-          onTranscriptionComplete?.(displaySegments, data.language || 'en');
-          
-          toast({
-            title: "Transcript saved successfully!",
-            description: `Successfully extracted and saved ${dbSegments.length} segments to database`
-          });
-        } else {
-          // ✅ Fallback: Only save if DB is still empty (edge save failed)
-          console.warn('⚠️ No segments found in DB after wait, saving as fallback');
-          
-          try {
-            const transcriptSegments = segments.map((seg) => ({
-              text: seg.text,
-              startTime: seg.start_time,
-              endTime: seg.end_time,
-              speaker: seg.speaker,
-              speakerColor: '#3B82F6',
-              emphasis: 'normal' as const,
-              pitch: 'normal' as const,
-              words: seg.words
-            }));
-            
-            await saveTranscriptSegments(transcriptSegments, data.language || 'en');
-            
-            toast({
-              title: "Transcript saved as fallback",
-              description: `Saved ${segments.length} segments locally`
-            });
-          } catch (saveError) {
-            console.error('Failed to save transcript:', saveError);
-            toast({
-              title: "Transcript extracted",
-              description: `${segments.length} segments extracted (save failed, using local storage)`
-            });
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(r => setTimeout(r, 300));
+
+          dbSegments = await loadTranscriptSegments(lang);
+          if (dbSegments.length > 0) break;
+
+          // Also probe base rows directly in case transcript_id path is empty
+          const { data: baseRows } = await supabase
+            .from('transcript_segments_clean')
+            .select('id')
+            .eq('video_id', videoId)
+            .eq('language', lang)
+            .is('transcript_id', null)
+            .limit(1);
+
+          if (baseRows?.length) {
+            // Force reload via the normal path
+            dbSegments = await loadTranscriptSegments(lang);
+            if (dbSegments.length > 0) break;
           }
-          
-          onTranscriptUpdate?.(segments);
-          onTranscriptionComplete?.(segments, data.language || 'en');
         }
+
+        if (dbSegments.length === 0) {
+          toast({
+            title: 'Transcription is processing…',
+            description: 'Segments will appear shortly. Try refresh in a few seconds.',
+            variant: 'destructive'
+          });
+          return; // 🚫 Don't fallback-save generic segments
+        }
+
+        // Convert DB segments to display format
+        const displaySegments = dbSegments.map(seg => ({
+          text: seg.text,
+          start_time: seg.startTime,
+          end_time: seg.endTime,
+          speaker: seg.speaker || 'Speaker'
+        }));
+        
+        setTranscripts(displaySegments);
+        onTranscriptUpdate?.(displaySegments);
+        onTranscriptionComplete?.(displaySegments, lang);
+        
+        toast({
+          title: "Transcript saved successfully!",
+          description: `Successfully extracted and saved ${dbSegments.length} segments to database`
+        });
       }
     } catch (error) {
       console.error('Transcription error:', error);

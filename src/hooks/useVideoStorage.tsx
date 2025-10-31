@@ -82,6 +82,25 @@ export const useVideoStorage = (videoId: string) => {
     setError(null);
 
     try {
+      // ✅ DEFENSIVE CHECK: Block overwrite if edge function just saved with speaker labels
+      const { data: existing } = await supabase
+        .from('transcript_segments_clean')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .is('transcript_id', null)
+        .limit(5);
+      
+      if (existing && existing.length > 0) {
+        const hasAsrLabels = existing.some((s: any) => s.speaker_asr_label);
+        const hasCharacters = existing.some((s: any) => s.character_id);
+        const hasWords = existing.some((s: any) => s.words && Array.isArray(s.words) && s.words.length > 0);
+        
+        if (hasAsrLabels || hasCharacters || hasWords) {
+          console.log('🛑 BLOCKED: Refusing to overwrite edge function save with speaker labels/characters/words');
+          return;
+        }
+      }
       // Use the RPC function that creates proper transcript records
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
       
