@@ -140,54 +140,47 @@ export const useVideoStorage = (videoId: string) => {
     try {
       // For authenticated users, always prioritize database
       if (user) {
-        console.log('🔍 Loading transcript segments from v_transcript_segments_resolved for display');
+        console.log('🔍 Loading transcript segments from v_transcript_segments_resolved');
         
-        // Query the view for display data (character names, colors)
-        const { data: viewSegs, error: viewErr } = await supabase
+        // Load identity fields from the view (single source of truth for speaker/color)
+        const { data: rows, error: viewErr } = await supabase
           .from('v_transcript_segments_resolved' as any)
-          .select('id, idx, start_time, end_time, text, display_speaker, display_color, character_id, confidence, emphasis, pitch, segment_type, is_off_camera, speaker_asr_label')
+          .select('id, idx, start_time, end_time, text, display_speaker, display_color, character_id, speaker_asr_label')
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
 
         if (viewErr) throw viewErr;
 
-        if (viewSegs && viewSegs.length > 0) {
-          // Fetch words from base table if needed for word-level timing
-          const ids = viewSegs.map((s: any) => s.id);
-          const wordsById = new Map<string, any>();
-          
-          if (ids.length > 0) {
-            const { data: baseRows } = await supabase
-              .from('transcript_segments_clean')
-              .select('id, words')
-              .in('id', ids);
-            
-            baseRows?.forEach((r: any) => {
-              if (r.words) wordsById.set(r.id, r.words);
-            });
-          }
+        if (rows && rows.length > 0) {
+          // Fetch word timings separately from base table
+          const ids = rows.map((r: any) => r.id);
+          const { data: wordsRows } = ids.length > 0
+            ? await supabase
+                .from('transcript_segments_clean')
+                .select('id, words')
+                .in('id', ids)
+            : { data: [] as any[] };
 
-          // Map view data + words to TranscriptSegment format
-          const segments: TranscriptSegment[] = viewSegs.map((row: any) => ({
-            id: row.id,
-            text: row.text,
-            startTime: row.start_time,
-            endTime: row.end_time,
-            speaker: row.display_speaker, // Use display_speaker from view
-            speakerColor: row.display_color, // Use display_color from view
-            speakerAsrLabel: row.speaker_asr_label,
-            emphasis: (row.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-            pitch: (row.pitch as 'normal' | 'high' | 'low') || 'normal',
-            words: wordsById.has(row.id) ? parseWordsData(wordsById.get(row.id)) : undefined,
-            isOffCamera: row.is_off_camera,
-            segmentType: (row.segment_type as 'dialogue' | 'soundeffect' | 'music') || 'dialogue',
-            confidence: row.confidence,
-            characterId: row.character_id,
-            character_id: row.character_id
+          const wordsMap = new Map((wordsRows ?? []).map((r: any) => [r.id, r.words ?? []]));
+
+          // Merge identity (from view) with word timings (from base)
+          const segments: TranscriptSegment[] = rows.map((r: any) => ({
+            id: r.id,
+            idx: r.idx,
+            text: r.text,
+            startTime: r.start_time,
+            endTime: r.end_time,
+            speaker: r.display_speaker,          // ← single source of truth from view
+            speakerColor: r.display_color,       // ← single source of truth from view
+            speakerAsrLabel: r.speaker_asr_label ?? null,
+            characterId: r.character_id ?? null,
+            character_id: r.character_id ?? null,
+            words: wordsMap.has(r.id) ? parseWordsData(wordsMap.get(r.id)) : undefined
           }));
 
-          console.log('✅ VIEW: Loaded transcript segments from view:', segments.length, 'segments');
+          console.log('✅ Loaded transcript segments from view:', segments.length, 'segments');
+          console.log('🔍 First segment:', segments[0]);
           localStorage.removeItem(`transcript_${videoId}_${language}`);
           return segments;
         }
