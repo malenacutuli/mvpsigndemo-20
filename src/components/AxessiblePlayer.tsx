@@ -962,6 +962,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       {/* Video Element */}
       <video
+        key={videoId}
         ref={handleVideoRef}
         crossOrigin="anonymous"
         data-no-native-captions="true"
