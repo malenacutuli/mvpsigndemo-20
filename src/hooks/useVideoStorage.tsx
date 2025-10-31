@@ -547,7 +547,7 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
-  // Save speaker mappings to database
+  // Save speaker mappings to database with UUID validation
   const saveSpeakerMappings = async (mappings: Record<string, string>, language: string = 'en') => {
     if (!user) {
       // Fallback to localStorage for unauthenticated users
@@ -557,20 +557,32 @@ export const useVideoStorage = (videoId: string) => {
 
     try {
       // Load all characters for this video to resolve names to UUIDs
-      const { data: chars } = await supabase
+      const { data: chars, error: charsError } = await supabase
         .from('characters')
         .select('id, name')
         .eq('video_id', videoId);
+      
+      if (charsError) throw charsError;
       
       const nameToId = new Map(chars?.map(c => [c.name, c.id]) || []);
       
       // Build canonical mapping with both ASR labels and full names
       const canonicalMappings: Record<string, string> = {};
+      const skipped: string[] = [];
       
       Object.entries(mappings).forEach(([speaker, characterName]) => {
         const characterId = nameToId.get(characterName);
         if (!characterId) {
           console.warn(`⚠️ Character "${characterName}" not found, skipping mapping for "${speaker}"`);
+          skipped.push(speaker);
+          return;
+        }
+        
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(characterId)) {
+          console.error(`❌ Invalid UUID for character "${characterName}":`, characterId);
+          skipped.push(speaker);
           return;
         }
         
@@ -581,6 +593,10 @@ export const useVideoStorage = (videoId: string) => {
         canonicalMappings[asrLabel] = characterId;
         canonicalMappings[speaker] = characterId;
       });
+      
+      if (skipped.length > 0) {
+        console.warn('⚠️ Skipped invalid mappings for:', skipped.join(', '));
+      }
       
       console.log('📝 Canonical mappings to save:', canonicalMappings);
 
@@ -598,7 +614,7 @@ export const useVideoStorage = (videoId: string) => {
 
       if (upsertError) throw upsertError;
 
-      console.log('✅ Speaker mappings saved with UUIDs:', canonicalMappings);
+      console.log('✅ Speaker mappings saved with validated UUIDs:', canonicalMappings);
     } catch (err) {
       console.error('Failed to save speaker mappings:', err);
       // Fallback to localStorage
@@ -654,6 +670,26 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // Helper to check if DB has transcript data
+  const hasTranscriptInDB = async (language: string = 'en'): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { count, error } = await supabase
+        .from('transcript_segments_clean')
+        .select('id', { count: 'exact', head: true })
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .limit(1);
+      
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    } catch (err) {
+      console.error('Failed to check DB for transcript:', err);
+      return false;
+    }
+  };
+
   return {
     loading,
     error,
@@ -666,6 +702,7 @@ export const useVideoStorage = (videoId: string) => {
     saveSpeakerMappings,
     loadSpeakerMappings,
     saveToCache,
-    loadFromCache
+    loadFromCache,
+    hasTranscriptInDB  // ✅ New helper to prevent duplicate caption layers
   };
 };
