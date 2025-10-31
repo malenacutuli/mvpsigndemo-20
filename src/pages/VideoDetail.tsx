@@ -369,16 +369,19 @@ const VideoDetail = () => {
 
       if (data && data.length > 0) {
         const captionSegments = data.map((seg, index) => {
-          // ✅ FIX: Compute displayed speaker name first
-          const displayedSpeaker = seg.speaker || `Speaker ${(index % 3) + 1}`;
+          // ✅ FIX: Prioritize speaker_asr_label for AssemblyAI speaker format
+          const asr = seg.speaker_asr_label;
+          const displayedSpeaker = 
+            (typeof seg.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(seg.speaker)) ? seg.speaker
+            : (asr ? `Speaker ${asr}` : (seg.speaker || 'Speaker'));
           
           return {
             text: seg.text,
             speaker: displayedSpeaker,
             startTime: Number(seg.start_time),
             endTime: Number(seg.end_time),
-            // ✅ FIX: Always compute color from displayed speaker name (not DB color)
-            speakerColor: getSpeakerColor(displayedSpeaker),
+            // ✅ FIX: Prefer DB color when present, otherwise compute from speaker name
+            speakerColor: seg.speaker_color || getSpeakerColor(displayedSpeaker),
             words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
             ? seg.words
             : seg.text.split(' ').map((word: string, i: number) => ({

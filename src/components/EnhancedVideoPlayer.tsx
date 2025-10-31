@@ -507,16 +507,24 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       // Reload original language captions from database
       const segments = await loadTranscriptSegments(newLanguage);
       if (segments && segments.length > 0) {
-        const converted: CaptionSegment[] = segments.map((seg: any) => ({
-          text: seg.text || '',
-          speaker: seg.speaker || 'Speaker',
-          speakerColor: seg.speakerColor || seg.speaker_color || '#3B82F6',
-          startTime: Number(seg.start_time || seg.startTime || 0),
-          endTime: Number(seg.end_time || seg.endTime || 0),
-          words: (seg.words as any) || [],
-          pitch: typeof seg.pitch === 'number' ? seg.pitch : undefined,
-          isOffCamera: seg.is_off_camera || seg.isOffCamera || false,
-        }));
+        const converted: CaptionSegment[] = segments.map((seg: any) => {
+          const asr = (seg as any).speakerAsrLabel || (seg as any).speaker_asr_label;
+          const speaker = 
+            (typeof seg.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(seg.speaker)) ? seg.speaker
+            : (asr ? `Speaker ${asr}` : (seg.speaker || 'Speaker'));
+          const speakerColor = (seg.speakerColor || (seg as any).speaker_color) || '#3B82F6';
+          
+          return {
+            text: seg.text || '',
+            speaker,
+            speakerColor,
+            startTime: Number(seg.start_time || seg.startTime || 0),
+            endTime: Number(seg.end_time || seg.endTime || 0),
+            words: (seg.words as any) || [],
+            pitch: typeof seg.pitch === 'number' ? seg.pitch : undefined,
+            isOffCamera: seg.is_off_camera || seg.isOffCamera || false,
+          };
+        });
         setCaptions(converted);
         console.log('✅ Restored', converted.length, 'original captions for language:', newLanguage);
       }
@@ -766,9 +774,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 }
               }
 
+              // ✅ FIX: Prefer speaker_asr_label for AssemblyAI format
+              const asr = (segment as any).speakerAsrLabel || (segment as any).speaker_asr_label;
+              const speaker = 
+                (typeof segment.speaker === 'string' && /^Speaker\s+[A-Z]$/.test(segment.speaker)) ? segment.speaker
+                : (asr ? `Speaker ${asr}` : (segment.speaker || 'Speaker'));
+
               return {
                 text: segment.text,
-                speaker: segment.speaker || 'Speaker',
+                speaker,
                 startTime: start,
                 endTime: end,
                 words,
@@ -952,6 +966,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               };
               
               const dbSegments = await tryFetchExisting();
+              
+              // ✅ FIX: Check if existing segments already have speaker labels or provider words
+              const { data: fullSegments } = await supabase
+                .from('transcript_segments_clean')
+                .select('*')
+                .eq('video_id', videoId)
+                .eq('language', currentLanguage)
+                .limit(5);
+              
+              const hasSpeakerLabels = Array.isArray(fullSegments) && fullSegments.some((s: any) => s.speaker_asr_label);
+              const hasProviderWords = Array.isArray(fullSegments) && fullSegments.some((s: any) => Array.isArray(s.words) && s.words.length > 0);
+              
+              if (dbSegments.length > 0 && (hasSpeakerLabels || hasProviderWords)) {
+                console.log('✅ Existing segments have speaker labels or provider words; skip persistence');
+                sessionStorage.setItem(persistKey, 'true');
+                return;
+              }
               
               if (!dbSegments || dbSegments.length === 0) {
                 console.warn('⚠️ No existing segments in database after retries, saving without character_id preservation');

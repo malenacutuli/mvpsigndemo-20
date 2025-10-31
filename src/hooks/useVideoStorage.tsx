@@ -123,24 +123,31 @@ export const useVideoStorage = (videoId: string) => {
       }
 
       // Use direct insert for clean table
-      const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => ({
-        transcript_id: null,
-        video_id: videoId,
-        language,
-        idx: index,
-        start_time: seg.startTime,
-        end_time: seg.endTime,
-        text: seg.text,
-        speaker: seg.speaker || 'Speaker',
-        speaker_color: seg.speakerColor || '#3B82F6',
-        character_id: seg.characterId || seg.character_id || null,
-        emphasis: seg.emphasis || 'normal',
-        pitch: seg.pitch || 'normal',
-        confidence: seg.confidence || 0.95,
-        segment_type: seg.segmentType || 'dialogue',
-        is_off_camera: seg.isOffCamera || false,
-        ...(seg.words && seg.words.length > 0 ? { words: JSON.parse(JSON.stringify(seg.words)) } : {})
-      }));
+      const segmentsToInsert = segments.map((seg: TranscriptSegment, index: number) => {
+        // ✅ FIX: Extract speaker_asr_label from speakerAsrLabel or from speaker format "Speaker X"
+        const asr = (seg as any).speakerAsrLabel || 
+                    (typeof seg.speaker === 'string' && seg.speaker.match(/^Speaker\s+([A-Z])$/)?.[1]);
+        
+        return {
+          transcript_id: null,
+          video_id: videoId,
+          language,
+          idx: index,
+          start_time: seg.startTime,
+          end_time: seg.endTime,
+          text: seg.text,
+          speaker: seg.speaker || 'Speaker',
+          speaker_asr_label: asr || null,
+          speaker_color: seg.speakerColor || '#3B82F6',
+          character_id: seg.characterId || seg.character_id || null,
+          emphasis: seg.emphasis || 'normal',
+          pitch: seg.pitch || 'normal',
+          confidence: seg.confidence || 0.95,
+          segment_type: seg.segmentType || 'dialogue',
+          is_off_camera: seg.isOffCamera || false,
+          ...(seg.words && seg.words.length > 0 ? { words: JSON.parse(JSON.stringify(seg.words)) } : {})
+        };
+      });
 
       const { error } = await supabase
         .from('transcript_segments_clean')
