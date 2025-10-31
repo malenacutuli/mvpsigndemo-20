@@ -365,16 +365,14 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       if (data.segments && Array.isArray(data.segments)) {
         extractedSegments = data.segments.map((segment: any, index: number) => {
-          const speaker = segment.speaker || `Speaker ${(index % 3) + 1}`;
-          const speakerColor = getSpeakerColor(speaker);
-          
+          // Use speaker and color directly from API response without fallbacks
           return {
             id: `segment-${index}`,
             text: segment.text || '',
             startTime: Number(segment.startTime || segment.start || 0),
             endTime: Number(segment.endTime || segment.end || 0),
-            speaker,
-            speakerColor: getSpeakerColor(speaker),
+            speaker: segment.speaker || 'Unassigned',
+            speakerColor: segment.speakerColor || '#3B82F6',
             emphasis: segment.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling' || 'normal',
             pitch: segment.pitch as 'normal' | 'high' | 'low' || 'normal',
             words: segment.words || []
