@@ -806,6 +806,35 @@ export type Database = {
           },
         ]
       }
+      transcript_freeze: {
+        Row: {
+          frozen_at: string
+          id: string
+          language: string
+          video_id: string
+        }
+        Insert: {
+          frozen_at?: string
+          id?: string
+          language?: string
+          video_id: string
+        }
+        Update: {
+          frozen_at?: string
+          id?: string
+          language?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_freeze_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transcript_segments: {
         Row: {
           character_id: string | null
@@ -1385,6 +1414,10 @@ export type Database = {
         Args: { accessing_user_id: string }
         Returns: undefined
       }
+      freeze_transcript: {
+        Args: { p_language: string; p_video_id: string }
+        Returns: undefined
+      }
       generate_embed_token: { Args: { video_uuid: string }; Returns: string }
       get_current_usage: {
         Args: { target_user_id: string }
@@ -1450,6 +1483,10 @@ export type Database = {
         Args: { video_uuid: string }
         Returns: undefined
       }
+      is_frozen: {
+        Args: { p_language: string; p_video_id: string }
+        Returns: boolean
+      }
       is_test_user: { Args: { user_email: string }; Returns: boolean }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
@@ -1497,6 +1534,18 @@ export type Database = {
       update_user_subscription_preferences: {
         Args: { email_notifications?: boolean }
         Returns: boolean
+      }
+      update_words_only: {
+        Args: {
+          p_end_time: number
+          p_idx: number
+          p_language: string
+          p_start_time: number
+          p_text: string
+          p_video_id: string
+          p_words: Json
+        }
+        Returns: undefined
       }
       upsert_transcript_segments: {
         Args: {
