@@ -11,7 +11,7 @@ import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { useAdvancedSpeakerAnalysis } from '@/hooks/useAdvancedSpeakerAnalysis';
-import { getSpeakerColor as getSpeakerColorFromPalette } from '@/lib/cwiPalette';
+import { resolveSpeakerColor } from '@/lib/cwiPalette';
 import { injectSyllables } from '@/lib/syllables';
 
 interface EnhancedVideoPlayerProps {
@@ -100,7 +100,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       }
       
       // Priority 2: Use cwiPalette auto-assignment
-      const color = getSpeakerColorFromPalette(speaker, characterColorMap, segment.speakerColor);
+      const color = resolveSpeakerColor({
+        characterColor: characterColorMap[speaker] || segment.speakerColor,
+        speakerName: speaker,
+        seed: `${videoId}:${currentLanguage}`
+      });
       return { ...segment, speaker, speakerColor: color };
     });
   };
