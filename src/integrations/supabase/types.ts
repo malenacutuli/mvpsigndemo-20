@@ -1382,6 +1382,15 @@ export type Database = {
         Args: { user_agent_str: string }
         Returns: string
       }
+      apply_specific_mapping: {
+        Args: {
+          p_character_id: string
+          p_language: string
+          p_speaker: string
+          p_video_id: string
+        }
+        Returns: number
+      }
       check_my_subscription_status: {
         Args: { channel_uuid: string }
         Returns: {
