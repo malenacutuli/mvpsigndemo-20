@@ -1030,16 +1030,6 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
       
-      // Load existing speaker mappings first
-      const speakerMappingsMap = await loadSpeakerMappings(
-        videoId, 
-        transcriptionResult.language || 'en', 
-        supabase
-      );
-      
-      // Auto-create characters for detected speakers (old method)
-      const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
-      
       // Prepare segments for database with proper text sanitization AND word timings
       const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
         // Sanitize text to handle special characters and remove invalid ones
@@ -1074,28 +1064,8 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           }
         }
         
-        // Check if there's a mapping for this speaker
-        const speakerLabel = segment.speaker || 'Unassigned';
-        const mapping = speakerMappingsMap.get(speakerLabel);
-        
-        let finalSpeaker: string;
-        let finalColor: string;
-        let finalCharacterId: string | null;
-        
-        if (mapping) {
-          // Use mapped character
-          finalSpeaker = mapping.characterName;
-          finalColor = mapping.characterColor;
-          finalCharacterId = mapping.characterId;
-          if (index < 3) {
-            console.log(`🎯 Segment mapped: "${speakerLabel}" → "${finalSpeaker}"`);
-          }
-        } else {
-          // Use auto-created character or fallback
-          finalSpeaker = speakerLabel;
-          finalColor = assignSpeakerColor(segment.speaker, transcriptionResult.segments);
-          finalCharacterId = speakerToCharIdMap.get(segment.speaker) || null;
-        }
+        // Extract ASR label (source of truth)
+        const speakerAsrLabel = segment.speaker_asr_label || segment.speaker || null;
         
         return {
           video_id: videoId,
@@ -1106,13 +1076,12 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker: finalSpeaker,
-          speaker_color: finalColor,
+          speaker_asr_label: speakerAsrLabel, // Only save ASR label
+          character_id: null, // Mapping is view-resolved
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
-          words: words, // Save provider word timings as JSON
-          character_id: finalCharacterId // Link to mapped or auto-created character
+          words: words // Save provider word timings as JSON
         };
       });
       

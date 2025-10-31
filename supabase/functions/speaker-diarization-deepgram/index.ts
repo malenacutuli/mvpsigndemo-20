@@ -170,15 +170,12 @@ serve(async (req) => {
           .lte('end_time', segment.endTime + 0.5);
 
         if (matchingSegments && matchingSegments.length > 0) {
-          const speakerIndex = parseInt(segment.speaker.split(' ')[1]) - 1;
-          const speakerColor = speakerColors[speakerIndex % speakerColors.length];
-          
+          // Update segments with ASR label only (view will resolve display values)
           for (const matchingSegment of matchingSegments) {
             await supabase
               .from('transcript_segments_clean')
               .update({
-                speaker: segment.speaker,
-                speaker_color: speakerColor
+                speaker_asr_label: segment.speaker // Only update ASR label
               })
               .eq('id', matchingSegment.id);
           }
