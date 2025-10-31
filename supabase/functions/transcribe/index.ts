@@ -709,15 +709,6 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
   const maxDurationSeconds = (maxDurationMinutes || 60) * 60; // Default to 60 minutes
   
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
-    console.log(`📊 AssemblyAI utterances: ${resultData.utterances.length} total`);
-    const firstUtterance = resultData.utterances[0];
-    console.log(`📊 First utterance structure:`, {
-      hasTopLevelSpeaker: !!firstUtterance.speaker,
-      hasWords: !!firstUtterance.words,
-      firstWordSpeaker: firstUtterance.words?.[0]?.speaker,
-      text: firstUtterance.text?.substring(0, 50)
-    });
-    
     for (const u of resultData.utterances) {
       const startTime = (u.start || 0) / 1000;
       const endTime = (u.end || 0) / 1000;
@@ -726,22 +717,6 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       if (startTime > maxDurationSeconds) {
         console.log(`⏭️ Skipping segment starting at ${startTime}s (exceeds ${maxDurationSeconds}s limit)`);
         continue;
-      }
-      
-      // Extract speaker from word-level data if not present at utterance level
-      let speaker = u.speaker;
-      if (!speaker && u.words && u.words.length > 0) {
-        // Use the most common speaker in this utterance's words
-        const speakerCounts = new Map<string, number>();
-        u.words.forEach((w: any) => {
-          if (w.speaker) {
-            speakerCounts.set(w.speaker, (speakerCounts.get(w.speaker) || 0) + 1);
-          }
-        });
-        if (speakerCounts.size > 0) {
-          speaker = Array.from(speakerCounts.entries())
-            .sort((a, b) => b[1] - a[1])[0][0];
-        }
       }
       
       segments.push({
@@ -754,7 +729,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           word: w.text ?? w.word,
           confidence: w.confidence,
         })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
-        speaker: speaker || undefined,  // Now properly extracted from words if needed
+        speaker: u.speaker || undefined,
       });
     }
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
@@ -945,39 +920,6 @@ async function autoCreateCharacters(videoId: string, segments: any[], supabaseCl
   return speakerToCharIdMap;
 }
 
-// Load existing speaker mappings from database
-async function loadSpeakerMappings(videoId: string, language: string, supabaseClient: any): Promise<Map<string, any>> {
-  const mappingsMap = new Map<string, any>();
-  
-  const { data: mappings } = await supabaseClient
-    .from('speaker_mappings')
-    .select('asr_label, character_id')
-    .eq('video_id', videoId)
-    .eq('language', language);
-
-  if (mappings && mappings.length > 0) {
-    // Load character details for each mapping
-    for (const mapping of mappings) {
-      const { data: char } = await supabaseClient
-        .from('characters')
-        .select('*')
-        .eq('id', mapping.character_id)
-        .maybeSingle();
-
-      if (char) {
-        mappingsMap.set(mapping.asr_label, {
-          characterId: char.id,
-          characterName: char.name,
-          characterColor: char.color
-        });
-        console.log(`✅ Loaded mapping: "${mapping.asr_label}" → "${char.name}"`);
-      }
-    }
-  }
-  
-  return mappingsMap;
-}
-
 // Save transcript to database with enhanced speaker assignment
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`💾 Saving ${transcriptionResult.segments.length} segments to database with speaker assignment service...`);
@@ -1016,26 +958,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         transcriptionResult.language || 'en'
       );
       
-      // Save processed segments server-side (NEVER send identity to frontend)
+      // Save processed segments
       await service.saveSegmentsToDatabase(processedSegments);
       
       console.log(`✅ Saved ${processedSegments.length} segments with proper character assignment`);
-      
-      // Replace segments with metadata to prevent frontend overwrites
-      transcriptionResult.segments = undefined;
-      transcriptionResult.utterances = undefined;
-      transcriptionResult.segmentsProcessed = processedSegments.length;
-      transcriptionResult.serverSaved = true;
     } else {
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
-      
-      // Load existing speaker mappings first
-      const speakerMappingsMap = await loadSpeakerMappings(
-        videoId, 
-        transcriptionResult.language || 'en', 
-        supabase
-      );
       
       // Auto-create characters for detected speakers (old method)
       const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
@@ -1058,15 +987,14 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           sanitizedText = `[Text contains invalid characters - segment ${index + 1}]`;
         }
         
-        // Transform provider word timings to our format: { text, startTime, endTime, confidence?, speaker? }
+        // Transform provider word timings to our format: { text, startTime, endTime, confidence? }
         let words = null;
         if (segment.words && Array.isArray(segment.words) && segment.words.length > 0) {
           words = segment.words.map((w: any) => ({
             text: w.word || w.text || '',
             startTime: Number(w.start || w.startTime) || 0,
             endTime: Number(w.end || w.endTime) || 0,
-            confidence: w.confidence || null,
-            speaker: w.speaker || null // Preserve word-level speaker if available
+            confidence: w.confidence || null
           }));
           
           if (index < 3) {
@@ -1074,28 +1002,7 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           }
         }
         
-        // Check if there's a mapping for this speaker
-        const speakerLabel = segment.speaker || 'Unassigned';
-        const mapping = speakerMappingsMap.get(speakerLabel);
-        
-        let finalSpeaker: string;
-        let finalColor: string;
-        let finalCharacterId: string | null;
-        
-        if (mapping) {
-          // Use mapped character
-          finalSpeaker = mapping.characterName;
-          finalColor = mapping.characterColor;
-          finalCharacterId = mapping.characterId;
-          if (index < 3) {
-            console.log(`🎯 Segment mapped: "${speakerLabel}" → "${finalSpeaker}"`);
-          }
-        } else {
-          // Use auto-created character or fallback
-          finalSpeaker = speakerLabel;
-          finalColor = assignSpeakerColor(segment.speaker, transcriptionResult.segments);
-          finalCharacterId = speakerToCharIdMap.get(segment.speaker) || null;
-        }
+        const characterId = speakerToCharIdMap.get(segment.speaker) || null;
         
         return {
           video_id: videoId,
@@ -1106,13 +1013,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker: finalSpeaker,
-          speaker_color: finalColor,
+          speaker: segment.speaker || 'Unassigned',
+          speaker_color: assignSpeakerColor(segment.speaker, transcriptionResult.segments),
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
           words: words, // Save provider word timings as JSON
-          character_id: finalCharacterId // Link to mapped or auto-created character
+          character_id: characterId // Link to auto-created character
         };
       });
       
@@ -1133,11 +1040,6 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       }
       
       console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
-      
-      // Replace segments with metadata to prevent frontend overwrites
-      transcriptionResult.segments = undefined;
-      transcriptionResult.segmentsProcessed = segmentsToSave.length;
-      transcriptionResult.serverSaved = true;
     }
     
   } catch (error) {

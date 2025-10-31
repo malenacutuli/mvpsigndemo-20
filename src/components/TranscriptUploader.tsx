@@ -50,9 +50,11 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
     { code: 'ko', name: 'Korean' },
   ];
 
-  // TranscriptUploader will NOT assign speaker names or colors
-  // Those will be resolved by the view after saving to database
-  // We only parse timing and text here
+  // Use unified color palette from cwiPalette
+  const getSpeakerColor = (speakerName: string) => {
+    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
+    return getColor(speakerName);
+  };
 
   // Convert timestamp formats to seconds
   const parseTimestamp = (timeStr: string): number => {
@@ -113,8 +115,8 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
           text,
           startTime,
           endTime,
-          speaker: 'Unassigned',
-          speakerColor: '#3B82F6',
+          speaker: `Speaker ${(index % 3) + 1}`,
+          speakerColor: getSpeakerColor(`Speaker ${(index % 3) + 1}`),
           emphasis: 'normal',
           pitch: 'normal'
         });
@@ -147,8 +149,8 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
             text: currentSegment.text,
             startTime: currentSegment.startTime || 0,
             endTime: currentSegment.endTime || 0,
-            speaker: 'Unassigned',
-            speakerColor: '#3B82F6',
+            speaker: `Speaker ${(segmentIndex % 3) + 1}`,
+            speakerColor: getSpeakerColor(`Speaker ${(segmentIndex % 3) + 1}`),
             emphasis: 'normal',
             pitch: 'normal'
           });
@@ -174,8 +176,8 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
         text: currentSegment.text,
         startTime: currentSegment.startTime || 0,
         endTime: currentSegment.endTime || 0,
-        speaker: 'Unassigned',
-        speakerColor: '#3B82F6',
+        speaker: `Speaker ${(segmentIndex % 3) + 1}`,
+        speakerColor: getSpeakerColor(`Speaker ${(segmentIndex % 3) + 1}`),
         emphasis: 'normal',
         pitch: 'normal'
       });
@@ -231,8 +233,8 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
           text,
           startTime,
           endTime,
-          speaker: 'Unassigned',
-          speakerColor: '#3B82F6',
+          speaker: `Speaker ${(index % 3) + 1}`,
+          speakerColor: getSpeakerColor(`Speaker ${(index % 3) + 1}`),
           emphasis: 'normal',
           pitch: 'normal'
         });

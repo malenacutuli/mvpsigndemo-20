@@ -72,14 +72,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [activeTab, setActiveTab] = useState<'transcript'>('transcript');
   const [useTestingMode, setUseTestingMode] = useState(false);
   const [videoSizeMB, setVideoSizeMB] = useState<number>(0);
-  const [isFrozen, setIsFrozen] = useState(false);
 
-  // Get unique detected speakers from segments (uses display values from view)
+  // Get unique detected speakers from segments
   const getDetectedSpeakers = () => {
     const speakers = Array.from(new Set(segments.map(seg => seg.speaker)));
     return speakers.map(speaker => ({
       name: speaker,
-      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || '#3B82F6'
+      color: segments.find(seg => seg.speaker === speaker)?.speakerColor || getSpeakerColor(speaker)
     }));
   };
 
@@ -163,39 +162,25 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       let loadedSegments: TranscriptSegment[] = [];
       
-      // Load from resolved view for ready-to-render segments
+      // Load from database
       const { data: dbData, error: dbError } = await supabase
-        .from('v_transcript_segments_resolved')
+        .from('transcript_segments_clean')
         .select('*')  
         .eq('video_id', videoId)
         .eq('language', detectedLanguage)
         .order('start_time', { ascending: true });
       
       if (!dbError && dbData && dbData.length > 0) {
-        // Also load emphasis/pitch from base table since view doesn't have them
-        const { data: cleanData } = await supabase
-          .from('transcript_segments_clean')
-          .select('id, emphasis, pitch')
-          .eq('video_id', videoId)
-          .eq('language', detectedLanguage);
-        
-        const emphasisPitchMap = new Map<string, { emphasis: string | null; pitch: string | null }>(
-          (cleanData || []).map(seg => [seg.id, { emphasis: seg.emphasis, pitch: seg.pitch }])
-        );
-        
-        loadedSegments = dbData.map(seg => {
-          const extraData = emphasisPitchMap.get(seg.id || '') || { emphasis: null, pitch: null };
-          return {
-            id: seg.id || '',
-            text: seg.text || '',
-            startTime: Number(seg.start_time || 0),
-            endTime: Number(seg.end_time || 0),
-            speaker: seg.display_speaker || 'Unassigned',
-            speakerColor: seg.display_color || '#3B82F6',
-            emphasis: (extraData.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-            pitch: (extraData.pitch as 'normal' | 'high' | 'low') || 'normal',
-          };
-        });
+        loadedSegments = dbData.map((seg, index) => ({
+          id: seg.id,
+          text: seg.text,
+          startTime: Number(seg.start_time),
+          endTime: Number(seg.end_time),
+          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
+          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
+          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
+        }));
         
         if (dbData[0]?.language) {
           setDetectedLanguage(dbData[0].language);
@@ -206,16 +191,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setSegments(loadedSegments);
         setHasTranscript(true);
         console.log('✅ TranscriptWorkflow - Loaded transcript:', loadedSegments.length, 'segments');
-        
-        // Check if transcript is frozen
-        const { data: freezeStatus } = await supabase.rpc('is_frozen', {
-          p_video_id: videoId,
-          p_language: detectedLanguage
-        });
-        setIsFrozen(freezeStatus || false);
-        if (freezeStatus) {
-          console.log('🔒 Transcript is frozen - only word timing edits allowed');
-        }
       } else {
         console.log('ℹ️ TranscriptWorkflow - No transcript found for video:', videoId);
       }
@@ -225,6 +200,12 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       console.error('❌ TranscriptWorkflow - Failed to load existing transcript:', error);
       setIsLoadingExisting(false);
     }
+  };
+
+  // Use unified color palette from cwiPalette
+  const getSpeakerColor = (speakerName: string) => {
+    const { getSpeakerColor: getColor } = require('@/lib/cwiPalette');
+    return getColor(speakerName);
   };
 
   const handleTranscriptUploaded = (uploadedSegments: TranscriptSegment[], language: string) => {
@@ -370,14 +351,16 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
       if (data.segments && Array.isArray(data.segments)) {
         extractedSegments = data.segments.map((segment: any, index: number) => {
-          // Use speaker and color directly from API response without fallbacks
+          const speaker = segment.speaker || `Speaker ${(index % 3) + 1}`;
+          const speakerColor = getSpeakerColor(speaker);
+          
           return {
             id: `segment-${index}`,
             text: segment.text || '',
             startTime: Number(segment.startTime || segment.start || 0),
             endTime: Number(segment.endTime || segment.end || 0),
-            speaker: segment.speaker || 'Unassigned',
-            speakerColor: segment.speakerColor || '#3B82F6',
+            speaker,
+            speakerColor: getSpeakerColor(speaker),
             emphasis: segment.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling' || 'normal',
             pitch: segment.pitch as 'normal' | 'high' | 'low' || 'normal',
             words: segment.words || []
@@ -425,100 +408,59 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setIsSaving(true);
     
     try {
-      if (isFrozen) {
-        // Path B: Words-only update for frozen transcripts
-        console.log('🔒 Transcript frozen - saving only word timings');
-        
-        for (const segment of segments) {
-          const { error } = await supabase.rpc('update_words_only', {
-            p_video_id: videoId,
-            p_language: detectedLanguage,
-            p_start_time: segment.startTime,
-            p_end_time: segment.endTime,
-            p_text: segment.text,
-            p_idx: segments.indexOf(segment),
-            p_words: segment.words || []
-          });
-          
-          if (error) {
-            console.error('Failed to update word timings:', error);
-          }
+      console.log('💾 Saving transcript to database:', segments.length, 'segments');
+      
+      // Harmonize speaker names before saving: if a color group has a non-generic name
+      // (e.g., "David") and other segments still have generic names (e.g., "Speaker 1"),
+      // propagate the non-generic name to the whole color group.
+      const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
+      const colorPreferred = new Map<string, string>();
+      segments.forEach(seg => {
+        if (!isGeneric(seg.speaker) && seg.speaker && seg.speakerColor) {
+          if (!colorPreferred.has(seg.speakerColor)) colorPreferred.set(seg.speakerColor, seg.speaker);
         }
-        
-        toast({
-          title: "Word Timings Updated",
-          description: "Speaker identities remain locked.",
-        });
-      } else {
-        // Path A: Full save (initial save before freeze)
-        console.log('💾 Saving full transcript');
-        
-        // Harmonize speaker names before saving: if a color group has a non-generic name
-        // (e.g., "David") and other segments still have generic names (e.g., "Speaker 1"),
-        // propagate the non-generic name to the whole color group.
-        const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
-        const colorPreferred = new Map<string, string>();
-        segments.forEach(seg => {
-          if (!isGeneric(seg.speaker) && seg.speaker && seg.speakerColor) {
-            if (!colorPreferred.has(seg.speakerColor)) colorPreferred.set(seg.speakerColor, seg.speaker);
-          }
-        });
-        let changedCount = 0;
-        const normalized = segments.map(seg => {
-          const preferred = colorPreferred.get(seg.speakerColor);
-          if (preferred && isGeneric(seg.speaker)) {
-            changedCount++;
-            return { ...seg, speaker: preferred };
-          }
-          return seg;
-        });
-        if (changedCount > 0) {
-          console.log(`🔄 Auto-propagation before save: updated ${changedCount} segments by color groups`);
-          setSegments(normalized);
+      });
+      let changedCount = 0;
+      const normalized = segments.map(seg => {
+        const preferred = colorPreferred.get(seg.speakerColor);
+        if (preferred && isGeneric(seg.speaker)) {
+          changedCount++;
+          return { ...seg, speaker: preferred };
         }
-        const toSave = changedCount > 0 ? normalized : segments;
-        
-        const segmentsData = toSave.map((segment, idx) => ({
-          idx,
-          startTime: segment.startTime,
-          endTime: segment.endTime,
-          text: segment.text,
-          emphasis: segment.emphasis,
-          pitch: segment.pitch,
-          words: segment.words
-        }));
-
-        const { error } = await supabase.functions.invoke('transcribe', {
-          body: {
-            videoId,
-            segments: segmentsData,
-            language: detectedLanguage,
-            saveOnly: true
-          }
-        });
-
-        if (error) throw error;
-
-        console.log('✅ Transcript saved successfully');
-        
-        // Freeze the transcript to lock speaker identities
-        const { error: freezeError } = await supabase.rpc('freeze_transcript', {
-          p_video_id: videoId,
-          p_language: detectedLanguage
-        });
-        
-        if (freezeError) {
-          console.error('⚠️ Failed to freeze transcript:', freezeError);
-        } else {
-          console.log('🔒 Transcript frozen successfully');
-          setIsFrozen(true);
-        }
-        
-        toast({
-          title: "Transcript Finalized",
-          description: "Identity locked; only word timing edits allowed.",
-        });
+        return seg;
+      });
+      if (changedCount > 0) {
+        console.log(`🔄 Auto-propagation before save: updated ${changedCount} segments by color groups`);
+        setSegments(normalized);
       }
+      const toSave = changedCount > 0 ? normalized : segments;
+      
+      const segmentsData = toSave.map((segment, idx) => ({
+        idx,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        text: segment.text,
+        speaker: segment.speaker,
+        speakerColor: segment.speakerColor,
+        emphasis: segment.emphasis,
+        pitch: segment.pitch,
+        segmentType: 'dialogue',
+        isOffCamera: false,
+        words: segment.words
+      }));
+
+      const { error } = await supabase.functions.invoke('transcribe', {
+        body: {
+          videoId,
+          segments: segmentsData,
+          language: detectedLanguage,
+          saveOnly: true
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Transcript saved successfully');
     } catch (error) {
       console.error('❌ Failed to save transcript:', error);
       toast({
@@ -747,11 +689,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
 
               {/* Toolbar: Language + Primary Actions */}
               <div className="flex flex-wrap items-center gap-3">
-                {isFrozen && (
-                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950">
-                    🔒 Transcript Frozen - Word Timing Edits Only
-                  </Badge>
-                )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Language</span>
                   <Select value={detectedLanguage} onValueChange={setDetectedLanguage}>
@@ -789,63 +726,61 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
               )}
 
               {/* Speaker & Character Management Section (always shown) */}
-              {!isFrozen && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Speaker & Character Management</CardTitle>
-                    <div className="text-sm text-muted-foreground">Status: {characters.length} characters • {detectedSpeakers.length} detected speakers</div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Character Management */}
-                    <div className="border rounded-lg p-4">
-                      <h4 className="text-sm font-medium mb-3">Create Characters</h4>
-                      <CharacterManager
-                        videoId={videoId}
-                        onCharactersUpdate={handleCharactersUpdate}
-                        existingCharacters={characters}
-                        language={videoLanguage}
-                        existingSpeakers={detectedSpeakers.map(s => s.name)}
-                        isFrozen={isFrozen}
-                      />
-                    </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Speaker & Character Management</CardTitle>
+                  <div className="text-sm text-muted-foreground">Status: {characters.length} characters • {detectedSpeakers.length} detected speakers</div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Character Management */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="text-sm font-medium mb-3">Create Characters</h4>
+                    <CharacterManager
+                      videoId={videoId}
+                      onCharactersUpdate={handleCharactersUpdate}
+                      existingCharacters={characters}
+                      language={videoLanguage}
+                      existingSpeakers={detectedSpeakers.map(s => s.name)}
+                    />
+                  </div>
 
-                    {/* Speaker Assignment */}
-                    {characters.length > 0 && detectedSpeakers.length > 0 && (
-                      <div className="border rounded-lg p-4">
-                        <h4 className="text-sm font-medium mb-3">Identify Speaker Assignment</h4>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Map each character to a detected transcript speaker. Colors come from Character Management.
-                        </p>
-                        
-                        <div className="grid gap-2">
-                          {detectedSpeakers.map(speaker => (
-                            <div key={speaker.name} className="flex items-center gap-3 p-2 bg-muted rounded border">
-                              <Badge 
-                                className="min-w-20 justify-center"
-                                style={{ 
-                                  backgroundColor: speaker.color,
-                                  color: '#000'
-                                }}
-                              >
-                                {speaker.name}
-                              </Badge>
-                              <span className="text-muted-foreground">→</span>
-                              <Select 
-                                value={speaker.name}
-                                onValueChange={(characterName) => {
-                                  // Update all segments with this speaker
-                                  const character = characters.find(char => char.name === characterName);
-                                  if (character) {
-                                    const updatedSegments = segments.map(seg => 
-                                      seg.speaker === speaker.name 
-                                        ? { ...seg, speaker: characterName, speakerColor: character.color }
-                                        : seg
-                                    );
-                                    setSegments(updatedSegments);
-                                    saveTranscript();
-                                  }
-                                }}
-                              >
+                  {/* Speaker Assignment */}
+                  {characters.length > 0 && detectedSpeakers.length > 0 && (
+                    <div className="border rounded-lg p-4">
+                      <h4 className="text-sm font-medium mb-3">Identify Speaker Assignment</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Map each character to a detected transcript speaker. Colors come from Character Management.
+                      </p>
+                      
+                      <div className="grid gap-2">
+                        {detectedSpeakers.map(speaker => (
+                          <div key={speaker.name} className="flex items-center gap-3 p-2 bg-muted rounded border">
+                            <Badge 
+                              className="min-w-20 justify-center"
+                              style={{ 
+                                backgroundColor: speaker.color,
+                                color: '#000'
+                              }}
+                            >
+                              {speaker.name}
+                            </Badge>
+                            <span className="text-muted-foreground">→</span>
+                            <Select 
+                              value={speaker.name}
+                              onValueChange={(characterName) => {
+                                // Update all segments with this speaker
+                                const character = characters.find(char => char.name === characterName);
+                                if (character) {
+                                  const updatedSegments = segments.map(seg => 
+                                    seg.speaker === speaker.name 
+                                      ? { ...seg, speaker: characterName, speakerColor: character.color }
+                                      : seg
+                                  );
+                                  setSegments(updatedSegments);
+                                  saveTranscript();
+                                }
+                              }}
+                            >
                               <SelectTrigger className="h-7 w-32">
                                 <SelectValue placeholder="Assign to..." />
                               </SelectTrigger>
@@ -870,7 +805,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   )}
                 </CardContent>
               </Card>
-              )}
 
               {/* Transcript & Content Generation (show when transcript exists) */}
               {hasTranscript && (
@@ -922,7 +856,6 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                               </Badge>
                               <Select 
                                 value={segment.speaker}
-                                disabled={isFrozen}
                                 onValueChange={(newSpeaker) => handleSpeakerChange(index, newSpeaker)}
                               >
                                 <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent hover:bg-muted">

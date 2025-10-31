@@ -1,95 +1,185 @@
-// Captions with Intention — Color System (full palette)
-// - 6 Main
-// - 12 Supporting
-// - 24 Minor (pastels)
-// Source of truth for all color selection in the app.
+/**
+ * Captions with Intention (CWI) Official Color Palette
+ * Design Guide V1.0 - Pages 16, 20, 22
+ * 
+ * Total: 42 colors (6 main + 12 supporting + 24 minor pastels)
+ */
 
 export const CWI_PALETTE = {
+  // Main characters (6 colors) - Design Guide page 16
   main: [
-    '#E5E517', // Yellow
-    '#17E5E5', // Cyan
+    '#E5E517', // Yellow - Hero
+    '#17E5E5', // Cyan - Villain (opposite of hero)
     '#E51717', // Red
     '#E58017', // Orange
     '#17E517', // Green
     '#E517E5', // Magenta
-  ],
+  ] as string[],
+  
+  // Supporting characters (12 colors) - Design Guide page 20
   supporting: [
-    '#E85C2E', '#47C2EB', '#EBC247', '#5E82ED', '#C2EB47', '#8C6BED',
-    '#82ED5E', '#CC6BED', '#47EB70', '#EB47C2', '#5EEDC9', '#ED5E82',
-  ],
-  minor: [
-    // 24 pastels — choose your approved set (examples shown)
-    '#F7E8A1','#CFF1F7','#F7B3B3','#FAD3A1','#CFF7CF','#F1C2F7',
-    '#D9F7A1','#D1C2F7','#B3F7D9','#F7A1E1','#A1E1F7','#F7D9A1',
-    '#E1F7A1','#A1F7E1','#D9A1F7','#F1F7A1','#A1F1F7','#F7A1C2',
-    '#C2F7A1','#A1C2F7','#F7C2A1','#A1F7C2','#E1A1F7','#F7A1A1',
-  ],
-} as const;
-
-export type CharacterType = 'main' | 'supporting' | 'minor';
-export type PalettePool = keyof typeof CWI_PALETTE;
-
-// fnv1a 32-bit hash for stability across sessions
-function fnv1a(str: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
-}
+    '#E85C2E', // Orange
+    '#47C2EB', // Blue I
+    '#EBC247', // Yellow
+    '#5E82ED', // Blue II
+    '#C2EB47', // Green I
+    '#8C6BED', // Purple I
+    '#82ED5E', // Green II
+    '#CC6BED', // Purple II
+    '#47EB70', // Green III
+    '#EB47C2', // Pink I
+    '#5EEDC9', // Cyan
+    '#ED5E82', // Pink II
+  ] as string[],
+  
+  // Minor characters (24 pastels) - Design Guide page 22
+  // Formula: hsl(H, 30%, 90%)
+  minor: Array.from({ length: 24 }, (_, i) => {
+    const hue = (i * 15) % 360; // Evenly spaced around color wheel
+    return `hsl(${hue}, 30%, 90%)`;
+  })
+};
 
 /**
- * Pick a color by pool + index (wraps safely).
+ * Get color by character type and index
  */
-export function getColorByPool(pool: PalettePool, index: number): string {
-  const arr = CWI_PALETTE[pool];
-  return arr[((index % arr.length) + arr.length) % arr.length];
-}
-
-/**
- * Deterministic auto-color for a speaker/character when DB color is missing.
- * - Respects character type → pool selection
- * - Seeds by videoId+language so colors don't "shift" between projects
- * - Falls back to supporting, then minor, then main (in case of type=undefined)
- */
-export function getAutoColor(
-  opts: {
-    name: string;                 // speaker or character name
-    type?: CharacterType | null;  // 'main' | 'supporting' | 'minor'
-    seed?: string;                // e.g. `${videoId}:${language}`
-  }
+export function getColorByType(
+  type: 'main' | 'supporting' | 'minor',
+  index: number
 ): string {
-  const { name, type, seed = '' } = opts;
-  const key = `${seed}::${(name ?? '').trim().toLowerCase()}`;
-  const h = fnv1a(key);
-
-  // Choose pool by type (spec-compliant)
-  const pool: PalettePool =
-    type === 'main' ? 'main' :
-    type === 'supporting' ? 'supporting' :
-    type === 'minor' ? 'minor' :
-    // If type is unknown, prefer supporting (more slots), else minor
-    'supporting';
-
-  const arr = CWI_PALETTE[pool];
-  return arr[h % arr.length];
+  const pool = CWI_PALETTE[type];
+  return pool[index % pool.length];
 }
 
 /**
- * Resolve final color with proper precedence:
- * 1) Explicit character.color from DB (single source of truth)
- * 2) Auto-color by type using stable hashing (project-scoped by seed)
+ * Get color for a speaker with priority system
+ * 
+ * Priority order:
+ * 1. Database segment.speaker_color (if set)
+ * 2. CharacterManager custom colors (if provided)
+ * 3. localStorage character-colors (legacy)
+ * 4. Auto-assign from full palette based on speaker name
  */
-export function resolveSpeakerColor(params: {
-  characterColor?: string | null;
-  characterType?: CharacterType | null;
-  speakerName: string;
-  seed?: string; // `${videoId}:${language}`
-}): string {
-  const { characterColor, characterType, speakerName, seed } = params;
-  if (characterColor && /^#([0-9a-f]{3}){1,2}$/i.test(characterColor)) {
-    return characterColor;
+export function getSpeakerColor(
+  speaker: string,
+  customColors?: Record<string, string>,
+  segmentColor?: string,
+  characterType?: 'main' | 'supporting' | 'minor'
+): string {
+  // Priority 1: Database segment.speaker_color
+  if (segmentColor && segmentColor !== '#3B82F6') {
+    return segmentColor;
   }
-  return getAutoColor({ name: speakerName, type: characterType ?? undefined, seed });
+  
+  // Priority 2: Character Manager colors (passed as prop)
+  if (customColors && customColors[speaker]) {
+    return customColors[speaker];
+  }
+  
+  // Priority 3: localStorage 'character-colors' (legacy support)
+  if (typeof window !== 'undefined') {
+    try {
+      const storedColors = JSON.parse(localStorage.getItem('character-colors') || '{}');
+      if (storedColors[speaker]) {
+        return storedColors[speaker];
+      }
+    } catch (e) {
+      console.warn('Failed to parse character-colors from localStorage:', e);
+    }
+  }
+  
+  // Priority 4: Auto-assign from full palette
+  return autoAssignColor(speaker, characterType);
+}
+
+/**
+ * Auto-assign color from 42-color palette
+ * Uses character type if provided, otherwise assigns from all colors
+ */
+function autoAssignColor(
+  speaker: string,
+  characterType?: 'main' | 'supporting' | 'minor'
+): string {
+  // Determine color pool
+  let colorPool: string[];
+  
+  if (characterType === 'main') {
+    colorPool = CWI_PALETTE.main;
+  } else if (characterType === 'supporting') {
+    colorPool = CWI_PALETTE.supporting;
+  } else if (characterType === 'minor') {
+    colorPool = CWI_PALETTE.minor;
+  } else {
+    // No type specified: Use main + supporting (18 colors)
+    // Pastels excluded from auto-assignment unless explicitly requested
+    colorPool = [
+      ...CWI_PALETTE.main,
+      ...CWI_PALETTE.supporting
+    ];
+  }
+  
+  // Generate consistent hash from speaker name
+  let hash = 0;
+  for (let i = 0; i < speaker.length; i++) {
+    hash = ((hash << 5) - hash) + speaker.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  // Return color from pool
+  return colorPool[Math.abs(hash) % colorPool.length];
+}
+
+/**
+ * Get next available color for new character
+ * Avoids colors already in use
+ */
+export function getNextAvailableColor(
+  usedColors: string[],
+  characterType: 'main' | 'supporting' | 'minor' = 'main'
+): string {
+  const pool = CWI_PALETTE[characterType];
+  
+  // Find first unused color
+  const availableColor = pool.find(color => !usedColors.includes(color));
+  
+  // If all colors used, return first color from pool
+  return availableColor || pool[0];
+}
+
+/**
+ * Get color by character importance
+ * Used in CharacterManager when creating new characters
+ */
+export function getColorByCharacterImportance(
+  importance: 'hero' | 'villain' | 'main' | 'supporting' | 'minor',
+  usedColors: string[]
+): string {
+  switch (importance) {
+    case 'hero':
+      // Yellow (#E5E517) - Most visible
+      return CWI_PALETTE.main[0];
+    
+    case 'villain':
+      // Cyan (#17E5E5) - Opposite of hero
+      return CWI_PALETTE.main[1];
+    
+    case 'main':
+      return getNextAvailableColor(usedColors, 'main');
+    
+    case 'supporting':
+      return getNextAvailableColor(usedColors, 'supporting');
+    
+    case 'minor':
+      return getNextAvailableColor(usedColors, 'minor');
+    
+    default:
+      return getNextAvailableColor(usedColors, 'main');
+  }
+}
+
+/**
+ * Get all available colors (6 + 12 = 18 non-pastel colors)
+ */
+export function getAllColors(): string[] {
+  return [...CWI_PALETTE.main, ...CWI_PALETTE.supporting];
 }

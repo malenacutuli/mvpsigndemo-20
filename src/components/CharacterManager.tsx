@@ -6,23 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Info } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
-
-// Generic speaker patterns to filter out from mappings and dropdowns
-const GENERIC_PATTERNS = [
-  /^speaker(\s*\d+)?$/i,
-  /^speaker\s*[A-Z]$/i,
-  /^unknown$/i,
-  /^unassigned$/i
-];
-
-const isGenericSpeaker = (speaker: string): boolean => {
-  return GENERIC_PATTERNS.some(pattern => pattern.test(speaker?.trim() ?? ''));
-};
 
 // Captions with Intention color palette
 const CI_COLORS = {
@@ -97,78 +85,25 @@ interface CharacterManagerProps {
   videoId: string;
   onCharactersUpdate?: (characters: Character[]) => void;
   existingCharacters?: Character[];
-  language?: string;
-  existingSpeakers?: string[];
-  isFrozen?: boolean;
+  language?: string; // Add language prop for multilingual support
+  existingSpeakers?: string[]; // Optional list of detected speakers to map
 }
 
 export const CharacterManager: React.FC<CharacterManagerProps> = ({ 
   videoId, 
   onCharactersUpdate, 
   existingCharacters = [],
-  language = 'en',
-  existingSpeakers,
-  isFrozen = false
+  language = 'en', // Default to English
+  existingSpeakers
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
-  const [asrLabels, setAsrLabels] = useState<string[]>([]);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
-  const { toast } = useToast();
 
-  // Load characters and ASR labels for dropdown
-  const loadCharactersAndDropdown = async () => {
-    try {
-      // Load characters (always show with their assigned color)
-      const { data: chars } = await supabase
-        .from('characters')
-        .select('id, name, type, color')
-        .eq('video_id', videoId)
-        .order('name');
-      
-      if (chars && chars.length > 0) {
-        const mappedChars = chars.map(c => ({
-          id: c.id,
-          name: c.name,
-          type: c.type as Character['type'],
-          color: c.color
-        }));
-        setCharacters(mappedChars as Character[]);
-      }
-      
-      // Load ASR labels present in segments (filter generics)
-      const { data: segSpeakers } = await supabase
-        .from('transcript_segments_clean')
-        .select('speaker_asr_label')
-        .eq('video_id', videoId)
-        .eq('language', language);
-      
-      const uniqueAsrLabels = [...new Set(
-        (segSpeakers ?? [])
-          .map(r => r.speaker_asr_label)
-          .filter(s => s && !isGenericSpeaker(s))
-      )].sort();
-      
-      setAsrLabels(uniqueAsrLabels);
-      
-      // Merge into available speakers for dropdown
-      const allSpeakers = [...uniqueAsrLabels];
-      setAvailableSpeakers(allSpeakers);
-      
-      console.log('🎯 Loaded dropdown:', {
-        characters: chars?.length || 0,
-        asrLabels: uniqueAsrLabels.length,
-        totalSpeakers: allSpeakers.length
-      });
-    } catch (error) {
-      console.error('❌ Failed to load characters and dropdown:', error);
-    }
-  };
-
-  // Load existing characters on mount and setup realtime updates
+  // Load existing characters on mount
   useEffect(() => {
     const loadExistingCharacters = async () => {
       if (existingCharacters.length === 0) {
@@ -185,26 +120,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     };
 
     loadExistingCharacters();
-    loadCharactersAndDropdown();
-    
-    // Setup realtime subscription for character updates
-    const channel = supabase
-      .channel('characters-live')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'characters',
-        filter: `video_id=eq.${videoId}`
-      }, () => {
-        console.log('🔴 Character updated, reloading...');
-        loadCharactersAndDropdown();
-      })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [videoId]);
+  const { toast } = useToast();
 
   // Load cached speaker data when no speakers are provided from transcript
   const loadCachedSpeakerData = async () => {
@@ -220,13 +137,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
         const resultData = data.result_data as any;
         if (resultData.speakers && Array.isArray(resultData.speakers)) {
-          const cachedSpeakers = resultData.speakers
-            .map((s: any) => s.name)
-            .filter((name: string) => !isGenericSpeaker(name));
-          
-          const merged = Array.from(new Set<string>(cachedSpeakers)).sort();
+          const cachedSpeakers = resultData.speakers.map((s: any) => s.name);
+          // Merge into stable list
+          const merged = Array.from(new Set([...
+            (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []),
+            ...cachedSpeakers,
+          ].filter(Boolean))).sort();
           setAvailableSpeakers(merged);
-          console.log('📋 Loaded cached speakers (generics filtered):', merged);
+          sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
+          console.log('📋 Loaded cached speakers:', merged);
         }
       }
     } catch (error) {
@@ -234,41 +153,40 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  // Load speakers from DB (transcript + mappings) and stabilize the list - filter generics
+  // Load speakers from DB (transcript + mappings) and stabilize the list
   const loadSpeakersFromDB = async () => {
     try {
       const speakersSet = new Set<string>();
-      
       // From transcript segments
       const { data: segs } = await supabase
         .from('transcript_segments_clean')
         .select('speaker')
         .eq('video_id', videoId)
-        .eq('language', language);
-      
-      (segs || []).forEach((r: any) => {
-        if (r?.speaker && !isGenericSpeaker(r.speaker)) {
-          speakersSet.add(r.speaker);
-        }
-      });
+        .eq('language', language)
+        .order('start_time');
+      (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
 
-      // From speaker mappings (asr_label column)
-      const { data: maps } = await supabase
+      // From latest speaker mappings (keys)
+      const { data: mapRow } = await supabase
         .from('speaker_mappings')
-        .select('asr_label')
+        .select('mappings, updated_at')
         .eq('video_id', videoId)
-        .eq('language', language);
-      
-      (maps || []).forEach((r: any) => {
-        if (r?.asr_label && !isGenericSpeaker(r.asr_label)) {
-          speakersSet.add(r.asr_label);
-        }
-      });
+        .eq('language', language)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const mappings = (mapRow?.mappings as Record<string, string>) || {};
+      Object.keys(mappings).forEach(k => speakersSet.add(k));
+
+      // Merge with cache and any previous stable list
+      const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
+      stable.forEach(s => speakersSet.add(s));
 
       const merged = Array.from(speakersSet).filter(Boolean).sort();
       if (merged.length > 0) {
         setAvailableSpeakers(merged);
-        console.log('💿 Loaded speakers from DB (generics filtered):', merged);
+        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
+        console.log('💿 Loaded speakers from DB/cache:', merged);
       }
     } catch (e) {
       console.warn('⚠️ Failed loading speakers from DB:', e);
@@ -473,14 +391,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
-      console.log('🎯 Applying character mappings with apply_specific_mapping RPC');
+      // Get all transcript languages for this video
+      const { data: transcripts } = await supabase
+        .from('transcripts')
+        .select('language')
+        .eq('video_id', videoId);
+      
+      const allLanguages = transcripts?.map(t => t.language) || [language];
+      console.log('🌍 Applying character mappings across all languages:', allLanguages);
       
       // First, save characters to database and get their IDs
       const { data: savedChars, error: saveError } = await supabase
         .from('characters')
         .upsert(
           characters.map(char => ({
-            id: char.id.startsWith('char-') ? undefined : char.id,
+            id: char.id.startsWith('char-') ? undefined : char.id, // Let DB generate ID for new chars
             video_id: videoId,
             name: char.name,
             type: char.type,
@@ -501,47 +426,61 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         return;
       }
       
-      // Apply mappings using RPC (blocks generics automatically)
-      let mappedCount = 0;
-      let skippedCount = 0;
+      // Create a map of character names to IDs
+      const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
       
-      for (const [asrLabel, characterName] of Object.entries(speakerMappings)) {
-        // Skip generic speaker labels
-        if (isGenericSpeaker(asrLabel)) {
-          console.warn(`⚠️ Skip generic label: "${asrLabel}"`);
-          skippedCount++;
-          continue;
-        }
-        
-        const character = characters.find(c => c.name === characterName);
-        if (!character) {
-          console.warn(`⚠️ Character "${characterName}" not found`);
-          continue;
-        }
-        
-        const savedChar = savedChars?.find(c => c.name === characterName);
-        if (!savedChar) {
-          console.warn(`⚠️ Saved character "${characterName}" not found`);
-          continue;
-        }
-        
-        // Use apply_specific_mapping RPC that blocks generics and applies character color
-        const { data: count, error } = await supabase.rpc('apply_specific_mapping', {
-          p_video_id: videoId,
-          p_language: language,
-          p_asr_label: asrLabel,
-          p_character_id: savedChar.id
-        });
-        
-        if (error) {
-          console.error(`❌ Failed to map "${asrLabel}" → "${characterName}":`, error);
-        } else {
-          console.log(`✅ Mapped "${asrLabel}" → "${characterName}" (${count} segments updated)`);
-          mappedCount += (count || 0);
+      // Apply mappings across ALL languages
+      for (const lang of allLanguages) {
+        // Update transcript segments based on character assignments for this language
+        for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
+          const characterId = charIdMap.get(characterName);
+          const character = characters.find(c => c.name === characterName);
+          
+          if (!character || !characterId) continue;
+          
+          // Query 1: Update segments that currently have the speaker label
+          const { error: err1 } = await supabase
+            .from('transcript_segments_clean')
+            .update({
+              speaker: characterName,
+              speaker_color: character.color,
+              character_id: characterId,
+              is_off_camera: character.isOffCamera || false,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal'
+            })
+            .eq('video_id', videoId)
+            .eq('language', lang)
+            .eq('speaker', speakerName);
+          
+          if (err1) {
+            console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
+          } else {
+            console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (${character.color})`);
+          }
+          
+          // Query 2: Update segments that already have the character name
+          // (for idempotency - if user saves multiple times)
+          const { error: err2 } = await supabase
+            .from('transcript_segments_clean')
+            .update({
+              speaker_color: character.color,
+              character_id: characterId,
+              is_off_camera: character.isOffCamera || false,
+              emphasis: character.emphasis || 'normal',
+              pitch: character.pitch || 'normal'
+            })
+            .eq('video_id', videoId)
+            .eq('language', lang)
+            .eq('speaker', characterName);
+          
+          if (err2) {
+            console.error(`❌ [${lang}] Failed to sync "${characterName}":`, err2);
+          }
         }
       }
       
-      console.log(`✅ Mappings complete: ${mappedCount} segments updated, ${skippedCount} generic labels skipped`);
+      console.log('✅ Character mappings applied across all languages');
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
     }
@@ -627,26 +566,8 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Freeze Warning */}
-        {isFrozen && (
-          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-medium text-blue-900 dark:text-blue-100">Transcript Frozen</h4>
-                  <p className="text-sm text-blue-700 dark:text-blue-200">
-                    Character mappings cannot be changed after transcript finalization. 
-                    Speaker identities are locked to preserve accuracy.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Speaker Mapping Section */}
-        {characters.length > 0 && !isFrozen && (
+        {characters.length > 0 && (
           <Card className="border-orange-200/50 bg-orange-50/30">
             <CardContent className="p-4 space-y-3">
               <h4 className="font-medium text-orange-800">
@@ -688,25 +609,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         <SelectTrigger className="h-7 w-56">
                           <SelectValue placeholder="Select detected speaker..." />
                         </SelectTrigger>
-                        <SelectContent className="z-50 bg-background">
+                        <SelectContent>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {/* Show existing characters with color chips */}
-                          {characters.map(c => (
-                            <SelectItem key={`char-${c.id}`} value={c.name} className="flex items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <span 
-                                  className="inline-block w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: c.color }}
-                                />
-                                {c.name} ({c.type})
-                              </div>
-                            </SelectItem>
-                          ))}
-                          {/* Show unmapped ASR labels */}
-                          {asrLabels.filter(label => !characters.some(c => c.name === label)).map(label => (
-                            <SelectItem key={`asr-${label}`} value={label}>
-                              {label}
-                            </SelectItem>
+                          {Array.from(new Set([...availableSpeakers, ...Object.keys(speakerMappings)])).sort().map(sp => (
+                            <SelectItem key={sp} value={sp}>{sp}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -727,7 +633,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 <h4 className="font-medium text-foreground">Character Management</h4>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
               </div>
-              <Button onClick={saveAllCharacters} size="sm" variant="default" disabled={isFrozen}>
+              <Button onClick={saveAllCharacters} size="sm" variant="default">
                 <Save className="w-4 h-4 mr-2" />
                 Save All Changes
               </Button>

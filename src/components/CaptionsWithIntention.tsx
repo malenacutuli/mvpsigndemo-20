@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
-import { resolveSpeakerColor } from '@/lib/cwiPalette';
+import { getSpeakerColor as getColorFromPalette } from '@/lib/cwiPalette';
 import { syllabify, injectSyllables } from '@/lib/syllables';
 
 // Captions with Intention color palette following the official protocol
@@ -453,10 +453,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  const speakerColor = resolveSpeakerColor({
-    characterColor: customSpeakerColors?.[activeCaption.speaker] || activeCaption.speakerColor,
-    speakerName: activeCaption.speaker,
-  });
+  const speakerColor = getColorFromPalette(activeCaption.speaker, customSpeakerColors, activeCaption.speakerColor);
   const volume = (activeCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 

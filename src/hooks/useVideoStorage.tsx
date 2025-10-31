@@ -90,12 +90,15 @@ export const useVideoStorage = (videoId: string) => {
         text: segment.text,
         startTime: segment.startTime,
         endTime: segment.endTime,
+        speaker: segment.speaker || 'Speaker',
+        speakerColor: segment.speakerColor || '#3B82F6',
         emphasis: segment.emphasis || 'normal',
         pitch: segment.pitch || 'normal',
         ...(segment.words && segment.words.length > 0 ? { words: JSON.parse(JSON.stringify(segment.words)) } : {}),
         isOffCamera: segment.isOffCamera || false,
         segmentType: segment.segmentType || 'dialogue',
-        confidence: segment.confidence || 0.95
+        confidence: segment.confidence || 0.95,
+        characterId: (segment as any).character_id || (segment as any).characterId || null
       }));
 
       // Create checksum for change detection (handle UTF-8 safely)
@@ -114,6 +117,9 @@ export const useVideoStorage = (videoId: string) => {
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
+        speaker: seg.speaker || 'Speaker',
+        speaker_color: seg.speakerColor || '#3B82F6',
+        character_id: seg.characterId || seg.character_id || null,
         emphasis: seg.emphasis || 'normal',
         pitch: seg.pitch || 'normal',
         confidence: seg.confidence || 0.95,
