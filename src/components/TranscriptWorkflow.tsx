@@ -162,25 +162,39 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       let loadedSegments: TranscriptSegment[] = [];
       
-      // Load from database
+      // Load from resolved view for ready-to-render segments
       const { data: dbData, error: dbError } = await supabase
-        .from('transcript_segments_clean')
+        .from('v_transcript_segments_resolved')
         .select('*')  
         .eq('video_id', videoId)
         .eq('language', detectedLanguage)
         .order('start_time', { ascending: true });
       
       if (!dbError && dbData && dbData.length > 0) {
-        loadedSegments = dbData.map((seg, index) => ({
-          id: seg.id,
-          text: seg.text,
-          startTime: Number(seg.start_time),
-          endTime: Number(seg.end_time),
-          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
-          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
-        }));
+        // Also load emphasis/pitch from base table since view doesn't have them
+        const { data: cleanData } = await supabase
+          .from('transcript_segments_clean')
+          .select('id, emphasis, pitch')
+          .eq('video_id', videoId)
+          .eq('language', detectedLanguage);
+        
+        const emphasisPitchMap = new Map<string, { emphasis: string | null; pitch: string | null }>(
+          (cleanData || []).map(seg => [seg.id, { emphasis: seg.emphasis, pitch: seg.pitch }])
+        );
+        
+        loadedSegments = dbData.map(seg => {
+          const extraData = emphasisPitchMap.get(seg.id || '') || { emphasis: null, pitch: null };
+          return {
+            id: seg.id || '',
+            text: seg.text || '',
+            startTime: Number(seg.start_time || 0),
+            endTime: Number(seg.end_time || 0),
+            speaker: seg.display_speaker || 'Unassigned',
+            speakerColor: seg.display_color || '#3B82F6',
+            emphasis: (extraData.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
+            pitch: (extraData.pitch as 'normal' | 'high' | 'low') || 'normal',
+          };
+        });
         
         if (dbData[0]?.language) {
           setDetectedLanguage(dbData[0].language);
