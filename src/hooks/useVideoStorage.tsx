@@ -25,6 +25,7 @@ export interface TranscriptSegment {
   confidence?: number;
   characterId?: string | null; // ✅ FIX #1: Link to characters table (camelCase)
   character_id?: string | null; // ✅ FIX #1: Link to characters table (snake_case)
+  speaker_asr_label?: string | null; // ✅ Original ASR label for mapping
 }
 
 export interface AudioDescription {
@@ -141,7 +142,8 @@ export const useVideoStorage = (videoId: string) => {
           .select(`
             id, video_id, language, idx,
             start_time, end_time, text, words,
-            character_id, display_speaker, display_color
+            character_id, display_speaker, display_color,
+            speaker_asr_label
           `)
           .eq('video_id', videoId)
           .eq('language', language)
@@ -160,6 +162,7 @@ export const useVideoStorage = (videoId: string) => {
             speakerColor: row.display_color || '#3B82F6',
             characterId: row.character_id || null,
             character_id: row.character_id || null,
+            speaker_asr_label: row.speaker_asr_label || null,
             words: row.words ? parseWordsData(row.words) : undefined,
             // Default emphasis/pitch since view doesn't include them
             emphasis: 'normal',

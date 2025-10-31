@@ -88,6 +88,20 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   }, [initialCaptions]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Ref callback for immediate native track disabling (before browser renders them)
+  const handleVideoRef = (element: HTMLVideoElement | null) => {
+    if (element) {
+      // Disable all text tracks IMMEDIATELY before browser can render native captions
+      const list = element.textTracks;
+      if (list?.length) {
+        for (let i = 0; i < list.length; i++) {
+          list[i].mode = 'disabled';
+        }
+      }
+    }
+    videoRef.current = element;
+  };
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -948,13 +962,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       {/* Video Element */}
       <video
-        ref={videoRef}
+        ref={handleVideoRef}
+        crossOrigin="anonymous"
+        data-no-native-captions="true"
         src={videoSrc}
         poster={posterSrc}
         className="w-full h-full object-cover"
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
-        crossOrigin="anonymous"
         playsInline
         preload="auto"
         onError={(e) => {

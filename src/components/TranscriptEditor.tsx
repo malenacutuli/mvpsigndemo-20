@@ -78,6 +78,7 @@ interface TranscriptSegment {
   auto_styling?: any;
   characterId?: string | null; // Link to characters table (camelCase for frontend)
   character_id?: string | null; // Link to characters table (snake_case for database)
+  speaker_asr_label?: string | null; // Original ASR label for mapping
 }
 
 interface TranscriptEditorProps {
@@ -790,6 +791,30 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       characterId: characterId,        // ✅ NOW SETS characterId (camelCase)
       character_id: characterId        // ✅ AND character_id (snake_case) for compatibility
     };
+
+    // ✅ CRITICAL: Save speaker mapping when user manually assigns a character
+    if (characterId && editSpeaker) {
+      try {
+        const segment = editingTranscript[editingIndex];
+        const asrLabel = segment.speaker_asr_label || segment.speaker || editSpeaker;
+        
+        console.log(`💾 Saving speaker mapping: "${asrLabel}" → "${editSpeaker}" (${characterId})`);
+        
+        // Load current mappings
+        const currentMappings = await loadSpeakerMappings(selectedLanguage);
+        
+        // Update mapping: asr_label -> character_id
+        currentMappings[asrLabel] = characterId;
+        
+        // Save back to database
+        await saveSpeakerMappings(currentMappings, selectedLanguage);
+        
+        console.log('✅ Speaker mapping saved successfully');
+      } catch (mappingError) {
+        console.error('❌ Failed to save speaker mapping:', mappingError);
+        console.warn('Warning: Character assignment may not persist');
+      }
+    }
 
     const nextSegments = updated;
     

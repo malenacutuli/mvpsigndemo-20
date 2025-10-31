@@ -1401,13 +1401,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "transcript_segments_clean_character_id_fkey"
-            columns: ["character_id"]
-            isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "transcript_segments_clean_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
@@ -1442,7 +1435,7 @@ export type Database = {
           p_language: string
           p_video_id: string
         }
-        Returns: number
+        Returns: undefined
       }
       check_my_subscription_status: {
         Args: { channel_uuid: string }
@@ -1478,6 +1471,10 @@ export type Database = {
       }
       detect_suspicious_subscription_access: {
         Args: { accessing_user_id: string }
+        Returns: undefined
+      }
+      ensure_speaker_mappings_row: {
+        Args: { p_language: string; p_video_id: string }
         Returns: undefined
       }
       freeze_transcript: {
@@ -1554,15 +1551,6 @@ export type Database = {
         Returns: boolean
       }
       is_test_user: { Args: { user_email: string }; Returns: boolean }
-      map_label_to_character: {
-        Args: {
-          p_asr_label: string
-          p_character_id: string
-          p_language: string
-          p_video_id: string
-        }
-        Returns: number
-      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string
