@@ -937,6 +937,7 @@ export type Database = {
           segment_type: string | null
           speaker: string | null
           speaker_color: string | null
+          speaker_norm: string | null
           speaker_normalized: string | null
           start_time: number
           text: string
@@ -961,6 +962,7 @@ export type Database = {
           segment_type?: string | null
           speaker?: string | null
           speaker_color?: string | null
+          speaker_norm?: string | null
           speaker_normalized?: string | null
           start_time: number
           text: string
@@ -985,6 +987,7 @@ export type Database = {
           segment_type?: string | null
           speaker?: string | null
           speaker_color?: string | null
+          speaker_norm?: string | null
           speaker_normalized?: string | null
           start_time?: number
           text?: string
@@ -1497,6 +1500,15 @@ export type Database = {
         Returns: boolean
       }
       is_test_user: { Args: { user_email: string }; Returns: boolean }
+      map_label_to_character: {
+        Args: {
+          p_asr_label: string
+          p_character_id: string
+          p_language: string
+          p_video_id: string
+        }
+        Returns: number
+      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string
