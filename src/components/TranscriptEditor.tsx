@@ -74,6 +74,7 @@ interface TranscriptSegment {
   endTime: number;
   speaker?: string;
   speakerColor?: string;
+  speakerOriginalLabel?: string; // Original AssemblyAI label (A, B, C)
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
   words?: WordData[]; // Add word-level data support
@@ -1303,15 +1304,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <span className="text-xs text-muted-foreground font-mono">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
-                     {segment.speaker && (
-                       <Badge 
-                         variant="outline" 
-                         className="text-xs px-2 py-0"
-                         style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                       >
-                         {segment.speaker}
-                       </Badge>
-                     )}
+                      {segment.speaker && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs px-2 py-0"
+                          style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
+                        >
+                          {/* Show "Speaker A", "Speaker B" etc. if no character assigned but has original label */}
+                          {!segment.characterId && !segment.character_id && segment.speakerOriginalLabel 
+                            ? `Speaker ${segment.speakerOriginalLabel}`
+                            : segment.speaker
+                          }
+                        </Badge>
+                      )}
                      {segment.emphasis !== 'normal' && (
                        <Badge variant="secondary" className="text-xs px-1 py-0">
                          {segment.emphasis}

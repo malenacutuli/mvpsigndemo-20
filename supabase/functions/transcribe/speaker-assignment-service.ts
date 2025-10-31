@@ -379,6 +379,7 @@ export class SpeakerAssignmentService {
           end_time: seg.end_time,
           speaker: seg.speaker,
           speaker_color: seg.speaker_color,
+          speaker_original_label: seg.speaker_original_label,
           character_id: seg.character_id,
           language: seg.language,
           confidence: seg.confidence,
