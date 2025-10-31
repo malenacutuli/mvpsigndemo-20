@@ -227,8 +227,16 @@ serve(async (req) => {
             console.log("✅ AssemblyAI analysis successful!");
             transcriptionResult = {
               ...assemblyResult,
-              provider: 'AssemblyAI'
+              provider: 'AssemblyAI',
+              // ✅ Explicitly preserve utterances to ensure they're not lost
+              utterances: assemblyResult.utterances || []
             };
+            console.log('✅ AssemblyAI result structure:', {
+              hasUtterances: !!transcriptionResult.utterances,
+              utteranceCount: transcriptionResult.utterances?.length || 0,
+              hasSegments: !!transcriptionResult.segments,
+              segmentCount: transcriptionResult.segments?.length || 0
+            });
           } else {
             throw new Error("AssemblyAI returned error or no result");
           }
@@ -439,6 +447,11 @@ serve(async (req) => {
     
     if (videoId && transcriptionResult.segments) {
       console.log("Attempting to save to database...");
+      console.log('📊 Pre-save transcription check:', {
+        hasUtterances: !!transcriptionResult.utterances,
+        utteranceCount: transcriptionResult.utterances?.length || 0,
+        firstUtterance: transcriptionResult.utterances?.[0]
+      });
       await saveTranscriptToDatabase(videoId, transcriptionResult, forceReExtract);
     } else {
       console.log("Skipping database save - missing videoId or segments");
@@ -984,9 +997,18 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
     }
     
     // Check if we have AssemblyAI utterances format (with speaker labels)
+    console.log('🔍 Utterance format check:', {
+      hasUtterances: !!transcriptionResult.utterances,
+      isArray: Array.isArray(transcriptionResult.utterances),
+      length: transcriptionResult.utterances?.length || 0,
+      firstUtterance: transcriptionResult.utterances?.[0]
+    });
+    
     const hasUtteranceFormat = transcriptionResult.utterances && 
                                Array.isArray(transcriptionResult.utterances) && 
                                transcriptionResult.utterances.length > 0;
+    
+    console.log(`✅ hasUtteranceFormat = ${hasUtteranceFormat}`);
     
     if (hasUtteranceFormat) {
       console.log('🎭 Using SpeakerAssignmentService for proper character linking...');
