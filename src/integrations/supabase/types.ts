@@ -218,6 +218,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cwi_palette: {
+        Row: {
+          hex: string
+          idx: number
+          pool: string
+        }
+        Insert: {
+          hex: string
+          idx: number
+          pool: string
+        }
+        Update: {
+          hex?: string
+          idx?: number
+          pool?: string
+        }
+        Relationships: []
+      }
       embed_analytics: {
         Row: {
           created_at: string
@@ -936,6 +954,8 @@ export type Database = {
           pitch: string | null
           segment_type: string | null
           speaker: string | null
+          speaker_asr_label: string | null
+          speaker_asr_norm: string | null
           speaker_color: string | null
           speaker_norm: string | null
           speaker_normalized: string | null
@@ -961,6 +981,8 @@ export type Database = {
           pitch?: string | null
           segment_type?: string | null
           speaker?: string | null
+          speaker_asr_label?: string | null
+          speaker_asr_norm?: string | null
           speaker_color?: string | null
           speaker_norm?: string | null
           speaker_normalized?: string | null
@@ -986,6 +1008,8 @@ export type Database = {
           pitch?: string | null
           segment_type?: string | null
           speaker?: string | null
+          speaker_asr_label?: string | null
+          speaker_asr_norm?: string | null
           speaker_color?: string | null
           speaker_norm?: string | null
           speaker_normalized?: string | null
@@ -1365,7 +1389,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_transcript_segments_resolved: {
+        Row: {
+          character_color: string | null
+          character_id: string | null
+          character_name: string | null
+          character_type: string | null
+          color_seed: string | null
+          display_color: string | null
+          display_pool: string | null
+          display_speaker: string | null
+          end_time: number | null
+          id: string | null
+          idx: number | null
+          language: string | null
+          slot: number | null
+          speaker: string | null
+          speaker_asr_label: string | null
+          start_time: number | null
+          text: string | null
+          video_id: string | null
+          words: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_segments_clean_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_segments_clean_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_get_masked_subscription_data: {
@@ -1387,9 +1449,9 @@ export type Database = {
       }
       apply_specific_mapping: {
         Args: {
+          p_asr_label: string
           p_character_id: string
           p_language: string
-          p_speaker: string
           p_video_id: string
         }
         Returns: number
@@ -1418,6 +1480,10 @@ export type Database = {
       }
       cleanup_old_analytics_data: { Args: never; Returns: undefined }
       cleanup_subscription_audit_data: { Args: never; Returns: undefined }
+      color_slot: {
+        Args: { p_key: string; p_mod: number; p_seed: string }
+        Returns: number
+      }
       consolidate_video_speakers: {
         Args: { target_language?: string; target_video_id: string }
         Returns: Json
