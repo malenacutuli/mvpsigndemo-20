@@ -486,8 +486,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   return (
     <div className="relative w-full">
-      {/* READ-AHEAD LAYER: Show upcoming caption in white ONLY in 1.5s gap between captions */}
-      {upcoming && !foundActive && currentTime > 0.5 && (upcoming.startTime - currentTime) <= 1.5 && (
+      {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
+      {upcoming && !foundActive && (
         <div 
           className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
                      text-white/90 text-base font-light text-center pointer-events-none"
@@ -501,16 +501,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
       )}
 
-      {/* ACTIVE CAPTION: Colored word-by-word rendering - show when activeCaption exists */}
-      {activeCaption && (
-        <div 
-          className={`
-            relative flex items-end justify-center pointer-events-none w-full
-            ${foundActive ? 'animate-caption-enter' : 'opacity-0'}
-          `}
-          style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
-          key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
-        >
+      {/* ACTIVE CAPTION: Colored word-by-word rendering */}
+      <div 
+        className={`
+          relative flex items-end justify-center pointer-events-none w-full
+          ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
+        `}
+        style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
+        key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
+      >
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
@@ -546,9 +545,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           </div>
         )}
         
-        {/* Single caption display with proper color synchronization - MAX 2 LINES */}
+        {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-tight break-words px-1 line-clamp-2"
+          className="relative text-center leading-tight break-words px-1"
           style={{
             fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
             ...pitchStyle,
@@ -559,12 +558,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3', // Tighter line height for mobile
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
           }}
         >
           {/* Sound effects and music formatting */}
@@ -851,7 +845,6 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         </div>
       </div>
       </div>
-      )}
     </div>
   );
 };

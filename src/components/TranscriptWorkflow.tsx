@@ -24,7 +24,6 @@ interface TranscriptSegment {
   endTime: number;
   speaker: string;
   speakerColor: string;
-  characterId?: string | null;
   emphasis: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch: 'normal' | 'high' | 'low';
   words?: Array<{
@@ -173,17 +172,19 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         .order('start_time', { ascending: true });
       
       if (!dbError && dbData && dbData.length > 0) {
+        // Also load emphasis/pitch from base table since view doesn't have them
+        const { data: cleanData } = await supabase
+          .from('transcript_segments_clean')
+          .select('id, emphasis, pitch')
+          .eq('video_id', videoId)
+          .eq('language', detectedLanguage);
+        
+        const emphasisPitchMap = new Map<string, { emphasis: string | null; pitch: string | null }>(
+          (cleanData || []).map(seg => [seg.id, { emphasis: seg.emphasis, pitch: seg.pitch }])
+        );
+        
         loadedSegments = dbData.map(seg => {
-          // Transform words to match our interface
-          let words: Array<{ text: string; emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'; pitch?: 'high' | 'low' | 'normal' }> | undefined;
-          if (Array.isArray(seg.words)) {
-            words = seg.words.map((w: any) => ({
-              text: w.text || '',
-              emphasis: w.emphasis || undefined,
-              pitch: w.pitch || undefined
-            }));
-          }
-          
+          const extraData = emphasisPitchMap.get(seg.id || '') || { emphasis: null, pitch: null };
           return {
             id: seg.id || '',
             text: seg.text || '',
@@ -191,10 +192,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             endTime: Number(seg.end_time || 0),
             speaker: seg.display_speaker || 'Unassigned',
             speakerColor: seg.display_color || '#3B82F6',
-            characterId: seg.character_id || null,
-            words,
-            emphasis: 'normal' as const,
-            pitch: 'normal' as const
+            emphasis: (extraData.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
+            pitch: (extraData.pitch as 'normal' | 'high' | 'low') || 'normal',
           };
         });
         
@@ -452,17 +451,41 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         });
       } else {
         // Path A: Full save (initial save before freeze)
-        console.log('💾 Saving full transcript (text and timings only - no identity)');
+        console.log('💾 Saving full transcript');
         
-        // Never save identity fields - only save text, timings, emphasis, pitch, and words
-        const segmentsData = segments.map((segment, idx) => ({
+        // Harmonize speaker names before saving: if a color group has a non-generic name
+        // (e.g., "David") and other segments still have generic names (e.g., "Speaker 1"),
+        // propagate the non-generic name to the whole color group.
+        const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
+        const colorPreferred = new Map<string, string>();
+        segments.forEach(seg => {
+          if (!isGeneric(seg.speaker) && seg.speaker && seg.speakerColor) {
+            if (!colorPreferred.has(seg.speakerColor)) colorPreferred.set(seg.speakerColor, seg.speaker);
+          }
+        });
+        let changedCount = 0;
+        const normalized = segments.map(seg => {
+          const preferred = colorPreferred.get(seg.speakerColor);
+          if (preferred && isGeneric(seg.speaker)) {
+            changedCount++;
+            return { ...seg, speaker: preferred };
+          }
+          return seg;
+        });
+        if (changedCount > 0) {
+          console.log(`🔄 Auto-propagation before save: updated ${changedCount} segments by color groups`);
+          setSegments(normalized);
+        }
+        const toSave = changedCount > 0 ? normalized : segments;
+        
+        const segmentsData = toSave.map((segment, idx) => ({
           idx,
           startTime: segment.startTime,
           endTime: segment.endTime,
           text: segment.text,
-          emphasis: segment.emphasis || 'normal',
-          pitch: segment.pitch || 'normal',
-          words: segment.words || null
+          emphasis: segment.emphasis,
+          pitch: segment.pitch,
+          words: segment.words
         }));
 
         const { error } = await supabase.functions.invoke('transcribe', {

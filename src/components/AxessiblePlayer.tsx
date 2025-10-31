@@ -87,84 +87,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   }, [initialCaptions]);
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  
-  // Ref callback for immediate native track disabling (before browser renders them)
-  const handleVideoRef = (el: HTMLVideoElement | null) => {
-    videoRef.current = el;
-    if (!el) return;
-
-    // Disable all current tracks + purge cues (nuclear)
-    const list = el.textTracks;
-    if (list && list.length) {
-      for (let i = 0; i < list.length; i++) {
-        const t = list[i];
-        t.mode = 'disabled';
-        // remove any already parsed cues
-        // @ts-ignore
-        if (t.cues) {
-          // @ts-ignore
-          while (t.cues.length > 0) t.removeCue(t.cues[0]);
-        }
-      }
-    }
-
-    // If any track is added later, disable immediately
-    el.addEventListener('addtrack', (e: any) => {
-      if (e?.track) e.track.mode = 'disabled';
-    });
-  };
-
-  // Extra belt-and-suspenders: re-disable at key lifecycle events
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    const disableTracks = () => {
-      const tracks = v.textTracks;
-      for (let i = 0; i < tracks.length; i++) {
-        if (tracks[i].mode !== 'disabled') tracks[i].mode = 'disabled';
-        // Optional: also clear cues if a browser repopulates
-        // @ts-ignore
-        if (tracks[i].cues && tracks[i].cues.length) {
-          // @ts-ignore
-          while (tracks[i].cues.length > 0) tracks[i].removeCue(tracks[i].cues[0]);
-        }
-      }
-    };
-
-    v.addEventListener('loadedmetadata', disableTracks);
-    v.addEventListener('timeupdate', disableTracks);
-    v.addEventListener('ratechange', disableTracks);
-    v.addEventListener('volumechange', disableTracks);
-
-    return () => {
-      v.removeEventListener('loadedmetadata', disableTracks);
-      v.removeEventListener('timeupdate', disableTracks);
-      v.removeEventListener('ratechange', disableTracks);
-      v.removeEventListener('volumechange', disableTracks);
-    };
-  }, []);
-
-  // MutationObserver to remove dynamically added <track> elements
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !v.parentElement) return;
-
-    const obs = new MutationObserver(muts => {
-      muts.forEach(m => {
-        m.addedNodes.forEach(node => {
-          if (node.nodeName === 'TRACK') {
-            node.parentNode?.removeChild(node);
-          }
-        });
-      });
-    });
-
-    obs.observe(v, { childList: true });
-    return () => obs.disconnect();
-  }, []);
-
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -1025,15 +948,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       {/* Video Element */}
       <video
-        key={videoId}
-        ref={handleVideoRef}
-        crossOrigin="anonymous"
-        data-no-native-captions="true"
+        ref={videoRef}
         src={videoSrc}
         poster={posterSrc}
         className="w-full h-full object-cover"
         onClick={togglePlay}
         aria-label={`Video: ${title}`}
+        crossOrigin="anonymous"
         playsInline
         preload="auto"
         onError={(e) => {

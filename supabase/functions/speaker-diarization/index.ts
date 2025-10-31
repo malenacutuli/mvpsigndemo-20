@@ -272,12 +272,16 @@ serve(async (req) => {
           .lte('end_time', segment.endTime + 0.5);
 
         if (matchingSegments && matchingSegments.length > 0) {
-          // Update segments with ASR label only (view will resolve display values)
+          // Update all matching segments with speaker info
+          const speakerIndex = parseInt(segment.speaker.split(' ')[1]) - 1;
+          const speakerColor = speakerColors[speakerIndex % speakerColors.length];
+          
           for (const matchingSegment of matchingSegments) {
             await supabase
               .from('transcript_segments_clean')
               .update({
-                speaker_asr_label: segment.speaker // Only update ASR label
+                speaker: segment.speaker,
+                speaker_color: speakerColor
               })
               .eq('id', matchingSegment.id);
           }

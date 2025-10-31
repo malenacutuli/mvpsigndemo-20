@@ -31,7 +31,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false, speakersExpected = 4 } = JSON.parse(decodedBody);
+    const { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -129,8 +129,7 @@ serve(async (req) => {
           resolvedVideoUrl, 
           language, 
           maxDurationMinutes,
-          true,  // Use test key
-          speakersExpected
+          true  // Use test key
         );
         
         if (testResult && !testResult.error) {
@@ -223,7 +222,7 @@ serve(async (req) => {
       if (ASSEMBLYAI_API_KEY) {
         try {
           console.log("🟣 PRIORITY 1: Trying AssemblyAI (PRIMARY)...");
-          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false, speakersExpected);
+          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false);
           if (assemblyResult && !assemblyResult.error) {
             console.log("✅ AssemblyAI analysis successful!");
             transcriptionResult = {
@@ -624,7 +623,7 @@ function deduplicateSegments(segments: any[]): any[] {
 }
 
 // Fallback: Use AssemblyAI for URL-based long-form transcription
-async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false, speakersExpected = 4): Promise<any> {
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false): Promise<any> {
   console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes, useTestKey });
 
   const apiKey = useTestKey 
@@ -651,7 +650,6 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     punctuate: true,
     format_text: true,
     speaker_labels: true,
-    speakers_expected: speakersExpected,
     // enable_word_timestamps: true // (AssemblyAI words are included by default when available)
   };
   if (languageCode) {
@@ -732,31 +730,31 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       
       // Extract speaker from word-level data if not present at utterance level
       let speaker = u.speaker;
-      if (!speaker && Array.isArray(u.words) && u.words.length > 0) {
+      if (!speaker && u.words && u.words.length > 0) {
         // Use the most common speaker in this utterance's words
-        const counts = new Map<string, number>();
-        for (const w of u.words) {
-          if (w?.speaker) counts.set(w.speaker, (counts.get(w.speaker) || 0) + 1);
+        const speakerCounts = new Map<string, number>();
+        u.words.forEach((w: any) => {
+          if (w.speaker) {
+            speakerCounts.set(w.speaker, (speakerCounts.get(w.speaker) || 0) + 1);
+          }
+        });
+        if (speakerCounts.size > 0) {
+          speaker = Array.from(speakerCounts.entries())
+            .sort((a, b) => b[1] - a[1])[0][0];
         }
-        if (counts.size) speaker = [...counts.entries()].sort((a,b)=>b[1]-a[1])[0][0];
       }
-      
-      // Save the **human-friendly** label: "Speaker A" instead of "A"
-      const speakerAsrLabel = speaker ? `Speaker ${speaker}` : null;
-      
-      const wordItems = (u.words || []).map((w: any) => ({
-        start: (w.start || 0) / 1000,
-        end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
-        word: w.text ?? w.word,
-        confidence: w.confidence,
-      })).filter((w: any) => w.start <= maxDurationSeconds);
       
       segments.push({
         text: u.text,
         start: startTime,
-        end: Math.min(endTime, maxDurationSeconds),
-        words: wordItems,
-        speaker_asr_label: speakerAsrLabel
+        end: Math.min(endTime, maxDurationSeconds), // Cap end time to max duration
+        words: (u.words || []).map((w: any) => ({
+          start: (w.start || 0) / 1000,
+          end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
+          word: w.text ?? w.word,
+          confidence: w.confidence,
+        })).filter((w: any) => w.start <= maxDurationSeconds), // Filter words within limit
+        speaker: speaker || undefined,  // Now properly extracted from words if needed
       });
     }
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
@@ -1032,6 +1030,16 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
       
+      // Load existing speaker mappings first
+      const speakerMappingsMap = await loadSpeakerMappings(
+        videoId, 
+        transcriptionResult.language || 'en', 
+        supabase
+      );
+      
+      // Auto-create characters for detected speakers (old method)
+      const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
+      
       // Prepare segments for database with proper text sanitization AND word timings
       const segmentsToSave = transcriptionResult.segments.map((segment: any, index: number) => {
         // Sanitize text to handle special characters and remove invalid ones
@@ -1066,8 +1074,28 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           }
         }
         
-        // Extract ASR label (source of truth)
-        const speakerAsrLabel = segment.speaker_asr_label || segment.speaker || null;
+        // Check if there's a mapping for this speaker
+        const speakerLabel = segment.speaker || 'Unassigned';
+        const mapping = speakerMappingsMap.get(speakerLabel);
+        
+        let finalSpeaker: string;
+        let finalColor: string;
+        let finalCharacterId: string | null;
+        
+        if (mapping) {
+          // Use mapped character
+          finalSpeaker = mapping.characterName;
+          finalColor = mapping.characterColor;
+          finalCharacterId = mapping.characterId;
+          if (index < 3) {
+            console.log(`🎯 Segment mapped: "${speakerLabel}" → "${finalSpeaker}"`);
+          }
+        } else {
+          // Use auto-created character or fallback
+          finalSpeaker = speakerLabel;
+          finalColor = assignSpeakerColor(segment.speaker, transcriptionResult.segments);
+          finalCharacterId = speakerToCharIdMap.get(segment.speaker) || null;
+        }
         
         return {
           video_id: videoId,
@@ -1078,49 +1106,38 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           confidence: segment.confidence || null,
           language: transcriptionResult.language || 'en',
           segment_type: 'dialogue',
-          speaker_asr_label: speakerAsrLabel, // ✅ Only save ASR label (identity resolved by view)
+          speaker: finalSpeaker,
+          speaker_color: finalColor,
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
-          words: words // Save provider word timings as JSON
-          // ❌ DO NOT set: speaker, speaker_color, character_id
+          words: words, // Save provider word timings as JSON
+          character_id: finalCharacterId // Link to mapped or auto-created character
         };
       });
       
-      // Idempotent save: ignore duplicates on conflict
+      // Save in batches
       const BATCH_SIZE = 50;
-      let insertedCount = 0;
-      let duplicateCount = 0;
-      
       for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
         const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
         
-        const { error, count } = await supabase
+        const { error } = await supabase
           .from('transcript_segments_clean')
-          .upsert(batch, {
-            onConflict: 'video_id,language,start_time,end_time,text',
-            ignoreDuplicates: true // ✅ DO NOTHING on conflict
-          })
-          .select();
+          .insert(batch);
           
         if (error) {
           console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
         } else {
-          const actualInserted = count || 0;
-          insertedCount += actualInserted;
-          duplicateCount += batch.length - actualInserted;
-          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${actualInserted} new, ${batch.length - actualInserted} duplicates ignored`);
+          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
         }
       }
       
-      console.log(`✅ Database save complete: ${insertedCount} new segments, ${duplicateCount} duplicates ignored (legacy method)`);
+      console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
       
       // Replace segments with metadata to prevent frontend overwrites
       transcriptionResult.segments = undefined;
       transcriptionResult.segmentsProcessed = segmentsToSave.length;
       transcriptionResult.serverSaved = true;
-      transcriptionResult.insertedCount = insertedCount;
-      transcriptionResult.duplicateCount = duplicateCount;
     }
     
   } catch (error) {
