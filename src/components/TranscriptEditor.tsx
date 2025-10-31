@@ -230,7 +230,32 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   // Load saved transcript from DATABASE when video or language changes
   useEffect(() => {
     const loadTranscriptData = async () => {
-      console.log('📥 Loading transcript from DATABASE for', videoId, 'language:', selectedLanguage);
+      // PHASE 4: Resolve 'auto' to actual language before querying
+      let effectiveLanguage = selectedLanguage;
+      
+      if (selectedLanguage === 'auto') {
+        console.log('⚠️ "auto" language detected - finding actual segment language');
+        
+        // Find the actual language stored in segments
+        const { data: languageCheck } = await supabase
+          .from('transcript_segments_clean')
+          .select('language')
+          .eq('video_id', videoId)
+          .limit(1)
+          .single();
+        
+        if (languageCheck?.language) {
+          effectiveLanguage = languageCheck.language;
+          setSelectedLanguage(effectiveLanguage); // Update UI
+          console.log(`✅ Found actual language: ${effectiveLanguage}`);
+        } else {
+          effectiveLanguage = 'en'; // Fallback
+          setSelectedLanguage(effectiveLanguage);
+          console.log('⚠️ No segments found - defaulting to "en"');
+        }
+      }
+      
+      console.log('📥 Loading transcript from DATABASE for', videoId, 'language:', effectiveLanguage);
       
       // Warn if user has unsaved edits
       if (editingTranscript.length > 0 && originalTranscript.length > 0) {
@@ -246,7 +271,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       }
       
       // Always fetch from database for cross-device sync
-      const segments = await loadTranscriptSegments(selectedLanguage);
+      const segments = await loadTranscriptSegments(effectiveLanguage);
       if (segments.length > 0) {
         const convertedSegments = segments.map(seg => ({
           ...seg,
@@ -254,10 +279,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         }));
         setEditingTranscript(convertedSegments);
         setOriginalTranscript(convertedSegments);
-        onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+        onTranscriptUpdate?.(convertedSegments, effectiveLanguage);
         console.log('✅ Loaded', segments.length, 'segments from database');
       } else {
-        console.log('ℹ️ No segments found in database for language:', selectedLanguage);
+        console.log('ℹ️ No segments found in database for language:', effectiveLanguage);
       }
     };
     loadTranscriptData();

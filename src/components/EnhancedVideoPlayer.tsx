@@ -58,7 +58,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
-  const [currentLanguage, setCurrentLanguage] = useState(language || 'en');
+  const [currentLanguage, setCurrentLanguage] = useState(
+    language === 'auto' ? 'en' : (language || 'en')
+  );
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
   const [translatedCaptions, setTranslatedCaptions] = useState<CaptionSegment[] | null>(null);

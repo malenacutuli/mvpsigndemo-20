@@ -401,6 +401,30 @@ export type Database = {
           },
         ]
       }
+      migration_log: {
+        Row: {
+          affected_rows: number | null
+          executed_at: string | null
+          id: string
+          migration_name: string
+          notes: string | null
+        }
+        Insert: {
+          affected_rows?: number | null
+          executed_at?: string | null
+          id?: string
+          migration_name: string
+          notes?: string | null
+        }
+        Update: {
+          affected_rows?: number | null
+          executed_at?: string | null
+          id?: string
+          migration_name?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -876,7 +900,9 @@ export type Database = {
           end_time: number
           id: string
           idx: number | null
+          is_music: boolean | null
           is_off_camera: boolean | null
+          is_sound_effect: boolean | null
           language: string
           pitch: string | null
           segment_type: string | null
@@ -887,6 +913,7 @@ export type Database = {
           text: string
           transcript_id: string | null
           video_id: string
+          vocal_intensity: string | null
           words: Json | null
         }
         Insert: {
@@ -897,7 +924,9 @@ export type Database = {
           end_time: number
           id?: string
           idx?: number | null
+          is_music?: boolean | null
           is_off_camera?: boolean | null
+          is_sound_effect?: boolean | null
           language?: string
           pitch?: string | null
           segment_type?: string | null
@@ -908,6 +937,7 @@ export type Database = {
           text: string
           transcript_id?: string | null
           video_id: string
+          vocal_intensity?: string | null
           words?: Json | null
         }
         Update: {
@@ -918,7 +948,9 @@ export type Database = {
           end_time?: number
           id?: string
           idx?: number | null
+          is_music?: boolean | null
           is_off_camera?: boolean | null
+          is_sound_effect?: boolean | null
           language?: string
           pitch?: string | null
           segment_type?: string | null
@@ -929,6 +961,7 @@ export type Database = {
           text?: string
           transcript_id?: string | null
           video_id?: string
+          vocal_intensity?: string | null
           words?: Json | null
         }
         Relationships: [

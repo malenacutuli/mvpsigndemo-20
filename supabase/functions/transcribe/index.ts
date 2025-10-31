@@ -83,6 +83,24 @@ serve(async (req) => {
     const contentType = headResponse.headers.get('content-type') || '';
     console.log(`Video size: ${sizeMB}MB, content-type: ${contentType}`);
 
+    // PHASE 3: Language validation - prevent 'auto' from reaching database
+    if (language === 'auto') {
+      console.warn('⚠️ Received "auto" language - defaulting to "en"');
+      language = 'en';
+    }
+
+    // Whitelist of supported languages
+    const SUPPORTED_LANGUAGES = [
+      'en', 'es', 'fr', 'de', 'it', 'pt', 'ca', 'zh', 'ja', 'ko', 
+      'ar', 'ru', 'hi', 'nl', 'pl', 'sv', 'no', 'da', 'fi', 'cs',
+      'hu', 'ro', 'uk', 'bg', 'hr', 'sk', 'sl', 'et', 'lv', 'lt', 'tr'
+    ];
+
+    if (!SUPPORTED_LANGUAGES.includes(language)) {
+      console.warn(`⚠️ Unsupported language "${language}" - defaulting to "en"`);
+      language = 'en';
+    }
+
     // MEMORY OPTIMIZATION: Only download video if we need it for local processing
     let videoBuffer: ArrayBuffer | null = null;
 

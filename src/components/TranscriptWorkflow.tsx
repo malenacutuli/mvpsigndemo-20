@@ -61,7 +61,9 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   const [wordEditingId, setWordEditingId] = useState<string | null>(null);
   const [characters, setCharacters] = useState<any[]>([]);
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
-  const [detectedLanguage, setDetectedLanguage] = useState<string>(videoLanguage || 'en');
+  const [detectedLanguage, setDetectedLanguage] = useState<string>(
+    videoLanguage === 'auto' ? 'en' : (videoLanguage || 'en')
+  );
   const [extractionMethod, setExtractionMethod] = useState<'whisper' | 'twelvelabs' | 'upload'>('whisper');
   const [showUploader, setShowUploader] = useState(false);
   const [hasTranscript, setHasTranscript] = useState(false);
@@ -242,7 +244,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           body: { 
             videoUrl,
             videoId,
-            language: detectedLanguage === 'auto' ? undefined : detectedLanguage
+            language: detectedLanguage === 'auto' ? 'en' : detectedLanguage
           }
         });
         
@@ -296,7 +298,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             rangeBytes: 200000000,
             fullTranscript: true,
             forceReExtract: true,
-            language: detectedLanguage === 'auto' ? undefined : detectedLanguage,
+            language: detectedLanguage === 'auto' ? 'en' : detectedLanguage,
             maxDurationMinutes: 60, // Index up to 60 minutes by default
             useTestingMode, // Add testing mode flag
             skipQualityCheck: true // Bypass validation to unblock immediately
