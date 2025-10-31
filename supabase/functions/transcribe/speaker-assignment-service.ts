@@ -35,7 +35,7 @@ interface ProcessedSegment {
   character_id: string | null;
   language: string;
   confidence: number;
-  speaker_original_label?: string;
+  speaker_asr_label?: string;
   words?: any[];
 }
 
@@ -318,7 +318,7 @@ export class SpeakerAssignmentService {
         character_id: characterId,
         language: language, // Use detected language, NOT 'auto'
         confidence: utterance.confidence || 0,
-        speaker_original_label: originalLabel,
+        speaker_asr_label: originalLabel,
         words: words.length > 0 ? words : undefined
       });
     }

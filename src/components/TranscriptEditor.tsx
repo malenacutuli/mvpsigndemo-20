@@ -67,6 +67,18 @@ const getNextCISpeakerColor = (index: number): string => {
   return PRIORITY_COLORS[index % PRIORITY_COLORS.length];
 };
 
+// ✅ FIX: Normalize speaker color based on speaker name (not DB color)
+const getNormalizedSpeakerColor = (speakerName: string | undefined): string => {
+  if (!speakerName) return '#9CA3AF'; // Gray for undefined
+  
+  // Generate deterministic color from speaker name
+  const hash = speakerName.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+  
+  return PRIORITY_COLORS[Math.abs(hash) % PRIORITY_COLORS.length];
+};
+
 interface TranscriptSegment {
   id: string;
   text: string;
@@ -1285,18 +1297,26 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <span className="text-xs text-muted-foreground font-mono">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
-                      {segment.speaker && (
+                       {segment.speaker && (
                         <div className="flex items-center gap-1">
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs px-2 py-0"
-                            style={{ borderColor: segment.speakerColor, color: segment.speakerColor }}
-                          >
-                            {!segment.characterId && !segment.character_id && segment.speakerAsrLabel 
+                          {(() => {
+                            // ✅ FIX: Compute displayed speaker and normalized color
+                            const displayedSpeaker = !segment.characterId && !segment.character_id && segment.speakerAsrLabel 
                               ? `Speaker ${segment.speakerAsrLabel}`
-                              : segment.speaker
-                            }
-                          </Badge>
+                              : segment.speaker;
+                            const normalizedColor = getNormalizedSpeakerColor(displayedSpeaker);
+                            
+                            return (
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs px-2 py-0"
+                                style={{ borderColor: normalizedColor, color: normalizedColor }}
+                              >
+                                {displayedSpeaker}
+                              </Badge>
+                            );
+                          })()}
+
                           {segment.speakerAsrLabel && (segment.characterId || segment.character_id) && (
                             <Badge variant="secondary" className="text-[10px] px-1 py-0">
                               ✏️

@@ -368,13 +368,18 @@ const VideoDetail = () => {
       }
 
       if (data && data.length > 0) {
-        const captionSegments = data.map((seg, index) => ({
-          text: seg.text,
-          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          startTime: Number(seg.start_time),
-          endTime: Number(seg.end_time),
-          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
-          words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
+        const captionSegments = data.map((seg, index) => {
+          // ✅ FIX: Compute displayed speaker name first
+          const displayedSpeaker = seg.speaker || `Speaker ${(index % 3) + 1}`;
+          
+          return {
+            text: seg.text,
+            speaker: displayedSpeaker,
+            startTime: Number(seg.start_time),
+            endTime: Number(seg.end_time),
+            // ✅ FIX: Always compute color from displayed speaker name (not DB color)
+            speakerColor: getSpeakerColor(displayedSpeaker),
+            words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
             ? seg.words
             : seg.text.split(' ').map((word: string, i: number) => ({
                 text: word,
@@ -383,11 +388,12 @@ const VideoDetail = () => {
                 emphasis: 'normal' as const,
                 pitch: 'normal' as const,
               })),
-          volume: 50,
-          pitch: 160,
-          type: 'dialogue' as const,
-          isOffCamera: seg.is_off_camera || false,
-        }));
+            volume: 50,
+            pitch: 160,
+            type: 'dialogue' as const,
+            isOffCamera: seg.is_off_camera || false,
+          };
+        });
         
         setCaptions(captionSegments);
         
