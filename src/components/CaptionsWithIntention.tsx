@@ -510,11 +510,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
-          relative inline-block w-full max-w-[92vw] text-center
+          relative inline-block w-[95vw] text-center
           ${isLoudBurst ? '' : 'bg-black/90'} 
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
-          ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
+          ${isLoudBurst ? '' : 'px-3 py-1.5 sm:px-6 sm:py-3'}
+          ${isLoudBurst ? '' : 'mx-1 sm:mx-2'}
           ${isLoudBurst ? 'animate-emphasis-bounce' : 'animate-box-resize'}
         `}
         style={{
@@ -544,7 +544,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         
         {/* Single caption display with proper color synchronization */}
         <div
-          className="relative text-center leading-tight break-words px-1"
+          className="relative text-center leading-tight break-words"
           style={{
             fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
             ...pitchStyle,
@@ -553,6 +553,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
             hyphens: 'auto',
+            wordSpacing: 'normal',
+            whiteSpace: 'normal',
             maxWidth: '100%',
             contain: 'layout paint',
             lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
