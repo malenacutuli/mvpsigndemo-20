@@ -1420,7 +1420,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         <Textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="min-h-[60px]"
+                          className="w-full h-[60px] max-h-[60px] overflow-y-auto resize-none leading-relaxed"
+                          rows={2}
                           autoFocus
                         />
                       )}
