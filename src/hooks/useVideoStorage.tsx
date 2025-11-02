@@ -97,16 +97,34 @@ export const useVideoStorage = (videoId: string) => {
         // ✅ DO NOT include speaker/character_id - use updateSegmentIdentity() for that
       }));
 
+      // --- Deduplicate rows to avoid conflict on identical timing/text ---
+      const seen = new Map();
+      const deduped = [];
+
+      for (const r of rows) {
+        const key = `${r.video_id}|${r.language}|${r.start_time}|${r.end_time}|${r.text}`;
+        const existing = seen.get(key);
+        if (!existing || (r.words && !existing.words)) {
+          seen.set(key, r);
+        }
+      }
+      deduped.push(...seen.values());
+
+      console.log(`🔄 Deduplication: ${rows.length} → ${deduped.length} segments`);
+
       // Use upsert to avoid deleting server-authored data
       // Align with database's actual unique constraint: (video_id, language, start_time, end_time, text)
       const { error } = await supabase
         .from('transcript_segments_clean')
-        .upsert(rows, {
+        .upsert(deduped, {
           onConflict: 'video_id,language,start_time,end_time,text',
           ignoreDuplicates: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Save failed:', error);
+        throw error;
+      }
 
       console.log('✅ Transcript saved to database:', segments.length, 'segments');
       
