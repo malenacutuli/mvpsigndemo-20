@@ -878,28 +878,26 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       // Save text/timing changes to database (creates segment if new)
       await saveTranscriptData(sortedSegments, selectedLanguage);
       
-      // 2️⃣ THEN: Update identity via RPC (now segment exists in DB)
-      if (editSpeaker && editSpeaker !== currentSegment.speaker) {
-        // Compute stable idx for RPC fallback (for new segments with temp IDs)
-        const idxForRPC = (currentSegment as any).idx ?? sortedSegments.findIndex(s => s.id === segmentId);
-        
-        await updateSegmentIdentity({
-          segmentId: isUUID(segmentId) ? segmentId : undefined,
-          videoId,
-          language: selectedLanguage,
-          idx: !isUUID(segmentId) ? idxForRPC : undefined,
-          characterId: selectedChar?.id,
-          characterName: selectedChar ? undefined : editSpeaker,
-        });
-        
-        // Refresh characters if we created a new one
-        if (!selectedChar) {
-          const updatedChars = await loadCharacters();
-          setAvailableCharacters(updatedChars);
-        }
+      // 2️⃣ THEN: Update identity via RPC (always run to ensure character link persists)
+      // Compute stable idx for RPC fallback (for new segments with temp IDs)
+      const idxForRPC = (currentSegment as any).idx ?? sortedSegments.findIndex(s => s.id === segmentId);
+      
+      await updateSegmentIdentity({
+        segmentId: isUUID(segmentId) ? segmentId : undefined,
+        videoId,
+        language: selectedLanguage,
+        idx: !isUUID(segmentId) ? idxForRPC : undefined,
+        characterId: selectedChar?.id,
+        characterName: selectedChar?.id ? undefined : editSpeaker, // allow create if needed
+      });
+      
+      // Refresh characters if we created a new one
+      if (!selectedChar && editSpeaker) {
+        const updatedChars = await loadCharacters();
+        setAvailableCharacters(updatedChars);
       }
       
-      // 3️⃣ Reload from database to get updated identity from view
+      // 3️⃣ Reload from database (now bypasses broken view) to get updated identity
       const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
       if (reloadedSegments.length > 0) {
         const convertedSegments = reloadedSegments.map(s => ({
@@ -908,6 +906,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         }));
         setEditingTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, selectedLanguage);
+        
+        // 4️⃣ Dispatch event to notify video player of changes
+        window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
+          detail: { 
+            videoId, 
+            language: selectedLanguage, 
+            timestamp: Date.now() 
+          }
+        }));
       } else {
         setEditingTranscript(sortedSegments);
         onTranscriptUpdate?.(sortedSegments, selectedLanguage);
