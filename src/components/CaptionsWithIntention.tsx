@@ -237,21 +237,35 @@ const getPitchBasedStyle = (pitch?: number | 'high' | 'low' | 'normal'): React.C
   };
 };
 
-// Accept any words that have text; synthesize timings if missing
+// Accept any words that have text; synthesize timings if missing while preserving emphasis/pitch
 function normalizeWords(
   words: WordSegment[] | undefined,
   segStart: number,
   segEnd: number
 ): WordSegment[] | undefined {
   if (!words || !words.length) return undefined;
+  
+  // Check if words need timing backfill
+  const hasAnyTiming = words.some(w => 
+    typeof w.startTime === 'number' && typeof w.endTime === 'number'
+  );
+  
+  // If all words already have timing, return as-is (preserves manual edits)
+  if (hasAnyTiming && words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number')) {
+    return words;
+  }
+  
+  // Backfill missing timings while preserving emphasis and pitch
   const duration = Math.max(0.01, segEnd - segStart);
-  const needsTiming = !words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number');
-  if (!needsTiming) return words;
   const step = duration / words.length;
+  
   return words.map((w, i) => ({
     ...w,
     startTime: typeof w.startTime === 'number' ? w.startTime : segStart + i * step,
-    endTime: typeof w.endTime === 'number' ? w.endTime : segStart + (i + 1) * step
+    endTime: typeof w.endTime === 'number' ? w.endTime : segStart + (i + 1) * step,
+    // ✅ CRITICAL: Preserve manual emphasis/pitch edits
+    emphasis: w.emphasis || 'normal',
+    pitch: w.pitch || 'normal'
   }));
 }
 
@@ -435,9 +449,29 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   
   // Synthesize word-level timing if missing with IMPROVED accuracy
   let workingCaption = { ...activeCaption, text: captionText };
+  
+  // ✅ CRITICAL: Check if words exist (even without perfect timings) before synthesizing from scratch
+  const hasExistingWords = workingCaption.words && workingCaption.words.length > 0;
+  
   if (!hasProviderWordTimings(workingCaption.words)) {
-    synthesizedWords = true;
-    console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
+    // If we have manually edited words (with emphasis/pitch), just backfill timings
+    if (hasExistingWords) {
+      console.log('🎤 CAPTIONS: Preserving manual word edits and backfilling timings');
+      const duration = workingCaption.endTime - workingCaption.startTime;
+      const step = duration / workingCaption.words!.length;
+      
+      workingCaption.words = workingCaption.words!.map((w, i) => ({
+        ...w,
+        startTime: typeof w.startTime === 'number' ? w.startTime : workingCaption.startTime + i * step,
+        endTime: typeof w.endTime === 'number' ? w.endTime : workingCaption.startTime + (i + 1) * step,
+        // ✅ Preserve manual emphasis/pitch
+        emphasis: w.emphasis || 'normal',
+        pitch: w.pitch || 'normal'
+      }));
+    } else {
+      // No words at all - synthesize from text
+      synthesizedWords = true;
+      console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
     const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
     
@@ -495,6 +529,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
     
     console.log('⚠️ CWI: Synthesized', words.length, 'words with adaptive timing (', baseWPM.toFixed(0), 'WPM) - no provider timings found');
+    }  // Close else block for synthesizing new words
   } else {
     // Provider timings detected - use them directly and only inject syllables
     console.log(`✅ CWI: Using PROVIDER timings for ${workingCaption.words!.length} words with confidence scores`);
