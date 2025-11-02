@@ -288,88 +288,64 @@ const VideoDetail = () => {
     try {
       const lang = video?.language || 'en';
 
-      // STEP 1: Try to fetch segments with provider word timings first (priority)
-      const { data: providerSegs, error: providerErr } = await supabase
+      // ✅ STEP 1: Find latest transcript for this video+language
+      const { data: latestTranscript } = await supabase
+        .from('transcripts')
+        .select('id')
+        .eq('video_id', id)
+        .eq('language', lang)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      // ✅ STEP 2: Load segments from ONE canonical source only
+      const segQuery = supabase
         .from('transcript_segments_clean')
         .select('*')
         .eq('video_id', id)
         .eq('language', lang)
-        .not('words', 'is', null)
         .order('start_time', { ascending: true });
-      
-      // Check if provider segments actually have startTime in words
-      const hasProviderTimings = providerSegs && providerSegs.length > 0 && 
-        providerSegs.every((seg: any) => {
-          const words = seg.words;
-          return Array.isArray(words) && words.length > 0 && 
-                 words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
-        });
       
       let data: any[] | null = null;
       
-      if (hasProviderTimings) {
-        data = providerSegs;
-        console.log('✅ VIDEO DETAIL: Using segments with provider word timings:', data.length, 'segments');
+      if (latestTranscript?.id) {
+        // Use ONLY the latest transcript's segments
+        const { data: segs, error: segErr } = await segQuery.eq('transcript_id', latestTranscript.id);
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🎯 VIDEO DETAIL: Using latest transcript segments (transcript_id:', latestTranscript.id, ') - Count:', data.length);
       } else {
-        // STEP 2: Fallback to edited transcript segments
-        const { data: transcripts, error: txError } = await supabase
-          .from('transcripts')
-          .select('id, updated_at')
-          .eq('video_id', id)
-          .eq('language', lang)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-
-        if (txError) throw txError;
-
-        if (transcripts && transcripts.length > 0) {
-          // Use ONLY the edited transcript's segments
-          const transcriptId = transcripts[0].id;
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('transcript_id', transcriptId)
-            .order('idx', { ascending: true })
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🎯 VIDEO DETAIL: Using edited transcript segments by transcript_id:', transcriptId, 'count:', data.length);
-          
-          // If edited transcript has no segments, fall back to base video-level
-          if (!data || data.length === 0) {
-            console.log('⚠️ Edited transcript has no segments, falling back to base video-level');
-            const { data: baseSegs, error: baseErr } = await supabase
-              .from('transcript_segments_clean')
-              .select('*')
-              .eq('video_id', id)
-              .eq('language', lang)
-              .is('transcript_id', null)
-              .order('start_time', { ascending: true });
-            
-            if (baseErr) throw baseErr;
-            data = baseSegs || [];
-            console.log('🗄️ VIDEO DETAIL: Fallback to base video-level segments. Count:', data.length);
-          }
-        } else {
-          // Fallback: base video-level segments only (exclude other transcripts)
-          const { data: segs, error: segErr } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('video_id', id)
-            .eq('language', lang)
-            .is('transcript_id', null)
-            .order('start_time', { ascending: true });
-
-          if (segErr) throw segErr;
-          data = segs || [];
-          console.log('🗄️ VIDEO DETAIL: Using base video-level transcript segments. Count:', data.length);
+        // Use ONLY base video-level segments (no transcript_id)
+        const { data: segs, error: segErr } = await segQuery.is('transcript_id', null);
+        if (segErr) throw segErr;
+        data = segs || [];
+        console.log('🗄️ VIDEO DETAIL: Using base video-level segments (transcript_id IS NULL) - Count:', data.length);
+      }
+      
+      // ✅ STEP 3: Client-side deduplication by timing+text (safety net)
+      const dedupMap = new Map<string, any>();
+      for (const seg of data || []) {
+        const key = `${seg.start_time}|${seg.end_time}|${seg.text}`;
+        const existing = dedupMap.get(key);
+        
+        // Priority: character_id > has words > first occurrence
+        if (!existing || 
+            (seg.character_id && !existing.character_id) ||
+            (seg.words && !existing.words) ||
+            (!existing.character_id && !existing.words && seg.speaker !== 'Speaker')) {
+          dedupMap.set(key, seg);
         }
       }
+      
+      const cleanedData = Array.from(dedupMap.values()).sort((a, b) => a.start_time - b.start_time);
+      
+      if (data && data.length !== cleanedData.length) {
+        console.log(`🧹 DEDUPE: Removed ${data.length - cleanedData.length} duplicate segments (${data.length} → ${cleanedData.length})`);
+      }
 
-      if (data && data.length > 0) {
-        const captionSegments = data.map((seg, index) => {
-          // Trust what the DB view already decided (character name or "Speaker A/B/C")
+      if (cleanedData && cleanedData.length > 0) {
+        const captionSegments = cleanedData.map((seg, index) => {
+          // Priority: character name > speaker > speaker_asr_label > fallback
           const displayedSpeaker = seg.speaker || seg.speaker_asr_label || 'Unknown';
           
           return {
@@ -377,7 +353,7 @@ const VideoDetail = () => {
             speaker: displayedSpeaker,
             startTime: Number(seg.start_time),
             endTime: Number(seg.end_time),
-            // ✅ FIX: Prefer DB color when present, otherwise compute from speaker name
+            // ✅ Prefer DB color when present
             speakerColor: seg.speaker_color || getSpeakerColor(displayedSpeaker),
             words: (seg.words && Array.isArray(seg.words) && seg.words.length > 0)
             ? seg.words
@@ -398,7 +374,7 @@ const VideoDetail = () => {
         setCaptions(captionSegments);
         
         // Build character colors map
-        const colors = data.reduce((acc: { [key: string]: string }, seg: any) => {
+        const colors = cleanedData.reduce((acc: { [key: string]: string }, seg: any) => {
           if (seg.speaker && seg.speaker_color) {
             acc[seg.speaker] = seg.speaker_color;
           }

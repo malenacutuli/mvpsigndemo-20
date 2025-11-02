@@ -148,63 +148,80 @@ export const useVideoStorage = (videoId: string) => {
     try {
       // For authenticated users, always prioritize database
       if (user) {
-        // Conditional query: bypass broken view and load from base table with character join
-        const useView = import.meta.env.VITE_TRANSCRIPT_LOAD_BYPASS_VIEW !== 'true';
-        const table = useView ? 'v_transcript_segments_resolved' : 'transcript_segments_clean';
-        const select = useView
-          ? 'id, idx, start_time, end_time, text, display_speaker, display_color, character_id, speaker_asr_label'
-          : `
-            id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, character_id,
-            characters(id, name, color)
-          `;
-
-        console.log(`🔍 Loading transcript segments from ${table} (bypass_view: ${!useView})`);
+        // ✅ STEP 1: Find latest transcript for this video+language
+        const { data: latestTranscript } = await supabase
+          .from('transcripts')
+          .select('id')
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
         
-        const { data: rows, error } = await supabase
-          .from(table as any)
-          .select(select)
+        // ✅ STEP 2: Load segments from ONE canonical source only
+        const segQuery = supabase
+          .from('transcript_segments_clean')
+          .select('id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, character_id, characters(id, name, color)')
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
-
-        if (error) throw error;
+        
+        let rows: any[] | null = null;
+        
+        if (latestTranscript?.id) {
+          // Use ONLY the latest transcript's segments
+          const { data: segs, error } = await segQuery.eq('transcript_id', latestTranscript.id);
+          if (error) throw error;
+          rows = segs || [];
+          console.log(`🎯 STORAGE: Using latest transcript segments (transcript_id: ${latestTranscript.id}) - Count: ${rows.length}`);
+        } else {
+          // Use ONLY base video-level segments (no transcript_id)
+          const { data: segs, error } = await segQuery.is('transcript_id', null);
+          if (error) throw error;
+          rows = segs || [];
+          console.log(`🗄️ STORAGE: Using base video-level segments (transcript_id IS NULL) - Count: ${rows.length}`);
+        }
 
         if (rows && rows.length > 0) {
-          // Fetch word timings separately ONLY if using view (base table already includes words)
-          let wordsMap = new Map<string, any>();
+          // ✅ STEP 3: Client-side deduplication by timing+text (safety net)
+          const dedupMap = new Map<string, any>();
+          for (const row of rows) {
+            const key = `${row.start_time}|${row.end_time}|${row.text}`;
+            const existing = dedupMap.get(key);
+            
+            // Priority: character_id > has words > first occurrence
+            if (!existing || 
+                (row.character_id && !existing.character_id) ||
+                (row.words && !existing.words) ||
+                (!existing.character_id && !existing.words && row.speaker !== 'Speaker')) {
+              dedupMap.set(key, row);
+            }
+          }
           
-          if (useView) {
-            const ids = rows.map((r: any) => r.id);
-            const { data: wordsRows } = await supabase
-              .from('transcript_segments_clean')
-              .select('id, words')
-              .in('id', ids);
-            wordsMap = new Map((wordsRows ?? []).map((r: any) => [r.id, r.words ?? []]));
+          const cleanedRows = Array.from(dedupMap.values()).sort((a, b) => 
+            (a.idx || 0) - (b.idx || 0) || a.start_time - b.start_time
+          );
+          
+          if (rows.length !== cleanedRows.length) {
+            console.log(`🧹 STORAGE DEDUPE: Removed ${rows.length - cleanedRows.length} duplicates (${rows.length} → ${cleanedRows.length})`);
           }
 
-          // Map results with conditional logic based on source
-          const segments: TranscriptSegment[] = (rows ?? []).map((r: any) => ({
+          // Map results with character data
+          const segments: TranscriptSegment[] = cleanedRows.map((r: any) => ({
             id: r.id,
             idx: r.idx,
             text: r.text,
             startTime: r.start_time,
             endTime: r.end_time,
-            speaker: useView 
-              ? (r.display_speaker ?? 'Unassigned')
-              : (r.characters?.name ?? r.speaker ?? 'Unassigned'),
-            speakerColor: useView
-              ? (r.display_color ?? '#9CA3AF')
-              : (r.characters?.color ?? '#9CA3AF'),
+            speaker: r.characters?.name ?? r.speaker ?? 'Unassigned',
+            speakerColor: r.characters?.color ?? '#9CA3AF',
             speakerAsrLabel: r.speaker_asr_label ?? null,
             characterId: r.character_id ?? null,
             character_id: r.character_id ?? null,
-            words: useView 
-              ? (wordsMap.has(r.id) ? parseWordsData(wordsMap.get(r.id)) : undefined)
-              : (r.words ? parseWordsData(r.words) : undefined)
+            words: r.words ? parseWordsData(r.words) : undefined
           }));
 
-          console.log(`✅ Loaded ${segments.length} segments from ${table}`);
-          console.log('🔍 First segment:', segments[0]);
+          console.log(`✅ STORAGE: Loaded ${segments.length} segments (deduplicated)`);
           localStorage.removeItem(`transcript_${videoId}_${language}`);
           return segments;
         }
