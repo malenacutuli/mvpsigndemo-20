@@ -286,7 +286,7 @@ function computeFontForSegment(seg: any, screenH: number, volume: number): FontO
   const scale = wc > 20 ? 0.8 : wc > 15 ? 0.9 : 1;
   
   return {
-    fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+    fontFamily: 'Roboto Flex, system-ui, sans-serif',
     fontSizePx: Math.max(14, Math.round(basePx * scale * 0.81)),
     fontWeight: 600,
     letterSpacingPx: 0
@@ -633,6 +633,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight px-1"
           style={{
+            fontFamily: 'Roboto Flex, system-ui, sans-serif',
             fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
             ...pitchStyle,
             ...intensityStyles,
