@@ -322,14 +322,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const TIMING_TOLERANCE = hasProviderTimings ? 0.03 : 0.06; // 30ms vs 60ms
   const READAHEAD_BUFFER = 0.025; // Start highlighting 25ms early for better perceived sync
   
-  // Truncate text for mobile portrait to prevent excessive screen coverage
-  const isMobilePortrait = window.innerWidth < 640 && window.innerHeight > window.innerWidth;
-  let captionText = activeCaption.text;
-  if (isMobilePortrait && captionText.length > 50) {
-    // Find a good break point (space or punctuation) within the limit
-    const truncateAt = captionText.lastIndexOf(' ', 50) || captionText.lastIndexOf(',', 50) || 50;
-    captionText = captionText.substring(0, truncateAt) + '...';
-  }
+  // Use full caption text (auto-segmentation handled in AxessiblePlayer)
+  const captionText = activeCaption.text;
   
   // Track if we synthesized data (for persistence flag)
   let synthesizedWords = false;

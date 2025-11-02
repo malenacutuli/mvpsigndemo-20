@@ -808,6 +808,63 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   };
 
+  // Auto-segment long captions into 2-line chunks using word timings (behind flag)
+  const autoSegment = (captions: CaptionSegment[]): CaptionSegment[] => {
+    if (import.meta.env.VITE_CAPTIONS_AUTO_SEGMENT !== 'true') return captions;
+    
+    const MAX_LINES = 2;
+    const AVG_CHARS_PER_LINE = 52; // heuristic; adjust if needed
+    const MAX_CHARS = MAX_LINES * AVG_CHARS_PER_LINE;
+
+    const result: CaptionSegment[] = [];
+    
+    for (const seg of captions) {
+      const words = seg.words ?? [];
+      
+      // If no words or text fits in limit, keep as-is
+      if (!words.length || seg.text.length <= MAX_CHARS) {
+        result.push(seg);
+        continue;
+      }
+
+      let chunkWords: typeof words = [];
+      let chunkStart = seg.startTime;
+
+      const pushChunk = (endIdxExclusive: number, endTime: number) => {
+        const text = chunkWords.map(w => w.text).join(' ');
+        result.push({ 
+          ...seg, 
+          text, 
+          words: [...chunkWords], 
+          startTime: chunkStart, 
+          endTime 
+        });
+        chunkWords = [];
+        chunkStart = endTime;
+      };
+
+      for (let i = 0; i < words.length; i++) {
+        const next = words[i];
+        const proposed = [...chunkWords, next].map(w => w.text).join(' ');
+        
+        // If proposed text exceeds limit and we have words, push current chunk
+        if (proposed.length > MAX_CHARS && chunkWords.length) {
+          const lastWordEnd = chunkWords[chunkWords.length - 1].endTime ?? next.startTime;
+          pushChunk(i, lastWordEnd);
+        }
+        
+        chunkWords.push(next);
+      }
+      
+      // Push remaining words as final chunk
+      if (chunkWords.length) {
+        pushChunk(words.length, seg.endTime);
+      }
+    }
+    
+    return result;
+  };
+
   // Compute final captions with all mappings applied
   const finalCaptions = useMemo(() => {
     let captions = [] as any[];
@@ -929,7 +986,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       source: 'database-priority'
     } : 'No captions');
     
-    return captions;
+    // Apply auto-segmentation for 2-line chunks (behind flag)
+    const segmented = autoSegment(captions);
+    console.log('📐 Auto-segment result:', segmented.length, 'segments (from', captions.length, 'original)');
+    
+    return segmented;
   }, [initialCaptions, translatedContent, generatedCaptions, videoId]);
 
   return (
