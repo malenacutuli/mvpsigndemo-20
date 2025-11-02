@@ -304,7 +304,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Paginate captions to 2-line visual pages using pixel-accurate measurement
   const processed = React.useMemo(() => {
-    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 0.95, 768)); // ~2xl max-width
+    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 1.14, 922)); // ~2xl max-width increased by 20%
     const volume = 50; // default volume for font computation
     
     return captions.flatMap((seg: any) => {
