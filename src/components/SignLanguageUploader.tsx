@@ -42,7 +42,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
           .from('sign_language_clips')
           .select('clip_url')
           .eq('transcript_segment_id', segmentId)
-          .single();
+          .maybeSingle();
 
         if (data && !error) {
           setClipUrl(data.clip_url);
