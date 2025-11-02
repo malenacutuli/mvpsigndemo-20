@@ -81,6 +81,8 @@ const getNormalizedSpeakerColor = (speakerName: string | undefined): string => {
 
 interface TranscriptSegment {
   id: string;
+  transcriptId?: string | null; // ✅ Link to transcripts table
+  idx?: number; // ✅ Segment index
   text: string;
   startTime: number;
   endTime: number;
@@ -325,25 +327,30 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
     const storageSegments: StorageTranscriptSegment[] = segments.map((segment, index) => {
-      // ✅ FIX #1: Properly extract character_id from segment
-      const charId = (segment as any).character_id || (segment as any).characterId || null;
+      // ✅ Extract all identity fields from segment
+      const charId = segment.character_id || segment.characterId || null;
+      const txId = segment.transcriptId ?? null;
       
-      console.log(`💾 Segment ${index}: speaker="${segment.speaker}", character_id="${charId}"`);
+      console.log(`💾 Segment ${index}: speaker="${segment.speaker}", character_id="${charId}", transcript_id="${txId}"`);
       
       return {
-        idx: index,
+        id: segment.id,
+        transcriptId: txId, // ✅ Preserve transcript_id
+        idx: segment.idx ?? index,
         text: segment.text,
         startTime: segment.startTime,
         endTime: segment.endTime,
         speaker: segment.speaker,
         speakerColor: segment.speakerColor,
+        speakerAsrLabel: segment.speakerAsrLabel,
         emphasis: segment.emphasis,
         pitch: segment.pitch,
         words: segment.words,
         isOffCamera: false,
         segmentType: 'dialogue' as const,
         confidence: 0.9,
-        characterId: charId
+        characterId: charId,
+        character_id: charId
       };
     });
     
@@ -898,10 +905,19 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       
       // 2️⃣ THEN: Update identity via RPC (always run to ensure character link persists)
       // Compute stable idx for RPC fallback (for new segments with temp IDs)
-      const idxForRPC = (currentSegment as any).idx ?? sortedSegments.findIndex(s => s.id === segmentId);
+      const idxForRPC = currentSegment.idx ?? sortedSegments.findIndex(s => s.id === segmentId);
+      const txId = currentSegment.transcriptId ?? null;
+      
+      console.log('🎯 Calling updateSegmentIdentity with:', { 
+        segmentId: isUUID(segmentId) ? segmentId : undefined, 
+        transcriptId: txId,
+        idx: idxForRPC,
+        characterId: selectedChar?.id 
+      });
       
       await updateSegmentIdentity({
         segmentId: isUUID(segmentId) ? segmentId : undefined,
+        transcriptId: txId, // ✅ Pass transcript_id
         videoId,
         language: selectedLanguage,
         idx: !isUUID(segmentId) ? idxForRPC : undefined,

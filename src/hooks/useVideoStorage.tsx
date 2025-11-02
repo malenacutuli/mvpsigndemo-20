@@ -12,6 +12,7 @@ export interface WordData {
 
 export interface TranscriptSegment {
   id?: string;
+  transcriptId?: string | null; // ✅ Link to transcripts table
   text: string;
   startTime: number;
   endTime: number;
@@ -26,6 +27,7 @@ export interface TranscriptSegment {
   confidence?: number;
   characterId?: string | null; // ✅ FIX #1: Link to characters table (camelCase)
   character_id?: string | null; // ✅ FIX #1: Link to characters table (snake_case)
+  idx?: number; // ✅ Segment index for ordering
 }
 
 export interface AudioDescription {
@@ -83,22 +85,35 @@ export const useVideoStorage = (videoId: string) => {
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // Prepare segments - persist text/timing/words/emphasis/pitch
+      // ✅ Fetch latest transcript_id for this video+language
+      const { data: latestTranscript } = await supabase
+        .from('transcripts')
+        .select('id')
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const transcriptId = latestTranscript?.id ?? null;
+      console.log(`💾 Using transcript_id: ${transcriptId} for save`);
+
+      // Prepare segments - persist text/timing/words/emphasis/pitch + transcript_id
       const rows = segments.map((seg: TranscriptSegment, i: number) => ({
         video_id: videoId,
         language,
-        idx: (seg as any).idx ?? i,
+        transcript_id: transcriptId, // ✅ Always stamp with latest transcript_id
+        idx: seg.idx ?? i,
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
-        emphasis: (seg as any).emphasis ?? null,
-        pitch: (seg as any).pitch ?? null,
+        emphasis: seg.emphasis ?? null,
+        pitch: seg.pitch ?? null,
         words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null,
         character_id: seg.characterId ?? seg.character_id ?? null,
         speaker: seg.speaker ?? null,
         speaker_asr_label: seg.speakerAsrLabel ?? null,
-        speaker_color: seg.speakerColor ?? null,
-        transcript_id: (seg as any).transcript_id ?? null
+        speaker_color: seg.speakerColor ?? null
       }));
 
       // ✅ Deduplicate by timing+text, keeping entry with words/character_id
@@ -121,12 +136,18 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`🧹 SAVE DEDUPE: Removed ${rows.length - toSave.length} duplicates before upsert (${rows.length} → ${toSave.length})`);
       }
 
-      // Use upsert to avoid deleting server-authored data
-      // Align with database's actual unique constraint: (video_id, language, start_time, end_time, text)
+      // Use upsert with transcript_id in conflict key (if transcript exists)
+      // If no transcript_id, fall back to base conflict key
+      const conflictKey = transcriptId 
+        ? 'video_id,language,transcript_id,start_time,end_time,text'
+        : 'video_id,language,start_time,end_time,text';
+      
+      console.log(`💾 Upserting with conflict key: ${conflictKey}`);
+      
       const { error } = await supabase
         .from('transcript_segments_clean')
         .upsert(toSave, {
-          onConflict: 'video_id,language,start_time,end_time,text',
+          onConflict: conflictKey,
           ignoreDuplicates: false
         });
 
@@ -179,10 +200,10 @@ export const useVideoStorage = (videoId: string) => {
           .limit(1)
           .maybeSingle();
         
-        // ✅ STEP 2: Load segments from ONE canonical source only
+        // ✅ STEP 2: Load segments from ONE canonical source only (include transcript_id)
         const segQuery = supabase
           .from('transcript_segments_clean')
-          .select('id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, character_id, characters(id, name, color)')
+          .select('id, transcript_id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, speaker_color, character_id, characters(id, name, color)')
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
@@ -227,15 +248,16 @@ export const useVideoStorage = (videoId: string) => {
             console.log(`🧹 STORAGE DEDUPE: Removed ${rows.length - cleanedRows.length} duplicates (${rows.length} → ${cleanedRows.length})`);
           }
 
-          // Map results with character data
+          // Map results with character data + transcript_id
           const segments: TranscriptSegment[] = cleanedRows.map((r: any) => ({
             id: r.id,
+            transcriptId: r.transcript_id, // ✅ Include transcript_id
             idx: r.idx,
             text: r.text,
             startTime: r.start_time,
             endTime: r.end_time,
             speaker: r.characters?.name ?? r.speaker ?? 'Unassigned',
-            speakerColor: r.characters?.color ?? '#9CA3AF',
+            speakerColor: r.characters?.color ?? r.speaker_color ?? '#9CA3AF',
             speakerAsrLabel: r.speaker_asr_label ?? null,
             characterId: r.character_id ?? null,
             character_id: r.character_id ?? null,
@@ -746,13 +768,16 @@ export const useVideoStorage = (videoId: string) => {
   // Update a single segment's speaker/character (preserves word timing)
   const updateSegmentIdentity = async (opts: {
     segmentId?: string;
+    transcriptId?: string | null; // ✅ NEW: transcript_id for precise targeting
     videoId?: string;
     language?: string;
     idx?: number;
     characterId?: string;
     characterName?: string;
   }) => {
-    const { segmentId, videoId: vid, language = 'en', idx, characterId, characterName } = opts;
+    const { segmentId, transcriptId, videoId: vid, language = 'en', idx, characterId, characterName } = opts;
+
+    console.log('🎯 updateSegmentIdentity called with:', { segmentId, transcriptId, idx, characterId, characterName });
 
     // Optional: guard if frozen
     try {
@@ -770,6 +795,7 @@ export const useVideoStorage = (videoId: string) => {
 
     const { error } = await supabase.rpc('update_segment_identity', {
       p_segment_id: segmentId ?? null,
+      p_transcript_id: transcriptId ?? null, // ✅ Pass transcript_id to RPC
       p_video_id: vid || videoId,
       p_language: language,
       p_idx: idx ?? null,
@@ -777,7 +803,11 @@ export const useVideoStorage = (videoId: string) => {
       p_character_name: characterName ?? null,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ updateSegmentIdentity RPC failed:', error);
+      throw error;
+    }
+    console.log('✅ updateSegmentIdentity RPC succeeded');
   };
 
   return {
