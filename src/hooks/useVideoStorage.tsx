@@ -605,8 +605,7 @@ export const useVideoStorage = (videoId: string) => {
         .upsert({
           video_id: videoId,
           language,
-          mappings: canonicalMappings,
-          created_by: user.id,
+          mappings: canonicalMappings
         }, {
           onConflict: 'video_id,language'
         });
