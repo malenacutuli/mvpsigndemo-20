@@ -452,105 +452,38 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   // Synthesize word-level timing if missing with IMPROVED accuracy
   // Note: workingCaption is already defined above, we'll modify it in place
   
-  // ✅ CRITICAL: Check if words exist (even without perfect timings) before synthesizing from scratch
-  const hasExistingWords = workingCaption.words && workingCaption.words.length > 0;
-  
-  if (!hasProviderWordTimings(workingCaption.words)) {
-    // If we have manually edited words (with emphasis/pitch), just backfill timings
-    if (hasExistingWords) {
-      console.log('🎤 CAPTIONS: Preserving manual word edits and backfilling timings');
-      const duration = workingCaption.endTime - workingCaption.startTime;
-      const step = duration / workingCaption.words!.length;
-      
-      workingCaption.words = workingCaption.words!.map((w, i) => ({
-        ...w,
-        startTime: typeof w.startTime === 'number' ? w.startTime : workingCaption.startTime + i * step,
-        endTime: typeof w.endTime === 'number' ? w.endTime : workingCaption.startTime + (i + 1) * step,
-        // ✅ Preserve manual emphasis/pitch
-        emphasis: w.emphasis || 'normal',
-        pitch: w.pitch || 'normal'
-      }));
-    } else {
-      // No words at all - synthesize from text
-      synthesizedWords = true;
-      console.log('🧩 CAPTIONS: Synthesizing words for segment without word data');
+  // ✅ CRITICAL: Check if words exist and have timings, preserve emphasis/pitch when backfilling
+  const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
+  const haveTiming = haveWords && workingCaption.words!.some(w =>
+    typeof w.startTime === 'number' && typeof w.endTime === 'number'
+  );
+
+  if (!haveWords) {
+    // Last resort: synthesize words from text
+    synthesizedWords = true;
+    console.log('🧩 CAPTIONS: Synthesizing words from text (no word data)');
     const words = captionText.trim().split(/\s+/).filter(Boolean);
     const duration = workingCaption.endTime - workingCaption.startTime;
+    const step = duration / Math.max(1, words.length);
     
-    // Adaptive speech rate based on actual segment duration
-    const measuredWPM = (words.length / duration) * 60;
-    const baseWPM = Math.max(120, Math.min(180, measuredWPM)); // Clamp to realistic range
-    
-    // Account for punctuation pauses
-    let currentTime = workingCaption.startTime;
-    const pauseAfterPeriod = 0.15; // 150ms after period
-    const pauseAfterComma = 0.08; // 80ms after comma
-    
-    workingCaption.words = words.map((word, index) => {
-      // Word complexity scoring: longer/harder words get more time
-      const lengthFactor = Math.max(0.7, Math.min(1.5, word.length / 5));
-      const hasCapital = /[A-Z]/.test(word);
-      const complexityBonus = hasCapital ? 1.1 : 1.0;
-      
-      // Calculate word duration with natural variation
-      const baseWordDuration = (60 / baseWPM) * lengthFactor * complexityBonus;
-      const wordDuration = Math.max(0.15, baseWordDuration); // Min 150ms
-      
-      const startTime = currentTime;
-      const endTime = Math.min(workingCaption.endTime, startTime + wordDuration);
-      
-      // Advance time
-      currentTime = endTime;
-      
-      // Add natural pauses after punctuation
-      if (word.endsWith('.') || word.endsWith('!') || word.endsWith('?')) {
-        currentTime += pauseAfterPeriod;
-      } else if (word.endsWith(',')) {
-        currentTime += pauseAfterComma;
-      }
-      
-      // Syllabify long words
-      const syllables = syllabify(word);
-      const syllableData = syllables.length > 1 ? syllables.map((syl, sylIdx) => {
-        const sylDuration = wordDuration / syllables.length;
-        return {
-          text: syl,
-          startTime: startTime + (sylIdx * sylDuration),
-          endTime: startTime + ((sylIdx + 1) * sylDuration)
-        };
-      }) : undefined;
-      
-      return {
-        text: word,
-        startTime: startTime,
-        endTime: endTime,
-        emphasis: 'normal' as const,
-        pitch: 'normal' as const,
-        syllables: syllableData
-      };
-    });
-    
-    console.log('⚠️ CWI: Synthesized', words.length, 'words with adaptive timing (', baseWPM.toFixed(0), 'WPM) - no provider timings found');
-    }  // Close else block for synthesizing new words
-  } else {
-    // Provider timings detected - use them directly and only inject syllables
-    console.log(`✅ CWI: Using PROVIDER timings for ${workingCaption.words!.length} words with confidence scores`);
-    
-    // Only inject syllables for long words, don't modify timings
-    const beforeCount = workingCaption.words!.filter(w => w.syllables && w.syllables.length > 0).length;
-    const injectedWords = injectSyllables(workingCaption.words!);
-    
-    // Ensure proper typing after injection
-    workingCaption.words = injectedWords.map(w => ({
-      ...w,
-      emphasis: (w.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling') || 'normal',
-      pitch: (w.pitch as 'high' | 'low' | 'normal') || 'normal'
+    workingCaption.words = words.map((word, i) => ({
+      text: word,
+      startTime: workingCaption.startTime + i * step,
+      endTime: workingCaption.startTime + (i + 1) * step,
+      emphasis: 'normal' as const,
+      pitch: 'normal' as const
     }));
+  } else if (!haveTiming) {
+    // Words exist but lack timings - backfill IN PLACE, keeping emphasis/pitch
+    console.log('🎤 CAPTIONS: Backfilling timings while preserving emphasis/pitch');
+    const duration = workingCaption.endTime - workingCaption.startTime;
+    const step = duration / Math.max(1, workingCaption.words!.length);
     
-    const afterCount = workingCaption.words!.filter(w => w.syllables && w.syllables.length > 0).length;
-    if (afterCount > beforeCount) {
-      console.log(`✅ CWI: Injected syllables into ${afterCount - beforeCount} words`);
-    }
+    workingCaption.words = workingCaption.words!.map((w, i) => ({
+      ...w, // ✅ Preserve all existing properties (emphasis, pitch, etc.)
+      startTime: w.startTime ?? (workingCaption.startTime + i * step),
+      endTime: w.endTime ?? (workingCaption.startTime + (i + 1) * step),
+    }));
   }
   
   // Apply read-ahead buffer to account for audio processing latency
