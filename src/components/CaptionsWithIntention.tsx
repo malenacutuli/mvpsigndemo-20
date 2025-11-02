@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { getSpeakerColor as getColorFromPalette } from '@/lib/cwiPalette';
 import { syllabify, injectSyllables } from '@/lib/syllables';
+import { paginateTwoLinesByWidth, type FontOpts } from '@/utils/captionsFit';
 
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
@@ -269,46 +270,27 @@ function normalizeWords(
   }));
 }
 
-// Split into sequential "virtual captions" of <= 2 lines (≤80 chars), preserving word order & timings
-function splitCaptionByChars<T extends {
-  id?: string;
-  startTime: number; endTime: number; text: string; words?: WordSegment[];
-}>(seg: T): (T & { _originId: string; _splitIndex: number })[] {
-  const words = seg.words ?? [];
-  if (!words.length || (seg.text ?? '').length <= MAX_CHARS) {
-    return [{ ...seg, _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`, _splitIndex: 0 }];
-  }
-  const chunks: (T & { _originId: string; _splitIndex: number })[] = [];
-  let cur: WordSegment[] = [];
-  let curLen = 0;
-  const pushChunk = () => {
-    if (!cur.length) return;
-    const start = cur[0].startTime ?? seg.startTime;
-    const end = cur[cur.length - 1].endTime ?? seg.endTime;
-    chunks.push({
-      ...seg,
-      text: cur.map(w => w.text).join(' '),
-      words: cur.slice(),
-      startTime: start,
-      endTime: end,
-      _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`,
-      _splitIndex: chunks.length
-    });
-    cur = []; curLen = 0;
+/**
+ * Compute font options for segment (reuses getIntonationBasedFontSize logic)
+ */
+function computeFontForSegment(seg: any, screenH: number, volume: number): FontOpts {
+  const basePx = getIntonationBasedFontSize(
+    screenH, 
+    seg.vocal_intensity, 
+    volume, 
+    seg.words?.[0]?.emphasis
+  );
+  
+  // Optional: apply word-count scaling (keeps huge lines smaller but readable)
+  const wc = seg.words?.length ?? (seg.text?.split(/\s+/).length || 0);
+  const scale = wc > 20 ? 0.8 : wc > 15 ? 0.9 : 1;
+  
+  return {
+    fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+    fontSizePx: Math.max(14, Math.round(basePx * scale)),
+    fontWeight: 600,
+    letterSpacingPx: 0
   };
-  for (let i = 0; i < words.length; i++) {
-    const w = words[i];
-    const addLen = (w.text?.length ?? 0) + 1;
-    // prefer to break at punctuation once we passed one line
-    const isNaturalBreak = /[.?!]$/.test(w.text || '');
-    if (curLen + addLen > MAX_CHARS || (isNaturalBreak && curLen >= MAX_CHARS_PER_LINE)) {
-      pushChunk();
-    }
-    cur.push(w);
-    curLen += addLen;
-  }
-  pushChunk();
-  return chunks.length ? chunks : [{ ...seg, _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`, _splitIndex: 0 }];
 }
 
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
@@ -320,16 +302,49 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Normalize words (keep manual edits) and split long captions to 2-line chunks
+  // Paginate captions to 2-line visual pages using pixel-accurate measurement
   const processed = React.useMemo(() => {
-    const withWords = captions.map(seg => ({
-      ...seg,
-      words: normalizeWords(seg.words, seg.startTime, seg.endTime)
-    }));
-    const flat = withWords.flatMap(splitCaptionByChars);
-    // maintain original order
-    return flat.sort((a, b) => a.startTime - b.startTime || a._splitIndex - b._splitIndex);
-  }, [captions]);
+    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 0.95, 768)); // ~2xl max-width
+    const volume = 50; // default volume for font computation
+    
+    return captions.flatMap((seg: any) => {
+      // Ensure words have timings (backfill if needed, preserving emphasis/pitch)
+      let workingSeg = { ...seg };
+      const haveWords = Array.isArray(seg.words) && seg.words.length > 0;
+      const haveTiming = haveWords && seg.words.some((w: any) => 
+        typeof w.startTime === 'number' && typeof w.endTime === 'number'
+      );
+      
+      if (!haveWords) {
+        // Last-resort synthesis from text
+        const words = (seg.text || '').split(/\s+/).filter(Boolean);
+        const dur = seg.endTime - seg.startTime;
+        const step = dur / Math.max(1, words.length);
+        workingSeg.words = words.map((text: string, i: number) => ({
+          text,
+          startTime: seg.startTime + i * step,
+          endTime: seg.startTime + (i + 1) * step,
+          emphasis: 'normal',
+          pitch: 'normal'
+        }));
+      } else if (!haveTiming) {
+        // Backfill timings IN PLACE, preserving emphasis/pitch
+        const dur = seg.endTime - seg.startTime;
+        const step = dur / Math.max(1, seg.words.length);
+        workingSeg.words = seg.words.map((w: any, i: number) => ({
+          ...w,
+          startTime: w.startTime ?? (seg.startTime + i * step),
+          endTime: w.endTime ?? (seg.startTime + (i + 1) * step)
+        }));
+      }
+      
+      // Compute font for this segment
+      const font = computeFontForSegment(workingSeg, screenHeight, volume);
+      
+      // Paginate to 2-line visual pages
+      return paginateTwoLinesByWidth(workingSeg, font, maxBoxWidthPx);
+    });
+  }, [captions, screenHeight]);
 
   // Listen for character color updates from Character Manager
   useEffect(() => {
@@ -362,25 +377,20 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     };
   }, []);
 
-  // Pick active chunk; allow one upcoming chunk, but NEVER from the same origin (prevents double overlay)
-  const active = React.useMemo(() => {
+  // Select ONE caption to show (no double overlay)
+  const activeCaption = React.useMemo(() => {
     return processed.find(c =>
-      currentTime >= c.startTime - 0.01 && currentTime <= c.endTime + 0.01
-    ) || null;
+      currentTime >= c.startTime - 0.05 && currentTime <= c.endTime + 0.05
+    ) ?? null;
   }, [processed, currentTime]);
 
-  // Only look for upcoming if there's no active caption
-  const upcoming = React.useMemo(() => {
-    if (!SHOW_READAHEAD_PREVIEW || active) return null;
+  const upcomingCaption = React.useMemo(() => {
+    if (!SHOW_READAHEAD_PREVIEW || activeCaption) return null;
     
     return processed.find(c =>
       c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
-    ) || null;
-  }, [processed, currentTime, active]);
-
-  // Render rule: active OR upcoming, never both
-  const activeCaption = active;
-  const upcomingCaption = active ? null : upcoming;
+    ) ?? null;
+  }, [processed, currentTime, activeCaption]);
 
   // Debug caption rendering and character colors
   useEffect(() => {

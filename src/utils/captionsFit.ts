@@ -1,6 +1,6 @@
 // utils/captionsFit.ts
-export type Word = { text: string; startTime: number; endTime: number; emphasis?: string; pitch?: string };
-export type Seg = { text: string; startTime: number; endTime: number; words: Word[] };
+export type Word = { text: string; startTime: number; endTime: number; emphasis?: string; pitch?: string; syllables?: any };
+export type Seg<T = any> = T & { text: string; startTime: number; endTime: number; words: Word[] };
 
 export type FontOpts = {
   // computed font for current segment (after intensity scaling)
@@ -26,17 +26,17 @@ function measure(text: string, opts: FontOpts) {
  * that fit within maxWidthPx. Uses pixel measurement so it's device-accurate.
  * Words retain their original timings. No word is dropped or duplicated.
  */
-export function paginateTwoLinesByWidth(
-  seg: Seg,
+export function paginateTwoLinesByWidth<T = any>(
+  seg: Seg<T>,
   opts: FontOpts,
   maxWidthPx: number
-): Array<Seg & { _pageIndex: number; _originKey: string }> {
+): Array<Seg<T> & { _pageIndex: number; _originKey: string }> {
   if (!seg.words || seg.words.length === 0) return [{
     ...seg, _pageIndex: 0, _originKey: `${seg.startTime}-${seg.endTime}-${seg.text}`
   }];
 
   const originKey = `${seg.startTime}-${seg.endTime}-${seg.text}`;
-  const pages: Array<Seg & { _pageIndex: number; _originKey: string }> = [];
+  const pages: Array<Seg<T> & { _pageIndex: number; _originKey: string }> = [];
 
   let i = 0; // index into words
   while (i < seg.words.length) {
@@ -89,3 +89,4 @@ export function paginateTwoLinesByWidth(
 
   return pages;
 }
+
