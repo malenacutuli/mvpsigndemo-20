@@ -49,6 +49,7 @@ const CI_COLORS = {
 const MAX_CHARS_PER_LINE = 40;
 const MAX_LINES = 2;
 const MAX_CHARS = MAX_CHARS_PER_LINE * MAX_LINES;
+const READAHEAD_WINDOW = 2.5; // seconds
 
 export interface WordSegment {
   text: string;
@@ -225,46 +226,51 @@ const getPitchBasedStyle = (pitch?: number | 'high' | 'low' | 'normal'): React.C
 
 /**
  * Split long captions into multiple chunks respecting MAX_CHARS limit
- * Preserves word timings and creates virtual sub-segments
+ * Preserves word timings and creates virtual sub-segments with origin tracking
  */
 function splitCaption(seg: CaptionSegment): CaptionSegment[] {
-  if ((seg.text ?? '').length <= MAX_CHARS || !seg.words?.length) return [seg];
+  if (!seg?.words?.length || seg.text.length <= MAX_CHARS) return [seg];
 
   const words = seg.words;
   const chunks: CaptionSegment[] = [];
-  let accLen = 0;
-  let chunkStartIdx = 0;
+  let startIdx = 0;
+  let acc = 0;
+  
+  // Create unique origin ID from segment timing and text
+  const originId = `${seg.startTime}-${seg.endTime}-${seg.text.substring(0, 20)}`;
 
   for (let i = 0; i < words.length; i++) {
-    const nextLen = accLen + (accLen ? 1 : 0) + words[i].text.length; // +space
-    const isNaturalBreak = /[.?!;:,—-]$/.test(words[i].text);
+    acc += words[i].text.length + 1;
+    const isBreak = /[.?!,;:—-]$/.test(words[i].text);
     
-    if (nextLen > MAX_CHARS && (i > chunkStartIdx)) {
-      const chunkWords = words.slice(chunkStartIdx, i);
+    if (acc > MAX_CHARS && i > startIdx) {
+      const part = words.slice(startIdx, i);
       chunks.push({
         ...seg,
-        text: chunkWords.map(w => w.text).join(' '),
-        words: chunkWords,
-        startTime: chunkWords[0].startTime ?? seg.startTime,
-        endTime: chunkWords[chunkWords.length - 1]?.endTime ?? seg.endTime,
-      });
-      chunkStartIdx = i;
-      accLen = 0;
-    } else {
-      accLen = nextLen;
+        _originId: originId,
+        _splitIndex: chunks.length,
+        text: part.map(w => w.text).join(' '),
+        words: part,
+        startTime: part[0].startTime ?? seg.startTime,
+        endTime: part[part.length - 1]?.endTime ?? seg.endTime,
+      } as any);
+      startIdx = i;
+      acc = 0;
     }
   }
   
   // Add remaining words as final chunk
-  if (chunkStartIdx < words.length) {
-    const chunkWords = words.slice(chunkStartIdx);
+  if (startIdx < words.length) {
+    const part = words.slice(startIdx);
     chunks.push({
       ...seg,
-      text: chunkWords.map(w => w.text).join(' '),
-      words: chunkWords,
-      startTime: chunkWords[0].startTime ?? seg.startTime,
-      endTime: chunkWords[chunkWords.length - 1]?.endTime ?? seg.endTime,
-    });
+      _originId: originId,
+      _splitIndex: chunks.length,
+      text: part.map(w => w.text).join(' '),
+      words: part,
+      startTime: part[0].startTime ?? seg.startTime,
+      endTime: part[part.length - 1]?.endTime ?? seg.endTime,
+    } as any);
   }
   
   return chunks;
@@ -280,7 +286,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
   // Apply caption splitting to prevent screen overflow
-  const finalCaptions = React.useMemo(() => captions.flatMap(splitCaption), [captions]);
+  const processedCaptions = React.useMemo(() => captions.flatMap(splitCaption), [captions]);
 
   // Listen for character color updates from Character Manager
   useEffect(() => {
@@ -313,23 +319,32 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     };
   }, []);
 
-  // Use small tolerance to avoid missing captions at segment edges and add read-ahead fallback
-  const SEGMENT_TOLERANCE = 0.05; // 50ms
-  const READAHEAD_WINDOW = 3.0; // always show upcoming caption up to 3s early (CI read-ahead)
-  const foundActive = finalCaptions.find(caption => 
-    currentTime >= (caption.startTime - SEGMENT_TOLERANCE) && currentTime <= (caption.endTime + SEGMENT_TOLERANCE)
+  // Find active caption with stricter timing to prevent overlaps
+  const active = processedCaptions.find(
+    c => currentTime >= c.startTime && currentTime <= c.endTime
   );
-  const upcoming = !foundActive
-    ? finalCaptions.find(caption => caption.startTime >= currentTime && (caption.startTime - currentTime) <= READAHEAD_WINDOW)
-    : undefined;
-  const activeCaption = foundActive || upcoming || null;
+
+  // Prevent same-origin "upcoming" from overlapping with active caption
+  const upcoming = active
+    ? processedCaptions.find(c =>
+        (c as any)._originId !== (active as any)._originId &&
+        c.startTime > currentTime &&
+        c.startTime - currentTime <= READAHEAD_WINDOW
+      )
+    : processedCaptions.find(c =>
+        c.startTime > currentTime &&
+        c.startTime - currentTime <= READAHEAD_WINDOW
+      );
+
+  const activeCaption = active || upcoming || null;
+  const foundActive = active;
 
   // Debug caption rendering and character colors
   useEffect(() => {
-    if (finalCaptions && finalCaptions.length > 0) {
+    if (processedCaptions && processedCaptions.length > 0) {
       console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-      console.log('📊 Available captions count:', finalCaptions.length);
-      console.log('🔍 Caption time ranges:', finalCaptions.slice(0, 3).map(c => ({
+      console.log('📊 Available captions count:', processedCaptions.length);
+      console.log('🔍 Caption time ranges:', processedCaptions.slice(0, 3).map(c => ({
         start: c.startTime, 
         end: c.endTime, 
         text: c.text.substring(0, 20) + '...',
@@ -348,11 +363,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         });
       }
     }
-  }, [finalCaptions, currentTime, activeCaption]);
+  }, [processedCaptions, currentTime, activeCaption]);
 
   console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-  console.log('📊 Available captions count:', finalCaptions.length);
-  console.log('🔍 Caption time ranges:', finalCaptions.slice(0, 3).map(c => ({
+  console.log('📊 Available captions count:', processedCaptions.length);
+  console.log('🔍 Caption time ranges:', processedCaptions.slice(0, 3).map(c => ({
     start: c.startTime, 
     end: c.endTime, 
     text: c.text.substring(0, 20) + '...' 
@@ -591,20 +606,23 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           </div>
         )}
         
-        {/* Single caption display with proper color synchronization */}
+        {/* Single caption display with proper color synchronization and 2-line max */}
         <div
-          className="relative text-center leading-tight break-words px-1"
+          className="relative text-center leading-tight break-words px-2"
           style={{
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
             ...pitchStyle,
-            ...intensityStyles, // Apply vocal intensity styling
+            ...intensityStyles,
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
+            maxWidth: '95vw',
+            maxHeight: `${window.innerHeight * 0.28}px`,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
-            hyphens: 'auto',
-            maxWidth: '100%',
-            contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
+            hyphens: 'auto'
           }}
         >
           {/* Sound effects and music formatting */}
