@@ -129,61 +129,62 @@ export const useVideoStorage = (videoId: string) => {
     try {
       // For authenticated users, always prioritize database
       if (user) {
-        // Conditional query: use view or bypass to base table with explicit join
+        // Conditional query: bypass broken view and load from base table with character join
         const useView = import.meta.env.VITE_TRANSCRIPT_LOAD_BYPASS_VIEW !== 'true';
-        const tableName = useView ? 'v_transcript_segments_resolved' : 'transcript_segments_clean';
-        const selectFields = useView
+        const table = useView ? 'v_transcript_segments_resolved' : 'transcript_segments_clean';
+        const select = useView
           ? 'id, idx, start_time, end_time, text, display_speaker, display_color, character_id, speaker_asr_label'
-          : 'id, idx, start_time, end_time, text, speaker, speaker_asr_label, character_id, characters!character_id(id, name, color)';
+          : `
+            id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, character_id,
+            characters(id, name, color)
+          `;
 
-        console.log(`🔍 Loading transcript segments from ${tableName} (useView: ${useView})`);
+        console.log(`🔍 Loading transcript segments from ${table} (bypass_view: ${!useView})`);
         
-        const { data: rows, error: viewErr } = await supabase
-          .from(tableName as any)
-          .select(selectFields)
+        const { data: rows, error } = await supabase
+          .from(table as any)
+          .select(select)
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
 
-        if (viewErr) throw viewErr;
+        if (error) throw error;
 
         if (rows && rows.length > 0) {
-          // Fetch word timings separately only if using view (base table query already has characters joined)
-          const ids = rows.map((r: any) => r.id);
-          const { data: wordsRows } = (useView && ids.length > 0)
-            ? await supabase
-                .from('transcript_segments_clean')
-                .select('id, words')
-                .in('id', ids)
-            : { data: [] as any[] };
+          // Fetch word timings separately ONLY if using view (base table already includes words)
+          let wordsMap = new Map<string, any>();
+          
+          if (useView) {
+            const ids = rows.map((r: any) => r.id);
+            const { data: wordsRows } = await supabase
+              .from('transcript_segments_clean')
+              .select('id, words')
+              .in('id', ids);
+            wordsMap = new Map((wordsRows ?? []).map((r: any) => [r.id, r.words ?? []]));
+          }
 
-          const wordsMap = new Map((wordsRows ?? []).map((r: any) => [r.id, r.words ?? []]));
-
-          // Map with conditional logic based on source
-          const segments: TranscriptSegment[] = rows.map((r: any) => {
-            const speaker = useView 
+          // Map results with conditional logic based on source
+          const segments: TranscriptSegment[] = (rows ?? []).map((r: any) => ({
+            id: r.id,
+            idx: r.idx,
+            text: r.text,
+            startTime: r.start_time,
+            endTime: r.end_time,
+            speaker: useView 
               ? (r.display_speaker ?? 'Unassigned')
-              : (r.characters?.name ?? r.speaker ?? 'Unassigned');
-            const speakerColor = useView
+              : (r.characters?.name ?? r.speaker ?? 'Unassigned'),
+            speakerColor: useView
               ? (r.display_color ?? '#9CA3AF')
-              : (r.characters?.color ?? '#9CA3AF');
-            
-            return {
-              id: r.id,
-              idx: r.idx,
-              text: r.text,
-              startTime: r.start_time,
-              endTime: r.end_time,
-              speaker,
-              speakerColor,
-              speakerAsrLabel: r.speaker_asr_label ?? null,
-              characterId: r.character_id ?? null,
-              character_id: r.character_id ?? null,
-              words: wordsMap.has(r.id) ? parseWordsData(wordsMap.get(r.id)) : undefined
-            };
-          });
+              : (r.characters?.color ?? '#9CA3AF'),
+            speakerAsrLabel: r.speaker_asr_label ?? null,
+            characterId: r.character_id ?? null,
+            character_id: r.character_id ?? null,
+            words: useView 
+              ? (wordsMap.has(r.id) ? parseWordsData(wordsMap.get(r.id)) : undefined)
+              : (r.words ? parseWordsData(r.words) : undefined)
+          }));
 
-          console.log('✅ Loaded transcript segments from view:', segments.length, 'segments');
+          console.log(`✅ Loaded ${segments.length} segments from ${table}`);
           console.log('🔍 First segment:', segments[0]);
           localStorage.removeItem(`transcript_${videoId}_${language}`);
           return segments;
