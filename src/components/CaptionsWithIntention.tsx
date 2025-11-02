@@ -287,7 +287,7 @@ function computeFontForSegment(seg: any, screenH: number, volume: number): FontO
   
   return {
     fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
-    fontSizePx: Math.max(14, Math.round(basePx * scale)),
+    fontSizePx: Math.max(14, Math.round(basePx * scale * 0.9)),
     fontWeight: 600,
     letterSpacingPx: 0
   };
