@@ -460,45 +460,63 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           
           if (!character || !characterId) continue;
           
-          // Update auto-assigned segments (not manual overrides)
+          // Extract ASR label from speaker name (e.g., "Speaker A" → "A", "A" → "A")
+          const asrLabelMatch = speakerName.match(/\b([A-Z])\b$/);
+          const asrLabel = asrLabelMatch ? asrLabelMatch[1] : null;
+          
+          // Build OR predicate to match all speaker variants:
+          // - Exact speaker name (e.g., "A", "Speaker A", "David")
+          // - speaker_asr_label (e.g., "A")
+          // - Pattern match "Speaker A", "Speaker B", etc.
+          const orConditions = [
+            `speaker.eq.${speakerName}`  // Exact match
+          ];
+          
+          if (asrLabel) {
+            orConditions.push(`speaker_asr_label.eq.${asrLabel}`);  // ASR label match
+            orConditions.push(`speaker.ilike.Speaker ${asrLabel}`);  // Pattern "Speaker A/B/C"
+          }
+          
+          const orPredicate = orConditions.join(',');
+          
+          console.log(`🔍 [${lang}] Mapping "${speakerName}" with OR conditions:`, orConditions);
+          
+          // Update segments with OR predicate, respecting manual overrides
+          const updateData = {
+            speaker: characterName,
+            speaker_color: character.color,
+            character_id: characterId,
+            is_off_camera: character.isOffCamera || false,
+            emphasis: character.emphasis || 'normal',
+            pitch: character.pitch || 'normal'
+          };
+          
           if (manuallyChangedSegments.size > 0) {
             const { error: err1 } = await supabase
               .from('transcript_segments_clean')
-              .update({
-                speaker: characterName,
-                speaker_color: character.color,
-                character_id: characterId,
-                is_off_camera: character.isOffCamera || false,
-                emphasis: character.emphasis || 'normal',
-                pitch: character.pitch || 'normal'
-              })
+              .update(updateData)
               .eq('video_id', videoId)
               .eq('language', lang)
-              .eq('speaker', speakerName)
+              .or(orPredicate)
               .not('id', 'in', `(${Array.from(manuallyChangedSegments).join(',')})`);
             
             if (err1) {
               console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
             } else {
-              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (preserved overrides)`);
+              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (preserved ${manuallyChangedSegments.size} overrides)`);
             }
           } else {
             const { error: err1 } = await supabase
               .from('transcript_segments_clean')
-              .update({
-                speaker: characterName,
-                speaker_color: character.color,
-                character_id: characterId,
-                is_off_camera: character.isOffCamera || false,
-                emphasis: character.emphasis || 'normal',
-                pitch: character.pitch || 'normal'
-              })
+              .update(updateData)
               .eq('video_id', videoId)
               .eq('language', lang)
-              .eq('speaker', speakerName);
+              .or(orPredicate);
             
             if (err1) {
               console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
+            } else {
+              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}"`);
             }
           }
           
@@ -523,6 +541,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       }
       
       console.log('✅ Character mappings applied (manual overrides preserved)');
+      
+      // Dispatch event to refresh transcript editor and video player
+      window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
+        detail: { videoId, languages: allLanguages } 
+      }));
+      
+      // Also dispatch character colors update event for immediate caption refresh
+      window.dispatchEvent(new CustomEvent('character-colors-updated'));
+      
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
     }
