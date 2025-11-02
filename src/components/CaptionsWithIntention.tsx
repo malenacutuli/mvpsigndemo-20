@@ -304,7 +304,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Paginate captions to 2-line visual pages using pixel-accurate measurement
   const processed = React.useMemo(() => {
-    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 1.368, 1106)); // increased by 40% total
+    // Match measurement width to actual container width (max-w-[95vw] sm:max-w-2xl with padding)
+    const containerMaxPx = window.innerWidth < 640
+      ? Math.round(window.innerWidth * 0.95)
+      : 672; // Tailwind sm:max-w-2xl = 42rem = 672px
+    const horizontalPadding = window.innerWidth < 640 ? 16 : 32; // px-2 => 16px total, sm:px-4 => 32px total
+    const maxBoxWidthPx = Math.max(0, containerMaxPx - horizontalPadding);
     const volume = 50; // default volume for font computation
     
     return captions.flatMap((seg: any) => {
