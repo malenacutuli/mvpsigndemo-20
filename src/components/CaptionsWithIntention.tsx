@@ -287,7 +287,7 @@ function computeFontForSegment(seg: any, screenH: number, volume: number): FontO
   
   return {
     fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
-    fontSizePx: Math.max(14, Math.round(basePx * scale * 0.9)),
+    fontSizePx: Math.max(14, Math.round(basePx * scale * 0.81)),
     fontWeight: 600,
     letterSpacingPx: 0
   };
@@ -304,7 +304,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Paginate captions to 2-line visual pages using pixel-accurate measurement
   const processed = React.useMemo(() => {
-    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 1.14, 922)); // ~2xl max-width increased by 20%
+    const maxBoxWidthPx = Math.round(Math.min(window.innerWidth * 1.368, 1106)); // increased by 40% total
     const volume = 50; // default volume for font computation
     
     return captions.flatMap((seg: any) => {
