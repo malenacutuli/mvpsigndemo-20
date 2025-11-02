@@ -51,6 +51,9 @@ const MAX_LINES = 2;
 const MAX_CHARS = MAX_CHARS_PER_LINE * MAX_LINES; // 80 total
 const READAHEAD_SECONDS = 3; // keep your current read-ahead
 
+// Feature flag: disable read-ahead preview to prevent duplicate white caption overlay
+const SHOW_READAHEAD_PREVIEW = false;
+
 export interface WordSegment {
   text: string;
   startTime: number;
@@ -353,6 +356,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   }, [processed, currentTime]);
 
   const upcoming = React.useMemo(() => {
+    // Guard calculation with feature flag to preserve logic without rendering
+    if (!SHOW_READAHEAD_PREVIEW) return null;
+    
     if (!active) {
       return processed.find(c =>
         c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
@@ -577,7 +583,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   return (
     <div className="relative w-full">
       {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
-      {upcoming && !foundActive && (
+      {SHOW_READAHEAD_PREVIEW && upcoming && !foundActive && (
         <div 
           className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
                      text-white/90 text-base font-light text-center pointer-events-none"
