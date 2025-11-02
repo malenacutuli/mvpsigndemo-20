@@ -510,7 +510,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
-          relative inline-block w-full max-w-[92vw] text-center
+          relative inline-block max-w-[92vw] sm:max-w-2xl text-center
           ${isLoudBurst ? '' : 'bg-black/90'} 
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
           ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
@@ -546,21 +546,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight break-words px-1"
           style={{
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
+            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`, // Optimized mobile font size
             ...pitchStyle,
-            ...intensityStyles,
+            ...intensityStyles, // Apply vocal intensity styling
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
             hyphens: 'auto',
             maxWidth: '100%',
             contain: 'layout paint',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
-            // Constrain to 2 lines maximum
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3' // Tighter line height for mobile
           }}
         >
           {/* Sound effects and music formatting */}
