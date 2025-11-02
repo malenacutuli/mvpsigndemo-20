@@ -116,6 +116,9 @@ export const useVideoStorage = (videoId: string) => {
         speaker_color: seg.speakerColor ?? null
       }));
 
+      console.log('[saveTranscriptSegments]',
+        { transcriptId, rows: rows.length, sample: rows[0] && { st: rows[0].start_time, sp: rows[0].speaker } });
+
       // ✅ Deduplicate by timing+text, keeping entry with words/character_id
       const uniq = new Map<string, typeof rows[number]>();
       for (const r of rows) {
