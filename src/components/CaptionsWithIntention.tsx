@@ -48,18 +48,28 @@ const CI_COLORS = {
 // Caption splitting constants - max 2 lines of 40 chars each
 const MAX_CHARS_PER_LINE = 40;
 const MAX_LINES = 2;
-const MAX_CHARS = MAX_CHARS_PER_LINE * MAX_LINES;
-const READAHEAD_WINDOW = 2.5; // seconds
+const MAX_CHARS = MAX_CHARS_PER_LINE * MAX_LINES; // 80 total
+const READAHEAD_SECONDS = 3; // keep your current read-ahead
 
 export interface WordSegment {
   text: string;
   startTime: number;
   endTime: number;
-  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
+  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling' | 'whisper';
   pitch?: 'high' | 'low' | 'normal';
   syllables?: Array<{ text: string; startTime: number; endTime: number }>;
   confidence?: number;
 }
+
+type TimedWord = {
+  text: string;
+  startTime?: number;
+  endTime?: number;
+  emphasis?: 'normal' | 'loud' | 'quiet' | 'yelling' | 'whisper';
+  pitch?: 'low' | 'normal' | 'high';
+  syllables?: Array<{ text: string; startTime: number; endTime: number }>;
+  confidence?: number;
+};
 
 // Helper to detect real provider timings (they ALWAYS include confidence scores)
 const hasProviderWordTimings = (words?: WordSegment[]): boolean => {
@@ -224,56 +234,64 @@ const getPitchBasedStyle = (pitch?: number | 'high' | 'low' | 'normal'): React.C
   };
 };
 
-/**
- * Split long captions into multiple chunks respecting MAX_CHARS limit
- * Preserves word timings and creates virtual sub-segments with origin tracking
- */
-function splitCaption(seg: CaptionSegment): CaptionSegment[] {
-  if (!seg?.words?.length || seg.text.length <= MAX_CHARS) return [seg];
+// Accept any words that have text; synthesize timings if missing
+function normalizeWords(
+  words: WordSegment[] | undefined,
+  segStart: number,
+  segEnd: number
+): WordSegment[] | undefined {
+  if (!words || !words.length) return undefined;
+  const duration = Math.max(0.01, segEnd - segStart);
+  const needsTiming = !words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+  if (!needsTiming) return words;
+  const step = duration / words.length;
+  return words.map((w, i) => ({
+    ...w,
+    startTime: typeof w.startTime === 'number' ? w.startTime : segStart + i * step,
+    endTime: typeof w.endTime === 'number' ? w.endTime : segStart + (i + 1) * step
+  }));
+}
 
-  const words = seg.words;
-  const chunks: CaptionSegment[] = [];
-  let startIdx = 0;
-  let acc = 0;
-  
-  // Create unique origin ID from segment timing and text
-  const originId = `${seg.startTime}-${seg.endTime}-${seg.text.substring(0, 20)}`;
-
-  for (let i = 0; i < words.length; i++) {
-    acc += words[i].text.length + 1;
-    const isBreak = /[.?!,;:—-]$/.test(words[i].text);
-    
-    if (acc > MAX_CHARS && i > startIdx) {
-      const part = words.slice(startIdx, i);
-      chunks.push({
-        ...seg,
-        _originId: originId,
-        _splitIndex: chunks.length,
-        text: part.map(w => w.text).join(' '),
-        words: part,
-        startTime: part[0].startTime ?? seg.startTime,
-        endTime: part[part.length - 1]?.endTime ?? seg.endTime,
-      } as any);
-      startIdx = i;
-      acc = 0;
-    }
+// Split into sequential "virtual captions" of <= 2 lines (≤80 chars), preserving word order & timings
+function splitCaptionByChars<T extends {
+  id?: string;
+  startTime: number; endTime: number; text: string; words?: WordSegment[];
+}>(seg: T): (T & { _originId: string; _splitIndex: number })[] {
+  const words = seg.words ?? [];
+  if (!words.length || (seg.text ?? '').length <= MAX_CHARS) {
+    return [{ ...seg, _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`, _splitIndex: 0 }];
   }
-  
-  // Add remaining words as final chunk
-  if (startIdx < words.length) {
-    const part = words.slice(startIdx);
+  const chunks: (T & { _originId: string; _splitIndex: number })[] = [];
+  let cur: WordSegment[] = [];
+  let curLen = 0;
+  const pushChunk = () => {
+    if (!cur.length) return;
+    const start = cur[0].startTime ?? seg.startTime;
+    const end = cur[cur.length - 1].endTime ?? seg.endTime;
     chunks.push({
       ...seg,
-      _originId: originId,
-      _splitIndex: chunks.length,
-      text: part.map(w => w.text).join(' '),
-      words: part,
-      startTime: part[0].startTime ?? seg.startTime,
-      endTime: part[part.length - 1]?.endTime ?? seg.endTime,
-    } as any);
+      text: cur.map(w => w.text).join(' '),
+      words: cur.slice(),
+      startTime: start,
+      endTime: end,
+      _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`,
+      _splitIndex: chunks.length
+    });
+    cur = []; curLen = 0;
+  };
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const addLen = (w.text?.length ?? 0) + 1;
+    // prefer to break at punctuation once we passed one line
+    const isNaturalBreak = /[.?!]$/.test(w.text || '');
+    if (curLen + addLen > MAX_CHARS || (isNaturalBreak && curLen >= MAX_CHARS_PER_LINE)) {
+      pushChunk();
+    }
+    cur.push(w);
+    curLen += addLen;
   }
-  
-  return chunks;
+  pushChunk();
+  return chunks.length ? chunks : [{ ...seg, _originId: `${seg.startTime}_${seg.endTime}_${seg.text}`, _splitIndex: 0 }];
 }
 
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
@@ -285,8 +303,16 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Apply caption splitting to prevent screen overflow
-  const processedCaptions = React.useMemo(() => captions.flatMap(splitCaption), [captions]);
+  // Normalize words (keep manual edits) and split long captions to 2-line chunks
+  const processed = React.useMemo(() => {
+    const withWords = captions.map(seg => ({
+      ...seg,
+      words: normalizeWords(seg.words, seg.startTime, seg.endTime)
+    }));
+    const flat = withWords.flatMap(splitCaptionByChars);
+    // maintain original order
+    return flat.sort((a, b) => a.startTime - b.startTime || a._splitIndex - b._splitIndex);
+  }, [captions]);
 
   // Listen for character color updates from Character Manager
   useEffect(() => {
@@ -319,32 +345,35 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     };
   }, []);
 
-  // Find active caption with stricter timing to prevent overlaps
-  const active = processedCaptions.find(
-    c => currentTime >= c.startTime && currentTime <= c.endTime
-  );
+  // Pick active chunk; allow one upcoming chunk, but NEVER from the same origin (prevents double overlay)
+  const active = React.useMemo(() => {
+    return processed.find(c =>
+      currentTime >= c.startTime - 0.01 && currentTime <= c.endTime + 0.01
+    ) || null;
+  }, [processed, currentTime]);
 
-  // Prevent same-origin "upcoming" from overlapping with active caption
-  const upcoming = active
-    ? processedCaptions.find(c =>
-        (c as any)._originId !== (active as any)._originId &&
-        c.startTime > currentTime &&
-        c.startTime - currentTime <= READAHEAD_WINDOW
-      )
-    : processedCaptions.find(c =>
-        c.startTime > currentTime &&
-        c.startTime - currentTime <= READAHEAD_WINDOW
-      );
+  const upcoming = React.useMemo(() => {
+    if (!active) {
+      return processed.find(c =>
+        c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
+      ) || null;
+    }
+    return processed.find(c =>
+      c._originId !== active._originId &&
+      c.startTime >= currentTime &&
+      (c.startTime - currentTime) <= READAHEAD_SECONDS
+    ) || null;
+  }, [processed, currentTime, active]);
 
   const activeCaption = active || upcoming || null;
   const foundActive = active;
 
   // Debug caption rendering and character colors
   useEffect(() => {
-    if (processedCaptions && processedCaptions.length > 0) {
+    if (processed && processed.length > 0) {
       console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-      console.log('📊 Available captions count:', processedCaptions.length);
-      console.log('🔍 Caption time ranges:', processedCaptions.slice(0, 3).map(c => ({
+      console.log('📊 Available captions count:', processed.length);
+      console.log('🔍 Caption time ranges:', processed.slice(0, 3).map(c => ({
         start: c.startTime, 
         end: c.endTime, 
         text: c.text.substring(0, 20) + '...',
@@ -363,11 +392,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         });
       }
     }
-  }, [processedCaptions, currentTime, activeCaption]);
+  }, [processed, currentTime, activeCaption]);
 
   console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-  console.log('📊 Available captions count:', processedCaptions.length);
-  console.log('🔍 Caption time ranges:', processedCaptions.slice(0, 3).map(c => ({
+  console.log('📊 Available captions count:', processed.length);
+  console.log('🔍 Caption time ranges:', processed.slice(0, 3).map(c => ({
     start: c.startTime, 
     end: c.endTime, 
     text: c.text.substring(0, 20) + '...' 
@@ -523,7 +552,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     screenHeight, 
     activeCaption.vocal_intensity, 
     volume, 
-    activeCaption.words?.[0]?.emphasis
+    activeCaption.words?.[0]?.emphasis === 'whisper' ? 'quiet' : activeCaption.words?.[0]?.emphasis
   );
   const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
   
@@ -574,7 +603,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
         className={`
-          relative inline-block max-w-[92vw] sm:max-w-2xl text-center
+          relative inline-block max-w-[95vw] sm:max-w-2xl text-center
           ${isLoudBurst ? '' : 'bg-black/90'} 
           ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
           ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
@@ -582,6 +611,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           ${isLoudBurst ? 'animate-emphasis-bounce' : 'animate-box-resize'}
         `}
         style={{
+          maxHeight: `${screenHeight * 0.25}px`,
+          overflow: 'hidden',
           // For loud bursts, captions break out of the box
           ...(isLoudBurst && {
             background: 'none',
@@ -608,21 +639,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         
         {/* Single caption display with proper color synchronization and 2-line max */}
         <div
-          className="relative text-center leading-tight break-words px-2"
+          className="relative text-center leading-tight px-1"
           style={{
             fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
             ...pitchStyle,
             ...intensityStyles,
             ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
-            maxWidth: '95vw',
-            maxHeight: `${window.innerHeight * 0.28}px`,
             display: '-webkit-box',
-            WebkitLineClamp: 2,
+            WebkitLineClamp: MAX_LINES,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            wordWrap: 'break-word',
-            overflowWrap: 'break-word',
-            hyphens: 'auto'
+            wordBreak: 'break-word',
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3'
           }}
         >
           {/* Sound effects and music formatting */}
@@ -646,12 +674,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               {workingCaption.words && workingCaption.words.length > 0 ? (
                  workingCaption.words.map((word, index) => {
                    const wordPitchStyle = getPitchBasedStyle(word.pitch);
-                   const wordFontSize = getIntonationBasedFontSize(
-                     screenHeight, 
-                     activeCaption.vocal_intensity, 
-                     volume, 
-                     word.emphasis
-                   );
+                    const wordFontSize = getIntonationBasedFontSize(
+                      screenHeight, 
+                      activeCaption.vocal_intensity, 
+                      volume, 
+                      word.emphasis === 'whisper' ? 'quiet' : word.emphasis
+                    );
                    
                     // Increased tolerance + lead-in offset for better sync with speech
                     const WORD_PRECISION = 0.12; // 120ms precision window for browser timing variance
