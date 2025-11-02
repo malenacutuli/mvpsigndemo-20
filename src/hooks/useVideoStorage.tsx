@@ -98,10 +98,11 @@ export const useVideoStorage = (videoId: string) => {
       }));
 
       // Use upsert to avoid deleting server-authored data
+      // Align with database's actual unique constraint: (video_id, language, start_time, end_time, text)
       const { error } = await supabase
         .from('transcript_segments_clean')
         .upsert(rows, {
-          onConflict: 'video_id,language,idx',
+          onConflict: 'video_id,language,start_time,end_time,text',
           ignoreDuplicates: false
         });
 
