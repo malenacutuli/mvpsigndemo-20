@@ -795,7 +795,6 @@ export const useVideoStorage = (videoId: string) => {
 
     const { error } = await supabase.rpc('update_segment_identity', {
       p_segment_id: segmentId ?? null,
-      p_transcript_id: transcriptId ?? null, // ✅ Pass transcript_id to RPC
       p_video_id: vid || videoId,
       p_language: language,
       p_idx: idx ?? null,
