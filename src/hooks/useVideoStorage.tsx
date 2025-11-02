@@ -83,7 +83,7 @@ export const useVideoStorage = (videoId: string) => {
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // Prepare segments - persist text/timing/words/emphasis/pitch but NOT identity
+      // Prepare segments - persist text/timing/words/emphasis/pitch
       const rows = segments.map((seg: TranscriptSegment, i: number) => ({
         video_id: videoId,
         language,
@@ -91,45 +91,66 @@ export const useVideoStorage = (videoId: string) => {
         start_time: seg.startTime,
         end_time: seg.endTime,
         text: seg.text,
-        emphasis: (seg as any).emphasis ?? 'normal',
-        pitch: (seg as any).pitch ?? 'normal',
-        words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null
-        // ✅ DO NOT include speaker/character_id - use updateSegmentIdentity() for that
+        emphasis: (seg as any).emphasis ?? null,
+        pitch: (seg as any).pitch ?? null,
+        words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null,
+        character_id: seg.characterId ?? seg.character_id ?? null,
+        speaker: seg.speaker ?? null,
+        speaker_asr_label: seg.speakerAsrLabel ?? null,
+        speaker_color: seg.speakerColor ?? null,
+        transcript_id: (seg as any).transcript_id ?? null
       }));
 
-      // --- Deduplicate rows to avoid conflict on identical timing/text ---
-      const seen = new Map();
-      const deduped = [];
-
+      // ✅ Deduplicate by timing+text, keeping entry with words/character_id
+      const uniq = new Map<string, typeof rows[number]>();
       for (const r of rows) {
         const key = `${r.video_id}|${r.language}|${r.start_time}|${r.end_time}|${r.text}`;
-        const existing = seen.get(key);
-        if (!existing || (r.words && !existing.words)) {
-          seen.set(key, r);
+        const existing = uniq.get(key);
+        
+        // Priority: has words > has character_id > first occurrence
+        if (!existing || 
+            (r.words && !existing.words) || 
+            (r.character_id && !existing.character_id)) {
+          uniq.set(key, r);
         }
       }
-      deduped.push(...seen.values());
+      
+      const toSave = Array.from(uniq.values());
 
-      console.log(`🔄 Deduplication: ${rows.length} → ${deduped.length} segments`);
+      if (rows.length !== toSave.length) {
+        console.log(`🧹 SAVE DEDUPE: Removed ${rows.length - toSave.length} duplicates before upsert (${rows.length} → ${toSave.length})`);
+      }
 
       // Use upsert to avoid deleting server-authored data
       // Align with database's actual unique constraint: (video_id, language, start_time, end_time, text)
       const { error } = await supabase
         .from('transcript_segments_clean')
-        .upsert(deduped, {
+        .upsert(toSave, {
           onConflict: 'video_id,language,start_time,end_time,text',
           ignoreDuplicates: false
         });
 
       if (error) {
-        console.error('❌ Save failed:', error);
+        console.error('❌ [saveTranscriptSegments] upsert failed:', {
+          code: error.code,
+          message: error.message,
+          hint: (error as any).hint,
+          details: (error as any).details,
+          sampleRows: toSave.slice(0, 3),
+          totalRows: toSave.length
+        });
         throw error;
       }
 
-      console.log('✅ Transcript saved to database:', segments.length, 'segments');
+      console.log('✅ Transcript saved to database:', toSave.length, 'segments');
       
       // Clear any localStorage fallback since we have database record
       localStorage.removeItem(`transcript_${videoId}_${language}`);
+      
+      // Notify listeners of transcript update
+      window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
+        detail: { videoId, language } 
+      }));
       
     } catch (err) {
       console.error('❌ Failed to save transcript to database:', err);
