@@ -576,6 +576,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const intensityStyles = workingCaption.vocal_intensity ? 
     getIntensityStyles(workingCaption.vocal_intensity, workingCaption.intensity_confidence) : {};
   
+  // Compute font size for rendering (must match measurement phase)
+  const renderFont = computeFontForSegment(workingCaption, screenHeight, volume || 50);
+  
   const isEnthusiastic = (!workingCaption.vocal_intensity || workingCaption.vocal_intensity === 'normal') && numericPitch >= 210 && volume < 80;
   const isLoudBurst = volume >= 85;
   const isSoundEffect = (workingCaption as any)?.type === 'soundeffect';
@@ -633,11 +636,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         <div
           className="relative text-center leading-tight px-1"
           style={{
-            fontFamily: 'Roboto Flex, system-ui, sans-serif',
-            fontSize: `${Math.min(baseFontSize * (window.innerWidth < 640 ? 0.9 : 1), screenHeight * 0.0455)}px`,
+            fontFamily: renderFont.fontFamily,
+            fontSize: `${renderFont.fontSizePx}px`,
+            fontWeight: renderFont.fontWeight,
             ...pitchStyle,
             ...intensityStyles,
-            ...(isEnthusiastic ? { fontWeight: 500, letterSpacing: '0.02em' } : {}),
             display: '-webkit-box',
             WebkitLineClamp: MAX_LINES,
             WebkitBoxOrient: 'vertical',
