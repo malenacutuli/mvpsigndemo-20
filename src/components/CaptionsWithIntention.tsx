@@ -369,24 +369,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     ) || null;
   }, [processed, currentTime]);
 
+  // Only look for upcoming if there's no active caption
   const upcoming = React.useMemo(() => {
-    // Guard calculation with feature flag to preserve logic without rendering
-    if (!SHOW_READAHEAD_PREVIEW) return null;
+    if (!SHOW_READAHEAD_PREVIEW || active) return null;
     
-    if (!active) {
-      return processed.find(c =>
-        c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
-      ) || null;
-    }
     return processed.find(c =>
-      c._originId !== active._originId &&
-      c.startTime >= currentTime &&
-      (c.startTime - currentTime) <= READAHEAD_SECONDS
+      c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
     ) || null;
   }, [processed, currentTime, active]);
 
-  const activeCaption = active || upcoming || null;
-  const foundActive = active;
+  // Render rule: active OR upcoming, never both
+  const activeCaption = active;
+  const upcomingCaption = active ? null : upcoming;
 
   // Debug caption rendering and character colors
   useEffect(() => {
@@ -431,24 +425,32 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  if (!activeCaption) return null;
+  // Render ONLY active (colored) OR upcoming (white read-ahead), never both
+  if (!activeCaption && !upcomingCaption) return null;
+
+  // Use active caption if available, otherwise upcoming for read-ahead
+  const workingCaption = activeCaption || upcomingCaption;
+  if (!workingCaption) return null;
 
   // Enhanced word timing with provider-aware precision
-  const hasProviderTimings = activeCaption.words && activeCaption.words.length > 0 && 
-    activeCaption.words.some((w: any) => w.startTime !== undefined);
+  const hasProviderTimings = workingCaption.words && workingCaption.words.length > 0 && 
+    workingCaption.words.some((w: any) => w.startTime !== undefined);
   
   // Tighter tolerance for provider data (AssemblyAI/Deepgram), looser for synthesized
   const TIMING_TOLERANCE = hasProviderTimings ? 0.03 : 0.06; // 30ms vs 60ms
   const READAHEAD_BUFFER = 0.025; // Start highlighting 25ms early for better perceived sync
   
   // Use full caption text (auto-segmentation handled in AxessiblePlayer)
-  const captionText = activeCaption.text;
+  const captionText = workingCaption.text;
   
   // Track if we synthesized data (for persistence flag)
   let synthesizedWords = false;
   
+  // For read-ahead captions, use white; for active, use speaker color
+  const isReadAhead = !activeCaption && !!upcomingCaption;
+  
   // Synthesize word-level timing if missing with IMPROVED accuracy
-  let workingCaption = { ...activeCaption, text: captionText };
+  // Note: workingCaption is already defined above, we'll modify it in place
   
   // ✅ CRITICAL: Check if words exist (even without perfect timings) before synthesizing from scratch
   const hasExistingWords = workingCaption.words && workingCaption.words.length > 0;
@@ -618,7 +620,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   return (
     <div className="relative w-full">
       {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
-      {SHOW_READAHEAD_PREVIEW && upcoming && !foundActive && (
+      {SHOW_READAHEAD_PREVIEW && upcomingCaption && !activeCaption && (
         <div 
           className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
                      text-white/90 text-base font-light text-center pointer-events-none"
@@ -628,7 +630,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             zIndex: 5
           }}
         >
-          {upcoming.text}
+          {upcomingCaption.text}
         </div>
       )}
 
@@ -636,10 +638,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       <div 
         className={`
           relative flex items-end justify-center pointer-events-none w-full
-          ${foundActive ? 'animate-caption-enter' : upcoming ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
+          ${activeCaption ? 'animate-caption-enter' : upcomingCaption ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
         `}
         style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
-        key={`caption-${activeCaption.startTime}-${activeCaption.endTime}`}
+        key={`caption-${workingCaption.startTime}-${workingCaption.endTime}`}
       >
       {/* Captions Container Box - Mobile Responsive with enhanced animations */}
       <div 
@@ -837,7 +839,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       
                       // Fallback to manual emphasis with jump effects and emotional context
                       if (word.emphasis) {
-                        const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
+                        const emotionalType = (workingCaption as any)?.intensity_metadata?.emotionalType;
                         switch (word.emphasis) {
                           case 'quiet':
                             return { 
@@ -894,9 +896,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                             style={{ marginRight: '0.3em' }}
                           >
                             {word.syllables.map((syl, sylIdx) => {
-                              const sylState = currentTime >= syl.startTime && currentTime <= syl.endTime ? 'active' 
-                                : currentTime > syl.endTime ? 'spoken' 
-                                : 'upcoming';
+                              const sylState = isReadAhead ? 'upcoming' : (
+                                currentTime >= syl.startTime && currentTime <= syl.endTime ? 'active' 
+                                  : currentTime > syl.endTime ? 'spoken' 
+                                  : 'upcoming'
+                              );
                               
                               return (
                                 <span
@@ -967,10 +971,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       </span>
                     );
                  })
-              ) : (
+             ) : (
                 // Fallback: show full text if no word-level timing
-                <span style={{ color: activeCaption.speakerColor || speakerColor }}>
-                  {activeCaption.text}
+                <span style={{ color: workingCaption.speakerColor || speakerColor }}>
+                  {workingCaption.text}
                 </span>
               )}
             </span>
