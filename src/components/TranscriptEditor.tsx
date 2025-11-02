@@ -940,8 +940,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
   const saveAllChanges = async () => {
     try {
-      // Save to database first
-      await saveTranscriptData(editingTranscript, selectedLanguage);
+      // Explicitly preserve character_id to prevent identity regressions
+      const safeSegments = editingTranscript.map(s => ({
+        ...s,
+        character_id: s.characterId ?? s.character_id ?? null,
+      }));
+      
+      // Save to database first (content only - identity preserved)
+      await saveTranscriptData(safeSegments, selectedLanguage);
+      
+      // Dispatch event to refresh video player
+      window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
+        detail: { 
+          videoId, 
+          language: selectedLanguage,
+          timestamp: Date.now()
+        }
+      }));
       
       // Immediately update the video player with changes
       console.log('💾 Saving all transcript changes with speaker info:', editingTranscript.length, 'segments');
@@ -964,7 +979,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       
       toast({
         title: "All Changes Saved",
-        description: "Transcript edits including speaker information have been saved and synced."
+        description: "Transcript edits saved. Character assignments preserved."
       });
     } catch (error) {
       console.error('Error saving transcript changes:', error);
