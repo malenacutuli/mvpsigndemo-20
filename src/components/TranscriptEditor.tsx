@@ -709,10 +709,28 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         const existingSegments = await loadTranscriptSegments(targetLanguage);
         if (existingSegments.length > 0) {
           console.log('✅ Found cached translation:', existingSegments.length, 'segments');
-          const convertedSegments = existingSegments.map(seg => ({
-            ...seg,
-            id: seg.id || `segment-${Date.now()}-${Math.random()}`
-          }));
+          
+          // ✅ Load characters to apply names and colors
+          const { data: characters } = await supabase
+            .from('characters')
+            .select('id, name, color')
+            .eq('video_id', videoId);
+          
+          const characterMap = new Map(characters?.map(c => [c.id, c]) || []);
+          
+          const convertedSegments = existingSegments.map(seg => {
+            const characterId = (seg as any).characterId || (seg as any).character_id;
+            const character = characterId ? characterMap.get(characterId) : null;
+            
+            return {
+              ...seg,
+              id: seg.id || `segment-${Date.now()}-${Math.random()}`,
+              speaker: character?.name || seg.speaker,
+              speakerColor: character?.color || seg.speakerColor,
+              characterId: characterId
+            };
+          });
+          
           setEditingTranscript(convertedSegments);
           setSelectedLanguage(targetLanguage);
           onTranscriptUpdate?.(convertedSegments, targetLanguage);
@@ -900,10 +918,27 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       // 3️⃣ Reload from database (now bypasses broken view) to get updated identity
       const reloadedSegments = await loadTranscriptSegments(selectedLanguage);
       if (reloadedSegments.length > 0) {
-        const convertedSegments = reloadedSegments.map(s => ({
-          ...s,
-          id: s.id || `segment-${Date.now()}-${Math.random()}`
-        }));
+        // ✅ Load characters to apply names and colors
+        const { data: characters } = await supabase
+          .from('characters')
+          .select('id, name, color')
+          .eq('video_id', videoId);
+        
+        const characterMap = new Map(characters?.map(c => [c.id, c]) || []);
+        
+        const convertedSegments = reloadedSegments.map(s => {
+          const characterId = (s as any).characterId || (s as any).character_id;
+          const character = characterId ? characterMap.get(characterId) : null;
+          
+          return {
+            ...s,
+            id: s.id || `segment-${Date.now()}-${Math.random()}`,
+            speaker: character?.name || s.speaker,
+            speakerColor: character?.color || s.speakerColor,
+            characterId: characterId
+          };
+        });
+        
         setEditingTranscript(convertedSegments);
         onTranscriptUpdate?.(convertedSegments, selectedLanguage);
         

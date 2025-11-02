@@ -398,6 +398,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       const allLanguages = transcripts?.map(t => t.language) || [language];
       console.log('🌍 Applying character mappings across all languages:', allLanguages);
       
+      // Type mapping to ensure valid database values
+      const typeMapping: Record<string, string> = {
+        'main': 'main',
+        'supporting': 'supporting',
+        'villain': 'minor', // Map villain to minor (valid DB type)
+        'minor': 'minor'
+      };
+      
       // First, save characters to database and get their IDs
       const { data: savedChars, error: saveError } = await supabase
         .from('characters')
@@ -406,7 +414,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             id: char.id.startsWith('char-') ? undefined : char.id,
             video_id: videoId,
             name: char.name,
-            type: char.type,
+            type: typeMapping[char.type] ?? 'minor', // Use mapping with fallback
             color: char.color,
             is_off_camera: char.isOffCamera || false,
             voice_id: char.voiceId,
