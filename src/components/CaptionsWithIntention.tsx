@@ -435,13 +435,37 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  // Render ONLY active (colored) OR upcoming (white read-ahead), never both
+  // ONE-CAPTION RULE: Render ONLY active (colored) OR upcoming (white), never both
   if (!activeCaption && !upcomingCaption) return null;
+  
+  // Read-ahead mode: show only white preview, no colored bubble
+  const isReadAhead = !activeCaption && !!upcomingCaption;
+  
+  if (isReadAhead) {
+    return (
+      <div className="relative w-full">
+        {SHOW_READAHEAD_PREVIEW && (
+          <div 
+            className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
+                       text-white/90 text-base font-light text-center pointer-events-none"
+            style={{
+              maxWidth: '92vw',
+              fontFamily: 'Roboto Flex, system-ui, sans-serif',
+              zIndex: 5
+            }}
+          >
+            {upcomingCaption!.text}
+          </div>
+        )}
+      </div>
+    );
+  }
 
-  // Use active caption if available, otherwise upcoming for read-ahead
-  const workingCaption = activeCaption || upcomingCaption;
-  if (!workingCaption) return null;
-
+  // Active mode: render ONLY the colored bubble (activeCaption exists)
+  if (!activeCaption) return null;
+  
+  const workingCaption = activeCaption;
+  
   // Enhanced word timing with provider-aware precision
   const hasProviderTimings = workingCaption.words && workingCaption.words.length > 0 && 
     workingCaption.words.some((w: any) => w.startTime !== undefined);
@@ -455,9 +479,6 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   
   // Track if we synthesized data (for persistence flag)
   let synthesizedWords = false;
-  
-  // For read-ahead captions, use white; for active, use speaker color
-  const isReadAhead = !activeCaption && !!upcomingCaption;
   
   // Synthesize word-level timing if missing with IMPROVED accuracy
   // Note: workingCaption is already defined above, we'll modify it in place
@@ -532,19 +553,19 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  const speakerColor = getColorFromPalette(activeCaption.speaker, customSpeakerColors, activeCaption.speakerColor);
-  const volume = (activeCaption as any)?.volume || 50;
+  const speakerColor = getColorFromPalette(workingCaption.speaker, customSpeakerColors, workingCaption.speakerColor);
+  const volume = (workingCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 
-    activeCaption.vocal_intensity, 
+    workingCaption.vocal_intensity, 
     volume, 
-    activeCaption.words?.[0]?.emphasis === 'whisper' ? 'quiet' : activeCaption.words?.[0]?.emphasis
+    workingCaption.words?.[0]?.emphasis === 'whisper' ? 'quiet' : workingCaption.words?.[0]?.emphasis
   );
-  const pitchStyle = getPitchBasedStyle(activeWord?.pitch || activeCaption.pitch);
+  const pitchStyle = getPitchBasedStyle(activeWord?.pitch || workingCaption.pitch);
   
   // Derive numeric pitch and an 'enthusiastic' heuristic
   const numericPitch = (() => {
-    const p = (activeWord?.pitch || activeCaption.pitch) as any;
+    const p = (activeWord?.pitch || workingCaption.pitch) as any;
     if (typeof p === 'number') return p;
     if (p === 'high') return 220;
     if (p === 'low') return 100;
@@ -552,32 +573,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   })();
   
   // Apply vocal intensity styling if available
-  const intensityStyles = activeCaption.vocal_intensity ? 
-    getIntensityStyles(activeCaption.vocal_intensity, activeCaption.intensity_confidence) : {};
+  const intensityStyles = workingCaption.vocal_intensity ? 
+    getIntensityStyles(workingCaption.vocal_intensity, workingCaption.intensity_confidence) : {};
   
-  const isEnthusiastic = (!activeCaption.vocal_intensity || activeCaption.vocal_intensity === 'normal') && numericPitch >= 210 && volume < 80;
+  const isEnthusiastic = (!workingCaption.vocal_intensity || workingCaption.vocal_intensity === 'normal') && numericPitch >= 210 && volume < 80;
   const isLoudBurst = volume >= 85;
-  const isSoundEffect = (activeCaption as any)?.type === 'soundeffect';
-  const isMusic = (activeCaption as any)?.type === 'music';
+  const isSoundEffect = (workingCaption as any)?.type === 'soundeffect';
+  const isMusic = (workingCaption as any)?.type === 'music';
 
   return (
     <div className="relative w-full">
-      {/* READ-AHEAD LAYER: Show upcoming caption in white (Design Guide) */}
-      {SHOW_READAHEAD_PREVIEW && upcomingCaption && !activeCaption && (
-        <div 
-          className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
-                     text-white/90 text-base font-light text-center pointer-events-none"
-          style={{
-            maxWidth: '92vw',
-            fontFamily: 'Roboto Flex, system-ui, sans-serif',
-            zIndex: 5
-          }}
-        >
-          {upcomingCaption.text}
-        </div>
-      )}
-
-      {/* ACTIVE CAPTION: Colored word-by-word rendering */}
+      {/* ACTIVE CAPTION: Colored word-by-word rendering (NO read-ahead here) */}
       <div 
         className={`
           relative flex items-end justify-center pointer-events-none w-full
