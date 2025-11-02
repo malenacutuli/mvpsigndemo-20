@@ -338,6 +338,37 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     handleMappingsUpdate();
   }, [characters, videoId, currentLanguage]);
 
+  // Listen for transcript-segments-updated events from TranscriptEditor
+  useEffect(() => {
+    const handler = async (e: CustomEvent) => {
+      if (e.detail?.videoId !== videoId) return;
+      
+      console.log('🔄 ENHANCED VIDEO PLAYER: Received transcript update event, refreshing captions...');
+      
+      const segments = await loadTranscriptSegments(currentLanguage);
+      const captionSegments = segments.map((seg: any) => ({
+        id: seg.id,
+        text: seg.text,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        speaker: seg.speaker,
+        speakerColor: seg.speakerColor,
+        emphasis: seg.emphasis,
+        pitch: seg.pitch,
+        words: seg.words,
+        speakerAsrLabel: seg.speakerAsrLabel
+      }));
+      
+      const stabilized = stabilizeSpeakerColors(captionSegments);
+      setCaptions(stabilized);
+      
+      console.log('✅ ENHANCED VIDEO PLAYER: Captions refreshed with updated character assignments');
+    };
+    
+    window.addEventListener('transcript-segments-updated', handler as EventListener);
+    return () => window.removeEventListener('transcript-segments-updated', handler as EventListener);
+  }, [videoId, currentLanguage, loadTranscriptSegments]);
+
   const handleTranscriptUpdate = async (segments: any[], detectedLang?: string) => {
     console.log('🔄 ENHANCED PLAYER: handleTranscriptUpdate received', segments.length, 'segments for language', detectedLang || 'current');
     
