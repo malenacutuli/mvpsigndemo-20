@@ -262,14 +262,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, [isMobileFullscreen]);
 
-  const activeCaption = useMemo(() => {
-    if (!generatedCaptions || generatedCaptions.length === 0) return null;
-    return (
-      generatedCaptions.find(
-        (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
-      ) || null
-    );
-  }, [generatedCaptions, currentTime]);
+  // Single-source caption pipeline - finalCaptions is computed later and used here
+  // We'll define finalCaptions first, then activeCaption
 
   useEffect(() => {
     const video = videoRef.current;
@@ -521,41 +515,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
-  // Use initial captions when provided - but DON'T override database captions
+  // Minimized mirroring: only as last-resort fallback when no captions exist
   useEffect(() => {
-    if (initialCaptions && initialCaptions.length > 0) {
-      console.log('🔄 AxessiblePlayer received new initialCaptions:', initialCaptions.length, 'segments');
-      console.log('🎨 First initial caption details:', initialCaptions[0] ? {
-        speaker: initialCaptions[0].speaker,
-        color: initialCaptions[0].speakerColor,
-        text: initialCaptions[0].text?.substring(0, 30),
-        currentLang: currentLanguage,
-        originalLang: originalLanguage
-      } : 'No caption');
-      
-      // CRITICAL: Only update if we're on the original language OR if we don't have captions yet
-      // Translated captions from LanguageSelector take absolute priority
-      const shouldUpdate = (
-        currentLanguage === originalLanguage || // User is viewing original language
-        !generatedCaptions || // No captions yet
-        generatedCaptions.length === 0 // Empty captions
-      );
-      
-      if (shouldUpdate) {
-        console.log('✅ Setting generatedCaptions from initialCaptions (lang:', currentLanguage, ')');
-        setGeneratedCaptions([...initialCaptions]);
-        
-        // Generate transcript text for dubbing from initial captions
-        const transcriptText = initialCaptions
-          .sort((a, b) => a.startTime - b.startTime)
-          .map(segment => segment.text)
-          .join(' ');
-        setGeneratedTranscript(transcriptText);
-      } else {
-        console.log('⏭️ Preserving existing captions - current lang:', currentLanguage, 'original:', originalLanguage);
-      }
+    if (initialCaptions && initialCaptions.length > 0 && !generatedCaptions?.length) {
+      console.log('📋 Fallback: Setting generatedCaptions from initialCaptions:', initialCaptions.length);
+      setGeneratedCaptions([...initialCaptions]);
     }
-  }, [initialCaptions, currentLanguage, originalLanguage]);
+  }, [initialCaptions, generatedCaptions?.length]);
 
   // Toggle and generate Dynamic Audio Description from AI
   const handleToggleDynamicAD = async () => {
@@ -818,30 +784,41 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     return result;
   };
 
-  // Single-source caption pipeline - initialCaptions is the only render source
+  // Single-source caption pipeline: pick translations ONLY when user switched languages
   const finalCaptions = useMemo(() => {
-    if (initialCaptions?.length) {
-      console.log('📥 Using INITIAL captions:', initialCaptions.length, 'segments');
-      console.log('🎯 First caption:', {
-        speaker: initialCaptions[0].speaker,
-        color: initialCaptions[0].speakerColor,
-        hasWords: !!initialCaptions[0].words?.length,
-        hasSyllables: initialCaptions[0].words?.some((w: any) => w.syllables?.length),
-        text: initialCaptions[0].text?.substring(0, 50) + '...'
-      });
-      return initialCaptions;
-    }
-    if (translatedContent?.captions?.length) {
+    // 1) If user selected a different language and we have translated captions, use them
+    if (currentLanguage !== originalLanguage && translatedContent?.captions?.length) {
       console.log('🌐 Using TRANSLATED captions:', translatedContent.captions.length);
       return translatedContent.captions;
     }
+    // 2) Otherwise render the original database captions
+    if (initialCaptions?.length) {
+      console.log('📥 Using INITIAL captions:', initialCaptions.length);
+      return initialCaptions;
+    }
+    // 3) Last-resort fallback (rare)
     if (generatedCaptions?.length) {
       console.log('🎯 Using GENERATED captions:', generatedCaptions.length);
       return generatedCaptions;
     }
     console.log('⚠️ No captions available');
     return [];
-  }, [initialCaptions, translatedContent, generatedCaptions]);
+  }, [initialCaptions, translatedContent, generatedCaptions, currentLanguage, originalLanguage]);
+
+  // Active caption from finalCaptions (no more shadow sources)
+  const activeCaption = useMemo(() => {
+    if (!finalCaptions.length) return null;
+    return finalCaptions.find(seg => currentTime >= seg.startTime && currentTime <= seg.endTime) || null;
+  }, [finalCaptions, currentTime]);
+
+  // Build transcript text from what the user actually sees
+  const transcriptText = useMemo(() => {
+    return finalCaptions
+      .slice()
+      .sort((a, b) => a.startTime - b.startTime)
+      .map(s => s.text)
+      .join(' ');
+  }, [finalCaptions]);
 
   return (
     <div 
@@ -1082,7 +1059,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             captions={finalCaptions}
             currentTime={currentTime}
             isVisible={showCaptions}
-            screenHeight={window?.innerHeight || 1080}
+            screenHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
           />
         </div>
       )}
@@ -1165,7 +1142,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             {/* Language & Dubbing */}
             <div className="flex items-center gap-1">
               <SynchronizedDubbingPlayer
-                transcriptText={generatedTranscript}
+                transcriptText={transcriptText}
                 audioDescriptions={dynamicDescriptions?.length ? dynamicDescriptions : (generatedAD || [])}
                 currentTime={currentTime}
                 isPlaying={isPlaying}
