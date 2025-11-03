@@ -391,11 +391,6 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         }));
       }
       
-      // ✅ SYLLABLE EXPANSION: After timings are set, expand words to syllables
-      if (workingSeg.words && workingSeg.words.length > 0) {
-        workingSeg.words = expandWordsToSyllables(workingSeg.words, seg.startTime, seg.endTime);
-      }
-      
       // Compute font for this segment
       const font = computeFontForSegment(workingSeg, screenHeight, volume);
       

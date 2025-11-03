@@ -75,7 +75,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     return unique;
   }, [transcriptSegments]);
   // Single neutral color until character is explicitly identified
-  const DEFAULT_NEUTRAL = '#FFFFFF'; // White for unidentified speakers
+  const DEFAULT_NEUTRAL = '#22E3D0'; // Light blue for unidentified speakers
   
   const resolveSpeakerColor = (seg: any): string => {
     // Single color unless a character has been explicitly assigned
