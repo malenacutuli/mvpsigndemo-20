@@ -350,58 +350,50 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   isVisible = true,
   screenHeight = 1080
 }) => {
-  // Timing constants tuned to avoid flicker and missing frames
-  const SEGMENT_TOLERANCE = 0.15; // ±150ms around start/end
-  const MIN_DISPLAY_MS = 800;     // 0.8s minimum on screen
+  // --- Timing constants to prevent flicker & premature removal ---
+  const SEGMENT_TOLERANCE = 0.20;   // seconds, ±200ms: window for segment visibility
+  const WORD_TOLERANCE    = 0.10;   // seconds, ±100ms: word/syllable highlighting
+  const MIN_DISPLAY_MS    = 1200;   // milliseconds: keep a caption on screen at least 1.2s
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Paginate captions to 2-line visual pages using pixel-accurate measurement
+  // Process captions without pagination - clamp with CSS instead to preserve exact DB timings
   const processed = React.useMemo(() => {
-    // Match measurement width to actual container width (max-w-[95vw] sm:max-w-2xl with padding)
-    const containerMaxPx = window.innerWidth < 640
-      ? Math.round(window.innerWidth * 0.95)
-      : 672; // Tailwind sm:max-w-2xl = 42rem = 672px
-    const horizontalPadding = window.innerWidth < 640 ? 16 : 32; // px-2 => 16px total, sm:px-4 => 32px total
+    const containerMaxPx = window.innerWidth < 640 ? Math.round(window.innerWidth * 0.95) : 672;
+    const horizontalPadding = window.innerWidth < 640 ? 16 : 32;
     const maxBoxWidthPx = Math.max(0, containerMaxPx - horizontalPadding);
-    const volume = 50; // default volume for font computation
-    
-    return captions.flatMap((seg: any) => {
-      // Ensure words have timings (backfill if needed, preserving emphasis/pitch)
-      let workingSeg = { ...seg };
+    const volume = 50;
+
+    return captions.map((seg: any) => {
+      const workingSeg = { ...seg };
       const haveWords = Array.isArray(seg.words) && seg.words.length > 0;
-      const haveTiming = haveWords && seg.words.some((w: any) => 
+      const haveTiming = haveWords && seg.words.some((w: any) =>
         typeof w.startTime === 'number' && typeof w.endTime === 'number'
       );
-      
+
       if (!haveWords) {
-        // Last-resort synthesis from text
         const words = (seg.text || '').split(/\s+/).filter(Boolean);
-        const dur = seg.endTime - seg.startTime;
+        const dur = Math.max(0.001, seg.endTime - seg.startTime);
         const step = dur / Math.max(1, words.length);
         workingSeg.words = words.map((text: string, i: number) => ({
           text,
           startTime: seg.startTime + i * step,
-          endTime: seg.startTime + (i + 1) * step,
+          endTime:   seg.startTime + (i + 1) * step,
           emphasis: 'normal',
           pitch: 'normal'
         }));
       } else if (!haveTiming) {
-        // Backfill timings IN PLACE, preserving emphasis/pitch
-        const dur = seg.endTime - seg.startTime;
+        const dur = Math.max(0.001, seg.endTime - seg.startTime);
         const step = dur / Math.max(1, seg.words.length);
         workingSeg.words = seg.words.map((w: any, i: number) => ({
           ...w,
           startTime: w.startTime ?? (seg.startTime + i * step),
-          endTime: w.endTime ?? (seg.startTime + (i + 1) * step)
+          endTime:   w.endTime   ?? (seg.startTime + (i + 1) * step),
         }));
       }
-      
-      // Compute font for this segment
+
       const font = computeFontForSegment(workingSeg, screenHeight, volume);
-      
-      // Paginate to 2-line visual pages
-      return paginateTwoLinesByWidth(workingSeg, font, maxBoxWidthPx);
+      return { ...workingSeg, _font: font, _maxBoxWidthPx: maxBoxWidthPx };
     });
   }, [captions, screenHeight]);
 
@@ -436,34 +428,63 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     };
   }, []);
 
-  // Active caption with looser tolerance + min display window
-  const rawActive = React.useMemo(() => {
+  // What we actually render - sticky display state
+  const [displayedCaption, setDisplayedCaption] = React.useState<any>(null);
+
+  // Refs (do not cause re-renders)
+  const showUntilSecRef   = React.useRef<number | null>(null); // seconds
+  const lastSetMsRef      = React.useRef<number>(0);           // ms (Date.now)
+
+  // Candidate purely by media time with generous tolerance
+  const activeCandidate = React.useMemo(() => {
     return processed.find(c =>
       currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
-      currentTime <= (c.endTime + SEGMENT_TOLERANCE)
+      currentTime <= (c.endTime   + SEGMENT_TOLERANCE)
     ) ?? null;
-  }, [processed, currentTime, SEGMENT_TOLERANCE]);
+  }, [processed, currentTime]);
 
-  const [displayedCaption, setDisplayedCaption] = useState<any | null>(null);
-  const [displayUntil, setDisplayUntil] = useState<number | null>(null);
+  // Sticky logic
+  React.useEffect(() => {
+    const nowMs = Date.now();
 
-  useEffect(() => {
-    if (rawActive) {
-      setDisplayedCaption(rawActive);
-      const minEnd = rawActive.startTime + MIN_DISPLAY_MS / 1000;
-      const extendedEnd = Math.max(rawActive.endTime, minEnd);
-      setDisplayUntil(extendedEnd);
-    } else if (displayedCaption && displayUntil !== null) {
-      // Keep showing until our minimum window elapses
-      if (currentTime > displayUntil + SEGMENT_TOLERANCE) {
-        setDisplayedCaption(null);
-        setDisplayUntil(null);
+    if (activeCandidate) {
+      // New or changed caption → show it immediately
+      const changed =
+        !displayedCaption ||
+        displayedCaption.startTime !== activeCandidate.startTime ||
+        displayedCaption.endTime   !== activeCandidate.endTime;
+
+      if (changed) {
+        setDisplayedCaption(activeCandidate);
+        lastSetMsRef.current = nowMs;
+
+        // keep visible until real end OR at least MIN_DISPLAY_MS from now
+        const minEndByMs   = lastSetMsRef.current + MIN_DISPLAY_MS; // ms
+        const minEndBySec  = minEndByMs / 1000;                     // convert to seconds
+        showUntilSecRef.current = Math.max(activeCandidate.endTime, minEndBySec);
       }
-    } else {
-      setDisplayedCaption(null);
-      setDisplayUntil(null);
+      return; // Nothing to clear while we have a candidate
     }
-  }, [rawActive, currentTime]); // eslint-disable-line
+
+    // No candidate → maybe clear after both conditions:
+    // 1) media time beyond showUntilSecRef + tolerance
+    // 2) at least MIN_DISPLAY_MS elapsed since we set it
+    if (displayedCaption) {
+      const elapsedMs = nowMs - lastSetMsRef.current;
+      const showUntilSec = showUntilSecRef.current ?? displayedCaption.endTime;
+      const canClearByTime = currentTime > (showUntilSec + SEGMENT_TOLERANCE);
+      const canClearByMin  = elapsedMs >= MIN_DISPLAY_MS;
+
+      if (canClearByTime && canClearByMin) {
+        // small exit delay to allow CSS transition to play
+        const t = setTimeout(() => {
+          setDisplayedCaption(null);
+          showUntilSecRef.current = null;
+        }, 150);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [activeCandidate, currentTime, displayedCaption]);
 
   const activeCaption = displayedCaption;
 
@@ -773,12 +794,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 
                 return words.length > 0 ? (
                   words.map((word, i) => {
-                    // Looser tolerance for per-word highlight
-                    const WORD_TOL = 0.08;
-                    const SYL_TOL = 0.08;
+                    // Use consistent tolerance from constants
                     const wordActive =
-                      currentTime >= (word.startTime! - WORD_TOL) &&
-                      currentTime <= (word.endTime! + WORD_TOL);
+                      currentTime >= (word.startTime! - WORD_TOLERANCE) &&
+                      currentTime <= (word.endTime! + WORD_TOLERANCE);
 
                     // Style by emphasis/pitch if present
                     const scale =
@@ -796,16 +815,19 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     
                     if (hasSyllables) {
                       const activeSylIdx = word.syllables.findIndex((s: any) =>
-                        currentTime >= (s.startTime - SYL_TOL) &&
-                        currentTime <= (s.endTime + SYL_TOL)
+                        currentTime >= (s.startTime - WORD_TOLERANCE) &&
+                        currentTime <= (s.endTime + WORD_TOLERANCE)
                       );
                       // If your injection precomputes charEnd, use it; else estimate proportionally
                       if (activeSylIdx >= 0) {
                         const s = word.syllables[activeSylIdx];
                         const charEnd = typeof s.charEnd === 'number'
                           ? s.charEnd
-                          : Math.round((Math.min(word.endTime, s.endTime) - Math.max(word.startTime, s.startTime)) / Math.max(0.001, (word.endTime - word.startTime)) * word.text.length);
-                        progressPct = Math.max(0, Math.min(100, Math.round((charEnd / Math.max(1, word.text.length)) * 100)));
+                          : Math.min(
+                              word.text.length,
+                              Math.round(((activeSylIdx + 1) / word.syllables.length) * word.text.length)
+                            );
+                        progressPct = Math.round((charEnd / word.text.length) * 100);
                       }
                     }
 
