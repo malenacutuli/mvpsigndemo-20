@@ -4,6 +4,9 @@ import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { syllabify, injectSyllables } from '@/lib/syllables';
 import { paginateTwoLinesByWidth, type FontOpts } from '@/utils/captionsFit';
 
+// Single neutral color until character is explicitly assigned
+const DEFAULT_NEUTRAL = '#22E3D0'; // Light blue for unidentified speakers
+
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
   // Read-ahead text color (white at 90% opacity)
@@ -607,7 +610,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   }
 
   // Use neutral color until character assigned (no palette fallback)
-  const speakerColor = workingCaption.speakerColor || '#22E3D0';
+  const baseColor = workingCaption.speakerColor || DEFAULT_NEUTRAL;
   const volume = (workingCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 
@@ -678,7 +681,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           <div 
             className="text-xs font-medium mb-1 text-center"
             style={{ 
-              color: activeCaption.speakerColor || speakerColor,
+              color: activeCaption.speakerColor || DEFAULT_NEUTRAL,
               fontSize: `${Math.max(10, baseFontSize * (window.innerWidth < 640 ? 0.45 : 0.35))}px` // Better mobile readability
             }}
           >
@@ -718,7 +721,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               style={{ 
                 fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal',
                 // Fallback color to ensure tint from t=0 even if per-word style is overridden
-                color: activeCaption.speakerColor || '#22E3D0'
+                color: activeCaption.speakerColor || DEFAULT_NEUTRAL
               }}
             >
               {(() => {
@@ -753,10 +756,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       word.emphasis === "quiet" ? 0.92 : 1.0;
 
                     // Use neutral color until character is assigned (no palette fallback)
-                    const speakerColor = activeCaption.speakerColor || '#22E3D0';
+                    const wordColor = activeCaption.speakerColor || DEFAULT_NEUTRAL;
                     
                     // Compute the fill and stroke colors based on active status
-                    const baseFill = wordActive ? '#FFFFFF' : speakerColor;
+                    const baseFill = wordActive ? '#FFFFFF' : wordColor;
 
                     // Render syllables if word has them (words ≥6 characters)
                     const hasSyllables = word.syllables && word.syllables.length > 1;
@@ -792,7 +795,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                               <span
                                 key={sylIdx}
                                 style={{
-                                  color: activeCaption.speakerColor || speakerColor,
+                                  color: activeCaption.speakerColor || DEFAULT_NEUTRAL,
                                   fontWeight: isSylActive ? 700 : 600,
                                   opacity: isSylActive ? 1.0 : 0.85,
                                   transition: 'all 0.1s ease'
@@ -804,7 +807,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                           })
                         ) : (
                           // Word without syllables - display as single unit
-                          <span style={{ color: activeCaption.speakerColor || speakerColor }}>
+                          <span style={{ color: activeCaption.speakerColor || DEFAULT_NEUTRAL }}>
                             {word.text}
                           </span>
                         )}
@@ -813,7 +816,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                   })
                 ) : (
                   // Fallback: show full text if no words
-                  <span style={{ color: workingCaption.speakerColor || speakerColor }}>
+                  <span style={{ color: workingCaption.speakerColor || DEFAULT_NEUTRAL }}>
                     {workingCaption.text}
                   </span>
                 );
