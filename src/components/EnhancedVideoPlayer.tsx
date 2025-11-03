@@ -805,12 +805,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               // Trust what the DB view already decided (character name or "Speaker A/B/C")
               const speaker = (segment as any).speaker || 'Unknown';
 
+              // Inject syllables for words ≥6 characters
+              const wordsWithSyllables = words && words.length > 0 ? injectSyllables(words) : words;
+
               return {
                 text: segment.text,
                 speaker,
                 startTime: start,
                 endTime: end,
-                words,
+                words: wordsWithSyllables,
                 speakerColor: segment.speakerColor || '#3B82F6',
                 pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
                 volume: 50,

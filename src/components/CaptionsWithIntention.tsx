@@ -129,7 +129,7 @@ function naiveSyllabify(text: string): string[] {
   return [text];
 }
 
-type Word = { text: string; startTime?: number; endTime?: number; emphasis?: string; pitch?: string; syllables?: string[] };
+type Word = { text: string; startTime?: number; endTime?: number; emphasis?: string; pitch?: string; syllables?: Array<{ text: string; startTime: number; endTime: number }> };
 
 function expandWordsToSyllables(words: Word[], segStart: number, segEnd: number) {
   // Ensure words have timings (keep existing; otherwise distribute evenly)
@@ -742,7 +742,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 
                 return words.length > 0 ? (
                   words.map((word, i) => {
-                    const active =
+                    const wordActive =
                       currentTime >= (word.startTime! - 0.06) &&
                       currentTime <= (word.endTime! + 0.06);
 
@@ -751,19 +751,47 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       word.emphasis === "yelling" || word.emphasis === "loud" ? 1.18 :
                       word.emphasis === "quiet" ? 0.92 : 1.0;
 
+                    // Render syllables if word has them (words ≥6 characters)
+                    const hasSyllables = word.syllables && word.syllables.length > 1;
+
                     return (
                       <span
                         key={`${i}-${word.startTime}`}
-                        className={`caption-word ${active ? "word-active" : ""}`}
+                        className={`caption-word ${wordActive ? "word-active" : ""}`}
                         style={{ 
                           transform: `scale(${scale})`,
-                          color: activeCaption.speakerColor || speakerColor,
                           marginRight: '0.3em',
                           display: 'inline-block',
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        {word.text}
+                        {hasSyllables ? (
+                          // Render individual syllables with independent highlighting
+                          word.syllables!.map((syl, sylIdx) => {
+                            const isSylActive = 
+                              currentTime >= (syl.startTime - 0.03) &&
+                              currentTime <= (syl.endTime + 0.03);
+                            
+                            return (
+                              <span
+                                key={sylIdx}
+                                style={{
+                                  color: activeCaption.speakerColor || speakerColor,
+                                  fontWeight: isSylActive ? 700 : 600,
+                                  opacity: isSylActive ? 1.0 : 0.85,
+                                  transition: 'all 0.1s ease'
+                                }}
+                              >
+                                {syl.text}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          // Word without syllables - display as single unit
+                          <span style={{ color: activeCaption.speakerColor || speakerColor }}>
+                            {word.text}
+                          </span>
+                        )}
                       </span>
                     );
                   })
