@@ -110,12 +110,26 @@ export interface CaptionSegment {
   auto_styling?: any;       // Computed styling from vocal intensity
 }
 
+// ---------- NEW: style mode ----------
+type KaraokeMode = 'textFill' | 'wordHighlight' | 'lineFill';
+
 interface CaptionsWithIntentionProps {
   captions: CaptionSegment[];
   currentTime: number;
   isVisible?: boolean;
   screenHeight?: number;
+  karaokeMode?: KaraokeMode; // NEW
 }
+
+// Small helper for rgba from hex
+const hexToRgba = (hex: string, alpha = 1) => {
+  const m = hex.replace('#', '');
+  const bigint = parseInt(m.length === 3 ? m.split('').map(c => c + c).join('') : m, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 // --- CWI: syllable support -----------------------------------------------
 const VOWEL_RE = /[aeiouyáéíóúàèìòùäëïöü]/i;
@@ -348,7 +362,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   captions,
   currentTime,
   isVisible = true,
-  screenHeight = 1080
+  screenHeight = 1080,
+  karaokeMode = 'textFill' // NEW default
 }) => {
   // --- Timing constants to prevent flicker & premature removal ---
   const SEGMENT_TOLERANCE = 0.20;   // seconds, ±200ms: window for segment visibility
@@ -359,43 +374,55 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Process captions without pagination - clamp with CSS instead to preserve exact DB timings
   const processed = React.useMemo(() => {
-    const containerMaxPx = window.innerWidth < 640 ? Math.round(window.innerWidth * 0.95) : 672;
-    const horizontalPadding = window.innerWidth < 640 ? 16 : 32;
-    const maxBoxWidthPx = Math.max(0, containerMaxPx - horizontalPadding);
-    const volume = 50;
-
     return captions.map((seg: any) => {
-      const workingSeg = { ...seg };
-      const haveWords = Array.isArray(seg.words) && seg.words.length > 0;
-      const haveTiming = haveWords && seg.words.some((w: any) =>
-        typeof w.startTime === 'number' && typeof w.endTime === 'number'
-      );
+      const working = { ...seg };
+
+      // Ensure words & timing exist
+      const haveWords = Array.isArray(working.words) && working.words.length > 0;
+      const wordsHaveTiming =
+        haveWords && working.words.some((w: any) =>
+          typeof w.startTime === 'number' && typeof w.endTime === 'number'
+        );
 
       if (!haveWords) {
-        const words = (seg.text || '').split(/\s+/).filter(Boolean);
-        const dur = Math.max(0.001, seg.endTime - seg.startTime);
-        const step = dur / Math.max(1, words.length);
-        workingSeg.words = words.map((text: string, i: number) => ({
+        const tokens = (working.text || '').split(/\s+/).filter(Boolean);
+        const dur = Math.max(0.001, working.endTime - working.startTime);
+        const step = dur / Math.max(1, tokens.length);
+        working.words = tokens.map((text: string, i: number) => ({
           text,
-          startTime: seg.startTime + i * step,
-          endTime:   seg.startTime + (i + 1) * step,
-          emphasis: 'normal',
-          pitch: 'normal'
+          startTime: working.startTime + i * step,
+          endTime:   working.startTime + (i + 1) * step,
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const
         }));
-      } else if (!haveTiming) {
-        const dur = Math.max(0.001, seg.endTime - seg.startTime);
-        const step = dur / Math.max(1, seg.words.length);
-        workingSeg.words = seg.words.map((w: any, i: number) => ({
+      } else if (!wordsHaveTiming) {
+        const dur = Math.max(0.001, working.endTime - working.startTime);
+        const step = dur / Math.max(1, working.words.length);
+        working.words = working.words.map((w: any, i: number) => ({
           ...w,
-          startTime: w.startTime ?? (seg.startTime + i * step),
-          endTime:   w.endTime   ?? (seg.startTime + (i + 1) * step),
+          startTime: w.startTime ?? (working.startTime + i * step),
+          endTime:   w.endTime   ?? (working.startTime + (i + 1) * step),
         }));
       }
 
-      const font = computeFontForSegment(workingSeg, screenHeight, volume);
-      return { ...workingSeg, _font: font, _maxBoxWidthPx: maxBoxWidthPx };
+      // Ensure syllables have charEnd once (proportional if missing)
+      working.words = (working.words || []).map((w: any) => {
+        if (Array.isArray(w.syllables) && w.syllables.length > 1) {
+          const len = Math.max(1, (w.text || '').length);
+          let hasCharEnd = w.syllables.some((s: any) => typeof s.charEnd === 'number');
+          if (!hasCharEnd) {
+            w.syllables = w.syllables.map((s: any, i: number) => ({
+              ...s,
+              charEnd: Math.min(len, Math.round(((i + 1) / w.syllables.length) * len))
+            }));
+          }
+        }
+        return w;
+      });
+
+      return working;
     });
-  }, [captions, screenHeight]);
+  }, [captions]);
 
   // Listen for character color updates from Character Manager
   useEffect(() => {
@@ -486,384 +513,122 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, [activeCandidate, currentTime, displayedCaption]);
 
-  const activeCaption = displayedCaption;
+  if (!displayedCaption) return null;
+  const cap = displayedCaption;
 
-  const upcomingCaption = React.useMemo(() => {
-    if (!SHOW_READAHEAD_PREVIEW || activeCaption) return null;
-    
-    return processed.find(c =>
-      c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_SECONDS
-    ) ?? null;
-  }, [processed, currentTime, activeCaption]);
+  // Neutral color until a character is assigned
+  const resolvedColor = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
 
-  // Debug caption rendering and character colors
-  useEffect(() => {
-    if (processed && processed.length > 0) {
-      console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-      console.log('📊 Available captions count:', processed.length);
-      console.log('🔍 Caption time ranges:', processed.slice(0, 3).map(c => ({
-        start: c.startTime, 
-        end: c.endTime, 
-        text: c.text.substring(0, 20) + '...',
-        speaker: c.speaker,
-        speakerColor: c.speakerColor
-      })));
-      
-      if (activeCaption) {
-        console.log('🎯 Active caption details:', {
-          startTime: activeCaption.startTime,
-          endTime: activeCaption.endTime,
-          text: activeCaption.text.substring(0, 30) + '...',
-          speaker: activeCaption.speaker,
-          speakerColor: activeCaption.speakerColor,
-          hasColor: !!activeCaption.speakerColor
-        });
+  // Word progress: syllables → charEnd; else proportional by time
+  const wordProgressPct = (w: any): number => {
+    // If syllabified, advance up to active syllable
+    if (Array.isArray(w.syllables) && w.syllables.length > 1) {
+      const idx = w.syllables.findIndex((s: any) =>
+        currentTime >= (s.startTime - WORD_TOLERANCE) &&
+        currentTime <= (s.endTime   + WORD_TOLERANCE)
+      );
+      if (idx >= 0) {
+        const len = Math.max(1, (w.text || '').length);
+        const ce  = Math.min(len, Number(w.syllables[idx].charEnd ?? len));
+        return Math.round((ce / len) * 100);
       }
     }
-  }, [processed, currentTime, activeCaption]);
+    // Fallback: proportional time fill across the word window
+    const dur = Math.max(0.001, (w.endTime - w.startTime));
+    const raw = ((currentTime - (w.startTime - WORD_TOLERANCE)) / (dur + 2 * WORD_TOLERANCE)) * 100;
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  };
 
-  console.log('⏰ CaptionsWithIntention - Current time:', currentTime, 'Active caption found:', !!activeCaption);
-  console.log('📊 Available captions count:', processed.length);
-  console.log('🔍 Caption time ranges:', processed.slice(0, 3).map(c => ({
-    start: c.startTime, 
-    end: c.endTime, 
-    text: c.text.substring(0, 20) + '...' 
-  })));
-  
-  if (activeCaption) {
-    console.log('🎯 Active caption details:', {
-      startTime: activeCaption.startTime,
-      endTime: activeCaption.endTime,
-      text: activeCaption.text.substring(0, 30) + '...',
-      speaker: activeCaption.speaker
-    });
-  }
-
-  // ONE-CAPTION RULE: Render ONLY active (colored) OR upcoming (white), never both
-  if (!activeCaption && !upcomingCaption) return null;
-  
-  // Read-ahead mode: show only white preview, no colored bubble
-  const isReadAhead = !activeCaption && !!upcomingCaption;
-  
-  if (isReadAhead) {
-    return (
-      <div className="relative w-full">
-        {SHOW_READAHEAD_PREVIEW && (
-          <div 
-            className="absolute bottom-32 left-1/2 transform -translate-x-1/2 
-                       text-white/90 text-base font-light text-center pointer-events-none"
-            style={{
-              maxWidth: '92vw',
-              fontFamily: 'Roboto Flex, system-ui, sans-serif',
-              zIndex: 5
-            }}
-          >
-            {upcomingCaption!.text}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Active mode: render ONLY the colored bubble (activeCaption exists)
-  if (!activeCaption) return null;
-
-  const workingCaption = activeCaption;
-  
-  // Enhanced word timing with provider-aware precision
-  const hasProviderTimings = workingCaption.words && workingCaption.words.length > 0 && 
-    workingCaption.words.some((w: any) => w.startTime !== undefined);
-  
-  // Tighter tolerance for provider data (AssemblyAI/Deepgram), looser for synthesized
-  const TIMING_TOLERANCE = hasProviderTimings ? 0.03 : 0.06; // 30ms vs 60ms
-  const READAHEAD_BUFFER = 0.025; // Start highlighting 25ms early for better perceived sync
-  
-  // Use full caption text (auto-segmentation handled in AxessiblePlayer)
-  const captionText = workingCaption.text;
-  
-  // Track if we synthesized data (for persistence flag)
-  let synthesizedWords = false;
-  
-  // Synthesize word-level timing if missing with IMPROVED accuracy
-  // Note: workingCaption is already defined above, we'll modify it in place
-  
-  // ✅ CRITICAL: Check if words exist and have timings, preserve emphasis/pitch when backfilling
-  const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
-  const haveTiming = haveWords && workingCaption.words!.some(w =>
-    typeof w.startTime === 'number' && typeof w.endTime === 'number'
-  );
-
-  if (!haveWords) {
-    // Last resort: synthesize words from text
-    synthesizedWords = true;
-    console.log('🧩 CAPTIONS: Synthesizing words from text (no word data)');
-    const words = captionText.trim().split(/\s+/).filter(Boolean);
-    const duration = workingCaption.endTime - workingCaption.startTime;
-    const step = duration / Math.max(1, words.length);
-    
-    workingCaption.words = words.map((word, i) => ({
-      text: word,
-      startTime: workingCaption.startTime + i * step,
-      endTime: workingCaption.startTime + (i + 1) * step,
-      emphasis: 'normal' as const,
-      pitch: 'normal' as const
-    }));
-  } else if (!haveTiming) {
-    // Words exist but lack timings - backfill IN PLACE, keeping emphasis/pitch
-    console.log('🎤 CAPTIONS: Backfilling timings while preserving emphasis/pitch');
-    const duration = workingCaption.endTime - workingCaption.startTime;
-    const step = duration / Math.max(1, workingCaption.words!.length);
-    
-    workingCaption.words = workingCaption.words!.map((w, i) => ({
-      ...w, // ✅ Preserve all existing properties (emphasis, pitch, etc.)
-      startTime: w.startTime ?? (workingCaption.startTime + i * step),
-      endTime: w.endTime ?? (workingCaption.startTime + (i + 1) * step),
-    }));
-  }
-  
-  // Apply read-ahead buffer to account for audio processing latency
-  const adjustedTime = currentTime + READAHEAD_BUFFER;
-  
-  let activeWordIndex = workingCaption.words?.findIndex(word => 
-    adjustedTime >= (word.startTime - TIMING_TOLERANCE) && 
-    adjustedTime <= (word.endTime + TIMING_TOLERANCE)
-  ) ?? -1;
-  
-  // Fallback: if within segment but no word matches, pick by proportional progress
-  if (activeWordIndex < 0 && adjustedTime >= workingCaption.startTime - TIMING_TOLERANCE && adjustedTime <= workingCaption.endTime + TIMING_TOLERANCE) {
-    const progress = (adjustedTime - workingCaption.startTime) / Math.max(0.001, (workingCaption.endTime - workingCaption.startTime));
-    activeWordIndex = Math.min(workingCaption.words.length - 1, Math.max(0, Math.floor(progress * workingCaption.words.length)));
-  }
-  const activeWord = activeWordIndex >= 0 ? workingCaption.words?.[activeWordIndex] : undefined;
-
-  // Debug word timing for development
-  if (workingCaption.words && workingCaption.words.length > 0) {
-    console.log('⏰ Word timing debug:', {
-      currentTime: currentTime.toFixed(3),
-      activeWordIndex,
-      totalWords: workingCaption.words.length,
-      activeWord: activeWord ? {
-        text: activeWord.text,
-        start: activeWord.startTime?.toFixed(3),
-        end: activeWord.endTime?.toFixed(3)
-      } : null,
-      segment: {
-        text: workingCaption.text.substring(0, 30) + '...',
-        start: workingCaption.startTime.toFixed(3),
-        end: workingCaption.endTime.toFixed(3),
-        hasWords: !!workingCaption.words,
-        wordCount: workingCaption.words?.length || 0
-      }
-    });
-  }
-
-  // Use neutral color until character assigned (no palette fallback)
-  const baseColor = workingCaption.speakerColor || DEFAULT_NEUTRAL;
-  const volume = (workingCaption as any)?.volume || 50;
-  const baseFontSize = getIntonationBasedFontSize(
-    screenHeight, 
-    workingCaption.vocal_intensity, 
-    volume, 
-    workingCaption.words?.[0]?.emphasis === 'whisper' ? 'quiet' : workingCaption.words?.[0]?.emphasis
-  );
-  const pitchStyle = getPitchBasedStyle(activeWord?.pitch || workingCaption.pitch);
-  
-  // Derive numeric pitch and an 'enthusiastic' heuristic
-  const numericPitch = (() => {
-    const p = (activeWord?.pitch || workingCaption.pitch) as any;
-    if (typeof p === 'number') return p;
-    if (p === 'high') return 220;
-    if (p === 'low') return 100;
-    return 180;
-  })();
-  
-  // Apply vocal intensity styling if available
-  const intensityStyles = workingCaption.vocal_intensity ? 
-    getIntensityStyles(workingCaption.vocal_intensity, workingCaption.intensity_confidence) : {};
-  
-  // Compute font size for rendering (must match measurement phase)
-  const renderFont = computeFontForSegment(workingCaption, screenHeight, volume || 50);
-  
-  const isEnthusiastic = (!workingCaption.vocal_intensity || workingCaption.vocal_intensity === 'normal') && numericPitch >= 210 && volume < 80;
-  const isLoudBurst = volume >= 85;
-  const isSoundEffect = (workingCaption as any)?.type === 'soundeffect';
-  const isMusic = (workingCaption as any)?.type === 'music';
+  const words = (cap.words || []) as any[];
+  const isLineFill = karaokeMode === 'lineFill';
+  const segDur = Math.max(0.001, cap.endTime - cap.startTime);
+  const segmentPct = Math.max(0, Math.min(100, Math.round(
+    ((currentTime - (cap.startTime - SEGMENT_TOLERANCE)) / (segDur + 2 * SEGMENT_TOLERANCE)) * 100
+  )));
+  const baseColor = resolvedColor;
 
   return (
     <div className="relative w-full">
-      {/* ACTIVE CAPTION: Colored word-by-word rendering (NO read-ahead here) */}
-      <div 
-        className={`
-          relative flex items-end justify-center pointer-events-none w-full
-          ${activeCaption ? 'animate-caption-enter' : upcomingCaption ? 'animate-caption-enter opacity-70' : 'animate-caption-exit'}
-        `}
-        style={{ fontFamily: 'Roboto Flex, system-ui, sans-serif' }}
-        key={`caption-${workingCaption.startTime}-${workingCaption.endTime}`}
-      >
-      {/* Captions Container Box - Mobile Responsive with enhanced animations */}
-      <div 
-        className={`
+      <div
+        className="
           relative inline-block max-w-[95vw] sm:max-w-2xl text-center
-          ${isLoudBurst ? '' : 'bg-black/90'} 
-          ${isLoudBurst ? '' : 'rounded-md sm:rounded-lg'} 
-          ${isLoudBurst ? '' : 'px-2 py-1.5 sm:px-4 sm:py-3'}
-          ${isLoudBurst ? '' : 'mx-2 sm:mx-4'}
-          ${isLoudBurst ? 'animate-emphasis-bounce' : 'animate-box-resize'}
-        `}
+          bg-black/90 rounded-md sm:rounded-lg px-2 py-1.5 sm:px-4 sm:py-3 mx-2 sm:mx-4
+          transition-opacity duration-150
+        "
         style={{
-          maxHeight: `${screenHeight * 0.25}px`,
-          overflow: 'hidden',
-          // For loud bursts, captions break out of the box
-          ...(isLoudBurst && {
-            background: 'none',
-            padding: 0,
-            margin: 0,
-          }),
-          // Enhanced layout containment for smooth animations
-          contain: 'layout style paint',
-          willChange: 'contents, transform'
+          ...(isLineFill ? {
+            backgroundImage: `linear-gradient(to right, ${hexToRgba(baseColor, 0.32)} ${segmentPct}%, transparent ${segmentPct}%)`,
+          } : {})
         }}
       >
-        {/* Speaker name label - only show for dialogue, not sound effects or music */}
-        {!isSoundEffect && !isMusic && activeCaption.speaker && (
-          <div 
+        {/* Speaker label */}
+        {cap.speaker && (
+          <div
             className="text-xs font-medium mb-1 text-center"
-            style={{ 
-              color: activeCaption.speakerColor || DEFAULT_NEUTRAL,
-              fontSize: `${Math.max(10, baseFontSize * (window.innerWidth < 640 ? 0.45 : 0.35))}px` // Better mobile readability
-            }}
+            style={{ color: baseColor }}
           >
-            {activeCaption.speaker}
+            {cap.speaker}
           </div>
         )}
-        
-        {/* Single caption display with proper color synchronization and 2-line max */}
+
+        {/* Full-line karaoke: text always present; per-word fill varies by mode */}
         <div
-          className="relative text-center leading-tight px-1"
+          className="leading-tight px-1 flex flex-wrap justify-center gap-x-[0.35em]"
           style={{
-            fontFamily: renderFont.fontFamily,
-            fontSize: `${renderFont.fontSizePx}px`,
-            fontWeight: renderFont.fontWeight,
-            ...pitchStyle,
-            ...intensityStyles,
-            display: '-webkit-box',
-            WebkitLineClamp: MAX_LINES,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            wordBreak: 'break-word',
-            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3'
+            fontFamily: 'Roboto Flex, system-ui, sans-serif',
+            lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
           }}
         >
-          {/* Sound effects and music formatting */}
-          {isSoundEffect ? (
-            <span className="text-white opacity-90">
-              [{activeCaption.text}]
-            </span>
-          ) : isMusic ? (
-            <span className="text-white">
-              ♪ {activeCaption.text} ♪
-            </span>
-          ) : (
-            <span 
-              className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
-              style={{ 
-                fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal',
-                // Always tint from t=0
-                color: activeCaption.speakerColor || DEFAULT_NEUTRAL
-              }}
-            >
-              {(() => {
-                // Use words directly; syllables render inside a single span per word
-                const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
-                let words: any[] = [];
-                
-                if (!haveWords) {
-                  // Synthesize words from caption text
-                  const rawWords = (workingCaption.text || "").trim().split(/\s+/).filter(Boolean);
-                  const duration = workingCaption.endTime - workingCaption.startTime;
-                  const timePerWord = duration / rawWords.length;
-                  
-                  words = rawWords.map((text, idx) => ({
-                    text,
-                    startTime: workingCaption.startTime + (idx * timePerWord),
-                    endTime: workingCaption.startTime + ((idx + 1) * timePerWord)
-                  }));
-                } else {
-                  words = workingCaption.words as any[];
-                }
-                
-                return words.length > 0 ? (
-                  words.map((word, i) => {
-                    // Use consistent tolerance from constants
-                    const wordActive =
-                      currentTime >= (word.startTime! - WORD_TOLERANCE) &&
-                      currentTime <= (word.endTime! + WORD_TOLERANCE);
+          {words.map((w, i) => {
+            const pct = wordProgressPct(w);
+            const isActiveWord =
+              currentTime >= (w.startTime - WORD_TOLERANCE) &&
+              currentTime <= (w.endTime   + WORD_TOLERANCE);
 
-                    // Style by emphasis/pitch if present
-                    const scale =
-                      word.emphasis === "yelling" || word.emphasis === "loud" ? 1.18 :
-                      word.emphasis === "quiet" ? 0.92 : 1.0;
+            if (karaokeMode === 'wordHighlight') {
+              // pill behind word, with overlay fill
+              const baseBg = hexToRgba(baseColor, 0.16);
+              const overlay = hexToRgba(baseColor, 0.40);
+              return (
+                <span
+                  key={`${w.text}-${w.startTime}-${i}`}
+                  className={`cwi-word ${isActiveWord ? 'is-active' : ''}`}
+                  style={{
+                    color: '#FFFFFF',
+                    padding: '0.08em 0.22em',
+                    borderRadius: '10px',
+                    backgroundColor: baseBg,
+                    backgroundImage: `linear-gradient(to right, ${overlay} ${pct}%, transparent ${pct}%)`,
+                    backgroundRepeat: 'no-repeat',
+                    transition: 'background-size 80ms linear, text-shadow 150ms ease'
+                  }}
+                >
+                  {w.text}
+                </span>
+              );
+            }
 
-                    // Neutral unless character explicitly assigned
-                    const wordColor = activeCaption.speakerColor || DEFAULT_NEUTRAL;
-
-                    // Syllable fill inside the word (no visible "Kev in" breaks)
-                    const hasSyllables = Array.isArray(word.syllables) && word.syllables.length > 1;
-                    
-                    // Compute progress percentage up to active syllable
-                    let progressPct = wordActive ? 100 : 0;
-                    
-                    if (hasSyllables) {
-                      const activeSylIdx = word.syllables.findIndex((s: any) =>
-                        currentTime >= (s.startTime - WORD_TOLERANCE) &&
-                        currentTime <= (s.endTime + WORD_TOLERANCE)
-                      );
-                      // If your injection precomputes charEnd, use it; else estimate proportionally
-                      if (activeSylIdx >= 0) {
-                        const s = word.syllables[activeSylIdx];
-                        const charEnd = typeof s.charEnd === 'number'
-                          ? s.charEnd
-                          : Math.min(
-                              word.text.length,
-                              Math.round(((activeSylIdx + 1) / word.syllables.length) * word.text.length)
-                            );
-                        progressPct = Math.round((charEnd / word.text.length) * 100);
-                      }
-                    }
-
-                    return (
-                      <span
-                        key={`${i}-${word.startTime}`}
-                        className={`caption-word ${wordActive ? "word-active" : ""}`}
-                        style={{ 
-                          transform: `scale(${scale})`,
-                          marginRight: '0.3em',
-                          display: 'inline-block',
-                          transition: 'all 0.15s ease',
-                          color: wordColor,
-                          backgroundImage: 'linear-gradient(currentColor, currentColor)',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundSize: `${progressPct}% 100%`,
-                          WebkitBackgroundClip: 'text',
-                          backgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent'
-                        }}
-                      >
-                        {word.text}
-                      </span>
-                    );
-                  })
-                ) : (
-                  // Fallback: show full text if no words
-                  <span style={{ color: workingCaption.speakerColor || DEFAULT_NEUTRAL }}>
-                    {workingCaption.text}
-                  </span>
-                );
-              })()}
-            </span>
-          )}
+            // textFill (default) — fill glyphs only
+            return (
+              <span
+                key={`${w.text}-${w.startTime}-${i}`}
+                className={`cwi-word ${isActiveWord ? 'is-active' : ''}`}
+                style={{
+                  color: baseColor,                               // unfilled color tint
+                  backgroundImage: 'linear-gradient(#FFFFFF, #FFFFFF)',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: `${pct}% 100%`,                 // fill to pct
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  transition: 'background-size 80ms linear, text-shadow 150ms ease'
+                }}
+              >
+                {w.text}
+              </span>
+            );
+          })}
         </div>
-      </div>
       </div>
     </div>
   );
