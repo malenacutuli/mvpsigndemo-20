@@ -360,7 +360,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
-  // Process captions without pagination - clamp with CSS instead to preserve exact DB timings
+  // Process captions: normalize words, precompute syllable charStart/charEnd
   const processed = React.useMemo(() => {
     return captions.map((seg: any) => {
       const working = { ...seg };
@@ -393,18 +393,59 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         }));
       }
 
-      // Ensure syllables have charEnd once (proportional if missing)
+      // Phase 1: Precompute charStart/charEnd for syllables
       working.words = (working.words || []).map((w: any) => {
-        if (Array.isArray(w.syllables) && w.syllables.length > 1) {
-          const len = Math.max(1, (w.text || '').length);
-          let hasCharEnd = w.syllables.some((s: any) => typeof s.charEnd === 'number');
-          if (!hasCharEnd) {
-            w.syllables = w.syllables.map((s: any, i: number) => ({
-              ...s,
-              charEnd: Math.min(len, Math.round(((i + 1) / w.syllables.length) * len))
-            }));
-          }
+        if (!Array.isArray(w.syllables) || w.syllables.length === 0) return w;
+        
+        const wordText = (w.text || '').toLowerCase();
+        const wordLen = wordText.length;
+        
+        // Check if charEnd is already set
+        const hasCharEnd = w.syllables.some((s: any) => typeof s.charEnd === 'number');
+        
+        if (!hasCharEnd) {
+          // Try to map syllable text to character indices
+          let cursor = 0;
+          w.syllables = w.syllables.map((syl: any, idx: number) => {
+            const sylText = (syl.text || '').toLowerCase().trim();
+            
+            if (sylText) {
+              // Find syllable text in word starting from cursor
+              const matchIdx = wordText.indexOf(sylText, cursor);
+              if (matchIdx >= 0) {
+                cursor = matchIdx + sylText.length;
+                return {
+                  ...syl,
+                  charStart: matchIdx,
+                  charEnd: cursor
+                };
+              }
+            }
+            
+            // Fallback: proportional distribution
+            const charStart = Math.round((idx / w.syllables.length) * wordLen);
+            const charEnd = Math.min(wordLen, Math.round(((idx + 1) / w.syllables.length) * wordLen));
+            return {
+              ...syl,
+              charStart,
+              charEnd
+            };
+          });
+        } else {
+          // charEnd exists, compute charStart from previous charEnd
+          let prevEnd = 0;
+          w.syllables = w.syllables.map((syl: any) => {
+            const charStart = prevEnd;
+            const charEnd = typeof syl.charEnd === 'number' ? syl.charEnd : wordLen;
+            prevEnd = charEnd;
+            return {
+              ...syl,
+              charStart,
+              charEnd
+            };
+          });
         }
+        
         return w;
       });
 
@@ -470,20 +511,37 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     ) || null;
   }, [processed, currentTime]);
 
-  // Sticky display effect (no blink, but no 1.2s linger)
+  // Phase 5: Stability - debounce speaker flicker using segment key
   const [displayUntil, setDisplayUntil] = React.useState<number | null>(null);
   const lastSetAtRef = React.useRef<number>(0);
+  const activeSegmentKeyRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const now = Date.now();
 
     if (activeCandidate) {
-      setDisplayedCaption(activeCandidate);
-      // enforce short minimum on-screen time for ultra-short segments
-      const minEnd = activeCandidate.startTime + (MIN_DISPLAY_MS / 1000);
-      const visualEnd = Math.max(activeCandidate.endTime, minEnd);
-      setDisplayUntil(visualEnd);
-      lastSetAtRef.current = now;
+      const segmentKey = `${activeCandidate.startTime.toFixed(2)}-${activeCandidate.endTime.toFixed(2)}`;
+      
+      // Only update if segment timing changed (not just speaker name/color)
+      if (activeSegmentKeyRef.current !== segmentKey) {
+        setDisplayedCaption(activeCandidate);
+        activeSegmentKeyRef.current = segmentKey;
+        
+        // enforce short minimum on-screen time for ultra-short segments
+        const minEnd = activeCandidate.startTime + (MIN_DISPLAY_MS / 1000);
+        const visualEnd = Math.max(activeCandidate.endTime, minEnd);
+        setDisplayUntil(visualEnd);
+        lastSetAtRef.current = now;
+        
+        console.log('🎯 CWI: Segment activated', { segmentKey, speaker: activeCandidate.speaker });
+      } else if (displayedCaption) {
+        // Same segment timing but potentially updated speaker/color - merge updates
+        setDisplayedCaption((prev: any) => ({
+          ...prev,
+          speaker: activeCandidate.speaker,
+          speakerColor: activeCandidate.speakerColor
+        }));
+      }
     } else if (displayedCaption && displayUntil !== null) {
       const timeSinceSet = now - lastSetAtRef.current;
       const shouldClear = (currentTime > displayUntil + SEGMENT_TOLERANCE) &&
@@ -491,6 +549,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       if (shouldClear) {
         setDisplayedCaption(null);
         setDisplayUntil(null);
+        activeSegmentKeyRef.current = null;
       }
     }
   }, [activeCandidate, currentTime, displayedCaption, displayUntil]);
@@ -502,14 +561,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const tint = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
   const words = (cap.words || []) as any[];
   
-  // Validation logging
-  console.log('🎨 CWI: Rendering caption', {
-    speaker: cap.speaker,
-    tint,
-    hasCustomColor: !!customSpeakerColors[cap.speaker],
-    hasSpeakerColor: !!cap.speakerColor,
-    text: cap.text?.substring(0, 30) + '...'
-  });
+  // Phase 4: Compute base font size for segment
+  const baseFontSize = getIntonationBasedFontSize(
+    screenHeight,
+    cap.vocal_intensity,
+    cap.volume,
+    words[0]?.emphasis
+  );
 
   return (
     <div className="relative w-full">
@@ -530,7 +588,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           </div>
         )}
 
-        {/* Word-by-word karaoke with smooth fill */}
+        {/* Word-by-word karaoke with smooth character fill */}
         <div
           className="leading-tight px-1 flex flex-wrap justify-center gap-x-[0.35em]"
           style={{
@@ -553,69 +611,85 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             const baseTint = tint.startsWith('#') ? hexToRgba(tint, 0.3) : `${tint}4D`;
             const fullTint = tint;
 
-            // CRITICAL FIX: Syllable-by-syllable character fill (CWI design)
-            if (Array.isArray(word.syllables) && word.syllables.length > 1 && withinWord) {
-              // Find active syllable index
-              const activeSylIdx = word.syllables.findIndex((syl: any) =>
+            // Phase 4: Apply per-word intonation (size + variable font)
+            const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
+            const pitchStyles = getPitchBasedStyle(word.pitch);
+
+            // Phase 2 & 3: Character-accurate fill (syllable or word-based)
+            const wordText = word.text || '';
+            const wordLen = wordText.length;
+            let filledUpTo = 0;
+
+            if (Array.isArray(word.syllables) && word.syllables.length > 0 && withinWord) {
+              // Phase 2: Continuous fill within active syllable
+              
+              // Find completed syllables (ended before current time)
+              const completedSyls = word.syllables.filter((syl: any) => 
+                currentTime > (syl.endTime + WORD_TOLERANCE)
+              );
+              const prevCompleteEnd = completedSyls.length > 0
+                ? Math.max(...completedSyls.map((s: any) => s.charEnd || 0))
+                : 0;
+
+              // Find active syllable
+              const activeSyl = word.syllables.find((syl: any) =>
                 currentTime >= (syl.startTime - WORD_TOLERANCE) &&
                 currentTime <= (syl.endTime + WORD_TOLERANCE)
               );
 
-              // Calculate character fill position using charEnd
-              const wordLen = word.text.length;
-              let filledUpTo = 0;
-              
-              if (activeSylIdx >= 0) {
-                // Active syllable found - fill up to its charEnd
-                filledUpTo = (word.syllables[activeSylIdx] as any)?.charEnd || wordLen;
-              } else if (currentTime < word.syllables[0].startTime) {
-                // Before first syllable - no fill
+              if (activeSyl) {
+                const cs = activeSyl.charStart ?? prevCompleteEnd;
+                const ce = activeSyl.charEnd ?? wordLen;
+                const sylDur = Math.max(0.001, activeSyl.endTime - activeSyl.startTime);
+                const r = Math.max(0, Math.min(1, (currentTime - activeSyl.startTime) / sylDur));
+                const liveFill = Math.round(cs + r * (ce - cs));
+                filledUpTo = Math.max(prevCompleteEnd, Math.min(liveFill, wordLen));
+                
+                // Phase 6: Validation logging
+                if (i === 0 || Math.random() < 0.05) { // Log first word or 5% sample
+                  console.log('🔤 CWI: Active syllable fill', {
+                    word: wordText,
+                    syllable: activeSyl.text,
+                    charStart: cs,
+                    charEnd: ce,
+                    progress: `${Math.round(r * 100)}%`,
+                    filledUpTo
+                  });
+                }
+              } else if (currentTime < word.syllables[0].startTime - WORD_TOLERANCE) {
+                // Before first syllable
                 filledUpTo = 0;
               } else {
-                // After all syllables - full fill
+                // After all syllables
                 filledUpTo = wordLen;
               }
-
-              // Render filled + unfilled character spans
-              return (
-                <span key={`${i}-${word.startTime}`} style={{ display: 'inline-block', marginRight: '0.3em' }}>
-                  <span style={{ color: fullTint }}>
-                    {word.text.substring(0, filledUpTo)}
-                  </span>
-                  <span style={{ color: baseTint }}>
-                    {word.text.substring(filledUpTo)}
-                  </span>
-                </span>
-              );
+            } else if (withinWord) {
+              // Phase 3: Precision fallback for words without syllables
+              const wordDur = Math.max(0.001, word.endTime! - word.startTime!);
+              const rWord = Math.max(0, Math.min(1, (currentTime - word.startTime!) / wordDur));
+              filledUpTo = Math.round(wordLen * rWord);
             }
 
-            // Fallback: Gradient-based fill for words without syllables
-            let progressPct = 0;
-            if (withinWord) {
-              const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
-              progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-            }
+            // Clamp filledUpTo to valid range
+            filledUpTo = Math.max(0, Math.min(wordLen, filledUpTo));
 
+            // Render with two-span character split (filled + unfilled)
             return (
               <span
-                key={`${i}-${word.startTime}`}
-                className="caption-word"
+                key={`${i}-${Math.round(word.startTime! * 1000)}`}
                 style={{
                   display: 'inline-block',
                   marginRight: '0.3em',
-                  color: 'transparent',
-                  WebkitTextFillColor: 'transparent',
-                  // Layer 1: full-word base tint (always visible)
-                  // Layer 2: karaoke fill that grows with progress
-                  backgroundImage: `linear-gradient(${baseTint}, ${baseTint}), linear-gradient(${fullTint}, ${fullTint})`,
-                  backgroundRepeat: 'no-repeat, no-repeat',
-                  backgroundSize: `100% 100%, ${progressPct}% 100%`,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  transition: 'background-size 80ms linear'
+                  fontSize: `${wordFontSize}px`,
+                  ...pitchStyles
                 }}
               >
-                {word.text}
+                <span style={{ color: fullTint }}>
+                  {wordText.substring(0, filledUpTo)}
+                </span>
+                <span style={{ color: baseTint }}>
+                  {wordText.substring(filledUpTo)}
+                </span>
               </span>
             );
           })}
