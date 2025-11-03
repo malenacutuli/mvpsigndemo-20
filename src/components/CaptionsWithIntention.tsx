@@ -543,42 +543,58 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               currentTime >= (word.startTime! - WORD_TOLERANCE) &&
               currentTime <= (word.endTime!   + WORD_TOLERANCE);
 
-            // Compute smooth progress:
-            // 1) If syllables w/ charEnd exist, fill up to the active syllable's charEnd.
-            // 2) Else, fill proportionally by time across the word duration.
-            let progressPct = 0;
-
-            if (Array.isArray(word.syllables) && word.syllables.length > 1) {
-              const sylIdx = word.syllables.findIndex(s =>
-                currentTime >= (s.startTime - WORD_TOLERANCE) &&
-                currentTime <= (s.endTime   + WORD_TOLERANCE)
-              );
-              if (sylIdx >= 0) {
-                const len = Math.max(1, word.text.length);
-                const charEnd =
-                  (word.syllables[sylIdx] as any)?.charEnd ??
-                  Math.min(len, Math.round(((sylIdx + 1) / word.syllables.length) * len));
-                progressPct = Math.round((charEnd / len) * 100);
-              } else if (withinWord) {
-                const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
-                progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-              }
-            } else if (withinWord) {
-              const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
-              progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-            }
-
-            // Helper to convert hex to rgba for alpha
+            // Character-specific tint with rgba alpha support
             const hexToRgba = (hex: string, alpha: number) => {
               const r = parseInt(hex.slice(1, 3), 16);
               const g = parseInt(hex.slice(3, 5), 16);
               const b = parseInt(hex.slice(5, 7), 16);
               return `rgba(${r}, ${g}, ${b}, ${alpha})`;
             };
-            
-            // Two-layer gradient: base tint at 30% alpha + karaoke fill at 100% alpha
             const baseTint = tint.startsWith('#') ? hexToRgba(tint, 0.3) : `${tint}4D`;
             const fullTint = tint;
+
+            // CRITICAL FIX: Syllable-by-syllable character fill (CWI design)
+            if (Array.isArray(word.syllables) && word.syllables.length > 1 && withinWord) {
+              // Find active syllable index
+              const activeSylIdx = word.syllables.findIndex((syl: any) =>
+                currentTime >= (syl.startTime - WORD_TOLERANCE) &&
+                currentTime <= (syl.endTime + WORD_TOLERANCE)
+              );
+
+              // Calculate character fill position using charEnd
+              const wordLen = word.text.length;
+              let filledUpTo = 0;
+              
+              if (activeSylIdx >= 0) {
+                // Active syllable found - fill up to its charEnd
+                filledUpTo = (word.syllables[activeSylIdx] as any)?.charEnd || wordLen;
+              } else if (currentTime < word.syllables[0].startTime) {
+                // Before first syllable - no fill
+                filledUpTo = 0;
+              } else {
+                // After all syllables - full fill
+                filledUpTo = wordLen;
+              }
+
+              // Render filled + unfilled character spans
+              return (
+                <span key={`${i}-${word.startTime}`} style={{ display: 'inline-block', marginRight: '0.3em' }}>
+                  <span style={{ color: fullTint }}>
+                    {word.text.substring(0, filledUpTo)}
+                  </span>
+                  <span style={{ color: baseTint }}>
+                    {word.text.substring(filledUpTo)}
+                  </span>
+                </span>
+              );
+            }
+
+            // Fallback: Gradient-based fill for words without syllables
+            let progressPct = 0;
+            if (withinWord) {
+              const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
+              progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+            }
 
             return (
               <span

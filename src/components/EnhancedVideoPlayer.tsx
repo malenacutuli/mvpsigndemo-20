@@ -461,6 +461,75 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       applied = segments;
     }
 
+    // Word timing normalization: Ensure all words have start/end times
+    // CRITICAL: Anchor first word to segment.startTime for CWI sync
+    applied = applied.map((segment: any) => {
+      if (!segment.words || segment.words.length === 0) {
+        return segment;
+      }
+
+      const segmentDuration = segment.endTime - segment.startTime;
+      const avgWordDuration = segmentDuration / segment.words.length;
+
+      const normalizedWords = segment.words.map((word: any, index: number) => {
+        const wordText = typeof word === 'string' ? word : word.text;
+        const hasValidTiming = word.startTime !== undefined && 
+                               word.endTime !== undefined && 
+                               word.startTime >= segment.startTime &&
+                               word.endTime <= segment.endTime;
+
+        // CRITICAL: First word MUST start at segment.startTime (±100ms tolerance)
+        if (index === 0) {
+          const firstWordStart = hasValidTiming ? word.startTime : segment.startTime;
+          const firstWordEnd = hasValidTiming ? word.endTime : segment.startTime + avgWordDuration;
+          
+          // Force alignment if first word is off by more than 100ms
+          const needsAlignment = Math.abs(firstWordStart - segment.startTime) > 0.1;
+          
+          return {
+            text: wordText,
+            startTime: needsAlignment ? segment.startTime : firstWordStart,
+            endTime: needsAlignment ? segment.startTime + avgWordDuration : firstWordEnd,
+            emphasis: word.emphasis || 'normal',
+            pitch: word.pitch || 'normal',
+            syllables: word.syllables || undefined
+          };
+        }
+
+        // Preserve valid timing for other words
+        if (hasValidTiming) {
+          return {
+            text: wordText,
+            startTime: word.startTime,
+            endTime: word.endTime,
+            emphasis: word.emphasis || 'normal',
+            pitch: word.pitch || 'normal',
+            syllables: word.syllables || undefined
+          };
+        }
+
+        // Synthesize timing for missing data
+        const wordStart = segment.startTime + (index * avgWordDuration);
+        const wordEnd = Math.min(segment.endTime, wordStart + avgWordDuration);
+        
+        return {
+          text: wordText,
+          startTime: wordStart,
+          endTime: wordEnd,
+          emphasis: word.emphasis || 'normal',
+          pitch: word.pitch || 'normal',
+          syllables: word.syllables || undefined
+        };
+      });
+
+      return {
+        ...segment,
+        words: normalizedWords
+      };
+    });
+
+    console.log('✅ ENHANCED PLAYER: Word timing normalized. First segment words:', applied[0]?.words?.slice(0, 3));
+
     // Keep captions for the player UI and also persist raw segments for AD scheduler
     setCaptions([...applied]);
     setTranscriptSegments([...applied]);
