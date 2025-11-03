@@ -85,7 +85,9 @@ export const useVideoStorage = (videoId: string) => {
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // ✅ Fetch latest transcript_id for this video+language
+      // ✅ Fetch or CREATE transcript_id for this video+language (FORCE transcript_id to always exist)
+      let transcriptId: string;
+      
       const { data: latestTranscript } = await supabase
         .from('transcripts')
         .select('id')
@@ -95,8 +97,28 @@ export const useVideoStorage = (videoId: string) => {
         .limit(1)
         .maybeSingle();
       
-      const transcriptId = latestTranscript?.id ?? null;
-      console.log(`💾 Using transcript_id: ${transcriptId} for save`);
+      if (latestTranscript?.id) {
+        transcriptId = latestTranscript.id;
+        console.log(`💾 Using existing transcript_id: ${transcriptId}`);
+      } else {
+        // Create new transcript if none exists
+        const { data: newTranscript, error: createError } = await supabase
+          .from('transcripts')
+          .insert({
+            video_id: videoId,
+            language,
+            created_by: user.id
+          })
+          .select('id')
+          .single();
+        
+        if (createError || !newTranscript) {
+          throw new Error(`Failed to create transcript: ${createError?.message}`);
+        }
+        
+        transcriptId = newTranscript.id;
+        console.log(`💾 Created new transcript_id: ${transcriptId}`);
+      }
 
       // Prepare segments - persist text/timing/words/emphasis/pitch + transcript_id
       const rows = segments.map((seg: TranscriptSegment, i: number) => ({
@@ -139,13 +161,10 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`🧹 SAVE DEDUPE: Removed ${rows.length - toSave.length} duplicates before upsert (${rows.length} → ${toSave.length})`);
       }
 
-      // Use upsert with transcript_id in conflict key (if transcript exists)
-      // If no transcript_id, fall back to base conflict key
-      const conflictKey = transcriptId 
-        ? 'video_id,language,transcript_id,start_time,end_time,text'
-        : 'video_id,language,start_time,end_time,text';
+      // ✅ ALWAYS use conflict key with transcript_id (transcript_id is guaranteed to exist now)
+      const conflictKey = 'video_id,language,transcript_id,start_time,end_time,text';
       
-      console.log(`💾 Upserting with conflict key: ${conflictKey}`);
+      console.log(`💾 Upserting ${toSave.length} segments with transcript_id: ${transcriptId}, conflict key: ${conflictKey}`);
       
       const { error } = await supabase
         .from('transcript_segments_clean')
