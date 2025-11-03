@@ -924,6 +924,11 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         characterId: selectedChar?.id,
         characterName: selectedChar?.id ? undefined : editSpeaker, // allow create if needed
       });
+
+      // Fire refresh event so the player re-pulls segments
+      window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
+        detail: { videoId, language: selectedLanguage }
+      }));
       
       // Refresh characters if we created a new one
       if (!selectedChar && editSpeaker) {

@@ -95,21 +95,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   
-  // === Karaoke mode state (persisted) ===
-  const [karaokeMode, setKaraokeMode] = useState<'textFill' | 'wordHighlight' | 'lineFill'>(() => {
-    try { 
-      return (localStorage.getItem('axv:karaokeMode') as any) || 'textFill'; 
-    } catch { 
-      return 'textFill'; 
-    }
-  });
-  
-  useEffect(() => { 
-    try { 
-      localStorage.setItem('axv:karaokeMode', karaokeMode); 
-    } catch {} 
-  }, [karaokeMode]);
-  
   // === Sign Language toggle state (safe default + persistence) ===
   const [showSignLanguage, setShowSignLanguage] = useState<boolean>(() => {
     try {
@@ -799,26 +784,64 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     return result;
   };
 
-  // Single-source caption pipeline: pick translations ONLY when user switched languages
-  const finalCaptions = useMemo(() => {
-    // 1) If user selected a different language and we have translated captions, use them
+  // Single-source caption pipeline with FINAL MAPPING GATE
+  const finalCaptions = React.useMemo(() => {
+    // 1) Choose source (unchanged logic)
+    let caps: any[] = [];
     if (currentLanguage !== originalLanguage && translatedContent?.captions?.length) {
-      console.log('🌐 Using TRANSLATED captions:', translatedContent.captions.length);
-      return translatedContent.captions;
+      caps = translatedContent.captions;
+    } else if (initialCaptions?.length) {
+      caps = initialCaptions;
+    } else if (generatedCaptions?.length) {
+      caps = generatedCaptions;
+    } else {
+      return [];
     }
-    // 2) Otherwise render the original database captions
-    if (initialCaptions?.length) {
-      console.log('📥 Using INITIAL captions:', initialCaptions.length);
-      return initialCaptions;
+
+    // 2) FINAL MAPPING GATE: apply Character Manager mappings/colors just before render
+    try {
+      const vid = videoId || 'default';
+
+      const mapping = JSON.parse(
+        localStorage.getItem(`speaker-mappings-${vid}`) || '{}'
+      ); // e.g. "Speaker A" -> "Alice"
+
+      const characters = JSON.parse(
+        localStorage.getItem(`characters_${vid}`) ||
+        localStorage.getItem(`characters-${vid}`) ||
+        '[]'
+      ); // [{name,color,isOffCamera,...}]
+
+      const byName: Record<string, any> = {};
+      (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
+
+      caps = caps.map((seg: any) => {
+        // Respect DB-provided character/color if present
+        if (seg.character_id && seg.speakerColor) return seg;
+
+        const mappedName = mapping?.[seg.speaker] || mapping?.[seg.speakerAsrLabel || ''];
+        const char = mappedName ? byName[mappedName] : byName[seg.speaker];
+
+        return char ? {
+          ...seg,
+          speaker: char.name || seg.speaker,
+          speakerColor: char.color || seg.speakerColor,
+          isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : seg.isOffCamera
+        } : seg;
+      });
+    } catch (e) {
+      console.warn('Final mapping gate skipped:', e);
     }
-    // 3) Last-resort fallback (rare)
-    if (generatedCaptions?.length) {
-      console.log('🎯 Using GENERATED captions:', generatedCaptions.length);
-      return generatedCaptions;
-    }
-    console.log('⚠️ No captions available');
-    return [];
-  }, [initialCaptions, translatedContent, generatedCaptions, currentLanguage, originalLanguage]);
+
+    return caps;
+  }, [
+    initialCaptions,
+    translatedContent,
+    generatedCaptions,
+    currentLanguage,
+    originalLanguage,
+    videoId
+  ]);
 
   // Active caption from finalCaptions (no more shadow sources)
   const activeCaption = useMemo(() => {
@@ -858,7 +881,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
         playsInline
-        preload="metadata"
+        preload="auto"
         onError={(e) => {
           console.error('Video loading error:', e);
           console.log('Video src:', videoSrc);
@@ -1075,7 +1098,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             currentTime={currentTime}
             isVisible={showCaptions}
             screenHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
-            karaokeMode={karaokeMode}
           />
         </div>
       )}
@@ -1204,20 +1226,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             >
               <FileText className="w-4 h-4" />
             </Button>
-            
-            {/* Caption Style Selector */}
-            <select
-              aria-label="Caption style"
-              value={karaokeMode}
-              onChange={(e) => setKaraokeMode(e.target.value as any)}
-              className="bg-black/50 text-white text-xs rounded px-2 py-1 outline-none hover:bg-black/70 transition-colors"
-              title="Caption style"
-            >
-              <option value="textFill">Text Fill</option>
-              <option value="wordHighlight">Word Highlight</option>
-              <option value="lineFill">Line Sweep</option>
-            </select>
-            
             {/* Dubbing speed selection moved into SynchronizedDubbingPlayer */}
             
             {/* Sign Language Toggle */}

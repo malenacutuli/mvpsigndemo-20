@@ -335,6 +335,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       console.log('🔄 ENHANCED VIDEO PLAYER: Received transcript update event, refreshing captions...');
       
+      // Re-load segments from DB with updated character colors
       const segments = await loadTranscriptSegments(currentLanguage);
       const captionSegments = segments.map((seg: any) => ({
         id: seg.id,
@@ -346,7 +347,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         emphasis: seg.emphasis,
         pitch: seg.pitch,
         words: seg.words,
-        speakerAsrLabel: seg.speakerAsrLabel
+        speakerAsrLabel: seg.speakerAsrLabel,
+        character_id: seg.character_id
       }));
       
       const stabilized = stabilizeSpeakerColors(captionSegments);

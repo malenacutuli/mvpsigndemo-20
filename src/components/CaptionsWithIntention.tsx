@@ -110,26 +110,13 @@ export interface CaptionSegment {
   auto_styling?: any;       // Computed styling from vocal intensity
 }
 
-// ---------- NEW: style mode ----------
-type KaraokeMode = 'textFill' | 'wordHighlight' | 'lineFill';
-
 interface CaptionsWithIntentionProps {
   captions: CaptionSegment[];
   currentTime: number;
   isVisible?: boolean;
   screenHeight?: number;
-  karaokeMode?: KaraokeMode; // NEW
 }
 
-// Small helper for rgba from hex
-const hexToRgba = (hex: string, alpha = 1) => {
-  const m = hex.replace('#', '');
-  const bigint = parseInt(m.length === 3 ? m.split('').map(c => c + c).join('') : m, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 // --- CWI: syllable support -----------------------------------------------
 const VOWEL_RE = /[aeiouyáéíóúàèìòùäëïöü]/i;
@@ -335,6 +322,12 @@ function normalizeWords(
   }));
 }
 
+// CWI Protocol timing
+const SEGMENT_TOLERANCE = 0.05;   // 50ms
+const WORD_TOLERANCE    = 0.06;   // 60ms
+const READAHEAD_WINDOW  = 3.0;    // 3 seconds
+const MIN_DISPLAY_MS    = 800;    // min display for short blips
+
 /**
  * Compute font options for segment (reuses getIntonationBasedFontSize logic)
  */
@@ -362,13 +355,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   captions,
   currentTime,
   isVisible = true,
-  screenHeight = 1080,
-  karaokeMode = 'textFill' // NEW default
+  screenHeight = 1080
 }) => {
-  // --- Timing constants to prevent flicker & premature removal ---
-  const SEGMENT_TOLERANCE = 0.20;   // seconds, ±200ms: window for segment visibility
-  const WORD_TOLERANCE    = 0.10;   // seconds, ±100ms: word/syllable highlighting
-  const MIN_DISPLAY_MS    = 1200;   // milliseconds: keep a caption on screen at least 1.2s
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
@@ -462,90 +450,56 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const showUntilSecRef   = React.useRef<number | null>(null); // seconds
   const lastSetMsRef      = React.useRef<number>(0);           // ms (Date.now)
 
-  // Candidate purely by media time with generous tolerance
+  // Active caption with read-ahead fallback (CWI Protocol)
   const activeCandidate = React.useMemo(() => {
-    return processed.find(c =>
+    if (!processed?.length) return null;
+
+    // exact active
+    const active = processed.find(c =>
       currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
       currentTime <= (c.endTime   + SEGMENT_TOLERANCE)
-    ) ?? null;
+    );
+    if (active) return active;
+
+    // CWI read-ahead: show the next caption within 3s
+    const upcoming = processed.find(c =>
+      c.startTime >= currentTime &&
+      (c.startTime - currentTime) <= READAHEAD_WINDOW
+    );
+    return upcoming || processed[0] || null;
   }, [processed, currentTime]);
 
-  // Sticky logic
+  // Sticky display effect (no blink, but no 1.2s linger)
+  const [displayUntil, setDisplayUntil] = React.useState<number | null>(null);
+  const lastSetAtRef = React.useRef<number>(0);
+
   React.useEffect(() => {
-    const nowMs = Date.now();
+    const now = Date.now();
 
     if (activeCandidate) {
-      // New or changed caption → show it immediately
-      const changed =
-        !displayedCaption ||
-        displayedCaption.startTime !== activeCandidate.startTime ||
-        displayedCaption.endTime   !== activeCandidate.endTime;
-
-      if (changed) {
-        setDisplayedCaption(activeCandidate);
-        lastSetMsRef.current = nowMs;
-
-        // keep visible until real end OR at least MIN_DISPLAY_MS from now
-        const minEndByMs   = lastSetMsRef.current + MIN_DISPLAY_MS; // ms
-        const minEndBySec  = minEndByMs / 1000;                     // convert to seconds
-        showUntilSecRef.current = Math.max(activeCandidate.endTime, minEndBySec);
-      }
-      return; // Nothing to clear while we have a candidate
-    }
-
-    // No candidate → maybe clear after both conditions:
-    // 1) media time beyond showUntilSecRef + tolerance
-    // 2) at least MIN_DISPLAY_MS elapsed since we set it
-    if (displayedCaption) {
-      const elapsedMs = nowMs - lastSetMsRef.current;
-      const showUntilSec = showUntilSecRef.current ?? displayedCaption.endTime;
-      const canClearByTime = currentTime > (showUntilSec + SEGMENT_TOLERANCE);
-      const canClearByMin  = elapsedMs >= MIN_DISPLAY_MS;
-
-      if (canClearByTime && canClearByMin) {
-        // small exit delay to allow CSS transition to play
-        const t = setTimeout(() => {
-          setDisplayedCaption(null);
-          showUntilSecRef.current = null;
-        }, 150);
-        return () => clearTimeout(t);
+      setDisplayedCaption(activeCandidate);
+      // enforce short minimum on-screen time for ultra-short segments
+      const minEnd = activeCandidate.startTime + (MIN_DISPLAY_MS / 1000);
+      const visualEnd = Math.max(activeCandidate.endTime, minEnd);
+      setDisplayUntil(visualEnd);
+      lastSetAtRef.current = now;
+    } else if (displayedCaption && displayUntil !== null) {
+      const timeSinceSet = now - lastSetAtRef.current;
+      const shouldClear = (currentTime > displayUntil + SEGMENT_TOLERANCE) &&
+                          (timeSinceSet >= MIN_DISPLAY_MS);
+      if (shouldClear) {
+        setDisplayedCaption(null);
+        setDisplayUntil(null);
       }
     }
-  }, [activeCandidate, currentTime, displayedCaption]);
+  }, [activeCandidate, currentTime, displayedCaption, displayUntil]);
 
   if (!displayedCaption) return null;
   const cap = displayedCaption;
 
   // Neutral color until a character is assigned
-  const resolvedColor = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
-
-  // Word progress: syllables → charEnd; else proportional by time
-  const wordProgressPct = (w: any): number => {
-    // If syllabified, advance up to active syllable
-    if (Array.isArray(w.syllables) && w.syllables.length > 1) {
-      const idx = w.syllables.findIndex((s: any) =>
-        currentTime >= (s.startTime - WORD_TOLERANCE) &&
-        currentTime <= (s.endTime   + WORD_TOLERANCE)
-      );
-      if (idx >= 0) {
-        const len = Math.max(1, (w.text || '').length);
-        const ce  = Math.min(len, Number(w.syllables[idx].charEnd ?? len));
-        return Math.round((ce / len) * 100);
-      }
-    }
-    // Fallback: proportional time fill across the word window
-    const dur = Math.max(0.001, (w.endTime - w.startTime));
-    const raw = ((currentTime - (w.startTime - WORD_TOLERANCE)) / (dur + 2 * WORD_TOLERANCE)) * 100;
-    return Math.max(0, Math.min(100, Math.round(raw)));
-  };
-
+  const tint = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
   const words = (cap.words || []) as any[];
-  const isLineFill = karaokeMode === 'lineFill';
-  const segDur = Math.max(0.001, cap.endTime - cap.startTime);
-  const segmentPct = Math.max(0, Math.min(100, Math.round(
-    ((currentTime - (cap.startTime - SEGMENT_TOLERANCE)) / (segDur + 2 * SEGMENT_TOLERANCE)) * 100
-  )));
-  const baseColor = resolvedColor;
 
   return (
     <div className="relative w-full">
@@ -555,23 +509,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           bg-black/90 rounded-md sm:rounded-lg px-2 py-1.5 sm:px-4 sm:py-3 mx-2 sm:mx-4
           transition-opacity duration-150
         "
-        style={{
-          ...(isLineFill ? {
-            backgroundImage: `linear-gradient(to right, ${hexToRgba(baseColor, 0.32)} ${segmentPct}%, transparent ${segmentPct}%)`,
-          } : {})
-        }}
       >
         {/* Speaker label */}
         {cap.speaker && (
           <div
             className="text-xs font-medium mb-1 text-center"
-            style={{ color: baseColor }}
+            style={{ color: tint }}
           >
             {cap.speaker}
           </div>
         )}
 
-        {/* Full-line karaoke: text always present; per-word fill varies by mode */}
+        {/* Word-by-word karaoke with smooth fill */}
         <div
           className="leading-tight px-1 flex flex-wrap justify-center gap-x-[0.35em]"
           style={{
@@ -579,52 +528,55 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
           }}
         >
-          {words.map((w, i) => {
-            const pct = wordProgressPct(w);
-            const isActiveWord =
-              currentTime >= (w.startTime - WORD_TOLERANCE) &&
-              currentTime <= (w.endTime   + WORD_TOLERANCE);
+          {words.map((word, i) => {
+            const withinWord =
+              currentTime >= (word.startTime! - WORD_TOLERANCE) &&
+              currentTime <= (word.endTime!   + WORD_TOLERANCE);
 
-            if (karaokeMode === 'wordHighlight') {
-              // pill behind word, with overlay fill
-              const baseBg = hexToRgba(baseColor, 0.16);
-              const overlay = hexToRgba(baseColor, 0.40);
-              return (
-                <span
-                  key={`${w.text}-${w.startTime}-${i}`}
-                  className={`cwi-word ${isActiveWord ? 'is-active' : ''}`}
-                  style={{
-                    color: '#FFFFFF',
-                    padding: '0.08em 0.22em',
-                    borderRadius: '10px',
-                    backgroundColor: baseBg,
-                    backgroundImage: `linear-gradient(to right, ${overlay} ${pct}%, transparent ${pct}%)`,
-                    backgroundRepeat: 'no-repeat',
-                    transition: 'background-size 80ms linear, text-shadow 150ms ease'
-                  }}
-                >
-                  {w.text}
-                </span>
+            // Compute smooth progress:
+            // 1) If syllables w/ charEnd exist, fill up to the active syllable's charEnd.
+            // 2) Else, fill proportionally by time across the word duration.
+            let progressPct = 0;
+
+            if (Array.isArray(word.syllables) && word.syllables.length > 1) {
+              const sylIdx = word.syllables.findIndex(s =>
+                currentTime >= (s.startTime - WORD_TOLERANCE) &&
+                currentTime <= (s.endTime   + WORD_TOLERANCE)
               );
+              if (sylIdx >= 0) {
+                const len = Math.max(1, word.text.length);
+                const charEnd =
+                  (word.syllables[sylIdx] as any)?.charEnd ??
+                  Math.min(len, Math.round(((sylIdx + 1) / word.syllables.length) * len));
+                progressPct = Math.round((charEnd / len) * 100);
+              } else if (withinWord) {
+                const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
+                progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+              }
+            } else if (withinWord) {
+              const ratio = (currentTime - (word.startTime ?? 0)) / Math.max(0.001, (word.endTime! - word.startTime!));
+              progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
             }
 
-            // textFill (default) — fill glyphs only
             return (
               <span
-                key={`${w.text}-${w.startTime}-${i}`}
-                className={`cwi-word ${isActiveWord ? 'is-active' : ''}`}
+                key={`${i}-${word.startTime}`}
+                className="caption-word"
                 style={{
-                  color: baseColor,                               // unfilled color tint
-                  backgroundImage: 'linear-gradient(#FFFFFF, #FFFFFF)',
+                  display: 'inline-block',
+                  marginRight: '0.3em',
+                  // base glyph is dim; the speaker color paints via background-clip
+                  color: 'rgba(255,255,255,0.28)',
+                  backgroundImage: `linear-gradient(${tint}, ${tint})`,
                   backgroundRepeat: 'no-repeat',
-                  backgroundSize: `${pct}% 100%`,                 // fill to pct
+                  backgroundSize: `${progressPct}% 100%`,
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  transition: 'background-size 80ms linear, text-shadow 150ms ease'
+                  transition: 'background-size 80ms linear'
                 }}
               >
-                {w.text}
+                {word.text}
               </span>
             );
           })}
