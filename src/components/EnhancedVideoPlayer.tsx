@@ -111,24 +111,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
   // Fallback speaker color assignment for error cases
   const applyFallbackSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
-    const colors = ['#E5E517', '#17E5E5', '#E51717', '#E58017'];
-    let colorIndex = 0;
-    let lastEndTime = 0;
-    
-    return segments.map((segment, index) => {
-      // Change speaker on significant pauses
-      if (index > 0 && segment.startTime - lastEndTime > 1.5) {
-        colorIndex = (colorIndex + 1) % colors.length;
-      }
-      
-      lastEndTime = segment.endTime;
-      
-      return {
-        ...segment,
-        speaker: `Speaker ${colorIndex + 1}`,
-        speakerColor: colors[colorIndex]
-      };
-    });
+    return segments.map(seg => ({
+      ...seg,
+      speakerColor: resolveSpeakerColor(seg) // Use resolver instead of palette
+    }));
   };
 
   // Helper to compute overlap of two intervals (moved outside function for cleaner scope)
@@ -545,7 +531,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         const converted: CaptionSegment[] = segments.map((seg: any) => {
           // Trust what the DB view already decided (character name or "Speaker A/B/C")
           const speaker = seg.speaker || seg.speakerAsrLabel || 'Unknown';
-          const speakerColor = (seg.speakerColor || (seg as any).speaker_color) || '#3B82F6';
+          const speakerColor = resolveSpeakerColor(seg); // Use resolver for consistency
           
           return {
             text: seg.text || '',
@@ -813,20 +799,26 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               // Inject syllables for words ≥6 characters
               const wordsWithSyllables = words && words.length > 0 ? injectSyllables(words) : words;
 
+              // Reduce lead-in to minimize timing drift and use existing start/end
+              const LEAD_IN_OFFSET = -0.02;
+              const finalStart = Math.max(0, start + LEAD_IN_OFFSET);
+              const finalEnd = end;
+
               return {
                 text: segment.text,
                 speaker,
-                startTime: start,
-                endTime: end,
+                startTime: finalStart,
+                endTime: finalEnd,
                 words: wordsWithSyllables,
-                speakerColor: resolveSpeakerColor(segment), // Phase 1B: Use resolver instead of fallback
+                speakerColor: resolveSpeakerColor(segment), // Always use resolver
                 pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
                 volume: 50,
                 type: 'dialogue' as const,
                 isOffCamera: segment.isOffCamera || false,
                 vocal_intensity: (segment as any).vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
                 intensity_confidence: (segment as any).intensity_confidence,
-                auto_styling: (segment as any).auto_styling
+                auto_styling: (segment as any).auto_styling,
+                idx: segment.idx // Preserve idx for correct database upserts
               };
             });
             
@@ -959,6 +951,28 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             _updateKey: `${Date.now()}-${Math.random()}`
           }));
           
+          setCaptions(convertedSegments);
+          setTranscriptSegments(convertedSegments);
+          
+          // Phase 5: Diagnostic logging for 10-14s range
+          const diagnosticSegments = convertedSegments.filter(s => s.startTime >= 10 && s.endTime <= 14);
+          if (diagnosticSegments.length > 0) {
+            console.groupCollapsed('🔍 DIAGNOSTIC: Segments 10-14s');
+            diagnosticSegments.forEach(seg => {
+              console.log({
+                idx: (seg as any).idx,
+                startTime: seg.startTime,
+                endTime: seg.endTime,
+                text: seg.text,
+                speaker: seg.speaker,
+                speakerColor: seg.speakerColor,
+                hasCharacterId: !!(seg as any).character_id,
+                hasSyllables: seg.words?.some((w: any) => w.syllables?.length > 1)
+              });
+            });
+            console.groupEnd();
+          }
+          
           console.log('🎯 ENHANCED PLAYER: Final converted segments:', convertedSegments.length);
           console.log('🎯 ENHANCED PLAYER: Sample caption data:', convertedSegments.slice(0, 2).map(s => ({
             speaker: s.speaker,
@@ -983,11 +997,15 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 endTime: seg.endTime,
                 speaker: seg.speaker,
                 speakerColor: seg.speakerColor,
-                words: seg.words as any, // Type assertion to handle WordSegment vs WordData
+                words: seg.words as any,
                 characterId: (seg as any).character_id,
-                idx: captionSegments.indexOf(seg)
+                idx: (seg as any).idx // Use preserved idx instead of indexOf
               })), currentLanguage);
               console.log('✅ Syllables persisted to database successfully');
+              // Clear persistence flag to allow re-save
+              sessionStorage.removeItem(`words_persisted_${videoId}_${currentLanguage}`);
+              // Force refresh to load updated data
+              forceRefresh();
             } catch (error) {
               console.error('❌ Failed to persist syllables:', error);
             }

@@ -717,7 +717,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               style={{ 
                 fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal',
                 // Fallback color to ensure tint from t=0 even if per-word style is overridden
-                color: activeCaption.speakerColor || speakerColor
+                color: activeCaption.speakerColor || '#22E3D0'
               }}
             >
               {(() => {
@@ -750,6 +750,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     const scale =
                       word.emphasis === "yelling" || word.emphasis === "loud" ? 1.18 :
                       word.emphasis === "quiet" ? 0.92 : 1.0;
+
+                    // Use neutral color until character is assigned (no palette fallback)
+                    const speakerColor = activeCaption.speakerColor || '#22E3D0';
+                    
+                    // Compute the fill and stroke colors based on active status
+                    const baseFill = wordActive ? '#FFFFFF' : speakerColor;
 
                     // Render syllables if word has them (words ≥6 characters)
                     const hasSyllables = word.syllables && word.syllables.length > 1;

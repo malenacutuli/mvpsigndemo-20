@@ -85,8 +85,8 @@ export const useVideoStorage = (videoId: string) => {
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
-      // ✅ Quantize helper: Round to 100ms steps to stabilize timing
-      const quantize = (t: number) => Math.round(t * 10) / 10;
+      // ✅ Quantize helper: Round to 10ms steps to reduce drift
+      const quantize = (t: number) => Math.round(t * 100) / 100;
 
       // ✅ Fetch or CREATE transcript_id for this video+language (FORCE transcript_id to always exist)
       let transcriptId: string;
@@ -267,7 +267,7 @@ export const useVideoStorage = (videoId: string) => {
 
         if (rows && rows.length > 0) {
           // ✅ STEP 3: Tolerant client-side deduplication (groups by idx or quantized timing)
-          const quantize = (t: number) => Math.round(t * 10) / 10;
+          const quantize = (t: number) => Math.round(t * 100) / 100;
           const dedupMap = new Map<string, any>();
           
           for (const row of rows) {
@@ -281,12 +281,13 @@ export const useVideoStorage = (videoId: string) => {
             if (!existing) {
               dedupMap.set(key, row);
             } else {
-              // Selection priority: character_id > words > longer duration
+              // UPDATED Selection priority: character_id > words > neutral color > longer duration
               const hasChar = row.character_id && !existing.character_id;
-              const hasWords = row.words && !existing.words;
+              const hasWords = row.words && (!existing.words || (existing.words && Array.isArray(row.words) && row.words.length > 0));
+              const isNeutral = row.speaker_color === '#22E3D0' && existing.speaker_color !== '#22E3D0';
               const longerDuration = (row.end_time - row.start_time) > (existing.end_time - existing.start_time);
               
-              if (hasChar || (hasWords && !existing.character_id) || (longerDuration && !existing.character_id && !existing.words)) {
+              if (hasChar || (hasWords && !existing.character_id) || (isNeutral && !existing.character_id && !existing.words) || (longerDuration && !existing.character_id && !existing.words && !isNeutral)) {
                 dedupMap.set(key, row);
               }
             }
