@@ -392,11 +392,26 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // Get all transcript languages for this video
       const { data: transcripts } = await supabase
         .from('transcripts')
-        .select('language')
-        .eq('video_id', videoId);
+        .select('language, id')
+        .eq('video_id', videoId)
+        .order('updated_at', { ascending: false });
       
-      const allLanguages = transcripts?.map(t => t.language) || [language];
-      console.log('🌍 Applying character mappings across all languages:', allLanguages);
+      // Build map of language -> latest transcript_id
+      const transcriptIdByLanguage = new Map<string, string>();
+      transcripts?.forEach(t => {
+        if (!transcriptIdByLanguage.has(t.language)) {
+          transcriptIdByLanguage.set(t.language, t.id);
+        }
+      });
+      
+      const allLanguages = Array.from(transcriptIdByLanguage.keys());
+      if (allLanguages.length === 0) {
+        allLanguages.push(language); // Fallback to current language
+      }
+      
+      console.log('🌍 Applying character mappings with transcript_id scoping:', 
+        Object.fromEntries(transcriptIdByLanguage));
+      
       
       // Type mapping to ensure valid database values
       const typeMapping: Record<string, string> = {
@@ -452,8 +467,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       console.log(`🔒 Found ${manuallyChangedSegments.size} manually-overridden segments`);
       
-      // Apply mappings across ALL languages
+      // Apply mappings across ALL languages with transcript_id scoping
       for (const lang of allLanguages) {
+        const txId = transcriptIdByLanguage.get(lang);
+        if (!txId) {
+          console.warn(`⚠️ No transcript_id found for language: ${lang}, skipping`);
+          continue;
+        }
+        
+        console.log(`🔍 [${lang}] Using transcript_id: ${txId}`);
+        
         for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
           const characterId = charIdMap.get(characterName);
           const character = characters.find(c => c.name === characterName);
@@ -474,7 +497,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           
           if (asrLabel) {
             orConditions.push(`speaker_asr_label.eq.${asrLabel}`);  // ASR label match
-            orConditions.push(`speaker.ilike.Speaker ${asrLabel}`);  // Pattern "Speaker A/B/C"
+            orConditions.push(`speaker.eq.Speaker%20${asrLabel}`);  // Pattern "Speaker A/B/C" (URL encoded)
           }
           
           const orPredicate = orConditions.join(',');
@@ -497,6 +520,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               .update(updateData)
               .eq('video_id', videoId)
               .eq('language', lang)
+              .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
               .or(orPredicate)
               .not('id', 'in', `(${Array.from(manuallyChangedSegments).join(',')})`);
             
@@ -511,6 +535,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               .update(updateData)
               .eq('video_id', videoId)
               .eq('language', lang)
+              .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
               .or(orPredicate);
             
             if (err1) {
@@ -532,6 +557,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             })
             .eq('video_id', videoId)
             .eq('language', lang)
+            .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
             .eq('character_id', characterId);
           
           if (err2) {
