@@ -621,47 +621,23 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             let filledUpTo = 0;
 
             if (Array.isArray(word.syllables) && word.syllables.length > 0 && withinWord) {
-              // Phase 2: Continuous fill within active syllable
+              // Stepwise syllable fill - show complete syllables as they're spoken
               
-              // Find completed syllables (ended before current time)
-              const completedSyls = word.syllables.filter((syl: any) => 
-                currentTime > (syl.endTime + WORD_TOLERANCE)
-              );
-              const prevCompleteEnd = completedSyls.length > 0
-                ? Math.max(...completedSyls.map((s: any) => s.charEnd || 0))
-                : 0;
-
-              // Find active syllable
-              const activeSyl = word.syllables.find((syl: any) =>
-                currentTime >= (syl.startTime - WORD_TOLERANCE) &&
-                currentTime <= (syl.endTime + WORD_TOLERANCE)
-              );
-
-              if (activeSyl) {
-                const cs = activeSyl.charStart ?? prevCompleteEnd;
-                const ce = activeSyl.charEnd ?? wordLen;
-                const sylDur = Math.max(0.001, activeSyl.endTime - activeSyl.startTime);
-                const r = Math.max(0, Math.min(1, (currentTime - activeSyl.startTime) / sylDur));
-                const liveFill = Math.round(cs + r * (ce - cs));
-                filledUpTo = Math.max(prevCompleteEnd, Math.min(liveFill, wordLen));
-                
-                // Phase 6: Validation logging
-                if (i === 0 || Math.random() < 0.05) { // Log first word or 5% sample
-                  console.log('🔤 CWI: Active syllable fill', {
-                    word: wordText,
-                    syllable: activeSyl.text,
-                    charStart: cs,
-                    charEnd: ce,
-                    progress: `${Math.round(r * 100)}%`,
-                    filledUpTo
-                  });
+              // Find the last syllable that has started (discrete, not continuous)
+              let lastStartedSylIdx = -1;
+              for (let idx = word.syllables.length - 1; idx >= 0; idx--) {
+                if (currentTime >= word.syllables[idx].startTime - WORD_TOLERANCE) {
+                  lastStartedSylIdx = idx;
+                  break;
                 }
-              } else if (currentTime < word.syllables[0].startTime - WORD_TOLERANCE) {
-                // Before first syllable
-                filledUpTo = 0;
+              }
+
+              if (lastStartedSylIdx >= 0) {
+                // Fill up to the charEnd of the last started syllable
+                filledUpTo = word.syllables[lastStartedSylIdx].charEnd ?? wordLen;
               } else {
-                // After all syllables
-                filledUpTo = wordLen;
+                // Before first syllable starts
+                filledUpTo = 0;
               }
             } else if (withinWord) {
               // Phase 3: Precision fallback for words without syllables
