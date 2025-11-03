@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
-// getSpeakerColor removed - using neutral color until character assigned
-import { syllabify, injectSyllables } from '@/lib/syllables';
+// getSpeakerColor removed – we keep a single neutral color unless character assigned
+// NOTE: syllable injection happens upstream; we only render syllables here
 import { paginateTwoLinesByWidth, type FontOpts } from '@/utils/captionsFit';
 
-// Single neutral color until character is explicitly assigned
-const DEFAULT_NEUTRAL = '#22E3D0'; // Light blue for unidentified speakers
+// Single neutral color until character is assigned
+const DEFAULT_NEUTRAL = '#22E3D0';
 
 // Captions with Intention color palette following the official protocol
 const CI_COLORS = {
@@ -49,13 +49,13 @@ const CI_COLORS = {
   ]
 };
 
-// Caption splitting constants - max 2 lines of 40 chars each
+// Caption splitting constants – max 2 lines of ~40 chars
 const MAX_CHARS_PER_LINE = 40;
 const MAX_LINES = 2;
 const MAX_CHARS = MAX_CHARS_PER_LINE * MAX_LINES; // 80 total
-const READAHEAD_SECONDS = 3; // keep your current read-ahead
+const READAHEAD_SECONDS = 3;
 
-// Feature flag: disable read-ahead preview to prevent duplicate white caption overlay
+// Disable read-ahead (prevents double overlay)
 const SHOW_READAHEAD_PREVIEW = false;
 
 export interface WordSegment {
@@ -350,6 +350,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   isVisible = true,
   screenHeight = 1080
 }) => {
+  // Timing constants tuned to avoid flicker and missing frames
+  const SEGMENT_TOLERANCE = 0.15; // ±150ms around start/end
+  const MIN_DISPLAY_MS = 800;     // 0.8s minimum on screen
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
 
@@ -433,12 +436,36 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     };
   }, []);
 
-  // Select ONE caption to show (no double overlay)
-  const activeCaption = React.useMemo(() => {
+  // Active caption with looser tolerance + min display window
+  const rawActive = React.useMemo(() => {
     return processed.find(c =>
-      currentTime >= c.startTime - 0.05 && currentTime <= c.endTime + 0.05
+      currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
+      currentTime <= (c.endTime + SEGMENT_TOLERANCE)
     ) ?? null;
-  }, [processed, currentTime]);
+  }, [processed, currentTime, SEGMENT_TOLERANCE]);
+
+  const [displayedCaption, setDisplayedCaption] = useState<any | null>(null);
+  const [displayUntil, setDisplayUntil] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (rawActive) {
+      setDisplayedCaption(rawActive);
+      const minEnd = rawActive.startTime + MIN_DISPLAY_MS / 1000;
+      const extendedEnd = Math.max(rawActive.endTime, minEnd);
+      setDisplayUntil(extendedEnd);
+    } else if (displayedCaption && displayUntil !== null) {
+      // Keep showing until our minimum window elapses
+      if (currentTime > displayUntil + SEGMENT_TOLERANCE) {
+        setDisplayedCaption(null);
+        setDisplayUntil(null);
+      }
+    } else {
+      setDisplayedCaption(null);
+      setDisplayUntil(null);
+    }
+  }, [rawActive, currentTime]); // eslint-disable-line
+
+  const activeCaption = displayedCaption;
 
   const upcomingCaption = React.useMemo(() => {
     if (!SHOW_READAHEAD_PREVIEW || activeCaption) return null;
@@ -519,7 +546,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Active mode: render ONLY the colored bubble (activeCaption exists)
   if (!activeCaption) return null;
-  
+
   const workingCaption = activeCaption;
   
   // Enhanced word timing with provider-aware precision
@@ -720,14 +747,14 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               className={(activeCaption as any)?.isOffCamera ? 'italic' : ''}
               style={{ 
                 fontStyle: (activeCaption as any)?.isOffCamera ? 'italic' : 'normal',
-                // Fallback color to ensure tint from t=0 even if per-word style is overridden
+                // Always tint from t=0
                 color: activeCaption.speakerColor || DEFAULT_NEUTRAL
               }}
             >
               {(() => {
-                // Use words directly without syllable expansion
+                // Use words directly; syllables render inside a single span per word
                 const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
-                let words: Word[] = [];
+                let words: any[] = [];
                 
                 if (!haveWords) {
                   // Synthesize words from caption text
@@ -741,51 +768,44 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     endTime: workingCaption.startTime + ((idx + 1) * timePerWord)
                   }));
                 } else {
-                  words = workingCaption.words as Word[];
+                  words = workingCaption.words as any[];
                 }
                 
                 return words.length > 0 ? (
                   words.map((word, i) => {
+                    // Looser tolerance for per-word highlight
+                    const WORD_TOL = 0.08;
+                    const SYL_TOL = 0.08;
                     const wordActive =
-                      currentTime >= (word.startTime! - 0.06) &&
-                      currentTime <= (word.endTime! + 0.06);
+                      currentTime >= (word.startTime! - WORD_TOL) &&
+                      currentTime <= (word.endTime! + WORD_TOL);
 
                     // Style by emphasis/pitch if present
                     const scale =
                       word.emphasis === "yelling" || word.emphasis === "loud" ? 1.18 :
                       word.emphasis === "quiet" ? 0.92 : 1.0;
 
-                    // Use neutral color until character is assigned (no palette fallback)
+                    // Neutral unless character explicitly assigned
                     const wordColor = activeCaption.speakerColor || DEFAULT_NEUTRAL;
-                    
-                    // Compute the fill and stroke colors based on active status
-                    const baseFill = wordActive ? '#FFFFFF' : wordColor;
 
-                    // Render syllables if word has them (words ≥6 characters)
-                    const hasSyllables = word.syllables && word.syllables.length > 1;
+                    // Syllable fill inside the word (no visible "Kev in" breaks)
+                    const hasSyllables = Array.isArray(word.syllables) && word.syllables.length > 1;
                     
-                    // Compute active syllable and progress percentage for background-clip fill
+                    // Compute progress percentage up to active syllable
                     let progressPct = wordActive ? 100 : 0;
                     
                     if (hasSyllables) {
-                      // Find active syllable by currentTime
-                      const activeSylIdx = word.syllables!.findIndex(syl =>
-                        currentTime >= (syl.startTime - 0.06) &&
-                        currentTime <= (syl.endTime + 0.06)
+                      const activeSylIdx = word.syllables.findIndex((s: any) =>
+                        currentTime >= (s.startTime - SYL_TOL) &&
+                        currentTime <= (s.endTime + SYL_TOL)
                       );
-                      
-                      // Compute charEnd for each syllable (character offset in word)
-                      let charOffset = 0;
-                      const syllablesWithCharEnd = word.syllables!.map(syl => {
-                        const charEnd = charOffset + syl.text.length;
-                        charOffset = charEnd;
-                        return { ...syl, charEnd };
-                      });
-                      
-                      // Calculate progress based on active syllable's character position
+                      // If your injection precomputes charEnd, use it; else estimate proportionally
                       if (activeSylIdx >= 0) {
-                        const activeSyl = syllablesWithCharEnd[activeSylIdx];
-                        progressPct = Math.round((activeSyl.charEnd / word.text.length) * 100);
+                        const s = word.syllables[activeSylIdx];
+                        const charEnd = typeof s.charEnd === 'number'
+                          ? s.charEnd
+                          : Math.round((Math.min(word.endTime, s.endTime) - Math.max(word.startTime, s.startTime)) / Math.max(0.001, (word.endTime - word.startTime)) * word.text.length);
+                        progressPct = Math.max(0, Math.min(100, Math.round((charEnd / Math.max(1, word.text.length)) * 100)));
                       }
                     }
 
@@ -799,7 +819,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                           display: 'inline-block',
                           transition: 'all 0.15s ease',
                           color: wordColor,
-                          backgroundImage: 'linear-gradient(#FFFFFF, #FFFFFF)',
+                          backgroundImage: 'linear-gradient(currentColor, currentColor)',
                           backgroundRepeat: 'no-repeat',
                           backgroundSize: `${progressPct}% 100%`,
                           WebkitBackgroundClip: 'text',
