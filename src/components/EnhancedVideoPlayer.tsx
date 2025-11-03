@@ -795,7 +795,23 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               const speaker = (segment as any).speaker || 'Unknown';
 
               // Inject syllables for words ≥6 characters
-              const wordsWithSyllables = words && words.length > 0 ? injectSyllables(words) : words;
+              let wordsWithSyllables = words && words.length > 0 ? injectSyllables(words) : words;
+
+              // Precompute charEnd for syllables if not already present
+              if (wordsWithSyllables) {
+                for (const w of wordsWithSyllables) {
+                  if (Array.isArray(w.syllables) && w.syllables.length > 1) {
+                    // If your pipeline didn't set charEnd, derive from text lengths
+                    let offset = 0;
+                    for (const syl of w.syllables) {
+                      if (typeof syl.charEnd !== 'number') {
+                        offset += (syl.text || '').length;
+                        (syl as any).charEnd = offset;
+                      }
+                    }
+                  }
+                }
+              }
 
               // Use DB timings exactly - no offsets
               const finalStart = start;
