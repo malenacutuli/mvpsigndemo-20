@@ -726,35 +726,39 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               }}
             >
               {(() => {
-                // Prepare tokens = syllables preferred, else words
+                // Use words directly without syllable expansion
                 const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
-                let tokens: Array<Word & { _syllableText?: string }> = [];
+                let words: Word[] = [];
                 
                 if (!haveWords) {
-                  // synthesize from caption text into words, then syllables
-                  const rawWords = (workingCaption.text || "").trim().split(/\s+/).filter(Boolean).map(t => ({ text: t }));
-                  tokens = expandWordsToSyllables(rawWords as Word[], workingCaption.startTime, workingCaption.endTime);
+                  // Synthesize words from caption text
+                  const rawWords = (workingCaption.text || "").trim().split(/\s+/).filter(Boolean);
+                  const duration = workingCaption.endTime - workingCaption.startTime;
+                  const timePerWord = duration / rawWords.length;
+                  
+                  words = rawWords.map((text, idx) => ({
+                    text,
+                    startTime: workingCaption.startTime + (idx * timePerWord),
+                    endTime: workingCaption.startTime + ((idx + 1) * timePerWord)
+                  }));
                 } else {
-                  tokens = expandWordsToSyllables(workingCaption.words as Word[], workingCaption.startTime, workingCaption.endTime);
+                  words = workingCaption.words as Word[];
                 }
                 
-                // convenience: what to display for each token
-                const getTokenText = (t: Word & { _syllableText?: string }) => t._syllableText ?? t.text;
-                
-                return tokens.length > 0 ? (
-                  tokens.map((tok, i) => {
+                return words.length > 0 ? (
+                  words.map((word, i) => {
                     const active =
-                      currentTime >= (tok.startTime! - 0.06) &&
-                      currentTime <= (tok.endTime! + 0.06);
+                      currentTime >= (word.startTime! - 0.06) &&
+                      currentTime <= (word.endTime! + 0.06);
 
-                    // style by emphasis/pitch if present
+                    // Style by emphasis/pitch if present
                     const scale =
-                      tok.emphasis === "yelling" || tok.emphasis === "loud" ? 1.18 :
-                      tok.emphasis === "quiet"   ? 0.92 : 1.0;
+                      word.emphasis === "yelling" || word.emphasis === "loud" ? 1.18 :
+                      word.emphasis === "quiet" ? 0.92 : 1.0;
 
                     return (
                       <span
-                        key={`${i}-${tok.startTime}`}
+                        key={`${i}-${word.startTime}`}
                         className={`caption-word ${active ? "word-active" : ""}`}
                         style={{ 
                           transform: `scale(${scale})`,
@@ -764,12 +768,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        {getTokenText(tok)}
+                        {word.text}
                       </span>
                     );
                   })
                 ) : (
-                  // Fallback: show full text if no tokens
+                  // Fallback: show full text if no words
                   <span style={{ color: workingCaption.speakerColor || speakerColor }}>
                     {workingCaption.text}
                   </span>
