@@ -114,7 +114,55 @@ interface CaptionsWithIntentionProps {
   screenHeight?: number;
 }
 
-// Syllabify utility moved to src/lib/syllables.ts for reuse
+// --- CWI: syllable support -----------------------------------------------
+const VOWEL_RE = /[aeiouyáéíóúàèìòùäëïöü]/i;
+function naiveSyllabify(text: string): string[] {
+  // If API provided syllables like "a-gain", prefer those (split by hyphen)
+  if (text.includes("-")) {
+    const parts = text.split("-").map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) return parts;
+  }
+  // Fallback: split by vowel groups while keeping at least 1 char per part
+  const raw = text.match(/[bcdfghjklmnpqrstvwxyz]*[aeiouy]+[bcdfghjklmnpqrstvwxyz]*/gi);
+  if (raw && raw.join("") === text.replace(/[^a-záéíóúàèìòùäëïöü]/gi, "")) return raw;
+  // Last resort: single "syllable"
+  return [text];
+}
+
+type Word = { text: string; startTime?: number; endTime?: number; emphasis?: string; pitch?: string; syllables?: string[] };
+
+function expandWordsToSyllables(words: Word[], segStart: number, segEnd: number) {
+  // Ensure words have timings (keep existing; otherwise distribute evenly)
+  const duration = Math.max(0.05, segEnd - segStart);
+  const baseStep = duration / Math.max(1, words.length);
+
+  let cursor = segStart;
+  const expanded: Array<Word & { _syllableText: string }> = [];
+
+  words.forEach((w, idx) => {
+    const wStart = typeof w.startTime === "number" ? w.startTime : (segStart + idx * baseStep);
+    const wEnd   = typeof w.endTime   === "number" ? w.endTime   : Math.min(segEnd, segStart + (idx + 1) * baseStep);
+
+    const parts = (w.syllables && w.syllables.length > 0) ? w.syllables : naiveSyllabify(w.text);
+    const span = Math.max(0.04, wEnd - wStart);
+    const step = span / Math.max(1, parts.length);
+
+    parts.forEach((p, i) => {
+      const sStart = wStart + i * step;
+      const sEnd   = (i === parts.length - 1) ? wEnd : (wStart + (i + 1) * step);
+      expanded.push({
+        ...w,
+        _syllableText: p,
+        startTime: sStart,
+        endTime: sEnd
+      });
+    });
+
+    cursor = wEnd;
+  });
+
+  return expanded;
+}
 
 /**
  * Calculate font size based on vocal intensity, volume, or emphasis - REDUCED SIZES
@@ -341,6 +389,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           startTime: w.startTime ?? (seg.startTime + i * step),
           endTime: w.endTime ?? (seg.startTime + (i + 1) * step)
         }));
+      }
+      
+      // ✅ SYLLABLE EXPANSION: After timings are set, expand words to syllables
+      if (workingSeg.words && workingSeg.words.length > 0) {
+        workingSeg.words = expandWordsToSyllables(workingSeg.words, seg.startTime, seg.endTime);
       }
       
       // Compute font for this segment
@@ -673,7 +726,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               }}
             >
               {workingCaption.words && workingCaption.words.length > 0 ? (
-                 workingCaption.words.map((word, index) => {
+                 workingCaption.words.map((word: any, index) => {
+                   // Use syllable text if available, otherwise fall back to full word text
+                   const displayText = word._syllableText || word.text;
+                   
                    const wordPitchStyle = getPitchBasedStyle(word.pitch);
                     const wordFontSize = getIntonationBasedFontSize(
                       screenHeight, 
@@ -692,10 +748,10 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
                     const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
                     
-                    // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
-                    if (currentTime <= 3.0 && index < 5) {
-                      console.log(`⏱️ Word ${index} "${word.text}" timing: current=${currentTime.toFixed(3)}s, word=${word.startTime?.toFixed(3)}-${word.endTime?.toFixed(3)}s, active=${isWordActive}`);
-                    }
+                     // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
+                     if (currentTime <= 3.0 && index < 5) {
+                       console.log(`⏱️ Syllable ${index} "${displayText}" timing: current=${currentTime.toFixed(3)}s, syllable=${word.startTime?.toFixed(3)}-${word.endTime?.toFixed(3)}s, active=${isWordActive}`);
+                     }
                    
                    // Progressive word state system (inspired by axs.so approach)
                    let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
@@ -843,51 +899,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                         ...baseStyle,
                         transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
                       };
-                    };
+                      };
                    
-                      // Render syllables if present (for long words)
-                      if (word.syllables && word.syllables.length > 1) {
-                        return (
-                          <span
-                            key={`${workingCaption.startTime}-${index}`}
-                            className="inline-block caption-word"
-                            style={{ marginRight: '0.3em' }}
-                          >
-                            {word.syllables.map((syl, sylIdx) => {
-                              const sylState = isReadAhead ? 'upcoming' : (
-                                currentTime >= syl.startTime && currentTime <= syl.endTime ? 'active' 
-                                  : currentTime > syl.endTime ? 'spoken' 
-                                  : 'upcoming'
-                              );
-                              
-                              return (
-                                <span
-                                  key={`${index}-syl-${sylIdx}`}
-                                  className={`
-                                    inline-block syllable-${sylState}
-                                    transition-all duration-150 ease-out
-                                  `}
-                                  style={{
-                                    color: sylState === 'active' ? getWordColorByState() : (sylState === 'spoken' ? speakerColor : 'rgba(255,255,255,0.7)'),
-                                    fontSize: `${wordFontSize}px`,
-                                    ...wordPitchStyle,
-                                    ...(sylState === 'active' && {
-                                      transform: 'scale(1.15) translateY(-2px)',
-                                      textShadow: `0 0 10px ${getWordColorByState()}40`,
-                                      zIndex: 10,
-                                      position: 'relative'
-                                    })
-                                  }}
-                                >
-                                  {syl.text}
-                                </span>
-                              );
-                            })}
-                          </span>
-                        );
-                      }
-                      
-                      // Regular word rendering (no syllables)
+                      // Regular word rendering (syllables already expanded into individual word entries)
                       return (
                         <span
                           key={`${workingCaption.startTime}-${index}`}
@@ -924,9 +938,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                            opacity: 0.6
                          })
                        }}
-                      >
-                        {word.text}
-                      </span>
+                       >
+                         {displayText}
+                       </span>
                     );
                  })
              ) : (

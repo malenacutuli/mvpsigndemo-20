@@ -84,6 +84,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       }
     });
     
+    // ✅ Check if we have ANY assigned characters
+    const hasCharacters = Object.keys(characterColorMap).length > 0;
+    const DEFAULT_COLOR = '#FFFFFF'; // White for unidentified speakers
+    
     // Normalize speaker names consistently for color assignment
     const normalizeSpeaker = (name: string) => {
       return name.trim().toLowerCase().replace(/\s+/g, '_');
@@ -99,7 +103,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         return { ...segment, speaker, speakerColor: characterColorMap[speaker] };
       }
       
-      // Priority 2: Use cwiPalette auto-assignment
+      // Priority 2: If NO characters assigned globally, use single default color
+      if (!hasCharacters) {
+        return { ...segment, speaker, speakerColor: DEFAULT_COLOR };
+      }
+      
+      // Priority 3: Characters exist but this speaker unmapped → use palette
       const color = getSpeakerColorFromPalette(speaker, characterColorMap, segment.speakerColor);
       return { ...segment, speaker, speakerColor: color };
     });
