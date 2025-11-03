@@ -77,11 +77,16 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   // Single neutral color until character is explicitly identified
   const DEFAULT_NEUTRAL = '#22E3D0'; // Light blue for unidentified speakers
   
+  // Phase 1C: Add data refresh trigger
+  const [dataVersion, setDataVersion] = useState(0);
+  const forceRefresh = () => setDataVersion(v => v + 1);
+  
   const resolveSpeakerColor = (seg: any): string => {
-    // Single color unless a character has been explicitly assigned
-    if ((seg as any).character_id && seg.speaker_color) {
-      return seg.speaker_color;
+    // ONLY use character color if character_id is explicitly assigned
+    if ((seg as any).character_id) {
+      return seg.speaker_color || DEFAULT_NEUTRAL;
     }
+    // For all unassigned speakers, use neutral color
     return DEFAULT_NEUTRAL;
   };
   
@@ -631,10 +636,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   // Load saved data on component mount and language changes
   useEffect(() => {
     const loadSavedData = async () => {
-      console.log('🔄 ENHANCED PLAYER: Loading database content for video:', videoId, 'language:', currentLanguage);
+      console.log('🔄 ENHANCED PLAYER: Loading database content for video:', videoId, 'language:', currentLanguage, 'version:', dataVersion);
       
       // Prevent multiple simultaneous loads
-      const loadingKey = `loading_${videoId}_${currentLanguage}`;
+      const loadingKey = `loading_${videoId}_${currentLanguage}_${dataVersion}`;
       if (sessionStorage.getItem(loadingKey)) {
         console.log('⚠️ Already loading data for this video/language combination');
         return;
@@ -814,7 +819,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 startTime: start,
                 endTime: end,
                 words: wordsWithSyllables,
-                speakerColor: segment.speakerColor || '#3B82F6',
+                speakerColor: resolveSpeakerColor(segment), // Phase 1B: Use resolver instead of fallback
                 pitch: segment.pitch === 'high' ? 220 : segment.pitch === 'low' ? 100 : 180,
                 volume: 50,
                 type: 'dialogue' as const,
@@ -964,6 +969,30 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             text: s.text.substring(0, 30) + '...'
           })));
           
+          // Phase 1A: Check if syllables were added and persist them
+          const syllablesWereAdded = captionSegments.some(seg => 
+            seg.words?.some((w: any) => w.syllables && w.syllables.length > 1)
+          );
+          
+          if (syllablesWereAdded) {
+            console.log('💾 ENHANCED PLAYER: Syllables detected, persisting to database...');
+            try {
+              await saveTranscriptSegments(captionSegments.map(seg => ({
+                text: seg.text,
+                startTime: seg.startTime,
+                endTime: seg.endTime,
+                speaker: seg.speaker,
+                speakerColor: seg.speakerColor,
+                words: seg.words as any, // Type assertion to handle WordSegment vs WordData
+                characterId: (seg as any).character_id,
+                idx: captionSegments.indexOf(seg)
+              })), currentLanguage);
+              console.log('✅ Syllables persisted to database successfully');
+            } catch (error) {
+              console.error('❌ Failed to persist syllables:', error);
+            }
+          }
+          
           // Persist synthesized/normalized word timings to DB once so all devices get word-by-word
           try {
             const persistKey = `words_persisted_${videoId}_${currentLanguage}`;
@@ -1079,7 +1108,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (videoId && currentLanguage) {
       loadSavedData();
     }
-  }, [videoId, currentLanguage, loadTranscriptSegments, analyzeVocalIntensity, isAnalyzingIntensity]);
+  }, [videoId, currentLanguage, dataVersion, loadTranscriptSegments, analyzeVocalIntensity, isAnalyzingIntensity]); // Phase 1C: Include dataVersion
 
   return (
     <div className="space-y-6">

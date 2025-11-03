@@ -753,6 +753,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
                     // Render syllables if word has them (words ≥6 characters)
                     const hasSyllables = word.syllables && word.syllables.length > 1;
+                    
+                    // Phase 1D: Debug logging for syllable rendering
+                    if (i === 0 && hasSyllables) {
+                      console.log('🔤 Syllable rendering:', {
+                        word: word.text,
+                        syllables: word.syllables,
+                        currentTime
+                      });
+                    }
 
                     return (
                       <span
