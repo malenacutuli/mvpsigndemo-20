@@ -818,41 +818,30 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     return result;
   };
 
-  // Compute final captions - unified pipeline prioritizes initialCaptions
+  // Single-source caption pipeline - initialCaptions is the only render source
   const finalCaptions = useMemo(() => {
-    let captions = [] as any[];
-    
-    // Priority 1: Initial captions from EnhancedVideoPlayer (already has timing, syllables, and DB colors)
-    if (initialCaptions && initialCaptions.length > 0) {
-      captions = initialCaptions;
-      console.log('📥 Using INITIAL captions:', captions.length, 'segments');
+    if (initialCaptions?.length) {
+      console.log('📥 Using INITIAL captions:', initialCaptions.length, 'segments');
+      console.log('🎯 First caption:', {
+        speaker: initialCaptions[0].speaker,
+        color: initialCaptions[0].speakerColor,
+        hasWords: !!initialCaptions[0].words?.length,
+        hasSyllables: initialCaptions[0].words?.some((w: any) => w.syllables?.length),
+        text: initialCaptions[0].text?.substring(0, 50) + '...'
+      });
+      return initialCaptions;
     }
-    // Priority 2: Translated content (when switching languages)
-    else if (translatedContent?.captions && translatedContent.captions.length > 0) {
-      captions = translatedContent.captions;
-      console.log('🌐 Using TRANSLATED captions:', captions.length, 'for language:', currentLanguage);
+    if (translatedContent?.captions?.length) {
+      console.log('🌐 Using TRANSLATED captions:', translatedContent.captions.length);
+      return translatedContent.captions;
     }
-    // Priority 3: Generated captions (fallback)
-    else if (generatedCaptions && generatedCaptions.length > 0) {
-      captions = generatedCaptions;
-      console.log('🎯 Using GENERATED captions:', captions.length);
+    if (generatedCaptions?.length) {
+      console.log('🎯 Using GENERATED captions:', generatedCaptions.length);
+      return generatedCaptions;
     }
-    else {
-      console.log('⚠️ No captions available');
-    }
-    
-    console.log('🎬 AxessiblePlayer final captions:', captions.length, 'segments');
-    console.log('🎯 First caption:', captions[0] ? {
-      speaker: captions[0].speaker,
-      color: captions[0].speakerColor,
-      hasWords: !!captions[0].words?.length,
-      hasSyllables: captions[0].words?.some((w: any) => w.syllables?.length),
-      text: captions[0].text?.substring(0, 50) + '...'
-    } : 'No captions');
-    
-    // Return captions as-is (no auto-segment, no mapping gate - preserve DB timing and colors)
-    return captions;
-  }, [initialCaptions, translatedContent, generatedCaptions, currentLanguage]);
+    console.log('⚠️ No captions available');
+    return [];
+  }, [initialCaptions, translatedContent, generatedCaptions]);
 
   return (
     <div 
