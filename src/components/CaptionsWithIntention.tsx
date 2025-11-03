@@ -742,224 +742,32 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 const getTokenText = (t: Word & { _syllableText?: string }) => t._syllableText ?? t.text;
                 
                 return tokens.length > 0 ? (
-                  tokens.map((token, index) => {
-                   const displayText = getTokenText(token);
-                   
-                   const wordPitchStyle = getPitchBasedStyle(token.pitch as 'high' | 'low' | 'normal');
-                    const wordFontSize = getIntonationBasedFontSize(
-                      screenHeight, 
-                      activeCaption.vocal_intensity, 
-                      volume, 
-                      (token.emphasis === 'whisper' ? 'quiet' : token.emphasis) as 'loud' | 'normal' | 'quiet' | 'yelling'
+                  tokens.map((tok, i) => {
+                    const active =
+                      currentTime >= (tok.startTime! - 0.06) &&
+                      currentTime <= (tok.endTime! + 0.06);
+
+                    // style by emphasis/pitch if present
+                    const scale =
+                      tok.emphasis === "yelling" || tok.emphasis === "loud" ? 1.18 :
+                      tok.emphasis === "quiet"   ? 0.92 : 1.0;
+
+                    return (
+                      <span
+                        key={`${i}-${tok.startTime}`}
+                        className={`caption-word ${active ? "word-active" : ""}`}
+                        style={{ 
+                          transform: `scale(${scale})`,
+                          color: activeCaption.speakerColor || speakerColor,
+                          marginRight: '0.3em',
+                          display: 'inline-block',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {getTokenText(tok)}
+                      </span>
                     );
-                   
-                    // Increased tolerance + lead-in offset for better sync with speech
-                    const WORD_PRECISION = 0.12; // 120ms precision window for browser timing variance
-                    const LEAD_IN_OFFSET = -0.1; // 100ms early activation to match audio
-                    const isActiveByTime = (currentTime >= (token.startTime + LEAD_IN_OFFSET - WORD_PRECISION) && 
-                                           currentTime <= (token.endTime + LEAD_IN_OFFSET + WORD_PRECISION));
-                    const isActiveByIndex = index === activeWordIndex;
-                    const isWordActive = isActiveByTime || isActiveByIndex;
-                    const wordHasBeenSpoken = currentTime >= (token.endTime - WORD_PRECISION);
-                    const isUpcoming = currentTime < (token.startTime - WORD_PRECISION);
-                    
-                    // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
-                    if (currentTime <= 3.0 && index < 5) {
-                      console.log(`⏱️ Token ${index} "${displayText}" timing: current=${currentTime.toFixed(3)}s, token=${token.startTime?.toFixed(3)}-${token.endTime?.toFixed(3)}s, active=${isWordActive}`);
-                    }
-                   
-                   // Progressive word state system (inspired by axs.so approach)
-                   let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
-                   if (wordHasBeenSpoken) wordState = 'spoken';
-                   else if (isWordActive) wordState = 'active';
-                   
-                    // Color system based on word state — always tint by speaker color so it "follows" every word
-                    const getWordColorByState = () => {
-                      const base = activeCaption.speakerColor || speakerColor;
-                      switch (wordState) {
-                        case 'active':
-                          return base; // full color
-                        case 'spoken':
-                          return base; // keep same hue; dim via opacity below
-                        case 'upcoming':
-                          return base; // preview uses same hue; dim via opacity below
-                        default:
-                          return base;
-                      }
-                    };
-                   
-                    // Enhanced vocal intensity styling with word-level precision and emotional expressions
-                     const getWordIntensityStyle = (): React.CSSProperties => {
-                       const baseStyle: React.CSSProperties = {
-                         transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bounce easing for 15% pop
-                         willChange: 'transform, opacity, color, font-size',
-                         transformOrigin: 'center bottom',
-                         // 15% pop animation on active word (Design Guide)
-                         ...(wordState === 'active' && {
-                           transform: 'scale(1.15) translateY(-2px)',
-                           zIndex: 10
-                         })
-                       };
-                      
-                      // Check for emotional expressions in the segment
-                      const emotionalType = (activeCaption as any)?.intensity_metadata?.emotionalType;
-                      
-                      // Apply vocal intensity effects with emotional context
-                      if (activeCaption.vocal_intensity) {
-                        switch (activeCaption.vocal_intensity) {
-                          case 'whisper':
-                            return {
-                              ...baseStyle,
-                              fontSize: `${wordFontSize * 0.8}px`,
-                              fontWeight: 300,
-                              opacity: wordState === 'active' ? 0.9 : 0.75,
-                              fontStyle: 'italic',
-                              letterSpacing: '-0.02em',
-                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)',
-                              filter: wordState === 'active' ? 'brightness(1.1)' : 'none'
-                            };
-                          case 'yell':
-                            const isEmotional = emotionalType && ['surprise', 'laughter'].includes(emotionalType);
-                            return {
-                              ...baseStyle,
-                              fontSize: `${wordFontSize * (isEmotional ? 1.4 : 1.25)}px`,
-                              fontWeight: isEmotional ? 800 : 700,
-                              letterSpacing: isEmotional ? '0.08em' : '0.04em',
-                              textShadow: wordState === 'active' ? 
-                                `0 0 15px ${getWordColorByState()}50, 0 2px 4px rgba(0,0,0,0.3)` : 
-                                '0 1px 2px rgba(0,0,0,0.2)',
-                              transform: wordState === 'active' ? 
-                                `scale(${isEmotional ? 1.12 : 1.06}) translateY(-3px)` : 'scale(1)',
-                              // Add emotional visual cues
-                              ...(emotionalType === 'laughter' && {
-                                animation: wordState === 'active' ? 'bounce 0.6s ease-out' : undefined
-                              }),
-                              ...(emotionalType === 'surprise' && {
-                                filter: wordState === 'active' ? 'brightness(1.3) contrast(1.1)' : 'none'
-                              })
-                            };
-                          case 'shout':
-                            const isCrying = emotionalType === 'crying';
-                            return {
-                              ...baseStyle,
-                              fontSize: `${wordFontSize * (isCrying ? 1.1 : 1.35)}px`,
-                              fontWeight: 800,
-                              letterSpacing: isCrying ? '0.02em' : '0.06em',
-                              textShadow: wordState === 'active' ? 
-                                `0 0 20px ${getWordColorByState()}70, 0 0 10px ${getWordColorByState()}50, 0 3px 6px rgba(0,0,0,0.4)` : 
-                                '0 2px 4px rgba(0,0,0,0.3)',
-                              transform: wordState === 'active' ? 
-                                `scale(${isCrying ? 1.05 : 1.15}) translateY(-4px)` : 'scale(1)',
-                              animation: wordState === 'active' ? 
-                                (isCrying ? 'pulse 1.2s ease-in-out' : 'pulse 0.8s ease-out') : undefined,
-                              // Emotional context styling
-                              ...(isCrying && {
-                                filter: wordState === 'active' ? 'blur(0.5px) brightness(0.9)' : 'none',
-                                opacity: 0.9
-                              })
-                            };
-                          default:
-                            return {
-                              ...baseStyle,
-                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                            };
-                        }
-                      }
-                      
-                      // Fallback to manual emphasis with jump effects and emotional context
-                      if (token.emphasis) {
-                        const emotionalType = (workingCaption as any)?.intensity_metadata?.emotionalType;
-                        const isLaughter = emotionalType === 'laughter';
-                        
-                        switch (token.emphasis) {
-                          case 'quiet':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 0.85}px`, 
-                              fontWeight: 300, 
-                              fontStyle: 'italic',
-                              opacity: 0.8,
-                              transform: wordState === 'active' ? 'scale(1.03) translateY(-1px)' : 'scale(1)'
-                            };
-                          case 'loud':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 1.3}px`, 
-                              fontWeight: 700,
-                              letterSpacing: '0.02em',
-                              transform: wordState === 'active' ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
-                              ...(emotionalType && {
-                                textShadow: wordState === 'active' ? `0 0 8px ${getWordColorByState()}40` : 'none'
-                              })
-                            };
-                          case 'yelling':
-                            return { 
-                              ...baseStyle, 
-                              fontSize: `${wordFontSize * 1.35}px`, // Increased from 1.25x
-                              fontWeight: 800, 
-                              letterSpacing: '0.05em',
-                              textShadow: wordState === 'active' ? `0 0 10px ${getWordColorByState()}50` : 'none',
-                              transform: wordState === 'active' ? 'scale(1.1) translateY(-4px)' : 'scale(1)',
-                              // Keep original case - no uppercase transformation
-                              animation: wordState === 'active' && emotionalType ? 'pulse 0.8s ease-out' : undefined
-                            };
-                          default:
-                            return {
-                              ...baseStyle,
-                              transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                            };
-                        }
-                      }
-                      
-                      // Default state with subtle jump
-                      return {
-                        ...baseStyle,
-                        transform: wordState === 'active' ? 'scale(1.02) translateY(-2px)' : 'scale(1)'
-                      };
-                      };
-                   
-                      // Regular word rendering (syllables already expanded into individual word entries)
-                      return (
-                        <span
-                          key={`${workingCaption.startTime}-${index}`}
-                          className={`
-                            inline-block caption-word word-${wordState} 
-                            ${activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''}
-                            ${wordState === 'active' ? 'animate-word-highlight' : ''}
-                            ${token.emphasis === 'yelling' || activeCaption.vocal_intensity === 'shout' ? 'animate-emphasis-bounce' : ''}
-                            transition-all duration-200 ease-out
-                          `}
-                        data-wid={index}
-                        data-start={token.startTime}
-                        data-end={token.endTime}
-                        style={{
-                         color: getWordColorByState(),
-                         marginRight: '0.3em',
-                         fontSize: `${wordFontSize}px`,
-                         cursor: 'default',
-                         ...wordPitchStyle,
-                         ...getWordIntensityStyle(),
-                         // Active word gets 15% pop and enhanced glow
-                         ...(wordState === 'active' && {
-                           transform: 'scale(1.15) translateY(-2px)',
-                           textShadow: `0 0 10px ${getWordColorByState()}40, 0 2px 4px rgba(0,0,0,0.2)`,
-                           zIndex: 10,
-                           position: 'relative'
-                         }),
-                         // Spoken words get subtle persistence
-                         ...(wordState === 'spoken' && {
-                           opacity: 0.85
-                         }),
-                         // Upcoming words are dimmed but visible
-                         ...(wordState === 'upcoming' && {
-                           opacity: 0.6
-                         })
-                       }}
-                       >
-                         {displayText}
-                       </span>
-                     );
-                 })
+                  })
                 ) : (
                   // Fallback: show full text if no tokens
                   <span style={{ color: workingCaption.speakerColor || speakerColor }}>
