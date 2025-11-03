@@ -380,12 +380,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
     const loadAudioDescriptions = async () => {
       try {
-        // Query for both 'es' and 'spanish' language values to handle inconsistency
+        // Query only for the current language
         const { data, error } = await supabase
           .from('audio_descriptions')
           .select('*')
           .eq('video_id', videoId)
-          .in('language', [currentLanguage || 'en', 'spanish', 'es'])
+          .eq('language', currentLanguage || 'en')
           .order('start_time');
 
         if (error) {

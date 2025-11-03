@@ -450,23 +450,24 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const showUntilSecRef   = React.useRef<number | null>(null); // seconds
   const lastSetMsRef      = React.useRef<number>(0);           // ms (Date.now)
 
-  // Active caption with read-ahead fallback (CWI Protocol)
+  // Active caption - only show truly active segments (no read-ahead promotion)
   const activeCandidate = React.useMemo(() => {
     if (!processed?.length) return null;
 
-    // exact active
+    // Only return segments that are actually active right now
     const active = processed.find(c =>
       currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
       currentTime <= (c.endTime   + SEGMENT_TOLERANCE)
     );
-    if (active) return active;
+    return active || null;
+  }, [processed, currentTime]);
 
-    // CWI read-ahead: show the next caption within 3s
-    const upcoming = processed.find(c =>
-      c.startTime >= currentTime &&
-      (c.startTime - currentTime) <= READAHEAD_WINDOW
-    );
-    return upcoming || processed[0] || null;
+  // Optional: upcoming segment for preview (only if SHOW_READAHEAD_PREVIEW is true)
+  const upcomingCandidate = React.useMemo(() => {
+    if (!processed?.length || !SHOW_READAHEAD_PREVIEW) return null;
+    return processed.find(c =>
+      c.startTime >= currentTime && (c.startTime - currentTime) <= READAHEAD_WINDOW
+    ) || null;
   }, [processed, currentTime]);
 
   // Sticky display effect (no blink, but no 1.2s linger)
@@ -500,6 +501,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   // Neutral color until a character is assigned
   const tint = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
   const words = (cap.words || []) as any[];
+  
+  // Validation logging
+  console.log('🎨 CWI: Rendering caption', {
+    speaker: cap.speaker,
+    tint,
+    hasCustomColor: !!customSpeakerColors[cap.speaker],
+    hasSpeakerColor: !!cap.speakerColor,
+    text: cap.text?.substring(0, 30) + '...'
+  });
 
   return (
     <div className="relative w-full">
@@ -558,6 +568,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               progressPct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
             }
 
+            // Helper to convert hex to rgba for alpha
+            const hexToRgba = (hex: string, alpha: number) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+            
+            // Two-layer gradient: base tint at 30% alpha + karaoke fill at 100% alpha
+            const baseTint = tint.startsWith('#') ? hexToRgba(tint, 0.3) : `${tint}4D`;
+            const fullTint = tint;
+
             return (
               <span
                 key={`${i}-${word.startTime}`}
@@ -565,14 +587,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 style={{
                   display: 'inline-block',
                   marginRight: '0.3em',
-                  // base glyph is dim; the speaker color paints via background-clip
-                  color: 'rgba(255,255,255,0.28)',
-                  backgroundImage: `linear-gradient(${tint}, ${tint})`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: `${progressPct}% 100%`,
+                  color: 'transparent',
+                  WebkitTextFillColor: 'transparent',
+                  // Layer 1: full-word base tint (always visible)
+                  // Layer 2: karaoke fill that grows with progress
+                  backgroundImage: `linear-gradient(${baseTint}, ${baseTint}), linear-gradient(${fullTint}, ${fullTint})`,
+                  backgroundRepeat: 'no-repeat, no-repeat',
+                  backgroundSize: `100% 100%, ${progressPct}% 100%`,
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
                   transition: 'background-size 80ms linear'
                 }}
               >

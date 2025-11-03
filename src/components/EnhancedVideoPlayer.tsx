@@ -394,6 +394,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     let applied = segments;
     try {
       const savedMappings = await loadSpeakerMappings(currentLanguage);
+      
+      // Mirror DB mappings to localStorage for AxessiblePlayer's Final Mapping Gate
+      if (savedMappings && Object.keys(savedMappings).length > 0) {
+        localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(savedMappings));
+        console.log('💾 ENHANCED PLAYER: Mirrored speaker mappings to localStorage:', savedMappings);
+      }
+      
       // Ensure characters are available on first render
       let availableChars = characters;
       if (!availableChars || availableChars.length === 0) {
