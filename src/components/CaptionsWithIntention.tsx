@@ -621,22 +621,29 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
             let filledUpTo = 0;
 
             if (Array.isArray(word.syllables) && word.syllables.length > 0 && withinWord) {
-              // Stepwise syllable fill - show complete syllables as they're spoken
+              // Show syllables that have completed or are 70% through
+              const SYLLABLE_THRESHOLD = 0.7; // Show syllable when 70% complete
               
-              // Find the last syllable that has started (discrete, not continuous)
-              let lastStartedSylIdx = -1;
-              for (let idx = word.syllables.length - 1; idx >= 0; idx--) {
-                if (currentTime >= word.syllables[idx].startTime - WORD_TOLERANCE) {
-                  lastStartedSylIdx = idx;
+              let lastCompletedSylIdx = -1;
+              for (let idx = 0; idx < word.syllables.length; idx++) {
+                const syl = word.syllables[idx];
+                const sylDuration = Math.max(0.001, syl.endTime - syl.startTime);
+                const sylProgress = (currentTime - syl.startTime) / sylDuration;
+                
+                // Show this syllable if it's completed OR well into its duration
+                if (currentTime >= syl.endTime || sylProgress >= SYLLABLE_THRESHOLD) {
+                  lastCompletedSylIdx = idx;
+                } else {
+                  // Stop at first incomplete syllable
                   break;
                 }
               }
-
-              if (lastStartedSylIdx >= 0) {
-                // Fill up to the charEnd of the last started syllable
-                filledUpTo = word.syllables[lastStartedSylIdx].charEnd ?? wordLen;
+              
+              if (lastCompletedSylIdx >= 0) {
+                // Fill up to the charEnd of the last completed syllable
+                filledUpTo = word.syllables[lastCompletedSylIdx].charEnd ?? wordLen;
               } else {
-                // Before first syllable starts
+                // No syllables completed yet
                 filledUpTo = 0;
               }
             } else if (withinWord) {
