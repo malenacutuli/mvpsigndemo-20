@@ -266,36 +266,33 @@ export const useVideoStorage = (videoId: string) => {
         }
 
         if (rows && rows.length > 0) {
-          // ✅ STEP 3: Tolerant client-side deduplication (groups by idx or quantized timing)
-          const quantize = (t: number) => Math.round(t * 100) / 100;
-          const dedupMap = new Map<string, any>();
+          // ✅ STEP 3: Hide legacy duplicates immediately - group by idx or rounded timing
+          const groups = new Map<string, any[]>();
           
           for (const row of rows) {
-            // Key by idx if present, else by quantized timing + text
-            const key = row.idx !== undefined && row.idx !== null
-              ? `idx:${row.idx}`
-              : `time:${quantize(row.start_time)}|${quantize(row.end_time)}|${row.text.trim()}`;
+            // Group by idx if present, else by rounded start|end|text
+            const k = Number.isFinite(row.idx) ? row.idx : null;
+            const key = k !== null 
+              ? `idx:${k}`
+              : `time:${Math.round(row.start_time * 100) / 100}|${Math.round(row.end_time * 100) / 100}|${row.text.trim()}`;
             
-            const existing = dedupMap.get(key);
-            
-            if (!existing) {
-              dedupMap.set(key, row);
-            } else {
-              // UPDATED Selection priority: character_id > words > neutral color > longer duration
-              const hasChar = row.character_id && !existing.character_id;
-              const hasWords = row.words && (!existing.words || (existing.words && Array.isArray(row.words) && row.words.length > 0));
-              const isNeutral = row.speaker_color === '#22E3D0' && existing.speaker_color !== '#22E3D0';
-              const longerDuration = (row.end_time - row.start_time) > (existing.end_time - existing.start_time);
-              
-              if (hasChar || (hasWords && !existing.character_id) || (isNeutral && !existing.character_id && !existing.words) || (longerDuration && !existing.character_id && !existing.words && !isNeutral)) {
-                dedupMap.set(key, row);
-              }
-            }
+            const arr = groups.get(key) || [];
+            arr.push(row);
+            groups.set(key, arr);
           }
           
-          const cleanedRows = Array.from(dedupMap.values()).sort((a, b) => 
-            (a.idx || 0) - (b.idx || 0) || a.start_time - b.start_time
-          );
+          // Pick best from each group: character_id > has words > longer duration
+          const pickBest = (arr: any[]) => {
+            return arr.sort((a, b) => 
+              (b.character_id ? 1 : 0) - (a.character_id ? 1 : 0) ||
+              ((b.words?.length ? 1 : 0) - (a.words?.length ? 1 : 0)) ||
+              ((b.end_time - b.start_time) - (a.end_time - a.start_time))
+            )[0];
+          };
+          
+          const cleanedRows = Array.from(groups.values())
+            .map(pickBest)
+            .sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0) || a.start_time - b.start_time);
           
           if (rows.length !== cleanedRows.length) {
             console.log(`🧹 STORAGE DEDUPE: Removed ${rows.length - cleanedRows.length} duplicates (${rows.length} → ${cleanedRows.length})`);
