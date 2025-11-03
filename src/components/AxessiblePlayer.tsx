@@ -95,6 +95,21 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   
+  // === Karaoke mode state (persisted) ===
+  const [karaokeMode, setKaraokeMode] = useState<'textFill' | 'wordHighlight' | 'lineFill'>(() => {
+    try { 
+      return (localStorage.getItem('axv:karaokeMode') as any) || 'textFill'; 
+    } catch { 
+      return 'textFill'; 
+    }
+  });
+  
+  useEffect(() => { 
+    try { 
+      localStorage.setItem('axv:karaokeMode', karaokeMode); 
+    } catch {} 
+  }, [karaokeMode]);
+  
   // === Sign Language toggle state (safe default + persistence) ===
   const [showSignLanguage, setShowSignLanguage] = useState<boolean>(() => {
     try {
@@ -843,7 +858,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         aria-label={`Video: ${title}`}
         crossOrigin="anonymous"
         playsInline
-        preload="auto"
+        preload="metadata"
         onError={(e) => {
           console.error('Video loading error:', e);
           console.log('Video src:', videoSrc);
@@ -1060,6 +1075,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             currentTime={currentTime}
             isVisible={showCaptions}
             screenHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
+            karaokeMode={karaokeMode}
           />
         </div>
       )}
@@ -1189,6 +1205,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <FileText className="w-4 h-4" />
             </Button>
             
+            {/* Caption Style Selector */}
+            <select
+              aria-label="Caption style"
+              value={karaokeMode}
+              onChange={(e) => setKaraokeMode(e.target.value as any)}
+              className="bg-black/50 text-white text-xs rounded px-2 py-1 outline-none hover:bg-black/70 transition-colors"
+              title="Caption style"
+            >
+              <option value="textFill">Text Fill</option>
+              <option value="wordHighlight">Word Highlight</option>
+              <option value="lineFill">Line Sweep</option>
+            </select>
             
             {/* Dubbing speed selection moved into SynchronizedDubbingPlayer */}
             
