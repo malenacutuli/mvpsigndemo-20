@@ -564,12 +564,12 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       try {
         console.log('🔄 Loading audio descriptions for video:', videoId, 'language:', currentLanguage);
         
-        // Query for audio descriptions with broader language matching
+        // Query for audio descriptions - only for current language
         const { data, error } = await supabase
           .from('audio_descriptions')
           .select('*')
           .eq('video_id', videoId)
-          .in('language', [currentLanguage || 'en', 'spanish', 'es', 'en']) // Always include 'en' as fallback
+          .eq('language', currentLanguage || 'en')
           .order('start_time');
 
         if (error) {
@@ -589,29 +589,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           console.log('✅ Loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions for published video');
         } else {
           console.log('📢 No audio descriptions found for video:', videoId, 'language:', currentLanguage);
-          // Try loading any audio descriptions regardless of language as fallback
-          try {
-            const { data: fallbackData, error: fallbackError } = await supabase
-              .from('audio_descriptions')
-              .select('*')
-              .eq('video_id', videoId)
-              .order('start_time')
-              .limit(50);
-              
-            if (!fallbackError && fallbackData && fallbackData.length > 0) {
-              const fallbackDescriptions = fallbackData.map(desc => ({
-                text: desc.description,
-                startTime: desc.start_time,
-                endTime: desc.end_time,  
-                voiceStyle: 'warm' as const,
-                timestamp: desc.start_time
-              }));
-              setAudioDescriptions(fallbackDescriptions);
-              console.log('✅ Loaded fallback audio descriptions:', fallbackDescriptions.length, 'descriptions');
-            }
-          } catch (fallbackError) {
-            console.error('❌ Fallback audio description loading failed:', fallbackError);
-          }
         }
       } catch (error) {
         console.error('❌ Failed to load audio descriptions:', error);
@@ -620,6 +597,21 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
     loadAudioDescriptions();
   }, [videoId, currentLanguage]);
+
+  // Helper to check available languages
+  const checkAvailableLanguages = async (videoId: string): Promise<string[]> => {
+    const { data, error } = await supabase
+      .from('transcript_segments_clean')
+      .select('language')
+      .eq('video_id', videoId)
+      .limit(200);
+
+    if (error) {
+      console.warn('checkAvailableLanguages error:', error);
+      return [];
+    }
+    return [...new Set((data || []).map((d: any) => d.language).filter(Boolean))];
+  };
 
   // Load saved data on component mount and language changes
   useEffect(() => {
@@ -635,33 +627,26 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       sessionStorage.setItem(loadingKey, 'true');
       
       try {
-        // Auto-detect available transcript language ONLY if no language was specified
         let targetLanguage = currentLanguage;
-        
-        // Only auto-detect if currentLanguage is not set or is 'auto'
-        if (!currentLanguage || currentLanguage === 'auto') {
-          const { data: availableTranscripts } = await supabase
-            .from('v_transcript_segments_resolved' as any)
-            .select('language')
-            .eq('video_id', videoId)
-            .limit(10);
-          
-          if (availableTranscripts && availableTranscripts.length > 0) {
-            // Filter out 'auto' language and get unique valid languages
-            const uniqueLanguages = [...new Set(
-              availableTranscripts
-                .map((t: any) => t.language)
-                .filter((lang: string) => lang && lang !== 'auto')
-            )];
-            
-            // Prefer 'en' if available, otherwise take first valid language
-            targetLanguage = uniqueLanguages.includes('en') ? 'en' : uniqueLanguages[0];
-            console.log('🌐 ENHANCED PLAYER: Auto-detected language (no explicit choice):', targetLanguage);
+
+        // 1) If no language was chosen yet (or 'auto'), we can detect one.
+        if (!targetLanguage || targetLanguage === 'auto') {
+          // Prefer the video's declared/original language prop first, else English.
+          targetLanguage = language || 'en';
+          setCurrentLanguage(targetLanguage);
+        } else {
+          // 2) If caller selected a language, verify it exists for this video.
+          const available = await checkAvailableLanguages(videoId);
+          console.log('📋 Available languages for video:', available);
+
+          if (!available.includes(targetLanguage)) {
+            console.warn(`⚠️ Language '${targetLanguage}' not available. Falling back.`);
+            targetLanguage = available[0] || (language || 'en');
             setCurrentLanguage(targetLanguage);
           }
-        } else {
-          console.log('✅ ENHANCED PLAYER: Using explicitly selected language:', targetLanguage);
         }
+
+        console.log('🌍 Loading captions/audio-description for language:', targetLanguage);
         
         // Load transcript segments with the correct target language
         const segments = await loadTranscriptSegments(targetLanguage);

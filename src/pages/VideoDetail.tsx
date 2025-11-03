@@ -57,7 +57,7 @@ const VideoDetail = () => {
   const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [deletingVideo, setDeletingVideo] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
+  const [currentLanguage, setCurrentLanguage] = useState<string>(''); // set after video loads
   const { toast } = useToast();
   
   const handleLanguageChange = (newLanguage: string) => {
@@ -117,6 +117,7 @@ const VideoDetail = () => {
       
       console.log('✅ Video data loaded successfully:', data);
       setVideo(data);
+      setCurrentLanguage(data?.language || 'en');
       
       // Get public URL for video since the videos bucket is now public
       if (data.storage_path) {
