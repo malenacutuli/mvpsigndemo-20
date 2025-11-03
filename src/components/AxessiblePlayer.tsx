@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { CICharacterSync } from './CICharacterSync';
+// CICharacterSync removed - using unified pipeline
 
 import { VoiceOption } from "@/types/voice";
 
@@ -160,54 +160,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   // Hooks
   const isMobile = useIsMobile();
   
-  // Reload captions from database when language changes
-  useEffect(() => {
-    const loadCaptionsForLanguage = async () => {
-      if (!videoId) return;
-      
-      console.log('🔄 Loading captions for language:', currentLanguage);
-      
-      try {
-        const { data: transcripts } = await supabase
-          .from('transcripts')
-          .select('id')
-          .eq('video_id', videoId)
-          .eq('language', currentLanguage)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        
-        if (transcripts && transcripts.length > 0) {
-          const { data: segments } = await supabase
-            .from('transcript_segments_clean')
-            .select('*')
-            .eq('transcript_id', transcripts[0].id)
-            .order('start_time', { ascending: true });
-          
-          if (segments && segments.length > 0) {
-            const formatted: CaptionSegment[] = segments.map(seg => ({
-              text: seg.text,
-              speaker: seg.speaker,
-              speakerColor: seg.speaker_color,
-              startTime: Number(seg.start_time),
-              endTime: Number(seg.end_time),
-              words: (seg.words as any) || [],
-              emphasis: seg.emphasis as any,
-              pitch: typeof seg.pitch === 'number' ? seg.pitch : undefined,
-              isOffCamera: seg.is_off_camera || false
-            }));
-            setGeneratedCaptions(formatted);
-            console.log('✅ Loaded', formatted.length, 'captions for language:', currentLanguage);
-          }
-        } else {
-          console.log('⚠️ No transcript found for language:', currentLanguage);
-        }
-      } catch (error) {
-        console.error('❌ Failed to load captions for language:', currentLanguage, error);
-      }
-    };
-    
-    loadCaptionsForLanguage();
-  }, [currentLanguage, videoId]);
+  // Caption loading removed - using unified pipeline from EnhancedVideoPlayer via initialCaptions
   
   // Keyboard shortcut for Sign Language toggle
   useEffect(() => {
@@ -865,133 +818,41 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     return result;
   };
 
-  // Compute final captions with all mappings applied
+  // Compute final captions - unified pipeline prioritizes initialCaptions
   const finalCaptions = useMemo(() => {
     let captions = [] as any[];
     
-    // Priority 1: Translated content (when actively switching languages via real-time translation)
-    if (translatedContent?.captions && translatedContent.captions.length > 0 && currentLanguage !== originalLanguage) {
+    // Priority 1: Initial captions from EnhancedVideoPlayer (already has timing, syllables, and DB colors)
+    if (initialCaptions && initialCaptions.length > 0) {
+      captions = initialCaptions;
+      console.log('📥 Using INITIAL captions:', captions.length, 'segments');
+    }
+    // Priority 2: Translated content (when switching languages)
+    else if (translatedContent?.captions && translatedContent.captions.length > 0) {
       captions = translatedContent.captions;
       console.log('🌐 Using TRANSLATED captions:', captions.length, 'for language:', currentLanguage);
     }
-    // Priority 2: Generated captions (from database reload or live generation)
+    // Priority 3: Generated captions (fallback)
     else if (generatedCaptions && generatedCaptions.length > 0) {
       captions = generatedCaptions;
-      console.log('🎯 Using GENERATED captions:', captions.length, 'for language:', currentLanguage);
-    }
-    // Priority 3: Initial captions (fallback - only use if we have no other option and they match the current language)
-    else if (initialCaptions && initialCaptions.length > 0) {
-      // Only use initial captions if they match current language (check via metadata or assume they're original)
-      if (currentLanguage === originalLanguage) {
-        captions = initialCaptions;
-        console.log('📥 Using INITIAL captions (original language):', captions.length);
-      } else {
-        console.log('⚠️ Initial captions available but language mismatch - waiting for correct language load');
-      }
+      console.log('🎯 Using GENERATED captions:', captions.length);
     }
     else {
-      console.log('⚠️ No captions available for language:', currentLanguage);
+      console.log('⚠️ No captions available');
     }
     
-    // STRICT FILTER: remove known conflicting segment reappearing from other sources
-    const beforeFilter = captions.length;
-    captions = captions.filter((seg: any) => {
-      const speaker = (seg.speaker || '').toLowerCase();
-      const text = (seg.text || '').toLowerCase();
-      const near30s = seg.startTime >= 29 && seg.startTime <= 31;
-      const isVegasBoth = speaker.includes('both') && text.includes('vegas') && text.includes('baby') && near30s;
-      return !isVegasBoth;
-    });
-    if (captions.length !== beforeFilter) {
-      console.log('🧹 Filtered conflicting segment: "Both — Vegas, baby" near 30s');
-    }
-    
-    // FINAL MAPPING GATE: enforce Character Manager mappings just before render
-    try {
-      const vid = videoId || 'default';
-      const mapping = JSON.parse(localStorage.getItem(`speaker-mappings-${vid}`) || '{}');
-      const characters = JSON.parse(localStorage.getItem(`characters_${vid}`) || localStorage.getItem(`characters-${vid}`) || '[]');
-      const byName: Record<string, any> = {};
-      (characters || []).forEach((c: any) => { if (c?.name) byName[c.name] = c; });
-      
-      console.log('🔍 Final mapping gate debug:', {
-        mapping,
-        charactersCount: characters.length,
-        byName: Object.keys(byName),
-        sampleSpeakers: captions.slice(0, 5).map(c => c.speaker)
-      });
-      
-      captions = captions.map((s: any, index: number) => {
-        try {
-          const mappedName = mapping?.[s.speaker];
-          const char = mappedName ? byName[mappedName] : byName[s.speaker];
-          
-          if (char) {
-            console.log(`🎭 Applied character color: ${s.speaker} -> ${char.name} (${char.color})`);
-            return {
-              ...s,
-              speaker: char.name || s.speaker,  // Ensure speaker name exists
-              speakerColor: char.color || s.speakerColor,
-              isOffCamera: typeof char.isOffCamera === 'boolean' ? char.isOffCamera : s.isOffCamera
-            };
-          } else {
-            console.log(`⚠️ No character found for speaker: ${s.speaker} (mapped: ${mappedName})`);
-            // Enhanced fuzzy matching for similar names (e.g., Miyoki vs Myoki)
-            const lowercaseSpeaker = s.speaker?.toLowerCase();
-            const fallbackChar = Object.values(byName).find((c: any) => {
-              if (!c?.name) return false;
-              const charName = c.name.toLowerCase();
-              return charName === lowercaseSpeaker || 
-                     charName.includes(lowercaseSpeaker.substring(0, 4)) ||
-                     lowercaseSpeaker.includes(charName.substring(0, 4));
-            });
-            
-            if (fallbackChar) {
-              console.log(`✅ Found fuzzy match: ${s.speaker} -> ${fallbackChar.name} (${fallbackChar.color})`);
-              return {
-                ...s,
-                speaker: fallbackChar.name || s.speaker,
-                speakerColor: fallbackChar.color || s.speakerColor,
-                isOffCamera: typeof fallbackChar.isOffCamera === 'boolean' ? fallbackChar.isOffCamera : s.isOffCamera
-              };
-            }
-          }
-          
-          // Return original segment if no character mapping found
-          return {
-            ...s,
-            speaker: s.speaker || 'Unknown',  // Ensure speaker exists
-            speakerColor: s.speakerColor || '#FFFFFF'  // Default color
-          };
-        } catch (segmentError) {
-          console.error('Error processing segment:', segmentError, s);
-          return {
-            ...s,
-            speaker: s.speaker || 'Unknown',
-            speakerColor: s.speakerColor || '#FFFFFF'
-          };
-        }
-      });
-    } catch (e) {
-      console.warn('⚠️ AXESSIBLE: Failed to apply final character mapping gate', e);
-    }
-    
-    console.log('🎬 AxessiblePlayer computed final captions:', captions.length, 'segments');
+    console.log('🎬 AxessiblePlayer final captions:', captions.length, 'segments');
     console.log('🎯 First caption:', captions[0] ? {
       speaker: captions[0].speaker,
       color: captions[0].speakerColor,
-      emphasis: captions[0].words?.[0]?.emphasis,
-      pitch: captions[0].words?.[0]?.pitch,
-      text: captions[0].text?.substring(0, 50) + '...',
-      source: 'database-priority'
+      hasWords: !!captions[0].words?.length,
+      hasSyllables: captions[0].words?.some((w: any) => w.syllables?.length),
+      text: captions[0].text?.substring(0, 50) + '...'
     } : 'No captions');
     
-    // Apply auto-segmentation for 2-line chunks (behind flag)
-    const segmented = autoSegment(captions);
-    console.log('📐 Auto-segment result:', segmented.length, 'segments (from', captions.length, 'original)');
-    
-    return segmented;
-  }, [initialCaptions, translatedContent, generatedCaptions, videoId]);
+    // Return captions as-is (no auto-segment, no mapping gate - preserve DB timing and colors)
+    return captions;
+  }, [initialCaptions, translatedContent, generatedCaptions, currentLanguage]);
 
   return (
     <div 
@@ -1004,8 +865,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(true)} // Keep controls visible for accessibility
     >
-      {/* CI Character Synchronization - Headless component for real-time sync */}
-      <CICharacterSync videoId={videoId} language={currentLanguage} />
+      {/* CICharacterSync removed - using unified pipeline */}
       
       {/* Video Element */}
       <video

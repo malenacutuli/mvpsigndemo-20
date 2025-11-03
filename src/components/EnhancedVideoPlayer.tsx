@@ -799,9 +799,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               // Inject syllables for words ≥6 characters
               const wordsWithSyllables = words && words.length > 0 ? injectSyllables(words) : words;
 
-              // Reduce lead-in to minimize timing drift and use existing start/end
-              const LEAD_IN_OFFSET = -0.02;
-              const finalStart = Math.max(0, start + LEAD_IN_OFFSET);
+              // Use DB timings exactly - no offsets
+              const finalStart = start;
               const finalEnd = end;
 
               return {

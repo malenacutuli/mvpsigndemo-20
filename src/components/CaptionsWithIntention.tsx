@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
-import { getSpeakerColor as getColorFromPalette } from '@/lib/cwiPalette';
+// getSpeakerColor removed - using neutral color until character assigned
 import { syllabify, injectSyllables } from '@/lib/syllables';
 import { paginateTwoLinesByWidth, type FontOpts } from '@/utils/captionsFit';
 
@@ -606,7 +606,8 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }
 
-  const speakerColor = getColorFromPalette(workingCaption.speaker, customSpeakerColors, workingCaption.speakerColor);
+  // Use neutral color until character assigned (no palette fallback)
+  const speakerColor = workingCaption.speakerColor || '#22E3D0';
   const volume = (workingCaption as any)?.volume || 50;
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight, 
