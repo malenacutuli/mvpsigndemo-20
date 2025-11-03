@@ -764,13 +764,29 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                     // Render syllables if word has them (words ≥6 characters)
                     const hasSyllables = word.syllables && word.syllables.length > 1;
                     
-                    // Phase 1D: Debug logging for syllable rendering
-                    if (i === 0 && hasSyllables) {
-                      console.log('🔤 Syllable rendering:', {
-                        word: word.text,
-                        syllables: word.syllables,
-                        currentTime
+                    // Compute active syllable and progress percentage for background-clip fill
+                    let progressPct = wordActive ? 100 : 0;
+                    
+                    if (hasSyllables) {
+                      // Find active syllable by currentTime
+                      const activeSylIdx = word.syllables!.findIndex(syl =>
+                        currentTime >= (syl.startTime - 0.06) &&
+                        currentTime <= (syl.endTime + 0.06)
+                      );
+                      
+                      // Compute charEnd for each syllable (character offset in word)
+                      let charOffset = 0;
+                      const syllablesWithCharEnd = word.syllables!.map(syl => {
+                        const charEnd = charOffset + syl.text.length;
+                        charOffset = charEnd;
+                        return { ...syl, charEnd };
                       });
+                      
+                      // Calculate progress based on active syllable's character position
+                      if (activeSylIdx >= 0) {
+                        const activeSyl = syllablesWithCharEnd[activeSylIdx];
+                        progressPct = Math.round((activeSyl.charEnd / word.text.length) * 100);
+                      }
                     }
 
                     return (
@@ -781,36 +797,17 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                           transform: `scale(${scale})`,
                           marginRight: '0.3em',
                           display: 'inline-block',
-                          transition: 'all 0.15s ease'
+                          transition: 'all 0.15s ease',
+                          color: wordColor,
+                          backgroundImage: 'linear-gradient(#FFFFFF, #FFFFFF)',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: `${progressPct}% 100%`,
+                          WebkitBackgroundClip: 'text',
+                          backgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
                         }}
                       >
-                        {hasSyllables ? (
-                          // Render individual syllables with independent highlighting
-                          word.syllables!.map((syl, sylIdx) => {
-                            const isSylActive = 
-                              currentTime >= (syl.startTime - 0.03) &&
-                              currentTime <= (syl.endTime + 0.03);
-                            
-                            return (
-                              <span
-                                key={sylIdx}
-                                style={{
-                                  color: activeCaption.speakerColor || DEFAULT_NEUTRAL,
-                                  fontWeight: isSylActive ? 700 : 600,
-                                  opacity: isSylActive ? 1.0 : 0.85,
-                                  transition: 'all 0.1s ease'
-                                }}
-                              >
-                                {syl.text}
-                              </span>
-                            );
-                          })
-                        ) : (
-                          // Word without syllables - display as single unit
-                          <span style={{ color: activeCaption.speakerColor || DEFAULT_NEUTRAL }}>
-                            {word.text}
-                          </span>
-                        )}
+                        {word.text}
                       </span>
                     );
                   })
