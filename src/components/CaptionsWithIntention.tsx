@@ -725,33 +725,48 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                 color: activeCaption.speakerColor || speakerColor
               }}
             >
-              {workingCaption.words && workingCaption.words.length > 0 ? (
-                 workingCaption.words.map((word: any, index) => {
-                   // Use syllable text if available, otherwise fall back to full word text
-                   const displayText = word._syllableText || word.text;
+              {(() => {
+                // Prepare tokens = syllables preferred, else words
+                const haveWords = Array.isArray(workingCaption.words) && workingCaption.words.length > 0;
+                let tokens: Array<Word & { _syllableText?: string }> = [];
+                
+                if (!haveWords) {
+                  // synthesize from caption text into words, then syllables
+                  const rawWords = (workingCaption.text || "").trim().split(/\s+/).filter(Boolean).map(t => ({ text: t }));
+                  tokens = expandWordsToSyllables(rawWords as Word[], workingCaption.startTime, workingCaption.endTime);
+                } else {
+                  tokens = expandWordsToSyllables(workingCaption.words as Word[], workingCaption.startTime, workingCaption.endTime);
+                }
+                
+                // convenience: what to display for each token
+                const getTokenText = (t: Word & { _syllableText?: string }) => t._syllableText ?? t.text;
+                
+                return tokens.length > 0 ? (
+                  tokens.map((token, index) => {
+                   const displayText = getTokenText(token);
                    
-                   const wordPitchStyle = getPitchBasedStyle(word.pitch);
+                   const wordPitchStyle = getPitchBasedStyle(token.pitch as 'high' | 'low' | 'normal');
                     const wordFontSize = getIntonationBasedFontSize(
                       screenHeight, 
                       activeCaption.vocal_intensity, 
                       volume, 
-                      word.emphasis === 'whisper' ? 'quiet' : word.emphasis
+                      (token.emphasis === 'whisper' ? 'quiet' : token.emphasis) as 'loud' | 'normal' | 'quiet' | 'yelling'
                     );
                    
                     // Increased tolerance + lead-in offset for better sync with speech
                     const WORD_PRECISION = 0.12; // 120ms precision window for browser timing variance
                     const LEAD_IN_OFFSET = -0.1; // 100ms early activation to match audio
-                    const isActiveByTime = (currentTime >= (word.startTime + LEAD_IN_OFFSET - WORD_PRECISION) && 
-                                           currentTime <= (word.endTime + LEAD_IN_OFFSET + WORD_PRECISION));
+                    const isActiveByTime = (currentTime >= (token.startTime + LEAD_IN_OFFSET - WORD_PRECISION) && 
+                                           currentTime <= (token.endTime + LEAD_IN_OFFSET + WORD_PRECISION));
                     const isActiveByIndex = index === activeWordIndex;
                     const isWordActive = isActiveByTime || isActiveByIndex;
-                    const wordHasBeenSpoken = currentTime >= (word.endTime - WORD_PRECISION);
-                    const isUpcoming = currentTime < (word.startTime - WORD_PRECISION);
+                    const wordHasBeenSpoken = currentTime >= (token.endTime - WORD_PRECISION);
+                    const isUpcoming = currentTime < (token.startTime - WORD_PRECISION);
                     
-                     // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
-                     if (currentTime <= 3.0 && index < 5) {
-                       console.log(`⏱️ Syllable ${index} "${displayText}" timing: current=${currentTime.toFixed(3)}s, syllable=${word.startTime?.toFixed(3)}-${word.endTime?.toFixed(3)}s, active=${isWordActive}`);
-                     }
+                    // Debug timing for first few seconds to ensure 0:00-0:03 works perfectly
+                    if (currentTime <= 3.0 && index < 5) {
+                      console.log(`⏱️ Token ${index} "${displayText}" timing: current=${currentTime.toFixed(3)}s, token=${token.startTime?.toFixed(3)}-${token.endTime?.toFixed(3)}s, active=${isWordActive}`);
+                    }
                    
                    // Progressive word state system (inspired by axs.so approach)
                    let wordState: 'upcoming' | 'active' | 'spoken' = 'upcoming';
@@ -852,9 +867,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                       }
                       
                       // Fallback to manual emphasis with jump effects and emotional context
-                      if (word.emphasis) {
+                      if (token.emphasis) {
                         const emotionalType = (workingCaption as any)?.intensity_metadata?.emotionalType;
-                        switch (word.emphasis) {
+                        const isLaughter = emotionalType === 'laughter';
+                        
+                        switch (token.emphasis) {
                           case 'quiet':
                             return { 
                               ...baseStyle, 
@@ -909,12 +926,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                             inline-block caption-word word-${wordState} 
                             ${activeCaption.vocal_intensity ? `intensity-${activeCaption.vocal_intensity}` : ''}
                             ${wordState === 'active' ? 'animate-word-highlight' : ''}
-                            ${word.emphasis === 'yelling' || activeCaption.vocal_intensity === 'shout' ? 'animate-emphasis-bounce' : ''}
+                            ${token.emphasis === 'yelling' || activeCaption.vocal_intensity === 'shout' ? 'animate-emphasis-bounce' : ''}
                             transition-all duration-200 ease-out
                           `}
                         data-wid={index}
-                        data-start={word.startTime}
-                        data-end={word.endTime}
+                        data-start={token.startTime}
+                        data-end={token.endTime}
                         style={{
                          color: getWordColorByState(),
                          marginRight: '0.3em',
@@ -941,14 +958,15 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
                        >
                          {displayText}
                        </span>
-                    );
+                     );
                  })
-             ) : (
-                // Fallback: show full text if no word-level timing
-                <span style={{ color: workingCaption.speakerColor || speakerColor }}>
-                  {workingCaption.text}
-                </span>
-              )}
+                ) : (
+                  // Fallback: show full text if no tokens
+                  <span style={{ color: workingCaption.speakerColor || speakerColor }}>
+                    {workingCaption.text}
+                  </span>
+                );
+              })()}
             </span>
           )}
         </div>
