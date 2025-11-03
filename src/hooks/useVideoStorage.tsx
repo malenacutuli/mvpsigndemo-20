@@ -85,6 +85,9 @@ export const useVideoStorage = (videoId: string) => {
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
 
+      // ✅ Quantize helper: Round to 100ms steps to stabilize timing
+      const quantize = (t: number) => Math.round(t * 10) / 10;
+
       // ✅ Fetch or CREATE transcript_id for this video+language (FORCE transcript_id to always exist)
       let transcriptId: string;
       
@@ -120,42 +123,58 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`💾 Created new transcript_id: ${transcriptId}`);
       }
 
-      // Prepare segments - persist text/timing/words/emphasis/pitch + transcript_id
-      const rows = segments.map((seg: TranscriptSegment, i: number) => ({
-        video_id: videoId,
-        language,
-        transcript_id: transcriptId, // ✅ Always stamp with latest transcript_id
-        idx: seg.idx ?? i,
-        start_time: seg.startTime,
-        end_time: seg.endTime,
-        text: seg.text,
-        emphasis: seg.emphasis ?? null,
-        pitch: seg.pitch ?? null,
-        words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null,
-        character_id: seg.characterId ?? seg.character_id ?? null,
-        speaker: seg.speaker ?? null,
-        speaker_asr_label: seg.speakerAsrLabel ?? null,
-        speaker_color: seg.speakerColor ?? null
-      }));
+      // Prepare segments with quantized timing
+      const rows = segments.map((seg: TranscriptSegment, i: number) => {
+        const qStart = quantize(seg.startTime);
+        const qEnd = Math.max(quantize(seg.endTime), qStart + 0.1); // Ensure end > start
+        
+        return {
+          video_id: videoId,
+          language,
+          transcript_id: transcriptId,
+          idx: seg.idx ?? i,
+          start_time: qStart,
+          end_time: qEnd,
+          text: seg.text,
+          emphasis: seg.emphasis ?? null,
+          pitch: seg.pitch ?? null,
+          words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null,
+          character_id: seg.characterId ?? seg.character_id ?? null,
+          speaker: seg.speaker ?? null,
+          speaker_asr_label: seg.speakerAsrLabel ?? null,
+          speaker_color: seg.speakerColor ?? null
+        };
+      });
 
       console.log('[saveTranscriptSegments]',
         { transcriptId, rows: rows.length, sample: rows[0] && { st: rows[0].start_time, sp: rows[0].speaker } });
 
-      // ✅ Deduplicate by timing+text, keeping entry with words/character_id
-      const uniq = new Map<string, typeof rows[number]>();
+      // ✅ STRONGER DEDUPE: By idx (stable identity), with priority selection
+      const dedupMap = new Map<string, typeof rows[number]>();
+      
       for (const r of rows) {
-        const key = `${r.video_id}|${r.language}|${r.start_time}|${r.end_time}|${r.text}`;
-        const existing = uniq.get(key);
+        // Key by (transcriptId, idx) if idx exists, else by (quantized timing + text)
+        const key = r.idx !== undefined && r.idx !== null
+          ? `${r.transcript_id}|${r.idx}`
+          : `${r.start_time}|${r.end_time}|${r.text.trim()}`;
         
-        // Priority: has words > has character_id > first occurrence
-        if (!existing || 
-            (r.words && !existing.words) || 
-            (r.character_id && !existing.character_id)) {
-          uniq.set(key, r);
+        const existing = dedupMap.get(key);
+        
+        if (!existing) {
+          dedupMap.set(key, r);
+        } else {
+          // Selection priority: character_id > words > longer duration
+          const hasChar = r.character_id && !existing.character_id;
+          const hasWords = r.words && !existing.words;
+          const longerDuration = (r.end_time - r.start_time) > (existing.end_time - existing.start_time);
+          
+          if (hasChar || (hasWords && !existing.character_id) || (longerDuration && !existing.character_id && !existing.words)) {
+            dedupMap.set(key, r);
+          }
         }
       }
       
-      const toSave = Array.from(uniq.values());
+      const toSave = Array.from(dedupMap.values());
 
       if (rows.length !== toSave.length) {
         console.log(`🧹 SAVE DEDUPE: Removed ${rows.length - toSave.length} duplicates before upsert (${rows.length} → ${toSave.length})`);
@@ -247,18 +266,29 @@ export const useVideoStorage = (videoId: string) => {
         }
 
         if (rows && rows.length > 0) {
-          // ✅ STEP 3: Client-side deduplication by timing+text (safety net)
+          // ✅ STEP 3: Tolerant client-side deduplication (groups by idx or quantized timing)
+          const quantize = (t: number) => Math.round(t * 10) / 10;
           const dedupMap = new Map<string, any>();
+          
           for (const row of rows) {
-            const key = `${row.start_time}|${row.end_time}|${row.text}`;
+            // Key by idx if present, else by quantized timing + text
+            const key = row.idx !== undefined && row.idx !== null
+              ? `idx:${row.idx}`
+              : `time:${quantize(row.start_time)}|${quantize(row.end_time)}|${row.text.trim()}`;
+            
             const existing = dedupMap.get(key);
             
-            // Priority: character_id > has words > first occurrence
-            if (!existing || 
-                (row.character_id && !existing.character_id) ||
-                (row.words && !existing.words) ||
-                (!existing.character_id && !existing.words && row.speaker !== 'Speaker')) {
+            if (!existing) {
               dedupMap.set(key, row);
+            } else {
+              // Selection priority: character_id > words > longer duration
+              const hasChar = row.character_id && !existing.character_id;
+              const hasWords = row.words && !existing.words;
+              const longerDuration = (row.end_time - row.start_time) > (existing.end_time - existing.start_time);
+              
+              if (hasChar || (hasWords && !existing.character_id) || (longerDuration && !existing.character_id && !existing.words)) {
+                dedupMap.set(key, row);
+              }
             }
           }
           

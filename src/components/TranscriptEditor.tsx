@@ -1392,28 +1392,31 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      <span className="text-xs text-muted-foreground font-mono">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
-                       {segment.speaker && (
-                        <div className="flex items-center gap-1">
-                          {(() => {
-                            // ✅ FIX: Use character name if linked, otherwise show ASR label or generic speaker
-                            const hasCharacter = segment.characterId || segment.character_id;
-                            const displayedSpeaker = hasCharacter 
-                              ? segment.speaker // Already set to character name in loadTranscriptData
-                              : (segment.speakerAsrLabel ? `Speaker ${segment.speakerAsrLabel}` : segment.speaker);
-                            const displayColor = hasCharacter 
-                              ? segment.speakerColor // Use character color
-                              : getNormalizedSpeakerColor(displayedSpeaker);
-                            
-                            return (
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs px-2 py-0"
-                                style={{ borderColor: displayColor, color: displayColor }}
-                              >
-                                {displayedSpeaker}
-                              </Badge>
-                            );
-                          })()}
+                        {segment.speaker && (
+                         <div className="flex items-center gap-1">
+                           {(() => {
+                             // ✅ FIX: Use character name if linked, otherwise show ASR label or generic speaker
+                             const hasCharacter = segment.characterId || segment.character_id;
+                             const displayedSpeaker = hasCharacter 
+                               ? segment.speaker // Already set to character name in loadTranscriptData
+                               : (segment.speakerAsrLabel ? `Speaker ${segment.speakerAsrLabel}` : segment.speaker);
+                             
+                             // ✅ NEUTRAL COLOR FIX: Use light blue for unlabeled speakers, character color when assigned
+                             const DEFAULT_NEUTRAL = '#22E3D0';
+                             const displayColor = hasCharacter 
+                               ? segment.speakerColor // Use character color
+                               : DEFAULT_NEUTRAL; // Use light blue for unassigned speakers
+                             
+                             return (
+                               <Badge 
+                                 variant="outline" 
+                                 className="text-xs px-2 py-0"
+                                 style={{ borderColor: displayColor, color: displayColor }}
+                               >
+                                 {displayedSpeaker}
+                               </Badge>
+                             );
+                           })()}
 
                           {segment.speakerAsrLabel && (segment.characterId || segment.character_id) && (
                             <Badge variant="secondary" className="text-[10px] px-1 py-0">
