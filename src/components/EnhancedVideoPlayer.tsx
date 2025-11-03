@@ -74,44 +74,34 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
     return unique;
   }, [transcriptSegments]);
-  // Stable speaker color assignment using cwiPalette and character colors
+  // Single neutral color until character is explicitly identified
+  const DEFAULT_NEUTRAL = '#FFFFFF'; // White for unidentified speakers
+  
+  const resolveSpeakerColor = (seg: any): string => {
+    // Single color unless a character has been explicitly assigned
+    if ((seg as any).character_id && seg.speaker_color) {
+      return seg.speaker_color;
+    }
+    return DEFAULT_NEUTRAL;
+  };
+  
+  const resolveDisplayName = (seg: any): string => {
+    // Prioritize character names, avoid generic "Speaker"
+    if ((seg as any).character_id && seg.speaker) {
+      return seg.speaker;
+    }
+    if (seg.speaker && seg.speaker !== 'Speaker') {
+      return seg.speaker;
+    }
+    return (seg as any).speakerAsrLabel || seg.speaker_asr_label || 'Speaker';
+  };
+
   const stabilizeSpeakerColors = (segments: CaptionSegment[]): CaptionSegment[] => {
-    // Build character color map
-    const characterColorMap: Record<string, string> = {};
-    characters.forEach(char => {
-      if (char.name && char.color) {
-        characterColorMap[char.name] = char.color;
-      }
-    });
-    
-    // ✅ Check if we have ANY assigned characters
-    const hasCharacters = Object.keys(characterColorMap).length > 0;
-    const DEFAULT_COLOR = '#FFFFFF'; // White for unidentified speakers
-    
-    // Normalize speaker names consistently for color assignment
-    const normalizeSpeaker = (name: string) => {
-      return name.trim().toLowerCase().replace(/\s+/g, '_');
-    };
-    
-    // Apply colors using unified source (cwiPalette + characters)
-    return segments.map(segment => {
-      const speaker = segment.speaker || (segment as any).speakerAsrLabel || 'Unknown';
-      const normalizedSpeaker = normalizeSpeaker(speaker);
-      
-      // Priority 1: Character color from CharacterManager
-      if (characterColorMap[speaker]) {
-        return { ...segment, speaker, speakerColor: characterColorMap[speaker] };
-      }
-      
-      // Priority 2: If NO characters assigned globally, use single default color
-      if (!hasCharacters) {
-        return { ...segment, speaker, speakerColor: DEFAULT_COLOR };
-      }
-      
-      // Priority 3: Characters exist but this speaker unmapped → use palette
-      const color = getSpeakerColorFromPalette(speaker, characterColorMap, segment.speakerColor);
-      return { ...segment, speaker, speakerColor: color };
-    });
+    return segments.map(segment => ({
+      ...segment,
+      speaker: resolveDisplayName(segment),
+      speakerColor: resolveSpeakerColor(segment)
+    }));
   };
 
   // Fallback speaker color assignment for error cases
