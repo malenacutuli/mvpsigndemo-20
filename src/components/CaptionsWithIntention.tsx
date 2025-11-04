@@ -324,7 +324,8 @@ function normalizeWords(
 
 // CWI Protocol timing
 const SEGMENT_TOLERANCE = 0.05;   // 50ms
-const WORD_TOLERANCE    = 0.06;   // 60ms
+const WORD_TOLERANCE    = 0.05;   // 50ms - tighter sync for instant color change
+const SYLLABLE_TOLERANCE = 0.02;  // 20ms - for pop animation timing
 const READAHEAD_WINDOW  = 3.0;    // 3 seconds
 const MIN_DISPLAY_MS    = 800;    // min display for short blips
 
@@ -569,6 +570,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     words[0]?.emphasis
   );
 
+  // Read-ahead color: white at 90% opacity
+  const READ_AHEAD_COLOR = 'rgba(255, 255, 255, 0.9)';
+
   return (
     <div className="relative w-full">
       <div
@@ -588,7 +592,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           </div>
         )}
 
-        {/* Word-by-word karaoke with smooth character fill */}
+        {/* Captions with Intention: Word-level color + 15% scale pop */}
         <div
           className="leading-tight px-1 flex flex-wrap justify-center gap-x-[0.35em]"
           style={{
@@ -597,82 +601,54 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           }}
         >
           {words.map((word, i) => {
-            const withinWord =
-              currentTime >= (word.startTime! - WORD_TOLERANCE) &&
-              currentTime <= (word.endTime!   + WORD_TOLERANCE);
+            // Word-level active state (instant color change)
+            const isWordActive =
+              currentTime >= word.startTime! - WORD_TOLERANCE &&
+              currentTime <= word.endTime! + WORD_TOLERANCE;
 
-            // Character-specific tint with rgba alpha support
-            const hexToRgba = (hex: string, alpha: number) => {
-              const r = parseInt(hex.slice(1, 3), 16);
-              const g = parseInt(hex.slice(3, 5), 16);
-              const b = parseInt(hex.slice(5, 7), 16);
-              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            };
-            const baseTint = tint.startsWith('#') ? hexToRgba(tint, 0.3) : `${tint}4D`;
-            const fullTint = tint;
-
-            // Phase 4: Apply per-word intonation (size + variable font)
-            const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
-            const pitchStyles = getPitchBasedStyle(word.pitch);
-
-            // Phase 2 & 3: Character-accurate fill (syllable or word-based)
-            const wordText = word.text || '';
-            const wordLen = wordText.length;
-            let filledUpTo = 0;
-
-            if (Array.isArray(word.syllables) && word.syllables.length > 0 && withinWord) {
-              // Show syllables that have completed or are 70% through
-              const SYLLABLE_THRESHOLD = 0.7; // Show syllable when 70% complete
-              
-              let lastCompletedSylIdx = -1;
+            // Find active syllable for 15% scale pop timing
+            let activeSyllableIdx = -1;
+            if (isWordActive && Array.isArray(word.syllables) && word.syllables.length > 0) {
               for (let idx = 0; idx < word.syllables.length; idx++) {
                 const syl = word.syllables[idx];
-                const sylDuration = Math.max(0.001, syl.endTime - syl.startTime);
-                const sylProgress = (currentTime - syl.startTime) / sylDuration;
-                
-                // Show this syllable if it's completed OR well into its duration
-                if (currentTime >= syl.endTime || sylProgress >= SYLLABLE_THRESHOLD) {
-                  lastCompletedSylIdx = idx;
-                } else {
-                  // Stop at first incomplete syllable
+                if (
+                  currentTime >= syl.startTime - SYLLABLE_TOLERANCE &&
+                  currentTime <= syl.endTime + SYLLABLE_TOLERANCE
+                ) {
+                  activeSyllableIdx = idx;
                   break;
                 }
               }
-              
-              if (lastCompletedSylIdx >= 0) {
-                // Fill up to the charEnd of the last completed syllable
-                filledUpTo = word.syllables[lastCompletedSylIdx].charEnd ?? wordLen;
-              } else {
-                // No syllables completed yet
-                filledUpTo = 0;
-              }
-            } else if (withinWord) {
-              // Phase 3: Precision fallback for words without syllables
-              const wordDur = Math.max(0.001, word.endTime! - word.startTime!);
-              const rWord = Math.max(0, Math.min(1, (currentTime - word.startTime!) / wordDur));
-              filledUpTo = Math.round(wordLen * rWord);
             }
 
-            // Clamp filledUpTo to valid range
-            filledUpTo = Math.max(0, Math.min(wordLen, filledUpTo));
+            // Apply 15% scale pop when any syllable is active
+            const scale = activeSyllableIdx >= 0 ? 1.15 : 1.0;
 
-            // Render with two-span character split (filled + unfilled)
+            // Word color: character color when active, white at 90% when not
+            const wordColor = isWordActive ? tint : READ_AHEAD_COLOR;
+
+            // Apply per-word intonation (size + variable font)
+            const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
+            const pitchStyles = getPitchBasedStyle(word.pitch);
+
+            const wordText = word.text || '';
+
+            // Render entire word as single span with instant color change + pop
             return (
               <span
                 key={`${i}-${Math.round(word.startTime! * 1000)}`}
                 style={{
                   display: 'inline-block',
                   marginRight: '0.3em',
+                  color: wordColor,
                   fontSize: `${wordFontSize}px`,
-                  ...pitchStyles
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'center bottom',
+                  ...pitchStyles,
+                  transition: 'color 0.05s ease-out, transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bounce easing for pop
                 }}
               >
-                <span style={{ color: fullTint }}>
-                  {wordText.substring(0, filledUpTo)}
-                </span>
-                <span style={{ color: baseTint }}>
-                  {wordText.substring(filledUpTo)}
-                </span>
+                {wordText}
               </span>
             );
           })}
