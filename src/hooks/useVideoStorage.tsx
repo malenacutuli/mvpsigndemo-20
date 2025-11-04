@@ -180,28 +180,40 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`🧹 SAVE DEDUPE: Removed ${rows.length - toSave.length} duplicates before upsert (${rows.length} → ${toSave.length})`);
       }
 
-      // ✅ ALWAYS use conflict key with transcript_id (transcript_id is guaranteed to exist now)
-      const conflictKey = 'video_id,language,transcript_id,start_time,end_time,text';
+      // ✅ Use conflict key matching the unique constraint: (video_id, language, idx)
+      const conflictKey = 'video_id,language,idx';
       
       console.log(`💾 Upserting ${toSave.length} segments with transcript_id: ${transcriptId}, conflict key: ${conflictKey}`);
       
-      const { error } = await supabase
+      const { error: upsertError } = await supabase
         .from('transcript_segments_clean')
         .upsert(toSave, {
           onConflict: conflictKey,
           ignoreDuplicates: false
         });
 
-      if (error) {
+      if (upsertError) {
         console.error('❌ [saveTranscriptSegments] upsert failed:', {
-          code: error.code,
-          message: error.message,
-          hint: (error as any).hint,
-          details: (error as any).details,
+          code: upsertError.code,
+          message: upsertError.message,
+          hint: (upsertError as any).hint,
+          details: (upsertError as any).details,
           sampleRows: toSave.slice(0, 3),
           totalRows: toSave.length
         });
-        throw error;
+        throw new Error(`Failed to save transcript: ${upsertError.message}`);
+      }
+
+      // ✅ Clean up stale rows (segments with idx >= current segment count)
+      const { error: deleteError } = await supabase
+        .from('transcript_segments_clean')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', language)
+        .gte('idx', toSave.length);
+
+      if (deleteError) {
+        console.warn('⚠️ Failed to delete stale segments:', deleteError.message);
       }
 
       console.log('✅ Transcript saved to database:', toSave.length, 'segments');
@@ -216,7 +228,19 @@ export const useVideoStorage = (videoId: string) => {
       
     } catch (err) {
       console.error('❌ Failed to save transcript to database:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save transcript');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save transcript';
+      setError(errorMessage);
+      
+      // Show user-friendly toast
+      if (typeof window !== 'undefined') {
+        const { toast } = await import('@/hooks/use-toast');
+        toast({
+          title: "Save Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+      
       throw err; // Don't use localStorage fallback for authenticated users
     } finally {
       setLoading(false);
