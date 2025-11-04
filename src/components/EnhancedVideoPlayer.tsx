@@ -464,19 +464,28 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       }
 
       const charByName: Record<string, any> = {};
-      (availableChars || []).forEach((c: any) => { if (c?.name) charByName[c.name] = c; });
+      const charById: Record<string, any> = {};
+      (availableChars || []).forEach((c: any) => {
+        if (c?.id) charById[c.id] = c;
+        if (c?.name) charByName[c.name] = c;
+      });
+      
+      // Helper to detect UUID format
+      const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
       
       applied = segments.map(s => {
-        // If the segment speaker maps to a character, apply name, color, and off-camera
-        const mappedCharacterName = savedMappings?.[s.speaker];
-        const directCharacter = charByName[s.speaker]; // if already renamed previously
-        const targetChar = mappedCharacterName ? charByName[mappedCharacterName] : directCharacter;
+        // Check if saved mapping value is a UUID (character ID) or name
+        const mappedValue = savedMappings?.[s.speaker];
+        const targetChar = mappedValue 
+          ? (isUUID(mappedValue) ? charById[mappedValue] : charByName[mappedValue])
+          : charByName[s.speaker]; // fallback to direct name match
         
         if (targetChar) {
           return {
             ...s,
             speaker: targetChar.name,
             speakerColor: targetChar.color || s.speakerColor,
+            character_id: targetChar.id,
             isOffCamera: (typeof targetChar.isOffCamera === 'boolean' ? targetChar.isOffCamera : s.isOffCamera)
           };
         }
@@ -491,6 +500,31 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       console.warn('⚠️ ENHANCED PLAYER: Failed to apply character mappings from database, using raw segments', e);
       applied = segments;
     }
+
+    // ✅ Synthesize missing words for segments that have none
+    const synthesizeWords = (text: string, start: number, end: number) => {
+      const tokens = text.match(/\S+/g) || [];
+      if (!tokens.length) return [];
+      const duration = (end - start) / tokens.length;
+      return tokens.map((t, i) => ({
+        text: t,
+        startTime: start + (i * duration),
+        endTime: start + ((i + 1) * duration),
+        emphasis: 'normal',
+        pitch: 'normal',
+      }));
+    };
+    
+    applied = applied.map((seg: any) => {
+      if (!seg.words || seg.words.length === 0) {
+        console.log(`🔧 Synthesizing words for segment at ${seg.startTime}s (no provider timings)`);
+        return {
+          ...seg,
+          words: synthesizeWords(seg.text, seg.startTime, seg.endTime)
+        };
+      }
+      return seg;
+    });
 
     // Word timing normalization: Ensure all words have start/end times
     // CRITICAL: Anchor first word to segment.startTime for CWI sync

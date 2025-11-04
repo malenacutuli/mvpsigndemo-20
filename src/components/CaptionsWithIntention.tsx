@@ -536,12 +536,18 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         
         console.log('🎯 CWI: Segment activated', { segmentKey, speaker: activeCandidate.speaker });
       } else if (displayedCaption) {
-        // Same segment timing but potentially updated speaker/color - merge updates
-        setDisplayedCaption((prev: any) => ({
-          ...prev,
-          speaker: activeCandidate.speaker,
-          speakerColor: activeCandidate.speakerColor
-        }));
+        // Same segment timing but potentially updated speaker/color - only update if changed
+        const shouldUpdate =
+          displayedCaption.speaker !== activeCandidate.speaker ||
+          displayedCaption.speakerColor !== activeCandidate.speakerColor;
+
+        if (shouldUpdate) {
+          setDisplayedCaption((prev: any) => ({
+            ...prev,
+            speaker: activeCandidate.speaker,
+            speakerColor: activeCandidate.speakerColor
+          }));
+        }
       }
     } else if (displayedCaption && displayUntil !== null) {
       const timeSinceSet = now - lastSetAtRef.current;
