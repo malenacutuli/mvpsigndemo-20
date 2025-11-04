@@ -606,23 +606,32 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
               currentTime >= word.startTime! - WORD_TOLERANCE &&
               currentTime <= word.endTime! + WORD_TOLERANCE;
 
-            // Find active syllable for 15% scale pop timing
-            let activeSyllableIdx = -1;
-            if (isWordActive && Array.isArray(word.syllables) && word.syllables.length > 0) {
-              for (let idx = 0; idx < word.syllables.length; idx++) {
-                const syl = word.syllables[idx];
-                if (
-                  currentTime >= syl.startTime - SYLLABLE_TOLERANCE &&
-                  currentTime <= syl.endTime + SYLLABLE_TOLERANCE
-                ) {
-                  activeSyllableIdx = idx;
-                  break;
-                }
+        // Find active syllable for 15% scale pop timing
+        let activeSyllableIdx = -1;
+        let shouldApplyPop = false;
+
+        if (isWordActive) {
+          // Tier 1: If word has syllables, use syllable-level timing
+          if (Array.isArray(word.syllables) && word.syllables.length > 0) {
+            for (let idx = 0; idx < word.syllables.length; idx++) {
+              const syl = word.syllables[idx];
+              if (
+                currentTime >= syl.startTime - SYLLABLE_TOLERANCE &&
+                currentTime <= syl.endTime + SYLLABLE_TOLERANCE
+              ) {
+                activeSyllableIdx = idx;
+                shouldApplyPop = true;
+                break;
               }
             }
+          } else {
+            // Tier 2: If word has NO syllables, apply pop for entire word duration
+            shouldApplyPop = true;
+          }
+        }
 
-            // Apply 15% scale pop when any syllable is active
-            const scale = activeSyllableIdx >= 0 ? 1.15 : 1.0;
+        // Apply 15% scale pop when word is active
+        const scale = shouldApplyPop ? 1.15 : 1.0;
 
             // Word color: character color when active, white at 90% when not
             const wordColor = isWordActive ? tint : READ_AHEAD_COLOR;
