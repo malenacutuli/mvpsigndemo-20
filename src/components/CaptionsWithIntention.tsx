@@ -324,7 +324,7 @@ function normalizeWords(
 
 // CWI Protocol timing
 const SEGMENT_TOLERANCE = 0.05;   // 50ms
-const WORD_TOLERANCE    = 0.05;   // 50ms - tighter sync for instant color change
+const WORD_TOLERANCE    = 0.08;   // 80ms - smoother sync for word highlighting
 const SYLLABLE_TOLERANCE = 0.02;  // 20ms - for pop animation timing
 const READAHEAD_WINDOW  = 3.0;    // 3 seconds
 const MIN_DISPLAY_MS    = 800;    // min display for short blips
