@@ -940,7 +940,23 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     setOriginalColor(segment.speakerColor || getNextCISpeakerColor(index));
     setEditEmphasis(segment.emphasis || 'normal');
     setEditPitch(segment.pitch || 'normal');
-    setEditWords(segment.words || []);
+    
+    // ✅ CRITICAL: Detect and repair stale words arrays
+    const loadedWords = segment.words || [];
+    const normalize = (t: string) => (t || "").toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+    
+    if (loadedWords.length > 0) {
+      const joined = loadedWords.map((w: any) => w.text).join(" ");
+      if (normalize(joined) !== normalize(segment.text)) {
+        console.warn(`⚠️ Stale words @${formatTime(segment.startTime)} – rebuilding`);
+        setEditWords(syncWordsToText(segment.text, segment.startTime, segment.endTime, loadedWords));
+      } else {
+        setEditWords(loadedWords);
+      }
+    } else {
+      setEditWords([]);
+    }
+    
     setUseWordLevelEditing(false);
     setEditApplyToAll(false);
   };
