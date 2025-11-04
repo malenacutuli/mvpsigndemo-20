@@ -93,18 +93,23 @@ export const useVideoStorage = (videoId: string) => {
       
       const { data: latestTranscript } = await supabase
         .from('transcripts')
-        .select('id')
+        .select('id, created_by')
         .eq('video_id', videoId)
         .eq('language', language)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       
-      if (latestTranscript?.id) {
+      // ✅ CRITICAL: Ensure transcript ownership for RLS
+      if (latestTranscript?.id && latestTranscript.created_by === user.id) {
         transcriptId = latestTranscript.id;
         console.log(`💾 Using existing transcript_id: ${transcriptId}`);
       } else {
-        // Create new transcript if none exists
+        if (latestTranscript?.id && latestTranscript.created_by !== user.id) {
+          console.log(`🔐 RLS: Creating new transcript for user ${user.id} (existing owned by ${latestTranscript.created_by})`);
+        }
+        
+        // Create new transcript if none exists OR if user doesn't own the existing one
         const { data: newTranscript, error: createError } = await supabase
           .from('transcripts')
           .insert({
@@ -205,15 +210,19 @@ export const useVideoStorage = (videoId: string) => {
       }
 
       // ✅ Clean up stale rows (segments with idx >= current segment count)
+      // CRITICAL: Restrict to current transcript_id to prevent cross-transcript deletes
       const { error: deleteError } = await supabase
         .from('transcript_segments_clean')
         .delete()
         .eq('video_id', videoId)
         .eq('language', language)
+        .eq('transcript_id', transcriptId)  // ✅ Restrict to current transcript
         .gte('idx', toSave.length);
 
       if (deleteError) {
         console.warn('⚠️ Failed to delete stale segments:', deleteError.message);
+      } else {
+        console.log(`🧹 Cleaned up stale segments for transcript_id: ${transcriptId}`);
       }
 
       console.log('✅ Transcript saved to database:', toSave.length, 'segments');
