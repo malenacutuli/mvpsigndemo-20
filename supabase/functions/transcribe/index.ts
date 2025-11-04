@@ -9,8 +9,51 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "*",
 };
 
+// Rate limiting helper
+async function checkRateLimit(
+  supabase: any,
+  userId: string,
+  functionName: string,
+  maxCallsPerHour: number = 20
+): Promise<{ allowed: boolean; remaining: number }> {
+  const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+  
+  const { count } = await supabase
+    .from('usage_records')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('processing_type', functionName)
+    .gte('created_at', oneHourAgo);
+
+  const callCount = count || 0;
+  const remaining = Math.max(0, maxCallsPerHour - callCount);
+  
+  return {
+    allowed: callCount < maxCallsPerHour,
+    remaining
+  };
+}
+
+// Structured logging
+function logAPICall(details: {
+  userId?: string;
+  videoId?: string;
+  apiService: string;
+  status: 'start' | 'success' | 'error';
+  duration?: number;
+  error?: string;
+  provider?: string;
+}) {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    function: 'transcribe',
+    ...details
+  }));
+}
+
 serve(async (req) => {
   console.log("=== TRANSCRIBE FUNCTION CALLED ===");
+  const startTime = Date.now();
 
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -22,6 +65,40 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  try {
+    // Check authentication and rate limit early
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (user) {
+        // Check rate limit for authenticated users
+        const rateLimit = await checkRateLimit(supabase, user.id, 'transcription', 20);
+        if (!rateLimit.allowed) {
+          logAPICall({
+            userId: user.id,
+            apiService: 'Transcription',
+            status: 'error',
+            error: 'Rate limit exceeded'
+          });
+          
+          return new Response(JSON.stringify({ 
+            error: 'Rate limit exceeded',
+            message: `Maximum 20 transcription requests per hour. ${rateLimit.remaining} remaining.`,
+            retryAfter: 3600
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' }
+          });
+        }
+      }
+    }
 
   try {
     const body = await req.text();

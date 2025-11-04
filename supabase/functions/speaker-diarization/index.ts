@@ -14,18 +14,111 @@ interface SpeakerSegment {
   confidence: number;
 }
 
+// Rate limiting helper
+async function checkRateLimit(
+  supabase: any,
+  userId: string,
+  functionName: string,
+  maxCallsPerHour: number = 20
+): Promise<{ allowed: boolean; remaining: number }> {
+  const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+  
+  const { count } = await supabase
+    .from('usage_records')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('processing_type', functionName)
+    .gte('created_at', oneHourAgo);
+
+  const callCount = count || 0;
+  const remaining = Math.max(0, maxCallsPerHour - callCount);
+  
+  return {
+    allowed: callCount < maxCallsPerHour,
+    remaining
+  };
+}
+
+// Structured logging
+function logAPICall(details: {
+  userId?: string;
+  videoId?: string;
+  apiService: string;
+  status: 'start' | 'success' | 'error';
+  duration?: number;
+  error?: string;
+}) {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    function: 'speaker-diarization',
+    ...details
+  }));
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
+    // Get user from JWT for rate limiting
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check rate limit
+    const rateLimit = await checkRateLimit(supabase, user.id, 'speaker-diarization', 20);
+    if (!rateLimit.allowed) {
+      logAPICall({
+        userId: user.id,
+        apiService: 'AssemblyAI',
+        status: 'error',
+        error: 'Rate limit exceeded'
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded',
+        message: `Maximum 20 speaker diarization requests per hour. ${rateLimit.remaining} remaining.`,
+        retryAfter: 3600
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' }
+      });
+    }
+
     const { videoUrl, videoId } = await req.json();
 
     if (!videoUrl || !videoId) {
       throw new Error('Video URL and video ID are required');
     }
+
+    logAPICall({
+      userId: user.id,
+      videoId,
+      apiService: 'AssemblyAI',
+      status: 'start'
+    });
 
     console.log('🎤 Starting speaker diarization for video:', videoId);
     
@@ -228,12 +321,16 @@ serve(async (req) => {
     console.log(`✅ Speaker diarization complete: ${speakerCounter} speakers identified, ${speakerSegments.length} segments`);
     console.log('🎨 Speaker metadata:', speakerMetadata);
 
+    logAPICall({
+      userId: user.id,
+      videoId,
+      apiService: 'AssemblyAI',
+      status: 'success',
+      duration: Date.now() - startTime
+    });
+
     // Step 5: Store results in Supabase and update transcript segments
     try {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
 
       // First, cache the results
       await supabase
@@ -313,6 +410,13 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ Speaker diarization error:', error);
+    
+    logAPICall({
+      apiService: 'AssemblyAI',
+      status: 'error',
+      duration: Date.now() - startTime,
+      error: error.message
+    });
     
     return new Response(
       JSON.stringify({

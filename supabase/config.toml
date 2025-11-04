@@ -1,5 +1,8 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.speaker-diarization]
+verify_jwt = true
+
 [functions.speaker-diarization-deepgram]
 verify_jwt = true
 
@@ -88,4 +91,49 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.speaker-diarization-unified]
+verify_jwt = true
+
+[functions.fix-speaker-mappings]
+verify_jwt = true
+
+[functions.generate-visual-descriptions]
+verify_jwt = true
+
+[functions.google-gemini]
+verify_jwt = true
+
+[functions.huggingface-ai]
+verify_jwt = true
+
+[functions.mapbox-geocoding]
+verify_jwt = true
+
+[functions.openai-realtime]
+verify_jwt = true
+
+[functions.send-demo-request]
+verify_jwt = false
+
+[functions.send-signup-notification]
+verify_jwt = false
+
+[functions.stability-ai]
+verify_jwt = true
+
+[functions.replicate-ai]
+verify_jwt = true
+
+[functions.prompt-to-video]
+verify_jwt = true
+
+[functions.export-accessible-video]
+verify_jwt = true
+
+[functions.export-status]
+verify_jwt = true
+
+[functions.tts]
+verify_jwt = true
+
+[functions.analyze-vocal-intensity]
 verify_jwt = true
