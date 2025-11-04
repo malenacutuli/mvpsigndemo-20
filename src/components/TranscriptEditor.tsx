@@ -97,7 +97,7 @@ const syncWordsToText = (
   text: string,
   startTime: number,
   endTime: number,
-  oldWords?: Array<{text: string; start?: number; end?: number; emphasis?: string; pitch?: string}>
+  oldWords?: Array<{text: string; startTime?: number; endTime?: number; emphasis?: string; pitch?: string}>
 ): WordData[] => {
   // Tokenize new text (split on whitespace, keep punctuation attached)
   const tokens: string[] = text.match(/\S+/g) || [];
@@ -134,8 +134,8 @@ const syncWordsToText = (
     
     const word: WordData = {
       text: token,
-      start: currentTime,
-      end: currentTime + duration,
+      startTime: currentTime,
+      endTime: currentTime + duration,
       emphasis,
       pitch
     };
@@ -146,7 +146,7 @@ const syncWordsToText = (
   
   // Adjust last word to exactly match segment end time
   if (newWords.length > 0 && newWords[newWords.length - 1]) {
-    newWords[newWords.length - 1].end = endTime;
+    newWords[newWords.length - 1].endTime = endTime;
   }
   
   return newWords;

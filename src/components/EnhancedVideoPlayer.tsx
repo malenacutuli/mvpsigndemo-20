@@ -359,8 +359,8 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             
             finalWords = tokens.map((token: string, i: number) => ({
               text: token,
-              start: seg.startTime + (i * timePerWord),
-              end: seg.startTime + ((i + 1) * timePerWord),
+              startTime: seg.startTime + (i * timePerWord),
+              endTime: seg.startTime + ((i + 1) * timePerWord),
               emphasis: 'normal',
               pitch: 'normal'
             }));

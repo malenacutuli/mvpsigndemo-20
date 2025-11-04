@@ -7,8 +7,8 @@ import { Volume2, Music } from 'lucide-react';
 
 export interface WordData {
   text: string;
-  start?: number;
-  end?: number;
+  startTime?: number;
+  endTime?: number;
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
 }
