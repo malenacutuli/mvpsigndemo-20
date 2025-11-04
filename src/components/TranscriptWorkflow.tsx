@@ -24,6 +24,7 @@ interface TranscriptSegment {
   endTime: number;
   speaker: string;
   speakerColor: string;
+  characterId?: string;
   emphasis: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch: 'normal' | 'high' | 'low';
   words?: Array<{
@@ -410,9 +411,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     try {
       console.log('💾 Saving transcript to database:', segments.length, 'segments');
       
-      // Harmonize speaker names before saving: if a color group has a non-generic name
-      // (e.g., "David") and other segments still have generic names (e.g., "Speaker 1"),
-      // propagate the non-generic name to the whole color group.
+      // Harmonize speaker names before saving
       const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
       const colorPreferred = new Map<string, string>();
       segments.forEach(seg => {
@@ -435,37 +434,65 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       }
       const toSave = changedCount > 0 ? normalized : segments;
       
-      const segmentsData = toSave.map((segment, idx) => ({
-        idx,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        text: segment.text,
-        speaker: segment.speaker,
-        speakerColor: segment.speakerColor,
-        emphasis: segment.emphasis,
-        pitch: segment.pitch,
-        segmentType: 'dialogue',
-        isOffCamera: false,
-        words: segment.words
-      }));
-
-      const { error } = await supabase.functions.invoke('transcribe', {
-        body: {
-          videoId,
-          segments: segmentsData,
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      // Direct database save: Delete existing segments
+      const { error: deleteError } = await supabase
+        .from('transcript_segments_clean')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', detectedLanguage);
+      
+      if (deleteError) {
+        console.error('❌ Failed to delete existing segments:', deleteError);
+        throw deleteError;
+      }
+      
+      // Insert updated segments with all properties including words
+      const segmentsToInsert = toSave.map((segment, idx) => {
+        // Find matching character for character_id
+        const matchingChar = characters.find(c => c.name === segment.speaker);
+        
+        return {
+          video_id: videoId,
           language: detectedLanguage,
-          saveOnly: true
-        }
+          idx,
+          text: segment.text,
+          speaker: segment.speaker,
+          speaker_color: segment.speakerColor,
+          character_id: matchingChar?.id || null,
+          start_time: segment.startTime,
+          end_time: segment.endTime,
+          emphasis: segment.emphasis || 'normal',
+          pitch: segment.pitch || 'normal',
+          segment_type: 'dialogue',
+          is_off_camera: false,
+          words: segment.words || [],
+          confidence: 0.95
+        };
       });
-
-      if (error) throw error;
-
-      console.log('✅ Transcript saved successfully');
+      
+      const { error: insertError } = await supabase
+        .from('transcript_segments_clean')
+        .insert(segmentsToInsert);
+      
+      if (insertError) {
+        console.error('❌ Failed to insert segments:', insertError);
+        throw insertError;
+      }
+      
+      console.log('✅ Successfully saved', segmentsToInsert.length, 'segments');
+      toast({
+        title: "Saved",
+        description: `Successfully saved ${segmentsToInsert.length} transcript segments`,
+      });
     } catch (error) {
       console.error('❌ Failed to save transcript:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save transcript changes",
+        description: error instanceof Error ? error.message : "Failed to save transcript changes",
         variant: "destructive",
       });
     } finally {
@@ -552,9 +579,15 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     if (!character) return;
 
     // Update all segments that match the original speaker OR original color
+    // Include character_id for proper persistence
     const updatedSegments = segments.map((segment) =>
       segment.speaker === originalSpeaker || segment.speakerColor === originalColor
-        ? { ...segment, speaker: newSpeaker, speakerColor: character.color }
+        ? { 
+            ...segment, 
+            speaker: newSpeaker, 
+            speakerColor: character.color,
+            characterId: character.id 
+          }
         : segment
     );
 
@@ -924,6 +957,23 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                                  }}
                                  className="text-sm"
                                />
+                               
+                               {/* Word-Level Editor for Emphasis & Pitch */}
+                               <div className="border-t pt-3 mt-3">
+                                 <label className="text-xs text-muted-foreground mb-2 block">
+                                   Word-Level Emphasis & Pitch
+                                 </label>
+                                 <WordLevelEditor
+                                   initialText={segment.text}
+                                   onWordsChange={(words) => {
+                                     const updatedSegments = [...segments];
+                                     updatedSegments[index].words = words;
+                                     setSegments(updatedSegments);
+                                   }}
+                                   className="text-sm"
+                                 />
+                               </div>
+                               
                                <div className="flex gap-2">
                                 <Button
                                    size="sm"
