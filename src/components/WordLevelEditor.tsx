@@ -7,35 +7,45 @@ import { Volume2, Music } from 'lucide-react';
 
 export interface WordData {
   text: string;
+  start?: number;
+  end?: number;
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
 }
 
 interface WordLevelEditorProps {
   initialText: string;
+  initialWords?: WordData[];
   onWordsChange: (words: WordData[]) => void;
   className?: string;
 }
 
 export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
   initialText,
+  initialWords,
   onWordsChange,
   className = ""
 }) => {
   const [words, setWords] = useState<WordData[]>([]);
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
 
-  // Initialize words from text
+  // Initialize words from initialWords (if provided) or text
   useEffect(() => {
-    const wordTexts = initialText.split(/\s+/).filter(word => word.trim());
-    const initialWords: WordData[] = wordTexts.map(text => ({
-      text: text,
-      emphasis: 'normal',
-      pitch: 'normal'
-    }));
-    setWords(initialWords);
-    onWordsChange(initialWords);
-  }, [initialText]);
+    if (initialWords && initialWords.length > 0) {
+      // Use existing words with emphasis/pitch preserved
+      setWords(initialWords);
+    } else {
+      // Parse text into new words
+      const wordTexts = initialText.split(/\s+/).filter(word => word.trim());
+      const newWords: WordData[] = wordTexts.map(text => ({
+        text: text,
+        emphasis: 'normal',
+        pitch: 'normal'
+      }));
+      setWords(newWords);
+      onWordsChange(newWords);
+    }
+  }, [initialText, initialWords]);
 
   const updateWord = (index: number, updates: Partial<WordData>) => {
     const updatedWords = words.map((word, i) => 

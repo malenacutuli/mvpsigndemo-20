@@ -79,6 +79,79 @@ const getNormalizedSpeakerColor = (speakerName: string | undefined): string => {
   return PRIORITY_COLORS[Math.abs(hash) % PRIORITY_COLORS.length];
 };
 
+/**
+ * syncWordsToText - Rebuild words array to match edited text
+ * 
+ * Purpose: When text is manually edited, rebuild the words array with:
+ * - New tokenization matching the edited text
+ * - Preserved emphasis/pitch for matching tokens
+ * - Proportionally distributed word timings
+ * 
+ * @param text - The edited text string
+ * @param startTime - Segment start time
+ * @param endTime - Segment end time
+ * @param oldWords - Previous words array (to preserve emphasis/pitch)
+ * @returns New words array synchronized with text
+ */
+const syncWordsToText = (
+  text: string,
+  startTime: number,
+  endTime: number,
+  oldWords?: Array<{text: string; start?: number; end?: number; emphasis?: string; pitch?: string}>
+): WordData[] => {
+  // Tokenize new text (split on whitespace, keep punctuation attached)
+  const tokens: string[] = text.match(/\S+/g) || [];
+  
+  if (tokens.length === 0) return [];
+  
+  // Natural speech timing based on word length
+  const getWordDuration = (word: string) => {
+    const len = word.replace(/[^\w]/g, '').length; // Count only letters/numbers
+    if (len <= 3) return 0.08;
+    if (len <= 7) return 0.12;
+    return 0.18;
+  };
+  
+  // Calculate ideal total duration
+  const idealDuration: number = tokens.reduce((sum: number, t: string) => sum + getWordDuration(t), 0);
+  const segmentDuration: number = Math.max(endTime - startTime, 0.1); // Minimum 0.1s
+  const scaleFactor: number = segmentDuration / Math.max(idealDuration, 0.01);
+  
+  // Build new words array
+  let currentTime = startTime;
+  const newWords: WordData[] = tokens.map((token, i) => {
+    const duration = getWordDuration(token) * scaleFactor;
+    
+    // Preserve emphasis/pitch if token matches old position (case-insensitive)
+    const oldWord = oldWords?.[i];
+    const textMatches = oldWord?.text.toLowerCase() === token.toLowerCase();
+    const emphasis = (textMatches && oldWord.emphasis) 
+      ? (oldWord.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling')
+      : 'normal';
+    const pitch = (textMatches && oldWord.pitch) 
+      ? (oldWord.pitch as 'high' | 'low' | 'normal')
+      : 'normal';
+    
+    const word: WordData = {
+      text: token,
+      start: currentTime,
+      end: currentTime + duration,
+      emphasis,
+      pitch
+    };
+    
+    currentTime += duration;
+    return word;
+  });
+  
+  // Adjust last word to exactly match segment end time
+  if (newWords.length > 0 && newWords[newWords.length - 1]) {
+    newWords[newWords.length - 1].end = endTime;
+  }
+  
+  return newWords;
+};
+
 interface TranscriptSegment {
   id: string;
   transcriptId?: string | null; // ✅ Link to transcripts table
@@ -885,25 +958,48 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     const selectedChar = availableCharacters.find(c => c.name === editSpeaker);
     
     try {
-      // 1️⃣ FIRST: Update text/timing/emphasis/pitch via bulk save
+      const newStartTime = parseTimeInput(editStartTime);
+      const newEndTime = parseTimeInput(editEndTime);
+      
+      // ✅ CRITICAL FIX: Rebuild words if text OR timing changed, OR if not in word-level mode
+      let finalWords = editWords;
+      const textChanged = editText !== currentSegment.text;
+      const timingChanged = newStartTime !== currentSegment.startTime || newEndTime !== currentSegment.endTime;
+      
+      // If NOT in word-level editing mode, OR if text/timing changed, rebuild words
+      if (!useWordLevelEditing || textChanged || timingChanged) {
+        console.log(`🔧 Rebuilding words array (text changed: ${textChanged}, timing changed: ${timingChanged}, word-level mode: ${useWordLevelEditing})`);
+        finalWords = syncWordsToText(
+          editText, 
+          newStartTime, 
+          newEndTime, 
+          textChanged ? editWords : undefined
+        );
+      }
+      
+      // 1️⃣ FIRST: Update ALL fields including synchronized words
       const updated = [...editingTranscript];
       updated[editingIndex] = {
         ...updated[editingIndex],
         text: editText,
-        startTime: parseTimeInput(editStartTime),
-        endTime: parseTimeInput(editEndTime),
+        startTime: newStartTime,
+        endTime: newEndTime,
         emphasis: editEmphasis,
         pitch: editPitch,
-        words: editWords
+        words: finalWords,
+        speaker: editSpeaker,
+        speakerColor: editSpeakerColor,
+        characterId: selectedChar?.id || null,
+        character_id: selectedChar?.id || null
       };
       
       // Sort segments by time after editing timing
       const sortedSegments = sortSegmentsByTime(updated);
       
-      // Save text/timing changes to database (creates segment if new)
+      // Save ALL changes to database (creates segment if new)
       await saveTranscriptData(sortedSegments, selectedLanguage);
       
-      // 2️⃣ THEN: Update identity via RPC (always run to ensure character link persists)
+      // 2️⃣ THEN: Update identity via RPC AND sync across languages (CRITICAL: Keep cross-language sync)
       // Compute stable idx for RPC fallback (for new segments with temp IDs)
       const idxForRPC = currentSegment.idx ?? sortedSegments.findIndex(s => s.id === segmentId);
       const txId = currentSegment.transcriptId ?? null;
@@ -924,12 +1020,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         characterId: selectedChar?.id,
         characterName: selectedChar?.id ? undefined : editSpeaker, // allow create if needed
       });
-
-      // Fire refresh event so the player re-pulls segments
-      window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
-        detail: { videoId, language: selectedLanguage }
-      }));
       
+      // ✅ CRITICAL: Sync character assignment across all languages
+      if (selectedChar?.id) {
+        console.log('🌐 Syncing character assignment across languages:', editSpeaker);
+        await syncSpeakerInfoAcrossLanguages(sortedSegments, selectedLanguage);
+      }
+
       // Refresh characters if we created a new one
       if (!selectedChar && editSpeaker) {
         const updatedChars = await loadCharacters();
@@ -1491,16 +1588,26 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         </Button>
                       </div>
                       
-                      {useWordLevelEditing ? (
+                       {useWordLevelEditing ? (
                         <WordLevelEditor
                           initialText={editText}
-                          onWordsChange={setEditWords}
+                          onWordsChange={(updatedWords) => {
+                            setEditWords(updatedWords);
+                            // Update text to match words when in word-level mode
+                            setEditText(updatedWords.map(w => w.text).join(' '));
+                          }}
                           className="border rounded-md"
                         />
                       ) : (
                         <Textarea
                           value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
+                          onChange={(e) => {
+                            setEditText(e.target.value);
+                            // Clear editWords when manually editing text (will be rebuilt on save)
+                            if (editWords.length > 0) {
+                              console.log('⚠️ Text changed in basic mode - words will be rebuilt on save');
+                            }
+                          }}
                           className="w-full h-[60px] max-h-[60px] overflow-y-auto resize-none leading-relaxed"
                           rows={2}
                           autoFocus

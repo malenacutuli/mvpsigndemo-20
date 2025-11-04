@@ -337,19 +337,50 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       
       // Re-load segments from DB with updated character colors
       const segments = await loadTranscriptSegments(currentLanguage);
-      const captionSegments = segments.map((seg: any) => ({
-        id: seg.id,
-        text: seg.text,
-        startTime: seg.startTime,
-        endTime: seg.endTime,
-        speaker: seg.speaker,
-        speakerColor: seg.speakerColor,
-        emphasis: seg.emphasis,
-        pitch: seg.pitch,
-        words: seg.words,
-        speakerAsrLabel: seg.speakerAsrLabel,
-        character_id: seg.character_id
-      }));
+      
+      // ✅ RUNTIME SAFETY: Verify words match text, rebuild if stale
+      const normalizeText = (t: string) => 
+        t.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+      
+      const captionSegments = segments.map((seg: any) => {
+        let finalWords = seg.words;
+        
+        // Check if words array is stale
+        if (finalWords && finalWords.length > 0) {
+          const wordsText = finalWords.map((w: any) => w.text).join(' ');
+          const mismatch = normalizeText(wordsText) !== normalizeText(seg.text);
+          
+          if (mismatch) {
+            console.warn(`⚠️ Words array stale for segment at ${seg.startTime}s. Regenerating from text.`);
+            // Rebuild words using same heuristic as TranscriptEditor
+            const tokens = seg.text.match(/\S+/g) || [];
+            const duration = seg.endTime - seg.startTime;
+            const timePerWord = duration / Math.max(tokens.length, 1);
+            
+            finalWords = tokens.map((token: string, i: number) => ({
+              text: token,
+              start: seg.startTime + (i * timePerWord),
+              end: seg.startTime + ((i + 1) * timePerWord),
+              emphasis: 'normal',
+              pitch: 'normal'
+            }));
+          }
+        }
+        
+        return {
+          id: seg.id,
+          text: seg.text,
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          speaker: seg.speaker,
+          speakerColor: seg.speakerColor,
+          emphasis: seg.emphasis,
+          pitch: seg.pitch,
+          words: finalWords,
+          speakerAsrLabel: seg.speakerAsrLabel,
+          character_id: seg.character_id
+        };
+      });
       
       const stabilized = stabilizeSpeakerColors(captionSegments);
       setCaptions(stabilized);
