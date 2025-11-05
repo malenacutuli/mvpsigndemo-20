@@ -867,12 +867,12 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
-      <Card className="shadow-soft border-border">
-        <CardContent className="pt-6">
+      <Card className="shadow-soft border-border rounded-2xl">
+        <CardContent className="pt-8 pb-8 px-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-2xl font-light text-foreground mb-2">Video Analysis</h2>
-              <p className="text-muted-foreground font-light leading-relaxed max-w-2xl">
+              <h2 className="text-2xl md:text-3xl font-light text-foreground mb-3">Video Analysis</h2>
+              <p className="text-base md:text-lg text-muted-foreground font-light leading-relaxed max-w-2xl">
                 Analyze video content for silent gaps and generate storytelling audio descriptions using AI.
               </p>
               <div className="flex items-center gap-2 mt-4">
@@ -897,7 +897,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 disabled={indexing || status === 'indexing'}
                 size="sm"
                 variant="outline"
-                className="shadow-sm font-light"
+                className="shadow-sm font-light rounded-full"
               >
                 {indexing ? (
                   <>
@@ -941,9 +941,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       )}
 
       {/* Silent Gaps and Narrations Section */}
-      <Card className="shadow-soft border-border">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+      <Card className="shadow-soft border-border rounded-2xl">
+        <CardHeader className="pb-4 pt-8 px-8">
+          <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
             Silent Gaps and Narrations
             {hasUnsavedSilenceChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
@@ -951,9 +951,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               </Badge>
             )}
           </CardTitle>
-          <Card className="border-primary/20 bg-primary/5 mt-3">
-            <CardContent className="p-4">
-              <p className="text-sm font-light leading-relaxed">
+          <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
+            <CardContent className="p-6">
+              <p className="text-base font-light leading-relaxed">
                 Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
               </p>
             </CardContent>
@@ -963,7 +963,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               onClick={analyzeSilences}
               disabled={status !== 'ready' || analyzingSilence}
               size="sm"
-              className="font-light"
+              className="font-light rounded-full"
             >
               {analyzingSilence ? (
                 <>
@@ -983,7 +983,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 disabled={savingSilenceResults}
                 size="sm"
                 variant={hasUnsavedSilenceChanges ? "secondary" : "outline"}
-                className="font-light"
+                className="font-light rounded-full"
               >
                 {savingSilenceResults ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -1000,7 +1000,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   disabled={!videoId}
                   size="sm"
                   variant="outline"
-                  className="font-light"
+                  className="font-light rounded-full"
                 >
                   <AudioLines className="w-4 h-4 mr-1" />
                   Use as Audio Description
@@ -1009,7 +1009,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   onClick={downloadSilenceAnalysis}
                   size="sm"
                   variant="outline"
-                  className="font-light"
+                  className="font-light rounded-full"
                 >
                   <Download className="w-4 h-4 mr-1" />
                   Download Analysis
@@ -1023,13 +1023,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-8 pb-8">
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">Analysis Prompt</label>
+            <label className="text-base font-light text-foreground">Analysis Prompt</label>
             <Textarea
               value={silencePrompt}
               onChange={(e) => setSilencePrompt(e.target.value)}
-              className="min-h-40 font-mono text-xs bg-muted/30 border-border leading-relaxed"
+              className="min-h-40 font-mono text-sm bg-muted/30 border-border leading-relaxed rounded-xl"
               placeholder="Enter analysis prompt..."
             />
           </div>
@@ -1054,14 +1054,14 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 const tooLong = wordCount > row.max_words;
                 
                 return (
-                  <div key={i} className="border rounded-lg p-4 space-y-3">
+                  <div key={i} className="border rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => seekTo(editedTimestamps[i]?.start || row.start)}
-                          className="text-sm"
+                          className="text-sm font-light rounded-full"
                         >
                           <Play className="w-3 h-3 mr-1" />
                           Play
@@ -1071,35 +1071,35 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                             type="text"
                             value={editedTimestamps[i]?.start || row.start}
                             onChange={(e) => updateTimestamp(i, 'start', e.target.value)}
-                            className="w-24 h-7 text-xs"
+                            className="w-28 h-8 text-sm font-light rounded-lg"
                             placeholder="HH:MM:SS"
                           />
-                          <span className="text-muted-foreground">→</span>
+                          <span className="text-muted-foreground font-light">→</span>
                           <Input
                             type="text"
                             value={editedTimestamps[i]?.end || row.end}
                             onChange={(e) => updateTimestamp(i, 'end', e.target.value)}
-                            className="w-24 h-7 text-xs"
+                            className="w-28 h-8 text-sm font-light rounded-lg"
                             placeholder="HH:MM:SS"
                           />
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-base text-muted-foreground font-light">
                         {msToNice(row.duration_ms)}
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-start gap-2">
                         <Edit3 className="w-4 h-4 mt-1 text-muted-foreground flex-shrink-0" />
                         <Textarea
                           value={currentText}
                           onChange={(e) => updateNarration(i, e.target.value)}
-                          className="text-sm leading-relaxed min-h-20 resize-none"
+                          className="text-base font-light leading-relaxed min-h-24 resize-none rounded-xl"
                           placeholder="Edit narration..."
                         />
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground font-light">
                         <span>
                           {wordCount} / {row.max_words} words
                         </span>
@@ -1119,9 +1119,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       </Card>
 
       {/* Custom Analysis Insights Section */}
-      <Card className="shadow-soft border-border">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+      <Card className="shadow-soft border-border rounded-2xl">
+        <CardHeader className="pt-8 px-8">
+          <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
             Custom Analysis Insights
             {hasUnsavedInsightChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
@@ -1129,9 +1129,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               </Badge>
             )}
           </CardTitle>
-          <Card className="border-primary/20 bg-primary/5 mt-3">
-            <CardContent className="p-4">
-              <p className="text-sm font-light leading-relaxed">
+          <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
+            <CardContent className="p-6">
+              <p className="text-base font-light leading-relaxed">
                 Enter a custom prompt to extract specific insights from your video content (e.g., generate hashtags, identify themes, extract key quotes, summarize main points).
               </p>
             </CardContent>
@@ -1141,7 +1141,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               onClick={analyzeInsights}
               disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
               size="sm"
-              className="font-light"
+              className="font-light rounded-full"
             >
               {analyzingInsight ? (
                 <>
@@ -1162,7 +1162,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   disabled={savingInsightResults}
                   size="sm"
                   variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
-                  className="font-light"
+                  className="font-light rounded-full"
                 >
                   {savingInsightResults ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -1175,7 +1175,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   onClick={downloadCustomAnalysis}
                   size="sm"
                   variant="outline"
-                  className="font-light"
+                  className="font-light rounded-full"
                 >
                   <Download className="w-4 h-4 mr-1" />
                   Download Analysis
@@ -1184,38 +1184,38 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-8 pb-8">
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">Custom Analysis Prompt</label>
-            <p className="text-muted-foreground font-light leading-relaxed">
+            <label className="text-base font-light text-foreground">Custom Analysis Prompt</label>
+            <p className="text-base text-muted-foreground font-light leading-relaxed">
               Enter a custom prompt to extract specific insights from your video (e.g., generate hashtags, identify themes, extract key quotes, etc.)
             </p>
             <Textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              className="min-h-32 leading-relaxed"
+              className="min-h-32 text-base font-light leading-relaxed rounded-xl"
               placeholder="e.g. Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
             />
           </div>
           
           {!insightResult ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Enter a custom prompt above and click "Analyze" to generate insights.</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-base font-light">Enter a custom prompt above and click "Analyze" to generate insights.</p>
             </div>
           ) : insightResult.analysis_text ? (
             <div className="space-y-4">
-              <div className="p-6 bg-muted/30 rounded-lg border border-border">
-                <h4 className="font-medium mb-4 text-foreground">Analysis Result</h4>
-                <div className="text-foreground font-light leading-relaxed whitespace-pre-wrap">
+              <div className="p-8 bg-muted/30 rounded-2xl border border-border">
+                <h4 className="text-lg font-light mb-4 text-foreground">Analysis Result</h4>
+                <div className="text-base text-foreground font-light leading-relaxed whitespace-pre-wrap">
                   {insightResult.analysis_text}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No insights generated. Try adjusting your prompt.</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-base font-light">No insights generated. Try adjusting your prompt.</p>
             </div>
           )}
         </CardContent>
