@@ -72,8 +72,14 @@ export type Database = {
           description: string
           description_type: string | null
           end_time: number
+          estimated_duration: number | null
+          extension_duration: number | null
+          extension_type: string | null
+          gap_duration: number | null
           id: string
           language: string
+          priority_level: string | null
+          requires_extension: boolean | null
           start_time: number
           updated_at: string
           video_id: string
@@ -90,8 +96,14 @@ export type Database = {
           description: string
           description_type?: string | null
           end_time: number
+          estimated_duration?: number | null
+          extension_duration?: number | null
+          extension_type?: string | null
+          gap_duration?: number | null
           id?: string
           language?: string
+          priority_level?: string | null
+          requires_extension?: boolean | null
           start_time: number
           updated_at?: string
           video_id: string
@@ -108,8 +120,14 @@ export type Database = {
           description?: string
           description_type?: string | null
           end_time?: number
+          estimated_duration?: number | null
+          extension_duration?: number | null
+          extension_type?: string | null
+          gap_duration?: number | null
           id?: string
           language?: string
+          priority_level?: string | null
+          requires_extension?: boolean | null
           start_time?: number
           updated_at?: string
           video_id?: string
@@ -1254,6 +1272,36 @@ export type Database = {
           },
         ]
       }
+      user_ead_preferences: {
+        Row: {
+          auto_resume: boolean | null
+          created_at: string | null
+          ead_enabled: boolean | null
+          extension_strategy: string | null
+          max_extension_duration: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_resume?: boolean | null
+          created_at?: string | null
+          ead_enabled?: boolean | null
+          extension_strategy?: string | null
+          max_extension_duration?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_resume?: boolean | null
+          created_at?: string | null
+          ead_enabled?: boolean | null
+          extension_strategy?: string | null
+          max_extension_duration?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_analysis_results: {
         Row: {
           asset_id: string
@@ -1466,6 +1514,15 @@ export type Database = {
       anonymize_user_agent: {
         Args: { user_agent_str: string }
         Returns: string
+      }
+      apply_character_mappings_atomic: {
+        Args: {
+          p_language: string
+          p_mappings: Json
+          p_respect_manual?: boolean
+          p_video_id: string
+        }
+        Returns: number
       }
       apply_specific_mapping: {
         Args: {

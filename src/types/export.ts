@@ -19,6 +19,8 @@ export interface VideoExport {
   completed_at?: string;
 }
 
+import { AudioDescriptionSegment } from './audioDescription';
+
 export interface ExportAssets {
   video: {
     id: string;
@@ -36,12 +38,7 @@ export interface ExportAssets {
     emphasis?: string;
     words?: any;
   }>;
-  audioDescriptions: Array<{
-    start_time: number;
-    end_time: number;
-    description: string;
-    audio_url?: string;
-  }>;
+  audioDescriptions: AudioDescriptionSegment[]; // Use comprehensive type
   signLanguageClips: Array<{
     id: string;
     transcript_segment_id?: string;

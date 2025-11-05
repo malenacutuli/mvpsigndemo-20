@@ -84,10 +84,10 @@ export class VideoExportProcessor {
       }));
 
       const audioDescForManager = assets.audioDescriptions.map(ad => ({
-        start_time_ms: ad.start_time * 1000,
-        end_time_ms: ad.end_time * 1000,
-        duration: ad.end_time - ad.start_time,
-        audio_url: ad.audio_url
+        start_time_ms: ad.startTime * 1000,
+        end_time_ms: ad.endTime * 1000,
+        duration: ad.endTime - ad.startTime,
+        audio_url: ad.audioUrl
       }));
 
       // Use FFmpeg for remaining features (ASL PiP, AD mixing) with captions disabled

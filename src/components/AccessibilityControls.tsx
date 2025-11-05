@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { HandHelping, Mic } from 'lucide-react';
+import { HandHelping, Mic, Pause } from 'lucide-react';
 import captionsIntention from '@/assets/captions-intention.jpg';
 import {
   Tooltip,
@@ -13,18 +13,22 @@ interface AccessibilityControlsProps {
   showCaptions: boolean;
   showASL: boolean;
   showAudioDescription: boolean;
+  eadEnabled?: boolean; // NEW: Extended Audio Description toggle
   onToggleCaptions: (show: boolean) => void;
   onToggleASL: (show: boolean) => void;
   onToggleAudioDescription: (show: boolean) => void;
+  onToggleEAD?: (enabled: boolean) => void; // NEW: EAD toggle handler
 }
 
 export const AccessibilityControls: React.FC<AccessibilityControlsProps> = ({
   showCaptions,
   showASL,
   showAudioDescription,
+  eadEnabled = false,
   onToggleCaptions,
   onToggleASL,
   onToggleAudioDescription,
+  onToggleEAD,
 }) => {
   return (
     <TooltipProvider>
@@ -88,6 +92,28 @@ export const AccessibilityControls: React.FC<AccessibilityControlsProps> = ({
             <p>Celebrity-Style Audio Description</p>
           </TooltipContent>
         </Tooltip>
+
+        {/* Extended Audio Description Toggle */}
+        {onToggleEAD && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onToggleEAD(!eadEnabled)}
+                aria-label={eadEnabled ? "Disable Extended Audio Description" : "Enable Extended Audio Description"}
+                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${
+                  eadEnabled ? 'bg-amber-500/30 text-amber-400' : ''
+                }`}
+              >
+                <Pause className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Extended Audio Description (Pauses Video)</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );

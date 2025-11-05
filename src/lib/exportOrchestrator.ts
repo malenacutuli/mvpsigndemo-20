@@ -213,7 +213,24 @@ export class ExportOrchestrator {
     if (options.audioDescription) {
       const { data: ads, error: adsError } = await supabase
         .from('audio_descriptions')
-        .select('start_time, end_time, description, audio_url, audio_generation_status')
+        .select(`
+          id, 
+          start_time, 
+          end_time, 
+          description, 
+          audio_url, 
+          audio_generation_status,
+          voice_id,
+          voice_name,
+          language,
+          estimated_duration,
+          requires_extension,
+          extension_duration,
+          extension_type,
+          priority_level,
+          gap_duration,
+          confidence
+        `)
         .eq('video_id', videoId)
         .order('start_time');
 
@@ -227,10 +244,22 @@ export class ExportOrchestrator {
         audioDescriptions = rawAds
           .filter(ad => ad.audio_url && ad.audio_url.length > 0) // Only include descriptions with audio
           .map(ad => ({
-            start_time: ad.start_time,
-            end_time: ad.end_time,
-            description: ad.description,
-            audio_url: ad.audio_url
+            id: ad.id,
+            text: ad.description,
+            startTime: ad.start_time,
+            endTime: ad.end_time,
+            audioUrl: ad.audio_url,
+            voiceId: ad.voice_id,
+            voiceName: ad.voice_name,
+            language: ad.language,
+            estimatedDuration: ad.estimated_duration,
+            requiresExtension: ad.requires_extension,
+            extensionDuration: ad.extension_duration,
+            extensionType: ad.extension_type as any,
+            priorityLevel: ad.priority_level as any,
+            gapDuration: ad.gap_duration,
+            confidence: ad.confidence,
+            audioGenerationStatus: ad.audio_generation_status as any
           }));
         
         const missingAudio = rawAds.length - audioDescriptions.length;
@@ -273,7 +302,7 @@ export class ExportOrchestrator {
 
     if (options.audioDescription) {
       const adsWithAudio = (assets.audioDescriptions || []).filter(ad => 
-        ad.audio_url && ad.audio_url.startsWith('http')
+        ad.audioUrl && ad.audioUrl.startsWith('http')
       );
       const adsMissingAudio = (assets.audioDescriptions || []).length - adsWithAudio.length;
       
@@ -300,7 +329,7 @@ export class ExportOrchestrator {
       console.log('🔍 Validating audio description files...');
       for (const ad of adsWithAudio) {
         try {
-          const response = await fetch(ad.audio_url, { method: 'HEAD' });
+          const response = await fetch(ad.audioUrl, { method: 'HEAD' });
           if (!response.ok) {
             throw new Error(`Audio file not accessible: ${response.status}`);
           }
