@@ -187,7 +187,7 @@ export function ExportModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-2xl font-light">
             <Video className="w-5 h-5" />
             Finalize & Export Video
           </DialogTitle>

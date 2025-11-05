@@ -228,7 +228,7 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
   
   return (
     <>
-      <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+      <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-light">
         <Video className="w-4 h-4" />
         Finalize & Export
       </Button>
