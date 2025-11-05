@@ -19,6 +19,8 @@ interface AudioDescriptionProps {
   language?: string;
   // Control whether to render the on-screen overlay (audio still plays if false)
   showOverlay?: boolean;
+  // Extended Audio Description enabled
+  eadEnabled?: boolean;
 }
 
 interface AudioDescription {
@@ -55,6 +57,7 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   dynamicDescriptions,
   language = 'en',
   showOverlay = true,
+  eadEnabled = false,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);

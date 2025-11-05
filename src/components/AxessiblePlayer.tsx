@@ -20,6 +20,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useExtendedAudioDescription } from '@/hooks/useExtendedAudioDescription';
+import { UserEADPreferences, AudioDescriptionSegment } from '@/types/audioDescription';
+import { toast } from 'sonner';
 // CICharacterSync removed - using unified pipeline
 
 import { VoiceOption } from "@/types/voice";
@@ -148,6 +151,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [isMobileFullscreen, setIsMobileFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Extended Audio Description (EAD) state
+  const [eadEnabled, setEadEnabled] = useState(false);
+  const [eadPreferences, setEadPreferences] = useState<UserEADPreferences>({
+    eadEnabled: false,
+    maxExtensionDuration: 5.0,
+    extensionStrategy: 'pause',
+    autoResume: true,
+    showVisualIndicator: true,
+    skipShortcutEnabled: true
+  });
+
+  // Initialize EAD hook
+  const { eadState, playExtendedAD, skipCurrentAD } = useExtendedAudioDescription(
+    videoRef,
+    eadPreferences
+  );
+  
   // Enhanced mobile fullscreen states
   const [isLandscape, setIsLandscape] = useState(false);
   const [safeAreaInsets, setSafeAreaInsets] = useState({
@@ -159,6 +179,45 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // Hooks
   const isMobile = useIsMobile();
+  
+  // Load user EAD preferences from database
+  useEffect(() => {
+    const loadEADPreferences = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('user_ead_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading EAD preferences:', error);
+          return;
+        }
+
+        if (data) {
+          console.log('✅ Loaded EAD preferences:', data);
+          const prefs: UserEADPreferences = {
+            eadEnabled: data.ead_enabled,
+            maxExtensionDuration: data.max_extension_duration,
+            extensionStrategy: (data.extension_strategy as 'pause' | 'slowdown' | 'hybrid') || 'pause',
+            autoResume: data.auto_resume,
+            showVisualIndicator: true,
+            skipShortcutEnabled: true
+          };
+          setEadPreferences(prefs);
+          setEadEnabled(data.ead_enabled);
+        }
+      } catch (error) {
+        console.error('Failed to load EAD preferences:', error);
+      }
+    };
+
+    loadEADPreferences();
+  }, []);
   
   // Caption loading removed - using unified pipeline from EnhancedVideoPlayer via initialCaptions
   
@@ -181,6 +240,19 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Keyboard shortcut: Shift+D to skip Extended AD
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key.toLowerCase() === 'd' && eadPreferences.skipShortcutEnabled && eadState.isActive) {
+        console.log('⏭️ User pressed Shift+D to skip EAD');
+        skipCurrentAD();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [skipCurrentAD, eadPreferences.skipShortcutEnabled, eadState.isActive]);
 
   // Force-disable any native text tracks (in-band or <track>) so only our overlay captions show
   useEffect(() => {
@@ -320,6 +392,23 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           lastVideoTime = videoTime;
         }
         
+        // Check for Extended Audio Description triggers
+        if (eadEnabled && !eadState.isActive && generatedAD) {
+          const currentVideoTime = video.currentTime;
+          const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => 
+            ad.requiresExtension &&
+            ad.audioUrl &&
+            currentVideoTime >= ad.startTime - 0.1 &&
+            currentVideoTime < ad.startTime + 0.1 &&
+            ad.extensionType === 'pause'
+          );
+          
+          if (needsExtension && needsExtension.audioUrl) {
+            console.log('🎬 Triggering Extended AD:', needsExtension.text.substring(0, 50) + '...');
+            playExtendedAD(needsExtension, needsExtension.audioUrl);
+          }
+        }
+        
         // Continue loop
         if ('requestVideoFrameCallback' in video) {
           (video as any).requestVideoFrameCallback(updateTimeWithPrecision);
@@ -414,6 +503,44 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     loadAudioDescriptions();
   }, [videoId, currentLanguage]);
 
+  // Save EAD preferences to database
+  const saveEADPreferences = async (updates: Partial<UserEADPreferences>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn('Cannot save EAD preferences: user not logged in');
+        return;
+      }
+
+      const updatedPreferences = { ...eadPreferences, ...updates };
+      setEadPreferences(updatedPreferences);
+
+      const { error } = await supabase
+        .from('user_ead_preferences')
+        .upsert({
+          user_id: user.id,
+          ead_enabled: updatedPreferences.eadEnabled,
+          max_extension_duration: updatedPreferences.maxExtensionDuration,
+          extension_strategy: updatedPreferences.extensionStrategy,
+          auto_resume: updatedPreferences.autoResume
+        });
+
+      if (error) {
+        console.error('Failed to save EAD preferences:', error);
+        toast.error('Failed to save Extended AD preferences');
+      } else {
+        console.log('✅ Saved EAD preferences');
+      }
+    } catch (error) {
+      console.error('Exception saving EAD preferences:', error);
+    }
+  };
+
+  // Toggle EAD enabled state
+  const handleToggleEAD = (enabled: boolean) => {
+    setEadEnabled(enabled);
+    saveEADPreferences({ eadEnabled: enabled });
+  };
 
   const togglePlay = async () => {
     const video = videoRef.current;
@@ -1112,7 +1239,62 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
             language={currentLanguage}
             showOverlay={false}
+            eadEnabled={eadEnabled}
           />
+        )}
+
+        {/* Extended Audio Description Overlay - Shows when video is paused for description */}
+        {eadState.isActive && eadPreferences.showVisualIndicator && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-amber-900/90 to-orange-900/90 border-2 border-amber-500 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <Pause className="w-8 h-8 text-amber-400 animate-pulse" />
+                <h3 className="text-2xl font-bold text-amber-100">
+                  Paused for Audio Description
+                </h3>
+              </div>
+              
+              {/* Current description text */}
+              {eadState.currentDescriptionId && generatedAD && (
+                <p className="text-amber-50 text-lg leading-relaxed mb-4">
+                  {generatedAD.find((ad: any) => ad.id === eadState.currentDescriptionId)?.text}
+                </p>
+              )}
+              
+              {/* Progress indicator */}
+              {eadState.remainingDuration && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm text-amber-200 mb-2">
+                    <span>Audio Description Playing...</span>
+                    <span>{Math.ceil(eadState.remainingDuration)}s remaining</span>
+                  </div>
+                  <div className="w-full bg-amber-950/50 rounded-full h-2">
+                    <div 
+                      className="bg-amber-400 h-2 rounded-full transition-all duration-1000 animate-pulse"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Skip button */}
+              {eadState.canSkip && eadPreferences.skipShortcutEnabled && (
+                <Button
+                  onClick={skipCurrentAD}
+                  variant="outline"
+                  className="w-full bg-amber-950/30 border-amber-600 text-amber-100 hover:bg-amber-900/50 hover:border-amber-400 transition-colors"
+                >
+                  <span className="font-semibold">Skip Description (Shift+D)</span>
+                </Button>
+              )}
+              
+              {!eadPreferences.skipShortcutEnabled && (
+                <p className="text-amber-300 text-sm text-center">
+                  Video will resume automatically when description completes
+                </p>
+              )}
+            </div>
+          </div>
         )}
 
       {/* Control Overlay - Hidden in fullscreen mode */}
@@ -1214,6 +1396,19 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${adEnabled ? 'bg-accent/20 text-accent-foreground' : ''}`}
             >
               <AudioLines className="w-4 h-4" />
+            </Button>
+
+            {/* Extended Audio Description (pauses video for longer descriptions) */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleToggleEAD(!eadEnabled)}
+              title="Extended Audio Description (pauses video for longer descriptions)"
+              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${
+                eadEnabled ? 'bg-amber-500/30 text-amber-400' : ''
+              }`}
+            >
+              <Pause className="w-4 h-4" />
             </Button>
             
             {/* Captions with Intention */}
