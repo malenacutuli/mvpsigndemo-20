@@ -350,5 +350,51 @@
       "doneEditing": "Edició completada",
       "published": "Publicat"
     }
+  },
+  "videos": {
+    "title": "Els Meus Vídeos",
+    "subtitle": "Gestiona els teus vídeos, publica'ls a Explorar i organitza'ls amb canals",
+    "tabs": {
+      "myVideos": "Els Meus Vídeos",
+      "channels": "Canals"
+    },
+    "actions": {
+      "uploadNew": "Pujar Nou Vídeo",
+      "uploadFirst": "Pujar el Teu Primer Vídeo",
+      "view": "Veure"
+    },
+    "search": "Cercar vídeos...",
+    "filters": {
+      "language": "Idioma",
+      "status": "Estat",
+      "allLanguages": "Tots els idiomes",
+      "allStatuses": "Tots els estats"
+    },
+    "status": {
+      "uploaded": "Pujat",
+      "processing": "Processant",
+      "ready": "Llest",
+      "error": "Error",
+      "uploading": "Pujant"
+    },
+    "badges": {
+      "public": "Públic"
+    },
+    "empty": {
+      "title": "Cap vídeo trobat",
+      "description": "Comença pujant el teu primer vídeo per crear contingut accessible.",
+      "noMatch": "Cap vídeo coincideix amb els teus filtres actuals.",
+      "uploadButton": "Pujar Vídeo"
+    },
+    "loading": "Carregant els teus vídeos...",
+    "toast": {
+      "deletedTitle": "Vídeo eliminat",
+      "deletedDesc": "El vídeo s'ha eliminat correctament.",
+      "deleteErrorTitle": "Error en eliminar",
+      "deleteErrorDesc": "S'ha produït un error en eliminar el vídeo. Si us plau, torna-ho a provar."
+    },
+    "createdAt": "Creat",
+    "duration": "Durada",
+    "noVideos": "Cap vídeo disponible."
   }
 }

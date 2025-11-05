@@ -350,5 +350,51 @@
       "doneEditing": "Edição concluída",
       "published": "Publicado"
     }
+  },
+  "videos": {
+    "title": "Meus Vídeos",
+    "subtitle": "Gerencie seus vídeos, publique no Explorar e organize com canais",
+    "tabs": {
+      "myVideos": "Meus Vídeos",
+      "channels": "Canais"
+    },
+    "actions": {
+      "uploadNew": "Carregar Novo Vídeo",
+      "uploadFirst": "Carregar Seu Primeiro Vídeo",
+      "view": "Visualizar"
+    },
+    "search": "Pesquisar vídeos...",
+    "filters": {
+      "language": "Idioma",
+      "status": "Status",
+      "allLanguages": "Todos os idiomas",
+      "allStatuses": "Todos os status"
+    },
+    "status": {
+      "uploaded": "Carregado",
+      "processing": "Processando",
+      "ready": "Pronto",
+      "error": "Erro",
+      "uploading": "Carregando"
+    },
+    "badges": {
+      "public": "Público"
+    },
+    "empty": {
+      "title": "Nenhum vídeo encontrado",
+      "description": "Comece carregando seu primeiro vídeo para criar conteúdo acessível.",
+      "noMatch": "Nenhum vídeo corresponde aos seus filtros atuais.",
+      "uploadButton": "Carregar Vídeo"
+    },
+    "loading": "Carregando seus vídeos...",
+    "toast": {
+      "deletedTitle": "Vídeo excluído",
+      "deletedDesc": "O vídeo foi excluído com sucesso.",
+      "deleteErrorTitle": "Erro ao excluir",
+      "deleteErrorDesc": "Ocorreu um erro ao excluir o vídeo. Por favor, tente novamente."
+    },
+    "createdAt": "Criado",
+    "duration": "Duração",
+    "noVideos": "Nenhum vídeo disponível."
   }
 }

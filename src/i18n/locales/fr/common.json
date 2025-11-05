@@ -350,5 +350,51 @@
       "doneEditing": "Édition terminée",
       "published": "Publié"
     }
+  },
+  "videos": {
+    "title": "Mes Vidéos",
+    "subtitle": "Gérez vos vidéos, publiez-les dans Explorer et organisez-les avec des chaînes",
+    "tabs": {
+      "myVideos": "Mes Vidéos",
+      "channels": "Chaînes"
+    },
+    "actions": {
+      "uploadNew": "Télécharger Nouvelle Vidéo",
+      "uploadFirst": "Télécharger Votre Première Vidéo",
+      "view": "Voir"
+    },
+    "search": "Rechercher des vidéos...",
+    "filters": {
+      "language": "Langue",
+      "status": "Statut",
+      "allLanguages": "Toutes les langues",
+      "allStatuses": "Tous les statuts"
+    },
+    "status": {
+      "uploaded": "Téléchargé",
+      "processing": "En traitement",
+      "ready": "Prêt",
+      "error": "Erreur",
+      "uploading": "Téléchargement"
+    },
+    "badges": {
+      "public": "Public"
+    },
+    "empty": {
+      "title": "Aucune vidéo trouvée",
+      "description": "Commencez par télécharger votre première vidéo pour créer du contenu accessible.",
+      "noMatch": "Aucune vidéo ne correspond à vos filtres actuels.",
+      "uploadButton": "Télécharger une vidéo"
+    },
+    "loading": "Chargement de vos vidéos...",
+    "toast": {
+      "deletedTitle": "Vidéo supprimée",
+      "deletedDesc": "La vidéo a été supprimée avec succès.",
+      "deleteErrorTitle": "Erreur de suppression",
+      "deleteErrorDesc": "Une erreur s'est produite lors de la suppression de la vidéo. Veuillez réessayer."
+    },
+    "createdAt": "Créée",
+    "duration": "Durée",
+    "noVideos": "Aucune vidéo disponible."
   }
 }

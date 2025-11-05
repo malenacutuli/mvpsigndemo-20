@@ -350,5 +350,51 @@
       "doneEditing": "Bearbeitung abgeschlossen",
       "published": "Veröffentlicht"
     }
+  },
+  "videos": {
+    "title": "Meine Videos",
+    "subtitle": "Verwalten Sie Ihre Videos, veröffentlichen Sie sie auf Erkunden und organisieren Sie sie mit Kanälen",
+    "tabs": {
+      "myVideos": "Meine Videos",
+      "channels": "Kanäle"
+    },
+    "actions": {
+      "uploadNew": "Neues Video hochladen",
+      "uploadFirst": "Ihr erstes Video hochladen",
+      "view": "Ansehen"
+    },
+    "search": "Videos suchen...",
+    "filters": {
+      "language": "Sprache",
+      "status": "Status",
+      "allLanguages": "Alle Sprachen",
+      "allStatuses": "Alle Status"
+    },
+    "status": {
+      "uploaded": "Hochgeladen",
+      "processing": "Wird verarbeitet",
+      "ready": "Bereit",
+      "error": "Fehler",
+      "uploading": "Hochladen"
+    },
+    "badges": {
+      "public": "Öffentlich"
+    },
+    "empty": {
+      "title": "Keine Videos gefunden",
+      "description": "Laden Sie Ihr erstes Video hoch, um barrierefreie Inhalte zu erstellen.",
+      "noMatch": "Keine Videos entsprechen Ihren aktuellen Filtern.",
+      "uploadButton": "Video hochladen"
+    },
+    "loading": "Ihre Videos werden geladen...",
+    "toast": {
+      "deletedTitle": "Video gelöscht",
+      "deletedDesc": "Das Video wurde erfolgreich gelöscht.",
+      "deleteErrorTitle": "Fehler beim Löschen",
+      "deleteErrorDesc": "Beim Löschen des Videos ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    },
+    "createdAt": "Erstellt",
+    "duration": "Dauer",
+    "noVideos": "Keine Videos verfügbar."
   }
 }
