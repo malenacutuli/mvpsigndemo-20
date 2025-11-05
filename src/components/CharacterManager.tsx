@@ -353,10 +353,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // 2. Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // 3. CRITICAL: Apply character settings to all segments in database
-      await applyCharacterMappings();
-      
-      // 4. Update localStorage for instant access (critical for video player)
+      // 3. Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
         ...acc, 
         [char.name]: char.color 
@@ -364,13 +361,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
       
-      // 5. Trigger parent component update 
+      // 4. Trigger parent component update 
       onCharactersUpdate?.(characters);
       
-      // 6. Trigger window event so other components can sync immediately
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: characterColorMap, characters } 
-      }));
+      // 5. CRITICAL: Apply character settings to all segments in database
+      // This MUST complete before dispatching events
+      await applyCharacterMappings();
       
       toast({
         title: "Colors synchronized!",
