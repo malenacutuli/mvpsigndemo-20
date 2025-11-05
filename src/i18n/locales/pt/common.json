@@ -396,5 +396,55 @@
     "createdAt": "Criado",
     "duration": "Duração",
     "noVideos": "Nenhum vídeo disponível."
+  },
+  "upload": {
+    "pageTitle": "Carregue e Crie Vídeos Acessíveis em Segundos",
+    "pageSubtitle": "Transforme seu conteúdo de vídeo com recursos de acessibilidade automáticos",
+    "cardTitle": "Carregar Vídeo para Processamento de Acessibilidade",
+    "dropZone": "Solte seu arquivo de vídeo aqui ou clique para navegar",
+    "supportedFormats": "Formatos suportados: MP4, MOV, AVI (max 5GB)",
+    "title": "Título",
+    "titleRequired": "O título é obrigatório",
+    "titlePlaceholder": "Digite o título do vídeo",
+    "description": "Descrição",
+    "descriptionPlaceholder": "Digite a descrição do vídeo (opcional)",
+    "transcriptOptions": {
+      "title": "📝 Opções de Transcrição",
+      "description": "Após o upload, você pode extrair a transcrição automaticamente ou carregar seu próprio arquivo de transcrição para edição com Captions with Intention.",
+      "autoExtract": "Auto-extração: A IA transcreverá seu vídeo com marcações de tempo",
+      "uploadTranscript": "Carregar transcrição: Use seus arquivos SRT, VTT ou TXT existentes com marcações de tempo",
+      "editIntonation": "Editar entonação: Ajuste ênfase e tom para melhor acessibilidade"
+    },
+    "language": "Idioma",
+    "languageHelp": "💡 Escolha o idioma principal falado em seu vídeo para transcrição precisa",
+    "contentType": "Tipo de Conteúdo",
+    "voiceSelection": "Seleção de Voz",
+    "aslCharacter": "Avatar ASL",
+    "uploadButton": "Carregar e Processar Vídeo",
+    "uploadInfo": {
+      "line1": "• Seu vídeo será automaticamente processado para recursos de acessibilidade",
+      "line2": "• Legendas profissionais, descrições de áudio e suporte ASL",
+      "line3": "• O processamento geralmente leva de 2 a 5 minutos, dependendo da duração do vídeo"
+    },
+    "features": {
+      "captions": {
+        "title": "Legendas Inteligentes",
+        "description": "Legendas alimentadas por IA com detecção de emoção e intenção para comunicação aprimorada"
+      },
+      "audioDescriptions": {
+        "title": "Descrições de Áudio",
+        "description": "Descrições de áudio profissionais perfeitamente sincronizadas com seu conteúdo"
+      },
+      "asl": {
+        "title": "Suporte ASL",
+        "description": "Avatares de língua de sinais e recursos de acessibilidade visual para inclusão abrangente"
+      }
+    },
+    "uploading": "Carregando...",
+    "processing": "Processando...",
+    "uploadComplete": "Carregamento Concluído",
+    "selectLanguage": "Selecionar Idioma",
+    "makePublic": "Tornar este vídeo público",
+    "enableAccessibility": "Ativar recursos de acessibilidade"
   }
 }

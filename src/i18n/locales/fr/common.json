@@ -396,5 +396,55 @@
     "createdAt": "Créée",
     "duration": "Durée",
     "noVideos": "Aucune vidéo disponible."
+  },
+  "upload": {
+    "pageTitle": "Téléchargez et Créez des Vidéos Accessibles en Secondes",
+    "pageSubtitle": "Transformez votre contenu vidéo avec des fonctionnalités d'accessibilité automatiques",
+    "cardTitle": "Télécharger la Vidéo pour le Traitement de l'Accessibilité",
+    "dropZone": "Déposez votre fichier vidéo ici ou cliquez pour parcourir",
+    "supportedFormats": "Formats supportés: MP4, MOV, AVI (max 5GB)",
+    "title": "Titre",
+    "titleRequired": "Le titre est requis",
+    "titlePlaceholder": "Entrez le titre de la vidéo",
+    "description": "Description",
+    "descriptionPlaceholder": "Entrez la description de la vidéo (facultatif)",
+    "transcriptOptions": {
+      "title": "📝 Options de Transcription",
+      "description": "Après le téléchargement, vous pouvez extraire la transcription automatiquement ou télécharger votre propre fichier de transcription pour l'édition avec Captions with Intention.",
+      "autoExtract": "Auto-extraction: L'IA transcrira votre vidéo avec des horodatages",
+      "uploadTranscript": "Télécharger la transcription: Utilisez vos fichiers SRT, VTT ou TXT existants avec horodatages",
+      "editIntonation": "Modifier l'intonation: Ajustez l'emphase et la hauteur pour une meilleure accessibilité"
+    },
+    "language": "Langue",
+    "languageHelp": "💡 Choisissez la langue principale parlée dans votre vidéo pour une transcription précise",
+    "contentType": "Type de Contenu",
+    "voiceSelection": "Sélection de la Voix",
+    "aslCharacter": "Avatar ASL",
+    "uploadButton": "Télécharger et Traiter la Vidéo",
+    "uploadInfo": {
+      "line1": "• Votre vidéo sera automatiquement traitée pour les fonctionnalités d'accessibilité",
+      "line2": "• Sous-titres professionnels, descriptions audio et support ASL",
+      "line3": "• Le traitement prend généralement 2-5 minutes selon la longueur de la vidéo"
+    },
+    "features": {
+      "captions": {
+        "title": "Sous-titres Intelligents",
+        "description": "Sous-titres alimentés par IA avec détection d'émotion et d'intention pour une communication améliorée"
+      },
+      "audioDescriptions": {
+        "title": "Descriptions Audio",
+        "description": "Descriptions audio professionnelles parfaitement synchronisées avec votre contenu"
+      },
+      "asl": {
+        "title": "Support ASL",
+        "description": "Avatars en langue des signes et fonctionnalités d'accessibilité visuelle pour une inclusion complète"
+      }
+    },
+    "uploading": "Téléchargement...",
+    "processing": "Traitement...",
+    "uploadComplete": "Téléchargement Terminé",
+    "selectLanguage": "Sélectionner la Langue",
+    "makePublic": "Rendre cette vidéo publique",
+    "enableAccessibility": "Activer les fonctionnalités d'accessibilité"
   }
 }

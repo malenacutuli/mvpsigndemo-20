@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { UploadVideo } from '@/components/UploadVideo';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -7,6 +8,7 @@ import { Target, Volume2, HandMetal } from 'lucide-react';
 
 export default function Upload() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleUploadComplete = (videoId: string) => {
     navigate(`/videos/${videoId}`);
@@ -20,9 +22,11 @@ export default function Upload() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-2">Upload and Create Accessible Videos in Seconds</h1>
-              <p className="text-muted-foreground">
-                Transform your video content with automatic accessibility features
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-light mb-4 text-foreground leading-tight">
+                {t('upload.pageTitle')}
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
+                {t('upload.pageSubtitle')}
               </p>
             </div>
 
@@ -34,9 +38,9 @@ export default function Upload() {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Target className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">Smart Captions</h3>
-                <p className="text-sm text-muted-foreground">
-                  AI-powered captions with emotion and intent detection for enhanced communication
+                <h3 className="font-light text-lg mb-2">{t('upload.features.captions.title')}</h3>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">
+                  {t('upload.features.captions.description')}
                 </p>
               </div>
 
@@ -44,9 +48,9 @@ export default function Upload() {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Volume2 className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">Audio Descriptions</h3>
-                <p className="text-sm text-muted-foreground">
-                  Professional audio descriptions timed perfectly with your content
+                <h3 className="font-light text-lg mb-2">{t('upload.features.audioDescriptions.title')}</h3>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">
+                  {t('upload.features.audioDescriptions.description')}
                 </p>
               </div>
 
@@ -54,9 +58,9 @@ export default function Upload() {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <HandMetal className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">ASL Support</h3>
-                <p className="text-sm text-muted-foreground">
-                  Sign language avatars and visual accessibility features for comprehensive inclusion
+                <h3 className="font-light text-lg mb-2">{t('upload.features.asl.title')}</h3>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">
+                  {t('upload.features.asl.description')}
                 </p>
               </div>
             </div>

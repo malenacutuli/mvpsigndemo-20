@@ -396,5 +396,55 @@
     "createdAt": "Creat",
     "duration": "Durada",
     "noVideos": "Cap vídeo disponible."
+  },
+  "upload": {
+    "pageTitle": "Puja i Crea Vídeos Accessibles en Segons",
+    "pageSubtitle": "Transforma el teu contingut de vídeo amb funcionalitats d'accessibilitat automàtiques",
+    "cardTitle": "Pujar Vídeo per al Processament d'Accessibilitat",
+    "dropZone": "Deixa anar el teu fitxer de vídeo aquí o fes clic per navegar",
+    "supportedFormats": "Formats suportats: MP4, MOV, AVI (max 5GB)",
+    "title": "Títol",
+    "titleRequired": "El títol és obligatori",
+    "titlePlaceholder": "Introdueix el títol del vídeo",
+    "description": "Descripció",
+    "descriptionPlaceholder": "Introdueix la descripció del vídeo (opcional)",
+    "transcriptOptions": {
+      "title": "📝 Opcions de Transcripció",
+      "description": "Després de pujar, pots extreure la transcripció automàticament o pujar el teu propi fitxer de transcripció per editar amb Captions with Intention.",
+      "autoExtract": "Auto-extracció: L'IA transcriurà el teu vídeo amb marques de temps",
+      "uploadTranscript": "Pujar transcripció: Utilitza els teus fitxers SRT, VTT o TXT existents amb marques de temps",
+      "editIntonation": "Editar entonació: Ajusta l'èmfasi i el to per a una millor accessibilitat"
+    },
+    "language": "Idioma",
+    "languageHelp": "💡 Tria l'idioma principal parlat en el teu vídeo per a una transcripció precisa",
+    "contentType": "Tipus de Contingut",
+    "voiceSelection": "Selecció de Veu",
+    "aslCharacter": "Avatar ASL",
+    "uploadButton": "Pujar i Processar Vídeo",
+    "uploadInfo": {
+      "line1": "• El teu vídeo serà processat automàticament per a funcionalitats d'accessibilitat",
+      "line2": "• Subtítols professionals, descripcions d'àudio i suport ASL",
+      "line3": "• El processament sol trigar de 2 a 5 minuts depenent de la durada del vídeo"
+    },
+    "features": {
+      "captions": {
+        "title": "Subtítols Intel·ligents",
+        "description": "Subtítols alimentats per IA amb detecció d'emoció i intenció per a una comunicació millorada"
+      },
+      "audioDescriptions": {
+        "title": "Descripcions d'Àudio",
+        "description": "Descripcions d'àudio professionals perfectament sincronitzades amb el teu contingut"
+      },
+      "asl": {
+        "title": "Suport ASL",
+        "description": "Avatars en llengua de signes i funcionalitats d'accessibilitat visual per a una inclusió completa"
+      }
+    },
+    "uploading": "Pujant...",
+    "processing": "Processant...",
+    "uploadComplete": "Pujada Completada",
+    "selectLanguage": "Seleccionar Idioma",
+    "makePublic": "Fer aquest vídeo públic",
+    "enableAccessibility": "Activar funcionalitats d'accessibilitat"
   }
 }

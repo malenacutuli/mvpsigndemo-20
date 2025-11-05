@@ -396,5 +396,55 @@
     "createdAt": "Erstellt",
     "duration": "Dauer",
     "noVideos": "Keine Videos verfügbar."
+  },
+  "upload": {
+    "pageTitle": "Laden Sie Barrierefreie Videos in Sekunden Hoch und Erstellen Sie Sie",
+    "pageSubtitle": "Transformieren Sie Ihre Videoinhalte mit automatischen Barrierefreiheitsfunktionen",
+    "cardTitle": "Video für Barrierefreiheitsverarbeitung Hochladen",
+    "dropZone": "Ziehen Sie Ihre Videodatei hierher oder klicken Sie zum Durchsuchen",
+    "supportedFormats": "Unterstützte Formate: MP4, MOV, AVI (max 5GB)",
+    "title": "Titel",
+    "titleRequired": "Titel ist erforderlich",
+    "titlePlaceholder": "Videotitel eingeben",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Videobeschreibung eingeben (optional)",
+    "transcriptOptions": {
+      "title": "📝 Transkriptionsoptionen",
+      "description": "Nach dem Hochladen können Sie das Transkript automatisch extrahieren oder Ihre eigene Transkriptionsdatei zur Bearbeitung mit Captions with Intention hochladen.",
+      "autoExtract": "Auto-Extraktion: KI transkribiert Ihr Video mit Zeitstempeln",
+      "uploadTranscript": "Transkript hochladen: Verwenden Sie Ihre vorhandenen SRT-, VTT- oder TXT-Dateien mit Zeitstempeln",
+      "editIntonation": "Intonation bearbeiten: Betonung und Tonhöhe für bessere Barrierefreiheit anpassen"
+    },
+    "language": "Sprache",
+    "languageHelp": "💡 Wählen Sie die Hauptsprache, die in Ihrem Video gesprochen wird, für eine genaue Transkription",
+    "contentType": "Inhaltstyp",
+    "voiceSelection": "Stimmenauswahl",
+    "aslCharacter": "ASL-Avatar",
+    "uploadButton": "Video Hochladen und Verarbeiten",
+    "uploadInfo": {
+      "line1": "• Ihr Video wird automatisch für Barrierefreiheitsfunktionen verarbeitet",
+      "line2": "• Professionelle Untertitel, Audiobeschreibungen und ASL-Unterstützung",
+      "line3": "• Die Verarbeitung dauert in der Regel 2-5 Minuten, abhängig von der Videolänge"
+    },
+    "features": {
+      "captions": {
+        "title": "Intelligente Untertitel",
+        "description": "KI-gestützte Untertitel mit Emotions- und Absichtserkennung für verbesserte Kommunikation"
+      },
+      "audioDescriptions": {
+        "title": "Audiobeschreibungen",
+        "description": "Professionelle Audiobeschreibungen perfekt synchronisiert mit Ihrem Inhalt"
+      },
+      "asl": {
+        "title": "ASL-Unterstützung",
+        "description": "Gebärdensprach-Avatare und visuelle Barrierefreiheitsfunktionen für umfassende Inklusion"
+      }
+    },
+    "uploading": "Hochladen...",
+    "processing": "Verarbeitung...",
+    "uploadComplete": "Hochladen Abgeschlossen",
+    "selectLanguage": "Sprache Auswählen",
+    "makePublic": "Dieses Video öffentlich machen",
+    "enableAccessibility": "Barrierefreiheitsfunktionen aktivieren"
   }
 }

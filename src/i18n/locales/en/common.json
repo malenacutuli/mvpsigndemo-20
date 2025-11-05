@@ -826,17 +826,51 @@
     "ru": "Russian"
   },
   "upload": {
-    "title": "Upload Your Video",
-    "subtitle": "Transform your content with accessibility features",
-    "dragAndDrop": "Drag and drop your video file here",
-    "orClickToSelect": "or click to select a file",
-    "supportedFormats": "Supported formats: MP4, MOV, AVI, WebM",
-    "maxFileSize": "Maximum file size: 2GB",
+    "pageTitle": "Upload and Create Accessible Videos in Seconds",
+    "pageSubtitle": "Transform your video content with automatic accessibility features",
+    "cardTitle": "Upload Video for Accessibility Processing",
+    "dropZone": "Drop your video file here or click to browse",
+    "supportedFormats": "Supports MP4, MOV, AVI (max 5GB)",
+    "title": "Title",
+    "titleRequired": "Title is required",
+    "titlePlaceholder": "Enter video title",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter video description (optional)",
+    "transcriptOptions": {
+      "title": "📝 Transcript Options",
+      "description": "After uploading, you can either extract the transcript automatically or upload your own transcript file for editing with Captions with Intention.",
+      "autoExtract": "Auto-extract: AI will transcribe your video with timestamps",
+      "uploadTranscript": "Upload transcript: Use your existing SRT, VTT, or TXT files with timestamps",
+      "editIntonation": "Edit intonation: Adjust emphasis and pitch for better accessibility"
+    },
+    "language": "Language",
+    "languageHelp": "💡 Choose the primary language spoken in your video for accurate transcription",
+    "contentType": "Content Type",
+    "voiceSelection": "Voice Selection",
+    "aslCharacter": "ASL Avatar Character",
+    "uploadButton": "Upload and Process Video",
+    "uploadInfo": {
+      "line1": "• Your video will be automatically processed for accessibility features",
+      "line2": "• Professional captions, audio descriptions, and ASL support",
+      "line3": "• Processing typically takes 2-5 minutes depending on video length"
+    },
+    "features": {
+      "captions": {
+        "title": "Smart Captions",
+        "description": "AI-powered captions with emotion and intent detection for enhanced communication"
+      },
+      "audioDescriptions": {
+        "title": "Audio Descriptions",
+        "description": "Professional audio descriptions timed perfectly with your content"
+      },
+      "asl": {
+        "title": "ASL Support",
+        "description": "Sign language avatars and visual accessibility features for comprehensive inclusion"
+      }
+    },
     "uploading": "Uploading...",
     "processing": "Processing...",
     "uploadComplete": "Upload Complete",
-    "videoTitle": "Video Title",
-    "videoDescription": "Video Description",
     "selectLanguage": "Select Language",
     "makePublic": "Make this video public",
     "enableAccessibility": "Enable accessibility features"

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Video, FileText, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ interface VideoData {
 }
 
 export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) => {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -738,9 +740,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 font-light">
           <Video className="w-5 h-5" />
-          Upload Video for Accessibility Processing
+          {t('upload.cardTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -770,9 +772,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium">Drop your video file here or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Supports MP4, MOV, AVI (max 5GB)
+              <p className="text-sm font-medium font-light">{t('upload.dropZone')}</p>
+              <p className="text-xs text-muted-foreground mt-1 font-light">
+                {t('upload.supportedFormats')}
               </p>
             </div>
           )}
@@ -781,87 +783,89 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         {/* Video Metadata */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title" className="font-light">{t('upload.title')} *</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter video title"
+              placeholder={t('upload.titlePlaceholder')}
               disabled={uploading}
+              className="font-light"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="font-light">{t('upload.description')}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter video description (optional)"
+              placeholder={t('upload.descriptionPlaceholder')}
               disabled={uploading}
               rows={3}
+              className="font-light"
             />
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <h4 className="text-sm font-medium text-blue-700 mb-2">📝 Transcript Options</h4>
-            <p className="text-xs text-blue-600 mb-3">
-              After uploading, you can either extract the transcript automatically or upload your own transcript file for editing with Captions with Intention.
+            <h4 className="text-sm font-medium text-blue-700 mb-2 font-light">{t('upload.transcriptOptions.title')}</h4>
+            <p className="text-xs text-blue-600 mb-3 font-light">
+              {t('upload.transcriptOptions.description')}
             </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• <strong>Auto-extract:</strong> AI will transcribe your video with timestamps</p>
-              <p>• <strong>Upload transcript:</strong> Use your existing SRT, VTT, or TXT files with timestamps</p>
-              <p>• <strong>Edit intonation:</strong> Adjust emphasis and pitch for better accessibility</p>
+            <div className="text-xs text-muted-foreground space-y-1 font-light">
+              <p>• <strong>{t('upload.transcriptOptions.autoExtract')}</strong></p>
+              <p>• <strong>{t('upload.transcriptOptions.uploadTranscript')}</strong></p>
+              <p>• <strong>{t('upload.transcriptOptions.editIntonation')}</strong></p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language" className="font-light">{t('upload.language')}</Label>
               <Select value={language} onValueChange={setLanguage} disabled={uploading}>
-                <SelectTrigger>
+                <SelectTrigger className="font-light">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="pt">Portuguese</SelectItem>
-                  <SelectItem value="nl">Dutch</SelectItem>
-                  <SelectItem value="ru">Russian</SelectItem>
-                  <SelectItem value="ja">Japanese</SelectItem>
-                  <SelectItem value="ko">Korean</SelectItem>
-                  <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="hi">Hindi</SelectItem>
-                  <SelectItem value="tr">Turkish</SelectItem>
-                  <SelectItem value="pl">Polish</SelectItem>
-                  <SelectItem value="sv">Swedish</SelectItem>
-                  <SelectItem value="no">Norwegian</SelectItem>
-                  <SelectItem value="da">Danish</SelectItem>
-                  <SelectItem value="fi">Finnish</SelectItem>
-                  <SelectItem value="cs">Czech</SelectItem>
-                  <SelectItem value="hu">Hungarian</SelectItem>
-                  <SelectItem value="ro">Romanian</SelectItem>
-                  <SelectItem value="uk">Ukrainian</SelectItem>
-                  <SelectItem value="bg">Bulgarian</SelectItem>
-                  <SelectItem value="hr">Croatian</SelectItem>
-                  <SelectItem value="sk">Slovak</SelectItem>
-                  <SelectItem value="sl">Slovenian</SelectItem>
-                  <SelectItem value="et">Estonian</SelectItem>
-                  <SelectItem value="lv">Latvian</SelectItem>
-                  <SelectItem value="lt">Lithuanian</SelectItem>
+                  <SelectItem value="en" className="font-light">English</SelectItem>
+                  <SelectItem value="es" className="font-light">Spanish</SelectItem>
+                  <SelectItem value="fr" className="font-light">French</SelectItem>
+                  <SelectItem value="de" className="font-light">German</SelectItem>
+                  <SelectItem value="it" className="font-light">Italian</SelectItem>
+                  <SelectItem value="pt" className="font-light">Portuguese</SelectItem>
+                  <SelectItem value="nl" className="font-light">Dutch</SelectItem>
+                  <SelectItem value="ru" className="font-light">Russian</SelectItem>
+                  <SelectItem value="ja" className="font-light">Japanese</SelectItem>
+                  <SelectItem value="ko" className="font-light">Korean</SelectItem>
+                  <SelectItem value="zh" className="font-light">Chinese (Mandarin)</SelectItem>
+                  <SelectItem value="ar" className="font-light">Arabic</SelectItem>
+                  <SelectItem value="hi" className="font-light">Hindi</SelectItem>
+                  <SelectItem value="tr" className="font-light">Turkish</SelectItem>
+                  <SelectItem value="pl" className="font-light">Polish</SelectItem>
+                  <SelectItem value="sv" className="font-light">Swedish</SelectItem>
+                  <SelectItem value="no" className="font-light">Norwegian</SelectItem>
+                  <SelectItem value="da" className="font-light">Danish</SelectItem>
+                  <SelectItem value="fi" className="font-light">Finnish</SelectItem>
+                  <SelectItem value="cs" className="font-light">Czech</SelectItem>
+                  <SelectItem value="hu" className="font-light">Hungarian</SelectItem>
+                  <SelectItem value="ro" className="font-light">Romanian</SelectItem>
+                  <SelectItem value="uk" className="font-light">Ukrainian</SelectItem>
+                  <SelectItem value="bg" className="font-light">Bulgarian</SelectItem>
+                  <SelectItem value="hr" className="font-light">Croatian</SelectItem>
+                  <SelectItem value="sk" className="font-light">Slovak</SelectItem>
+                  <SelectItem value="sl" className="font-light">Slovenian</SelectItem>
+                  <SelectItem value="et" className="font-light">Estonian</SelectItem>
+                  <SelectItem value="lv" className="font-light">Latvian</SelectItem>
+                  <SelectItem value="lt" className="font-light">Lithuanian</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                💡 Choose the primary language spoken in your video for accurate transcription
+              <p className="text-xs text-muted-foreground mt-1 font-light">
+                {t('upload.languageHelp')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="content-type">Content Type</Label>
+              <Label htmlFor="content-type" className="font-light">{t('upload.contentType')}</Label>
               <Select value={contentType} onValueChange={(value: string) => {
                 setContentType(value);
                 // Reset voice and ASL selections when content type changes
@@ -898,14 +902,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div className="space-y-4">
               {/* Simple Voice Selection - keeping existing functionality */}
               <div>
-                <Label>Voice Selection</Label>
+                <Label className="font-light">{t('upload.voiceSelection')}</Label>
                 <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                  <SelectTrigger>
+                  <SelectTrigger className="font-light">
                     <SelectValue placeholder="Select a voice" />
                   </SelectTrigger>
                   <SelectContent>
                     {(voiceOptions[contentType] || []).map(voice => (
-                      <SelectItem key={voice.id} value={voice.id}>
+                      <SelectItem key={voice.id} value={voice.id} className="font-light">
                         {voice.name}
                       </SelectItem>
                     ))}
@@ -940,8 +944,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         {/* Upload Progress */}
         {uploading && (
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Uploading...</span>
+            <div className="flex justify-between text-sm font-light">
+              <span>{t('upload.uploading')}</span>
               <span>{uploadProgress}%</span>
             </div>
             <div className="w-full bg-secondary rounded-full h-2">
@@ -957,16 +961,16 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         <Button
           onClick={uploadVideo}
           disabled={!videoFile || !title.trim() || uploading}
-          className="w-full"
+          className="w-full font-light"
         >
-          {uploading ? 'Uploading...' : 'Upload and Process Video'}
+          {uploading ? t('upload.uploading') : t('upload.uploadButton')}
         </Button>
 
         {/* Info Text */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>• Your video will be automatically processed for accessibility features</p>
-          <p>• Professional captions, audio descriptions, and ASL support</p>
-          <p>• Processing typically takes 2-5 minutes depending on video length</p>
+        <div className="text-xs text-muted-foreground space-y-1 font-light">
+          <p>• {t('upload.uploadInfo.line1')}</p>
+          <p>• {t('upload.uploadInfo.line2')}</p>
+          <p>• {t('upload.uploadInfo.line3')}</p>
         </div>
       </CardContent>
     </Card>

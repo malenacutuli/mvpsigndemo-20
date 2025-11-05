@@ -396,5 +396,55 @@
     "createdAt": "Creato",
     "duration": "Durata",
     "noVideos": "Nessun video disponibile."
+  },
+  "upload": {
+    "pageTitle": "Carica e Crea Video Accessibili in Secondi",
+    "pageSubtitle": "Trasforma i tuoi contenuti video con funzionalità di accessibilità automatiche",
+    "cardTitle": "Carica Video per l'Elaborazione dell'Accessibilità",
+    "dropZone": "Rilascia qui il tuo file video o clicca per sfogliare",
+    "supportedFormats": "Formati supportati: MP4, MOV, AVI (max 5GB)",
+    "title": "Titolo",
+    "titleRequired": "Il titolo è obbligatorio",
+    "titlePlaceholder": "Inserisci il titolo del video",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Inserisci la descrizione del video (facoltativo)",
+    "transcriptOptions": {
+      "title": "📝 Opzioni Trascrizione",
+      "description": "Dopo il caricamento, puoi estrarre automaticamente la trascrizione o caricare il tuo file di trascrizione per modificarlo con Captions with Intention.",
+      "autoExtract": "Auto-estrazione: L'IA trascriverà il tuo video con timestamp",
+      "uploadTranscript": "Carica trascrizione: Usa i tuoi file SRT, VTT o TXT esistenti con timestamp",
+      "editIntonation": "Modifica intonazione: Regola enfasi e tono per una migliore accessibilità"
+    },
+    "language": "Lingua",
+    "languageHelp": "💡 Scegli la lingua principale parlata nel tuo video per una trascrizione accurata",
+    "contentType": "Tipo di Contenuto",
+    "voiceSelection": "Selezione Voce",
+    "aslCharacter": "Avatar ASL",
+    "uploadButton": "Carica ed Elabora Video",
+    "uploadInfo": {
+      "line1": "• Il tuo video verrà automaticamente elaborato per le funzionalità di accessibilità",
+      "line2": "• Sottotitoli professionali, descrizioni audio e supporto ASL",
+      "line3": "• L'elaborazione richiede tipicamente 2-5 minuti a seconda della lunghezza del video"
+    },
+    "features": {
+      "captions": {
+        "title": "Sottotitoli Intelligenti",
+        "description": "Sottotitoli alimentati da IA con rilevamento di emozione e intenzione per una comunicazione migliorata"
+      },
+      "audioDescriptions": {
+        "title": "Descrizioni Audio",
+        "description": "Descrizioni audio professionali perfettamente sincronizzate con i tuoi contenuti"
+      },
+      "asl": {
+        "title": "Supporto ASL",
+        "description": "Avatar in lingua dei segni e funzionalità di accessibilità visiva per un'inclusione completa"
+      }
+    },
+    "uploading": "Caricamento...",
+    "processing": "Elaborazione...",
+    "uploadComplete": "Caricamento Completato",
+    "selectLanguage": "Seleziona Lingua",
+    "makePublic": "Rendi questo video pubblico",
+    "enableAccessibility": "Abilita funzionalità di accessibilità"
   }
 }
