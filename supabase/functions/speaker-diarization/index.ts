@@ -64,47 +64,44 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    // Get user from JWT for rate limiting
+    // Get user from JWT for rate limiting (optional for internal calls)
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Check rate limit
-    const rateLimit = await checkRateLimit(supabase, user.id, 'speaker-diarization', 20);
-    if (!rateLimit.allowed) {
-      logAPICall({
-        userId: user.id,
-        apiService: 'AssemblyAI',
-        status: 'error',
-        error: 'Rate limit exceeded'
-      });
+    // Check if this is an internal service call (has service role key) or user call
+    let user = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
       
-      return new Response(JSON.stringify({ 
-        error: 'Rate limit exceeded',
-        message: `Maximum 20 speaker diarization requests per hour. ${rateLimit.remaining} remaining.`,
-        retryAfter: 3600
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' }
-      });
+      // Try to get user (will work for both user tokens and service role)
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authUser) {
+        user = authUser;
+        
+        // Check rate limit only for direct user calls
+        const rateLimit = await checkRateLimit(supabase, user.id, 'speaker-diarization', 20);
+        if (!rateLimit.allowed) {
+          logAPICall({
+            userId: user.id,
+            apiService: 'AssemblyAI',
+            status: 'error',
+            error: 'Rate limit exceeded'
+          });
+          
+          return new Response(JSON.stringify({ 
+            error: 'Rate limit exceeded',
+            message: `Maximum 20 speaker diarization requests per hour. ${rateLimit.remaining} remaining.`,
+            retryAfter: 3600
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' }
+          });
+        }
+      }
     }
 
     const { videoUrl, videoId } = await req.json();
@@ -114,7 +111,7 @@ serve(async (req) => {
     }
 
     logAPICall({
-      userId: user.id,
+      userId: user?.id,
       videoId,
       apiService: 'AssemblyAI',
       status: 'start'
@@ -322,7 +319,7 @@ serve(async (req) => {
     console.log('🎨 Speaker metadata:', speakerMetadata);
 
     logAPICall({
-      userId: user.id,
+      userId: user?.id,
       videoId,
       apiService: 'AssemblyAI',
       status: 'success',
