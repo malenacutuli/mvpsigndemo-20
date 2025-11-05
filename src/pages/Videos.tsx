@@ -180,7 +180,7 @@ export default function Videos() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('videos.loading')}</p>
+          <p className="text-muted-foreground font-light leading-relaxed">{t('videos.loading')}</p>
         </div>
       </div>
     );
@@ -201,10 +201,10 @@ export default function Videos() {
               </div>
               <div className="flex items-center gap-2 mt-4 md:mt-0">
                 <TabsList>
-                  <TabsTrigger value="videos">{t('videos.tabs.myVideos')}</TabsTrigger>
-                  <TabsTrigger value="channels">{t('videos.tabs.channels')}</TabsTrigger>
+                  <TabsTrigger value="videos" className="font-light">{t('videos.tabs.myVideos')}</TabsTrigger>
+                  <TabsTrigger value="channels" className="font-light">{t('videos.tabs.channels')}</TabsTrigger>
                 </TabsList>
-                <Button asChild>
+                <Button asChild className="font-light">
                   <Link to="/upload">{t('videos.actions.uploadNew')}</Link>
                 </Button>
               </div>
@@ -267,7 +267,7 @@ export default function Videos() {
                       : t('videos.empty.noMatch')}
                   </p>
                   {videos.length === 0 && (
-                    <Button asChild>
+                    <Button asChild className="font-light">
                       <Link to="/upload">{t('videos.actions.uploadFirst')}</Link>
                     </Button>
                   )}
@@ -275,7 +275,7 @@ export default function Videos() {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredVideos.map((video) => (
-                    <Card key={video.id} className="hover:shadow-lg transition-shadow">
+                    <Card key={video.id} className="hover:shadow-lg transition-shadow rounded-xl">
                       <CardHeader className="p-0">
                         <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center relative overflow-hidden">
                           {video.thumbnail_url ? (
@@ -301,18 +301,18 @@ export default function Videos() {
                           )}
                           
                           <div className="absolute top-2 left-2 flex gap-1">
-                            <Badge className={getStatusColor(video.status)}>
+                            <Badge className={`${getStatusColor(video.status)} font-light`}>
                               {t(`videos.status.${video.status}`)}
                             </Badge>
                             {video.is_public && (
-                              <Badge variant="outline" className="bg-green-50 text-green-700">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 font-light">
                                 {t('videos.badges.public')}
                               </Badge>
                             )}
                           </div>
                           
                           {video.duration_seconds && (
-                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-sm font-light px-2 py-1 rounded">
                               {formatDuration(video.duration_seconds)}
                             </div>
                           )}
@@ -323,12 +323,12 @@ export default function Videos() {
                         <h3 className="font-light mb-2 line-clamp-2 text-foreground text-lg">{video.title}</h3>
                         
                         {video.description && (
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          <p className="text-base font-light text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
                             {video.description}
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                        <div className="flex items-center gap-3 text-sm font-light text-muted-foreground mb-3">
                           <div className="flex items-center gap-1">
                             <Languages className="w-3 h-3" />
                             {getLanguageDisplay(video.language)}
@@ -340,7 +340,7 @@ export default function Videos() {
                         </div>
                         
                         <div className="flex items-center gap-2 w-full">
-                          <Button asChild size="sm" className="flex-1">
+                          <Button asChild size="sm" className="flex-1 font-light">
                             <Link to={`/videos/${video.id}`}>
                               <Eye className="w-4 h-4 mr-1" />
                               {t('videos.actions.view')}
