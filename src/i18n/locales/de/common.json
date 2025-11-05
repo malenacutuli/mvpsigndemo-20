@@ -419,11 +419,11 @@
     "languageHelp": "💡 Wählen Sie die Hauptsprache, die in Ihrem Video gesprochen wird, für eine genaue Transkription",
     "contentType": "Inhaltstyp",
     "voiceSelection": "Stimmenauswahl",
-    "aslCharacter": "ASL-Avatar",
+    "slCharacter": "LS-Avatar",
     "uploadButton": "Video Hochladen und Verarbeiten",
     "uploadInfo": {
       "line1": "• Ihr Video wird automatisch für Barrierefreiheitsfunktionen verarbeitet",
-      "line2": "• Professionelle Untertitel, Audiobeschreibungen und ASL-Unterstützung",
+      "line2": "• Professionelle Untertitel, Audiobeschreibungen und LS-Unterstützung",
       "line3": "• Die Verarbeitung dauert in der Regel 2-5 Minuten, abhängig von der Videolänge"
     },
     "features": {
@@ -435,8 +435,8 @@
         "title": "Audiobeschreibungen",
         "description": "Professionelle Audiobeschreibungen perfekt synchronisiert mit Ihrem Inhalt"
       },
-      "asl": {
-        "title": "ASL-Unterstützung",
+      "sl": {
+        "title": "LS-Unterstützung",
         "description": "Gebärdensprach-Avatare und visuelle Barrierefreiheitsfunktionen für umfassende Inklusion"
       }
     },
@@ -451,7 +451,9 @@
     "cancel": "Abbrechen",
     "create": "Erstellen",
     "update": "Aktualisieren",
-    "error": "Fehler"
+    "error": "Fehler",
+    "doneEditing": "Bearbeitung abgeschlossen",
+    "published": "Veröffentlicht"
   },
   "channels": {
     "title": "Ihre Kanäle",

@@ -847,11 +847,11 @@
     "languageHelp": "💡 Choose the primary language spoken in your video for accurate transcription",
     "contentType": "Content Type",
     "voiceSelection": "Voice Selection",
-    "aslCharacter": "ASL Avatar Character",
+    "slCharacter": "SL Avatar Character",
     "uploadButton": "Upload and Process Video",
     "uploadInfo": {
       "line1": "• Your video will be automatically processed for accessibility features",
-      "line2": "• Professional captions, audio descriptions, and ASL support",
+      "line2": "• Professional captions, audio descriptions, and SL support",
       "line3": "• Processing typically takes 2-5 minutes depending on video length"
     },
     "features": {
@@ -863,8 +863,8 @@
         "title": "Audio Descriptions",
         "description": "Professional audio descriptions timed perfectly with your content"
       },
-      "asl": {
-        "title": "ASL Support",
+      "sl": {
+        "title": "SL Support",
         "description": "Sign language avatars and visual accessibility features for comprehensive inclusion"
       }
     },

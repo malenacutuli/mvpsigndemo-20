@@ -419,11 +419,11 @@
     "languageHelp": "💡 Choisissez la langue principale parlée dans votre vidéo pour une transcription précise",
     "contentType": "Type de Contenu",
     "voiceSelection": "Sélection de la Voix",
-    "aslCharacter": "Avatar ASL",
+    "slCharacter": "Avatar LS",
     "uploadButton": "Télécharger et Traiter la Vidéo",
     "uploadInfo": {
       "line1": "• Votre vidéo sera automatiquement traitée pour les fonctionnalités d'accessibilité",
-      "line2": "• Sous-titres professionnels, descriptions audio et support ASL",
+      "line2": "• Sous-titres professionnels, descriptions audio et support LS",
       "line3": "• Le traitement prend généralement 2-5 minutes selon la longueur de la vidéo"
     },
     "features": {
@@ -435,8 +435,8 @@
         "title": "Descriptions Audio",
         "description": "Descriptions audio professionnelles parfaitement synchronisées avec votre contenu"
       },
-      "asl": {
-        "title": "Support ASL",
+      "sl": {
+        "title": "Support LS",
         "description": "Avatars en langue des signes et fonctionnalités d'accessibilité visuelle pour une inclusion complète"
       }
     },
@@ -451,7 +451,9 @@
     "cancel": "Annuler",
     "create": "Créer",
     "update": "Mettre à jour",
-    "error": "Erreur"
+    "error": "Erreur",
+    "doneEditing": "Édition terminée",
+    "published": "Publié"
   },
   "channels": {
     "title": "Vos Chaînes",

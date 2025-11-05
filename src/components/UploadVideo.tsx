@@ -813,9 +813,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               {t('upload.transcriptOptions.description')}
             </p>
             <div className="text-xs text-muted-foreground space-y-1 font-light">
-              <p>• <strong>{t('upload.transcriptOptions.autoExtract')}</strong></p>
-              <p>• <strong>{t('upload.transcriptOptions.uploadTranscript')}</strong></p>
-              <p>• <strong>{t('upload.transcriptOptions.editIntonation')}</strong></p>
+              <p>• {t('upload.transcriptOptions.autoExtract')}</p>
+              <p>• {t('upload.transcriptOptions.uploadTranscript')}</p>
+              <p>• {t('upload.transcriptOptions.editIntonation')}</p>
             </div>
           </div>
 

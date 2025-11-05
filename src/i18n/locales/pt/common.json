@@ -419,11 +419,11 @@
     "languageHelp": "💡 Escolha o idioma principal falado em seu vídeo para transcrição precisa",
     "contentType": "Tipo de Conteúdo",
     "voiceSelection": "Seleção de Voz",
-    "aslCharacter": "Avatar ASL",
+    "slCharacter": "Avatar LS",
     "uploadButton": "Carregar e Processar Vídeo",
     "uploadInfo": {
       "line1": "• Seu vídeo será automaticamente processado para recursos de acessibilidade",
-      "line2": "• Legendas profissionais, descrições de áudio e suporte ASL",
+      "line2": "• Legendas profissionais, descrições de áudio e suporte LS",
       "line3": "• O processamento geralmente leva de 2 a 5 minutos, dependendo da duração do vídeo"
     },
     "features": {
@@ -435,8 +435,8 @@
         "title": "Descrições de Áudio",
         "description": "Descrições de áudio profissionais perfeitamente sincronizadas com seu conteúdo"
       },
-      "asl": {
-        "title": "Suporte ASL",
+      "sl": {
+        "title": "Suporte LS",
         "description": "Avatares de língua de sinais e recursos de acessibilidade visual para inclusão abrangente"
       }
     },
@@ -446,5 +446,51 @@
     "selectLanguage": "Selecionar Idioma",
     "makePublic": "Tornar este vídeo público",
     "enableAccessibility": "Ativar recursos de acessibilidade"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "error": "Erro",
+    "doneEditing": "Edição concluída",
+    "published": "Publicado"
+  },
+  "channels": {
+    "title": "Seus Canais",
+    "subtitle": "Crie e gerencie canais para organizar seus vídeos",
+    "create": "Criar Canal",
+    "createNew": "Criar Novo Canal",
+    "createFirst": "Crie Seu Primeiro Canal",
+    "edit": "Editar Canal",
+    "channel": "Canal",
+    "name": "Nome do Canal",
+    "namePlaceholder": "Digite o nome do canal",
+    "description": "Os canais ajudam a organizar seus vídeos e torná-los mais fáceis de descobrir",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Descreva sobre o que é este canal...",
+    "avatar": "Avatar do Canal",
+    "uploadAvatar": "Carregar Avatar",
+    "changeAvatar": "Alterar Avatar",
+    "avatarHelp": "Carregar uma imagem (JPG, PNG, máx 5MB)",
+    "public": "Público",
+    "noDescription": "Sem descrição",
+    "noChannels": "Ainda Sem Canais",
+    "noChannelsText": "Crie seu primeiro canal para começar a organizar seus vídeos e construir uma audiência",
+    "videos": "vídeos",
+    "subscribers": "inscritos",
+    "created": "Criado",
+    "updated": "Canal Atualizado",
+    "updatedSuccess": "Seu canal foi atualizado com sucesso",
+    "createdSuccess": "Seu novo canal foi criado com sucesso",
+    "deleted": "Canal Excluído",
+    "deletedSuccess": "O canal foi excluído com sucesso",
+    "deleteConfirm": "Tem certeza de que deseja excluir o canal \"{{name}}\"? Isso removerá a atribuição do canal de todos os vídeos, mas não excluirá os vídeos em si.",
+    "errors": {
+      "selectImage": "Por favor, selecione um arquivo de imagem",
+      "fileTooLarge": "A imagem deve ser menor que 5MB",
+      "nameRequired": "O nome do canal é obrigatório",
+      "saveFailed": "Falha ao salvar o canal",
+      "deleteFailed": "Falha ao excluir o canal"
+    }
   }
 }

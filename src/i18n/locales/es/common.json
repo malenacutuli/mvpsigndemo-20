@@ -1038,7 +1038,7 @@
       "fileTooLarge": "La imagen debe ser menor a 5MB",
       "nameRequired": "El nombre del canal es obligatorio",
       "saveFailed": "Error al guardar el canal",
-      "deleteFailed": "Error al eliminar el canal"
+     "deleteFailed": "Error al eliminar el canal"
     }
   },
   "common": {
@@ -1082,12 +1082,26 @@
     "languageHelp": "💡 Elige el idioma principal hablado en tu video para una transcripción precisa",
     "contentType": "Tipo de Contenido",
     "voiceSelection": "Selección de Voz",
-    "aslCharacter": "Avatar de ASL",
+    "slCharacter": "Personaje Avatar de LS",
     "uploadButton": "Subir y Procesar Video",
     "uploadInfo": {
       "line1": "• Tu video se procesará automáticamente para funciones de accesibilidad",
-      "line2": "• Subtítulos profesionales, descripciones de audio y soporte de ASL",
+      "line2": "• Subtítulos profesionales, descripciones de audio y soporte de LS",
       "line3": "• El procesamiento suele tardar de 2 a 5 minutos según la duración del video"
+    },
+    "features": {
+      "captions": {
+        "title": "Subtítulos Inteligentes",
+        "description": "Subtítulos alimentados por IA con detección de emoción e intención para una comunicación mejorada"
+      },
+      "audioDescriptions": {
+        "title": "Descripciones de Audio",
+        "description": "Descripciones de audio profesionales sincronizadas perfectamente con tu contenido"
+      },
+      "sl": {
+        "title": "Soporte de LS",
+        "description": "Avatares de lengua de señas y funciones de accesibilidad visual para inclusión completa"
+      }
     },
     "uploading": "Subiendo...",
     "processing": "Procesando...",

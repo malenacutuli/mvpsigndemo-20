@@ -419,11 +419,11 @@
     "languageHelp": "💡 Scegli la lingua principale parlata nel tuo video per una trascrizione accurata",
     "contentType": "Tipo di Contenuto",
     "voiceSelection": "Selezione Voce",
-    "aslCharacter": "Avatar ASL",
+    "slCharacter": "Avatar LS",
     "uploadButton": "Carica ed Elabora Video",
     "uploadInfo": {
       "line1": "• Il tuo video verrà automaticamente elaborato per le funzionalità di accessibilità",
-      "line2": "• Sottotitoli professionali, descrizioni audio e supporto ASL",
+      "line2": "• Sottotitoli professionali, descrizioni audio e supporto LS",
       "line3": "• L'elaborazione richiede tipicamente 2-5 minuti a seconda della lunghezza del video"
     },
     "features": {
@@ -435,8 +435,8 @@
         "title": "Descrizioni Audio",
         "description": "Descrizioni audio professionali perfettamente sincronizzate con i tuoi contenuti"
       },
-      "asl": {
-        "title": "Supporto ASL",
+      "sl": {
+        "title": "Supporto LS",
         "description": "Avatar in lingua dei segni e funzionalità di accessibilità visiva per un'inclusione completa"
       }
     },
@@ -451,7 +451,9 @@
     "cancel": "Annulla",
     "create": "Crea",
     "update": "Aggiorna",
-    "error": "Errore"
+    "error": "Errore",
+    "doneEditing": "Modifica completata",
+    "published": "Pubblicato"
   },
   "channels": {
     "title": "I Tuoi Canali",
