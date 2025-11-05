@@ -218,32 +218,33 @@ export default function Videos() {
                     placeholder={t('videos.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    className="font-light"
                   />
                 </div>
                 
                 <Select value={languageFilter} onValueChange={setLanguageFilter}>
-                  <SelectTrigger className="w-full md:w-48">
+                  <SelectTrigger className="w-full md:w-48 font-light">
                     <SelectValue placeholder={t('videos.filters.allLanguages')} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('videos.filters.allLanguages')}</SelectItem>
-                    <SelectItem value="en">{t('languages.en')}</SelectItem>
-                    <SelectItem value="es">{t('languages.es')}</SelectItem>
-                    <SelectItem value="fr">{t('languages.fr')}</SelectItem>
-                    <SelectItem value="de">{t('languages.de')}</SelectItem>
+                  <SelectContent className="bg-background z-50 shadow-lg">
+                    <SelectItem value="all" className="font-light">{t('videos.filters.allLanguages')}</SelectItem>
+                    <SelectItem value="en" className="font-light">{t('languages.en')}</SelectItem>
+                    <SelectItem value="es" className="font-light">{t('languages.es')}</SelectItem>
+                    <SelectItem value="fr" className="font-light">{t('languages.fr')}</SelectItem>
+                    <SelectItem value="de" className="font-light">{t('languages.de')}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full md:w-48">
+                  <SelectTrigger className="w-full md:w-48 font-light">
                     <SelectValue placeholder={t('videos.filters.allStatuses')} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('videos.filters.allStatuses')}</SelectItem>
-                    <SelectItem value="ready">{t('videos.status.ready')}</SelectItem>
-                    <SelectItem value="processing">{t('videos.status.processing')}</SelectItem>
-                    <SelectItem value="uploading">{t('videos.status.uploading')}</SelectItem>
-                    <SelectItem value="error">{t('videos.status.error')}</SelectItem>
+                  <SelectContent className="bg-background z-50 shadow-lg">
+                    <SelectItem value="all" className="font-light">{t('videos.filters.allStatuses')}</SelectItem>
+                    <SelectItem value="ready" className="font-light">{t('videos.status.ready')}</SelectItem>
+                    <SelectItem value="processing" className="font-light">{t('videos.status.processing')}</SelectItem>
+                    <SelectItem value="uploading" className="font-light">{t('videos.status.uploading')}</SelectItem>
+                    <SelectItem value="error" className="font-light">{t('videos.status.error')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
