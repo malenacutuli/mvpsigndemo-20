@@ -208,8 +208,7 @@ useEffect(() => {
     };
   }, [currentDescription, isPlaying, selectedVoice, contentType, language]);
 
-  if (!showOverlay || !currentDescription) return null;
-
+  // Helper functions for rendering
   const getVoiceStyleColor = (style: string) => {
     switch (style) {
       case 'passionate':
@@ -230,6 +229,9 @@ useEffect(() => {
     const n = Number(t);
     return Number.isFinite(n) ? n.toFixed(1) : '—';
   };
+
+  // Only hide overlay rendering, audio still plays above
+  if (!showOverlay || !currentDescription) return null;
 
   return (
     <div className="fixed bottom-4 right-4 max-w-md p-4 bg-black/90 border border-white/20 rounded-lg shadow-xl backdrop-blur-sm z-50">
