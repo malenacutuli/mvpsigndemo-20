@@ -439,21 +439,23 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       const allLanguages = Array.from(new Set(transcripts?.map(t => t.language) || [language]));
       
-      // Apply mappings atomically for each language
+      // Apply mappings for each language using existing RPC
       for (const lang of allLanguages) {
-        const { data, error } = await supabase.rpc('apply_character_mappings_atomic', {
-          p_video_id: videoId,
-          p_language: lang,
-          p_mappings: mappingsForRPC,
-          p_respect_manual: true
-        });
-        
-        if (error) {
-          console.error(`❌ [${lang}] Failed to apply mappings:`, error);
-          throw error;
+        for (const [speakerLabel, charId] of Object.entries(mappingsForRPC)) {
+          const { error } = await supabase.rpc('apply_specific_mapping', {
+            p_video_id: videoId,
+            p_language: lang,
+            p_asr_label: speakerLabel,
+            p_character_id: charId
+          });
+          
+          if (error) {
+            console.error(`❌ [${lang}] Failed to apply mapping for ${speakerLabel}:`, error);
+            throw error;
+          }
         }
         
-        console.log(`✅ [${lang}] Applied mappings atomically:`, data);
+        console.log(`✅ [${lang}] Applied all character mappings`);
       }
       
       // ONE event after ALL database updates are complete
