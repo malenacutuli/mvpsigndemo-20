@@ -498,12 +498,12 @@ const VideoDetail = () => {
             </div>
           </div>
 
-          <Card>
+          <Card className="rounded-xl shadow-soft border">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <CardTitle className="text-2xl">{video.title}</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CardTitle className="text-3xl md:text-4xl font-light text-foreground">{video.title}</CardTitle>
+                  <div className="flex items-center gap-2 text-base text-muted-foreground font-light">
                     <Badge className={getStatusColor(video.status)}>
                       {video.status}
                     </Badge>
@@ -537,9 +537,9 @@ const VideoDetail = () => {
                   
                   {/* Video Description - Now below the video */}
                   {video.description && (
-                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                      <h3 className="font-semibold mb-2">{t('videoDetail.description')}</h3>
-                      <p className="text-muted-foreground">{video.description}</p>
+                    <div className="mt-4 p-6 bg-muted/50 rounded-xl">
+                      <h3 className="text-xl font-light text-foreground mb-2">{t('videoDetail.description')}</h3>
+                      <p className="text-base font-light text-muted-foreground leading-relaxed">{video.description}</p>
                     </div>
                   )}
                 </div>
