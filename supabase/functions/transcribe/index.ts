@@ -66,8 +66,9 @@ serve(async (req) => {
     });
   }
 
-  // Check authentication and rate limit early
-  const authHeader = req.headers.get("authorization");
+  try {
+    // Check authentication and rate limit early
+    const authHeader = req.headers.get("authorization");
     if (authHeader) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -98,8 +99,6 @@ serve(async (req) => {
         }
       }
     }
-
-  try {
     const body = await req.text();
     
     // Ensure proper UTF-8 handling for international characters
