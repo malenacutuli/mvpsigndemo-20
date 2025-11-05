@@ -972,7 +972,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Button 
               onClick={generateAIDescriptions} 
-              className="w-full" 
+              className="w-full font-light" 
               disabled={isGenerating || isLoading}
               variant="outline"
             >
@@ -991,7 +991,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
             <Button 
               onClick={generateTwelveLabsDescriptions} 
-              className="w-full" 
+              className="w-full font-light" 
               disabled={isGenerating || isLoading}
             >
               {isGenerating && isUsingTwelveLabs ? (
@@ -1013,7 +1013,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             <Button 
               onClick={() => setShowManualForm(!showManualForm)}
               variant="outline"
-              className="flex-1"
+              className="flex-1 font-light"
             >
               <Plus className="w-4 h-4 mr-2" />
               {showManualForm ? 'Cancel' : 'Add Manual Segment'}
@@ -1023,6 +1023,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 onClick={() => saveDescriptionsToDatabase(descriptions)}
                 disabled={isSaving}
                 variant="secondary"
+                className="font-light"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

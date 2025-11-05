@@ -897,7 +897,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 disabled={indexing || status === 'indexing'}
                 size="sm"
                 variant="outline"
-                className="shadow-sm"
+                className="shadow-sm font-light"
               >
                 {indexing ? (
                   <>
@@ -963,6 +963,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               onClick={analyzeSilences}
               disabled={status !== 'ready' || analyzingSilence}
               size="sm"
+              className="font-light"
             >
               {analyzingSilence ? (
                 <>
@@ -982,6 +983,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 disabled={savingSilenceResults}
                 size="sm"
                 variant={hasUnsavedSilenceChanges ? "secondary" : "outline"}
+                className="font-light"
               >
                 {savingSilenceResults ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -998,6 +1000,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   disabled={!videoId}
                   size="sm"
                   variant="outline"
+                  className="font-light"
                 >
                   <AudioLines className="w-4 h-4 mr-1" />
                   Use as Audio Description
@@ -1006,6 +1009,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   onClick={downloadSilenceAnalysis}
                   size="sm"
                   variant="outline"
+                  className="font-light"
                 >
                   <Download className="w-4 h-4 mr-1" />
                   Download Analysis
@@ -1137,6 +1141,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               onClick={analyzeInsights}
               disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
               size="sm"
+              className="font-light"
             >
               {analyzingInsight ? (
                 <>
@@ -1157,6 +1162,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   disabled={savingInsightResults}
                   size="sm"
                   variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
+                  className="font-light"
                 >
                   {savingInsightResults ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -1169,6 +1175,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   onClick={downloadCustomAnalysis}
                   size="sm"
                   variant="outline"
+                  className="font-light"
                 >
                   <Download className="w-4 h-4 mr-1" />
                   Download Analysis
