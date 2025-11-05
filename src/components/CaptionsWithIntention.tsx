@@ -454,34 +454,32 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     });
   }, [captions]);
 
-  // Listen for character color updates from Character Manager
+  // Debounced listener for character color updates
+  const colorUpdateTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevColorsRef = React.useRef<string>('');
+
   useEffect(() => {
-    const loadCharacterColors = () => {
-      const characterColorString = localStorage.getItem('character-colors');
-      if (characterColorString) {
+    const loadColors = () => {
+      const s = localStorage.getItem('character-colors') || '';
+      if (s && s !== prevColorsRef.current) {
         try {
-          const parsedColors = JSON.parse(characterColorString);
-          setCustomSpeakerColors(parsedColors);
-          console.log('🔄 CAPTION COLORS: Loaded character colors from localStorage:', parsedColors);
-        } catch (e) {
-          console.warn('⚠️ Failed to parse character colors from localStorage');
-        }
+          setCustomSpeakerColors(JSON.parse(s));
+          prevColorsRef.current = s;
+        } catch {}
       }
     };
-    
-    // Load on mount
-    loadCharacterColors();
-    
-    // Listen for character color updates
-    const handleCharacterColorsUpdate = (event: CustomEvent) => {
-      console.log('🔄 CAPTION COLORS: Received character colors update event');
-      loadCharacterColors();
+
+    loadColors(); // initial
+
+    const handler = () => {
+      if (colorUpdateTimerRef.current) clearTimeout(colorUpdateTimerRef.current);
+      colorUpdateTimerRef.current = setTimeout(loadColors, 300);
     };
-    
-    window.addEventListener('character-colors-updated', handleCharacterColorsUpdate as EventListener);
-    
+
+    window.addEventListener('character-colors-updated', handler);
     return () => {
-      window.removeEventListener('character-colors-updated', handleCharacterColorsUpdate as EventListener);
+      if (colorUpdateTimerRef.current) clearTimeout(colorUpdateTimerRef.current);
+      window.removeEventListener('character-colors-updated', handler);
     };
   }, []);
 
