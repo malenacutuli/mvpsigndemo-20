@@ -263,31 +263,31 @@ export const ChannelManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{t('channels.title')}</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-light">{t('channels.title')}</h2>
+          <p className="text-muted-foreground font-light">
             {t('channels.subtitle')}
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenDialog()} className="font-light">
               <Plus className="w-4 h-4 mr-2" />
               {t('channels.create')}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="rounded-xl">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-2xl font-light">
                 {editingChannel ? t('channels.edit') : t('channels.createNew')}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="font-light text-base leading-relaxed">
                 {t('channels.description')}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t('channels.avatar')}</Label>
+                <Label className="font-light">{t('channels.avatar')}</Label>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-16 h-16">
                     <AvatarImage src={avatarPreview || undefined} />
@@ -301,11 +301,12 @@ export const ChannelManager: React.FC = () => {
                       variant="outline" 
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
+                      className="font-light"
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       {avatarPreview ? t('channels.changeAvatar') : t('channels.uploadAvatar')}
                     </Button>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-light">
                       {t('channels.avatarHelp')}
                     </p>
                   </div>
@@ -320,7 +321,7 @@ export const ChannelManager: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">{t('channels.name')}</Label>
+                <Label htmlFor="name" className="font-light">{t('channels.name')}</Label>
                 <Input
                   id="name"
                   placeholder={t('channels.namePlaceholder')}
@@ -328,11 +329,12 @@ export const ChannelManager: React.FC = () => {
                   onChange={(e) => 
                     setFormData(prev => ({ ...prev, name: e.target.value }))
                   }
+                  className="font-light"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">{t('channels.descriptionLabel')}</Label>
+                <Label htmlFor="description" className="font-light">{t('channels.descriptionLabel')}</Label>
                 <Textarea
                   id="description"
                   placeholder={t('channels.descriptionPlaceholder')}
@@ -341,15 +343,16 @@ export const ChannelManager: React.FC = () => {
                     setFormData(prev => ({ ...prev, description: e.target.value }))
                   }
                   rows={3}
+                  className="font-light"
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button variant="outline" onClick={() => setOpen(false)} className="font-light">
                 {t('common.cancel')}
               </Button>
-              <Button onClick={handleSave} disabled={uploading}>
+              <Button onClick={handleSave} disabled={uploading} className="font-light">
                 {uploading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                 ) : null}
@@ -361,14 +364,14 @@ export const ChannelManager: React.FC = () => {
       </div>
 
       {channels.length === 0 ? (
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Video className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{t('channels.noChannels')}</h3>
-            <p className="text-muted-foreground text-center mb-4">
+            <h3 className="text-lg font-light mb-2">{t('channels.noChannels')}</h3>
+            <p className="text-muted-foreground text-center mb-4 font-light">
               {t('channels.noChannelsText')}
             </p>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenDialog()} className="font-light">
               <Plus className="w-4 h-4 mr-2" />
               {t('channels.createFirst')}
             </Button>
@@ -377,7 +380,7 @@ export const ChannelManager: React.FC = () => {
       ) : (
         <div className="grid gap-4">
           {channels.map((channel) => (
-            <Card key={channel.id}>
+            <Card key={channel.id} className="rounded-xl">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
@@ -388,13 +391,13 @@ export const ChannelManager: React.FC = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 font-light">
                         {channel.name}
                         {channel.is_public && (
-                          <Badge variant="outline">{t('channels.public')}</Badge>
+                          <Badge variant="outline" className="font-light">{t('channels.public')}</Badge>
                         )}
                       </CardTitle>
-                      <CardDescription className="mt-1">
+                      <CardDescription className="mt-1 font-light">
                         {channel.description || t('channels.noDescription')}
                       </CardDescription>
                     </div>
@@ -404,6 +407,7 @@ export const ChannelManager: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleOpenDialog(channel)}
+                      className="font-light"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -411,6 +415,7 @@ export const ChannelManager: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(channel)}
+                      className="font-light"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -418,7 +423,7 @@ export const ChannelManager: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-6 text-sm text-muted-foreground font-light">
                   <div className="flex items-center gap-1">
                     <Video className="w-4 h-4" />
                     {channel.video_count} {t('channels.videos')}
