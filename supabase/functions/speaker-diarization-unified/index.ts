@@ -156,15 +156,15 @@ serve(async (req) => {
     
     // Continue with normal provider logic only if NOT in testing mode
     if (!useTestingMode) {
-      console.log("🔄 TEMPORARY: Using AssemblyAI as PRIMARY provider for diarization");
+      console.log("🚀 Using AssemblyAI as PRIMARY provider for speaker diarization");
       
       // ============================================================================
-      // PRIORITY 1: ASSEMBLYAI (Temporarily primary)
+      // PRIORITY 1: ASSEMBLYAI (Primary diarization provider)
       // ============================================================================
       const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
       if (ASSEMBLYAI_API_KEY) {
         try {
-          console.log("🟣 PRIORITY 1: Trying AssemblyAI diarization (PRIMARY)...");
+          console.log("🟣 PRIORITY 1: AssemblyAI speaker diarization (PRIMARY)...");
           const { data, error } = await supabase.functions.invoke('speaker-diarization', {
             body: { videoUrl, videoId, force_reanalysis }
           });
@@ -177,10 +177,10 @@ serve(async (req) => {
             throw new Error(error?.message || data?.error || "AssemblyAI failed");
           }
         } catch (assemblyError) {
-          console.warn("⚠️ AssemblyAI failed, trying Deepgram:", assemblyError.message);
+          console.warn("⚠️ AssemblyAI failed, trying fallback providers:", assemblyError.message);
         }
       } else {
-        console.log("⏭️ AssemblyAI API key not configured, skipping");
+        console.error("❌ ASSEMBLYAI_API_KEY not configured - this is required for primary diarization");
       }
       
       // ============================================================================

@@ -285,25 +285,25 @@ serve(async (req) => {
     }
 
     // MEMORY-EFFICIENT PROCESSING STRATEGY
-    // TEMPORARY: AssemblyAI as PRIMARY provider for testing
-    console.log("🔄 TEMPORARY: Using AssemblyAI as PRIMARY provider");
+    // AssemblyAI as PRIMARY provider for all transcription
+    console.log("🚀 Using AssemblyAI as PRIMARY transcription provider");
     
-    // Strategy 1: For all videos, try AssemblyAI FIRST
+    // Strategy 1: For all videos, use AssemblyAI FIRST
     if (sizeMB > 0) {
-      console.log(`🚀 Video detected (${sizeMB}MB). Trying AssemblyAI first (TEMPORARY PRIMARY)...`);
+      console.log(`🚀 Video detected (${sizeMB}MB). Using AssemblyAI as primary provider...`);
       
-      // PRIORITY 1: AssemblyAI (Temporarily primary)
+      // PRIORITY 1: AssemblyAI (Primary transcription provider)
       const ASSEMBLYAI_API_KEY = Deno.env.get("ASSEMBLYAI_API_KEY");
       if (ASSEMBLYAI_API_KEY) {
         try {
-          console.log("🟣 PRIORITY 1: Trying AssemblyAI (PRIMARY)...");
+          console.log("🟣 PRIORITY 1: AssemblyAI transcription (PRIMARY)...");
           const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false);
           if (assemblyResult && !assemblyResult.error) {
-            console.log("✅ AssemblyAI analysis successful!");
+            console.log("✅ AssemblyAI transcription successful!");
             transcriptionResult = {
               ...assemblyResult,
               provider: 'AssemblyAI',
-              // ✅ Explicitly preserve utterances to ensure they're not lost
+              // ✅ Explicitly preserve utterances for speaker diarization
               utterances: assemblyResult.utterances || []
             };
             console.log('✅ AssemblyAI result structure:', {
@@ -316,8 +316,10 @@ serve(async (req) => {
             throw new Error("AssemblyAI returned error or no result");
           }
         } catch (assemblyError) {
-          console.log("AssemblyAI failed, trying Deepgram fallback:", assemblyError instanceof Error ? assemblyError.message : 'Unknown error');
+          console.log("⚠️ AssemblyAI failed, trying fallback providers:", assemblyError instanceof Error ? assemblyError.message : 'Unknown error');
         }
+      } else {
+        console.error("❌ ASSEMBLYAI_API_KEY not configured - this is required for primary transcription");
       }
       
       // PRIORITY 2: Deepgram fallback
