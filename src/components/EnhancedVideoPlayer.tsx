@@ -63,6 +63,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   );
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [characters, setCharacters] = useState<any[]>([]);
+  const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [translatedCaptions, setTranslatedCaptions] = useState<CaptionSegment[] | null>(null);
   const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
   const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
@@ -81,14 +82,27 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [dataVersion, setDataVersion] = useState(0);
   const forceRefresh = () => setDataVersion(v => v + 1);
   
-  const resolveSpeakerColor = (seg: any): string => {
-    // ONLY use character color if character_id is explicitly assigned
-    if ((seg as any).character_id) {
-      return seg.speaker_color || DEFAULT_NEUTRAL;
-    }
-    // For all unassigned speakers, use neutral color
-    return DEFAULT_NEUTRAL;
-  };
+  // Pure color resolver - NEVER reads unstable speaker_color field
+  const resolveSpeakerColor = useMemo(() => {
+    const charById = new Map(characters.map(c => [c.id, c]));
+    const charByName = new Map(characters.map(c => [c.name, c]));
+
+    return function(seg: { speaker?: string; character_id?: string | null }): string {
+      // Priority 1: Direct character_id assignment
+      if (seg.character_id) {
+        const c = charById.get(seg.character_id);
+        if (c?.color) return c.color;
+      }
+      // Priority 2: Speaker mapping to character name
+      if (seg.speaker) {
+        const mappedName = speakerMappings[seg.speaker];
+        const c = mappedName ? charByName.get(mappedName) : undefined;
+        if (c?.color) return c.color;
+      }
+      // Priority 3: Fallback to neutral
+      return DEFAULT_NEUTRAL;
+    };
+  }, [characters, speakerMappings]);
   
   const resolveDisplayName = (seg: any): string => {
     // Prioritize character names, avoid generic "Speaker"
@@ -426,10 +440,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     try {
       const savedMappings = await loadSpeakerMappings(currentLanguage);
       
-      // Mirror DB mappings to localStorage for AxessiblePlayer's Final Mapping Gate
+      // Store mappings in state for pure color resolution
       if (savedMappings && Object.keys(savedMappings).length > 0) {
+        setSpeakerMappings(savedMappings);
         localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(savedMappings));
-        console.log('💾 ENHANCED PLAYER: Mirrored speaker mappings to localStorage:', savedMappings);
+        console.log('💾 ENHANCED PLAYER: Loaded speaker mappings:', savedMappings);
+      } else {
+        setSpeakerMappings({});
       }
       
       // Ensure characters are available on first render
