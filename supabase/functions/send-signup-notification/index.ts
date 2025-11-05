@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -7,6 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Validation schema for signup notification
+const SignupNotificationSchema = z.object({
+  userEmail: z.string().email().max(255),
+  displayName: z.string().max(100).optional(),
+  userId: z.string().uuid(),
+  // Internal auth key to prevent abuse
+  authKey: z.string().min(32).optional(),
+});
 
 interface SignupNotificationRequest {
   userEmail: string;
@@ -23,9 +33,37 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("[SIGNUP-NOTIFICATION] Function started");
     
-    const { userEmail, displayName, userId }: SignupNotificationRequest = await req.json();
+    const rawData = await req.json();
     
-    console.log("[SIGNUP-NOTIFICATION] Processing signup notification", { userEmail, userId });
+    // Validate input
+    const validatedData = SignupNotificationSchema.parse(rawData);
+    const { userEmail, displayName, userId, authKey } = validatedData;
+
+    // Security: Verify internal auth key or service role header
+    const INTERNAL_SIGNUP_KEY = Deno.env.get("INTERNAL_SIGNUP_AUTH_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authHeader = req.headers.get("authorization");
+
+    // Allow if:
+    // 1. Request includes valid internal auth key, OR
+    // 2. Request uses service role key (from Supabase Auth triggers)
+    const isAuthorized = (
+      (authKey && INTERNAL_SIGNUP_KEY && authKey === INTERNAL_SIGNUP_KEY) ||
+      (authHeader && authHeader.includes(serviceRoleKey || ''))
+    );
+
+    if (!isAuthorized) {
+      console.warn("[SIGNUP-NOTIFICATION] Unauthorized request attempt");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { 
+          status: 401, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+    
+    console.log("[SIGNUP-NOTIFICATION] Processing authorized signup notification", { userEmail, userId });
 
     const emailResponse = await resend.emails.send({
       from: "Axessible <no-reply@axessvideo.com>",

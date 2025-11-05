@@ -1,10 +1,19 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const AnalysisRequestSchema = z.object({
+  videoUrl: z.string().url().max(2048),
+  videoId: z.string().uuid(),
+  language: z.string().length(2).optional(),
+});
 
 interface TwelveLabsSegment {
   text: string;
@@ -27,10 +36,41 @@ serve(async (req) => {
   }
 
   try {
-    const { videoUrl, videoId: inputVideoId, language } = await req.json();
-    
-    if (!videoUrl) {
-      throw new Error('Video URL is required');
+    // Verify JWT authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      throw new Error("Missing authorization header");
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Parse and validate input
+    const rawData = await req.json();
+    const validatedData = AnalysisRequestSchema.parse(rawData);
+    const { videoUrl, videoId: inputVideoId, language } = validatedData;
+
+    // Verify video ownership
+    const { data: video, error: videoError } = await supabase
+      .from("videos")
+      .select("user_id")
+      .eq("id", inputVideoId)
+      .single();
+
+    if (videoError || !video) {
+      throw new Error("Video not found");
+    }
+
+    if (video.user_id !== user.id) {
+      throw new Error("Unauthorized: You do not own this video");
     }
 
     const twelveLabsApiKey = Deno.env.get('TWELVE_LABS_API_KEY');
@@ -308,17 +348,21 @@ serve(async (req) => {
       stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined // Truncate stack trace
     });
     
-    // Skipping index cleanup on error to avoid scope issues; indexes auto-expire
-
+    // Return validation errors with 400 status for Zod errors
+    const statusCode = error.name === 'ZodError' ? 400 : 
+                       error.message.includes('Unauthorized') ? 401 : 
+                       error.message.includes('not found') ? 404 : 500;
+    const errorMessage = error.name === 'ZodError' ? 'Invalid input data' :
+                        error instanceof Error ? error.message : 'Unknown error';
     
     // Return error as 200 response so client can handle gracefully
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Twelve Labs analysis failed',
+      error: errorMessage,
       errorType: 'twelve_labs_error',
       details: error instanceof Error ? error.toString() : String(error),
       fallbackToWhisper: true
     }), {
-      status: 200, // Return 200 so client receives the error details
+      status: statusCode >= 500 ? 200 : statusCode, // Return 200 for server errors so client handles gracefully
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

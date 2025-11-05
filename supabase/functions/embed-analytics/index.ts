@@ -8,6 +8,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiter (for production, use Redis or similar)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute per IP
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    // New window or expired
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+
+  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count };
+}
+
+// Cleanup old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now > record.resetTime + 60000) { // 1 minute grace period
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 300000);
+
 interface AnalyticsPayload {
   video_id: string;
   embed_token?: string;
@@ -37,6 +70,33 @@ serve(async (req) => {
       );
     }
 
+    // Get client IP for rate limiting
+    const client_ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+                      req.headers.get('x-real-ip') || 
+                      'unknown';
+
+    // Apply rate limiting
+    const rateCheck = checkRateLimit(client_ip);
+    if (!rateCheck.allowed) {
+      console.warn('⚠️ Rate limit exceeded for IP:', client_ip);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again later.',
+          retryAfter: 60 
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': '60',
+            'X-RateLimit-Limit': String(RATE_LIMIT_MAX_REQUESTS),
+            'X-RateLimit-Remaining': '0'
+          } 
+        }
+      );
+    }
+
     const payload: AnalyticsPayload = await req.json();
     const { 
       video_id, 
@@ -50,7 +110,12 @@ serve(async (req) => {
       device_type 
     } = payload;
 
-    console.log('📊 Processing embed analytics:', { video_id, event_type, referrer_domain });
+    console.log('📊 Processing embed analytics:', { 
+      video_id, 
+      event_type, 
+      referrer_domain, 
+      rateLimit: { remaining: rateCheck.remaining } 
+    });
 
     // Validate required fields
     if (!video_id || !event_type) {
@@ -166,7 +231,7 @@ serve(async (req) => {
 
     console.log('✅ Analytics recorded successfully');
 
-    // Return success response
+    // Return success response with rate limit headers
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -176,7 +241,12 @@ serve(async (req) => {
       }),
       { 
         status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': String(RATE_LIMIT_MAX_REQUESTS),
+          'X-RateLimit-Remaining': String(rateCheck.remaining)
+        } 
       }
     );
 
