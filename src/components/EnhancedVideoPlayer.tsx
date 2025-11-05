@@ -1337,10 +1337,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           </Card>
 
           {/* Integrated Speaker & Character Management inside Transcript tab */}
-          <Card className="shadow-soft border-border">
+          <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-light text-foreground">Speaker & Character Management</CardTitle>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <CardTitle className="text-2xl font-light text-foreground">Speaker & Character Management</CardTitle>
+              <p className="text-base font-light text-muted-foreground leading-relaxed">
                 Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
               </p>
             </CardHeader>

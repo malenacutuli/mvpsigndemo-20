@@ -1353,6 +1353,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={isGenerating}
             size="sm"
             variant="outline"
+            className="font-light"
           >
             <Mic className="w-4 h-4 mr-2" />
             {isGenerating ? 'Extracting Full Transcript...' : 'Extract Complete Transcript'}
@@ -1363,6 +1364,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={editingTranscript.length === 0}
             size="sm"
             variant="default"
+            className="font-light"
           >
             <Save className="w-4 h-4 mr-2" />
             Save Changes to Video

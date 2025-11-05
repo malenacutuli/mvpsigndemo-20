@@ -646,15 +646,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     characters.filter(c => c.type === type);
 
   return (
-    <Card className="w-full">
+    <Card className="w-full rounded-xl shadow-soft border">
       <CardHeader>
-        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
+        <CardTitle className="text-2xl font-light text-foreground flex items-center gap-2">
           <Palette className="w-5 h-5" />
           Character Color Attribution
         </CardTitle>
-        <Card className="border-primary/20 bg-primary/5 mt-3">
+        <Card className="border-primary/20 bg-primary/5 mt-3 rounded-xl">
           <CardContent className="p-4">
-            <p className="text-sm font-light leading-relaxed">
+            <p className="text-base font-light leading-relaxed">
               Assign colors to characters following the Captions with Intention protocol.
             </p>
           </CardContent>
@@ -663,15 +663,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       <CardContent className="space-y-6">
         {/* Speaker Mapping Section */}
         {characters.length > 0 && (
-          <Card className="border-orange-200/50 bg-orange-50/30">
+          <Card className="border-orange-200/50 bg-orange-50/30 rounded-xl">
             <CardContent className="p-4 space-y-3">
-              <h4 className="font-medium text-orange-800">
+              <h4 className="text-lg font-light text-orange-800">
                 Speaker Assignment
               </h4>
-              <p className="text-sm font-light leading-relaxed text-orange-700">
+              <p className="text-base font-light leading-relaxed text-orange-700">
                 Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
               </p>
-              <div className="text-xs text-orange-600 bg-orange-100/80 p-3 rounded-lg border border-orange-200">
+              <div className="text-sm font-light text-orange-600 bg-orange-100/80 p-3 rounded-lg border border-orange-200">
                 <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
               </div>
               <div className="space-y-2">
@@ -721,14 +721,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         )}
 
 
-        <Card className="border-accent/30 bg-accent/5">
+        <Card className="border-accent/30 bg-accent/5 rounded-xl">
           <CardContent className="p-4">
             <div className="flex justify-between items-center">
               <div>
-                <h4 className="font-medium text-foreground">Character Management</h4>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
+                <h4 className="text-lg font-light text-foreground">Character Management</h4>
+                <p className="text-base text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
               </div>
-              <Button onClick={saveAllCharacters} size="sm" variant="default">
+              <Button onClick={saveAllCharacters} size="sm" variant="default" className="font-light">
                 <Save className="w-4 h-4 mr-2" />
                 Save All Changes
               </Button>
@@ -737,15 +737,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
 
         {/* Add New Character */}
-        <Card className="border-accent/30 bg-accent/5">
+        <Card className="border-accent/30 bg-accent/5 rounded-xl">
           <CardContent className="p-4 space-y-3">
-            <h4 className="font-medium text-foreground flex items-center gap-2">
+            <h4 className="text-lg font-light text-foreground flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add New Character
             </h4>
             <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label className="text-xs">Name</Label>
+              <Label className="text-sm font-light">Name</Label>
               <Input
                 value={newCharacterName}
                 onChange={(e) => setNewCharacterName(e.target.value)}
@@ -755,7 +755,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               />
             </div>
             <div>
-              <Label className="text-xs">Type</Label>
+              <Label className="text-sm font-light">Type</Label>
               <Select value={newCharacterType} onValueChange={(value) => setNewCharacterType(value as Character['type'])}>
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -770,7 +770,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               </Select>
             </div>
             <div className="flex items-end">
-              <Button onClick={addCharacter} size="sm" className="h-8">
+              <Button onClick={addCharacter} size="sm" className="h-8 font-light">
                 <Plus className="w-4 h-4" />
                 Add
               </Button>
@@ -786,14 +786,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
           return (
             <div key={type} className="space-y-2">
-              <h4 className="font-medium capitalize flex items-center gap-2">
+              <h4 className="text-lg font-light capitalize flex items-center gap-2">
                 {getCharacterTypeIcon(type as Character['type'])}
                 {type} Characters
               </h4>
               <div className="space-y-4">
                 {typeCharacters.map(character => {
                   return (
-                    <div key={character.id} className="p-4 bg-accent/5 rounded border space-y-4">
+                    <div key={character.id} className="p-4 bg-accent/5 rounded-xl border space-y-4">
                       {/* Character Header */}
                       <div className="flex items-center gap-3">
                         <div 
@@ -833,7 +833,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                        <div className="grid grid-cols-3 gap-4">
                          {/* Character Type */}
                          <div className="space-y-2">
-                           <Label className="text-xs">Character Type</Label>
+                           <Label className="text-sm font-light">Character Type</Label>
                            <Select
                              value={character.type}
                              onValueChange={(type) => {
@@ -860,7 +860,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                          {/* Color Selection */}
                          <div className="space-y-2">
-                           <Label className="text-xs">Color</Label>
+                           <Label className="text-sm font-light">Color</Label>
                            <Select
                              value={character.color}
                              onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
@@ -886,12 +886,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                          {/* Off-Camera Toggle */}
                          <div className="space-y-2">
-                           <Label className="text-xs">Camera Status</Label>
+                           <Label className="text-sm font-light">Camera Status</Label>
                            <Button
                              size="sm"
                              variant={character.isOffCamera ? "default" : "outline"}
                              onClick={() => updateCharacterProperty(character.id, 'isOffCamera', !character.isOffCamera)}
-                             className="h-8 w-full"
+                             className="h-8 w-full font-light"
                            >
                              {character.isOffCamera ? 'Off-Camera' : 'On-Camera'}
                            </Button>
@@ -902,7 +902,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                        <div className="grid grid-cols-2 gap-4">
                          {/* Emphasis */}
                          <div className="space-y-2">
-                           <Label className="text-xs">Emphasis</Label>
+                           <Label className="text-sm font-light">Emphasis</Label>
                            <Select
                              value={character.emphasis || 'normal'}
                              onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
@@ -920,7 +920,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                          {/* Pitch */}
                          <div className="space-y-2">
-                           <Label className="text-xs">Pitch</Label>
+                           <Label className="text-sm font-light">Pitch</Label>
                            <Select
                              value={character.pitch || 'normal'}
                              onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
@@ -939,7 +939,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                       {/* Voice Selection */}
                       <div className="space-y-2">
-                        <Label className="text-xs">Voice Assignment</Label>
+                        <Label className="text-sm font-light">Voice Assignment</Label>
                         <VoiceSelector
                           selectedVoiceId={character.voiceId}
                           onVoiceSelect={(voiceId, voiceName, voiceType) => 
@@ -959,16 +959,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         {characters.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No characters added yet</p>
-            <p className="text-sm">Add characters to enable color-coded captions</p>
+            <p className="text-base font-light">No characters added yet</p>
+            <p className="text-sm font-light">Add characters to enable color-coded captions</p>
           </div>
         )}
 
         {/* Color Guidelines */}
         <Separator />
-        <div className="text-xs text-muted-foreground space-y-2">
-          <h5 className="font-medium text-foreground">Color Guidelines:</h5>
-          <ul className="space-y-1 pl-4">
+        <div className="text-sm text-muted-foreground space-y-2 font-light">
+          <h5 className="text-base font-light text-foreground">Color Guidelines:</h5>
+          <ul className="space-y-1 pl-4 leading-relaxed">
             <li>• Main characters use the 6 primary spectrum colors</li>
             <li>• Supporting characters use colors between main character colors</li>
             <li>• Minor characters use pastel tones from the center of the color wheel</li>

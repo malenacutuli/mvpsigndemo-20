@@ -740,6 +740,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   <Button 
                     onClick={extractTranscript}
                     disabled={isExtracting || !videoUrl}
+                    className="font-light"
                   >
                     {isExtracting ? (useTestingMode ? '🧪 Testing...' : 'Extracting…') : 'Extract Complete Transcript'}
                   </Button>
@@ -747,6 +748,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                     variant="secondary" 
                     onClick={saveTranscript}
                     disabled={isSaving || segments.length === 0}
+                    className="font-light"
                   >
                     Save Changes to Video
                   </Button>
