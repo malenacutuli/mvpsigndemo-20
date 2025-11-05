@@ -310,14 +310,14 @@ const Index = () => {
                   alt="Axessible"
                   className="h-8 w-auto"
                 />
-                <span className="text-sm text-muted-foreground">{t('footer.tagline')}</span>
+                <span className="text-base font-light text-muted-foreground leading-relaxed">{t('footer.tagline')}</span>
               </div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
               <div>
                 <h3 className="font-light text-foreground mb-4">{t('footer.about')}</h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-base font-light">
                   <Link to="/enterprise" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.enterprise')}</Link>
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.community')}</Link>
                   <Link to="/pricing" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.pricing')}</Link>
@@ -326,7 +326,7 @@ const Index = () => {
               
               <div>
                 <h3 className="font-light text-foreground mb-4">{t('common.feature')}</h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-base font-light">
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.explore')}</Link>
                   <Link to="/upload" className="block text-muted-foreground hover:text-primary transition-colors">{t('common.upload')}</Link>
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
@@ -336,7 +336,7 @@ const Index = () => {
               
               <div>
                 <h3 className="font-light text-foreground mb-4">{t('footer.contact')}</h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-base font-light">
                   <Link to="/contact" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link>
                   <Link to="/accessibility-statement" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.accessibilityStatement')}</Link>
                 </div>
@@ -344,14 +344,14 @@ const Index = () => {
               
               <div>
                 <h3 className="font-light text-foreground mb-4">{t('footer.terms')}</h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-base font-light">
                   <Link to="/terms" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link>
                   <Link to="/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link>
                 </div>
               </div>
             </div>
             
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-center text-base font-light text-muted-foreground">
               <p>{t('footer.copyright')}</p>
             </div>
           </div>
