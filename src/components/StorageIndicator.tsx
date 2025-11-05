@@ -33,19 +33,19 @@ export const StorageIndicator: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-xl">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg font-light flex items-center gap-2">
           <HardDrive className="w-5 h-5" />
           {t('dashboard.storage.title')}
           {storageUsage.isOverLimit && (
-            <Badge variant="destructive" className="ml-2">
+            <Badge variant="destructive" className="ml-2 font-light">
               <AlertTriangle className="w-3 h-3 mr-1" />
               {t('dashboard.storage.overLimit')}
             </Badge>
           )}
           {storageUsage.isNearLimit && !storageUsage.isOverLimit && (
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="secondary" className="ml-2 font-light">
               <TrendingUp className="w-3 h-3 mr-1" />
               {t('dashboard.storage.nearlyFull')}
             </Badge>
@@ -55,7 +55,7 @@ export const StorageIndicator: React.FC = () => {
       
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-base font-light">
             <span className={getStatusColor()}>
               {t('dashboard.storage.usedOfTotal', { used: formatBytes(storageUsage.totalUsed), total: '100GB' })}
             </span>
@@ -71,17 +71,17 @@ export const StorageIndicator: React.FC = () => {
         </div>
 
         {storageUsage.isOverLimit && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div className="text-red-800 text-sm font-medium mb-2">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <div className="text-red-800 text-base font-light mb-2">
               {t('dashboard.storage.overLimitTitle')}
             </div>
-            <p className="text-red-700 text-xs mb-3">
+            <p className="text-red-700 text-sm font-light mb-3 leading-relaxed">
               {t('dashboard.storage.overLimitDesc')}
             </p>
             <Button 
               size="sm" 
               onClick={() => navigate('/pricing')}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 font-light"
             >
               {t('dashboard.storage.upgradeStandard')}
             </Button>
@@ -89,18 +89,18 @@ export const StorageIndicator: React.FC = () => {
         )}
 
         {storageUsage.isNearLimit && !storageUsage.isOverLimit && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <div className="text-amber-800 text-sm font-medium mb-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <div className="text-amber-800 text-base font-light mb-2">
               {t('dashboard.storage.nearlyFullTitle')}
             </div>
-            <p className="text-amber-700 text-xs mb-3">
+            <p className="text-amber-700 text-sm font-light mb-3 leading-relaxed">
               {t('dashboard.storage.nearlyFullDesc')}
             </p>
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => navigate('/pricing')}
-              className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="border-amber-300 text-amber-700 hover:bg-amber-100 font-light"
             >
               {t('dashboard.storage.viewUpgradeOptions')}
             </Button>
@@ -108,12 +108,12 @@ export const StorageIndicator: React.FC = () => {
         )}
 
         {!storageUsage.isNearLimit && !storageUsage.isOverLimit && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-sm font-light text-muted-foreground leading-relaxed">
             {t('dashboard.storage.onStarter')}
             <Button 
               variant="link" 
               size="sm" 
-              className="p-0 h-auto text-xs ml-1"
+              className="p-0 h-auto text-sm font-light ml-1"
               onClick={() => navigate('/pricing')}
             >
               {t('dashboard.storage.viewOtherPlans')}

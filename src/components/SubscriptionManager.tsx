@@ -43,15 +43,15 @@ export const SubscriptionManager: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="min-w-0">
+      <Card className="min-w-0 rounded-xl">
         <CardHeader>
         <div className="flex items-center justify-between min-w-0">
           <div className="min-w-0 flex-1">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2 text-lg font-light">
               <CreditCard className="w-4 h-4 flex-shrink-0" />
               <span className="truncate">{t('dashboard.subscription.title')}</span>
             </CardTitle>
-            <CardDescription className="text-sm truncate">
+            <CardDescription className="text-base font-light truncate leading-relaxed">
               {t('dashboard.subscription.manageDesc')}
             </CardDescription>
           </div>
@@ -60,7 +60,7 @@ export const SubscriptionManager: React.FC = () => {
             size="sm"
             onClick={checkSubscription}
             disabled={loading}
-            className="flex-shrink-0 ml-2"
+            className="flex-shrink-0 ml-2 font-light"
             aria-label={t('common.refresh')}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -70,16 +70,16 @@ export const SubscriptionManager: React.FC = () => {
       
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between min-w-0">
-          <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.statusLabel')}</span>
-          <Badge variant={getStatusColor()} className="ml-2 text-xs">
+          <span className="text-base font-light flex-shrink-0">{t('dashboard.subscription.statusLabel')}</span>
+          <Badge variant={getStatusColor()} className="ml-2 text-sm font-light">
             <span className="truncate">{getStatusText()}</span>
           </Badge>
         </div>
 
         {subscribed && subscription_tier && (
           <div className="flex items-center justify-between min-w-0">
-            <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.planLabel')}</span>
-            <Badge variant="outline" className="ml-2 text-xs">
+            <span className="text-base font-light flex-shrink-0">{t('dashboard.subscription.planLabel')}</span>
+            <Badge variant="outline" className="ml-2 text-sm font-light">
               <span className="truncate">{subscription_tier}</span>
             </Badge>
           </div>
@@ -87,8 +87,8 @@ export const SubscriptionManager: React.FC = () => {
 
         {subscription_end && (
           <div className="flex items-center justify-between min-w-0">
-            <span className="text-sm font-medium flex-shrink-0">{t('dashboard.subscription.nextBilling')}</span>
-            <div className="flex items-center gap-1 text-xs ml-2 min-w-0">
+            <span className="text-base font-light flex-shrink-0">{t('dashboard.subscription.nextBilling')}</span>
+            <div className="flex items-center gap-1 text-sm font-light ml-2 min-w-0">
               <Calendar className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{formatDate(subscription_end)}</span>
             </div>
@@ -100,19 +100,19 @@ export const SubscriptionManager: React.FC = () => {
             <Button 
               onClick={openCustomerPortal}
               disabled={loading}
-              className="w-full"
+              className="w-full font-light"
             >
               {t('dashboard.subscription.manageButton')}
             </Button>
           ) : (
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-base font-light text-muted-foreground mb-3 leading-relaxed">
                 {t('dashboard.subscription.noActive')}
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => window.location.href = '/pricing'}
-                className="w-full"
+                className="w-full font-light"
               >
                 {t('dashboard.subscription.viewPlans')}
               </Button>

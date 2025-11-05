@@ -66,13 +66,13 @@ export const UsageDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-light">
             <Clock className="w-5 h-5" />
             Usage Dashboard
           </CardTitle>
-          <CardDescription>Loading your usage data...</CardDescription>
+          <CardDescription className="text-base font-light leading-relaxed">Loading your usage data...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -103,21 +103,21 @@ export const UsageDashboard: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-light">
               <Clock className="w-5 h-5" />
               Usage Dashboard
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base font-light leading-relaxed">
               Current billing cycle: {formatDate(usage.billingCycle.start)} 
               {usage.billingCycle.end && ` - ${formatDate(usage.billingCycle.end)}`}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="capitalize">
+            <Badge variant="outline" className="capitalize font-light">
               {usage.tier} Plan
             </Badge>
             <Button
@@ -125,6 +125,7 @@ export const UsageDashboard: React.FC = () => {
               size="sm"
               onClick={fetchUsage}
               disabled={loading}
+              className="font-light"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
@@ -135,11 +136,11 @@ export const UsageDashboard: React.FC = () => {
       <CardContent className="space-y-6">
         {/* Warning for approaching limit */}
         {usage.approachingLimit && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium text-amber-900">Approaching Usage Limit</p>
-              <p className="text-amber-700">
+            <div className="text-base font-light">
+              <p className="font-light text-amber-900 mb-1">Approaching Usage Limit</p>
+              <p className="text-amber-700 leading-relaxed">
                 You've used {Math.round(minutesPercent)}% of your included processing minutes. 
                 Consider upgrading your plan to avoid overage charges.
               </p>
@@ -149,20 +150,20 @@ export const UsageDashboard: React.FC = () => {
 
         {/* Processing Minutes */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-base font-light">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium">Processing Minutes</span>
+              <span className="font-light">Processing Minutes</span>
             </div>
             <span className="text-muted-foreground">
               {usage.usage.minutesUsed} / {usage.usage.minutesIncluded} min
             </span>
           </div>
           <Progress value={minutesPercent} className="h-2" />
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-sm font-light text-muted-foreground">
             <span>{usage.usage.minutesRemaining} minutes remaining</span>
             {usage.costs.overageMinutes > 0 && (
-              <span className="text-destructive font-medium">
+              <span className="text-destructive font-light">
                 +{usage.costs.overageMinutes} min overage (€{usage.costs.overageCostEUR.toFixed(2)})
               </span>
             )}
@@ -171,17 +172,17 @@ export const UsageDashboard: React.FC = () => {
 
         {/* Storage */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-base font-light">
             <div className="flex items-center gap-2">
               <Database className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium">Storage</span>
+              <span className="font-light">Storage</span>
             </div>
             <span className="text-muted-foreground">
               {usage.usage.storageUsedGB.toFixed(1)} / {usage.usage.storageLimitGB} GB
             </span>
           </div>
           <Progress value={storagePercent} className="h-2" />
-          <div className="text-xs text-muted-foreground">
+          <div className="text-sm font-light text-muted-foreground">
             {usage.usage.storageRemainingGB.toFixed(1)} GB remaining
           </div>
         </div>
@@ -189,22 +190,22 @@ export const UsageDashboard: React.FC = () => {
         {/* Usage Breakdown */}
         {usage.breakdown.length > 0 && (
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-medium">Usage Breakdown</h4>
+            <h4 className="text-base font-light">Usage Breakdown</h4>
             <div className="space-y-2">
               {usage.breakdown.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-sm">
+                <div key={idx} className="flex items-center justify-between text-base font-light">
                   <div className="flex-1">
                     <span className="text-muted-foreground capitalize">
                       {item.type.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-xs text-muted-foreground ml-2">
+                    <span className="text-sm font-light text-muted-foreground ml-2">
                       ({item.count} calls)
                     </span>
                   </div>
                   <div className="text-right">
                     <div>{item.minutes.toFixed(1)} min</div>
                     {item.estimatedCost > 0 && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm font-light text-muted-foreground">
                         €{item.estimatedCost.toFixed(2)}
                       </div>
                     )}
@@ -218,7 +219,7 @@ export const UsageDashboard: React.FC = () => {
         {/* Overage Info */}
         {usage.costs.overageRateEUR > 0 && (
           <div className="pt-4 border-t">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-light text-muted-foreground leading-relaxed">
               Overage rate: €{usage.costs.overageRateEUR.toFixed(2)} per minute beyond included quota
             </p>
           </div>
