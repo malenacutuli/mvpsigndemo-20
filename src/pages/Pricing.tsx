@@ -154,7 +154,7 @@ export default function Pricing() {
     if (typeof value === 'boolean') {
       return value ? <Check className="w-4 h-4 text-green-600" /> : <span className="text-muted-foreground">—</span>;
     }
-    return <span className="text-sm">{value}</span>;
+    return <span className="text-base font-light">{value}</span>;
   };
 
   return (
@@ -170,7 +170,7 @@ export default function Pricing() {
           <p className="text-lg md:text-xl text-muted-foreground font-light mb-2 leading-relaxed">
             {t('pricing.subtitle')}
           </p>
-          <p className="text-sm text-muted-foreground font-light">
+          <p className="text-base md:text-lg text-muted-foreground font-light leading-relaxed">
             {t('pricing.disclaimer')}
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function Pricing() {
           {plans.map((plan) => (
             <Card 
               key={plan.key} 
-              className={`relative flex flex-col ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
+              className={`relative flex flex-col rounded-xl ${plan.highlight ? 'ring-2 ring-primary shadow-lg scale-105' : ''} ${
                 subscribed && subscription_tier === plan.name ? 'ring-2 ring-green-500' : ''
               }`}
             >
@@ -197,18 +197,18 @@ export default function Pricing() {
               )}
               
               <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2">
+                <CardTitle className="flex items-center justify-center gap-2 text-2xl font-light">
                   <span>{plan.name}</span>
                   {plan.highlight && <Star className="w-5 h-5 text-primary" />}
                 </CardTitle>
                 <div className="mt-4">
                   <div className="text-3xl md:text-4xl font-light text-center text-foreground">{plan.price}</div>
-                  <div className="text-sm text-muted-foreground font-light text-center mt-1">{plan.cadence}</div>
+                  <div className="text-base text-muted-foreground font-light text-center mt-1">{plan.cadence}</div>
                   {plan.trial && (
-                    <div className="text-sm text-primary font-light text-center mt-1">{plan.trial}</div>
+                    <div className="text-base text-primary font-light text-center mt-1">{plan.trial}</div>
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground text-center mt-2">
+                <div className="text-base text-muted-foreground font-light text-center mt-2">
                   {plan.storage}
                 </div>
               </CardHeader>
@@ -217,7 +217,7 @@ export default function Pricing() {
                 <div className="flex-1">
                   <ul className="space-y-3 mb-6 text-left">
                     {plan.features.map((feature: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
+                      <li key={index} className="flex items-start gap-2 text-base font-light">
                         <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                         <span className="leading-relaxed">{feature}</span>
                       </li>
@@ -226,7 +226,7 @@ export default function Pricing() {
                 </div>
 
                 <Button 
-                  className="w-full" 
+                  className="w-full font-light" 
                   variant={plan.highlight ? "default" : "outline"}
                   onClick={() => handlePlanAction(plan.key, plan.name)}
                   disabled={planLoading === plan.key || (subscribed && subscription_tier === plan.name)}
@@ -268,7 +268,7 @@ export default function Pricing() {
                     </tr>
                     {category.features.map((feature, index) => (
                       <tr key={index} className="border-b hover:bg-muted/20">
-                        <td className="p-4 text-sm font-light">{feature.name}</td>
+                        <td className="p-4 text-base font-light">{feature.name}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.starter)}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.standard)}</td>
                         <td className="p-4 text-center">{renderFeatureValue(feature.advanced)}</td>
@@ -285,12 +285,13 @@ export default function Pricing() {
         {/* FAQ Section */}
         <div className="mt-16 text-center max-w-2xl mx-auto">
           <h3 className="text-2xl md:text-3xl font-light mb-4 text-foreground">{t('pricing.questionsAboutPricing')}</h3>
-          <p className="text-muted-foreground font-light mb-6 leading-relaxed">
+          <p className="text-base md:text-lg text-muted-foreground font-light mb-6 leading-relaxed">
             {t('pricing.teamHelpChoose')}
           </p>
           <Button 
             variant="outline"
             size="lg"
+            className="font-light"
             onClick={() => window.open('mailto:sales@axessible.com?subject=Pricing Questions', '_blank')}
           >
             {t('pricing.contactUs')}
