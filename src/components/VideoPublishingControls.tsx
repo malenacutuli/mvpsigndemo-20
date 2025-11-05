@@ -320,7 +320,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
     return (
       <TooltipProvider>
         <div className="flex items-center gap-2 w-full">
-          <Button asChild size="sm" variant="outline" className="flex-1">
+          <Button asChild size="sm" variant="outline" className="flex-1 font-light">
             <span className="flex items-center justify-center gap-1">
               <Globe className="w-3 h-3" />
               Published
@@ -333,13 +333,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 size="sm"
                 onClick={() => setShowReplaceDialog(true)}
                 disabled={loading}
-                className="px-3"
+                className="px-3 font-light"
               >
                 <Replace className="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Replace video</p>
+              <p className="font-light">Replace video</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -349,13 +349,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 size="sm"
                 onClick={handleUnpublish}
                 disabled={loading}
-                className="px-3"
+                className="px-3 font-light"
               >
                 <EyeOff className="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Unpublish</p>
+              <p className="font-light">Unpublish</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -365,13 +365,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 size="sm"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-3"
+                className="px-3 font-light"
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Delete video</p>
+              <p className="font-light">Delete video</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -387,10 +387,10 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
             <>
               <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md flex-1">
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                <span className="text-sm text-blue-700">
+                <span className="text-sm font-light text-blue-700">
                   {videoStatus === 'uploading' ? 'Uploading...' : 'Processing...'}
                 </span>
-                <Button variant="ghost" size="sm" onClick={onUpdate}>↻</Button>
+                <Button variant="ghost" size="sm" onClick={onUpdate} className="font-light">↻</Button>
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -399,13 +399,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                     size="sm"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="px-3"
+                    className="px-3 font-light"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete video</p>
+                  <p className="font-light">Delete video</p>
                 </TooltipContent>
               </Tooltip>
             </>
@@ -414,7 +414,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
               <Button
                 variant="outline"
                 onClick={() => setEditingComplete(true)}
-                className="flex-1"
+                className="flex-1 font-light"
               >
                 ✓ Done Editing
               </Button>
@@ -425,13 +425,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                     size="sm"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="px-3"
+                    className="px-3 font-light"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete video</p>
+                  <p className="font-light">Delete video</p>
                 </TooltipContent>
               </Tooltip>
             </>
@@ -439,25 +439,26 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
             <>
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button className="flex-1">
+                  <Button className="flex-1 font-light">
                     Publish to Channel
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[500px] rounded-xl">
                   <DialogHeader>
-                    <DialogTitle>Publish to Channel</DialogTitle>
+                    <DialogTitle className="text-2xl font-light">Publish to Channel</DialogTitle>
                   </DialogHeader>
 
                   <div className="space-y-4">
                     {/* Channel Selection */}
                     {channels.length === 0 && !showChannelCreation ? (
-                      <div className="text-center p-4 border border-dashed rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-3">
+                      <div className="text-center p-4 border border-dashed rounded-xl">
+                        <p className="text-base font-light text-muted-foreground mb-3 leading-relaxed">
                           Create a channel to publish your video.
                         </p>
                         <Button
                           variant="outline"
                           onClick={() => setShowChannelCreation(true)}
+                          className="font-light"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Create Channel
@@ -465,7 +466,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                       </div>
                     ) : showChannelCreation ? (
                       <div className="space-y-3">
-                        <Label>Create New Channel</Label>
+                        <Label className="font-light">Create New Channel</Label>
                         <Input
                           value={newChannel.name}
                           onChange={(e) => setNewChannel(prev => ({ ...prev, name: e.target.value }))}
@@ -482,6 +483,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                             onClick={createChannel}
                             disabled={!newChannel.name.trim() || loading}
                             size="sm"
+                            className="font-light"
                           >
                             {loading ? "Creating..." : "Create"}
                           </Button>
@@ -489,6 +491,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                             variant="outline"
                             onClick={() => setShowChannelCreation(false)}
                             size="sm"
+                            className="font-light"
                           >
                             Cancel
                           </Button>
@@ -496,7 +499,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <Label>Channel</Label>
+                        <Label className="font-light">Channel</Label>
                         <Select
                           value={formData.channelId}
                           onValueChange={(value) => setFormData(prev => ({ ...prev, channelId: value }))}
@@ -516,6 +519,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowChannelCreation(true)}
+                          className="font-light"
                         >
                           <Plus className="w-3 h-3 mr-1" />
                           New Channel
@@ -524,7 +528,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                     )}
 
                     <div className="space-y-3">
-                      <Label>Description (optional)</Label>
+                      <Label className="font-light">Description (optional)</Label>
                       <Textarea
                         value={formData.description}
                         onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -542,12 +546,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>
+                    <Button variant="outline" onClick={() => setOpen(false)} className="font-light">
                       Cancel
                     </Button>
                     <Button
                       onClick={handlePublish}
                       disabled={loading || formData.channelId === 'none'}
+                      className="font-light"
                     >
                       {loading ? "Publishing..." : "Publish"}
                     </Button>
@@ -561,13 +566,13 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                     size="sm"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="px-3"
+                    className="px-3 font-light"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete video</p>
+                  <p className="font-light">Delete video</p>
                 </TooltipContent>
               </Tooltip>
             </>
@@ -577,17 +582,17 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
 
       {/* Video Replacement Dialog */}
       <Dialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Replace Video</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-light">Replace Video</DialogTitle>
+            <DialogDescription className="text-base font-light leading-relaxed">
               Upload a new video file to replace the current one. The same video ID and metadata will be kept.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-3">
-              <Label>Select New Video File</Label>
+              <Label className="font-light">Select New Video File</Label>
               <Input
                 type="file"
                 accept="video/*"
@@ -600,15 +605,15 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 className="cursor-pointer"
               />
               {replacementFile && (
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm font-light text-muted-foreground leading-relaxed">
                   Selected: {replacementFile.name} ({(replacementFile.size / 1024 / 1024).toFixed(2)} MB)
                 </div>
               )}
             </div>
 
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">What happens when you replace:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+            <div className="bg-muted/50 p-4 rounded-xl">
+              <h4 className="font-light mb-2">What happens when you replace:</h4>
+              <ul className="text-sm font-light text-muted-foreground space-y-1 leading-relaxed">
                 <li>• The video file will be updated</li>
                 <li>• Same URL and embed links will continue to work</li>
                 <li>• Video will be reprocessed (may take a few minutes)</li>
@@ -624,12 +629,14 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 setShowReplaceDialog(false);
                 setReplacementFile(null);
               }}
+              className="font-light"
             >
               Cancel
             </Button>
             <Button
               onClick={handleReplace}
               disabled={!replacementFile || replacing}
+              className="font-light"
             >
               {replacing ? (
                 <>
