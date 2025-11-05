@@ -1369,10 +1369,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             </CardContent>
           </Card>
           
-          <Card className="shadow-soft border-border">
+          <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-light text-foreground">Audio Description Generation</CardTitle>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Audio Description Generation</CardTitle>
+              <p className="text-base font-light text-muted-foreground leading-relaxed">
                 Enable audio descriptions for visual elements in the video.
               </p>
             </CardHeader>

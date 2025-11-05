@@ -557,42 +557,42 @@ const VideoDetail = () => {
               
               {/* Immersive Features Section */}
               <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <h2 className="text-3xl md:text-4xl font-light text-foreground mb-8 flex items-center gap-2">
                   <Play className="w-5 h-5" />
                   {t('videoDetail.immersiveFeatures')}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <Card className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <Card className="p-6 rounded-xl border shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold text-sm">CC</span>
+                        <span className="text-blue-600 font-light text-sm">CC</span>
                       </div>
-                      <h3 className="font-semibold">Captions with Intention</h3>
+                      <h3 className="text-lg font-light text-foreground">Captions with Intention</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">Emotional context and speaker identification</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">Emotional context and speaker identification</p>
                   </Card>
-                  <Card className="p-4">
+                  <Card className="p-6 rounded-xl border shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-semibold text-sm">AD</span>
+                        <span className="text-green-600 font-light text-sm">AD</span>
                       </div>
-                      <h3 className="font-semibold">Audio Descriptions</h3>
+                      <h3 className="text-lg font-light text-foreground">Audio Descriptions</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">Describes visual elements for screen readers</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">Describes visual elements for screen readers</p>
                   </Card>
-                  <Card className="p-4">
+                  <Card className="p-6 rounded-xl border shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-purple-600 font-semibold text-sm">VA</span>
+                        <span className="text-purple-600 font-light text-sm">VA</span>
                       </div>
-                      <h3 className="font-semibold">Video Analysis</h3>
+                      <h3 className="text-lg font-light text-foreground">Video Analysis</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">AI-powered analysis and narration generation</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">AI-powered analysis and narration generation</p>
                   </Card>
                 </div>
                 
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
+                <div className="p-6 bg-muted/50 rounded-xl">
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">
                     {t('videoDetail.immersiveTip')}
                   </p>
                 </div>
@@ -603,13 +603,13 @@ const VideoDetail = () => {
 
           {/* Export Accessible Video with Current Language */}
           {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length > 0 && (
-            <Card>
+            <Card className="rounded-xl shadow-soft border">
               <CardHeader>
-                <CardTitle>Export Accessible Video</CardTitle>
+                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Export Accessible Video</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-base font-light text-muted-foreground leading-relaxed">
                     Download your video with accessibility features burned-in.
                     {captions.length > 0 && (
                       <span className="block mt-1">
@@ -630,14 +630,14 @@ const VideoDetail = () => {
 
           {/* Warning for Videos Without Transcripts */}
           {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length === 0 && (
-            <Card>
+            <Card className="rounded-xl shadow-soft border">
               <CardHeader>
-                <CardTitle>Export Accessible Video</CardTitle>
+                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Export Accessible Video</CardTitle>
               </CardHeader>
               <CardContent>
-                <Alert>
+                <Alert className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
+                  <AlertDescription className="text-base font-light leading-relaxed">
                     Generate a transcript first to enable export with captions.
                   </AlertDescription>
                 </Alert>

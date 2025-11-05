@@ -916,23 +916,23 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="rounded-xl shadow-soft border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-2xl font-light text-foreground flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
             Audio Description Editor
           </CardTitle>
-          <p className="text-sm text-muted-foreground font-light leading-relaxed">
+          <p className="text-base font-light text-muted-foreground leading-relaxed">
             Generate and manage audio descriptions to describe visual elements for accessibility.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Card className="border-primary/20 bg-primary/5">
+          <Card className="border-primary/20 bg-primary/5 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-sm font-light leading-relaxed">
-                <span className="font-medium text-primary">Basic AI:</span> Generates simple audio descriptions for common video scenarios.
+              <p className="text-base font-light leading-relaxed">
+                <span className="font-light text-primary">Basic AI:</span> Generates simple audio descriptions for common video scenarios.
                 <br />
-                <span className="font-medium text-primary">Advanced Analysis:</span> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
+                <span className="font-light text-primary">Advanced Analysis:</span> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
               </p>
             </CardContent>
           </Card>
@@ -940,7 +940,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           {/* Audio Description Voice */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Audio Description Voice</Label>
+              <Label className="text-sm font-light">Audio Description Voice</Label>
                 <Select
                   value={selectedVoice?.id || ''}
                   onValueChange={(val) => {
@@ -1035,13 +1035,13 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           </div>
 
           {showManualForm && (
-            <Card className="border-dashed">
+            <Card className="border-dashed rounded-xl">
               <CardContent className="p-4 space-y-3">
-                <h4 className="font-medium text-sm">Add Manual Audio Description</h4>
+                <h4 className="text-lg font-light">Add Manual Audio Description</h4>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Start Time</Label>
+                    <Label className="text-sm font-light">Start Time</Label>
                     <div className="space-y-1">
                       <Input
                         value={manualStartTime}
@@ -1090,7 +1090,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs">End Time</Label>
+                    <Label className="text-sm font-light">End Time</Label>
                     <div className="space-y-1">
                       <Input
                         value={manualEndTime}
@@ -1141,7 +1141,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 </div>
 
                 <div>
-                  <Label className="text-xs">Voice Style</Label>
+                  <Label className="text-sm font-light">Voice Style</Label>
                   <Select value={manualVoiceStyle} onValueChange={setManualVoiceStyle}>
                     <SelectTrigger className="h-8">
                       <SelectValue />
@@ -1156,7 +1156,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 </div>
 
                 <div>
-                  <Label className="text-xs">Description Text</Label>
+                  <Label className="text-sm font-light">Description Text</Label>
                   <Textarea
                     value={manualText}
                     onChange={(e) => setManualText(e.target.value)}
@@ -1181,7 +1181,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Audio Descriptions ({descriptions.length})</h4>
+                  <h4 className="text-lg font-light">Audio Descriptions ({descriptions.length})</h4>
                   <Button
                     size="sm"
                     variant="outline"
@@ -1202,12 +1202,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   </Button>
                 </div>
                 {descriptions.map((desc, index) => (
-                  <div key={index} className="border rounded-lg p-3">
+                  <div key={index} className="border rounded-xl p-3">
                     {editingIndex === index ? (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-xs">Start Time</Label>
+                            <Label className="text-sm font-light">Start Time</Label>
                             <div className="space-y-1">
                               <Input
                                 value={editStartTime}
@@ -1256,7 +1256,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             </div>
                           </div>
                           <div>
-                            <Label className="text-xs">End Time</Label>
+                            <Label className="text-sm font-light">End Time</Label>
                             <div className="space-y-1">
                               <Input
                                 value={editEndTime}
@@ -1307,7 +1307,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         </div>
                         
                         <div>
-                          <Label className="text-xs">Voice Style</Label>
+                          <Label className="text-sm font-light">Voice Style</Label>
                           <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>
                             <SelectTrigger className="h-8">
                               <SelectValue />
@@ -1322,7 +1322,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         </div>
                         
                         <div>
-                          <Label className="text-xs">Description Text</Label>
+                          <Label className="text-sm font-light">Description Text</Label>
                           <Textarea
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
