@@ -58,9 +58,9 @@ export default function Upload() {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <HandMetal className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-light text-lg mb-2">{t('upload.features.asl.title')}</h3>
+                <h3 className="font-light text-lg mb-2">{t('upload.features.sl.title')}</h3>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  {t('upload.features.asl.description')}
+                  {t('upload.features.sl.description')}
                 </p>
               </div>
             </div>
