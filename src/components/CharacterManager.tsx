@@ -385,30 +385,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const applyCharacterMappings = async () => {
     try {
-      // Get all transcript languages for this video
-      const { data: transcripts } = await supabase
-        .from('transcripts')
-        .select('language, id')
-        .eq('video_id', videoId)
-        .order('updated_at', { ascending: false });
-      
-      // Build map of language -> latest transcript_id
-      const transcriptIdByLanguage = new Map<string, string>();
-      transcripts?.forEach(t => {
-        if (!transcriptIdByLanguage.has(t.language)) {
-          transcriptIdByLanguage.set(t.language, t.id);
-        }
-      });
-      
-      const allLanguages = Array.from(transcriptIdByLanguage.keys());
-      if (allLanguages.length === 0) {
-        allLanguages.push(language); // Fallback to current language
-      }
-      
-      console.log('🌍 Applying character mappings with transcript_id scoping:', 
-        Object.fromEntries(transcriptIdByLanguage));
-      
-      
       // Type mapping to ensure valid database values
       const typeMapping: Record<string, string> = {
         'main': 'main',
@@ -425,7 +401,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             id: char.id.startsWith('char-') ? undefined : char.id,
             video_id: videoId,
             name: char.name,
-            type: typeMapping[char.type] ?? 'minor', // Use mapping with fallback
+            type: typeMapping[char.type] ?? 'minor',
             color: char.color,
             is_off_camera: char.isOffCamera || false,
             voice_id: char.voiceId,
@@ -440,140 +416,52 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       if (saveError) {
         console.error('❌ Failed to save characters:', saveError);
-        return;
+        throw saveError;
       }
       
       // Create a map of character names to IDs
       const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
       
-      // Identify manually-overridden segments
-      const { data: allSegments } = await supabase
-        .from('transcript_segments_clean')
-        .select('id, character_id, speaker')
-        .eq('video_id', videoId)
-        .not('character_id', 'is', null);
-      
-      const manuallyChangedSegments = new Set<string>();
-      allSegments?.forEach(seg => {
-        const expectedCharId = charIdMap.get(seg.speaker);
-        if (expectedCharId && seg.character_id !== expectedCharId) {
-          manuallyChangedSegments.add(seg.id);
-        }
-      });
-      
-      console.log(`🔒 Found ${manuallyChangedSegments.size} manually-overridden segments`);
-      
-      // Apply mappings across ALL languages with transcript_id scoping
-      for (const lang of allLanguages) {
-        const txId = transcriptIdByLanguage.get(lang);
-        if (!txId) {
-          console.warn(`⚠️ No transcript_id found for language: ${lang}, skipping`);
-          continue;
-        }
-        
-        console.log(`🔍 [${lang}] Using transcript_id: ${txId}`);
-        
-        for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
-          const characterId = charIdMap.get(characterName);
-          const character = characters.find(c => c.name === characterName);
-          
-          if (!character || !characterId) continue;
-          
-          // Extract ASR label from speaker name (e.g., "Speaker A" → "A", "A" → "A")
-          const asrLabelMatch = speakerName.match(/\b([A-Z])\b$/);
-          const asrLabel = asrLabelMatch ? asrLabelMatch[1] : null;
-          
-          // Build OR predicate to match all speaker variants:
-          // - Exact speaker name (e.g., "A", "Speaker A", "David")
-          // - speaker_asr_label (e.g., "A")
-          // - Pattern match "Speaker A", "Speaker B", etc.
-          const orConditions = [
-            `speaker.eq.${speakerName}`  // Exact match
-          ];
-          
-          if (asrLabel) {
-            orConditions.push(`speaker_asr_label.eq.${asrLabel}`);  // ASR label match
-            orConditions.push(`speaker.eq.Speaker%20${asrLabel}`);  // Pattern "Speaker A/B/C" (URL encoded)
-          }
-          
-          const orPredicate = orConditions.join(',');
-          
-          console.log(`🔍 [${lang}] Mapping "${speakerName}" with OR conditions:`, orConditions);
-          
-          // Update segments with OR predicate, respecting manual overrides
-          const updateData = {
-            speaker: characterName,
-            speaker_color: character.color,
-            character_id: characterId,
-            is_off_camera: character.isOffCamera || false,
-            emphasis: character.emphasis || 'normal',
-            pitch: character.pitch || 'normal'
-          };
-          
-          if (manuallyChangedSegments.size > 0) {
-            const { error: err1 } = await supabase
-              .from('transcript_segments_clean')
-              .update(updateData)
-              .eq('video_id', videoId)
-              .eq('language', lang)
-              .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
-              .or(orPredicate)
-              .not('id', 'in', `(${Array.from(manuallyChangedSegments).join(',')})`);
-            
-            if (err1) {
-              console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
-            } else {
-              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}" (preserved ${manuallyChangedSegments.size} overrides)`);
-            }
-          } else {
-            const { error: err1 } = await supabase
-              .from('transcript_segments_clean')
-              .update(updateData)
-              .eq('video_id', videoId)
-              .eq('language', lang)
-              .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
-              .or(orPredicate);
-            
-            if (err1) {
-              console.error(`❌ [${lang}] Failed to map "${speakerName}":`, err1);
-            } else {
-              console.log(`✅ [${lang}] Mapped "${speakerName}" → "${characterName}"`);
-            }
-          }
-          
-          // Sync colors/properties for ALL segments with this character_id
-          const { error: err2 } = await supabase
-            .from('transcript_segments_clean')
-            .update({
-              speaker: characterName,
-              speaker_color: character.color,
-              is_off_camera: character.isOffCamera || false,
-              emphasis: character.emphasis || 'normal',
-              pitch: character.pitch || 'normal'
-            })
-            .eq('video_id', videoId)
-            .eq('language', lang)
-            .eq('transcript_id', txId)  // ✅ SCOPED TO TRANSCRIPT
-            .eq('character_id', characterId);
-          
-          if (err2) {
-            console.error(`❌ [${lang}] Failed to sync character "${characterName}":`, err2);
-          }
+      // Build mappings object for RPC (speaker -> character_id)
+      const mappingsForRPC: Record<string, string> = {};
+      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
+        const characterId = charIdMap.get(characterName);
+        if (characterId) {
+          mappingsForRPC[speakerName] = characterId;
         }
       }
       
-      console.log('✅ Character mappings applied (manual overrides preserved)');
+      // Get all transcript languages for this video
+      const { data: transcripts } = await supabase
+        .from('transcripts')
+        .select('language')
+        .eq('video_id', videoId);
       
-      // Dispatch event to refresh transcript editor and video player
-      window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
-        detail: { videoId, languages: allLanguages } 
-      }));
+      const allLanguages = Array.from(new Set(transcripts?.map(t => t.language) || [language]));
       
-      // Also dispatch character colors update event for immediate caption refresh
+      // Apply mappings atomically for each language
+      for (const lang of allLanguages) {
+        const { data, error } = await supabase.rpc('apply_character_mappings_atomic', {
+          p_video_id: videoId,
+          p_language: lang,
+          p_mappings: mappingsForRPC,
+          p_respect_manual: true
+        });
+        
+        if (error) {
+          console.error(`❌ [${lang}] Failed to apply mappings:`, error);
+          throw error;
+        }
+        
+        console.log(`✅ [${lang}] Applied mappings atomically:`, data);
+      }
+      
+      // ONE event after ALL database updates are complete
       window.dispatchEvent(new CustomEvent('character-colors-updated'));
       
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
+      throw error;
     }
   };
 
