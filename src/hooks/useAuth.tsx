@@ -61,6 +61,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 
                 if (error) {
                   console.error('Error creating profile:', error);
+                } else {
+                  // Send signup notification for OAuth signups
+                  try {
+                    await supabase.functions.invoke('send-signup-notification', {
+                      body: {
+                        userEmail: session.user.email,
+                        displayName: session.user.user_metadata?.full_name,
+                        userId: session.user.id
+                      }
+                    });
+                  } catch (notificationError) {
+                    console.error('Error sending signup notification:', notificationError);
+                  }
                 }
               }
             } catch (error) {
@@ -124,6 +137,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: redirectUrl
         }
       });
+      
+      // Send signup notification email
+      if (!error && data.user) {
+        try {
+          await supabase.functions.invoke('send-signup-notification', {
+            body: {
+              userEmail: data.user.email,
+              displayName: data.user.user_metadata?.full_name,
+              userId: data.user.id
+            }
+          });
+        } catch (notificationError) {
+          console.error('Error sending signup notification:', notificationError);
+          // Don't fail signup if notification fails
+        }
+      }
+      
       return { error };
     } catch (error) {
       console.error('Error signing up with email:', error);

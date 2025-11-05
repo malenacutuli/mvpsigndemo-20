@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Axessible <no-reply@axessvideo.com>",
-      to: ["malena@axessvideo.com"],
+      to: ["malena@axessible.ai"],
       subject: "New User Signup - Axessible",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
