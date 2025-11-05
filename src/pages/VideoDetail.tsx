@@ -471,7 +471,7 @@ const VideoDetail = () => {
       <main className="container mx-auto px-4 py-8">
           <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={() => navigate('/videos')}>
+            <Button variant="ghost" onClick={() => navigate('/videos')} className="font-light">
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t('videoDetail.backToVideos')}
             </Button>
@@ -491,6 +491,7 @@ const VideoDetail = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setShowEmbedSettings(!showEmbedSettings)}
+                className="font-light"
               >
                 <Share className="w-4 h-4 mr-2" />
                 {t('videoDetail.embed.title')}
@@ -544,11 +545,11 @@ const VideoDetail = () => {
                   )}
                 </div>
               ) : (
-                <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
+                <div className="aspect-video w-full bg-muted rounded-xl flex items-center justify-center">
                   <div className="text-center">
                     <Play className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-muted-foreground">{t('videoDetail.unavailableTitle')}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-base font-light text-muted-foreground">{t('videoDetail.unavailableTitle')}</p>
+                    <p className="text-sm font-light text-muted-foreground mt-2 leading-relaxed">
                       {video.storage_path ? t('videoDetail.unavailableGenerating') : t('videoDetail.unavailableNoFile')}
                     </p>
                   </div>
