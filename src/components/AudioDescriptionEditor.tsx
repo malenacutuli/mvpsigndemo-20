@@ -951,7 +951,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   <SelectTrigger className="h-8">
                     <SelectValue placeholder="Choose voice" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background z-50 shadow-lg">
                     {filteredVoices.map(v => (
                       <SelectItem key={v.id} value={v.id}>
                         <div className="flex items-center gap-2">
@@ -1146,7 +1146,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                     <SelectTrigger className="h-8">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background z-50 shadow-lg">
                       <SelectItem value="passionate">Passionate</SelectItem>
                       <SelectItem value="warm">Warm</SelectItem>
                       <SelectItem value="authoritative">Authoritative</SelectItem>

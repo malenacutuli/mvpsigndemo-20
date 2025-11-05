@@ -760,7 +760,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background z-50 shadow-lg">
                   <SelectItem value="hero">Hero (Main)</SelectItem>
                   <SelectItem value="villain">Villain (Main)</SelectItem>
                   <SelectItem value="main">Main Character</SelectItem>
@@ -868,19 +868,19 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                              <SelectTrigger className="h-8">
                                <SelectValue />
                              </SelectTrigger>
-                             <SelectContent className="max-h-60">
-                               {getAllColorsForType(character.type).map(({ name, color }) => (
-                                 <SelectItem key={color} value={color}>
-                                   <div className="flex items-center gap-2">
-                                     <div 
-                                       className="w-4 h-4 rounded border"
-                                       style={{ backgroundColor: color }}
-                                     />
-                                     {name}
-                                   </div>
-                                 </SelectItem>
-                               ))}
-                             </SelectContent>
+                              <SelectContent className="max-h-60 bg-background z-50 shadow-lg">
+                                {getAllColorsForType(character.type).map(({ name, color }) => (
+                                  <SelectItem key={color} value={color}>
+                                    <div className="flex items-center gap-2">
+                                      <div 
+                                        className="w-4 h-4 rounded border"
+                                        style={{ backgroundColor: color }}
+                                      />
+                                      {name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
                            </Select>
                          </div>
 

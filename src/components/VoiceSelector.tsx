@@ -223,9 +223,9 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   };
 
   return (
-    <Card className={className}>
+    <Card className={`rounded-xl shadow-soft border ${className}`}>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
+        <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
           <Volume2 className="w-4 h-4" />
           Voice Selection {language !== 'en' && `(${language.toUpperCase()})`}
         </CardTitle>
@@ -237,6 +237,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
             size="sm"
             variant={selectedType === 'native' ? 'default' : 'outline'}
             onClick={() => setSelectedType('native')}
+            className="font-light"
           >
             Native Voices (Free)
           </Button>
@@ -244,6 +245,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
             size="sm"
             variant={selectedType === 'elevenlabs' ? 'default' : 'outline'}
             onClick={() => setSelectedType('elevenlabs')}
+            className="font-light"
           >
             Premium Voices
             <ExternalLink className="w-3 h-3 ml-1" />
@@ -253,10 +255,10 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         {/* Voice Selection */}
         <div className="space-y-2">
           <Select value={selectedVoice} onValueChange={handleVoiceSelect}>
-            <SelectTrigger>
+            <SelectTrigger className="h-9 font-light">
               <SelectValue placeholder={`Select a ${selectedType === 'elevenlabs' ? 'premium' : 'native'} voice`} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background z-50 shadow-lg">
               {getCurrentVoices().map(voice => (
                   <SelectItem key={voice.id} value={voice.id}>
                     <div className="flex items-center gap-2">
@@ -290,7 +292,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         </div>
 
         {selectedType === 'elevenlabs' && (
-          <div className="text-xs text-muted-foreground bg-accent/10 p-2 rounded">
+          <div className="text-sm text-muted-foreground bg-accent/10 p-3 rounded-xl font-light">
             <strong>Note:</strong> Premium voices require API key setup and may incur costs. 
             Native voices are free and work immediately.
           </div>

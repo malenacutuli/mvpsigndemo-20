@@ -1343,6 +1343,9 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               </p>
             </CardContent>
           </Card>
+          <p className="mt-3 text-sm font-light text-muted-foreground leading-relaxed">
+            Auto-Enhanced: Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+          </p>
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -1435,7 +1438,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                 </div>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background z-50 shadow-lg">
               {languages.map((lang) => (
                 <SelectItem key={lang.code} value={lang.code}>
                   {lang.name}
@@ -1772,7 +1775,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                             </div>
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background z-50 shadow-lg">
                           {availableCharacters.length === 0 ? (
                             <div className="p-2 text-xs text-muted-foreground">
                               No characters assigned yet. Use Character Manager to create characters.
@@ -1811,7 +1814,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-background z-50 shadow-lg">
                               <SelectItem value="normal">Normal</SelectItem>
                               <SelectItem value="loud">Loud</SelectItem>
                               <SelectItem value="quiet">Quiet</SelectItem>
@@ -1825,11 +1828,11 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">Normal</SelectItem>
-                              <SelectItem value="high">High</SelectItem>
-                              <SelectItem value="low">Low</SelectItem>
-                            </SelectContent>
+                             <SelectContent className="bg-background z-50 shadow-lg">
+                               <SelectItem value="normal">Normal</SelectItem>
+                               <SelectItem value="high">High</SelectItem>
+                               <SelectItem value="low">Low</SelectItem>
+                             </SelectContent>
                           </Select>
                         </div>
                       </div>
