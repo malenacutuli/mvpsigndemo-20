@@ -25,7 +25,7 @@ export const SignLanguageAvatarSelector: React.FC<SignLanguageAvatarSelectorProp
 
   return (
     <div>
-      <label className="text-sm font-medium mb-2 block font-light">
+      <label className="text-sm mb-2 block font-light">
         {t('upload.slCharacter')}
       </label>
       <Select value={selectedValue} onValueChange={onValueChange}>
@@ -36,8 +36,8 @@ export const SignLanguageAvatarSelector: React.FC<SignLanguageAvatarSelectorProp
           {options.map((signLanguageOption) => (
             <SelectItem key={signLanguageOption.id} value={signLanguageOption.id} className="cursor-pointer hover:bg-accent focus:bg-accent font-light">
               <div className="flex flex-col gap-1 py-1">
-                <div className="font-medium text-foreground">{signLanguageOption.name}</div>
-                <div className="text-xs text-muted-foreground line-clamp-1">{signLanguageOption.description}</div>
+                <div className="font-light text-foreground">{signLanguageOption.name}</div>
+                <div className="text-xs text-muted-foreground line-clamp-1 font-light">{signLanguageOption.description}</div>
               </div>
             </SelectItem>
           ))}

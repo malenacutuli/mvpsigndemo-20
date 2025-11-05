@@ -808,7 +808,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <h4 className="text-sm font-medium text-blue-700 mb-2 font-light">{t('upload.transcriptOptions.title')}</h4>
+            <h4 className="text-sm text-blue-700 mb-2 font-light">{t('upload.transcriptOptions.title')}</h4>
             <p className="text-xs text-blue-600 mb-3 font-light">
               {t('upload.transcriptOptions.description')}
             </p>
@@ -874,24 +874,24 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                   setSelectedASL(aslOptions[value][0].id);
                 }
               }} disabled={uploading}>
-                <SelectTrigger>
+                <SelectTrigger className="font-light">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="advertising">Advertising</SelectItem>
-                  <SelectItem value="film">Film</SelectItem>
-                  <SelectItem value="branded-content">Branded Content</SelectItem>
-                  <SelectItem value="webinar">Webinar</SelectItem>
-                  <SelectItem value="podcast">Podcast</SelectItem>
-                  <SelectItem value="social-media">Social Media</SelectItem>
-                  <SelectItem value="tutorial">Tutorial</SelectItem>
-                  <SelectItem value="stand-up">Stand Up</SelectItem>
-                  <SelectItem value="product-demo">Product Demo</SelectItem>
-                  <SelectItem value="children">Children</SelectItem>
-                  <SelectItem value="music-video">Music Video</SelectItem>
-                  <SelectItem value="tv-show">TV Show</SelectItem>
-                  <SelectItem value="education">Educational</SelectItem>
-                  <SelectItem value="recipe">Cooking/Recipe</SelectItem>
+                  <SelectItem value="advertising" className="font-light">Advertising</SelectItem>
+                  <SelectItem value="film" className="font-light">Film</SelectItem>
+                  <SelectItem value="branded-content" className="font-light">Branded Content</SelectItem>
+                  <SelectItem value="webinar" className="font-light">Webinar</SelectItem>
+                  <SelectItem value="podcast" className="font-light">Podcast</SelectItem>
+                  <SelectItem value="social-media" className="font-light">Social Media</SelectItem>
+                  <SelectItem value="tutorial" className="font-light">Tutorial</SelectItem>
+                  <SelectItem value="stand-up" className="font-light">Stand Up</SelectItem>
+                  <SelectItem value="product-demo" className="font-light">Product Demo</SelectItem>
+                  <SelectItem value="children" className="font-light">Children</SelectItem>
+                  <SelectItem value="music-video" className="font-light">Music Video</SelectItem>
+                  <SelectItem value="tv-show" className="font-light">TV Show</SelectItem>
+                  <SelectItem value="education" className="font-light">Educational</SelectItem>
+                  <SelectItem value="recipe" className="font-light">Cooking/Recipe</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -905,7 +905,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 <Label className="font-light">{t('upload.voiceSelection')}</Label>
                 <Select value={selectedVoice} onValueChange={setSelectedVoice}>
                   <SelectTrigger className="font-light">
-                    <SelectValue placeholder="Select a voice" />
+                    <SelectValue placeholder="Select a voice" className="font-light" />
                   </SelectTrigger>
                   <SelectContent>
                     {(voiceOptions[contentType] || []).map(voice => (
