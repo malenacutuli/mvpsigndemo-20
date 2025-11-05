@@ -1330,16 +1330,16 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-light text-foreground flex items-center justify-between">
+          <CardTitle className="text-2xl font-light text-foreground flex items-center justify-between">
             Transcript & Content Generation
-            <Badge variant="outline">
+            <Badge variant="outline" className="font-light">
               {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
             </Badge>
           </CardTitle>
-          <Card className="border-primary/20 bg-primary/5 mt-3">
+          <Card className="border-primary/20 bg-primary/5 mt-3 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-sm font-light leading-relaxed">
-                Edit text and intonation word-by-word. Change speakers and customize voice characteristics for each segment.
+              <p className="text-base font-light leading-relaxed">
+                Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
               </p>
             </CardContent>
           </Card>
@@ -1452,6 +1452,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={isTranslating || originalTranscript.length === 0}
             size="sm"
             variant="ghost"
+            className="font-light"
           >
             {isTranslating ? 'Translating...' : 'Re-translate'}
           </Button>
@@ -1461,6 +1462,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={editingTranscript.length === 0}
             size="sm"
             variant="outline"
+            className="font-light"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Segment
@@ -1471,6 +1473,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={editingTranscript.length === 0}
             size="sm"
             variant="ghost"
+            className="font-light"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -1481,6 +1484,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             disabled={isAnalyzing || editingTranscript.length === 0}
             size="sm"
             variant="outline"
+            className="font-light"
           >
             <Zap className="w-4 h-4 mr-2" />
             {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
@@ -1492,12 +1496,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           {editingTranscript.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>Generate transcript to start editing</p>
+              <p className="text-base font-light">Generate transcript to start editing</p>
             </div>
           ) : filteredSegments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No segments found matching "{searchQuery}"</p>
-              <Button size="sm" variant="ghost" onClick={() => setSearchQuery('')}>
+              <p className="text-base font-light">No segments found matching "{searchQuery}"</p>
+              <Button size="sm" variant="ghost" onClick={() => setSearchQuery('')} className="font-light">
                 Clear search
               </Button>
             </div>
@@ -1506,10 +1510,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
               // Find the real index in the original array for proper editing
               const realIndex = editingTranscript.findIndex(s => s.id === segment.id);
               return (
-               <div key={segment.id} className={`p-3 border rounded-lg ${searchQuery && (segment.text.toLowerCase().includes(searchQuery.toLowerCase()) || segment.speaker?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bg-yellow-100 border-yellow-300' : 'bg-muted/20'}`}>
+               <div key={segment.id} className={`p-3 border rounded-xl ${searchQuery && (segment.text.toLowerCase().includes(searchQuery.toLowerCase()) || segment.speaker?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bg-yellow-100 border-yellow-300' : 'bg-muted/20'}`}>
                  <div className="flex items-start justify-between mb-2">
                    <div className="flex items-center gap-2">
-                     <span className="text-xs text-muted-foreground font-mono">
+                     <span className="text-sm text-muted-foreground font-mono font-light">
                        {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
                      </span>
                         {segment.speaker && (
@@ -1527,15 +1531,15 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                                ? segment.speakerColor // Use character color
                                : DEFAULT_NEUTRAL; // Use light blue for unassigned speakers
                              
-                             return (
-                               <Badge 
-                                 variant="outline" 
-                                 className="text-xs px-2 py-0"
-                                 style={{ borderColor: displayColor, color: displayColor }}
-                               >
-                                 {displayedSpeaker}
-                               </Badge>
-                             );
+                              return (
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-sm px-2 py-0 font-light"
+                                  style={{ borderColor: displayColor, color: displayColor }}
+                                >
+                                  {displayedSpeaker}
+                                </Badge>
+                              );
                            })()}
 
                           {segment.speakerAsrLabel && (segment.characterId || segment.character_id) && (
@@ -1594,12 +1598,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     {/* Text Editor - Switch between basic and word-level */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Text</Label>
+                        <Label className="text-sm font-light">Text</Label>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setUseWordLevelEditing(!useWordLevelEditing)}
-                          className="h-6 text-xs"
+                          className="h-6 text-xs font-light"
                         >
                           <Type className="w-3 h-3 mr-1" />
                           {useWordLevelEditing ? 'Basic Edit' : 'Word-Level Edit'}
@@ -1636,7 +1640,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     {/* Timing Controls */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
+                        <Label className="text-sm font-light flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           Start Time
                         </Label>
@@ -1688,7 +1692,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1">
+                        <Label className="text-sm font-light flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           End Time
                         </Label>
@@ -1743,7 +1747,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     
                     {/* Speaker Selection */}
                     <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
+                      <Label className="text-sm font-light flex items-center gap-1">
                         <User className="w-3 h-3" />
                         Character / Speaker
                       </Label>
@@ -1799,7 +1803,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                     {!useWordLevelEditing && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
+                          <Label className="text-sm font-light flex items-center gap-1">
                             <Volume2 className="w-3 h-3" />
                             Emphasis
                           </Label>
@@ -1816,7 +1820,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Pitch</Label>
+                          <Label className="text-sm font-light">Pitch</Label>
                           <Select value={editPitch} onValueChange={(value) => setEditPitch(value as 'high' | 'low' | 'normal')}>
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
@@ -1846,18 +1850,18 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                      </div>
                      
                      <div className="flex gap-2">
-                      <Button size="sm" onClick={saveEdit}>
+                      <Button size="sm" onClick={saveEdit} className="font-light">
                         <Save className="w-3 h-3 mr-1" />
                         Save
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="font-light">
                         <X className="w-3 h-3 mr-1" />
                         Cancel
                       </Button>
                     </div>
                   </div>
                  ) : (
-                   <p className="text-sm whitespace-pre-wrap break-words">
+                   <p className="text-base font-light whitespace-pre-wrap break-words leading-relaxed">
                      {searchQuery ? (
                        segment.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) =>
                          part.toLowerCase() === searchQuery.toLowerCase() ? (
@@ -1879,7 +1883,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
         {/* Generation Info */}
         {selectedLanguage !== 'en' && editingTranscript.length > 0 && (
-          <div className="text-xs text-muted-foreground p-2 bg-accent/10 rounded">
+          <div className="text-sm text-muted-foreground p-4 bg-accent/10 rounded-xl font-light">
             <p>✓ Transcript translated to {languages.find(l => l.code === selectedLanguage)?.name}</p>
             <p>✓ Captions with intention generated</p>
             <p>✓ Dubbing content prepared</p>
