@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_cost_tracking: {
+        Row: {
+          api_endpoint: string
+          cost_usd: number
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          service_name: string
+          unit_type: string | null
+          usage_units: number | null
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          api_endpoint: string
+          cost_usd?: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          service_name: string
+          unit_type?: string | null
+          usage_units?: number | null
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          api_endpoint?: string
+          cost_usd?: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          service_name?: string
+          unit_type?: string | null
+          usage_units?: number | null
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_cost_tracking_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audio_descriptions: {
         Row: {
           audio_error_message: string | null
@@ -623,15 +670,7 @@ export type Database = {
           updated_at?: string
           video_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "sign_language_clips_transcript_segment_id_fkey"
-            columns: ["transcript_segment_id"]
-            isOneToOne: true
-            referencedRelation: "transcript_segments"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       speaker_mappings: {
         Row: {
@@ -1579,6 +1618,8 @@ export type Database = {
           total_subscribers: number
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       system_get_stripe_customer_for_webhook: {
         Args: { user_email: string }
         Returns: string
@@ -1592,6 +1633,19 @@ export type Database = {
           tier?: string
         }
         Returns: boolean
+      }
+      track_api_cost: {
+        Args: {
+          p_api_endpoint: string
+          p_cost_usd: number
+          p_metadata?: Json
+          p_service_name: string
+          p_unit_type?: string
+          p_usage_units?: number
+          p_user_id: string
+          p_video_id: string
+        }
+        Returns: string
       }
       track_video_processing_usage: {
         Args: {
