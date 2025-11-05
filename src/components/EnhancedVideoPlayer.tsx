@@ -1309,14 +1309,14 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         </TabsList>
         
         <TabsContent value="transcript" className="space-y-6">
-          <Card className="shadow-soft border-border">
+          <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-light text-foreground">Transcript Extraction & Character Management</CardTitle>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Transcript Extraction & Character Management</CardTitle>
+              <p className="text-base font-light text-muted-foreground leading-relaxed">
                 Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
               </p>
-              <div className="bg-accent/50 border border-accent-foreground/20 rounded-lg p-4 mt-4">
-                <p className="text-sm text-accent-foreground">
+              <div className="bg-muted/50 border border-border rounded-xl p-4 mt-4">
+                <p className="text-base font-light text-muted-foreground leading-relaxed">
                   <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
                 </p>
               </div>
