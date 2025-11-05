@@ -142,7 +142,7 @@ export function ExportModal({
           <div className="flex items-center space-x-2">
             <Label 
               htmlFor={key}
-              className={`font-medium ${available ? '' : 'text-muted-foreground'}`}
+              className={`text-base font-light ${available ? '' : 'text-muted-foreground'}`}
             >
               {title}
             </Label>
@@ -171,7 +171,7 @@ export function ExportModal({
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-base font-light text-muted-foreground mt-1 leading-relaxed">{description}</p>
         </div>
       </div>
       <Switch
@@ -185,9 +185,9 @@ export function ExportModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl font-light">
+          <DialogTitle className="flex items-center gap-2 text-3xl md:text-4xl font-light">
             <Video className="w-5 h-5" />
             Finalize & Export Video
           </DialogTitle>
@@ -195,16 +195,16 @@ export function ExportModal({
 
         <div className="space-y-6">
           {/* Video Info */}
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <h3 className="font-medium text-sm text-muted-foreground mb-1">Video</h3>
-            <p className="font-medium">{videoTitle}</p>
+          <div className="bg-muted/50 p-6 rounded-xl">
+            <h3 className="text-base font-light text-muted-foreground mb-1">Video</h3>
+            <p className="text-xl font-light">{videoTitle}</p>
           </div>
 
           {/* Mobile Warning */}
           {isMobile && (
-            <Alert>
+            <Alert className="rounded-xl">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
+              <AlertDescription className="text-base font-light leading-relaxed">
                 Video processing on mobile devices may be slow or fail for longer videos. 
                 For best results, use a desktop computer.
               </AlertDescription>
@@ -214,18 +214,18 @@ export function ExportModal({
           {/* Previous Exports - Recovery */}
           {previousExports.length > 0 && !isProcessing && !downloadUrl && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">Previously Exported Versions</h4>
+              <h4 className="text-lg font-light">Previously Exported Versions</h4>
               <div className="space-y-2">
                 {previousExports.map((exp) => (
-                  <Alert key={exp.id}>
+                  <Alert key={exp.id} className="rounded-xl">
                     <Download className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className="text-sm">
+                        <p className="text-base font-light">
                           {new Date(exp.created_at).toLocaleDateString()} - 
                           {exp.file_size_bytes ? ` ${(exp.file_size_bytes / 1024 / 1024).toFixed(1)}MB` : ''}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm font-light text-muted-foreground">
                           {exp.export_options?.captions && '✓ Captions '}
                           {exp.export_options?.audioDescription && '✓ Audio Description '}
                           {exp.export_options?.signLanguage && '✓ Sign Language'}
@@ -235,7 +235,7 @@ export function ExportModal({
                         size="sm" 
                         variant="outline" 
                         onClick={() => onDownloadPrevious?.(exp)}
-                        className="ml-2"
+                        className="ml-2 font-light"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Download
@@ -249,11 +249,11 @@ export function ExportModal({
 
           {/* Always-available original download */}
           {originalDownloadUrl && (
-            <Alert>
+            <Alert className="rounded-xl">
               <Download className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
-                <span>Need a copy now? Download the original video.</span>
-                <Button size="sm" variant="outline" onClick={handleForceDownloadOriginal} className="ml-2">
+                <span className="text-base font-light">Need a copy now? Download the original video.</span>
+                <Button size="sm" variant="outline" onClick={handleForceDownloadOriginal} className="ml-2 font-light">
                   <Download className="w-4 h-4 mr-2" />
                   Download original
                 </Button>
@@ -265,29 +265,29 @@ export function ExportModal({
           {isProcessing && progress && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
+                <span className="text-base font-light">
                   {progress.stage === 'preparing' && 'Preparing...'}
                   {progress.stage === 'processing' && 'Processing Video...'}
                   {progress.stage === 'uploading' && 'Uploading...'}
                   {progress.stage === 'finalizing' && 'Finalizing...'}
                 </span>
-                <span className="text-sm text-muted-foreground">{progress.progress}%</span>
+                <span className="text-base font-light text-muted-foreground">{progress.progress}%</span>
               </div>
               <Progress value={progress.progress} className="w-full" />
-              <p className="text-xs text-muted-foreground">{progress.message}</p>
+              <p className="text-sm font-light text-muted-foreground">{progress.message}</p>
             </div>
           )}
 
           {/* Download Link */}
           {downloadUrl && (
-            <Alert>
+            <Alert className="rounded-xl">
               <Download className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
-                <span>Your export is ready for download!</span>
+                <span className="text-base font-light">Your export is ready for download!</span>
                 <Button
                   size="sm"
                   onClick={handleForceDownload}
-                  className="ml-2"
+                  className="ml-2 font-light"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download
@@ -300,7 +300,7 @@ export function ExportModal({
           {!isProcessing && !downloadUrl && (
             <>
               <div>
-                <h3 className="text-lg font-semibold mb-4">Select Accessibility Features</h3>
+                <h3 className="text-2xl font-light mb-4">Select Accessibility Features</h3>
                 <div className="space-y-3">
                   {renderFeatureOption(
                     'captions',
@@ -330,12 +330,12 @@ export function ExportModal({
 
               {/* Export Summary */}
               {getSelectedFeatureCount() > 0 && (
-                <div className="bg-primary/5 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Export Summary</h4>
-                  <p className="text-sm text-muted-foreground">
+                <div className="bg-primary/5 p-6 rounded-xl">
+                  <h4 className="text-lg font-light mb-2">Export Summary</h4>
+                  <p className="text-base font-light text-muted-foreground">
                     Your video will be exported with {getSelectedFeatureCount()} accessibility feature{getSelectedFeatureCount() !== 1 ? 's' : ''}:
                   </p>
-                  <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                  <ul className="text-base font-light text-muted-foreground mt-2 space-y-1">
                     {options.captions && <li>• Burned-in captions</li>}
                     {options.audioDescription && <li>• Mixed audio descriptions</li>}
                     {options.signLanguage && <li>• Sign language picture-in-picture</li>}
@@ -345,9 +345,9 @@ export function ExportModal({
 
               {/* Validation Messages */}
               {getSelectedFeatureCount() === 0 && (
-                <Alert>
+                <Alert className="rounded-xl">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
+                  <AlertDescription className="text-base font-light leading-relaxed">
                     Please select at least one accessibility feature to export.
                   </AlertDescription>
                 </Alert>
@@ -361,7 +361,7 @@ export function ExportModal({
               variant="outline" 
               onClick={handleClose}
               disabled={isProcessing}
-              className="flex-1"
+              className="flex-1 font-light"
             >
               {isProcessing ? 'Processing...' : downloadUrl ? 'Close' : 'Cancel'}
             </Button>
@@ -370,7 +370,7 @@ export function ExportModal({
               <Button 
                 onClick={handleExport}
                 disabled={getSelectedFeatureCount() === 0}
-                className="flex-1"
+                className="flex-1 font-light"
               >
                 <Video className="w-4 h-4 mr-2" />
                 Start Export
