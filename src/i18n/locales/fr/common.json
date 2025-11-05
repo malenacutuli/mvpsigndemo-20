@@ -446,5 +446,49 @@
     "selectLanguage": "Sélectionner la Langue",
     "makePublic": "Rendre cette vidéo publique",
     "enableAccessibility": "Activer les fonctionnalités d'accessibilité"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "error": "Erreur"
+  },
+  "channels": {
+    "title": "Vos Chaînes",
+    "subtitle": "Créez et gérez des chaînes pour organiser vos vidéos",
+    "create": "Créer une Chaîne",
+    "createNew": "Créer une Nouvelle Chaîne",
+    "createFirst": "Créez Votre Première Chaîne",
+    "edit": "Modifier la Chaîne",
+    "channel": "Chaîne",
+    "name": "Nom de la Chaîne",
+    "namePlaceholder": "Entrez le nom de la chaîne",
+    "description": "Les chaînes aident à organiser vos vidéos et à les rendre plus faciles à découvrir pour les spectateurs",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Décrivez ce qu'est cette chaîne...",
+    "avatar": "Avatar de la Chaîne",
+    "uploadAvatar": "Télécharger l'Avatar",
+    "changeAvatar": "Changer l'Avatar",
+    "avatarHelp": "Téléchargez une image (JPG, PNG, max 5MB)",
+    "public": "Publique",
+    "noDescription": "Pas de description",
+    "noChannels": "Pas Encore de Chaînes",
+    "noChannelsText": "Créez votre première chaîne pour commencer à organiser vos vidéos et construire une audience",
+    "videos": "vidéos",
+    "subscribers": "abonnés",
+    "created": "Créée",
+    "updated": "Chaîne Mise à Jour",
+    "updatedSuccess": "Votre chaîne a été mise à jour avec succès",
+    "createdSuccess": "Votre nouvelle chaîne a été créée avec succès",
+    "deleted": "Chaîne Supprimée",
+    "deletedSuccess": "La chaîne a été supprimée avec succès",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer la chaîne \"{{name}}\" ? Cela retirera l’assignation de chaîne de toutes les vidéos mais ne supprimera pas les vidéos elles-mêmes.",
+    "errors": {
+      "selectImage": "Veuillez sélectionner une image",
+      "fileTooLarge": "L'image doit être inférieure à 5 Mo",
+      "nameRequired": "Le nom de la chaîne est requis",
+      "saveFailed": "Échec de l'enregistrement de la chaîne",
+      "deleteFailed": "Échec de la suppression de la chaîne"
+    }
   }
 }
