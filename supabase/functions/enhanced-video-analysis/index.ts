@@ -1,10 +1,30 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const AnalysisRequestSchema = z.object({
+  videoId: z.string().uuid(),
+  frames: z.array(z.object({
+    timestamp: z.number().min(0),
+    frameDataUrl: z.string().regex(/^data:image\/(png|jpeg|jpg|webp);base64,/),
+    gapStart: z.number().min(0),
+    gapEnd: z.number().min(0),
+  })).max(10), // Limit to 10 frames max
+  transcript: z.array(z.object({
+    startTime: z.number(),
+    endTime: z.number(),
+    text: z.string().max(1000),
+    speaker: z.string().max(100),
+  })),
+  detectedLanguage: z.string().length(2),
+});
 
 interface Gap {
   start: number;
@@ -37,7 +57,42 @@ serve(async (req) => {
   }
 
   try {
-    const { videoId, frames, transcript, detectedLanguage }: AnalysisRequest = await req.json();
+    // Verify JWT authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      throw new Error("Missing authorization header");
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Parse and validate input
+    const rawData = await req.json();
+    const validatedData = AnalysisRequestSchema.parse(rawData);
+    const { videoId, frames, transcript, detectedLanguage } = validatedData;
+
+    // Verify video ownership
+    const { data: video, error: videoError } = await supabase
+      .from("videos")
+      .select("user_id")
+      .eq("id", videoId)
+      .single();
+
+    if (videoError || !video) {
+      throw new Error("Video not found");
+    }
+
+    if (video.user_id !== user.id) {
+      throw new Error("Unauthorized: You do not own this video");
+    }
 
     console.log(`🎬 Enhanced Analysis: Processing ${frames.length} frames for video ${videoId}`);
 
@@ -111,15 +166,22 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Enhanced video analysis failed:', error);
+    
+    // Return validation errors with 400 status for Zod errors
+    const statusCode = error.name === 'ZodError' ? 400 : 
+                       error.message.includes('Unauthorized') ? 401 : 500;
+    const errorMessage = error.name === 'ZodError' ? 'Invalid input data' :
+                        error instanceof Error ? error.message : 'Unknown error';
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         descriptions: []
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+        status: statusCode
       }
     );
   }

@@ -55,7 +55,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.enhanced-video-analysis]
-verify_jwt = false
+verify_jwt = true
 
 [functions.twelve-labs-audio-descriptions]
 verify_jwt = true
