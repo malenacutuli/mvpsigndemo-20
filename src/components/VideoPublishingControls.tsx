@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
   onDelete,
   isDeleting
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -323,7 +325,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
           <Button asChild size="sm" variant="outline" className="flex-1 font-light">
             <span className="flex items-center justify-center gap-1">
               <Globe className="w-3 h-3" />
-              Published
+              {t('common.published')}
             </span>
           </Button>
           <Tooltip>
@@ -416,7 +418,7 @@ export const VideoPublishingControls: React.FC<VideoPublishingControlsProps> = (
                 onClick={() => setEditingComplete(true)}
                 className="flex-1 font-light"
               >
-                ✓ Done Editing
+                ✓ {t('common.doneEditing')}
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>

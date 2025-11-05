@@ -345,6 +345,10 @@
         "fastTrack": "Via Rápida",
         "dedicated": "Dedicado"
       }
+    },
+    "common": {
+      "doneEditing": "Edição concluída",
+      "published": "Publicado"
     }
   }
 }

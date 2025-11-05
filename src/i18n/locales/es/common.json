@@ -1041,6 +1041,10 @@
       "deleteFailed": "Error al eliminar el canal"
     }
   },
+  "common": {
+    "doneEditing": "Edición completada",
+    "published": "Publicado"
+  },
   "languages": {
     "en": "Inglés",
     "es": "Español",

@@ -806,6 +806,10 @@
       "deleteFailed": "Failed to delete channel"
     }
   },
+  "common": {
+    "doneEditing": "Done Editing",
+    "published": "Published"
+  },
   "languages": {
     "en": "English",
     "es": "Spanish",

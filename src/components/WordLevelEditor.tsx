@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
   onWordsChange,
   className = ""
 }) => {
+  const { t } = useTranslation();
   const [words, setWords] = useState<WordData[]>([]);
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
 
@@ -225,7 +227,7 @@ export const WordLevelEditor: React.FC<WordLevelEditorProps> = ({
               variant="ghost"
               onClick={() => setSelectedWordIndex(null)}
             >
-              Done Editing
+              {t('common.doneEditing')}
             </Button>
           </div>
         </div>
