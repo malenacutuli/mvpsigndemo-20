@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,10 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, LogIn, Gift } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, LogIn, Gift, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Link } from 'react-router-dom';
 
 export const Auth = () => {
   const [email, setEmail] = useState('');
@@ -205,8 +204,22 @@ export const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <Card className="w-full max-w-md shadow-soft">
+    <div className="min-h-screen bg-background">
+      {/* Header with back to home link */}
+      <header className="border-b bg-background">
+        <div className="container mx-auto px-4 py-4">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-base font-light text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+        </div>
+      </header>
+
+      <div className="flex items-center justify-center p-4 py-12">
+      <Card className="w-full max-w-md shadow-soft rounded-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-light text-center text-foreground">
             {t('auth.welcomeToAxessible')}
@@ -484,18 +497,19 @@ export const Auth = () => {
           </Button>
 
           {error && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="mt-4 rounded-xl">
+              <AlertDescription className="font-light">{error}</AlertDescription>
             </Alert>
           )}
 
           {message && (
-            <Alert className="mt-4">
-              <AlertDescription>{message}</AlertDescription>
+            <Alert className="mt-4 rounded-xl">
+              <AlertDescription className="font-light">{message}</AlertDescription>
             </Alert>
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
