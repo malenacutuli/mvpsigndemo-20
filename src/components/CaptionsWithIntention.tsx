@@ -602,6 +602,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
           style={{
             fontFamily: 'Roboto Flex, system-ui, sans-serif',
             lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
+            fontStyle: cap.isOffCamera ? 'italic' : 'normal', // Apply italic for off-camera dialogue
           }}
         >
           {words.map((word, i) => {

@@ -82,12 +82,17 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [dataVersion, setDataVersion] = useState(0);
   const forceRefresh = () => setDataVersion(v => v + 1);
   
-  // Pure color resolver - NEVER reads unstable speaker_color field
+  // Pure color resolver - respects database color first
   const resolveSpeakerColor = useMemo(() => {
     const charById = new Map(characters.map(c => [c.id, c]));
     const charByName = new Map(characters.map(c => [c.name, c]));
 
-    return function(seg: { speaker?: string; character_id?: string | null }): string {
+    return function(seg: { speaker?: string; character_id?: string | null; speakerColor?: string }): string {
+      // Priority 0: Use existing speakerColor from database if present
+      if (seg.speakerColor) {
+        console.log('🎨 Using database color:', seg.speakerColor, 'for speaker:', seg.speaker);
+        return seg.speakerColor;
+      }
       // Priority 1: Direct character_id assignment
       if (seg.character_id) {
         const c = charById.get(seg.character_id);
