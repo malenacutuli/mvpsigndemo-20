@@ -38,7 +38,7 @@ serve(async (req) => {
       throw new Error(`Failed to fetch source description: ${fetchError?.message}`);
     }
 
-    console.log('📝 Source AD text:', sourceAD.text.substring(0, 100));
+    console.log('📝 Source AD:', sourceAD.description?.substring(0, 100) || 'No description text');
 
     // Check if translation already exists
     const { data: existingTranslation } = await supabase
@@ -89,7 +89,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
+        body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
           {
@@ -98,7 +98,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: sourceAD.text
+            content: sourceAD.description
           }
         ],
         temperature: 0.3,
@@ -121,7 +121,7 @@ serve(async (req) => {
       .from('audio_descriptions')
       .insert({
         video_id: video_id,
-        text: translatedText,
+        description: translatedText,
         start_time: sourceAD.start_time,
         end_time: sourceAD.end_time,
         language: target_language,
@@ -155,7 +155,7 @@ serve(async (req) => {
       metadata: {
         source_language: sourceAD.language,
         target_language: target_language,
-        text_length: sourceAD.text.length
+        text_length: sourceAD.description?.length || 0
       }
     });
 
