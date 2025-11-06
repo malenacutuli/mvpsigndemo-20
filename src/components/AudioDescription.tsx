@@ -100,9 +100,10 @@ useEffect(() => {
     isPlaying
   });
   
-  // Find description that matches current time with strict non-overlap checking
+  // Find description that matches current time with improved logic
   const potentialDescription = descriptions.find(desc => {
-    const isInTimeRange = currentTime >= desc.startTime && currentTime <= desc.endTime;
+    // Use half-open interval to avoid boundary double-hits
+    const isInTimeRange = currentTime >= desc.startTime && currentTime < desc.endTime;
     
     if (isInTimeRange) {
       console.log('🎯 Found matching description:', {
@@ -113,24 +114,25 @@ useEffect(() => {
         language,
         timestamp: desc.timestamp || 'not specified'
       });
-      
-      // Verify this is actually a gap in dialogue by checking if we're not overlapping with speech
-      const hasOverlap = descriptions.some(otherDesc => 
-        otherDesc !== desc && 
-        desc.startTime < otherDesc.endTime && 
-        desc.endTime > otherDesc.startTime
-      );
-      
-      if (hasOverlap) {
-        console.log('⚠️ Description overlaps with other content, skipping');
-        return false;
-      }
     }
     
     return isInTimeRange;
   });
   
-  setCurrentDescription(potentialDescription || null);
+  // If multiple matches (shouldn't happen with half-open interval), pick earliest/shortest
+  const matchingDescriptions = descriptions.filter(d =>
+    currentTime >= d.startTime && currentTime < d.endTime
+  );
+  
+  const chosen = matchingDescriptions.length > 1
+    ? matchingDescriptions.sort((a, b) => {
+        const startDiff = a.startTime - b.startTime;
+        if (startDiff !== 0) return startDiff;
+        return (a.endTime - a.startTime) - (b.endTime - b.startTime);
+      })[0]
+    : potentialDescription;
+  
+  setCurrentDescription(chosen || null);
 }, [currentTime, contentType, dynamicDescriptions, isPlaying, language]);
 
   // Enhanced TTS generation with cache-first approach - plays audio regardless of showOverlay

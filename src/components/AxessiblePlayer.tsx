@@ -127,7 +127,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generatedTranscript, setGeneratedTranscript] = useState<string>('');
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
   const [dynamicADEnabled, setDynamicADEnabled] = useState(false);
-  const [generatedAD, setGeneratedAD] = useState<Array<{ text: string; startTime: number; endTime: number; voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging' }> | null>(null);
+  const [generatedAD, setGeneratedAD] = useState<Array<{ 
+    text: string; 
+    startTime: number; 
+    endTime: number; 
+    voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
+    audio_url?: string;
+    audio_generation_status?: string;
+    id?: string;
+    requires_extension?: boolean;
+    extension_duration?: number;
+    extension_type?: 'pause' | 'slowdown' | 'none';
+  }> | null>(null);
   const [isGeneratingAD, setIsGeneratingAD] = useState(false);
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
@@ -174,7 +185,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     loadAdLanguages();
   }, [videoId]);
   
-  // Load audio descriptions when AD language changes
+  // Load audio descriptions when AD language changes (including EAD metadata)
   useEffect(() => {
     const loadAdDescriptions = async () => {
       if (!videoId || !adLanguage) return;
@@ -191,8 +202,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       if (!error && data) {
         console.log(`🎵 Loaded ${data.length} AD segments for ${adLanguage}`);
-        // Transform database data to match expected interface
-        const transformedData = data.map(ad => ({
+        // Transform database data to match expected interface, including EAD metadata
+        const transformedData = data.map((ad: any) => ({
           text: ad.description,
           startTime: ad.start_time,
           endTime: ad.end_time,
@@ -202,9 +213,15 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                       'encouraging') as 'passionate' | 'warm' | 'authoritative' | 'encouraging',
           audio_url: ad.audio_url,
           audio_generation_status: ad.audio_generation_status,
-          id: ad.id
+          id: ad.id,
+          // Include EAD metadata
+          requires_extension: ad.requires_extension || false,
+          extension_duration: ad.extension_duration,
+          extension_type: ad.extension_type || 'none'
         }));
-        setGeneratedAD(transformedData);
+        const deduped = dedupeByTime(transformedData);
+        setGeneratedAD(deduped);
+        console.log(`✅ Set ${deduped.length} deduplicated AD segments (${transformedData.length - deduped.length} duplicates removed)`);
       }
       
       setIsLoadingAdLanguage(false);
@@ -239,6 +256,21 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     videoRef,
     eadPreferences
   );
+
+  // Track which EAD segments have already been triggered (to prevent re-triggering on same segment)
+  const triggeredEADSegments = React.useRef<Set<string>>(new Set());
+
+  // Helper: Deduplicate segments by time (to avoid duplicates from DB)
+  const dedupeByTime = (segments: any[]): any[] => {
+    const seen = new Map<string, any>();
+    for (const seg of segments) {
+      const key = `${seg.startTime.toFixed(2)}-${seg.endTime.toFixed(2)}`;
+      if (!seen.has(key)) {
+        seen.set(key, seg);
+      }
+    }
+    return Array.from(seen.values());
+  };
   
   // Enhanced mobile fullscreen states
   const [isLandscape, setIsLandscape] = useState(false);
@@ -293,6 +325,38 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // Caption loading removed - using unified pipeline from EnhancedVideoPlayer via initialCaptions
   
+  // Trigger EAD for segments that require extension (purple overlay + video pause)
+  useEffect(() => {
+    if (!adEnabled || !eadEnabled || !generatedAD || generatedAD.length === 0) return;
+    if (eadState.isActive) return; // Don't trigger while EAD is already playing
+    if (!isPlaying) return; // Only trigger during playback
+    
+    const now = currentTime;
+    
+    // Find segment that requires extension and matches current time
+    const currentSegment = generatedAD.find(ad => 
+      ad.requires_extension === true && 
+      now >= ad.startTime && 
+      now < ad.endTime
+    );
+    
+    if (currentSegment && currentSegment.audio_url) {
+      const segmentKey = `${currentSegment.startTime}-${currentSegment.endTime}`;
+      
+      // Only trigger if we haven't already triggered this segment
+      if (!triggeredEADSegments.current.has(segmentKey)) {
+        console.log('🎬 Triggering EAD at', currentSegment.startTime.toFixed(1), ':', currentSegment.text.substring(0, 50));
+        triggeredEADSegments.current.add(segmentKey);
+        playExtendedAD(currentSegment, currentSegment.audio_url);
+      }
+    }
+  }, [currentTime, generatedAD, adEnabled, eadEnabled, eadState.isActive, isPlaying, playExtendedAD]);
+
+  // Clear triggered segments when seeking or changing language
+  useEffect(() => {
+    triggeredEADSegments.current.clear();
+  }, [adLanguage, videoSrc]);
+
   // Keyboard shortcut for Sign Language toggle
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1416,9 +1480,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             isPlaying={isPlaying}
             contentType={contentType}
             selectedVoice={selectedVoice}
-            dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
+            dynamicDescriptions={generatedAD && generatedAD.length > 0 ? dedupeByTime(generatedAD.filter(ad => !ad.requires_extension)) : undefined}
             language={adLanguage}
-            showOverlay={true}
+            showOverlay={false}
             eadEnabled={eadEnabled}
             videoId={videoId}
           />
@@ -1435,10 +1499,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 </h3>
               </div>
               
-              {/* Current description text */}
+              {/* Current description text - use text from generatedAD filtered by adLanguage */}
               {eadState.currentDescriptionId && generatedAD && (
                 <p className="text-ead-purple-700 text-lg leading-relaxed mb-4 font-light">
-                  {generatedAD.find((ad: any) => ad.id === eadState.currentDescriptionId)?.text}
+                  {generatedAD.find(ad => ad.id === eadState.currentDescriptionId)?.text || 'Audio Description Playing...'}
                 </p>
               )}
               
