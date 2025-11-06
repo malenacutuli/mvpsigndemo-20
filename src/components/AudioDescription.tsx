@@ -29,6 +29,9 @@ interface AudioDescription {
   endTime: number;
   voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
   timestamp?: number; // Optional timestamp for sync reference
+  audio_url?: string; // Cached audio URL from database
+  audio_generation_status?: string; // Status of audio generation
+  id?: string; // Database ID
 }
 
 // Native Spanish voices optimized for accessibility content
@@ -127,7 +130,7 @@ useEffect(() => {
   setCurrentDescription(potentialDescription || null);
 }, [currentTime, contentType, dynamicDescriptions, isPlaying, language]);
 
-  // Enhanced TTS generation with language-optimized voices
+  // Enhanced TTS generation with cache-first approach
   useEffect(() => {
     if (!isPlaying) {
       if (descriptionAudio && !descriptionAudio.paused) descriptionAudio.pause();
@@ -142,63 +145,95 @@ useEffect(() => {
       try {
         setIsGenerating(true);
         setGenError(null);
-        const voiceId = resolveVoiceId();
         
-        console.log('🎤 Generating TTS:', {
-          text: currentDescription.text.substring(0, 50) + '...',
-          language,
-          voiceId,
-          contentType
-        });
+        // STEP 1: Check if cached audio exists in database
+        const descriptionWithAudio = (dynamicDescriptions || []).find(desc => 
+          Math.abs(desc.startTime - currentDescription.startTime) < 0.5 &&
+          Math.abs(desc.endTime - currentDescription.endTime) < 0.5
+        );
         
-        const res = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/tts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
-          },
-          body: JSON.stringify({ 
-            text: currentDescription.text, 
-            voiceId, 
-            modelId: language === 'es' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5',
-            language: language
-          })
-        });
-        
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`TTS failed: ${res.status} - ${errorData.error || 'Unknown error'}`);
+        if (descriptionWithAudio?.audio_url && descriptionWithAudio?.audio_generation_status === 'completed') {
+          // CACHED: Use existing audio
+          console.log('🎵 Using cached audio:', descriptionWithAudio.audio_url);
+          
+          if (cancelled) return;
+          
+          const audio = new Audio(descriptionWithAudio.audio_url);
+          audio.onended = () => {
+            setIsDescriptionPlaying(false);
+          };
+          audio.volume = 0.85;
+          setDescriptionAudio(audio);
+          setIsDescriptionPlaying(true);
+          
+          await audio.play().catch((error) => {
+            console.error('Cached audio playback failed:', error);
+            setGenError(`Audio playback failed: ${error.message}`);
+          });
+          
+          console.log('✅ Cached audio playback started');
+        } else {
+          // FALLBACK: Generate new audio (only if no cache exists)
+          console.log('⚡ No cached audio, generating new...');
+          
+          const voiceId = resolveVoiceId();
+          
+          console.log('🎤 Generating TTS:', {
+            text: currentDescription.text.substring(0, 50) + '...',
+            language,
+            voiceId,
+            contentType
+          });
+          
+          const res = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/tts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
+            },
+            body: JSON.stringify({ 
+              text: currentDescription.text, 
+              voiceId, 
+              modelId: language === 'es' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5',
+              language: language
+            })
+          });
+          
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(`TTS failed: ${res.status} - ${errorData.error || 'Unknown error'}`);
+          }
+          
+          const blob = await res.blob();
+          if (cancelled) return;
+          
+          const url = URL.createObjectURL(blob);
+          if (descriptionAudio) {
+            try {
+              descriptionAudio.pause();
+              descriptionAudio.currentTime = 0;
+            } catch {}
+          }
+          
+          const audio = new Audio(url);
+          audio.onended = () => {
+            setIsDescriptionPlaying(false);
+            URL.revokeObjectURL(url);
+          };
+          audio.volume = 0.85;
+          setDescriptionAudio(audio);
+          setIsDescriptionPlaying(true);
+          
+          await audio.play().catch((error) => {
+            console.error('Audio playback failed:', error);
+            setGenError(`Audio playback failed: ${error.message}`);
+          });
+          
+          console.log('✅ TTS playback started successfully');
         }
-        
-        const blob = await res.blob();
-        if (cancelled) return;
-        
-        const url = URL.createObjectURL(blob);
-        if (descriptionAudio) {
-          try {
-            descriptionAudio.pause();
-            descriptionAudio.currentTime = 0;
-          } catch {}
-        }
-        
-        const audio = new Audio(url);
-        audio.onended = () => {
-          setIsDescriptionPlaying(false);
-          URL.revokeObjectURL(url);
-        };
-        audio.volume = 0.85; // Slightly reduced for better balance
-        setDescriptionAudio(audio);
-        setIsDescriptionPlaying(true);
-        
-        await audio.play().catch((error) => {
-          console.error('Audio playback failed:', error);
-          setGenError(`Audio playback failed: ${error.message}`);
-        });
-        
-        console.log('✅ TTS playback started successfully');
       } catch (e: any) {
-        console.error('TTS generation failed:', e);
+        console.error('Audio Description playback failed:', e);
         setGenError(e.message || 'Failed to generate audio');
         setIsDescriptionPlaying(false);
       } finally {
@@ -209,7 +244,7 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [currentDescription, isPlaying, selectedVoice, contentType, language]);
+  }, [currentDescription, isPlaying, selectedVoice, contentType, language, dynamicDescriptions]);
 
   // Helper functions for rendering
   const getVoiceStyleColor = (style: string) => {

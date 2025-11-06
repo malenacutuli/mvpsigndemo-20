@@ -394,6 +394,30 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           console.log('⏭️ Segment', i + 1, 'already translated');
         } else {
           console.log('✅ Translated segment', i + 1, ':', data?.text?.substring(0, 50));
+          
+          // Step 2.5: Auto-generate audio for translated description
+          if (data?.id) {
+            try {
+              console.log(`🎵 Auto-generating audio for translated segment ${i + 1}...`);
+              const audioResponse = await supabase.functions.invoke('generate-ad-audio', {
+                body: {
+                  description_id: data.id,
+                  video_id: videoId,
+                  text: data.text,
+                  language: targetLanguage,
+                  voice_id: null // Use default voice for language
+                }
+              });
+              
+              if (audioResponse.error) {
+                console.warn(`⚠️ Audio generation failed for segment ${i + 1}:`, audioResponse.error);
+              } else {
+                console.log(`✅ Audio generated for segment ${i + 1}`);
+              }
+            } catch (audioError) {
+              console.warn(`⚠️ Audio generation error for segment ${i + 1}:`, audioError);
+            }
+          }
         }
       }
       

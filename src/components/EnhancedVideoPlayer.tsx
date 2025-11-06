@@ -70,6 +70,28 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
   
+  // Load audio descriptions from database with cached audio URLs
+  useEffect(() => {
+    const loadAudioDescriptionsFromDB = async () => {
+      if (!videoId) return;
+      
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', currentLanguage)
+        .eq('audio_generation_status', 'completed') // Only load completed audio
+        .order('start_time');
+      
+      if (!error && data) {
+        console.log(`🎵 Loaded ${data.length} audio descriptions with cached audio for language: ${currentLanguage}`);
+        setAudioDescriptions(data);
+      }
+    };
+    
+    loadAudioDescriptionsFromDB();
+  }, [videoId, currentLanguage]);
+  
   // Stable list of detected speakers from transcript segments only (avoid flicker)
   const stableDetectedSpeakers = useMemo(() => {
     const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();

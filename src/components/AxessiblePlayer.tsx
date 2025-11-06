@@ -135,6 +135,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [currentLanguage, setCurrentLanguage] = useState(externalCurrentLanguage || originalLanguage);
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   
+  // Audio Description language (separate from dubbing language)
+  const [adLanguage, setAdLanguage] = useState(currentLanguage);
+  const [availableAdLanguages, setAvailableAdLanguages] = useState<string[]>([]);
+  
   // Sync with external language changes
   useEffect(() => {
     if (externalCurrentLanguage && externalCurrentLanguage !== currentLanguage) {
@@ -142,6 +146,32 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       setCurrentLanguage(externalCurrentLanguage);
     }
   }, [externalCurrentLanguage]);
+  
+  // Load available AD languages from database
+  useEffect(() => {
+    const loadAdLanguages = async () => {
+      if (!videoId) return;
+      
+      const { data } = await supabase
+        .from('audio_descriptions')
+        .select('language, audio_generation_status')
+        .eq('video_id', videoId)
+        .eq('audio_generation_status', 'completed'); // Only show languages with generated audio
+      
+      if (data) {
+        const uniqueLangs = [...new Set(data.map(d => d.language))];
+        setAvailableAdLanguages(uniqueLangs);
+        console.log('🌍 Available AD languages:', uniqueLangs);
+        
+        // Set initial AD language if not already set
+        if (uniqueLangs.length > 0 && !uniqueLangs.includes(adLanguage)) {
+          setAdLanguage(uniqueLangs[0]);
+        }
+      }
+    };
+    
+    loadAdLanguages();
+  }, [videoId]);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
@@ -1347,7 +1377,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             contentType={contentType}
             selectedVoice={selectedVoice}
             dynamicDescriptions={dynamicDescriptions && dynamicDescriptions.length > 0 ? dynamicDescriptions : (generatedAD || undefined)}
-            language={currentLanguage}
+            language={adLanguage}
             showOverlay={false}
             eadEnabled={eadEnabled}
           />
@@ -1497,16 +1527,34 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               )}
             </div>
             
-            {/* Audio Description */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAdEnabled(!adEnabled)}
-              title="Toggle audio description"
-              className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${adEnabled ? 'bg-accent/20 text-accent-foreground' : ''}`}
-            >
-              <AudioLines className="w-4 h-4" />
-            </Button>
+            {/* Audio Description with Language Selector */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAdEnabled(!adEnabled)}
+                title="Toggle audio description"
+                className={`text-primary-foreground hover:text-primary hover:bg-primary/20 ${adEnabled ? 'bg-accent/20 text-accent-foreground' : ''}`}
+              >
+                <AudioLines className="w-4 h-4" />
+              </Button>
+              
+              {/* AD Language Selector - Only show when AD is enabled and multiple languages available */}
+              {adEnabled && availableAdLanguages.length > 1 && (
+                <select
+                  value={adLanguage}
+                  onChange={(e) => setAdLanguage(e.target.value)}
+                  className="bg-black/60 border border-white/20 rounded px-2 py-1 text-xs text-primary-foreground"
+                  title="Audio Description Language"
+                >
+                  {availableAdLanguages.map(lang => (
+                    <option key={lang} value={lang}>
+                      AD: {lang.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
             {/* Extended Audio Description (pauses video for longer descriptions) */}
             <Button
