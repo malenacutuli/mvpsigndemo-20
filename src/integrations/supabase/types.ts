@@ -1677,6 +1677,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      sync_character_to_segments: {
+        Args: { p_character_id: string; p_language: string; p_video_id: string }
+        Returns: number
+      }
       system_get_stripe_customer_for_webhook: {
         Args: { user_email: string }
         Returns: string

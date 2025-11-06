@@ -453,6 +453,20 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             console.error(`❌ [${lang}] Failed to apply mapping for ${speakerLabel}:`, error);
             throw error;
           }
+
+          // Sync character properties (color, is_off_camera) to all matching segments
+          const { data: syncCount, error: syncError } = await supabase.rpc('sync_character_to_segments', {
+            p_video_id: videoId,
+            p_language: lang,
+            p_character_id: charId
+          });
+
+          if (syncError) {
+            console.error(`❌ [${lang}] Failed to sync character to segments:`, syncError);
+            throw syncError;
+          }
+
+          console.log(`✅ [${lang}] Synced character properties to ${syncCount} segments for ${speakerLabel}`);
         }
         
         console.log(`✅ [${lang}] Applied all character mappings`);

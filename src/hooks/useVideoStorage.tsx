@@ -277,7 +277,7 @@ export const useVideoStorage = (videoId: string) => {
         // ✅ STEP 2: Load segments from ONE canonical source only (include transcript_id)
         const segQuery = supabase
           .from('transcript_segments_clean')
-          .select('id, transcript_id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, speaker_color, character_id, characters(id, name, color)')
+          .select('id, transcript_id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, speaker_color, character_id, is_off_camera, characters(id, name, color, is_off_camera)')
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
@@ -344,6 +344,7 @@ export const useVideoStorage = (videoId: string) => {
             speakerAsrLabel: r.speaker_asr_label ?? null,
             characterId: r.character_id ?? null,
             character_id: r.character_id ?? null,
+            isOffCamera: r.characters?.is_off_camera ?? r.is_off_camera ?? false,
             words: r.words ? parseWordsData(r.words) : undefined
           }));
 
