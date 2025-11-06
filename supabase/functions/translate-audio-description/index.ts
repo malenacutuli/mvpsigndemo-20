@@ -68,10 +68,10 @@ serve(async (req) => {
       );
     }
 
-    // Translate using OpenAI GPT-4o-mini
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    // Translate using Google Gemini via Lovable AI Gateway
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const languageNames: Record<string, string> = {
@@ -90,14 +90,14 @@ serve(async (req) => {
 
     const targetLanguageName = languageNames[target_language] || target_language;
 
-    const translationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const translationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
         body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
@@ -118,7 +118,7 @@ serve(async (req) => {
       
       // Handle rate limit errors specifically
       if (translationResponse.status === 429) {
-        console.error('⚠️ OpenAI rate limit exceeded');
+        console.error('⚠️ Lovable AI rate limit exceeded');
         return new Response(
           JSON.stringify({ 
             error: 'Rate limit exceeded. Please wait a moment before translating more descriptions.',
@@ -132,7 +132,7 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`OpenAI API error: ${translationResponse.status} - ${errorText}`);
+      throw new Error(`Lovable AI API error: ${translationResponse.status} - ${errorText}`);
     }
 
     const translationData = await translationResponse.json();
@@ -140,7 +140,7 @@ serve(async (req) => {
     const translatedText = typeof content === 'string' ? content.trim() : '';
 
     if (!translatedText) {
-      throw new Error('OpenAI returned empty translation');
+      throw new Error('Gemini returned empty translation');
     }
 
     console.log('✨ Translated text:', translatedText ? translatedText.substring(0, 100) : '[empty]');
@@ -175,16 +175,17 @@ serve(async (req) => {
       throw new Error(`Failed to insert translation: ${insertError.message}`);
     }
 
-    // Track API cost (~$0.001 per translation)
+    // Track API cost (~$0.0005 per translation with Gemini)
     await supabase.from('api_cost_tracking').insert({
       video_id: video_id,
-      service_name: 'openai-translation',
+      service_name: 'lovable-ai-gemini-translation',
       operation_type: 'translate-audio-description',
-      cost_amount: 0.001,
+      cost_amount: 0.0005,
       metadata: {
         source_language: sourceAD.language,
         target_language: target_language,
-        text_length: sourceAD.description?.length || 0
+        text_length: sourceAD.description?.length || 0,
+        model: 'google/gemini-2.5-flash'
       }
     });
 
