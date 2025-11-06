@@ -224,14 +224,19 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       <Globe className="w-4 h-4 text-primary-foreground" />
       
       <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-        <SelectTrigger className="w-24 h-8 text-xs bg-black/50 border-white/20 text-primary-foreground">
-          <SelectValue placeholder="Lang" />
+        <SelectTrigger className="w-28 h-8 text-xs bg-black/50 border-white/20 text-primary-foreground">
+          <SelectValue placeholder="Dub: Lang" />
         </SelectTrigger>
         <SelectContent className="bg-background border-border z-50">
-          <SelectItem value="original">Original</SelectItem>
+          <SelectItem value="original">
+            <span className="flex items-center gap-1">
+              <Globe className="w-3 h-3" />
+              Original Audio
+            </span>
+          </SelectItem>
           {LANGUAGES.map((lang) => (
             <SelectItem key={lang.code} value={lang.code}>
-              {lang.name}
+              Dub: {lang.name}
             </SelectItem>
           ))}
         </SelectContent>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles, Gauge, AudioLines } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles, Gauge, AudioLines, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -138,6 +138,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   // Audio Description language (separate from dubbing language)
   const [adLanguage, setAdLanguage] = useState(currentLanguage);
   const [availableAdLanguages, setAvailableAdLanguages] = useState<string[]>([]);
+  const [isLoadingAdLanguage, setIsLoadingAdLanguage] = useState(false);
   
   // Sync with external language changes
   useEffect(() => {
@@ -172,6 +173,45 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     
     loadAdLanguages();
   }, [videoId]);
+  
+  // Load audio descriptions when AD language changes
+  useEffect(() => {
+    const loadAdDescriptions = async () => {
+      if (!videoId || !adLanguage) return;
+      
+      setIsLoadingAdLanguage(true);
+      
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', adLanguage)
+        .eq('audio_generation_status', 'completed')
+        .order('start_time');
+      
+      if (!error && data) {
+        console.log(`🎵 Loaded ${data.length} AD segments for ${adLanguage}`);
+        // Transform database data to match expected interface
+        const transformedData = data.map(ad => ({
+          text: ad.description,
+          startTime: ad.start_time,
+          endTime: ad.end_time,
+          voiceStyle: (ad.voice_name?.toLowerCase().includes('warm') ? 'warm' :
+                      ad.voice_name?.toLowerCase().includes('passion') ? 'passionate' :
+                      ad.voice_name?.toLowerCase().includes('author') ? 'authoritative' :
+                      'encouraging') as 'passionate' | 'warm' | 'authoritative' | 'encouraging',
+          audio_url: ad.audio_url,
+          audio_generation_status: ad.audio_generation_status,
+          id: ad.id
+        }));
+        setGeneratedAD(transformedData);
+      }
+      
+      setIsLoadingAdLanguage(false);
+    };
+    
+    loadAdDescriptions();
+  }, [videoId, adLanguage]);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
@@ -1380,6 +1420,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             language={adLanguage}
             showOverlay={false}
             eadEnabled={eadEnabled}
+            videoId={videoId}
           />
         )}
 
@@ -1541,18 +1582,26 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               
               {/* AD Language Selector - Only show when AD is enabled and multiple languages available */}
               {adEnabled && availableAdLanguages.length > 1 && (
-                <select
-                  value={adLanguage}
-                  onChange={(e) => setAdLanguage(e.target.value)}
-                  className="bg-black/60 border border-white/20 rounded px-2 py-1 text-xs text-primary-foreground"
-                  title="Audio Description Language"
-                >
-                  {availableAdLanguages.map(lang => (
-                    <option key={lang} value={lang}>
-                      AD: {lang.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-1 bg-purple-500/20 border border-purple-400/40 rounded px-2 py-1">
+                  {isLoadingAdLanguage ? (
+                    <Loader2 className="w-3 h-3 text-purple-300 animate-spin" />
+                  ) : (
+                    <AudioLines className="w-3 h-3 text-purple-300" />
+                  )}
+                  <select
+                    value={adLanguage}
+                    onChange={(e) => setAdLanguage(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs text-primary-foreground cursor-pointer"
+                    title="Audio Description Language (Accessibility Narration)"
+                    disabled={isLoadingAdLanguage}
+                  >
+                    {availableAdLanguages.map(lang => (
+                      <option key={lang} value={lang} className="bg-background text-foreground">
+                        AD: {lang.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 

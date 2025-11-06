@@ -21,6 +21,8 @@ interface AudioDescriptionProps {
   showOverlay?: boolean;
   // Extended Audio Description enabled
   eadEnabled?: boolean;
+  // Video ID for database queries
+  videoId?: string;
 }
 
 interface AudioDescription {
@@ -61,6 +63,7 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   language = 'en',
   showOverlay = true,
   eadEnabled = false,
+  videoId,
 }) => {
   const [currentDescription, setCurrentDescription] = useState<AudioDescription | null>(null);
   const [isDescriptionPlaying, setIsDescriptionPlaying] = useState(false);
