@@ -92,14 +92,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   }, [initialCaptions]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const lastEADCheckTime = useRef<number>(0);
+  const eadPlayedIdsRef = useRef<Set<string>>(new Set()); // Single ref for EAD tracking
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
-  const [playedEadIds, setPlayedEadIds] = useState<Set<string>>(new Set());
   
   // === Sign Language toggle state (safe default + persistence) ===
   const [showSignLanguage, setShowSignLanguage] = useState<boolean>(() => {
@@ -133,12 +132,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     startTime: number; 
     endTime: number; 
     voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
-    audio_url?: string;
-    audio_generation_status?: string;
+    audioUrl?: string;
+    audioGenerationStatus?: string;
     id?: string;
-    requires_extension?: boolean;
-    extension_duration?: number;
-    extension_type?: 'pause' | 'slowdown' | 'none';
+    requiresExtension?: boolean;
+    extensionDuration?: number;
+    extensionType?: 'pause' | 'slowdown' | 'none';
+    language?: string;
+    priorityLevel?: string;
   }> | null>(null);
   const [isGeneratingAD, setIsGeneratingAD] = useState(false);
   const [generateADError, setGenerateADError] = useState<string | null>(null);
@@ -281,14 +282,67 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     skipShortcutEnabled: true
   });
 
-  // Initialize EAD hook
-  const { eadState, playExtendedAD, skipCurrentAD } = useExtendedAudioDescription(
+  // Initialize EAD hook for state management only
+  const { eadState, skipCurrentAD } = useExtendedAudioDescription(
     videoRef,
     eadPreferences
   );
 
-  // Track which EAD segments have already been triggered (to prevent re-triggering on same segment)
-  const triggeredEADSegments = React.useRef<Set<string>>(new Set());
+  // === EAD Trigger Function (camelCase, runs once per segment) ===
+  const maybeTriggerEAD = React.useCallback((now: number) => {
+    if (!eadEnabled || !generatedAD?.length) return;
+
+    // Find first matching EAD segment at current time
+    const seg = generatedAD.find(ad =>
+      ad.requiresExtension &&
+      !!ad.audioUrl &&
+      ad.id &&
+      now >= ad.startTime &&
+      now < ad.endTime
+    );
+
+    if (!seg || !seg.id) return;
+    if (eadPlayedIdsRef.current.has(seg.id)) return; // Already played
+
+    console.log('🎬 EAD Trigger:', {
+      id: seg.id,
+      text: seg.text?.slice(0, 60),
+      at: now.toFixed(2),
+      extType: seg.extensionType,
+      extDur: seg.extensionDuration,
+    });
+
+    // Pause or slow down video
+    if (seg.extensionType === 'pause' && videoRef.current) {
+      videoRef.current.pause();
+    } else if (seg.extensionType === 'slowdown' && videoRef.current) {
+      videoRef.current.playbackRate = 0.75;
+    }
+
+    // Play AD audio, then resume/restore
+    const audio = new Audio(seg.audioUrl);
+    audio.onended = () => {
+      if (seg.extensionType === 'pause' && videoRef.current) {
+        videoRef.current.play();
+      } else if (seg.extensionType === 'slowdown' && videoRef.current) {
+        videoRef.current.playbackRate = 1.0;
+      }
+    };
+    audio.onerror = (err) => {
+      console.warn('⚠️ EAD audio play failed:', err);
+      // Restore video state even on error
+      if (videoRef.current) {
+        if (seg.extensionType === 'pause') {
+          videoRef.current.play();
+        } else if (seg.extensionType === 'slowdown') {
+          videoRef.current.playbackRate = 1.0;
+        }
+      }
+    };
+    audio.play().catch(err => console.warn('⚠️ EAD audio play failed:', err));
+
+    eadPlayedIdsRef.current.add(seg.id);
+  }, [eadEnabled, generatedAD]);
 
   // Helper: Deduplicate segments by time (to avoid duplicates from DB)
   const dedupeByTime = (segments: any[]): any[] => {
@@ -355,12 +409,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // Caption loading removed - using unified pipeline from EnhancedVideoPlayer via initialCaptions
   
-  // ❌ REMOVED: Old EAD trigger using snake_case fields (replaced by requestVideoFrameCallback-based trigger below)
+  // ❌ REMOVED: Old EAD triggers and effects - now using unified maybeTriggerEAD
   
-
-  // Clear triggered segments when seeking or changing language
+  // Reset EAD tracking when seeking or changing language
   useEffect(() => {
-    triggeredEADSegments.current.clear();
+    eadPlayedIdsRef.current.clear();
   }, [adLanguage, videoSrc]);
 
   // Keyboard shortcut for Sign Language toggle
@@ -534,44 +587,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           lastVideoTime = videoTime;
         }
         
-        // Check for Extended Audio Description triggers
-        if (eadEnabled && !eadState.isActive && generatedAD) {
-          const currentVideoTime = video.currentTime;
-          
-          // Debug log every 5 seconds
-          if (currentVideoTime % 5 < 0.1) {
-            console.log('🔍 EAD Check:', {
-              eadEnabled,
-              prefsEnabled: eadPreferences.eadEnabled,
-              adCount: generatedAD.length,
-              currentTime: currentVideoTime.toFixed(2),
-              lastCheck: lastEADCheckTime.current.toFixed(2)
-            });
-          }
-          
-          // Range-based detection: check if we've crossed a trigger point
-          const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => {
-            const hasCrossedTrigger = 
-              lastEADCheckTime.current < ad.startTime &&  // We were before the trigger
-              currentVideoTime >= ad.startTime - 0.1;      // We're now at or past it
-            
-            return ad.requiresExtension &&
-              ad.audioUrl &&
-              ad.id &&
-              !playedEadIds.has(ad.id) &&
-              hasCrossedTrigger &&
-              ad.extensionType === 'pause';
-          });
-
-          // Update last check time
-          lastEADCheckTime.current = currentVideoTime;
-          
-          if (needsExtension && needsExtension.audioUrl && needsExtension.id) {
-            console.log('🎬 Triggering Extended AD:', needsExtension.text.substring(0, 50) + '...');
-            playExtendedAD(needsExtension, needsExtension.audioUrl);
-            setPlayedEadIds(prev => new Set(prev).add(needsExtension.id!));
-          }
-        }
+        // Trigger EAD check using unified function
+        maybeTriggerEAD(videoTime);
         
         // Continue loop
         if ('requestVideoFrameCallback' in video) {
@@ -592,7 +609,6 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const handlePlay = () => {
       lastPerformanceTime = performance.now();
       lastVideoTime = video.currentTime;
-      lastEADCheckTime.current = video.currentTime || 0; // Reset for range detection
       
       if ('requestVideoFrameCallback' in video) {
         console.log('⏱️ Using requestVideoFrameCallback for frame-accurate timing');
@@ -630,74 +646,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   // ❌ REMOVED: Duplicate AD loader (conflicted with adLanguage loader above)
 
-  // Trigger EAD for segments at or near video start (0s)
-  useEffect(() => {
-    if (!eadEnabled || !generatedAD || generatedAD.length === 0) return;
-    
-    const video = videoRef.current;
-    if (!video) return;
+  // ❌ REMOVED: Old EAD pre-roll trigger (now handled by unified maybeTriggerEAD)
 
-    const checkStartEAD = () => {
-      const earlySegment = (generatedAD as AudioDescriptionSegment[]).find(ad =>
-        ad.requiresExtension &&
-        ad.audioUrl &&
-        ad.id &&
-        ad.startTime <= 0.4 &&  // Within first 400ms
-        ad.extensionType === 'pause' &&
-        !playedEadIds.has(ad.id)
-      );
-
-      if (earlySegment && earlySegment.audioUrl && earlySegment.id) {
-        console.log('🎬 Pre-roll EAD trigger:', earlySegment.text.substring(0, 50) + '...');
-        playExtendedAD(earlySegment, earlySegment.audioUrl);
-        setPlayedEadIds(prev => new Set(prev).add(earlySegment.id!));
-      }
-    };
-
-    // Check immediately if video is already playing
-    if (!video.paused && video.currentTime < 1) {
-      checkStartEAD();
-    }
-
-    // Also check on next play event
-    const handlePlay = () => {
-      if (video.currentTime < 1) {
-        checkStartEAD();
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, [eadEnabled, generatedAD, playExtendedAD, playedEadIds]);
-
-  // Safety net: catch any missed EADs
-  useEffect(() => {
-    if (!eadEnabled || !generatedAD) return;
-    
-    const interval = setInterval(() => {
-      const video = videoRef.current;
-      if (!video || video.paused) return;
-      
-      // Check if we missed any EADs in the last 2 seconds
-      const missedEAD = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) =>
-        ad.requiresExtension &&
-        ad.audioUrl &&
-        ad.id &&
-        !playedEadIds.has(ad.id) &&
-        video.currentTime > ad.startTime &&
-        video.currentTime < ad.startTime + 2 &&
-        ad.extensionType === 'pause'
-      );
-      
-      if (missedEAD && !eadState.isActive) {
-        console.log('🔄 Catching missed EAD:', missedEAD.text.substring(0, 50));
-        playExtendedAD(missedEAD, missedEAD.audioUrl!);
-        setPlayedEadIds(prev => new Set(prev).add(missedEAD.id!));
-      }
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [eadEnabled, generatedAD, eadState.isActive, playExtendedAD]);
+  // ❌ REMOVED: Old EAD safety net (now handled by unified maybeTriggerEAD)
 
   // Save EAD preferences to database
   const saveEADPreferences = async (updates: Partial<UserEADPreferences>) => {
@@ -792,8 +743,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const newTime = (value[0] / 100) * duration;
     video.currentTime = newTime;
     setCurrentTime(newTime);
-    setPlayedEadIds(new Set()); // Reset EAD tracking when seeking
-    lastEADCheckTime.current = newTime; // Reset last check time for range detection
+    eadPlayedIdsRef.current.clear(); // Reset EAD tracking when seeking
   };
 
   const handleVolumeChange = (value: number[]) => {
@@ -1433,7 +1383,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           const filteredAD = generatedAD && generatedAD.length > 0 
             ? dedupeByTime(
                 eadEnabled 
-                  ? generatedAD.filter(ad => !ad.requires_extension)  // EAD ON: Filter out extended segments (handled by pause system)
+                  ? generatedAD.filter(ad => !ad.requiresExtension)  // EAD ON: Filter out extended segments (handled by pause system)
                   : generatedAD  // EAD OFF: Play ALL segments inline (even if marked as requiring extension)
               )
             : undefined;
@@ -1443,9 +1393,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             eadEnabled,
             totalAD: generatedAD?.length || 0,
             filteredAD: filteredAD?.length || 0,
-            withAudio: generatedAD?.filter(ad => ad.audio_url).length || 0,
-            pending: generatedAD?.filter(ad => ad.audio_generation_status === 'pending').length || 0,
-            requiresExtension: generatedAD?.filter(ad => ad.requires_extension).length || 0,
+            withAudio: generatedAD?.filter(ad => ad.audioUrl).length || 0,
+            pending: generatedAD?.filter(ad => ad.audioGenerationStatus === 'pending').length || 0,
+            requiresExtension: generatedAD?.filter(ad => ad.requiresExtension).length || 0,
             language: adLanguage
           });
           
