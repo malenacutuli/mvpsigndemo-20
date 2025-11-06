@@ -91,6 +91,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   }, [initialCaptions]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastEADCheckTime = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -403,19 +404,27 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               eadEnabled,
               prefsEnabled: eadPreferences.eadEnabled,
               adCount: generatedAD.length,
-              currentTime: currentVideoTime.toFixed(2)
+              currentTime: currentVideoTime.toFixed(2),
+              lastCheck: lastEADCheckTime.current.toFixed(2)
             });
           }
           
-          const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => 
-            ad.requiresExtension &&
-            ad.audioUrl &&
-            ad.id &&
-            !playedEadIds.has(ad.id) &&
-            currentVideoTime >= ad.startTime - 0.2 &&
-            currentVideoTime < ad.startTime + 0.3 &&
-            ad.extensionType === 'pause'
-          );
+          // Range-based detection: check if we've crossed a trigger point
+          const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => {
+            const hasCrossedTrigger = 
+              lastEADCheckTime.current < ad.startTime &&  // We were before the trigger
+              currentVideoTime >= ad.startTime - 0.1;      // We're now at or past it
+            
+            return ad.requiresExtension &&
+              ad.audioUrl &&
+              ad.id &&
+              !playedEadIds.has(ad.id) &&
+              hasCrossedTrigger &&
+              ad.extensionType === 'pause';
+          });
+
+          // Update last check time
+          lastEADCheckTime.current = currentVideoTime;
           
           if (needsExtension && needsExtension.audioUrl && needsExtension.id) {
             console.log('🎬 Triggering Extended AD:', needsExtension.text.substring(0, 50) + '...');
@@ -443,6 +452,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const handlePlay = () => {
       lastPerformanceTime = performance.now();
       lastVideoTime = video.currentTime;
+      lastEADCheckTime.current = video.currentTime || 0; // Reset for range detection
       
       if ('requestVideoFrameCallback' in video) {
         console.log('⏱️ Using requestVideoFrameCallback for frame-accurate timing');
@@ -571,6 +581,35 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     return () => video.removeEventListener('play', handlePlay);
   }, [eadEnabled, generatedAD, playExtendedAD, playedEadIds]);
 
+  // Safety net: catch any missed EADs
+  useEffect(() => {
+    if (!eadEnabled || !generatedAD) return;
+    
+    const interval = setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused) return;
+      
+      // Check if we missed any EADs in the last 2 seconds
+      const missedEAD = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) =>
+        ad.requiresExtension &&
+        ad.audioUrl &&
+        ad.id &&
+        !playedEadIds.has(ad.id) &&
+        video.currentTime > ad.startTime &&
+        video.currentTime < ad.startTime + 2 &&
+        ad.extensionType === 'pause'
+      );
+      
+      if (missedEAD && !eadState.isActive) {
+        console.log('🔄 Catching missed EAD:', missedEAD.text.substring(0, 50));
+        playExtendedAD(missedEAD, missedEAD.audioUrl!);
+        setPlayedEadIds(prev => new Set(prev).add(missedEAD.id!));
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [eadEnabled, generatedAD, eadState.isActive, playExtendedAD]);
+
   // Save EAD preferences to database
   const saveEADPreferences = async (updates: Partial<UserEADPreferences>) => {
     // Update local state IMMEDIATELY (works for both logged-in and guest users)
@@ -665,6 +704,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     video.currentTime = newTime;
     setCurrentTime(newTime);
     setPlayedEadIds(new Set()); // Reset EAD tracking when seeking
+    lastEADCheckTime.current = newTime; // Reset last check time for range detection
   };
 
   const handleVolumeChange = (value: number[]) => {
