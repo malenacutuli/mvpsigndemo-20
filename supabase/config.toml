@@ -137,3 +137,7 @@ verify_jwt = true
 
 [functions.analyze-vocal-intensity]
 verify_jwt = true
+
+[functions.translate-audio-description]
+verify_jwt = true
+

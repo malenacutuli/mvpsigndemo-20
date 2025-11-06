@@ -68,6 +68,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [eadAnalysisResults, setEadAnalysisResults] = useState<Map<string, EADAnalysisResult>>(new Map());
   const [isAnalyzingEAD, setIsAnalyzingEAD] = useState(false);
 
+  // Multi-language state
+  const [currentLanguage, setCurrentLanguage] = useState(detectedLanguage);
+  const [availableLanguages, setAvailableLanguages] = useState<string[]>([detectedLanguage]);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
+
   // Local UI state
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,7 +88,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const currentTaskRef = React.useRef<{ indexId: string; taskId: string } | null>(null);
 
   // Load existing audio descriptions from database
-  const loadExistingDescriptions = async () => {
+  const loadExistingDescriptions = async (language: string = currentLanguage) => {
     if (!videoId) return;
     
     setIsLoading(true);
@@ -91,7 +97,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         .from('audio_descriptions')
         .select('*')
         .eq('video_id', videoId)
-        .eq('language', detectedLanguage)
+        .eq('language', language)
         .order('start_time', { ascending: true });
 
       if (error) {
@@ -128,6 +134,18 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         setDescriptions(loadedDescriptions);
         onDescriptionsUpdate?.(loadedDescriptions);
         console.log('✅ Loaded', loadedDescriptions.length, 'existing audio descriptions');
+      }
+
+      // Check which languages have audio descriptions
+      const { data: allLanguages } = await supabase
+        .from('audio_descriptions')
+        .select('language')
+        .eq('video_id', videoId);
+      
+      if (allLanguages) {
+        const uniqueLanguages = [...new Set(allLanguages.map(l => l.language))];
+        setAvailableLanguages(uniqueLanguages);
+        console.log('📚 Available languages:', uniqueLanguages);
       }
     } catch (error) {
       console.error('Failed to load audio descriptions:', error);
@@ -284,6 +302,109 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
   const getVoiceStyleColor = (voiceId: string): string => {
     return 'text-orange-600';
+  };
+
+  // Language helper functions
+  const supportedLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru'];
+  
+  const getLanguageDisplay = (code: string): string => {
+    const languageNames: Record<string, string> = {
+      'en': '🇬🇧 English',
+      'es': '🇪🇸 Español',
+      'fr': '🇫🇷 Français',
+      'de': '🇩🇪 Deutsch',
+      'it': '🇮🇹 Italiano',
+      'pt': '🇵🇹 Português',
+      'ja': '🇯🇵 日本語',
+      'ko': '🇰🇷 한국어',
+      'zh': '🇨🇳 中文',
+      'ar': '🇸🇦 العربية',
+      'ru': '🇷🇺 Русский'
+    };
+    return languageNames[code] || code;
+  };
+
+  // Handle language change
+  const handleLanguageChange = async (newLanguage: string) => {
+    console.log('🌍 Changing language to:', newLanguage);
+    setCurrentLanguage(newLanguage);
+    await loadExistingDescriptions(newLanguage);
+  };
+
+  // Translate all descriptions to target language
+  const translateAllDescriptions = async (targetLanguage: string) => {
+    if (!videoId || descriptions.length === 0) return;
+    
+    setIsTranslating(true);
+    setTranslationProgress({ current: 0, total: descriptions.length });
+    
+    try {
+      console.log(`🌍 Starting translation of ${descriptions.length} segments to ${targetLanguage}`);
+      
+      for (let i = 0; i < descriptions.length; i++) {
+        const desc = descriptions[i];
+        
+        // Only translate if we have an ID (saved to database)
+        if (!desc.id) {
+          console.warn('⚠️ Skipping translation for unsaved description');
+          continue;
+        }
+
+        setTranslationProgress({ current: i + 1, total: descriptions.length });
+
+        const { data, error } = await supabase.functions.invoke('translate-audio-description', {
+          body: {
+            source_description_id: desc.id,
+            target_language: targetLanguage,
+            video_id: videoId
+          }
+        });
+
+        if (error) {
+          console.error('❌ Translation error for segment', i, ':', error);
+          toast.error(`Failed to translate segment ${i + 1}`);
+        } else {
+          console.log('✅ Translated segment', i + 1, ':', data.text?.substring(0, 50));
+        }
+      }
+
+      toast.success(`Translated ${descriptions.length} segments to ${getLanguageDisplay(targetLanguage)}`);
+      
+      // Reload descriptions for the new language
+      await handleLanguageChange(targetLanguage);
+      
+    } catch (error) {
+      console.error('❌ Translation failed:', error);
+      toast.error('Translation failed');
+    } finally {
+      setIsTranslating(false);
+      setTranslationProgress({ current: 0, total: 0 });
+    }
+  };
+
+  // Generate audio for all descriptions in current language
+  const handleGenerateAllAudio = async () => {
+    if (descriptions.length === 0) {
+      toast.error('No audio descriptions to generate');
+      return;
+    }
+
+    const pendingDescriptions = descriptions.filter(d => 
+      d.id && (!d.audio_generation_status || d.audio_generation_status === 'pending')
+    );
+
+    if (pendingDescriptions.length === 0) {
+      toast.info('All audio descriptions already generated');
+      return;
+    }
+
+    toast.info(`Generating audio for ${pendingDescriptions.length} descriptions...`);
+
+    for (const desc of pendingDescriptions) {
+      if (desc.id) {
+        await generateAudioForDescription(desc.id, desc.text);
+      }
+    }
   };
 
   const computeGaps = (segments: any[]): { start: number; end: number }[] => {
@@ -1075,6 +1196,94 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   </SelectContent>
                 </Select>
             </div>
+          </div>
+
+          {/* Multi-Language Audio Description Selector */}
+          <div className="space-y-3">
+            <Label className="text-sm font-light">Audio Description Language</Label>
+            <Select value={currentLanguage} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="font-light">
+                <SelectValue>
+                  {getLanguageDisplay(currentLanguage)}
+                  {currentLanguage === detectedLanguage && " (Original)"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50 shadow-lg border">
+                {supportedLanguages.map(lang => (
+                  <SelectItem key={lang} value={lang} className="font-light">
+                    <div className="flex items-center gap-2">
+                      <span>{getLanguageDisplay(lang)}</span>
+                      {availableLanguages.includes(lang) && (
+                        <Badge variant="outline" className="text-xs font-light">
+                          Available
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Translation Controls */}
+            {currentLanguage !== detectedLanguage && !availableLanguages.includes(currentLanguage) && descriptions.length > 0 && (
+              <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-light text-foreground mb-2">
+                      Audio descriptions not yet translated to {getLanguageDisplay(currentLanguage)}
+                    </p>
+                    <Button
+                      onClick={() => translateAllDescriptions(currentLanguage)}
+                      disabled={isTranslating}
+                      size="sm"
+                      className="font-light"
+                    >
+                      {isTranslating ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                          Translating {translationProgress.current}/{translationProgress.total}...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-3 h-3 mr-2" />
+                          Translate to {getLanguageDisplay(currentLanguage)}
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs font-light text-muted-foreground mt-2">
+                      Est. cost: ${(descriptions.length * 0.001).toFixed(3)} (90% savings vs re-analysis)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Generate All Audio button for translated language */}
+            {currentLanguage !== detectedLanguage && availableLanguages.includes(currentLanguage) && (
+              <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-light text-foreground mb-2">
+                      Translations available. Generate audio for all segments?
+                    </p>
+                    <Button
+                      onClick={handleGenerateAllAudio}
+                      size="sm"
+                      variant="outline"
+                      className="font-light"
+                    >
+                      <Volume2 className="w-3 h-3 mr-2" />
+                      Generate All Audio
+                    </Button>
+                    <p className="text-xs font-light text-muted-foreground mt-2">
+                      Will generate TTS for {descriptions.filter(d => !d.audio_url).length} pending segments
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
