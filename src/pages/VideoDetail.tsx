@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fixAdLanguages } from "@/utils/fixAdLanguages";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,13 @@ const VideoDetail = () => {
     if (id) {
       console.log('✅ ID found, fetching video...');
       fetchVideo();
+      
+      // Auto-fix AD language fields
+      fixAdLanguages(id).then((result) => {
+        if (result.success) {
+          console.log('🔧 AD languages fixed:', result.updated);
+        }
+      });
     } else {
       console.error('❌ No video ID found in URL');
     }
