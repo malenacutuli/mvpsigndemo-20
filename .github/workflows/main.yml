@@ -1,0 +1,34 @@
+name: Enviar cambios a repositorio GitLab de Bjäland
+
+# Disparador: Se activa en cada 'push' a la rama 'main'
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  mirror-to-gitlab-repo:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Actualiza el código de tu repositorio de origen
+      # 'fetch-depth: 0' para obtener todo el historial
+      - name: Checkout de la última versión de código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Envía los cambios al repositorio remoto
+      - name: Enviar al repositorio de Bjäland
+        env:
+          # URL del repositorio de Bjäland, con su token de acceso privado.
+          # Este token debería estar como un secret en las settings de GitHub, pero no tengo acceso
+          DESTINATION_GIT_REPOSITORY: https://github-user:glpat-HsCfQNFLKJnf8T2us5N5y@gitlab.bjaland.co/malena-cutuli/axessible.git
+          
+        run: |
+          git remote add -t main gitlab ${{env.DESTINATION_GIT_REPOSITORY}} 
+          git config set advice.skippedCherryPicks false
+          git config user.email "github@axessible.com"
+          git config user.name "Lovable from GitHub"
+          git pull gitlab main --rebase
+          git push gitlab
