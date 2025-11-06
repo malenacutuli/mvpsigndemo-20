@@ -333,54 +333,73 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
   // Translate all descriptions to target language
   const translateAllDescriptions = async (targetLanguage: string) => {
-    if (!videoId || descriptions.length === 0) return;
+    if (!videoId) return;
     
     setIsTranslating(true);
-    setTranslationProgress({ current: 0, total: descriptions.length });
     
     try {
-      console.log(`🌍 Starting translation of ${descriptions.length} segments to ${targetLanguage}`);
+      // Step 1: Fetch ONLY original descriptions (not translations)
+      console.log(`🌍 Fetching original descriptions for translation to ${targetLanguage}`);
       
-      for (let i = 0; i < descriptions.length; i++) {
-        const desc = descriptions[i];
+      const result = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', detectedLanguage)
+        .is('is_translation', false)
+        .order('start_time');
+      
+      const sourceDescriptions = result.data;
+      const fetchError = result.error;
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+      
+      if (!sourceDescriptions || sourceDescriptions.length === 0) {
+        toast.error('No original audio descriptions found. Please generate them first.');
+        return;
+      }
+      
+      console.log(`✅ Found ${sourceDescriptions.length} original descriptions to translate`);
+      setTranslationProgress({ current: 0, total: sourceDescriptions.length });
+      
+      // Step 2: Translate each original description
+      for (let i = 0; i < sourceDescriptions.length; i++) {
+        const sourceDesc = sourceDescriptions[i];
         
-        // Only translate if we have an ID (saved to database)
-        if (!desc.id) {
-          console.warn('⚠️ Skipping translation for unsaved description');
-          continue;
-        }
-
-        setTranslationProgress({ current: i + 1, total: descriptions.length });
-
+        setTranslationProgress({ current: i + 1, total: sourceDescriptions.length });
+        
         const { data, error } = await supabase.functions.invoke('translate-audio-description', {
           body: {
-            source_description_id: desc.id,
+            source_description_id: sourceDesc.id,
             target_language: targetLanguage,
             video_id: videoId
           }
         });
-
+        
         if (error) {
           console.error('❌ Translation error for segment', i, ':', error);
           
-          // Check if it's a rate limit error
+          // Check for rate limit
           if (error.message?.includes('Rate limit')) {
-            toast.error('OpenAI rate limit reached. Please wait 30 seconds and try again.', {
+            toast.error('Rate limit reached. Please wait and try again.', {
               duration: 5000
             });
-            // Stop the translation loop
             break;
           }
           
           toast.error(`Failed to translate segment ${i + 1}`);
+        } else if (data?.skipped) {
+          console.log('⏭️ Segment', i + 1, 'already translated');
         } else {
           console.log('✅ Translated segment', i + 1, ':', data?.text?.substring(0, 50));
         }
       }
-
-      toast.success(`Translated ${descriptions.length} segments to ${getLanguageDisplay(targetLanguage)}`);
       
-      // Reload descriptions for the new language
+      toast.success(`Translated ${sourceDescriptions.length} segments to ${getLanguageDisplay(targetLanguage)}`);
+      
+      // Step 3: Switch to the new language tab
       await handleLanguageChange(targetLanguage);
       
     } catch (error) {
