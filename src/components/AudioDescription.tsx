@@ -31,8 +31,8 @@ interface AudioDescription {
   endTime: number;
   voiceStyle: 'passionate' | 'warm' | 'authoritative' | 'encouraging';
   timestamp?: number; // Optional timestamp for sync reference
-  audio_url?: string; // Cached audio URL from database
-  audio_generation_status?: string; // Status of audio generation
+  audioUrl?: string; // Cached audio URL from database
+  audioGenerationStatus?: string; // Status of audio generation
   id?: string; // Database ID
 }
 
@@ -157,13 +157,13 @@ useEffect(() => {
           Math.abs(desc.endTime - currentDescription.endTime) < 0.5
         );
         
-        if (descriptionWithAudio?.audio_url && descriptionWithAudio?.audio_generation_status === 'completed') {
+        if (descriptionWithAudio?.audioUrl && descriptionWithAudio?.audioGenerationStatus === 'completed') {
           // CACHED: Use existing audio
-          console.log('🎵 Using cached audio:', descriptionWithAudio.audio_url);
+          console.log('🎵 Using cached audio:', descriptionWithAudio.audioUrl);
           
           if (cancelled) return;
           
-          const audio = new Audio(descriptionWithAudio.audio_url);
+          const audio = new Audio(descriptionWithAudio.audioUrl);
           audio.onended = () => {
             setIsDescriptionPlaying(false);
           };
