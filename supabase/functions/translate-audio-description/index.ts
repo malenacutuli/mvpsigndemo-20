@@ -115,6 +115,23 @@ serve(async (req) => {
 
     if (!translationResponse.ok) {
       const errorText = await translationResponse.text();
+      
+      // Handle rate limit errors specifically
+      if (translationResponse.status === 429) {
+        console.error('⚠️ OpenAI rate limit exceeded');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Please wait a moment before translating more descriptions.',
+            rateLimitExceeded: true,
+            retryAfter: 20
+          }),
+          { 
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
       throw new Error(`OpenAI API error: ${translationResponse.status} - ${errorText}`);
     }
 

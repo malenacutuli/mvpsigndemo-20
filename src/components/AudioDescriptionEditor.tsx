@@ -362,9 +362,19 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
 
         if (error) {
           console.error('❌ Translation error for segment', i, ':', error);
+          
+          // Check if it's a rate limit error
+          if (error.message?.includes('Rate limit')) {
+            toast.error('OpenAI rate limit reached. Please wait 30 seconds and try again.', {
+              duration: 5000
+            });
+            // Stop the translation loop
+            break;
+          }
+          
           toast.error(`Failed to translate segment ${i + 1}`);
         } else {
-          console.log('✅ Translated segment', i + 1, ':', data.text?.substring(0, 50));
+          console.log('✅ Translated segment', i + 1, ':', data?.text?.substring(0, 50));
         }
       }
 
