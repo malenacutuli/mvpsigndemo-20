@@ -1355,18 +1355,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
         {/* Extended Audio Description Overlay - Shows when video is paused for description */}
         {eadState.isActive && eadPreferences.showVisualIndicator && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 animate-in fade-in duration-300">
-            <div className="bg-gradient-to-r from-amber-900/90 to-orange-900/90 border-2 border-amber-500 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-300">
+            <div className="bg-gradient-to-br from-ead-purple-100/95 to-ead-purple-200/95 backdrop-blur-md border border-ead-purple-300 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
-                <Pause className="w-8 h-8 text-amber-400 animate-pulse" />
-                <h3 className="text-2xl font-bold text-amber-100">
+                <Pause className="w-8 h-8 text-ead-purple-500 animate-pulse" />
+                <h3 className="text-2xl font-light text-ead-purple-900">
                   Paused for Audio Description
                 </h3>
               </div>
               
               {/* Current description text */}
               {eadState.currentDescriptionId && generatedAD && (
-                <p className="text-amber-50 text-lg leading-relaxed mb-4">
+                <p className="text-ead-purple-700 text-lg leading-relaxed mb-4 font-light">
                   {generatedAD.find((ad: any) => ad.id === eadState.currentDescriptionId)?.text}
                 </p>
               )}
@@ -1374,13 +1374,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               {/* Progress indicator */}
               {eadState.remainingDuration && (
                 <div className="mb-4">
-                  <div className="flex justify-between text-sm text-amber-200 mb-2">
+                  <div className="flex justify-between text-sm text-ead-purple-700 mb-2 font-light">
                     <span>Audio Description Playing...</span>
                     <span>{Math.ceil(eadState.remainingDuration)}s remaining</span>
                   </div>
-                  <div className="w-full bg-amber-950/50 rounded-full h-2">
+                  <div className="w-full bg-ead-purple-200 rounded-full h-2">
                     <div 
-                      className="bg-amber-400 h-2 rounded-full transition-all duration-1000 animate-pulse"
+                      className="bg-ead-purple-500 h-2 rounded-full transition-all duration-1000 animate-pulse"
                       style={{ width: '100%' }}
                     />
                   </div>
@@ -1392,14 +1392,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 <Button
                   onClick={skipCurrentAD}
                   variant="outline"
-                  className="w-full bg-amber-950/30 border-amber-600 text-amber-100 hover:bg-amber-900/50 hover:border-amber-400 transition-colors"
+                  className="w-full bg-ead-purple-100 border-ead-purple-400 text-ead-purple-900 hover:bg-ead-purple-200 hover:border-ead-purple-500 transition-colors font-light"
                 >
-                  <span className="font-semibold">Skip Description (Shift+D)</span>
+                  <span className="font-light">Skip Description (Shift+D)</span>
                 </Button>
               )}
               
               {!eadPreferences.skipShortcutEnabled && (
-                <p className="text-amber-300 text-sm text-center">
+                <p className="text-ead-purple-700 text-sm text-center font-light">
                   Video will resume automatically when description completes
                 </p>
               )}

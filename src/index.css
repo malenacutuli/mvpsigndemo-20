@@ -52,6 +52,17 @@ Focused on high contrast, readable typography, and inclusive design.
     --cwi-support-cyan: 180 70% 55%;
     --cwi-support-pink: 330 75% 60%;
 
+    /* Extended Audio Description - Pastel Purple Theme */
+    --ead-purple-50: 270 100% 98%;
+    --ead-purple-100: 270 100% 95%;
+    --ead-purple-200: 270 80% 92%;
+    --ead-purple-300: 270 70% 85%;
+    --ead-purple-400: 270 60% 70%;
+    --ead-purple-500: 270 65% 60%;
+    --ead-purple-700: 270 50% 35%;
+    --ead-purple-900: 270 60% 20%;
+    --ead-purple-950: 270 70% 12%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
@@ -130,6 +141,17 @@ Focused on high contrast, readable typography, and inclusive design.
     --cwi-main-orange: 25 85% 60%;
     --cwi-main-green: 120 60% 55%;
     --cwi-main-purple: 280 60% 65%;
+
+    /* Dark mode Extended Audio Description - Pastel Purple Theme */
+    --ead-purple-50: 270 60% 12%;
+    --ead-purple-100: 270 50% 18%;
+    --ead-purple-200: 270 40% 25%;
+    --ead-purple-300: 270 35% 35%;
+    --ead-purple-400: 270 50% 50%;
+    --ead-purple-500: 270 60% 65%;
+    --ead-purple-700: 270 80% 85%;
+    --ead-purple-900: 270 100% 95%;
+    --ead-purple-950: 270 100% 98%;
   }
 
   /* Gradients for beautiful accessibility-focused design */

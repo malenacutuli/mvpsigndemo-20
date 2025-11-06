@@ -81,6 +81,17 @@ export default {
 					'support-cyan': 'hsl(var(--cwi-support-cyan))',
 					'support-pink': 'hsl(var(--cwi-support-pink))'
 				},
+				'ead-purple': {
+					'50': 'hsl(var(--ead-purple-50))',
+					'100': 'hsl(var(--ead-purple-100))',
+					'200': 'hsl(var(--ead-purple-200))',
+					'300': 'hsl(var(--ead-purple-300))',
+					'400': 'hsl(var(--ead-purple-400))',
+					'500': 'hsl(var(--ead-purple-500))',
+					'700': 'hsl(var(--ead-purple-700))',
+					'900': 'hsl(var(--ead-purple-900))',
+					'950': 'hsl(var(--ead-purple-950))'
+				},
 				charcoal: 'hsl(var(--charcoal))'
 			},
 			borderRadius: {
