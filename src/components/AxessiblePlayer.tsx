@@ -186,52 +186,78 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     loadAdLanguages();
   }, [videoId]);
   
-  // Load audio descriptions when AD language changes (including EAD metadata)
+  // === AD LOADER (single source of truth; camelCase only) ===
   useEffect(() => {
-    const loadAdDescriptions = async () => {
+    const loadAudioDescriptions = async () => {
       if (!videoId || !adLanguage) return;
       
       setIsLoadingAdLanguage(true);
       
-      // PHASE 4: Add logging for language filtering
-      console.log(`🔊 Loading AD for language: ${adLanguage.toUpperCase()}`);
-      
       const { data, error } = await supabase
         .from('audio_descriptions')
-        .select('*')
+        .select(`
+          id, video_id, language, start_time, end_time, description,
+          audio_url, audio_generation_status,
+          voice_id, voice_name,
+          requires_extension, extension_duration, extension_type,
+          estimated_duration, gap_duration, priority_level
+        `)
         .eq('video_id', videoId)
         .eq('language', adLanguage)
-        .eq('audio_generation_status', 'completed')
-        .order('start_time');
-      
-      if (!error && data) {
-        console.log(`✅ Loaded ${data.length} completed AD segments for ${adLanguage.toUpperCase()}`);
-        // Transform database data to match expected interface, including EAD metadata
-        const transformedData = data.map((ad: any) => ({
-          text: ad.description,
-          startTime: ad.start_time,
-          endTime: ad.end_time,
-          voiceStyle: (ad.voice_name?.toLowerCase().includes('warm') ? 'warm' :
-                      ad.voice_name?.toLowerCase().includes('passion') ? 'passionate' :
-                      ad.voice_name?.toLowerCase().includes('author') ? 'authoritative' :
-                      'encouraging') as 'passionate' | 'warm' | 'authoritative' | 'encouraging',
-          audio_url: ad.audio_url,
-          audio_generation_status: ad.audio_generation_status,
-          id: ad.id,
-          // Include EAD metadata
-          requires_extension: ad.requires_extension || false,
-          extension_duration: ad.extension_duration,
-          extension_type: ad.extension_type || 'none'
-        }));
-        const deduped = dedupeByTime(transformedData);
-        setGeneratedAD(deduped);
-        console.log(`✅ Set ${deduped.length} deduplicated AD segments (${transformedData.length - deduped.length} duplicates removed)`);
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('❌ AD load failed:', error);
+        setIsLoadingAdLanguage(false);
+        return;
       }
-      
+
+      const transformed = (data ?? []).map((ad: any) => ({
+        id: ad.id,
+        text: ad.description,
+        startTime: Number(ad.start_time),
+        endTime: Number(ad.end_time),
+        voiceStyle: (ad.voice_name?.toLowerCase().includes('warm') ? 'warm' :
+                    ad.voice_name?.toLowerCase().includes('passion') ? 'passionate' :
+                    ad.voice_name?.toLowerCase().includes('author') ? 'authoritative' :
+                    'encouraging') as 'passionate' | 'warm' | 'authoritative' | 'encouraging',
+        // ✅ camelCase only
+        audioUrl: ad.audio_url,
+        audioGenerationStatus: ad.audio_generation_status,
+        requiresExtension: !!ad.requires_extension,
+        extensionDuration: Number(ad.extension_duration ?? 0),
+        extensionType: ad.extension_type ?? 'none',
+        estimatedDuration: Number(ad.estimated_duration ?? 0),
+        gapDuration: Number(ad.gap_duration ?? 0),
+        voiceId: ad.voice_id ?? null,
+        voiceName: ad.voice_name ?? null,
+        language: ad.language,
+        priorityLevel: ad.priority_level ?? 'important',
+      }));
+
+      // De-dupe by [startTime, endTime, language]
+      const key = (x: any) => `${x.startTime}-${x.endTime}-${x.language}`;
+      const deduped = Array.from(new Map(transformed.map(d => [key(d), d])).values());
+
+      setGeneratedAD(deduped);
       setIsLoadingAdLanguage(false);
+
+      // Helpful diagnostics
+      console.log('🔊 AD Loader Results:', {
+        language: adLanguage,
+        total: deduped.length,
+        withAudio: deduped.filter(d => !!d.audioUrl).length,
+        pending: deduped.filter(d => d.audioGenerationStatus === 'pending').length,
+        requiresExtension: deduped.filter(d => d.requiresExtension).length,
+        extTypes: {
+          pause: deduped.filter(d => d.extensionType === 'pause').length,
+          slowdown: deduped.filter(d => d.extensionType === 'slowdown').length,
+          none: deduped.filter(d => d.extensionType === 'none').length,
+        }
+      });
     };
     
-    loadAdDescriptions();
+    loadAudioDescriptions();
   }, [videoId, adLanguage]);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
@@ -626,58 +652,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     };
   }, []);
 
-  // Load saved audio descriptions from database
-  useEffect(() => {
-    if (!videoId) return;
-
-    const loadAudioDescriptions = async () => {
-      try {
-        // Query only for the current language
-        const { data, error } = await supabase
-          .from('audio_descriptions')
-          .select('*')
-          .eq('video_id', videoId)
-          .eq('language', currentLanguage || 'en')
-          .order('start_time');
-
-        if (error) {
-          console.error('Error loading audio descriptions:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const formattedDescriptions = data.map(desc => ({
-            id: desc.id,
-            text: desc.description,
-            startTime: desc.start_time,
-            endTime: desc.end_time,  
-            voiceStyle: 'warm' as const,
-            timestamp: desc.start_time,
-            // EAD metadata - critical for pause/resume functionality
-            requiresExtension: desc.requires_extension || false,
-            extensionDuration: desc.extension_duration || 0,
-            extensionType: desc.extension_type || 'none',
-            estimatedDuration: desc.estimated_duration || 0,
-            gapDuration: desc.gap_duration || 0,
-            audioUrl: desc.audio_url || null,
-            audioGenerationStatus: desc.audio_generation_status || 'pending',
-            priorityLevel: desc.priority_level || 'important',
-            confidence: desc.confidence || null,
-            voiceId: desc.voice_id || null,
-            voiceName: desc.voice_name || null
-          }));
-          setGeneratedAD(formattedDescriptions);
-          console.log('📢 AxessiblePlayer loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions');
-        } else {
-          console.log('📢 AxessiblePlayer: No audio descriptions found for video:', videoId, 'language:', currentLanguage);
-        }
-      } catch (error) {
-        console.error('Failed to load audio descriptions:', error);
-      }
-    };
-
-    loadAudioDescriptions();
-  }, [videoId, currentLanguage]);
+  // ❌ REMOVED: Duplicate AD loader (conflicted with adLanguage loader above)
 
   // Trigger EAD for segments at or near video start (0s)
   useEffect(() => {
