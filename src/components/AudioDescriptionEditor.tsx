@@ -1056,16 +1056,16 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                     setSelectedVoice(v);
                   }}
                 >
-                  <SelectTrigger className="h-8">
+                  <SelectTrigger className="h-8 font-light">
                     <SelectValue placeholder="Choose voice" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background z-50 shadow-lg">
+                  <SelectContent className="bg-background z-50 shadow-lg border">
                     {filteredVoices.map(v => (
-                      <SelectItem key={v.id} value={v.id}>
+                      <SelectItem key={v.id} value={v.id} className="font-light">
                         <div className="flex items-center gap-2">
-                          <span>{v.name}</span>
+                          <span className="font-light">{v.name}</span>
                           {v.category && (
-                            <Badge variant="outline" className={getCategoryColor(v.category)}>
+                            <Badge variant="outline" className={`${getCategoryColor(v.category)} font-light`}>
                               {v.category}
                             </Badge>
                           )}
@@ -1177,14 +1177,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         value={manualStartTime}
                         onChange={(e) => setManualStartTime(e.target.value)}
                         placeholder="0:00.0 or 1:23:45.0"
-                        className="text-xs font-mono"
+                        className="text-xs font-mono font-light"
                       />
                       <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setManualStartTime(adjustTime(manualStartTime, -5))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Subtract 5 seconds"
                         >
                           -5s
@@ -1193,7 +1193,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualStartTime(adjustTime(manualStartTime, -1))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Subtract 1 second"
                         >
                           -1s
@@ -1202,7 +1202,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualStartTime(adjustTime(manualStartTime, 1))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Add 1 second"
                         >
                           +1s
@@ -1211,7 +1211,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualStartTime(adjustTime(manualStartTime, 5))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Add 5 seconds"
                         >
                           +5s
@@ -1226,14 +1226,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         value={manualEndTime}
                         onChange={(e) => setManualEndTime(e.target.value)}
                         placeholder="0:05.0 or 1:23:45.0"
-                        className="text-xs font-mono"
+                        className="text-xs font-mono font-light"
                       />
                       <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setManualEndTime(adjustTime(manualEndTime, -5))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Subtract 5 seconds"
                         >
                           -5s
@@ -1242,7 +1242,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualEndTime(adjustTime(manualEndTime, -1))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Subtract 1 second"
                         >
                           -1s
@@ -1251,7 +1251,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualEndTime(adjustTime(manualEndTime, 1))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Add 1 second"
                         >
                           +1s
@@ -1260,7 +1260,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           size="sm"
                           variant="outline"
                           onClick={() => setManualEndTime(adjustTime(manualEndTime, 5))}
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs font-light"
                           title="Add 5 seconds"
                         >
                           +5s
@@ -1273,14 +1273,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 <div>
                   <Label className="text-sm font-light">Voice Style</Label>
                   <Select value={manualVoiceStyle} onValueChange={setManualVoiceStyle}>
-                    <SelectTrigger className="h-8">
+                    <SelectTrigger className="h-8 font-light">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50 shadow-lg">
-                      <SelectItem value="passionate">Passionate</SelectItem>
-                      <SelectItem value="warm">Warm</SelectItem>
-                      <SelectItem value="authoritative">Authoritative</SelectItem>
-                      <SelectItem value="encouraging">Encouraging</SelectItem>
+                    <SelectContent className="bg-background z-50 shadow-lg border">
+                      <SelectItem value="passionate" className="font-light">Passionate</SelectItem>
+                      <SelectItem value="warm" className="font-light">Warm</SelectItem>
+                      <SelectItem value="authoritative" className="font-light">Authoritative</SelectItem>
+                      <SelectItem value="encouraging" className="font-light">Encouraging</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1291,13 +1291,13 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                     value={manualText}
                     onChange={(e) => setManualText(e.target.value)}
                     placeholder="Enter audio description..."
-                    className="min-h-[60px]"
+                    className="min-h-[60px] font-light"
                   />
                 </div>
 
                 <Button 
                   onClick={addManualSegment} 
-                  className="w-full"
+                  className="w-full font-light"
                   disabled={!manualText.trim() || parseTimeInput(manualEndTime) <= parseTimeInput(manualStartTime)}
                 >
                   Add Description
@@ -1315,6 +1315,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   <Button
                     size="sm"
                     variant="outline"
+                    className="font-light"
                     onClick={generateAllAudio}
                     disabled={isGenerating || descriptions.some(d => d.id && generatingAudioIds.has(d.id))}
                   >
@@ -1332,7 +1333,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                   </Button>
                 </div>
                 {descriptions.map((desc, index) => (
-                  <div key={index} className="border rounded-xl p-3">
+                  <div key={index} className="border rounded-xl p-4 bg-card">
                     {editingIndex === index ? (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
@@ -1343,14 +1344,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                 value={editStartTime}
                                 onChange={(e) => setEditStartTime(e.target.value)}
                                 placeholder="0:00.0 or 1:23:45.0"
-                                className="text-xs font-mono"
+                                className="text-xs font-mono font-light"
                               />
                               <div className="flex gap-1">
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditStartTime(adjustTime(editStartTime, -5))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Subtract 5 seconds"
                                 >
                                   -5s
@@ -1359,7 +1360,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditStartTime(adjustTime(editStartTime, -1))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Subtract 1 second"
                                 >
                                   -1s
@@ -1368,7 +1369,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditStartTime(adjustTime(editStartTime, 1))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Add 1 second"
                                 >
                                   +1s
@@ -1377,7 +1378,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditStartTime(adjustTime(editStartTime, 5))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Add 5 seconds"
                                 >
                                   +5s
@@ -1392,14 +1393,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                 value={editEndTime}
                                 onChange={(e) => setEditEndTime(e.target.value)}
                                 placeholder="0:05.0 or 1:23:45.0"
-                                className="text-xs font-mono"
+                                className="text-xs font-mono font-light"
                               />
                               <div className="flex gap-1">
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditEndTime(adjustTime(editEndTime, -5))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Subtract 5 seconds"
                                 >
                                   -5s
@@ -1408,7 +1409,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditEndTime(adjustTime(editEndTime, -1))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Subtract 1 second"
                                 >
                                   -1s
@@ -1417,7 +1418,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditEndTime(adjustTime(editEndTime, 1))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Add 1 second"
                                 >
                                   +1s
@@ -1426,7 +1427,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditEndTime(adjustTime(editEndTime, 5))}
-                                  className="h-6 px-2 text-xs"
+                                  className="h-6 px-2 text-xs font-light"
                                   title="Add 5 seconds"
                                 >
                                   +5s
@@ -1439,14 +1440,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         <div>
                           <Label className="text-sm font-light">Voice Style</Label>
                           <Select value={editVoiceStyle} onValueChange={(value) => setEditVoiceStyle(value as any)}>
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger className="h-8 font-light">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="passionate">Passionate</SelectItem>
-                              <SelectItem value="warm">Warm</SelectItem>
-                              <SelectItem value="authoritative">Authoritative</SelectItem>
-                              <SelectItem value="encouraging">Encouraging</SelectItem>
+                            <SelectContent className="bg-background z-50 shadow-lg border">
+                              <SelectItem value="passionate" className="font-light">Passionate</SelectItem>
+                              <SelectItem value="warm" className="font-light">Warm</SelectItem>
+                              <SelectItem value="authoritative" className="font-light">Authoritative</SelectItem>
+                              <SelectItem value="encouraging" className="font-light">Encouraging</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1457,12 +1458,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
                             placeholder="Enter audio description..."
-                            className="min-h-[60px]"
+                            className="min-h-[60px] font-light"
                           />
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} disabled={isSaving}>
+                          <Button size="sm" className="font-light" onClick={saveEdit} disabled={isSaving}>
                             {isSaving ? (
                               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                             ) : (
@@ -1470,7 +1471,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             )}
                             Save
                           </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEdit}>
+                          <Button size="sm" variant="outline" className="font-light" onClick={cancelEdit}>
                             <X className="w-3 h-3 mr-1" />
                             Cancel
                           </Button>
@@ -1479,23 +1480,23 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                     ) : (
                       <>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs font-light">
                               <Clock className="w-3 h-3 mr-1" />
                               {formatTime(desc.startTime)} - {formatTime(desc.endTime)}
                             </Badge>
-                            <Badge variant="secondary" className={`text-xs ${getVoiceStyleColor(desc.voiceStyle)}`}>
+                            <Badge variant="secondary" className={`text-xs font-light ${getVoiceStyleColor(desc.voiceStyle)}`}>
                               {desc.voiceStyle}
                             </Badge>
                             {desc.timestamp && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs font-light">
                                 @{desc.timestamp.toFixed(1)}s
                               </Badge>
                             )}
                             {desc.id && (
                               <div className="flex items-center gap-1">
                                 {getAudioStatusIcon(desc.id)}
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs font-light text-muted-foreground">
                                   {audioGenerationStatus[desc.id] === 'completed' ? 'Audio ready' :
                                    audioGenerationStatus[desc.id] === 'failed' ? 'Audio failed' :
                                    audioGenerationStatus[desc.id] === 'processing' ? 'Generating...' :
@@ -1504,7 +1505,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                               </div>
                             )}
                           </div>
-                          <p className="text-sm text-foreground">{desc.text}</p>
+                          <p className="text-sm font-light text-foreground leading-relaxed">{desc.text}</p>
                           
                           {/* EAD Status Badge */}
                           {desc.id && eadAnalysisResults.has(desc.id) && (
@@ -1516,7 +1517,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                                 return (
                                   <Badge 
                                     variant="outline" 
-                                    className={`text-xs ${badge.color} border`}
+                                    className={`text-xs font-light ${badge.color} border`}
                                   >
                                     {badge.icon} {badge.label}
                                     {result.requiresExtension && (
@@ -1531,14 +1532,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-1 mt-2">
+                        <div className="flex items-center gap-1 mt-3">
                           {desc.id && (
                             <Button
                               size="sm"
                               variant="outline"
+                              className="font-light"
                               onClick={() => generateAudioForDescription(desc.id!, desc.text)}
                               disabled={desc.id && generatingAudioIds.has(desc.id)}
-                              className="h-8"
                               title={audioGenerationStatus[desc.id] === 'completed' ? 'Regenerate audio' : 'Generate audio'}
                             >
                               {desc.id && generatingAudioIds.has(desc.id) ? (
@@ -1553,7 +1554,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             size="sm"
                             variant="ghost"
                             onClick={() => startEditing(index)}
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 font-light"
+                            title="Edit description"
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
@@ -1561,7 +1563,8 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             size="sm"
                             variant="ghost"
                             onClick={() => deleteDescription(index)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                            className="h-8 w-8 p-0 font-light text-destructive hover:text-destructive/90"
+                            title="Delete description"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
