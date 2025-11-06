@@ -355,32 +355,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // Caption loading removed - using unified pipeline from EnhancedVideoPlayer via initialCaptions
   
-  // Trigger EAD for segments that require extension (purple overlay + video pause)
-  useEffect(() => {
-    if (!adEnabled || !eadEnabled || !generatedAD || generatedAD.length === 0) return;
-    if (eadState.isActive) return; // Don't trigger while EAD is already playing
-    if (!isPlaying) return; // Only trigger during playback
-    
-    const now = currentTime;
-    
-    // Find segment that requires extension and matches current time
-    const currentSegment = generatedAD.find(ad => 
-      ad.requires_extension === true && 
-      now >= ad.startTime && 
-      now < ad.endTime
-    );
-    
-    if (currentSegment && currentSegment.audio_url) {
-      const segmentKey = `${currentSegment.startTime}-${currentSegment.endTime}`;
-      
-      // Only trigger if we haven't already triggered this segment
-      if (!triggeredEADSegments.current.has(segmentKey)) {
-        console.log('🎬 Triggering EAD at', currentSegment.startTime.toFixed(1), ':', currentSegment.text.substring(0, 50));
-        triggeredEADSegments.current.add(segmentKey);
-        playExtendedAD(currentSegment, currentSegment.audio_url);
-      }
-    }
-  }, [currentTime, generatedAD, adEnabled, eadEnabled, eadState.isActive, isPlaying, playExtendedAD]);
+  // ❌ REMOVED: Old EAD trigger using snake_case fields (replaced by requestVideoFrameCallback-based trigger below)
+  
 
   // Clear triggered segments when seeking or changing language
   useEffect(() => {
