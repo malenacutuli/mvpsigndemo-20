@@ -32,13 +32,20 @@ serve(async (req) => {
       .from('audio_descriptions')
       .select('*')
       .eq('id', source_description_id)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !sourceAD) {
-      throw new Error(`Failed to fetch source description: ${fetchError?.message}`);
+    if (fetchError) {
+      throw new Error(`Failed to fetch source description: ${fetchError.message}`);
     }
 
-    console.log('📝 Source AD:', sourceAD.description?.substring(0, 100) || 'No description text');
+    if (!sourceAD) {
+      return new Response(
+        JSON.stringify({ error: 'Source description not found', notFound: true }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('📝 Source AD:', sourceAD.description ? String(sourceAD.description).substring(0, 100) : 'No description text');
 
     // Check if translation already exists
     const { data: existingTranslation } = await supabase
@@ -112,9 +119,14 @@ serve(async (req) => {
     }
 
     const translationData = await translationResponse.json();
-    const translatedText = translationData.choices[0].message.content.trim();
+    const content = translationData?.choices?.[0]?.message?.content;
+    const translatedText = typeof content === 'string' ? content.trim() : '';
 
-    console.log('✨ Translated text:', translatedText.substring(0, 100));
+    if (!translatedText) {
+      throw new Error('OpenAI returned empty translation');
+    }
+
+    console.log('✨ Translated text:', translatedText ? translatedText.substring(0, 100) : '[empty]');
 
     // Create new audio description record
     const { data: newAD, error: insertError } = await supabase
