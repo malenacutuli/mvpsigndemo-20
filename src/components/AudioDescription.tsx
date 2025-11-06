@@ -178,64 +178,17 @@ useEffect(() => {
           
           console.log('✅ Cached audio playback started');
         } else {
-          // FALLBACK: Generate new audio (only if no cache exists)
-          console.log('⚡ No cached audio, generating new...');
-          
-          const voiceId = resolveVoiceId();
-          
-          console.log('🎤 Generating TTS:', {
+          // NO FALLBACK GENERATION - Audio must be pre-generated in editor
+          // This prevents uncontrolled concurrent TTS requests during playback
+          console.warn('⚠️ No cached audio available for description:', {
             text: currentDescription.text.substring(0, 50) + '...',
-            language,
-            voiceId,
-            contentType
+            startTime: currentDescription.startTime,
+            endTime: currentDescription.endTime,
+            language
           });
           
-          const res = await fetch('https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/tts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw',
-              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZXlla3ludWR5emVvdGJqZnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDMyMzUsImV4cCI6MjA3MTc3OTIzNX0.ifRh6Lx1AsWMjSchaNqa5ELHnImOLWUMGtYZLGWD1Qw'
-            },
-            body: JSON.stringify({ 
-              text: currentDescription.text, 
-              voiceId, 
-              modelId: language === 'es' ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5',
-              language: language
-            })
-          });
-          
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(`TTS failed: ${res.status} - ${errorData.error || 'Unknown error'}`);
-          }
-          
-          const blob = await res.blob();
-          if (cancelled) return;
-          
-          const url = URL.createObjectURL(blob);
-          if (descriptionAudio) {
-            try {
-              descriptionAudio.pause();
-              descriptionAudio.currentTime = 0;
-            } catch {}
-          }
-          
-          const audio = new Audio(url);
-          audio.onended = () => {
-            setIsDescriptionPlaying(false);
-            URL.revokeObjectURL(url);
-          };
-          audio.volume = 0.85;
-          setDescriptionAudio(audio);
-          setIsDescriptionPlaying(true);
-          
-          await audio.play().catch((error) => {
-            console.error('Audio playback failed:', error);
-            setGenError(`Audio playback failed: ${error.message}`);
-          });
-          
-          console.log('✅ TTS playback started successfully');
+          setGenError('Audio not available. Please generate audio in the editor first.');
+          setIsDescriptionPlaying(false);
         }
       } catch (e: any) {
         console.error('Audio Description playback failed:', e);

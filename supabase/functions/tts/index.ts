@@ -85,60 +85,29 @@ serve(async (req) => {
 
     console.log("Making request to ElevenLabs API...");
     
-    // Retry logic for rate limiting (429 errors)
-    let elRes: Response | null = null;
-    let lastError: string = "";
-    const maxRetries = 3;
-    
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      elRes = await fetch(elevenUrl, {
-        method: "POST",
-        headers: {
-          "xi-api-key": XI_API_KEY,
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify(payload),
-      });
+    // NO RETRY LOGIC - Fail fast and let client-side queue handle retries
+    // This prevents concurrent request buildup
+    const elRes = await fetch(elevenUrl, {
+      method: "POST",
+      headers: {
+        "xi-api-key": XI_API_KEY,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
+      },
+      body: JSON.stringify(payload),
+    });
 
-      if (elRes.ok) {
-        break; // Success
-      }
-
+    if (!elRes.ok) {
       const errText = await elRes.text();
-      lastError = errText;
-      
-      // Handle 429 rate limit with exponential backoff
-      if (elRes.status === 429) {
-        const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-        console.warn(`Rate limited (429). Retry ${attempt + 1}/${maxRetries} after ${waitTime}ms`);
-        
-        if (attempt < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-      }
-      
-      // For non-429 errors, fail immediately
       console.error("ElevenLabs API error:", elRes.status, errText);
+      
+      // Return error immediately - client queue will handle retry logic
       return new Response(JSON.stringify({ 
         error: "ElevenLabs API error", 
         status: elRes.status,
         details: errText 
       }), {
         status: elRes.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!elRes || !elRes.ok) {
-      console.error("ElevenLabs API error after retries:", lastError);
-      return new Response(JSON.stringify({ 
-        error: "ElevenLabs API error", 
-        status: 429,
-        details: lastError 
-      }), {
-        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
