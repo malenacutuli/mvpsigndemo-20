@@ -484,11 +484,24 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
         if (data && data.length > 0) {
           const formattedDescriptions = data.map(desc => ({
+            id: desc.id,
             text: desc.description,
             startTime: desc.start_time,
             endTime: desc.end_time,  
             voiceStyle: 'warm' as const,
-            timestamp: desc.start_time
+            timestamp: desc.start_time,
+            // EAD metadata - critical for pause/resume functionality
+            requiresExtension: desc.requires_extension || false,
+            extensionDuration: desc.extension_duration || 0,
+            extensionType: desc.extension_type || 'none',
+            estimatedDuration: desc.estimated_duration || 0,
+            gapDuration: desc.gap_duration || 0,
+            audioUrl: desc.audio_url || null,
+            audioGenerationStatus: desc.audio_generation_status || 'pending',
+            priorityLevel: desc.priority_level || 'important',
+            confidence: desc.confidence || null,
+            voiceId: desc.voice_id || null,
+            voiceName: desc.voice_name || null
           }));
           setGeneratedAD(formattedDescriptions);
           console.log('📢 AxessiblePlayer loaded audio descriptions from database:', formattedDescriptions.length, 'descriptions');
