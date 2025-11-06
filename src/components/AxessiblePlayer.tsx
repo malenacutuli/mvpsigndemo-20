@@ -97,6 +97,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
+  const [playedEadIds, setPlayedEadIds] = useState<Set<string>>(new Set());
   
   // === Sign Language toggle state (safe default + persistence) ===
   const [showSignLanguage, setShowSignLanguage] = useState<boolean>(() => {
@@ -398,14 +399,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => 
             ad.requiresExtension &&
             ad.audioUrl &&
-            currentVideoTime >= ad.startTime - 0.1 &&
-            currentVideoTime < ad.startTime + 0.1 &&
+            ad.id &&
+            !playedEadIds.has(ad.id) &&
+            currentVideoTime >= ad.startTime - 0.2 &&
+            currentVideoTime < ad.startTime + 0.3 &&
             ad.extensionType === 'pause'
           );
           
-          if (needsExtension && needsExtension.audioUrl) {
+          if (needsExtension && needsExtension.audioUrl && needsExtension.id) {
             console.log('🎬 Triggering Extended AD:', needsExtension.text.substring(0, 50) + '...');
             playExtendedAD(needsExtension, needsExtension.audioUrl);
+            setPlayedEadIds(prev => new Set(prev).add(needsExtension.id!));
           }
         }
         
@@ -608,6 +612,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const newTime = (value[0] / 100) * duration;
     video.currentTime = newTime;
     setCurrentTime(newTime);
+    setPlayedEadIds(new Set()); // Reset EAD tracking when seeking
   };
 
   const handleVolumeChange = (value: number[]) => {
