@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, HandHelping, Mic, Globe, FileText, Sparkles, Gauge, AudioLines, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CaptionsWithIntention } from './CaptionsWithIntention';
@@ -192,6 +193,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       
       setIsLoadingAdLanguage(true);
       
+      // PHASE 4: Add logging for language filtering
+      console.log(`🔊 Loading AD for language: ${adLanguage.toUpperCase()}`);
+      
       const { data, error } = await supabase
         .from('audio_descriptions')
         .select('*')
@@ -201,7 +205,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         .order('start_time');
       
       if (!error && data) {
-        console.log(`🎵 Loaded ${data.length} AD segments for ${adLanguage}`);
+        console.log(`✅ Loaded ${data.length} completed AD segments for ${adLanguage.toUpperCase()}`);
         // Transform database data to match expected interface, including EAD metadata
         const transformedData = data.map((ad: any) => ({
           text: ad.description,
@@ -1492,11 +1496,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         {eadState.isActive && eadPreferences.showVisualIndicator && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-300">
             <div className="bg-secondary/95 backdrop-blur-md border border-ead-purple-300 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <Pause className="w-8 h-8 text-ead-purple-500 animate-pulse" />
-                <h3 className="text-2xl font-light text-ead-purple-900">
-                  Paused for Audio Description
-                </h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Pause className="w-8 h-8 text-ead-purple-500 animate-pulse" />
+                  <h3 className="text-2xl font-light text-ead-purple-900">
+                    Paused for Audio Description
+                  </h3>
+                </div>
+                {/* PHASE 6: Language indicator badge */}
+                <Badge variant="outline" className="text-sm font-mono border-ead-purple-400 text-ead-purple-700 bg-ead-purple-50">
+                  {adLanguage?.toUpperCase() || 'EN'}
+                </Badge>
               </div>
               
               {/* Current description text - use text from generatedAD filtered by adLanguage */}

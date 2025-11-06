@@ -450,6 +450,20 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // PHASE 5: Helper to deduplicate audio descriptions
+  const deduplicateDescriptions = (descriptions: any[]) => {
+    const seen = new Map();
+    return descriptions.filter(desc => {
+      const key = `${desc.language}-${Math.round(desc.start_time * 10) / 10}-${Math.round(desc.end_time * 10) / 10}-${desc.description?.substring(0, 50)}`;
+      if (seen.has(key)) {
+        console.warn(`⚠️ Duplicate AD detected and removed: ${desc.language} @ ${desc.start_time}s`);
+        return false;
+      }
+      seen.set(key, true);
+      return true;
+    });
+  };
+
   // Load audio descriptions from database
   const loadAudioDescriptions = async (language: string = 'en'): Promise<AudioDescription[]> => {
     if (!user) {
@@ -477,19 +491,29 @@ export const useVideoStorage = (videoId: string) => {
         .eq('language', language)
         .order('start_time');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to load audio descriptions:', error);
+        throw error;
+      }
 
-      const descriptions: AudioDescription[] = (data || []).map(row => ({
-        id: row.id,
-        startTime: row.start_time,
-        endTime: row.end_time,
-        description: row.description,
-        descriptionType: (row.description_type as 'visual' | 'action' | 'emotion' | 'setting') || 'visual',
-        confidence: row.confidence
-      }));
+      if (data) {
+        // PHASE 5: Apply deduplication
+        const dedupedData = deduplicateDescriptions(data);
+        
+        const descriptions: AudioDescription[] = (dedupedData || []).map(row => ({
+          id: row.id,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          description: row.description,
+          descriptionType: (row.description_type as 'visual' | 'action' | 'emotion' | 'setting') || 'visual',
+          confidence: row.confidence
+        }));
 
-      console.log('📢 Loaded audio descriptions from database:', descriptions.length, 'descriptions');
-      return descriptions;
+        console.log('📢 Loaded audio descriptions from database:', descriptions.length, 'descriptions');
+        return descriptions;
+      }
+      
+      return [];
     } catch (err) {
       console.error('Failed to load audio descriptions:', err);
       setError(err instanceof Error ? err.message : 'Failed to load audio descriptions');

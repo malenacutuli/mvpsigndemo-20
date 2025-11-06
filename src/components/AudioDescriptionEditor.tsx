@@ -357,6 +357,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const translateAllDescriptions = async (targetLanguage: string) => {
     if (!videoId) return;
     
+    // PHASE 3: Validate before translation
+    if (targetLanguage === detectedLanguage) {
+      toast.error(`Cannot translate ${detectedLanguage.toUpperCase()} to itself. Original descriptions are already in this language.`);
+      return;
+    }
+    
     setIsTranslating(true);
     
     try {
@@ -383,10 +389,12 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         return;
       }
       
-      console.log(`✅ Found ${sourceDescriptions.length} original descriptions to translate`);
+      // PHASE 3: Validate translation parameters
+      console.log(`✅ Found ${sourceDescriptions.length} original descriptions to translate to ${targetLanguage.toUpperCase()}`);
+      
       setTranslationProgress({ current: 0, total: sourceDescriptions.length });
       
-      // Step 2: Translate each original description
+      // Step 2: Translate each original description (backend will skip duplicates)
       for (let i = 0; i < sourceDescriptions.length; i++) {
         const sourceDesc = sourceDescriptions[i];
         
@@ -443,7 +451,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         }
       }
       
-      toast.success(`Translated ${sourceDescriptions.length} segments to ${getLanguageDisplay(targetLanguage)}`);
+      toast.success(`✅ Translated ${sourceDescriptions.length} segments to ${getLanguageDisplay(targetLanguage)}`);
       
       // Step 3: Switch to the new language tab
       await handleLanguageChange(targetLanguage);
@@ -1279,8 +1287,15 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             <Select value={currentLanguage} onValueChange={handleLanguageChange}>
               <SelectTrigger className="font-light">
                 <SelectValue>
-                  {getLanguageDisplay(currentLanguage)}
-                  {currentLanguage === detectedLanguage && " (Original)"}
+                  <div className="flex items-center gap-2">
+                    <span>{getLanguageDisplay(currentLanguage)}</span>
+                    {currentLanguage === detectedLanguage && <span className="text-muted-foreground">(Original)</span>}
+                    {descriptions.length > 0 && (
+                      <Badge variant="secondary" className="text-xs font-light ml-auto">
+                        {descriptions.length}
+                      </Badge>
+                    )}
+                  </div>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-background z-50 shadow-lg border">
