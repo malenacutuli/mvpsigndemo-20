@@ -396,6 +396,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         // Check for Extended Audio Description triggers
         if (eadEnabled && !eadState.isActive && generatedAD) {
           const currentVideoTime = video.currentTime;
+          
+          // Debug log every 5 seconds
+          if (currentVideoTime % 5 < 0.1) {
+            console.log('🔍 EAD Check:', {
+              eadEnabled,
+              prefsEnabled: eadPreferences.eadEnabled,
+              adCount: generatedAD.length,
+              currentTime: currentVideoTime.toFixed(2)
+            });
+          }
+          
           const needsExtension = (generatedAD as AudioDescriptionSegment[]).find((ad: AudioDescriptionSegment) => 
             ad.requiresExtension &&
             ad.audioUrl &&
@@ -520,17 +531,58 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     loadAudioDescriptions();
   }, [videoId, currentLanguage]);
 
+  // Trigger EAD for segments at or near video start (0s)
+  useEffect(() => {
+    if (!eadEnabled || !generatedAD || generatedAD.length === 0) return;
+    
+    const video = videoRef.current;
+    if (!video) return;
+
+    const checkStartEAD = () => {
+      const earlySegment = (generatedAD as AudioDescriptionSegment[]).find(ad =>
+        ad.requiresExtension &&
+        ad.audioUrl &&
+        ad.id &&
+        ad.startTime <= 0.4 &&  // Within first 400ms
+        ad.extensionType === 'pause' &&
+        !playedEadIds.has(ad.id)
+      );
+
+      if (earlySegment && earlySegment.audioUrl && earlySegment.id) {
+        console.log('🎬 Pre-roll EAD trigger:', earlySegment.text.substring(0, 50) + '...');
+        playExtendedAD(earlySegment, earlySegment.audioUrl);
+        setPlayedEadIds(prev => new Set(prev).add(earlySegment.id!));
+      }
+    };
+
+    // Check immediately if video is already playing
+    if (!video.paused && video.currentTime < 1) {
+      checkStartEAD();
+    }
+
+    // Also check on next play event
+    const handlePlay = () => {
+      if (video.currentTime < 1) {
+        checkStartEAD();
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    return () => video.removeEventListener('play', handlePlay);
+  }, [eadEnabled, generatedAD, playExtendedAD, playedEadIds]);
+
   // Save EAD preferences to database
   const saveEADPreferences = async (updates: Partial<UserEADPreferences>) => {
+    // Update local state IMMEDIATELY (works for both logged-in and guest users)
+    const updatedPreferences = { ...eadPreferences, ...updates };
+    setEadPreferences(updatedPreferences);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn('Cannot save EAD preferences: user not logged in');
+        console.log('EAD preferences updated locally (guest session)');
         return;
       }
-
-      const updatedPreferences = { ...eadPreferences, ...updates };
-      setEadPreferences(updatedPreferences);
 
       const { error } = await supabase
         .from('user_ead_preferences')

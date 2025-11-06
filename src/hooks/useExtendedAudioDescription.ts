@@ -92,7 +92,7 @@ export function useExtendedAudioDescription(
     audioUrl: string
   ) => {
     const video = videoRef.current;
-    if (!video || !preferences.eadEnabled) return;
+    if (!video) return;
 
     console.log('🎬 Playing Extended Audio Description:', description.text.substring(0, 50) + '...');
 
