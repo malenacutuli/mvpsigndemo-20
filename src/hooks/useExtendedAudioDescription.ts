@@ -50,7 +50,8 @@ export function useExtendedAudioDescription(
 
       audioFadeIntervalRef.current = window.setInterval(() => {
         currentStep++;
-        video.volume = startVolume * (1 - currentStep / steps);
+        const newVolume = startVolume * (1 - currentStep / steps);
+        video.volume = Math.max(0, Math.min(1, newVolume));
         
         if (currentStep >= steps) {
           if (audioFadeIntervalRef.current) {
@@ -74,13 +75,14 @@ export function useExtendedAudioDescription(
 
       audioFadeIntervalRef.current = window.setInterval(() => {
         currentStep++;
-        video.volume = targetVolume * (currentStep / steps);
+        const newVolume = targetVolume * (currentStep / steps);
+        video.volume = Math.max(0, Math.min(1, newVolume));
         
         if (currentStep >= steps) {
           if (audioFadeIntervalRef.current) {
             window.clearInterval(audioFadeIntervalRef.current);
           }
-          video.volume = targetVolume;
+          video.volume = Math.max(0, Math.min(1, targetVolume));
           resolve();
         }
       }, stepDuration);

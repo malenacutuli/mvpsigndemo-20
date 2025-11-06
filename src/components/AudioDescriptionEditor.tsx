@@ -1110,26 +1110,47 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       return;
     }
 
-    toast.info(`Generating audio for ${descriptions.length} descriptions...`);
+    const totalCount = descriptions.length;
+    toast.info(`Queuing ${totalCount} audio generation requests (max 5 concurrent)...`);
+    
     let successCount = 0;
     let failCount = 0;
+    let processedCount = 0;
 
-    for (const desc of descriptions) {
-      if (desc.id) {
+    // Use dynamic import to avoid circular dependencies
+    const { ttsQueue } = await import('@/lib/ttsQueue');
+
+    // Queue all requests
+    const promises = descriptions.map((desc) => {
+      if (!desc.id) return Promise.resolve();
+
+      return ttsQueue.enqueue(async () => {
         try {
-          await generateAudioForDescription(desc.id, desc.text);
+          await generateAudioForDescription(desc.id!, desc.text);
           successCount++;
         } catch (error) {
+          console.error(`Failed to generate audio for ${desc.id}:`, error);
           failCount++;
+        } finally {
+          processedCount++;
+          // Update progress
+          if (processedCount % 3 === 0 || processedCount === totalCount) {
+            toast.info(`Progress: ${processedCount}/${totalCount} (${successCount} success, ${failCount} failed)`, {
+              duration: 2000
+            });
+          }
         }
-      }
-    }
+      });
+    });
 
+    await Promise.all(promises);
+
+    toast.dismiss();
     if (successCount > 0) {
-      toast.success(`Generated audio for ${successCount} descriptions`);
+      toast.success(`Generated audio for ${successCount}/${totalCount} descriptions`);
     }
     if (failCount > 0) {
-      toast.error(`Failed to generate audio for ${failCount} descriptions`);
+      toast.error(`Failed to generate ${failCount}/${totalCount} descriptions. Try again for failed items.`);
     }
   };
 
