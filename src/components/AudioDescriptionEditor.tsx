@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus, Volume2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus, Volume2, CheckCircle2, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceOption, getFilteredVoices, getCategoryColor, findVoiceById } from "@/types/voice";
+import { analyzeAndPopulateEAD, getEADStatusBadge, type EADAnalysisResult } from '@/lib/ad/eadAnalyzer';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -22,6 +23,12 @@ interface AudioDescriptionSegment {
   audio_url?: string;
   audio_generation_status?: string;
   originalText?: string; // Track original text to detect changes
+  // EAD metadata
+  requires_extension?: boolean;
+  extension_duration?: number;
+  extension_type?: 'pause' | 'slowdown' | 'none';
+  estimated_duration?: number;
+  gap_duration?: number;
 }
 
 interface AudioDescriptionEditorProps {
@@ -58,6 +65,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [audioGenerationStatus, setAudioGenerationStatus] = useState<Record<string, string>>({});
   const [generatingAudioIds, setGeneratingAudioIds] = useState<Set<string>>(new Set());
+  const [eadAnalysisResults, setEadAnalysisResults] = useState<Map<string, EADAnalysisResult>>(new Map());
+  const [isAnalyzingEAD, setIsAnalyzingEAD] = useState(false);
 
   // Local UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +107,11 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
           endTime: Number(desc.end_time),
           voiceStyle: 'warm',
           audio_url: (desc as any).audio_url,
+          requires_extension: (desc as any).requires_extension,
+          extension_duration: (desc as any).extension_duration,
+          extension_type: (desc as any).extension_type,
+          estimated_duration: (desc as any).estimated_duration,
+          gap_duration: (desc as any).gap_duration,
           audio_generation_status: (desc as any).audio_generation_status,
           originalText: desc.description // Track original for change detection
         }));
@@ -914,6 +928,63 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     }
   };
 
+  // Analyze EAD requirements for all descriptions
+  const handleAnalyzeEAD = async () => {
+    if (descriptions.length === 0) {
+      toast.error('No descriptions to analyze. Generate descriptions first.');
+      return;
+    }
+
+    setIsAnalyzingEAD(true);
+    toast.info('Analyzing Extended Audio Description requirements...');
+
+    try {
+      const results = await analyzeAndPopulateEAD(videoId, detectedLanguage);
+      
+      // Store results in state for UI display
+      const resultsMap = new Map(results.map(r => [r.descriptionId, r]));
+      setEadAnalysisResults(resultsMap);
+
+      // Update local descriptions with EAD metadata
+      const updatedDescriptions = descriptions.map(desc => {
+        if (!desc.id) return desc;
+        const result = resultsMap.get(desc.id);
+        if (!result) return desc;
+
+        return {
+          ...desc,
+          requires_extension: result.requiresExtension,
+          extension_duration: result.extensionDuration,
+          extension_type: result.extensionType,
+          estimated_duration: result.estimatedAudioDuration,
+          gap_duration: result.gapDuration,
+        };
+      });
+
+      setDescriptions(updatedDescriptions);
+
+      const requiresEAD = results.filter(r => r.requiresExtension).length;
+      const sufficient = results.filter(r => r.sufficiency === 'sufficient').length;
+      const tight = results.filter(r => r.sufficiency === 'tight').length;
+
+      toast.success(
+        `Analysis complete: ${sufficient} fit perfectly, ${tight} are tight, ${requiresEAD} require Extended AD`
+      );
+      
+      console.log('✅ EAD Analysis Results:', {
+        total: results.length,
+        sufficient,
+        tight,
+        requiresEAD,
+      });
+    } catch (error: any) {
+      console.error('❌ EAD analysis failed:', error);
+      toast.error(`Analysis failed: ${error.message}`);
+    } finally {
+      setIsAnalyzingEAD(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="rounded-xl shadow-soft border">
@@ -1008,6 +1079,27 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
             </Button>
           </div>
 
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleAnalyzeEAD}
+              variant="outline"
+              className="flex-1 font-light"
+              disabled={isAnalyzingEAD || descriptions.length === 0}
+            >
+              {isAnalyzingEAD ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing EAD...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Analyze for EAD
+                </>
+              )}
+            </Button>
+          </div>
 
           <div className="flex gap-2">
             <Button 
@@ -1376,6 +1468,30 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                             )}
                           </div>
                           <p className="text-sm text-foreground">{desc.text}</p>
+                          
+                          {/* EAD Status Badge */}
+                          {desc.id && eadAnalysisResults.has(desc.id) && (
+                            <div className="mt-2">
+                              {(() => {
+                                const result = eadAnalysisResults.get(desc.id);
+                                if (!result) return null;
+                                const badge = getEADStatusBadge(result.sufficiency);
+                                return (
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${badge.color} border`}
+                                  >
+                                    {badge.icon} {badge.label}
+                                    {result.requiresExtension && (
+                                      <span className="ml-1">
+                                        (+{result.extensionDuration.toFixed(1)}s {result.extensionType})
+                                      </span>
+                                    )}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex items-center gap-1 mt-2">
