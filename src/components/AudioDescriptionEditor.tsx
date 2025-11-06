@@ -1251,9 +1251,6 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                         </>
                       )}
                     </Button>
-                    <p className="text-xs font-light text-muted-foreground mt-2">
-                      Est. cost: ${(descriptions.length * 0.001).toFixed(3)} (90% savings vs re-analysis)
-                    </p>
                   </div>
                 </div>
               </div>
