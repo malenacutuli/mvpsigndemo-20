@@ -1111,7 +1111,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     }
 
     const totalCount = descriptions.length;
-    toast.info(`Queuing ${totalCount} audio generation requests (max 5 concurrent)...`);
+    toast.info(`Queuing ${totalCount} audio generation requests (max 2 concurrent to avoid rate limits)...`);
     
     let successCount = 0;
     let failCount = 0;
