@@ -687,6 +687,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   // Toggle EAD enabled state
   const handleToggleEAD = (enabled: boolean) => {
     setEadEnabled(enabled);
+    // EAD depends on AD – turn AD on automatically
+    if (enabled && !adEnabled) {
+      setAdEnabled(true);
+      toast.info('Audio Description enabled to support Extended AD');
+    }
     saveEADPreferences({ eadEnabled: enabled });
   };
 
