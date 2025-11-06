@@ -142,30 +142,53 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
     
     setIsSaving(true);
     try {
-      // Delete existing descriptions for this video and language
-      await supabase
+      // Get existing descriptions to find IDs to delete
+      const { data: existingDescriptions } = await supabase
         .from('audio_descriptions')
-        .delete()
+        .select('id')
         .eq('video_id', videoId)
         .eq('language', detectedLanguage);
 
-      // Insert new descriptions
+      const existingIds = new Set(existingDescriptions?.map(d => d.id) || []);
+      const keptIds = new Set(descriptionsToSave.filter(d => d.id).map(d => d.id));
+      
+      // Delete descriptions that are no longer in the list
+      const idsToDelete = Array.from(existingIds).filter(id => !keptIds.has(id));
+      if (idsToDelete.length > 0) {
+        await supabase
+          .from('audio_descriptions')
+          .delete()
+          .in('id', idsToDelete);
+      }
+
+      // UPSERT descriptions (update existing, insert new)
       if (descriptionsToSave.length > 0) {
         const { error } = await supabase
           .from('audio_descriptions')
-          .insert(
+          .upsert(
             descriptionsToSave.map(desc => ({
+              ...(desc.id ? { id: desc.id } : {}), // Preserve ID if it exists
               video_id: videoId,
               description: desc.text,
               start_time: desc.startTime,
               end_time: desc.endTime,
               language: detectedLanguage,
               description_type: 'visual',
-              // Preserve audio URL and status only if text hasn't changed
-              audio_url: desc.text === desc.originalText ? desc.audio_url : null,
-              audio_generation_status: desc.text === desc.originalText ? desc.audio_generation_status : null,
-              audio_generated_at: desc.text === desc.originalText && desc.audio_url ? new Date().toISOString() : null
-            }))
+              // Preserve ALL metadata (using snake_case as stored in objects)
+              audio_url: (desc as any).audio_url || null,
+              audio_generation_status: (desc as any).audio_generation_status || 'pending',
+              audio_generated_at: (desc as any).audio_generated_at || null,
+              voice_id: (desc as any).voice_id || null,
+              voice_name: (desc as any).voice_name || null,
+              requires_extension: (desc as any).requires_extension || false,
+              extension_duration: (desc as any).extension_duration || null,
+              extension_type: (desc as any).extension_type || 'none',
+              estimated_duration: (desc as any).estimated_duration || null,
+              gap_duration: (desc as any).gap_duration || null,
+              priority_level: (desc as any).priority_level || 'important',
+              confidence: (desc as any).confidence || null
+            })),
+            { onConflict: 'id' }
           );
 
         if (error) {
