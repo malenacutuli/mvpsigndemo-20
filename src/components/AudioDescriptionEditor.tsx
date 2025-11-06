@@ -173,10 +173,32 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       // Delete descriptions that are no longer in the list
       const idsToDelete = Array.from(existingIds).filter(id => !keptIds.has(id));
       if (idsToDelete.length > 0) {
-        await supabase
-          .from('audio_descriptions')
-          .delete()
-          .in('id', idsToDelete);
+        try {
+          // Attempt to delete descriptions - foreign key constraint will prevent deletion if translations exist
+          const { error: deleteError } = await (supabase
+            .from('audio_descriptions')
+            .delete()
+            .in('id', idsToDelete) as any);
+          
+          if (deleteError) {
+            console.error('Delete error:', deleteError);
+            // Check if it's a foreign key constraint violation
+            if (deleteError.message?.includes('foreign key') || deleteError.message?.includes('violates')) {
+              toast.warning('Cannot delete descriptions that have translations. Please delete translations first.');
+            } else {
+              toast.error('Failed to delete some descriptions');
+            }
+          } else {
+            console.log('✅ Deleted', idsToDelete.length, 'descriptions');
+          }
+        } catch (err: any) {
+          console.error('Failed to delete descriptions:', err);
+          if (err.message?.includes('foreign key') || err.message?.includes('violates')) {
+            toast.warning('Cannot delete descriptions that have translations.');
+          } else {
+            toast.error('Failed to delete some descriptions');
+          }
+        }
       }
 
       // UPSERT descriptions (update existing, insert new)
