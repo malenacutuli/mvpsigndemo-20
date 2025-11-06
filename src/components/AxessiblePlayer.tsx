@@ -1580,9 +1580,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                 <AudioLines className="w-4 h-4" />
               </Button>
               
-              {/* AD Language Selector - Only show when AD is enabled and multiple languages available */}
-              {adEnabled && availableAdLanguages.length > 1 && (
-                <div className="flex items-center gap-1 bg-purple-500/20 border border-purple-400/40 rounded px-2 py-1">
+              {/* AD Language Selector - Show when AD is enabled and at least one language exists */}
+              {adEnabled && availableAdLanguages.length >= 1 && (
+                <div className="flex items-center gap-1 bg-background border border-purple-400/40 rounded px-2 py-1 z-50">
                   {isLoadingAdLanguage ? (
                     <Loader2 className="w-3 h-3 text-purple-300 animate-spin" />
                   ) : (
@@ -1591,7 +1591,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   <select
                     value={adLanguage}
                     onChange={(e) => setAdLanguage(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs text-primary-foreground cursor-pointer"
+                    className="bg-background text-foreground rounded px-1 py-0.5 border-none outline-none text-xs cursor-pointer"
                     title="Audio Description Language (Accessibility Narration)"
                     disabled={isLoadingAdLanguage}
                   >
