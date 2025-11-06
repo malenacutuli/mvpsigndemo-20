@@ -1356,7 +1356,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         {/* Extended Audio Description Overlay - Shows when video is paused for description */}
         {eadState.isActive && eadPreferences.showVisualIndicator && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-300">
-            <div className="bg-gradient-to-br from-ead-purple-100/95 to-ead-purple-200/95 backdrop-blur-md border border-ead-purple-300 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
+            <div className="bg-secondary/95 backdrop-blur-md border border-ead-purple-300 rounded-xl p-6 max-w-2xl mx-4 shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
                 <Pause className="w-8 h-8 text-ead-purple-500 animate-pulse" />
                 <h3 className="text-2xl font-light text-ead-purple-900">
