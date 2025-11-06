@@ -1478,19 +1478,40 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       )}
 
         {/* Audio Description - Controlled by adEnabled state */}
-        {adEnabled && (
-          <AudioDescription
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            contentType={contentType}
-            selectedVoice={selectedVoice}
-            dynamicDescriptions={generatedAD && generatedAD.length > 0 ? dedupeByTime(generatedAD.filter(ad => !ad.requires_extension)) : undefined}
-            language={adLanguage}
-            showOverlay={false}
-            eadEnabled={eadEnabled}
-            videoId={videoId}
-          />
-        )}
+        {adEnabled && (() => {
+          const filteredAD = generatedAD && generatedAD.length > 0 
+            ? dedupeByTime(
+                eadEnabled 
+                  ? generatedAD.filter(ad => !ad.requires_extension)  // EAD ON: Filter out extended segments (handled by pause system)
+                  : generatedAD  // EAD OFF: Play ALL segments inline (even if marked as requiring extension)
+              )
+            : undefined;
+          
+          console.log('🔊 AudioDescription render:', {
+            adEnabled,
+            eadEnabled,
+            totalAD: generatedAD?.length || 0,
+            filteredAD: filteredAD?.length || 0,
+            withAudio: generatedAD?.filter(ad => ad.audio_url).length || 0,
+            pending: generatedAD?.filter(ad => ad.audio_generation_status === 'pending').length || 0,
+            requiresExtension: generatedAD?.filter(ad => ad.requires_extension).length || 0,
+            language: adLanguage
+          });
+          
+          return (
+            <AudioDescription
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+              contentType={contentType}
+              selectedVoice={selectedVoice}
+              dynamicDescriptions={filteredAD}
+              language={adLanguage}
+              showOverlay={false}
+              eadEnabled={eadEnabled}
+              videoId={videoId}
+            />
+          );
+        })()}
 
         {/* Extended Audio Description Overlay - Shows when video is paused for description */}
         {eadState.isActive && eadPreferences.showVisualIndicator && (
