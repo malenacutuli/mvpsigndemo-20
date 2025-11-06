@@ -1023,11 +1023,25 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
         <CardContent className="space-y-4">
           <Card className="border-primary/20 bg-primary/5 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-base font-light leading-relaxed">
-                <span className="font-light text-primary">Basic AI:</span> Generates simple audio descriptions for common video scenarios.
-                <br />
-                <span className="font-light text-primary">Advanced Analysis:</span> Uses comprehensive video analysis to detect silent moments and generate detailed cinematic descriptions with full context awareness.
-              </p>
+              <div className="space-y-3 text-sm font-light leading-relaxed">
+                <p className="font-semibold text-primary text-base">How to Use Audio Descriptions:</p>
+                
+                <div className="space-y-2">
+                  <p><span className="font-medium text-primary">Step 1:</span> Select your preferred audio description voice from the dropdown above.</p>
+                  
+                  <p><span className="font-medium text-primary">Step 2:</span> Choose a generation method:</p>
+                  <ul className="ml-4 space-y-1 list-disc list-inside">
+                    <li><span className="font-medium">Basic AI:</span> Quick generation of simple descriptions for common scenarios</li>
+                    <li><span className="font-medium">Advanced Analysis:</span> Comprehensive video analysis that detects silent moments and generates detailed cinematic descriptions</li>
+                  </ul>
+                  
+                  <p><span className="font-medium text-primary">Step 3:</span> After generation, click "Analyze for Extended Audio Description" to check if descriptions fit within dialogue gaps.</p>
+                  
+                  <p><span className="font-medium text-primary">Step 4:</span> Edit descriptions as needed, then click "Generate Audio" for each segment or "Generate All Audio" for batch processing.</p>
+                  
+                  <p><span className="font-medium text-primary">Step 5:</span> Save your work using "Save All" to persist changes to the database.</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1118,7 +1132,7 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  Analyze for EAD
+                  Analyze for Extended Audio Description
                 </>
               )}
             </Button>
