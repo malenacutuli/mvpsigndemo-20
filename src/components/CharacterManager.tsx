@@ -103,6 +103,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<Array<{ name: string; asr_label?: string }>>([]);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
+  const speakersInitializedRef = useRef(false);
 
   // Load existing characters on mount
   useEffect(() => {
@@ -199,27 +200,43 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   // Keep available speakers in sync with props
   useEffect(() => {
+    // Skip sync if already initialized and we're saving
+    if (speakersInitializedRef.current && savingMappings.size > 0) {
+      console.log('⏸️ Skipping speaker sync during active save');
+      return;
+    }
+    
     const initOrMergeSpeakers = async () => {
       if (existingSpeakers && existingSpeakers.length > 0) {
         const unique = existingSpeakers
           .filter(Boolean)
           .map(s => ({ name: s, asr_label: undefined as string | undefined }));
-        setAvailableSpeakers(unique);
-        console.log('🧩 Available speakers (from props):', unique);
-        console.log('🔍 Final mapping gate debug:', {
-          mapping: speakerMappings,
-          charactersCount: characters.length,
-          byName: characters.map(c => c.name),
-          sampleSpeakers: unique.slice(0, 5).map(s => s.name)
-        });
+        
+        // Only update if content actually changed
+        const currentNames = availableSpeakers.map(s => s.name).sort().join(',');
+        const newNames = unique.map(s => s.name).sort().join(',');
+        
+        if (currentNames !== newNames || !speakersInitializedRef.current) {
+          setAvailableSpeakers(unique);
+          console.log('🧩 Available speakers updated:', unique);
+          console.log('🔍 Final mapping gate debug:', {
+            mapping: speakerMappings,
+            charactersCount: characters.length,
+            byName: characters.map(c => c.name),
+            sampleSpeakers: unique.slice(0, 5).map(s => s.name)
+          });
+        }
+        
+        speakersInitializedRef.current = true;
       } else {
         // No speakers provided – load from cache and DB to build a stable list
         await loadCachedSpeakerData();
         await loadSpeakersFromDB();
+        speakersInitializedRef.current = true;
       }
     };
     initOrMergeSpeakers();
-  }, [existingSpeakers, videoId, language]);
+  }, [existingSpeakers, videoId, language, savingMappings.size]);
 
   // Load speaker mappings from database on mount
   // Track if we've loaded mappings for this video/language once to avoid overwriting user selections on re-renders
@@ -229,6 +246,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   useEffect(() => {
     const key = `${videoId}:${language}`;
     if (loadedMappingsKeyRef.current === key) return;
+    
+    // Don't reload if we're currently saving
+    if (savingMappings.size > 0) {
+      console.log('⏸️ Postponing mapping load during active save');
+      return;
+    }
+    
     loadedMappingsKeyRef.current = key;
 
     const loadMappingsFromDatabase = async () => {
@@ -278,7 +302,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     };
     
     loadMappingsFromDatabase();
-  }, [videoId, language]);
+  }, [videoId, language, savingMappings.size]);
 
   // Get all available colors for character type (not filtered by usage)
   const getAllColorsForType = (type: Character['type']) => {
