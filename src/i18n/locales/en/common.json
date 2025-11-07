@@ -275,9 +275,9 @@
       "usedOfTotal": "{{used}} used of {{total}}",
       "overLimitTitle": "Storage limit exceeded",
       "overLimitDesc": "You've exceeded your 100GB storage limit. Upgrade to continue uploading videos.",
-      "upgradeStandard": "Upgrade to Standard (2TB)",
+      "upgradeStandard": "Upgrade to Standard (650GB)",
       "nearlyFullTitle": "Storage nearly full",
-      "nearlyFullDesc": "You're running low on storage. Upgrade to Standard for 2TB of storage.",
+      "nearlyFullDesc": "You're running low on storage. Upgrade to Standard for 650GB of storage.",
       "viewUpgradeOptions": "View Upgrade Options",
       "onStarter": "You're on the Starter plan with 100GB of storage.",
       "viewOtherPlans": "View other plans"
@@ -620,7 +620,7 @@
         "price": "€65",
         "cadence": "per month",
         "users": "5 users",
-        "storage": "2TB hosting • 10 minutes processing included",
+        "storage": "650GB hosting • 10 minutes processing included",
         "cta": "Try Standard",
         "features": [
           "Everything in Creators",
@@ -635,7 +635,7 @@
         "price": "€250",
         "cadence": "per month",
         "users": "10 users",
-        "storage": "5TB hosting • 50 minutes processing included",
+        "storage": "2TB hosting • 50 minutes processing included",
         "cta": "Go Advanced",
         "features": [
           "Everything in Standard",
