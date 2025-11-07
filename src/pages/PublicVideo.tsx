@@ -260,22 +260,18 @@ const PublicVideo = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-white">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-6">
-            <Skeleton className="h-10 w-32 mb-4" />
-            <Skeleton className="h-8 w-96 mb-2" />
-            <Skeleton className="h-4 w-64" />
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-48 mb-6 rounded-full" />
+            <Skeleton className="h-12 w-full max-w-2xl mb-4" />
+            <Skeleton className="h-6 w-96" />
           </div>
-          <Skeleton className="aspect-video w-full mb-6" />
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <Skeleton className="h-32 w-full" />
-            </div>
-            <div>
-              <Skeleton className="h-48 w-full" />
-            </div>
+          <Skeleton className="aspect-video w-full mb-8 rounded-2xl" />
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
         </div>
       </div>
@@ -284,15 +280,19 @@ const PublicVideo = () => {
 
   if (!video) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-white">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-4">Video Not Found</h2>
-            <p className="text-muted-foreground mb-6">
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="text-center py-20">
+            <h2 className="text-3xl md:text-4xl font-light text-foreground mb-4">Video Not Found</h2>
+            <p className="text-lg text-muted-foreground font-light mb-8 leading-relaxed">
               This video may not be public or may have been removed.
             </p>
-            <Button onClick={() => navigate('/public')}>
+            <Button 
+              onClick={() => navigate('/public')}
+              size="lg"
+              className="px-8 py-4 text-lg font-light rounded-full"
+            >
               Back to Public Board
             </Button>
           </div>
@@ -302,38 +302,38 @@ const PublicVideo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Back Button */}
         <Button 
-          variant="ghost" 
+          variant="outline" 
           onClick={() => navigate('/public')}
-          className="mb-6"
+          className="mb-8 font-light rounded-full"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Public Board
         </Button>
 
-        <div className="mb-6">
-          <div className="flex items-start justify-between mb-4">
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{video.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-foreground mb-4 leading-tight">{video.title}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-light">
+                <div className="flex items-center gap-1.5">
                   <Eye className="w-4 h-4" />
                   {formatViewCount(video.view_count)} views
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <Globe className="w-4 h-4" />
                   Public
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <Languages className="w-4 h-4" />
                   {getLanguageDisplay(video.language)}
                 </div>
                 {video.duration_seconds && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />
                     {formatDuration(video.duration_seconds)}
                   </div>
@@ -344,28 +344,30 @@ const PublicVideo = () => {
         </div>
 
         {/* Video Player */}
-        <div className="mb-8">
+        <div className="mb-12">
           {videoUrl && (
-            <AxessiblePlayer
-              videoSrc={videoUrl}
-              posterSrc={video.thumbnail_url || undefined}
-              title={video.title}
-              videoId={video.id}
-              selectedVoice={selectedVoicePreference}
-              selectedSignLanguageAvatar={undefined}
-              contentType={video.content_type as 'recipe' | 'education'}
-              initialCaptions={captions}
-              dynamicDescriptions={audioDescriptions}
-              isPublic={true}
-            />
+            <div className="rounded-2xl overflow-hidden shadow-soft">
+              <AxessiblePlayer
+                videoSrc={videoUrl}
+                posterSrc={video.thumbnail_url || undefined}
+                title={video.title}
+                videoId={video.id}
+                selectedVoice={selectedVoicePreference}
+                selectedSignLanguageAvatar={undefined}
+                contentType={video.content_type as 'recipe' | 'education'}
+                initialCaptions={captions}
+                dynamicDescriptions={audioDescriptions}
+                isPublic={true}
+              />
+            </div>
           )}
         </div>
 
         {/* Description Below Video */}
         {video.description && (
-          <Card className="mb-8">
-            <CardContent className="pt-4">
-              <p className="text-muted-foreground whitespace-pre-wrap">
+          <Card className="mb-12 shadow-soft border rounded-2xl">
+            <CardContent className="p-8">
+              <p className="text-muted-foreground font-light text-lg leading-relaxed whitespace-pre-wrap">
                 {video.description}
               </p>
             </CardContent>
@@ -373,38 +375,38 @@ const PublicVideo = () => {
         )}
 
         {/* Immersive Features Info */}
-        <Card>
+        <Card className="shadow-soft border rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-2xl font-light text-foreground">
+              <Globe className="w-6 h-6 text-primary" />
               {t('videoDetail.immersiveFeatures')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-primary font-bold text-sm">CC</span>
+          <CardContent className="p-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="text-center p-8 bg-card rounded-2xl border shadow-soft hover:shadow-elegant transition-shadow">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-primary font-light text-lg">CC</span>
                 </div>
-                <h3 className="font-semibold mb-1">Captions with Intention</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-light text-lg mb-2 text-foreground">Captions with Intention</h3>
+                <p className="text-base text-muted-foreground font-light leading-relaxed">
                   Emotional context and speaker identification
                 </p>
               </div>
               
-              <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-green-600 font-bold text-sm">AD</span>
+              <div className="text-center p-8 bg-card rounded-2xl border shadow-soft hover:shadow-elegant transition-shadow">
+                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-green-600 font-light text-lg">AD</span>
                 </div>
-                <h3 className="font-semibold mb-1">Audio Descriptions</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-light text-lg mb-2 text-foreground">Audio Descriptions</h3>
+                <p className="text-base text-muted-foreground font-light leading-relaxed">
                   Describes visual elements for screen readers
                 </p>
               </div>
             </div>
             
-            <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
-              <p className="text-sm text-muted-foreground">
+            <div className="mt-8 p-6 bg-muted/20 rounded-2xl border border-primary/20">
+              <p className="text-base text-muted-foreground font-light leading-relaxed">
                 {t('videoDetail.immersiveTip')}
               </p>
             </div>
