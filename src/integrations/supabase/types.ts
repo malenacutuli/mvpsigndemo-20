@@ -729,7 +729,7 @@ export type Database = {
         Row: {
           access_type: string
           accessed_fields: string[] | null
-          accessed_subscriber_id: string
+          accessed_subscriber_id: string | null
           created_at: string
           id: string
           ip_address: unknown
@@ -739,7 +739,7 @@ export type Database = {
         Insert: {
           access_type: string
           accessed_fields?: string[] | null
-          accessed_subscriber_id: string
+          accessed_subscriber_id?: string | null
           created_at?: string
           id?: string
           ip_address?: unknown
@@ -749,7 +749,7 @@ export type Database = {
         Update: {
           access_type?: string
           accessed_fields?: string[] | null
-          accessed_subscriber_id?: string
+          accessed_subscriber_id?: string | null
           created_at?: string
           id?: string
           ip_address?: unknown
