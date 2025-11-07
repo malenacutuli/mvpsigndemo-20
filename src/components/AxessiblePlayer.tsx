@@ -997,7 +997,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     // Generate transcript text for dubbing from segments
     const transcriptText = segments
       .filter(segment => segment && segment.text && !segment._forceUpdate)
-      .sort((a, b) => (a.startTime || a.start_time || 0) - (b.startTime || b.start_time || 0))
+      .sort((a, b) => (a.startTime || 0) - (b.startTime || 0))
       .map(segment => segment.text)
       .join(' ');
     setGeneratedTranscript(transcriptText);
