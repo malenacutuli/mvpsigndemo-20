@@ -134,16 +134,48 @@ export const UsageDashboard: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Warning for approaching limit */}
+        {/* PHASE 5: Enhanced warnings for limits */}
         {usage.approachingLimit && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <div className="flex items-start gap-2 p-4 bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-300 rounded-xl shadow-sm">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-base font-light">
-              <p className="font-light text-amber-900 mb-1">Approaching Usage Limit</p>
-              <p className="text-amber-700 leading-relaxed">
+            <div className="flex-1">
+              <p className="font-medium text-amber-900 mb-2">Approaching Usage Limit</p>
+              <p className="text-sm text-amber-800 leading-relaxed mb-3">
                 You've used {Math.round(minutesPercent)}% of your included processing minutes. 
-                Consider upgrading your plan to avoid overage charges.
+                {usage.costs.overageRateEUR > 0 && (
+                  <span className="block mt-1">
+                    Overage rate: <strong>€{usage.costs.overageRateEUR.toFixed(2)}/minute</strong>
+                  </span>
+                )}
               </p>
+              <a 
+                href="/pricing" 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Upgrade Plan
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE 5: Over limit warning */}
+        {usage.costs.overageMinutes > 0 && (
+          <div className="flex items-start gap-2 p-4 bg-gradient-to-r from-red-50 to-red-100/50 border border-red-300 rounded-xl shadow-sm">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-red-900 mb-2">Overage Charges Apply</p>
+              <p className="text-sm text-red-800 leading-relaxed mb-1">
+                You've exceeded your plan's included minutes by <strong>{usage.costs.overageMinutes} minutes</strong>.
+              </p>
+              <p className="text-sm text-red-900 font-medium mb-3">
+                Estimated overage cost: <strong>€{usage.costs.overageCostEUR.toFixed(2)}</strong>
+              </p>
+              <a 
+                href="/pricing" 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Upgrade to Save Money
+              </a>
             </div>
           </div>
         )}

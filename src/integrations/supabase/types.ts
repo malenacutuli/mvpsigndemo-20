@@ -1589,6 +1589,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      can_process_video: {
+        Args: { target_user_id: string; video_duration_seconds: number }
+        Returns: Json
+      }
+      check_and_notify_overages: {
+        Args: never
+        Returns: {
+          email: string
+          estimated_cost: number
+          overage_minutes: number
+          tier: string
+          user_id: string
+        }[]
+      }
       check_my_subscription_status: {
         Args: { channel_uuid: string }
         Returns: {
@@ -1714,6 +1728,18 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      get_user_storage_usage: {
+        Args: { target_user_id: string }
+        Returns: {
+          files_count: number
+          is_near_limit: boolean
+          is_over_limit: boolean
+          storage_limit_bytes: number
+          storage_used_bytes: number
+          tier: string
+          usage_percentage: number
+        }[]
+      }
       get_user_subscription_info: {
         Args: never
         Returns: {
@@ -1744,8 +1770,11 @@ export type Database = {
         Returns: string
       }
       reset_monthly_usage: {
-        Args: { target_user_id: string }
-        Returns: boolean
+        Args: never
+        Returns: {
+          reset_count: number
+          user_ids: string[]
+        }[]
       }
       secure_check_subscription_status_v2: {
         Args: { channel_uuid: string }

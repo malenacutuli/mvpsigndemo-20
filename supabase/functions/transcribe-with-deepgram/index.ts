@@ -23,6 +23,22 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client for validation
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+    
+    // Check authentication for minutes validation
+    let authenticatedUser = null;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader && supabase) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+        authenticatedUser = user;
+      }
+    }
+
     const { videoUrl, videoId, language, enableDiarization = true } = await req.json();
     
     console.log("Request parameters:", {
@@ -50,6 +66,37 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // PHASE 3: VALIDATE MINUTES BEFORE PROCESSING
+    // Get video HEAD request to estimate duration
+    const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+    const contentLength = parseInt(headResponse.headers.get('content-length') || '0');
+    const sizeMB = Math.round(contentLength / 1024 / 1024);
+    const estimatedDurationSeconds = Math.max(60, sizeMB * 6); // Conservative estimate
+    
+    if (authenticatedUser && supabase) {
+      console.log(`🔒 Validating processing minutes for user ${authenticatedUser.id}...`);
+      
+      const { data: validation } = await supabase.rpc('can_process_video', {
+        target_user_id: authenticatedUser.id,
+        video_duration_seconds: estimatedDurationSeconds
+      });
+
+      if (validation && !validation.allowed) {
+        console.warn(`❌ Processing not allowed: ${validation.reason}`);
+        return new Response(JSON.stringify({
+          error: 'insufficient_minutes',
+          message: validation.message || 'Insufficient processing minutes available',
+          details: validation,
+          upgradeUrl: '/pricing'
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      console.log(`✅ Minutes validation passed`);
     }
 
     // Build Deepgram API URL with options

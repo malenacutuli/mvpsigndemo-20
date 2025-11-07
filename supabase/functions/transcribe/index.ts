@@ -99,6 +99,21 @@ serve(async (req) => {
         }
       }
     }
+    // Check authentication first to enable minutes validation
+    const authHeader = req.headers.get("authorization");
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    let authenticatedUser = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (user) {
+        authenticatedUser = user;
+      }
+    }
+
     const body = await req.text();
     
     // Ensure proper UTF-8 handling for international characters
@@ -158,6 +173,47 @@ serve(async (req) => {
     const sizeMB = Math.round(contentLength / 1024 / 1024);
     const contentType = headResponse.headers.get('content-type') || '';
     console.log(`Video size: ${sizeMB}MB, content-type: ${contentType}`);
+
+    // PHASE 3: VALIDATE MINUTES BEFORE PROCESSING
+    // Estimate video duration (rough estimate: 1 minute per 10MB for compressed video)
+    const estimatedDurationSeconds = Math.max(60, sizeMB * 6); // Conservative estimate
+    
+    if (authenticatedUser && !useTestingMode) {
+      console.log(`🔒 Validating processing minutes for user ${authenticatedUser.id}...`);
+      
+      const { data: validation, error: validationError } = await supabase.rpc('can_process_video', {
+        target_user_id: authenticatedUser.id,
+        video_duration_seconds: estimatedDurationSeconds
+      });
+
+      if (validationError) {
+        console.error('Minutes validation error:', validationError);
+      } else if (validation && !validation.allowed) {
+        console.warn(`❌ Processing not allowed: ${validation.reason}`);
+        logAPICall({
+          userId: authenticatedUser.id,
+          videoId: videoId || 'unknown',
+          apiService: 'Transcription',
+          status: 'error',
+          error: `Minutes limit: ${validation.reason}`,
+          provider: 'blocked'
+        });
+        
+        return new Response(JSON.stringify({
+          error: 'insufficient_minutes',
+          message: validation.message || 'Insufficient processing minutes available',
+          details: validation,
+          upgradeUrl: '/pricing'
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } else if (validation && validation.will_approach_limit) {
+        console.warn(`⚠️ User approaching minutes limit: ${validation.minutes_remaining_after} minutes remaining after processing`);
+      }
+      
+      console.log(`✅ Minutes validation passed. Available: ${validation?.minutes_available || 'unknown'} minutes`);
+    }
 
     // PHASE 3: Language validation - prevent 'auto' from reaching database
     if (language === 'auto') {
