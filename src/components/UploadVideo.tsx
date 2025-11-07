@@ -14,7 +14,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
 import { uploadToR2 } from '@/lib/r2Upload';
-import { useStorageManagement } from '@/hooks/useStorageManagement';
 
 interface UploadVideoProps {
   onUploadComplete?: (videoId: string) => void;
@@ -40,7 +39,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [contentType, setContentType] = useState<string>('education');
   const { toast } = useToast();
   const { user } = useAuth();
-  const { checkStorageBeforeUpload } = useStorageManagement();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -101,11 +99,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       return;
     }
 
-    // PHASE 2: Check storage before upload (now async)
-    const canUpload = await checkStorageBeforeUpload(videoFile.size);
-    if (!canUpload) {
-      return;
-    }
+    // Storage validation removed - no file size restrictions
 
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
