@@ -1256,6 +1256,9 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           segment_type: 'dialogue',
           speaker: displaySpeaker, // ✅ Use proper speaker name
           speaker_color: assignSpeakerColor(speakerLabel, transcriptionResult.segments),
+          speaker_asr_label: speakerLabel, // ✅ Preserve raw ASR label (A, B, C, D)
+          speaker_asr_norm: speakerLabel.toUpperCase(), // ✅ Normalized uppercase
+          speaker_normalized: displaySpeaker.toLowerCase(), // ✅ Normalized display name
           emphasis: 'normal',
           pitch: 'normal',
           is_off_camera: false,
