@@ -68,84 +68,72 @@ serve(async (req) => {
     });
   }
 
-  try {
-    // Check authentication and rate limit early
-    const authHeader = req.headers.get("authorization");
-    if (authHeader) {
+    try {
+      // Initialize Supabase client and auth state
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (user) {
-        // Check subscription-based rate limit (requests per minute)
-        const rateLimitCheck = await checkSubscriptionRateLimit(supabase, user.id, 'transcribe');
+      let authenticatedUser: any = null;
+      // Check authentication and rate limit early
+      const authHeader = req.headers.get("authorization");
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         
-        if (!rateLimitCheck.allowed) {
+        if (user) {
+          authenticatedUser = user;
+          // Check subscription-based rate limit (requests per minute)
+          const rateLimitCheck = await checkSubscriptionRateLimit(supabase, user.id, 'transcribe');
+          
+          if (!rateLimitCheck.allowed) {
+            logAPICall({
+              userId: user.id,
+              apiService: 'Transcription',
+              status: 'error',
+              error: `Rate limit exceeded: ${rateLimitCheck.message}`
+            });
+  
+            // Log the violation for monitoring
+            await logRateLimitViolation(
+              supabase,
+              user.id,
+              'transcribe',
+              rateLimitCheck.current || 0,
+              rateLimitCheck.limit || 0,
+              rateLimitCheck.tier || 'unknown'
+            );
+  
+            const responseHeaders = addRateLimitHeaders(
+              { ...corsHeaders, 'Content-Type': 'application/json' },
+              rateLimitCheck
+            );
+            
+            return new Response(JSON.stringify({ 
+              error: 'Rate limit exceeded',
+              message: rateLimitCheck.message,
+              limit: rateLimitCheck.limit,
+              tier: rateLimitCheck.tier,
+              retryAfter: rateLimitCheck.retryAfter || 60
+            }), {
+              status: 429,
+              headers: responseHeaders
+            });
+          }
+  
           logAPICall({
             userId: user.id,
             apiService: 'Transcription',
-            status: 'error',
-            error: `Rate limit exceeded: ${rateLimitCheck.message}`
+            status: 'start',
+            provider: 'rate-check-passed'
           });
-
-          // Log the violation for monitoring
-          await logRateLimitViolation(
-            supabase,
-            user.id,
-            'transcribe',
-            rateLimitCheck.current || 0,
-            rateLimitCheck.limit || 0,
-            rateLimitCheck.tier || 'unknown'
-          );
-
-          const responseHeaders = addRateLimitHeaders(
-            { ...corsHeaders, 'Content-Type': 'application/json' },
-            rateLimitCheck
-          );
-          
-          return new Response(JSON.stringify({ 
-            error: 'Rate limit exceeded',
-            message: rateLimitCheck.message,
-            limit: rateLimitCheck.limit,
+          console.log(`✅ Rate limit OK for user ${user.id}:`, {
             tier: rateLimitCheck.tier,
-            retryAfter: rateLimitCheck.retryAfter || 60
-          }), {
-            status: 429,
-            headers: responseHeaders
+            remaining: rateLimitCheck.remaining,
+            limit: rateLimitCheck.limit,
+            testUser: rateLimitCheck.testUser
           });
         }
-
-        logAPICall({
-          userId: user.id,
-          apiService: 'Transcription',
-          status: 'start',
-          provider: 'rate-check-passed'
-        });
-        console.log(`✅ Rate limit OK for user ${user.id}:`, {
-          tier: rateLimitCheck.tier,
-          remaining: rateLimitCheck.remaining,
-          limit: rateLimitCheck.limit,
-          testUser: rateLimitCheck.testUser
-        });
       }
-    }
-    // Check authentication first to enable minutes validation
-    const authHeader = req.headers.get("authorization");
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    let authenticatedUser = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (user) {
-        authenticatedUser = user;
-      }
-    }
 
     const body = await req.text();
     
