@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save } from 'lucide-react';
+import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
@@ -98,6 +98,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 }) => {
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
+  const [savingMappings, setSavingMappings] = useState<Set<string>>(new Set());
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<Array<{ name: string; asr_label?: string }>>([]);
@@ -590,25 +591,28 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                     <div className="flex items-center gap-2">
                     <Select 
                       value={mappedSpeaker}
+                      disabled={savingMappings.has(char.name)}
                       onValueChange={async (value) => {
-                        // Update local state
+                        // Prevent double-click during save
+                        if (savingMappings.has(char.name)) return;
+                        
+                        // Mark as saving
+                        setSavingMappings(prev => new Set(prev).add(char.name));
+                        
+                        // Calculate new mappings ONCE and store in variable
+                        let newMappings: Record<string, string> = {};
                         setSpeakerMappings(prev => {
                           const next: Record<string, string> = {};
                           for (const [sp, ch] of Object.entries(prev)) {
                             if (ch !== char.name) next[sp] = ch;
                           }
                           if (value !== 'unassigned') next[value] = char.name;
+                          newMappings = next; // Store for async operations
                           return next;
                         });
                         
-                        // Auto-save immediately
+                        // Auto-save using the NEW mappings variable
                         try {
-                          const newMappings = { ...speakerMappings };
-                          for (const [sp, ch] of Object.entries(newMappings)) {
-                            if (ch === char.name) delete newMappings[sp];
-                          }
-                          if (value !== 'unassigned') newMappings[value] = char.name;
-                          
                           await saveSpeakerMappings(newMappings, language);
                           
                           // Find character in the list
@@ -654,6 +658,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                             description: "Could not save character mapping. Please try 'Save All Changes' button.",
                             variant: "destructive"
                           });
+                        } finally {
+                          // Remove from saving set
+                          setSavingMappings(prev => {
+                            const next = new Set(prev);
+                            next.delete(char.name);
+                            return next;
+                          });
                         }
                       }}
                     >
@@ -669,6 +680,11 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           ))}
                         </SelectContent>
                       </Select>
+                      
+                      {/* Loading indicator during save */}
+                      {savingMappings.has(char.name) && (
+                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                      )}
                     </div>
                   </div>
                 );
