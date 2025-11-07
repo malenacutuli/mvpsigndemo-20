@@ -1551,6 +1551,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_get_subscriber_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          is_active: boolean
+          minutes_included: number
+          minutes_used: number
+          storage_limit_gb: number
+          storage_used_gb: number
+          subscription_end: string
+          subscription_tier: string
+          user_id: string
+        }[]
+      }
       anonymize_ip_address: { Args: { ip_addr: unknown }; Returns: unknown }
       anonymize_user_agent: {
         Args: { user_agent_str: string }
@@ -1677,6 +1692,19 @@ export type Database = {
           features_available: Json
           is_active: boolean
           tier_name: string
+        }[]
+      }
+      get_subscriber_stats: {
+        Args: never
+        Returns: {
+          active_subscribers: number
+          advanced_tier_count: number
+          free_tier_count: number
+          standard_tier_count: number
+          starter_tier_count: number
+          total_minutes_used: number
+          total_storage_used_gb: number
+          total_subscribers: number
         }[]
       }
       get_user_roles: {

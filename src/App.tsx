@@ -25,6 +25,7 @@ import AccessibilityStatement from "./pages/AccessibilityStatement";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
+import AdminSubscribers from "./pages/AdminSubscribers";
 
 
 const queryClient = new QueryClient();
@@ -72,6 +73,11 @@ const App = () => (
             } />
             <Route path="/embed/:id" element={<Embed />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/admin/subscribers" element={
+              <ProtectedRoute>
+                <AdminSubscribers />
+              </ProtectedRoute>
+            } />
             
             <Route path="/accessibility-statement" element={<AccessibilityStatement />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
