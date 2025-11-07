@@ -98,88 +98,87 @@ export default function PublicBoard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('publicBoard.loadingVideos')}</p>
+          <p className="text-muted-foreground font-light">{t('publicBoard.loadingVideos')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20">
         {/* Hero Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              {t('publicBoard.title')}
-            </h1>
-          </div>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-foreground mb-6 leading-tight">
+            {t('publicBoard.title')}
+          </h1>
+          <p className="text-lg sm:text-xl text-muted-foreground font-light max-w-3xl mx-auto leading-relaxed">
             {t('publicBoard.subtitle')}
           </p>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-5xl mx-auto">
           <div className="flex-1">
             <Input
               placeholder={t('publicBoard.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-12 rounded-full font-light text-base"
             />
           </div>
           
           <Select value={languageFilter} onValueChange={setLanguageFilter}>
-            <SelectTrigger className="w-full md:w-48">
+            <SelectTrigger className="w-full md:w-56 h-12 rounded-full font-light">
               <SelectValue placeholder={t('publicBoard.allLanguages')} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('publicBoard.allLanguages')}</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
+            <SelectContent className="bg-card border shadow-lg rounded-2xl z-50">
+              <SelectItem value="all" className="font-light">{t('publicBoard.allLanguages')}</SelectItem>
+              <SelectItem value="en" className="font-light">English</SelectItem>
+              <SelectItem value="es" className="font-light">Spanish</SelectItem>
+              <SelectItem value="fr" className="font-light">French</SelectItem>
+              <SelectItem value="de" className="font-light">German</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
-            <SelectTrigger className="w-full md:w-48">
+            <SelectTrigger className="w-full md:w-56 h-12 rounded-full font-light">
               <SelectValue placeholder={t('publicBoard.allContent')} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('publicBoard.allContent')}</SelectItem>
-              <SelectItem value="education">Educational</SelectItem>
-              <SelectItem value="recipe">Recipe</SelectItem>
-              <SelectItem value="tutorial">Tutorial</SelectItem>
-              <SelectItem value="presentation">Presentation</SelectItem>
+            <SelectContent className="bg-card border shadow-lg rounded-2xl z-50">
+              <SelectItem value="all" className="font-light">{t('publicBoard.allContent')}</SelectItem>
+              <SelectItem value="education" className="font-light">Educational</SelectItem>
+              <SelectItem value="recipe" className="font-light">Recipe</SelectItem>
+              <SelectItem value="tutorial" className="font-light">Tutorial</SelectItem>
+              <SelectItem value="presentation" className="font-light">Presentation</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Videos Grid */}
         {filteredVideos.length === 0 ? (
-          <div className="text-center py-12">
-            <Globe className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">{t('publicBoard.noVideosFound')}</h3>
-            <p className="text-muted-foreground mb-4">
+          <div className="text-center py-20">
+            <Globe className="w-20 h-20 mx-auto mb-6 text-muted-foreground" />
+            <h3 className="text-2xl md:text-3xl font-light text-foreground mb-4">{t('publicBoard.noVideosFound')}</h3>
+            <p className="text-lg text-muted-foreground font-light mb-8 leading-relaxed max-w-md mx-auto">
               {videos.length === 0 
                 ? t('publicBoard.noVideosYet')
                 : t('publicBoard.noMatchingVideos')}
             </p>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" size="lg" className="rounded-full px-8 py-6 text-lg font-light">
               <Link to="/auth">{t('publicBoard.joinCommunity')}</Link>
             </Button>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredVideos.map((video) => (
-              <Card key={video.id} className="hover:shadow-lg transition-all hover:scale-105 group">
+              <Card key={video.id} className="hover:shadow-elegant transition-all duration-300 hover:scale-105 group border rounded-2xl shadow-soft overflow-hidden">
                 <CardHeader className="p-0">
-                  <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center relative overflow-hidden">
+                  <div className="aspect-video bg-muted rounded-t-2xl flex items-center justify-center relative overflow-hidden">
                     {video.thumbnail_url ? (
                       <img 
                         src={video.thumbnail_url} 
@@ -194,55 +193,55 @@ export default function PublicBoard() {
                       <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                     
-                    <div className="absolute top-2 left-2">
-                      <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
+                    <div className="absolute top-3 left-3">
+                      <Badge variant="secondary" className="bg-primary/90 text-primary-foreground font-light rounded-full px-3 py-1">
                         <Globe className="w-3 h-3 mr-1" />
                         {t('publicBoard.public')}
                       </Badge>
                     </div>
                     
                     {video.duration_seconds && (
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      <div className="absolute bottom-3 right-3 bg-black/80 text-white text-xs font-light px-3 py-1.5 rounded-full">
                         {formatDuration(video.duration_seconds)}
                       </div>
                     )}
 
-                    <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                    <div className="absolute bottom-3 left-3 bg-black/80 text-white text-xs font-light px-3 py-1.5 rounded-full flex items-center gap-1.5">
                       <Eye className="w-3 h-3" />
                       {formatViewCount(video.view_count)}
                     </div>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                <CardContent className="p-6">
+                  <h3 className="font-light text-lg text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                     {video.title}
                   </h3>
                   
                   {video.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                    <p className="text-sm text-muted-foreground font-light mb-4 line-clamp-2 leading-relaxed">
                       {video.description}
                     </p>
                   )}
                   
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground font-light mb-4">
+                    <div className="flex items-center gap-1.5">
                       <Languages className="w-3 h-3" />
                       {getLanguageDisplay(video.language)}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-xs font-light rounded-full">
                         {getContentTypeDisplay(video.content_type)}
                       </Badge>
                     </div>
                   </div>
 
-                    <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                    <div className="text-xs text-muted-foreground font-light mb-4 flex items-center gap-1.5">
                       <Calendar className="w-3 h-3" />
                       {t('publicBoard.published')} {new Date(video.published_at).toLocaleDateString()}
                     </div>
                   
-                    <Button asChild className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Button asChild className="w-full font-light rounded-full group-hover:shadow-md transition-all">
                       <Link to={`/watch/${video.id}`}>
                         <Play className="w-4 h-4 mr-2" />
                         {t('publicBoard.watchVideo')}
@@ -256,12 +255,12 @@ export default function PublicBoard() {
 
         {/* Call to Action */}
         {videos.length > 0 && (
-          <div className="text-center mt-16 py-12 bg-muted/30 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">{t('publicBoard.ctaTitle')}</h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+          <div className="text-center mt-20 py-16 bg-muted/20 rounded-2xl border shadow-soft">
+            <h2 className="text-3xl md:text-4xl font-light text-foreground mb-6">{t('publicBoard.ctaTitle')}</h2>
+            <p className="text-lg text-muted-foreground font-light mb-8 max-w-2xl mx-auto leading-relaxed">
               {t('publicBoard.ctaDescription')}
             </p>
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full">
               <Link to="/auth">{t('publicBoard.getStarted')}</Link>
             </Button>
           </div>
