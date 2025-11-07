@@ -468,9 +468,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       const savedMappings = await loadSpeakerMappings(currentLanguage);
       
       // Store mappings in state for pure color resolution
+      // NOTE: useVideoStorage already handles localStorage fallback - don't duplicate writes
       if (savedMappings && Object.keys(savedMappings).length > 0) {
         setSpeakerMappings(savedMappings);
-        localStorage.setItem(`speaker-mappings-${videoId}`, JSON.stringify(savedMappings));
         console.log('💾 ENHANCED PLAYER: Loaded speaker mappings:', savedMappings);
       } else {
         setSpeakerMappings({});
