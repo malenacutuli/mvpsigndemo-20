@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Users, TrendingUp, HardDrive, Clock, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
+import { UsageAlertsPanel } from "@/components/UsageAlertsPanel";
+import { UserAlertHistory } from "@/components/UserAlertHistory";
 
 interface SubscriberStats {
   total_subscribers: number;
@@ -131,6 +133,13 @@ export default function AdminSubscribers() {
     }
   };
 
+  const refreshData = async () => {
+    await fetchStats();
+    if (showList) {
+      await fetchSubscriberList();
+    }
+  };
+
   if (!user) {
     return (
       <div className="container mx-auto p-6">
@@ -158,6 +167,9 @@ export default function AdminSubscribers() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Usage Alerts Panel */}
+      <UsageAlertsPanel onRefresh={refreshData} />
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -278,28 +290,35 @@ export default function AdminSubscribers() {
               </TableHeader>
               <TableBody>
                 {subscribers.map((sub) => (
-                  <TableRow key={sub.user_id}>
-                    <TableCell className="font-medium">{sub.display_name}</TableCell>
-                    <TableCell>
-                      <Badge variant={getTierColor(sub.subscription_tier)}>
-                        {sub.subscription_tier}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={sub.is_active ? "default" : "secondary"}>
-                        {sub.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {sub.minutes_used} / {sub.minutes_included} min
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {sub.storage_used_gb.toFixed(2)} / {sub.storage_limit_gb} GB
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(sub.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow key={sub.user_id}>
+                      <TableCell className="font-medium">{sub.display_name}</TableCell>
+                      <TableCell>
+                        <Badge variant={getTierColor(sub.subscription_tier)}>
+                          {sub.subscription_tier}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sub.is_active ? "default" : "secondary"}>
+                          {sub.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {sub.minutes_used} / {sub.minutes_included} min
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {sub.storage_used_gb.toFixed(2)} / {sub.storage_limit_gb} GB
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(sub.created_at), 'MMM d, yyyy')}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow key={`${sub.user_id}-alert-history`}>
+                      <TableCell colSpan={6} className="p-0 bg-muted/50">
+                        <UserAlertHistory userId={sub.user_id} />
+                      </TableCell>
+                    </TableRow>
+                  </>
                 ))}
               </TableBody>
             </Table>
