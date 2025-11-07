@@ -209,7 +209,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           mapping: speakerMappings,
           charactersCount: characters.length,
           byName: characters.map(c => c.name),
-          sampleSpeakers: merged.slice(0, 5)
+          sampleSpeakers: unique.slice(0, 5).map(s => s.name)
         });
       } else {
         // No speakers provided – load from cache and DB to build a stable list
