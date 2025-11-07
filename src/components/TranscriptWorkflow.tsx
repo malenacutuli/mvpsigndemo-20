@@ -25,6 +25,10 @@ interface TranscriptSegment {
   speaker: string;
   speakerColor: string;
   characterId?: string;
+  // ✅ ASR speaker fields from AssemblyAI/Deepgram
+  speakerAsrLabel?: string;      // Original ASR label (A, B, C, D)
+  speakerAsrNorm?: string;        // Normalized ASR label
+  speakerNormalized?: string;     // Final normalized speaker name
   emphasis: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch: 'normal' | 'high' | 'low';
   words?: Array<{
@@ -163,35 +167,61 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       
       let loadedSegments: TranscriptSegment[] = [];
       
-      // Load from database
+      // Load from database - ✅ INCLUDE ASR speaker fields
       const { data: dbData, error: dbError } = await supabase
         .from('transcript_segments_clean')
-        .select('*')  
+        .select('*, speaker_asr_label, speaker_asr_norm, speaker_normalized')  
         .eq('video_id', videoId)
         .eq('language', detectedLanguage)
         .order('start_time', { ascending: true });
       
       if (!dbError && dbData && dbData.length > 0) {
-        loadedSegments = dbData.map((seg, index) => ({
-          id: seg.id,
-          text: seg.text,
-          startTime: Number(seg.start_time),
-          endTime: Number(seg.end_time),
-          speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
-          speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
-          emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
-          pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
-        }));
+        loadedSegments = dbData.map((seg, index) => {
+          // Parse words array with proper typing
+          let parsedWords: Array<{
+            text: string;
+            emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
+            pitch?: 'high' | 'low' | 'normal';
+          }> = [];
+          
+          if (Array.isArray(seg.words)) {
+            parsedWords = seg.words.map((w: any) => ({
+              text: w.text || '',
+              emphasis: (w.emphasis as 'loud' | 'quiet' | 'normal' | 'yelling') || undefined,
+              pitch: (w.pitch as 'high' | 'low' | 'normal') || undefined
+            }));
+          }
+          
+          return {
+            id: seg.id,
+            text: seg.text,
+            startTime: Number(seg.start_time),
+            endTime: Number(seg.end_time),
+            speaker: seg.speaker || `Speaker ${(index % 3) + 1}`,
+            speakerColor: seg.speaker_color || getSpeakerColor(seg.speaker || `Speaker ${(index % 3) + 1}`),
+            // ✅ Load ASR speaker labels
+            speakerAsrLabel: seg.speaker_asr_label,
+            speakerAsrNorm: seg.speaker_asr_norm,
+            speakerNormalized: seg.speaker_normalized,
+            emphasis: (seg.emphasis as 'normal' | 'loud' | 'quiet' | 'yelling') || 'normal',
+            pitch: (seg.pitch as 'normal' | 'high' | 'low') || 'normal',
+            words: parsedWords,
+          };
+        });
         
         if (dbData[0]?.language) {
           setDetectedLanguage(dbData[0].language);
         }
+        
+        console.log('✅ TranscriptWorkflow - Loaded transcript with ASR data:', {
+          segments: loadedSegments.length,
+          asr_labels: loadedSegments.filter(s => s.speakerAsrLabel).length
+        });
       }
 
       if (loadedSegments.length > 0) {
         setSegments(loadedSegments);
         setHasTranscript(true);
-        console.log('✅ TranscriptWorkflow - Loaded transcript:', loadedSegments.length, 'segments');
       } else {
         console.log('ℹ️ TranscriptWorkflow - No transcript found for video:', videoId);
       }
@@ -409,7 +439,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
     setIsSaving(true);
     
     try {
-      console.log('💾 Saving transcript to database:', segments.length, 'segments');
+      console.log('💾 Saving transcript - PRESERVING ASR speaker data');
       
       // Harmonize speaker names before saving
       const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
@@ -438,21 +468,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Direct database save: Delete existing segments
-      const { error: deleteError } = await supabase
-        .from('transcript_segments_clean')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', detectedLanguage);
-      
-      if (deleteError) {
-        console.error('❌ Failed to delete existing segments:', deleteError);
-        throw deleteError;
-      }
-      
-      // Insert updated segments with all properties including words
-      const segmentsToInsert = toSave.map((segment, idx) => {
-        // Find matching character for character_id
+      // ✅ CRITICAL FIX: Use UPSERT to preserve ASR fields instead of DELETE+INSERT
+      const segmentsToUpsert = toSave.map((segment, idx) => {
         const matchingChar = characters.find(c => c.name === segment.speaker);
         
         return {
@@ -470,23 +487,29 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           segment_type: 'dialogue',
           is_off_camera: false,
           words: segment.words || [],
-          confidence: 0.95
+          confidence: 0.95,
+          // ✅ PRESERVE these ASR fields - they will be kept from DB on conflict
+          // The upsert will keep existing values for fields not in this object
         };
       });
       
-      const { error: insertError } = await supabase
+      // Use upsert with onConflict to preserve ASR data
+      const { error: upsertError } = await supabase
         .from('transcript_segments_clean')
-        .insert(segmentsToInsert);
+        .upsert(segmentsToUpsert, {
+          onConflict: 'video_id,language,idx',
+          ignoreDuplicates: false  // Update existing records
+        });
       
-      if (insertError) {
-        console.error('❌ Failed to insert segments:', insertError);
-        throw insertError;
+      if (upsertError) {
+        console.error('❌ Failed to upsert segments:', upsertError);
+        throw upsertError;
       }
       
-      console.log('✅ Successfully saved', segmentsToInsert.length, 'segments');
+      console.log('✅ Successfully saved', segmentsToUpsert.length, 'segments with ASR data preserved');
       toast({
         title: "Saved",
-        description: `Successfully saved ${segmentsToInsert.length} transcript segments`,
+        description: `Transcript saved. ASR speaker data preserved.`,
       });
     } catch (error) {
       console.error('❌ Failed to save transcript:', error);

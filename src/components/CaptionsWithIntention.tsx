@@ -494,11 +494,38 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const activeCandidate = React.useMemo(() => {
     if (!processed?.length) return null;
 
-    // Only return segments that are actually active right now
-    const active = processed.find(c =>
-      currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
-      currentTime <= (c.endTime   + SEGMENT_TOLERANCE)
-    );
+    // ✅ Validate word timings before processing
+    const validateWordTimings = (segment: any): boolean => {
+      if (!segment.words || segment.words.length === 0) {
+        return true; // No words to validate
+      }
+      
+      // Check that word timings are within segment bounds
+      const hasValidTimings = segment.words.every((word: any) => 
+        word.startTime >= segment.startTime && 
+        word.endTime <= segment.endTime &&
+        word.startTime < word.endTime
+      );
+      
+      if (!hasValidTimings) {
+        console.error('❌ Invalid word timings detected in segment:', {
+          text: segment.text?.substring(0, 30),
+          segmentStart: segment.startTime,
+          segmentEnd: segment.endTime,
+          firstWord: segment.words[0],
+          lastWord: segment.words[segment.words.length - 1]
+        });
+      }
+      
+      return hasValidTimings;
+    };
+
+    // Only return segments that are actually active right now AND have valid timings
+    const active = processed.find(c => {
+      const isActive = currentTime >= (c.startTime - SEGMENT_TOLERANCE) &&
+                      currentTime <= (c.endTime   + SEGMENT_TOLERANCE);
+      return isActive && validateWordTimings(c);
+    });
     return active || null;
   }, [processed, currentTime]);
 

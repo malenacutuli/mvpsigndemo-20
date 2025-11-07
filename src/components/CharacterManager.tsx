@@ -100,7 +100,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [newCharacterName, setNewCharacterName] = useState('');
   const [newCharacterType, setNewCharacterType] = useState<Character['type']>('main');
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
-  const [availableSpeakers, setAvailableSpeakers] = useState<string[]>([]);
+  const [availableSpeakers, setAvailableSpeakers] = useState<Array<{ name: string; asr_label?: string }>>([]);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
 
   // Load existing characters on mount
@@ -137,15 +137,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       if (data?.result_data && typeof data.result_data === 'object' && data.result_data !== null) {
         const resultData = data.result_data as any;
         if (resultData.speakers && Array.isArray(resultData.speakers)) {
-          const cachedSpeakers = resultData.speakers.map((s: any) => s.name);
-          // Merge into stable list
-          const merged = Array.from(new Set([...
-            (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []),
-            ...cachedSpeakers,
-          ].filter(Boolean))).sort();
-          setAvailableSpeakers(merged);
-          sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
-          console.log('📋 Loaded cached speakers:', merged);
+          const cachedSpeakers = resultData.speakers.map((s: any) => ({
+            name: s.name,
+            asr_label: s.asr_label || undefined
+          }));
+          setAvailableSpeakers(cachedSpeakers);
+          console.log('📋 Loaded cached speakers:', cachedSpeakers);
         }
       }
     } catch (error) {
@@ -153,18 +150,27 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  // Load speakers from DB (transcript + mappings) and stabilize the list
+  // Load speakers from DB (transcript + mappings) with ASR labels
   const loadSpeakersFromDB = async () => {
     try {
-      const speakersSet = new Set<string>();
-      // From transcript segments
+      const speakersMap = new Map<string, { name: string; asr_label?: string }>();
+      
+      // ✅ Load speakers WITH ASR labels from transcript segments
       const { data: segs } = await supabase
         .from('transcript_segments_clean')
-        .select('speaker')
+        .select('speaker, speaker_asr_label')
         .eq('video_id', videoId)
         .eq('language', language)
         .order('start_time');
-      (segs || []).forEach((r: any) => r?.speaker && speakersSet.add(r.speaker));
+      
+      (segs || []).forEach((r: any) => {
+        if (r?.speaker) {
+          speakersMap.set(r.speaker, {
+            name: r.speaker,
+            asr_label: r.speaker_asr_label || undefined
+          });
+        }
+      });
 
       // From latest speaker mappings (keys)
       const { data: mapRow } = await supabase
@@ -174,17 +180,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         .eq('language', language)
         .maybeSingle();
       const mappings = (mapRow?.mappings as Record<string, string>) || {};
-      Object.keys(mappings).forEach(k => speakersSet.add(k));
+      Object.keys(mappings).forEach(k => {
+        if (!speakersMap.has(k)) {
+          speakersMap.set(k, { name: k });
+        }
+      });
 
-      // Merge with cache and any previous stable list
-      const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
-      stable.forEach(s => speakersSet.add(s));
-
-      const merged = Array.from(speakersSet).filter(Boolean).sort();
+      const merged = Array.from(speakersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
       if (merged.length > 0) {
         setAvailableSpeakers(merged);
-        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
-        console.log('💿 Loaded speakers from DB/cache:', merged);
+        console.log('💿 Loaded speakers from DB with ASR labels:', merged);
       }
     } catch (e) {
       console.warn('⚠️ Failed loading speakers from DB:', e);
@@ -195,14 +200,11 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   useEffect(() => {
     const initOrMergeSpeakers = async () => {
       if (existingSpeakers && existingSpeakers.length > 0) {
-        const unique = Array.from(new Set(existingSpeakers.filter(Boolean))).sort();
-        // Merge with any previously stabilized list to avoid flicker
-        const stable = (sessionStorage.getItem(`speakers_${videoId}_${language}`)?.split('\n') || []).filter(Boolean);
-        const merged = Array.from(new Set([...stable, ...unique])).sort();
-        setAvailableSpeakers(merged);
-        sessionStorage.setItem(`speakers_${videoId}_${language}`, merged.join('\n'));
-        console.log('🧩 Available speakers (from props, stabilized):', merged);
-        console.log('🔍 Debugging speakers - Total provided:', existingSpeakers.length, 'Unique filtered:', unique.length);
+        const unique = existingSpeakers
+          .filter(Boolean)
+          .map(s => ({ name: s, asr_label: undefined as string | undefined }));
+        setAvailableSpeakers(unique);
+        console.log('🧩 Available speakers (from props):', unique);
         console.log('🔍 Final mapping gate debug:', {
           mapping: speakerMappings,
           charactersCount: characters.length,
@@ -603,8 +605,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {Array.from(new Set([...availableSpeakers, ...Object.keys(speakerMappings)])).sort().map(sp => (
-                            <SelectItem key={sp} value={sp}>{sp}</SelectItem>
+                          {availableSpeakers.map(sp => (
+                            <SelectItem key={sp.name} value={sp.name}>
+                              {sp.name} {sp.asr_label ? `(Speaker ${sp.asr_label})` : ''}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -691,20 +695,34 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                 {typeCharacters.map(character => {
                   return (
                     <div key={character.id} className="p-4 bg-accent/5 rounded-xl border space-y-4">
-                      {/* Character Header */}
+                       {/* Character Header */}
                       <div className="flex items-center gap-3">
                         <div 
                           className="w-8 h-8 rounded border-2 border-gray-300 flex-shrink-0"
                           style={{ backgroundColor: character.color }}
                         />
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Input
                               value={character.name}
                               onChange={(e) => updateCharacterProperty(character.id, 'name', e.target.value)}
                               className="h-8 min-w-[120px] font-medium"
                               placeholder="Character name"
                             />
+                            {/* ✅ Show which ASR speaker (A, B, C, D) this character is mapped to */}
+                            {(() => {
+                              const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
+                              const asrLabel = availableSpeakers.find(s => s.name === mappedSpeaker)?.asr_label;
+                              
+                              if (asrLabel) {
+                                return (
+                                  <Badge variant="outline" className="text-xs bg-primary/10">
+                                    Speaker {asrLabel}
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
                             {character.isOffCamera && (
                               <Badge variant="secondary" className="text-xs">Off-camera</Badge>
                             )}
