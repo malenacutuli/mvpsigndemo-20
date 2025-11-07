@@ -93,6 +93,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const eadPlayedIdsRef = useRef<Set<string>>(new Set()); // Single ref for EAD tracking
+  const maybeTriggerEADRef = useRef<((now: number) => void) | null>(null); // Ref for latest EAD callback
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -587,8 +588,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           lastVideoTime = videoTime;
         }
         
-        // Trigger EAD check using unified function
-        maybeTriggerEAD(videoTime);
+        // Trigger EAD check using unified function (via ref to avoid stale closure)
+        if (maybeTriggerEADRef.current) {
+          maybeTriggerEADRef.current(videoTime);
+        }
         
         // Continue loop
         if ('requestVideoFrameCallback' in video) {
@@ -643,6 +646,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       }
     };
   }, []);
+
+  // Keep maybeTriggerEADRef updated to avoid stale closure
+  useEffect(() => {
+    maybeTriggerEADRef.current = maybeTriggerEAD;
+  }, [maybeTriggerEAD]);
 
   // ❌ REMOVED: Duplicate AD loader (conflicted with adLanguage loader above)
 
