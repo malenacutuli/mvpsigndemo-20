@@ -61,8 +61,10 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [editStartTime, setEditStartTime] = useState<string>('0:00.0');
   const [editEndTime, setEditEndTime] = useState<string>('0:00.0');
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
-  const detectedLanguage = videoData?.transcript_language || 'en';
-const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
+  
+  // Stabilize language to prevent flickering
+  const stableLanguageRef = React.useRef(videoData?.transcript_language || 'en');
+  const detectedLanguage = stableLanguageRef.current;
   const [audioGenerationStatus, setAudioGenerationStatus] = useState<Record<string, string>>({});
   const [generatingAudioIds, setGeneratingAudioIds] = useState<Set<string>>(new Set());
   const [eadAnalysisResults, setEadAnalysisResults] = useState<Map<string, EADAnalysisResult>>(new Map());
@@ -73,6 +75,23 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([detectedLanguage]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
+  const [isChangingLanguage, setIsChangingLanguage] = useState(false);
+  
+  // Memoize filtered voices to prevent recalculation on every render
+  const filteredVoices = React.useMemo(() => 
+    getFilteredVoices(currentLanguage, 'education'),
+    [currentLanguage]
+  );
+  
+  // Update stable language ref only when videoData changes
+  React.useEffect(() => {
+    const newLang = videoData?.transcript_language || 'en';
+    if (stableLanguageRef.current !== newLang) {
+      console.log('🌍 Stable language change:', stableLanguageRef.current, '→', newLang);
+      stableLanguageRef.current = newLang;
+      setCurrentLanguage(newLang);
+    }
+  }, [videoData?.transcript_language]);
 
   // Local UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -272,13 +291,13 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
       setSelectedVoice({ id: meta.ad_voice_id, name: meta.ad_voice_name, description: 'Preferred AD voice' });
     } else {
       // Sensible defaults by language
-      if (detectedLanguage === 'es') {
+      if (currentLanguage === 'es') {
         setSelectedVoice(filteredVoices.find(v => v.accent === 'Spanish') || filteredVoices[0]);
       } else {
         setSelectedVoice(filteredVoices.find(v => v.id === 'gordon-ramsay') || filteredVoices[0]);
       }
     }
-  }, [videoId, detectedLanguage]);
+  }, [videoId, currentLanguage]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -349,8 +368,10 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
   // Handle language change
   const handleLanguageChange = async (newLanguage: string) => {
     console.log('🌍 Changing language to:', newLanguage);
+    setIsChangingLanguage(true);
     setCurrentLanguage(newLanguage);
     await loadExistingDescriptions(newLanguage);
+    setIsChangingLanguage(false);
   };
 
   // Translate all descriptions to target language
@@ -1334,6 +1355,14 @@ const filteredVoices = getFilteredVoices(detectedLanguage, 'education');
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Language change loading indicator */}
+            {isChangingLanguage && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading language...</span>
+              </div>
+            )}
 
             {/* Translation Controls */}
             {currentLanguage !== detectedLanguage && !availableLanguages.includes(currentLanguage) && descriptions.length > 0 && (
