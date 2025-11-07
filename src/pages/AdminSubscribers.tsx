@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,6 +40,7 @@ interface Subscriber {
 
 export default function AdminSubscribers() {
   const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const [stats, setStats] = useState<SubscriberStats | null>(null);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,13 +144,24 @@ export default function AdminSubscribers() {
     }
   };
 
-  if (!user) {
+  if (adminLoading) {
+    return (
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
     return (
       <div className="container mx-auto p-6">
-        <Alert>
+        <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
           <AlertDescription>
-            You must be logged in to access this page.
+            Access denied. This page is only accessible to administrators.
           </AlertDescription>
         </Alert>
       </div>
