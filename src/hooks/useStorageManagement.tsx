@@ -40,10 +40,8 @@ export const useStorageManagement = () => {
     
     setLoading(true);
     try {
-      // PHASE 2: Use server-side storage calculation
-      const { data: usage, error } = await supabase.rpc('get_user_storage_usage', {
-        target_user_id: user.id
-      });
+      // SECURITY FIX: Call without user_id parameter - function uses auth.uid() internally
+      const { data: usage, error } = await supabase.rpc('get_user_storage_usage');
 
       if (error) throw error;
 
