@@ -472,7 +472,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       }
       
       // ONE event after ALL database updates are complete
-      window.dispatchEvent(new CustomEvent('character-colors-updated'));
+      window.dispatchEvent(new CustomEvent('character-colors-updated', {
+        detail: { videoId, languages: allLanguages }
+      }));
       
     } catch (error) {
       console.error('❌ Failed to apply character mappings:', error);
