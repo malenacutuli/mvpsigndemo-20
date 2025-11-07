@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { Calendar, CreditCard, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UsageDashboard } from './UsageDashboard';
@@ -16,6 +17,7 @@ export const SubscriptionManager: React.FC = () => {
     checkSubscription, 
     openCustomerPortal 
   } = useSubscription();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { t, i18n } = useTranslation();
 
   const formatDate = (dateString: string | null) => {
@@ -122,7 +124,8 @@ export const SubscriptionManager: React.FC = () => {
       </CardContent>
     </Card>
     
-    <UsageDashboard />
+    {/* ADMIN ONLY: Usage Analytics Dashboard */}
+    {isAdmin && !adminLoading && <UsageDashboard />}
     </div>
   );
 };
