@@ -1245,6 +1245,36 @@ export type Database = {
           },
         ]
       }
+      usage_notifications: {
+        Row: {
+          billing_cycle_start: string
+          created_at: string
+          id: string
+          notification_type: string
+          sent_at: string
+          usage_snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          billing_cycle_start: string
+          created_at?: string
+          id?: string
+          notification_type: string
+          sent_at?: string
+          usage_snapshot: Json
+          user_id: string
+        }
+        Update: {
+          billing_cycle_start?: string
+          created_at?: string
+          id?: string
+          notification_type?: string
+          sent_at?: string
+          usage_snapshot?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_records: {
         Row: {
           billing_cycle_start: string
@@ -1681,6 +1711,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_notification_history: {
+        Args: { days_back?: number; target_user_id: string }
+        Returns: {
+          billing_cycle_start: string
+          id: string
+          notification_type: string
+          sent_at: string
+          usage_snapshot: Json
+        }[]
+      }
       get_secure_channel_stats: {
         Args: { channel_uuid: string }
         Returns: {
@@ -1749,6 +1789,21 @@ export type Database = {
           tier_name: string
         }[]
       }
+      get_users_approaching_limits: {
+        Args: never
+        Returns: {
+          billing_cycle_start: string
+          email: string
+          minutes_included: number
+          minutes_percent: number
+          minutes_used: number
+          storage_limit_gb: number
+          storage_percent: number
+          storage_used_gb: number
+          tier: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1769,6 +1824,10 @@ export type Database = {
         Args: { customer_id: string }
         Returns: string
       }
+      record_notification_sent: {
+        Args: { notif_type: string; target_user_id: string; usage_data: Json }
+        Returns: string
+      }
       reset_monthly_usage: {
         Args: never
         Returns: {
@@ -1786,6 +1845,10 @@ export type Database = {
           latest_subscription_date: string
           total_subscribers: number
         }[]
+      }
+      should_send_notification: {
+        Args: { notif_type: string; target_user_id: string }
+        Returns: boolean
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
