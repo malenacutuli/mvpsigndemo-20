@@ -1290,7 +1290,6 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
         }
       }
-      }
       
       console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
     }
