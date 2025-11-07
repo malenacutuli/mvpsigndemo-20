@@ -455,31 +455,31 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   }, [captions]);
 
   // Debounced listener for character color updates
+  const lastColorsJSONRef = React.useRef<string>('');
   const colorUpdateTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevColorsRef = React.useRef<string>('');
 
   useEffect(() => {
-    const loadColors = () => {
-      const s = localStorage.getItem('character-colors') || '';
-      if (s && s !== prevColorsRef.current) {
+    const applyColors = () => {
+      const j = localStorage.getItem('character-colors') || '';
+      if (j && j !== lastColorsJSONRef.current) {
         try {
-          setCustomSpeakerColors(JSON.parse(s));
-          prevColorsRef.current = s;
+          setCustomSpeakerColors(JSON.parse(j));
+          lastColorsJSONRef.current = j;
         } catch {}
       }
     };
 
-    loadColors(); // initial
+    applyColors(); // initial
 
-    const handler = () => {
+    const onUpdate = () => {
       if (colorUpdateTimerRef.current) clearTimeout(colorUpdateTimerRef.current);
-      colorUpdateTimerRef.current = setTimeout(loadColors, 300);
+      colorUpdateTimerRef.current = setTimeout(applyColors, 400);
     };
 
-    window.addEventListener('character-colors-updated', handler);
+    window.addEventListener('character-colors-updated', onUpdate as any);
     return () => {
       if (colorUpdateTimerRef.current) clearTimeout(colorUpdateTimerRef.current);
-      window.removeEventListener('character-colors-updated', handler);
+      window.removeEventListener('character-colors-updated', onUpdate as any);
     };
   }, []);
 
@@ -490,6 +490,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   const showUntilSecRef   = React.useRef<number | null>(null); // seconds
   const lastSetMsRef      = React.useRef<number>(0);           // ms (Date.now)
 
+  // Memoize active caption by coarse time bucket (100ms) to reduce paint thrashing
+  const timeBucket = Math.floor(currentTime * 10); // 100ms buckets
+  
   // Active caption - only show truly active segments (no read-ahead promotion)
   const activeCandidate = React.useMemo(() => {
     if (!processed?.length) return null;
@@ -527,7 +530,7 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
       return isActive && validateWordTimings(c);
     });
     return active || null;
-  }, [processed, currentTime]);
+  }, [processed, timeBucket]);
 
   // Optional: upcoming segment for preview (only if SHOW_READAHEAD_PREVIEW is true)
   const upcomingCandidate = React.useMemo(() => {
