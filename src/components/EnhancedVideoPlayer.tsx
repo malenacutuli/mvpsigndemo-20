@@ -124,9 +124,13 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   }, [videoId, currentLanguage]);
   
   // Stable list of detected speakers from transcript segments only (avoid flicker)
+  // FIX 1: Use ASR labels instead of display names to prevent dropdown flickering
   const stableDetectedSpeakers = useMemo(() => {
-    const unique = Array.from(new Set(transcriptSegments.map((s: any) => s?.speaker).filter(Boolean))).sort();
-    return unique;
+    const labels = transcriptSegments
+      .map((s: any) => s.speakerAsrLabel || s.speaker_asr_label || null)
+      .filter(Boolean)
+      .map((l: string) => `Speaker ${String(l).replace(/^Speaker\s+/, '')}`);
+    return Array.from(new Set(labels)).sort();
   }, [transcriptSegments]);
   // Single neutral color until character is explicitly identified
   const DEFAULT_NEUTRAL = '#22E3D0'; // Light blue for unidentified speakers

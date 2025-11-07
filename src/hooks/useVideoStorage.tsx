@@ -230,10 +230,12 @@ export const useVideoStorage = (videoId: string) => {
       // Clear any localStorage fallback since we have database record
       localStorage.removeItem(`transcript_${videoId}_${language}`);
       
-      // Notify listeners of transcript update
-      window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
-        detail: { videoId, language } 
-      }));
+      // Notify listeners of transcript update (with delay to allow UI to stabilize)
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('transcript-segments-updated', { 
+          detail: { videoId, language } 
+        }));
+      }, 300);
       
     } catch (err) {
       console.error('❌ Failed to save transcript to database:', err);

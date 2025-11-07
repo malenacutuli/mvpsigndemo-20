@@ -104,6 +104,15 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   const [availableSpeakers, setAvailableSpeakers] = useState<Array<{ name: string; asr_label?: string }>>([]);
   const { saveCharacters, loadCharacters, saveSpeakerMappings, loadSpeakerMappings } = useVideoStorage(videoId);
   const speakersInitializedRef = useRef(false);
+  
+  // FIX 2: Helper functions to normalize speaker keys for stable dropdown values
+  const toSpeakerKey = (sp: { name: string; asr_label?: string }) =>
+    sp.asr_label ? `Speaker ${sp.asr_label}` : sp.name;
+
+  const normalizeSpeakerKey = (v: string) => {
+    const m = v.match(/(\d+|[A-Z])$/);
+    return m ? `Speaker ${m[1]}` : v;
+  };
 
   // Load existing characters on mount
   useEffect(() => {
@@ -260,41 +269,54 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         // First, try to load from speaker_mappings table
         const mappings = await loadSpeakerMappings(language);
         
+        // FIX 3: Load character names to resolve UUIDs
+        const { data: chars } = await supabase
+          .from('characters')
+          .select('id, name')
+          .eq('video_id', videoId);
+        
+        const idToName = new Map((chars || []).map(c => [c.id, c.name]));
+        
         // Reconstruct mappings from transcript_segments with character_id
         const { data: segments } = await supabase
           .from('transcript_segments_clean')
-          .select('speaker, character_id')
+          .select('speaker, speaker_asr_label, character_id')
           .eq('video_id', videoId)
           .eq('language', language)
           .not('character_id', 'is', null);
-        
+
         if (segments && segments.length > 0) {
-          // Get character details
-          const charIds = Array.from(new Set(segments.map(s => s.character_id).filter(Boolean)));
-          const { data: chars } = await supabase
-            .from('characters')
-            .select('id, name')
-            .in('id', charIds);
-          
-          const charMap = new Map(chars?.map(c => [c.id, c.name]) || []);
-          
-          // Auto-populate: Reconstruct speaker -> character mapping from character_id links
-          const autoMappings: Record<string, string> = {};
+          const segmentMappings: Record<string, string> = {};
           for (const seg of segments) {
-            if (seg.character_id && seg.speaker) {
-              const charName = charMap.get(seg.character_id);
-              if (charName) {
-                autoMappings[seg.speaker] = charName;
-              }
+            const characterName = idToName.get(seg.character_id);
+            if (characterName) {
+              // Use ASR label if available, otherwise use speaker name, normalize to "Speaker X" format
+              const speakerKey = seg.speaker_asr_label 
+                ? normalizeSpeakerKey(`Speaker ${seg.speaker_asr_label}`)
+                : normalizeSpeakerKey(seg.speaker);
+              segmentMappings[speakerKey] = characterName;
             }
           }
+
+          const finalMappings = { ...segmentMappings, ...(mappings || {}) };
           
-          // Merge with loaded mappings (prefer auto-reconstructed as current state)
-          const finalMappings = { ...mappings, ...autoMappings };
-          setSpeakerMappings(finalMappings);
-          console.log('✅ Auto-populated speaker mappings:', finalMappings);
+          // Normalize all keys in final mappings
+          const normalizedMappings: Record<string, string> = {};
+          for (const [spk, charId] of Object.entries(finalMappings)) {
+            const characterName = idToName.get(charId as string) || charId;
+            normalizedMappings[normalizeSpeakerKey(spk)] = characterName;
+          }
+          
+          setSpeakerMappings(normalizedMappings);
+          console.log('✅ Auto-populated speaker mappings (normalized):', normalizedMappings);
         } else {
-          setSpeakerMappings(mappings || {});
+          // Normalize mappings from speaker_mappings table
+          const normalizedMappings: Record<string, string> = {};
+          for (const [spk, charId] of Object.entries(mappings || {})) {
+            const characterName = idToName.get(charId as string) || charId;
+            normalizedMappings[normalizeSpeakerKey(spk)] = characterName;
+          }
+          setSpeakerMappings(normalizedMappings);
         }
       } catch (error) {
         console.error('Failed to load speaker mappings:', error);
@@ -602,6 +624,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
               </div>
               <div className="space-y-2">
               {characters.map((char) => {
+                // FIX 2: Use normalized keys for stable dropdown value
                 const mappedSpeaker = Object.keys(speakerMappings).find(sp => speakerMappings[sp] === char.name) || 'unassigned';
                 return (
                   <div key={char.id} className="flex items-center gap-3 text-sm">
@@ -623,6 +646,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         // Mark as saving
                         setSavingMappings(prev => new Set(prev).add(char.name));
                         
+                        // FIX 2: Normalize the selected value to "Speaker X" format
+                        const normalized = value !== 'unassigned' ? normalizeSpeakerKey(value) : value;
+                        
                         // Calculate new mappings ONCE and store in variable
                         let newMappings: Record<string, string> = {};
                         setSpeakerMappings(prev => {
@@ -630,7 +656,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           for (const [sp, ch] of Object.entries(prev)) {
                             if (ch !== char.name) next[sp] = ch;
                           }
-                          if (value !== 'unassigned') next[value] = char.name;
+                          if (normalized !== 'unassigned') next[normalized] = char.name;
                           newMappings = next; // Store for async operations
                           return next;
                         });
@@ -641,10 +667,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           
                           // Find character in the list
                           const character = characters.find(c => c.name === char.name);
-                          if (character && value !== 'unassigned') {
-                            // Get the speaker's ASR label if available
-                            const speaker = availableSpeakers.find(s => s.name === value);
-                            const asrLabel = speaker?.asr_label || value;
+                          if (character && normalized !== 'unassigned') {
+                            // Extract bare ASR label (digits/letters) from normalized key
+                            const m = normalized.match(/(\d+|[A-Z])$/);
+                            const asrLabelBare = m ? m[1] : normalized;
                             
                             // Apply mapping to database
                             const { data: savedChars } = await supabase
@@ -658,7 +684,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                               await supabase.rpc('apply_specific_mapping', {
                                 p_video_id: videoId,
                                 p_language: language,
-                                p_asr_label: asrLabel,
+                                p_asr_label: asrLabelBare,
                                 p_character_id: savedChars.id
                               });
                             }
@@ -666,15 +692,17 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           
                           toast({
                             title: "Mapping Saved",
-                            description: value === 'unassigned' 
+                            description: normalized === 'unassigned' 
                               ? `${char.name} unmapped` 
-                              : `${char.name} → ${value}`
+                              : `${char.name} → ${normalized}`
                           });
                           
-                          // Trigger refresh in video player
-                          window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
-                            detail: { videoId, language }
-                          }));
+                          // Trigger refresh in video player (delayed to allow save to complete)
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
+                              detail: { videoId, language }
+                            }));
+                          }, 300);
                         } catch (error) {
                           console.error('Failed to save mapping:', error);
                           toast({
@@ -695,10 +723,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         <SelectTrigger className="h-7 w-56">
                           <SelectValue placeholder="Select detected speaker..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background z-50 shadow-lg">
                           <SelectItem value="unassigned">Unassigned</SelectItem>
                           {availableSpeakers.map(sp => (
-                            <SelectItem key={sp.name} value={sp.name}>
+                            <SelectItem key={sp.name} value={toSpeakerKey(sp)}>
                               {sp.name} {sp.asr_label ? `(Speaker ${sp.asr_label})` : ''}
                             </SelectItem>
                           ))}
