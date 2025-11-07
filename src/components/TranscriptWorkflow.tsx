@@ -719,7 +719,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
                   <Beaker className="h-5 w-5 text-amber-600" />
                   <div>
                     <p className="font-semibold text-amber-900 dark:text-amber-100">
-                      AssemblyAI Testing Mode
+                      Analysis Testing Mode
                     </p>
                     <p className="text-sm text-amber-700 dark:text-amber-300">
                       Use test API key for quality/cost comparison (videos &gt;25MB)

@@ -1267,20 +1267,29 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         };
       });
       
-      // Save in batches
+      // Save in batches - clear existing segments first to avoid unique-idx conflicts
+      const targetLang = transcriptionResult.language || 'en';
+      const { error: delErr } = await supabase
+        .from('transcript_segments_clean')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', targetLang);
+      if (delErr) {
+        console.warn('⚠️ Failed to clear existing segments before upsert:', delErr);
+      }
+
       const BATCH_SIZE = 50;
       for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
         const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
-        
         const { error } = await supabase
           .from('transcript_segments_clean')
-          .insert(batch);
-          
+          .upsert(batch, { onConflict: 'video_id,language,idx' });
         if (error) {
           console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
         } else {
           console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
         }
+      }
       }
       
       console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
