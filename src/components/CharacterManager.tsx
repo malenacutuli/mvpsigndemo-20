@@ -347,13 +347,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
   const saveAllCharacters = async () => {
     try {
-      // 1. Save characters to database
-      await saveCharacters(characters);
-      
-      // 2. Save speaker mappings to database
+      // Save speaker mappings to database
       await saveSpeakerMappings(speakerMappings, language);
       
-      // 3. Update localStorage for instant access (critical for video player)
+      // Update localStorage for instant access (critical for video player)
       const characterColorMap = characters.reduce((acc, char) => ({ 
         ...acc, 
         [char.name]: char.color 
@@ -361,12 +358,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       localStorage.setItem('character-colors', JSON.stringify(characterColorMap));
       
-      // 4. Trigger parent component update 
-      onCharactersUpdate?.(characters);
-      
-      // 5. CRITICAL: Apply character settings to all segments in database
-      // This MUST complete before dispatching events
+      // CRITICAL: Apply character settings to all segments in database
+      // This function already handles saving characters with proper upsert logic
       await applyCharacterMappings();
+      
+      // Trigger parent component update after database operations complete
+      onCharactersUpdate?.(characters);
       
       toast({
         title: "Colors synchronized!",
