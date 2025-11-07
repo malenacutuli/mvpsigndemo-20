@@ -77,10 +77,13 @@ export type Database = {
           extension_type: string | null
           gap_duration: number | null
           id: string
+          is_translation: boolean | null
           language: string
           priority_level: string | null
           requires_extension: boolean | null
+          source_description_id: string | null
           start_time: number
+          translation_quality_score: number | null
           updated_at: string
           video_id: string
           voice_id: string | null
@@ -101,10 +104,13 @@ export type Database = {
           extension_type?: string | null
           gap_duration?: number | null
           id?: string
+          is_translation?: boolean | null
           language?: string
           priority_level?: string | null
           requires_extension?: boolean | null
+          source_description_id?: string | null
           start_time: number
+          translation_quality_score?: number | null
           updated_at?: string
           video_id: string
           voice_id?: string | null
@@ -125,16 +131,27 @@ export type Database = {
           extension_type?: string | null
           gap_duration?: number | null
           id?: string
+          is_translation?: boolean | null
           language?: string
           priority_level?: string | null
           requires_extension?: boolean | null
+          source_description_id?: string | null
           start_time?: number
+          translation_quality_score?: number | null
           updated_at?: string
           video_id?: string
           voice_id?: string | null
           voice_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audio_descriptions_source_description_id_fkey"
+            columns: ["source_description_id"]
+            isOneToOne: false
+            referencedRelation: "audio_descriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       channel_subscriptions: {
         Row: {
