@@ -61,6 +61,36 @@ export type Database = {
           },
         ]
       }
+      api_rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          last_request_at: string
+          request_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_request_at?: string
+          request_count?: number
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_request_at?: string
+          request_count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       audio_descriptions: {
         Row: {
           audio_error_message: string | null
@@ -601,6 +631,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_violations: {
+        Row: {
+          attempted_count: number
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: unknown
+          limit_exceeded: number
+          tier: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          attempted_count: number
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address?: unknown
+          limit_exceeded: number
+          tier?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          attempted_count?: number
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: unknown
+          limit_exceeded?: number
+          tier?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       security_audit_log: {
         Row: {
@@ -1640,6 +1706,14 @@ export type Database = {
           subscribed_at: string
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_user_id: string
+          p_window_minutes?: number
+        }
+        Returns: Json
+      }
       check_user_subscription: {
         Args: { channel_uuid: string }
         Returns: {
@@ -1656,6 +1730,7 @@ export type Database = {
         }[]
       }
       cleanup_old_analytics_data: { Args: never; Returns: undefined }
+      cleanup_old_rate_limits: { Args: never; Returns: number }
       cleanup_subscription_audit_data: { Args: never; Returns: undefined }
       color_slot: {
         Args: { p_key: string; p_mod: number; p_seed: string }
@@ -1719,6 +1794,17 @@ export type Database = {
           notification_type: string
           sent_at: string
           usage_snapshot: Json
+        }[]
+      }
+      get_rate_limit_status: {
+        Args: { p_endpoint?: string; p_user_id: string }
+        Returns: {
+          current_count: number
+          endpoint: string
+          limit_per_minute: number
+          remaining: number
+          tier: string
+          window_resets_in: number
         }[]
       }
       get_secure_channel_stats: {
@@ -1820,6 +1906,18 @@ export type Database = {
         Returns: boolean
       }
       is_test_user: { Args: { user_email: string }; Returns: boolean }
+      log_rate_limit_violation: {
+        Args: {
+          p_attempted_count: number
+          p_endpoint: string
+          p_ip_address?: unknown
+          p_limit: number
+          p_tier: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       mask_stripe_customer_id: {
         Args: { customer_id: string }
         Returns: string

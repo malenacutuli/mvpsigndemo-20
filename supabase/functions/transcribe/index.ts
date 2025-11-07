@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { SpeakerAssignmentService } from './speaker-assignment-service.ts';
+import { checkRateLimit as checkSubscriptionRateLimit, logRateLimitViolation, addRateLimitHeaders } from "../_shared/rateLimiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "*",
 };
 
-// Rate limiting helper
+// Legacy rate limiting helper (deprecated - use subscription-based rate limiting)
+// Kept for backward compatibility but should be phased out
 async function checkRateLimit(
   supabase: any,
   userId: string,
@@ -78,25 +80,56 @@ serve(async (req) => {
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       
       if (user) {
-        // Check rate limit for authenticated users
-        const rateLimit = await checkRateLimit(supabase, user.id, 'transcription', 20);
-        if (!rateLimit.allowed) {
+        // Check subscription-based rate limit (requests per minute)
+        const rateLimitCheck = await checkSubscriptionRateLimit(supabase, user.id, 'transcribe');
+        
+        if (!rateLimitCheck.allowed) {
           logAPICall({
             userId: user.id,
             apiService: 'Transcription',
             status: 'error',
-            error: 'Rate limit exceeded'
+            error: `Rate limit exceeded: ${rateLimitCheck.message}`
           });
+
+          // Log the violation for monitoring
+          await logRateLimitViolation(
+            supabase,
+            user.id,
+            'transcribe',
+            rateLimitCheck.current || 0,
+            rateLimitCheck.limit || 0,
+            rateLimitCheck.tier || 'unknown'
+          );
+
+          const responseHeaders = addRateLimitHeaders(
+            { ...corsHeaders, 'Content-Type': 'application/json' },
+            rateLimitCheck
+          );
           
           return new Response(JSON.stringify({ 
             error: 'Rate limit exceeded',
-            message: `Maximum 20 transcription requests per hour. ${rateLimit.remaining} remaining.`,
-            retryAfter: 3600
+            message: rateLimitCheck.message,
+            limit: rateLimitCheck.limit,
+            tier: rateLimitCheck.tier,
+            retryAfter: rateLimitCheck.retryAfter || 60
           }), {
             status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' }
+            headers: responseHeaders
           });
         }
+
+        logAPICall({
+          userId: user.id,
+          apiService: 'Transcription',
+          status: 'start',
+          provider: 'rate-check-passed'
+        });
+        console.log(`✅ Rate limit OK for user ${user.id}:`, {
+          tier: rateLimitCheck.tier,
+          remaining: rateLimitCheck.remaining,
+          limit: rateLimitCheck.limit,
+          testUser: rateLimitCheck.testUser
+        });
       }
     }
     // Check authentication first to enable minutes validation
