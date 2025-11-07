@@ -1769,7 +1769,7 @@ export type Database = {
         }[]
       }
       get_user_storage_usage: {
-        Args: { target_user_id: string }
+        Args: never
         Returns: {
           files_count: number
           is_near_limit: boolean
