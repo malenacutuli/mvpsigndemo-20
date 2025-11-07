@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
@@ -104,32 +104,50 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [dataVersion, setDataVersion] = useState(0);
   const forceRefresh = () => setDataVersion(v => v + 1);
   
-  // Pure color resolver - respects database color first
+  // Stability guard: track segment colors to prevent micro-flickers during DB writes
+  const colorStabilityRef = useRef<Map<string, { color: string; timestamp: number }>>(new Map());
+  const STABILITY_WINDOW_MS = 2000; // 2 seconds
+  
+  // Pure color resolver - simple precedence rule
   const resolveSpeakerColor = useMemo(() => {
-    const charById = new Map(characters.map(c => [c.id, c]));
-    const charByName = new Map(characters.map(c => [c.name, c]));
-
-    return function(seg: { speaker?: string; character_id?: string | null; speakerColor?: string }): string {
-      // Priority 0: Use existing speakerColor from database if present
-      if (seg.speakerColor) {
-        console.log('🎨 Using database color:', seg.speakerColor, 'for speaker:', seg.speaker);
-        return seg.speakerColor;
+    return function(seg: { 
+      speaker?: string; 
+      character_id?: string | null; 
+      speakerColor?: string;
+      startTime?: number;
+      endTime?: number;
+    }): string {
+      const segmentKey = `${seg.startTime?.toFixed(2) || '0'}-${seg.endTime?.toFixed(2) || '0'}`;
+      const now = Date.now();
+      
+      // Simple rule: character_id set → use speaker_color, else → neutral
+      const resolvedColor = seg.character_id && seg.speakerColor 
+        ? seg.speakerColor 
+        : DEFAULT_NEUTRAL;
+      
+      // Stability guard: prevent flickers during DB writes
+      const cached = colorStabilityRef.current.get(segmentKey);
+      
+      if (cached) {
+        const age = now - cached.timestamp;
+        
+        // If we had a character color but now resolving to neutral, and it's within stability window
+        if (cached.color !== DEFAULT_NEUTRAL && 
+            resolvedColor === DEFAULT_NEUTRAL && 
+            age < STABILITY_WINDOW_MS) {
+          console.log('🛡️ Stability guard: retaining', cached.color, 'for', segmentKey);
+          return cached.color;
+        }
       }
-      // Priority 1: Direct character_id assignment
-      if (seg.character_id) {
-        const c = charById.get(seg.character_id);
-        if (c?.color) return c.color;
+      
+      // Update cache with new color
+      if (!cached || cached.color !== resolvedColor) {
+        colorStabilityRef.current.set(segmentKey, { color: resolvedColor, timestamp: now });
       }
-      // Priority 2: Speaker mapping to character name
-      if (seg.speaker) {
-        const mappedName = speakerMappings[seg.speaker];
-        const c = mappedName ? charByName.get(mappedName) : undefined;
-        if (c?.color) return c.color;
-      }
-      // Priority 3: Fallback to neutral
-      return DEFAULT_NEUTRAL;
+      
+      return resolvedColor;
     };
-  }, [characters, speakerMappings]);
+  }, []);
   
   const resolveDisplayName = (seg: any): string => {
     // Prioritize character names, avoid generic "Speaker"
