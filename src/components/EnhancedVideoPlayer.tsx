@@ -70,6 +70,37 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
   
+  // Stabilize language to prevent flickering
+  const stableLanguageRef = useRef(currentLanguage);
+  const languageChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLanguageSet = useRef(false);
+  
+  // Debounced language setter
+  const debouncedSetLanguage = (newLang: string) => {
+    if (languageChangeTimerRef.current) {
+      clearTimeout(languageChangeTimerRef.current);
+    }
+    languageChangeTimerRef.current = setTimeout(() => {
+      if (stableLanguageRef.current !== newLang && initialLanguageSet.current) {
+        console.log('🌐 Language change:', stableLanguageRef.current, '→', newLang);
+        setCurrentLanguage(newLang);
+        stableLanguageRef.current = newLang;
+        onLanguageChange?.(newLang);
+      }
+    }, 300);
+  };
+  
+  // Set initial language once and prevent auto-switching
+  useEffect(() => {
+    if (!initialLanguageSet.current) {
+      const initialLang = language === 'auto' ? 'en' : (language || 'en');
+      stableLanguageRef.current = initialLang;
+      setCurrentLanguage(initialLang);
+      initialLanguageSet.current = true;
+      console.log('🎯 Initial language locked:', initialLang);
+    }
+  }, []);
+  
   // Load audio descriptions from database with cached audio URLs
   useEffect(() => {
     const loadAudioDescriptionsFromDB = async () => {

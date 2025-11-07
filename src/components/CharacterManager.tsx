@@ -588,20 +588,75 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                     </Badge>
                     <span className="text-muted-foreground">→</span>
                     <div className="flex items-center gap-2">
-                      <Select 
-                        value={mappedSpeaker}
-                        onValueChange={(value) => {
-                          // Remove any existing mapping pointing to this character, then (optionally) set the new one
-                          setSpeakerMappings(prev => {
-                            const next: Record<string, string> = {};
-                            for (const [sp, ch] of Object.entries(prev)) {
-                              if (ch !== char.name) next[sp] = ch;
+                    <Select 
+                      value={mappedSpeaker}
+                      onValueChange={async (value) => {
+                        // Update local state
+                        setSpeakerMappings(prev => {
+                          const next: Record<string, string> = {};
+                          for (const [sp, ch] of Object.entries(prev)) {
+                            if (ch !== char.name) next[sp] = ch;
+                          }
+                          if (value !== 'unassigned') next[value] = char.name;
+                          return next;
+                        });
+                        
+                        // Auto-save immediately
+                        try {
+                          const newMappings = { ...speakerMappings };
+                          for (const [sp, ch] of Object.entries(newMappings)) {
+                            if (ch === char.name) delete newMappings[sp];
+                          }
+                          if (value !== 'unassigned') newMappings[value] = char.name;
+                          
+                          await saveSpeakerMappings(newMappings, language);
+                          
+                          // Find character in the list
+                          const character = characters.find(c => c.name === char.name);
+                          if (character && value !== 'unassigned') {
+                            // Get the speaker's ASR label if available
+                            const speaker = availableSpeakers.find(s => s.name === value);
+                            const asrLabel = speaker?.asr_label || value;
+                            
+                            // Apply mapping to database
+                            const { data: savedChars } = await supabase
+                              .from('characters')
+                              .select('id')
+                              .eq('video_id', videoId)
+                              .eq('name', char.name)
+                              .single();
+                            
+                            if (savedChars?.id) {
+                              await supabase.rpc('apply_specific_mapping', {
+                                p_video_id: videoId,
+                                p_language: language,
+                                p_asr_label: asrLabel,
+                                p_character_id: savedChars.id
+                              });
                             }
-                            if (value !== 'unassigned') next[value] = char.name;
-                            return next;
+                          }
+                          
+                          toast({
+                            title: "Mapping Saved",
+                            description: value === 'unassigned' 
+                              ? `${char.name} unmapped` 
+                              : `${char.name} → ${value}`
                           });
-                        }}
-                      >
+                          
+                          // Trigger refresh in video player
+                          window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
+                            detail: { videoId, language }
+                          }));
+                        } catch (error) {
+                          console.error('Failed to save mapping:', error);
+                          toast({
+                            title: "Save Failed",
+                            description: "Could not save character mapping. Please try 'Save All Changes' button.",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
                         <SelectTrigger className="h-7 w-56">
                           <SelectValue placeholder="Select detected speaker..." />
                         </SelectTrigger>
