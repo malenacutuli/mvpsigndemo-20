@@ -10,6 +10,8 @@ import { Users, TrendingUp, HardDrive, Clock, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { UsageAlertsPanel } from "@/components/UsageAlertsPanel";
 import { UserAlertHistory } from "@/components/UserAlertHistory";
+import { UsageDashboard } from "@/components/UsageDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SubscriberStats {
   total_subscribers: number;
@@ -168,9 +170,22 @@ export default function AdminSubscribers() {
         </Alert>
       )}
 
-      {/* Usage Alerts Panel */}
-      <UsageAlertsPanel onRefresh={refreshData} />
+      <Tabs defaultValue="alerts" className="w-full">
+        <TabsList>
+          <TabsTrigger value="alerts">Usage Alerts</TabsTrigger>
+          <TabsTrigger value="analytics">Usage Analytics</TabsTrigger>
+          <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="alerts" className="space-y-6">
+          <UsageAlertsPanel onRefresh={refreshData} />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <UsageDashboard />
+        </TabsContent>
+
+        <TabsContent value="subscribers" className="space-y-6">
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -325,6 +340,8 @@ export default function AdminSubscribers() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
