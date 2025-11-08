@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
-import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 import { useAdvancedSpeakerAnalysis } from '@/hooks/useAdvancedSpeakerAnalysis';
 import { getSpeakerColor as getSpeakerColorFromPalette } from '@/lib/cwiPalette';
 import { injectSyllables } from '@/lib/syllables';
@@ -66,7 +65,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [translatedCaptions, setTranslatedCaptions] = useState<CaptionSegment[] | null>(null);
   const { loadTranscriptSegments, loadAudioDescriptions, loadCharacters, loadSpeakerMappings, saveTranscriptSegments } = useVideoStorage(videoId);
-  const { analyzeVocalIntensity, isAnalyzing: isAnalyzingIntensity } = useVocalIntensityAnalysis();
   const { analyzeSpeakers, isAnalyzing: isAnalyzingSpeakers } = useAdvancedSpeakerAnalysis();
   const [detectedSpeakers, setDetectedSpeakers] = useState<string[]>([]);
   
@@ -1084,81 +1082,6 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               console.log('🛑 Skipping diarization: using saved transcript speakers/colors');
             }
             
-            // 2. Analyze vocal intensity ONCE if needed with improved audio handling
-            const needsIntensityAnalysis = captionSegments.some(s => !s.vocal_intensity);
-            const hasIntensityKey = `intensity_analyzed_${videoId}_${currentLanguage}`;
-            const alreadyAnalyzed = sessionStorage.getItem(hasIntensityKey);
-            
-            console.log('🔊 ENHANCED PLAYER: Needs intensity analysis:', needsIntensityAnalysis, 'Already analyzed:', !!alreadyAnalyzed);
-            
-            if (needsIntensityAnalysis && !isAnalyzingIntensity && !alreadyAnalyzed) {
-              console.log('🔊 ENHANCED PLAYER: Starting enhanced vocal intensity analysis with audio extraction...');
-              sessionStorage.setItem(hasIntensityKey, 'true'); // Prevent duplicate calls
-              try {
-                // Enhanced analysis with video URL for better audio processing
-                const { data, error } = await supabase.functions.invoke('analyze-vocal-intensity', {
-                  body: {
-                    video_id: videoId,
-                    video_url: videoSrc, // Provide video URL for audio extraction
-                    segments: captionSegments.map(seg => ({
-                      text: seg.text,
-                      start_time: seg.startTime,
-                      end_time: seg.endTime,
-                      speaker: seg.speaker
-                    }))
-                  }
-                });
-
-                if (error) throw error;
-
-                if (data?.success && data?.analyzed_segments) {
-                  captionSegments = captionSegments.map((segment, idx) => {
-                    const analyzedSegment = data.analyzed_segments[idx];
-                    if (analyzedSegment) {
-                      return {
-                        ...segment,
-                        vocal_intensity: analyzedSegment.vocal_intensity as 'whisper' | 'normal' | 'yell' | 'shout' | undefined,
-                        intensity_confidence: analyzedSegment.intensity_confidence || 0.5,
-                        auto_styling: analyzedSegment.auto_styling
-                      };
-                    }
-                    return segment;
-                  });
-                  console.log('🔊 ENHANCED PLAYER: Enhanced vocal intensity analysis completed for', data.analyzed_segments.length, 'segments');
-                } else {
-                  console.warn('⚠️ Vocal intensity analysis returned no data');
-                }
-              } catch (error) {
-                console.error('❌ ENHANCED PLAYER: Enhanced vocal intensity analysis failed:', error);
-                sessionStorage.removeItem(hasIntensityKey); // Allow retry on failure
-                
-                // Fallback: basic text-based analysis
-                captionSegments = captionSegments.map(segment => {
-                  const text = segment.text.toLowerCase();
-                  let intensity: 'whisper' | 'normal' | 'yell' | 'shout' = 'normal';
-                  let confidence = 0.3;
-                  
-                  if (text.includes('!!!') || text === text.toUpperCase()) {
-                    intensity = 'shout';
-                    confidence = 0.7;
-                  } else if (text.includes('!!') || /[!?]{2,}/.test(text)) {
-                    intensity = 'yell';
-                    confidence = 0.6;
-                  } else if (text.includes('...') || text.includes('*whisper')) {
-                    intensity = 'whisper';
-                    confidence = 0.5;
-                  }
-                  
-                  return {
-                    ...segment,
-                    vocal_intensity: intensity,
-                    intensity_confidence: confidence,
-                    auto_styling: {}
-                  };
-                });
-              }
-            }
-            
           } catch (error) {
             console.error('❌ ENHANCED PLAYER: Failed to process segments:', error);
             // Fallback: convert with basic speaker colors
@@ -1364,7 +1287,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (videoId && currentLanguage) {
       loadSavedData();
     }
-  }, [videoId, currentLanguage, dataVersion, loadTranscriptSegments, analyzeVocalIntensity, isAnalyzingIntensity]); // Phase 1C: Include dataVersion
+  }, [videoId, currentLanguage, dataVersion, loadTranscriptSegments]); // Phase 1C: Include dataVersion
 
   return (
     <div className="space-y-6">

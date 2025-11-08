@@ -43,7 +43,6 @@ import { WordLevelEditor, type WordData } from './WordLevelEditor';
 import { SignLanguageUploader } from './SignLanguageUploader';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 import { VocalIntensityIndicator } from './VocalIntensityIndicator';
-import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 
 // Captions with Intention - Official Color Palette
 const CI_MAIN_COLORS = [
@@ -228,7 +227,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [originalColor, setOriginalColor] = useState<string>('');
   const { toast } = useToast();
   const { saveTranscriptSegments, loadTranscriptSegments, loadCharacters, loadSpeakerMappings, saveSpeakerMappings, updateSegmentIdentity } = useVideoStorage(videoId);
-  const { isAnalyzing, analyzeVocalIntensity } = useVocalIntensityAnalysis();
 
   // ✅ FIX #4: Auto-save timer - saves changes every 30 seconds
   useEffect(() => {
@@ -1283,37 +1281,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleVocalIntensityAnalysis = async () => {
-    if (!editingTranscript || editingTranscript.length === 0) return;
-    
-    try {
-      const analyzedSegments = await analyzeVocalIntensity(
-        videoId, // Use actual video ID
-        editingTranscript
-      );
-      
-      const updatedSegments = analyzedSegments.map((segment: any, index: number) => ({
-        id: segment.id || `segment-${Date.now()}-${Math.random()}`,
-        text: segment.text,
-        startTime: segment.start_time || segment.startTime,
-        endTime: segment.end_time || segment.endTime,
-        speaker: segment.speaker || segment.speakerAsrLabel || segment.speaker_asr_label || 'Unknown',
-        speakerColor: segment.speakerColor || PRIORITY_COLORS[index % PRIORITY_COLORS.length],
-        emphasis: segment.emphasis || 'normal' as const,
-        pitch: segment.pitch || 'normal' as const,
-        vocal_intensity: (segment.vocal_intensity === 'whisper' || segment.vocal_intensity === 'yell' || segment.vocal_intensity === 'shout') ? segment.vocal_intensity : 'normal' as const,
-        intensity_confidence: segment.intensity_confidence,
-        auto_styling: segment.auto_styling,
-      }));
-      
-      setEditingTranscript(updatedSegments);
-      saveTranscriptData(updatedSegments, selectedLanguage);
-      onTranscriptUpdate?.(updatedSegments, selectedLanguage);
-    } catch (error) {
-      console.error('Failed to analyze vocal intensity:', error);
-    }
-  };
-
   // Filter segments based on search query
   const filteredSegments = editingTranscript.filter(segment => {
     if (!searchQuery.trim()) return true;
@@ -1480,17 +1447,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           >
             <Download className="w-4 h-4 mr-2" />
             Export
-          </Button>
-          
-          <Button
-            onClick={handleVocalIntensityAnalysis}
-            disabled={isAnalyzing || editingTranscript.length === 0}
-            size="sm"
-            variant="outline"
-            className="font-light"
-          >
-            <Zap className="w-4 h-4 mr-2" />
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Intensity'}
           </Button>
         </div>
 

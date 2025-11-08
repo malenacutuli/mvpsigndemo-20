@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useVocalIntensityAnalysis } from '@/hooks/useVocalIntensityAnalysis';
 // getSpeakerColor removed – we keep a single neutral color unless character assigned
 // NOTE: syllable injection happens upstream; we only render syllables here
 import { paginateTwoLinesByWidth, type FontOpts } from '@/utils/captionsFit';
@@ -591,7 +590,6 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   expressiveSettings: externalExpressiveSettings
 }) => {
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
-  const { getIntensityStyles } = useVocalIntensityAnalysis();
   
   // ✅ Use passed expressiveSettings or fallback to defaults
   const expressiveSettings = externalExpressiveSettings || {
