@@ -50,33 +50,33 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
   const score = Math.round((passedChecks / checks.length) * 100);
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 bg-white shadow-sm border-border">
       <div className="text-center mb-6">
-        <div className={`text-3xl font-bold ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+        <div className={`text-3xl font-light ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
           {score}%
         </div>
-        <div className="text-sm text-muted-foreground">WCAG 2.1 AA Compliance Score</div>
-        <div className="text-xs text-muted-foreground mt-1">
+        <div className="text-sm text-muted-foreground font-light">WCAG 2.1 AA Compliance Score</div>
+        <div className="text-xs text-muted-foreground mt-1 font-light">
           {passedChecks} of {checks.length} accessibility requirements met
         </div>
       </div>
       
       <div className="space-y-3">
-        <h4 className="font-medium text-sm mb-3">8-Point Accessibility Checklist</h4>
+        <h4 className="font-light text-sm mb-3 text-foreground">8-Point Accessibility Checklist</h4>
         {checks.map((check, index) => (
           <div key={index} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${check.status ? 'text-green-600' : 'text-red-600'}`} />
-              <span className="text-sm">{check.name}</span>
+              <span className="text-sm font-light">{check.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={check.status ? 'default' : 'destructive'} className="text-xs">
+              <Badge variant={check.status ? 'default' : 'destructive'} className="text-xs font-light rounded-full">
                 {check.status ? 'Pass' : 'Fail'}
               </Badge>
               {!check.status && (
                 <button
                   onClick={() => onFixIssue(check.issue)}
-                  className="text-xs text-primary hover:text-primary/80 underline"
+                  className="text-xs text-primary hover:text-primary/80 underline font-light"
                 >
                   Fix
                 </button>
@@ -87,8 +87,8 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
       </div>
       
       {score < 100 && (
-        <div className="mt-4 p-3 bg-muted/50 rounded-md">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-4 p-3 bg-accent/30 rounded-md">
+          <p className="text-xs text-muted-foreground font-light">
             {score >= 80 ? 'Great job! Just a few more improvements needed.' : 
              score >= 60 ? 'Good progress! Consider addressing the remaining issues.' :
              'Several accessibility improvements are needed for full compliance.'}

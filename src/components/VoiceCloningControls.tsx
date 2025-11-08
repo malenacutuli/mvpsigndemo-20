@@ -125,8 +125,8 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
   };
 
   return (
-    <div className="space-y-4 p-4 border border-muted/20 rounded-lg">
-      <h4 className="text-sm font-medium text-white">Voice Cloning & Custom Voices</h4>
+    <div className="space-y-4 p-4 border border-border rounded-lg bg-white shadow-sm">
+      <h4 className="text-sm font-light text-foreground">Voice Cloning & Custom Voices</h4>
       
       {/* Recording Controls */}
       <div className="flex items-center gap-2">
@@ -134,7 +134,7 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
           variant="ghost"
           size="sm"
           onClick={isRecording ? stopRecording : startRecording}
-          className={`text-white hover:bg-white/20 ${isRecording ? 'bg-red-500/30' : ''}`}
+          className={`text-foreground hover:bg-accent/50 rounded-full font-light ${isRecording ? 'bg-destructive/30' : ''}`}
           disabled={isProcessing}
         >
           {isRecording ? (
@@ -154,7 +154,7 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          className="text-white hover:bg-white/20"
+          className="text-foreground hover:bg-accent/50 rounded-full font-light"
           disabled={isProcessing}
         >
           <Upload className="w-4 h-4 mr-2" />
@@ -177,7 +177,7 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
             variant="ghost" 
             size="sm"
             onClick={playPreview}
-            className="text-white hover:bg-white/20"
+            className="text-foreground hover:bg-accent/50 rounded-full font-light"
           >
             <Play className="w-3 h-3 mr-1" />
             Preview
@@ -188,7 +188,7 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
             size="sm"
             onClick={cloneVoice}
             disabled={isProcessing}
-            className="text-white hover:bg-white/20"
+            className="text-foreground hover:bg-accent/50 rounded-full font-light"
           >
             <Volume2 className="w-3 h-3 mr-1" />
             {isProcessing ? 'Cloning...' : 'Clone Voice'}
@@ -199,9 +199,9 @@ export const VoiceCloningControls: React.FC<VoiceCloningControlsProps> = ({
       {/* Cloned Voices List */}
       {clonedVoices.length > 0 && (
         <div className="space-y-2">
-          <h5 className="text-xs font-medium text-white/70">Your Cloned Voices</h5>
+          <h5 className="text-xs font-light text-muted-foreground">Your Cloned Voices</h5>
           {clonedVoices.map((voice) => (
-            <div key={voice.id} className="text-xs text-white/60 p-2 bg-white/5 rounded">
+            <div key={voice.id} className="text-xs text-muted-foreground p-2 bg-accent/30 rounded font-light">
               {voice.name} ({voice.language})
             </div>
           ))}

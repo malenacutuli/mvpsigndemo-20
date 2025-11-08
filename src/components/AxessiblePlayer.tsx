@@ -1746,14 +1746,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </div>
             
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 bg-muted/20 rounded-full font-light">
-                <TabsTrigger value="info">Info</TabsTrigger>
-                <TabsTrigger value="grader">Grader</TabsTrigger>
-                <TabsTrigger value="language">Language</TabsTrigger>
-                <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
-                <TabsTrigger value="dubbing">Dubbing</TabsTrigger>
-                <TabsTrigger value="voice">Voice</TabsTrigger>
-                <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-7 bg-muted/50 rounded-full font-light border border-border shadow-sm">
+                <TabsTrigger value="info" className="font-light">Info</TabsTrigger>
+                <TabsTrigger value="grader" className="font-light">Grader</TabsTrigger>
+                <TabsTrigger value="language" className="font-light">Language</TabsTrigger>
+                <TabsTrigger value="transcripts" className="font-light">Transcripts</TabsTrigger>
+                <TabsTrigger value="dubbing" className="font-light">Dubbing</TabsTrigger>
+                <TabsTrigger value="voice" className="font-light">Voice</TabsTrigger>
+                <TabsTrigger value="keyboard" className="font-light">Keyboard</TabsTrigger>
               </TabsList>
               
               <TabsContent value="info" className="mt-4">

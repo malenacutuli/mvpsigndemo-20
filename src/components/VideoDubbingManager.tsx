@@ -151,17 +151,17 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
   };
 
   return (
-    <Card className="p-4">
-      <h3 className="font-semibold mb-4 flex items-center gap-2">
+    <Card className="p-4 bg-white shadow-sm border-border">
+      <h3 className="font-light mb-4 flex items-center gap-2 text-foreground">
         <Globe className="w-5 h-5" />
         AI Dubbing & Translations
       </h3>
       <div className="space-y-4">
         <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-          <SelectTrigger>
+          <SelectTrigger className="font-light rounded-full">
             <SelectValue placeholder="Select language..." />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="font-light">
             <SelectItem value="es">🇪🇸 Spanish</SelectItem>
             <SelectItem value="fr">🇫🇷 French</SelectItem>
             <SelectItem value="de">🇩🇪 German</SelectItem>
@@ -172,7 +172,7 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Gauge className="w-4 h-4" />
-            <label className="text-sm font-medium">Playback Speed: {playbackSpeed}x</label>
+            <label className="text-sm font-light">Playback Speed: {playbackSpeed}x</label>
           </div>
           <Slider
             value={[playbackSpeed]}
@@ -182,30 +182,34 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
             step={0.05}
             className="w-full"
           />
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-xs text-muted-foreground font-light">
             <span>0.7x</span>
             <span>1.0x (Normal)</span>
             <span>1.25x</span>
           </div>
         </div>
 
-        <Button onClick={generateDubbing} disabled={isGenerating || !selectedLanguage || !getSourceText()}>
+        <Button 
+          onClick={generateDubbing} 
+          disabled={isGenerating || !selectedLanguage || !getSourceText()}
+          className="font-light rounded-full"
+        >
           <Wand2 className="w-4 h-4 mr-2" />
           {isGenerating ? 'Generating...' : 'Generate Dubbing'}
         </Button>
 
         {dubbingResult && (
-          <div className="space-y-3 mt-4 p-3 bg-muted rounded-lg">
+          <div className="space-y-3 mt-4 p-3 bg-accent/30 rounded-lg">
             <div>
-              <h4 className="font-medium text-sm">Translated Text:</h4>
-              <p className="text-sm text-muted-foreground mt-1">{dubbingResult.translatedText}</p>
+              <h4 className="font-light text-sm text-foreground">Translated Text:</h4>
+              <p className="text-sm text-muted-foreground mt-1 font-light">{dubbingResult.translatedText}</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={playDubbing} variant="outline" size="sm">
+              <Button onClick={playDubbing} variant="outline" size="sm" className="font-light rounded-full">
                 <Play className="w-3 h-3 mr-1" />
                 Play
               </Button>
-              <Button onClick={downloadDubbing} variant="outline" size="sm">
+              <Button onClick={downloadDubbing} variant="outline" size="sm" className="font-light rounded-full">
                 <Download className="w-3 h-3 mr-1" />
                 Download
               </Button>
@@ -214,19 +218,19 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
         )}
 
         {!getSourceText() && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground font-light">
             Generate a transcript or audio descriptions to enable dubbing
           </p>
         )}
 
         {transcriptText && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground font-light">
             Source: Video Transcript
           </div>
         )}
 
         {!transcriptText && audioDescriptions && audioDescriptions.length > 0 && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground font-light">
             Source: Audio Descriptions ({audioDescriptions.length} segments)
           </div>
         )}
