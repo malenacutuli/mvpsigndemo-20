@@ -1790,7 +1790,7 @@ export type Database = {
           p_language: string
           p_video_id: string
         }
-        Returns: undefined
+        Returns: Json
       }
       can_process_video: {
         Args: { target_user_id: string; video_duration_seconds: number }
