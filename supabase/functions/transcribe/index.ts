@@ -822,12 +822,20 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     word_boost: [], // No custom vocabulary
     boost_param: 'default', // Default boost parameter
     auto_chapters: false,
-    sentiment_analysis: false,
+    sentiment_analysis: true, // ✅ FREE feature - enable sentiment analysis
     entity_detection: false,
     iab_categories: false,
     content_safety: false,
     auto_highlights: false,
     dual_channel: false, // Set to true if audio has separate left/right channels
+    speech_understanding: {
+      request: {
+        speaker_identification: {
+          speaker_type: "name",
+          known_values: [] // Can be populated with known speaker names
+        }
+      }
+    }
   };
   if (languageCode) {
     body.language_code = languageCode;
@@ -891,12 +899,27 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     hasWords: !!resultData.words,
     wordCount: resultData.words?.length || 0,
     firstUtteranceSpeaker: resultData.utterances?.[0]?.speaker || 'none',
-    status: resultData.status
+    status: resultData.status,
+    hasSentimentAnalysis: !!resultData.sentiment_analysis_results,
+    sentimentResultsCount: resultData.sentiment_analysis_results?.length || 0
   });
+  
+  // Process sentiment analysis results
+  const sentimentMap = new Map<number, any>(); // Map utterance index to sentiment
+  if (resultData.sentiment_analysis_results && Array.isArray(resultData.sentiment_analysis_results)) {
+    console.log(`🎭 Processing ${resultData.sentiment_analysis_results.length} sentiment analysis results...`);
+    resultData.sentiment_analysis_results.forEach((sentiment: any, idx: number) => {
+      sentimentMap.set(idx, sentiment);
+      if (idx < 5) {
+        console.log(`   😊 Sentiment ${idx}: ${sentiment.sentiment} (confidence: ${sentiment.confidence})`);
+      }
+    });
+  }
   
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
     console.log(`🎯 Processing ${resultData.utterances.length} utterances with speaker labels...`);
-    for (const u of resultData.utterances) {
+    for (let i = 0; i < resultData.utterances.length; i++) {
+      const u = resultData.utterances[i];
       const startTime = (u.start || 0) / 1000;
       const endTime = (u.end || 0) / 1000;
       
@@ -907,6 +930,28 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       }
       
       console.log(`   📍 Utterance: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
+      
+      // Map sentiment to emphasis
+      const sentimentData = sentimentMap.get(i);
+      let emphasis = 'normal';
+      let emotionMetadata: any = null;
+      
+      if (sentimentData) {
+        const sentiment = sentimentData.sentiment;
+        const confidence = sentimentData.confidence || 0;
+        
+        // Map POSITIVE/NEGATIVE with high confidence to 'loud'
+        if ((sentiment === 'POSITIVE' || sentiment === 'NEGATIVE') && confidence > 0.75) {
+          emphasis = 'loud';
+        }
+        
+        // Store sentiment data for database
+        emotionMetadata = {
+          sentiment: sentiment,
+          confidence: confidence,
+          text: sentimentData.text || u.text
+        };
+      }
       
       segments.push({
         text: u.text,
@@ -919,10 +964,12 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           confidence: w.confidence,
         })).filter((w: any) => w.start <= maxDurationSeconds),
         speaker: u.speaker || undefined, // ✅ PRESERVE speaker label (A, B, C, etc.)
-        confidence: u.confidence || 0.95
+        confidence: u.confidence || 0.95,
+        emphasis: emphasis, // ✅ Sentiment-based emphasis
+        emotion_metadata: emotionMetadata // ✅ Store sentiment data
       });
     }
-    console.log(`✅ Built ${segments.length} segments from utterances with speakers`);
+    console.log(`✅ Built ${segments.length} segments from utterances with speakers and sentiment analysis`);
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
     // Group words into ~5s sentences
     let current: any = { text: "", start: null as number | null, end: null as number | null, words: [] as any[] };
@@ -1259,11 +1306,12 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           speaker_asr_label: speakerLabel, // ✅ Preserve raw ASR label (A, B, C, D)
           speaker_asr_norm: speakerLabel.toUpperCase(), // ✅ Normalized uppercase
           speaker_normalized: displaySpeaker.toLowerCase(), // ✅ Normalized display name
-          emphasis: 'normal',
+          emphasis: segment.emphasis || 'normal', // ✅ Use sentiment-based emphasis
           pitch: 'normal',
           is_off_camera: false,
           words: words, // Save provider word timings as JSON
-          character_id: characterId // ✅ Link to auto-created character
+          character_id: characterId, // ✅ Link to auto-created character
+          emotion_metadata: segment.emotion_metadata || null // ✅ Store sentiment data
         };
       });
       
