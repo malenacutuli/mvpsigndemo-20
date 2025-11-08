@@ -350,7 +350,7 @@ const Index = () => {
               </div>
               
               <div>
-                <h3 className="font-light text-foreground mb-4">{t('common.feature')}</h3>
+                <h3 className="font-light text-foreground mb-4">{t('footer.features')}</h3>
                 <div className="space-y-2 text-base font-light">
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.explore')}</Link>
                   <Link to="/upload" className="block text-muted-foreground hover:text-primary transition-colors">{t('common.upload')}</Link>
