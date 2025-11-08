@@ -7,8 +7,8 @@ import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 import captionsWithIntention from '@/assets/captions-with-intention.jpg';
 import audioDescriptions from '@/assets/audio-descriptions.jpg';
 import signLanguage from '@/assets/sign-language.jpg';
-import euLogo from '@/assets/eu-logo.png';
-import bscLogo from '@/assets/bsc-ai-factory-logo.jpg';
+import euLogo from '@/assets/eu-logo-transparent.png';
+import bscLogo from '@/assets/bsc-ai-factory-logo-transparent.png';
 import nvidiaLogo from '@/assets/nvidia-inception-logo.png';
 
 const Index = () => {
