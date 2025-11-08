@@ -971,7 +971,10 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         continue;
       }
       
-      console.log(`   📍 Utterance: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
+      console.log(`   📍 Utterance ${i}: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
+      
+      // Extract ASR label from speaker
+      const speakerLabel = u.speaker || 'A';  // "A", "B", "C", etc.
       
       // Map sentiment to intensity using 7-level spectrum
       const sentimentData = sentimentMap.get(i);
@@ -1001,9 +1004,9 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           intensity: overall_intensity
         };
         
-        if (i < 5) {
-          console.log(`   😊 Sentiment: ${sentiment} (conf: ${confidence.toFixed(2)}) → intensity: ${overall_intensity}`);
-        }
+        console.log(`   😊 Segment ${i}: speaker=${speakerLabel}, sentiment=${sentiment}, confidence=${confidence.toFixed(2)}, intensity=${overall_intensity}`);
+      } else {
+        console.log(`   📝 Segment ${i}: speaker=${speakerLabel}, no sentiment data`);
       }
       
       segments.push({
@@ -1012,8 +1015,8 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         end_ms: end_ms,      // ✅ MILLISECONDS
         start: startTimeSeconds,  // Keep for compatibility
         end: Math.min(endTimeSeconds, maxDurationSeconds),
-        speaker_asr_label: u.speaker || 'Speaker',  // ✅ Preserve ASR label
-        speaker: u.speaker || undefined,
+        speaker_asr_label: speakerLabel,  // ✅ Just the ASR label: "A", "B", "C"
+        speaker: `Speaker ${speakerLabel}`,  // ✅ Formatted speaker name: "Speaker A"
         words_source: 'asr',  // ✅ Mark as ASR source
         timing_confidence: u.confidence || 0.95,
         confidence: u.confidence || 0.95,
@@ -1045,7 +1048,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         })).filter((w: any) => (w.start_ms / 1000) <= maxDurationSeconds)
       });
     }
-    console.log(`✅ Built ${segments.length} segments from utterances with 7-level intensity mapping`);
+    console.log(`✅ Created ${segments.length} segments with emotion data and 7-level intensity mapping`);
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
     // Group words into ~5s sentences
     let current: any = { text: "", start: null as number | null, end: null as number | null, words: [] as any[] };
