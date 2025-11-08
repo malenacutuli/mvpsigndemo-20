@@ -13,6 +13,39 @@ import { SpeakerMappingManager } from './SpeakerMappingManager';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
 
+// ============================================================
+// HELPER FUNCTIONS FOR SPEAKER MAPPING
+// ============================================================
+
+// Extract bare ASR label: "Speaker A" → "A", "Speaker 1" → "1"
+const extractBareLabel = (speakerKey: string): string => {
+  const match = speakerKey.match(/(\d+|[A-Z])$/i);
+  if (match) {
+    return match[1].toUpperCase();
+  }
+  
+  if (/^[A-Z0-9]$/i.test(speakerKey)) {
+    return speakerKey.toUpperCase();
+  }
+  
+  console.warn(`⚠️ [extractBareLabel] Could not extract from: "${speakerKey}"`);
+  return speakerKey;
+};
+
+// Validate UUID format
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
+// Validate speaker label format
+const isValidSpeakerLabel = (str: string): boolean => {
+  return /^Speaker [A-Z0-9]+$/i.test(str);
+};
+
+// Export helper functions for testing
+export { extractBareLabel, isValidUUID, isValidSpeakerLabel };
+
 // Captions with Intention color palette
 const CI_COLORS = {
   // Main Characters (6 primary colors)
@@ -447,40 +480,66 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
-  // Helper function to extract bare ASR label from speaker key
-  const extractBareLabel = (speakerKey: string): string => {
-    // Extract trailing letter/number from "Speaker A" → "A", "Speaker 1" → "1"
-    const match = speakerKey.match(/(\d+|[A-Z])$/);
-    return match ? match[1] : speakerKey;
-  };
-
   const applyCharacterMappings = async () => {
     try {
-      // Type mapping to ensure valid database values
-      const typeMapping: Record<string, string> = {
-        'main': 'main',
-        'supporting': 'supporting',
-        'villain': 'minor', // Map villain to minor (valid DB type)
-        'minor': 'minor'
-      };
-      
-      // ✅ Step 1: Check for duplicate character names
-      const names = characters.map(c => c.name.trim().toLowerCase());
-      const dupes = names.filter((n, i) => names.indexOf(n) !== i);
-      if (dupes.length) {
+      console.log('💾 [CharacterManager] Starting comprehensive save...');
+
+      // ============================================================
+      // VALIDATION PHASE
+      // ============================================================
+
+      if (!videoId) {
+        throw new Error('No video ID available');
+      }
+
+      if (characters.length === 0) {
         toast({
-          title: "Duplicate character names",
-          description: "Please ensure each character has a unique name.",
+          title: "No Characters",
+          description: "Add at least one character before saving.",
           variant: "destructive"
         });
         return;
       }
 
-      // ✅ Step 2: Prepare upsert rows WITHOUT id field
+      // Type mapping to ensure valid database values
+      const typeMapping: Record<string, string> = {
+        'main': 'main',
+        'supporting': 'supporting',
+        'villain': 'minor',
+        'minor': 'minor',
+        'hero': 'main'
+      };
+
+      // Check for duplicate character names
+      const names = characters.map(c => c.name.trim());
+      const nameLower = names.map(n => n.toLowerCase());
+      const duplicates = nameLower.filter((n, i) => nameLower.indexOf(n) !== i);
+      
+      if (duplicates.length > 0) {
+        toast({
+          title: "Duplicate Names",
+          description: `Character names must be unique. Duplicates: ${[...new Set(duplicates)].join(', ')}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ [Validation] Passed:', {
+        characterCount: characters.length,
+        names: names,
+        videoId: videoId
+      });
+
+      // ============================================================
+      // PHASE 1: SAVE CHARACTERS
+      // ============================================================
+
+      console.log('📝 [Phase 1] Saving characters to database...');
+
+      // Prepare rows WITHOUT id field (prevents PK conflicts)
       const upsertRows = characters.map(char => ({
-        // id is intentionally omitted - let DB handle it
         video_id: videoId,
-        name: char.name,
+        name: char.name.trim(),
         type: typeMapping[char.type] ?? 'minor',
         color: char.color,
         is_off_camera: char.isOffCamera || false,
@@ -491,99 +550,207 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         pitch: char.pitch || 'normal'
       }));
 
-      // ✅ Step 3: Upsert with better error logging
       const { data: savedChars, error: saveError } = await supabase
         .from('characters')
-        .upsert(upsertRows, { 
-          onConflict: 'video_id,name', 
-          ignoreDuplicates: false 
+        .upsert(upsertRows, {
+          onConflict: 'video_id,name',
+          ignoreDuplicates: false
         })
         .select();
 
-      // ✅ Step 4: Enhanced error logging
       if (saveError) {
-        console.error('❌ Failed to save characters upsert:', {
+        console.error('❌ [Phase 1] Character save failed:', {
           code: saveError.code,
           message: saveError.message,
           details: (saveError as any).details,
           hint: (saveError as any).hint,
-          sampleRows: upsertRows.slice(0, 3),
-          totalRows: upsertRows.length
+          sample: upsertRows[0]
         });
-        throw saveError;
+        throw new Error(`Failed to save characters: ${saveError.message}`);
       }
+
+      console.log(`✅ [Phase 1] Saved ${savedChars?.length || 0} characters`);
+
+      // Build character lookup maps
+      const charByName = new Map<string, any>();
+      const charById = new Map<string, any>();
       
-      // Create a map of character names to IDs
-      const charIdMap = new Map(savedChars?.map(c => [c.name, c.id]) || []);
+      savedChars?.forEach(char => {
+        charByName.set(char.name, char);
+        charById.set(char.id, char);
+      });
+
+      // ============================================================
+      // PHASE 2: VALIDATE & NORMALIZE MAPPINGS
+      // ============================================================
+
+      console.log('🔍 [Phase 2] Validating speaker mappings...');
+
+      const normalizedMappings: Record<string, Record<string, string>> = {};
+      const issues: string[] = [];
+
+      // Process mappings for current language
+      const mappingsToProcess = speakerMappings[language] || speakerMappings;
+      console.log(`🌐 [${language}] Processing ${Object.keys(mappingsToProcess || {}).length} mappings`);
       
-      // Build mappings object for RPC (speaker -> character_id)
-      const mappingsForRPC: Record<string, string> = {};
-      for (const [speakerName, characterName] of Object.entries(speakerMappings)) {
-        const characterId = charIdMap.get(characterName);
-        if (characterId) {
-          mappingsForRPC[speakerName] = characterId;
+      normalizedMappings[language] = {};
+
+      for (const [key, value] of Object.entries(mappingsToProcess || {})) {
+        // Normalize speaker label
+        let speakerLabel = key.trim();
+        if (!isValidSpeakerLabel(speakerLabel)) {
+          if (/^[A-Z0-9]$/i.test(speakerLabel)) {
+            speakerLabel = `Speaker ${speakerLabel.toUpperCase()}`;
+            console.log(`🔧 [${language}] Fixed label: "${key}" → "${speakerLabel}"`);
+          } else {
+            issues.push(`Invalid speaker label: "${key}" in ${language}`);
+            continue;
+          }
         }
+
+        // Normalize character reference
+        let characterId = value;
+        if (!isValidUUID(characterId)) {
+          // Assume it's a character name, look up UUID
+          const char = charByName.get(characterId);
+          if (char) {
+            characterId = char.id;
+            console.log(`🔧 [${language}] Resolved name "${value}" → UUID ${characterId}`);
+          } else {
+            issues.push(`Character not found: "${value}" in ${language}`);
+            continue;
+          }
+        }
+
+        // Validate character exists
+        if (!charById.has(characterId)) {
+          issues.push(`Unknown character ID: ${characterId} in ${language}`);
+          continue;
+        }
+
+        normalizedMappings[language][speakerLabel] = characterId;
       }
-      
-      // Get all transcript languages for this video
-      const { data: transcripts } = await supabase
-        .from('transcripts')
-        .select('language')
-        .eq('video_id', videoId);
-      
-      const allLanguages = Array.from(new Set(transcripts?.map(t => t.language) || [language]));
-      
-      // Apply mappings for each language using existing RPC
-      for (const lang of allLanguages) {
-        for (const [speakerLabel, charId] of Object.entries(mappingsForRPC)) {
-          // ✅ Extract bare ASR label before passing to RPC
+
+      if (issues.length > 0) {
+        console.warn('⚠️ [Phase 2] Validation issues:', issues);
+        toast({
+          title: "Mapping Issues",
+          description: issues.slice(0, 3).join('; '),
+          variant: "destructive"
+        });
+      }
+
+      console.log('✅ [Phase 2] Normalized mappings:', normalizedMappings);
+
+      // ============================================================
+      // PHASE 3: APPLY MAPPINGS VIA RPC
+      // ============================================================
+
+      console.log('🔄 [Phase 3] Applying character mappings...');
+
+      const results: any[] = [];
+
+      for (const [lang, mappings] of Object.entries(normalizedMappings)) {
+        if (Object.keys(mappings).length === 0) {
+          console.log(`⏭️ [${lang}] No mappings to apply`);
+          continue;
+        }
+
+        for (const [speakerLabel, characterId] of Object.entries(mappings)) {
           const bareLabel = extractBareLabel(speakerLabel);
-          
-          console.log(`🔄 [${lang}] Applying mapping: ${speakerLabel} (bare: ${bareLabel}) → ${charId}`);
-          
-          const { error } = await supabase.rpc('apply_specific_mapping', {
-            p_video_id: videoId,
-            p_language: lang,
-            p_asr_label: bareLabel,  // ✅ Now passing "A" instead of "Speaker A"
-            p_character_id: charId
-          });
-          
-          if (error) {
-            console.error(`❌ [${lang}] Failed to apply mapping:`, {
-              speakerLabel,
-              bareLabel,
-              characterId: charId,
-              error
+          const character = charById.get(characterId);
+
+          console.log(`🔄 [${lang}] Applying: ${speakerLabel} (bare: ${bareLabel}) → ${character?.name}`);
+
+          try {
+            // Call RPC with bare label
+            const { data: rpcResult, error: rpcError } = await supabase.rpc(
+              'apply_specific_mapping',
+              {
+                p_video_id: videoId,
+                p_language: lang,
+                p_asr_label: bareLabel,
+                p_character_id: characterId
+              }
+            );
+
+            if (rpcError) {
+              console.error(`❌ [${lang}] RPC failed for ${speakerLabel}:`, rpcError);
+              issues.push(`Failed to map ${speakerLabel}: ${rpcError.message}`);
+              continue;
+            }
+
+            console.log(`✅ [${lang}] RPC success:`, rpcResult);
+            results.push({
+              lang,
+              speaker: speakerLabel,
+              character: character?.name,
+              result: rpcResult
             });
-            throw error;
+
+            // Sync character properties to segments
+            const { data: syncCount, error: syncError } = await supabase.rpc('sync_character_to_segments', {
+              p_video_id: videoId,
+              p_language: lang,
+              p_character_id: characterId
+            });
+
+            if (syncError) {
+              console.error(`⚠️ [${lang}] Sync failed for ${speakerLabel}:`, syncError);
+            } else {
+              console.log(`✅ [${lang}] Synced ${syncCount} segments for ${character?.name}`);
+            }
+
+          } catch (error) {
+            console.error(`💥 [${lang}] Exception for ${speakerLabel}:`, error);
+            issues.push(`Error mapping ${speakerLabel}: ${error}`);
           }
-
-          // Sync character properties (color, is_off_camera) to all matching segments
-          const { data: syncCount, error: syncError } = await supabase.rpc('sync_character_to_segments', {
-            p_video_id: videoId,
-            p_language: lang,
-            p_character_id: charId
-          });
-
-          if (syncError) {
-            console.error(`❌ [${lang}] Failed to sync character to segments:`, syncError);
-            throw syncError;
-          }
-
-          console.log(`✅ [${lang}] Synced character properties to ${syncCount} segments for ${speakerLabel}`);
         }
-        
-        console.log(`✅ [${lang}] Applied all character mappings`);
       }
-      
-      // ONE event after ALL database updates are complete
+
+      // ============================================================
+      // FINAL REPORT
+      // ============================================================
+
+      const totalMapped = results.length;
+
+      console.log('🎉 [CharacterManager] Save complete:', {
+        charactersSaved: savedChars?.length || 0,
+        mappingsApplied: totalMapped,
+        issues: issues.length
+      });
+
+      // Emit refresh event
       window.dispatchEvent(new CustomEvent('character-colors-updated', {
-        detail: { videoId, languages: allLanguages }
+        detail: { videoId, language }
       }));
-      
+
+      if (issues.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Saved ${savedChars?.length || 0} characters, but ${issues.length} mapping(s) failed. Check console.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Complete Success",
+          description: `Saved ${savedChars?.length || 0} characters and applied ${totalMapped} mappings.`,
+          variant: "default"
+        });
+      }
+
+      // Trigger data refresh
+      if (typeof onCharactersUpdate === 'function') {
+        onCharactersUpdate(characters);
+      }
+
     } catch (error) {
-      console.error('❌ Failed to apply character mappings:', error);
-      throw error;
+      console.error('💥 [CharacterManager] Fatal error:', error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: "destructive"
+      });
     }
   };
 
