@@ -17,6 +17,7 @@ import { LanguageSelector } from './LanguageSelector';
 import { VoiceCloningControls } from './VoiceCloningControls';
 import { SynchronizedDubbingPlayer } from './SynchronizedDubbingPlayer';
 import { FeatureExplanation } from './FeatureExplanation';
+import { ExpressiveSettingsPanel, loadExpressiveSettings } from './video/ExpressiveSettings';
 import { supabase } from "@/integrations/supabase/client";
 import type { CaptionSegment } from './CaptionsWithIntention';
 import { computeGaps, allocateAdSlots } from '@/lib/ad/scheduler';
@@ -98,6 +99,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [expressiveSettings, setExpressiveSettings] = useState(loadExpressiveSettings());
   const [isMuted, setIsMuted] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   
@@ -1387,6 +1389,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             currentTime={currentTime}
             isVisible={showCaptions}
             screenHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
+            expressiveSettings={expressiveSettings}
           />
         </div>
       )}
@@ -1746,9 +1749,10 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             </div>
             
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 bg-muted/50 rounded-full font-light border border-border shadow-sm">
+              <TabsList className="grid w-full grid-cols-8 bg-muted/50 rounded-full font-light border border-border shadow-sm">
                 <TabsTrigger value="info" className="font-light">Info</TabsTrigger>
                 <TabsTrigger value="grader" className="font-light">Grader</TabsTrigger>
+                <TabsTrigger value="captions" className="font-light">Captions</TabsTrigger>
                 <TabsTrigger value="language" className="font-light">Language</TabsTrigger>
                 <TabsTrigger value="transcripts" className="font-light">Transcripts</TabsTrigger>
                 <TabsTrigger value="dubbing" className="font-light">Dubbing</TabsTrigger>
@@ -1775,6 +1779,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                   hasVisiblePlayButton={true}
                   onFixIssue={handleFixAccessibilityIssue}
                 />
+              </TabsContent>
+              
+              <TabsContent value="captions" className="mt-4">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-light text-foreground">Expressive Captions Settings</h3>
+                  <ExpressiveSettingsPanel 
+                    value={expressiveSettings}
+                    onChange={setExpressiveSettings}
+                  />
+                </div>
               </TabsContent>
               
               <TabsContent value="language" className="mt-4">

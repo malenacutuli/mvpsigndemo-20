@@ -150,11 +150,29 @@ export interface CaptionSegment {
   auto_styling?: any;       // Computed styling from vocal intensity
 }
 
+// ✅ Import ExpressiveSettings type
+export interface ExpressiveSettings {
+  enabled: boolean;
+  useStyles: boolean;
+  lengthenWords: boolean;
+  showSoundLabels: boolean;
+  showEnvironmentalSounds: boolean;
+  dynamicSizing: boolean;
+  showSentimentBadge: boolean;
+  highlightPitch: boolean;
+  whisperThreshold: number;
+  yellThreshold: number;
+  reduceMotion: boolean;
+  highContrast: boolean;
+  minFontSize: number;
+}
+
 interface CaptionsWithIntentionProps {
   captions: CaptionSegment[];
   currentTime: number;
   isVisible?: boolean;
   screenHeight?: number;
+  expressiveSettings?: ExpressiveSettings;
 }
 
 
@@ -565,26 +583,32 @@ function computeFontForSegment(seg: any, screenH: number, volume: number): FontO
   };
 }
 
-// ✅ Settings for EC protocol features
-interface ExpressiveSettings {
-  lengthenWords: boolean;
-  useStyles: boolean;
-}
-
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   captions,
   currentTime,
   isVisible = true,
-  screenHeight = 1080
+  screenHeight = 1080,
+  expressiveSettings: externalExpressiveSettings
 }) => {
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
   
-  // ✅ EC Protocol settings (can be made configurable later)
-  const [expressiveSettings] = useState<ExpressiveSettings>({
-    lengthenWords: true,  // Enable vowel elongation
-    useStyles: true       // Enable ALL CAPS for yelling/screaming
-  });
+  // ✅ Use passed expressiveSettings or fallback to defaults
+  const expressiveSettings = externalExpressiveSettings || {
+    enabled: true,
+    lengthenWords: true,
+    useStyles: true,
+    dynamicSizing: true,
+    showSoundLabels: true,
+    showEnvironmentalSounds: true,
+    showSentimentBadge: false,
+    highlightPitch: false,
+    whisperThreshold: -25,
+    yellThreshold: -10,
+    reduceMotion: false,
+    highContrast: false,
+    minFontSize: 18
+  };
 
   // Process captions: normalize words, precompute syllable charStart/charEnd
   const processed = React.useMemo(() => {
