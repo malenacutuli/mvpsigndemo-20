@@ -31,11 +31,22 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
   characters,
   existingSpeakers
 }) => {
+  // Store speaker key -> character UUID mappings
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<Speaker[]>([]);
   const [savingMappings, setSavingMappings] = useState<Set<string>>(new Set());
   const loadedRef = useRef(false);
   const { toast } = useToast();
+
+  // Helper: Get character name from UUID
+  const getCharacterName = (characterId: string): string => {
+    return characters.find(c => c.id === characterId)?.name || '';
+  };
+
+  // Helper: Get character UUID from name
+  const getCharacterUuid = (characterName: string): string => {
+    return characters.find(c => c.name === characterName)?.id || '';
+  };
 
   // Normalize speaker keys to "Speaker X" format for consistency
   const normalizeSpeakerKey = (value: string): string => {
@@ -99,15 +110,37 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
 
     const loadMappings = async () => {
       try {
-        // Load character IDs
-        const { data: chars } = await supabase
-          .from('characters')
-          .select('id, name')
-          .eq('video_id', videoId);
+        // Load mappings from speaker_mappings table (preferred source)
+        const { data: savedMappings } = await supabase
+          .from('speaker_mappings')
+          .select('mappings')
+          .eq('video_id', videoId)
+          .eq('language', language)
+          .maybeSingle();
 
-        const idToName = new Map((chars || []).map(c => [c.id, c.name]));
+        if (savedMappings?.mappings) {
+          // Check if mappings use UUIDs (new format) or names (legacy format)
+          const firstValue = Object.values(savedMappings.mappings)[0];
+          const isUuidFormat = firstValue && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firstValue as string);
+          
+          if (isUuidFormat) {
+            // New UUID format - use directly
+            setSpeakerMappings(savedMappings.mappings as Record<string, string>);
+            console.log('🔗 Mappings loaded (UUID format):', savedMappings.mappings);
+          } else {
+            // Legacy name format - convert to UUIDs
+            const converted: Record<string, string> = {};
+            Object.entries(savedMappings.mappings).forEach(([speaker, characterName]) => {
+              const uuid = getCharacterUuid(characterName as string);
+              if (uuid) converted[speaker] = uuid;
+            });
+            setSpeakerMappings(converted);
+            console.log('🔗 Mappings loaded (converted from legacy):', converted);
+          }
+          return;
+        }
 
-        // Load mappings from transcript segments
+        // Fallback: Load from transcript segments
         const { data: segments } = await supabase
           .from('transcript_segments_clean')
           .select('speaker, speaker_asr_label, character_id')
@@ -119,84 +152,128 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
 
         if (segments && segments.length > 0) {
           segments.forEach(seg => {
-            const characterName = idToName.get(seg.character_id);
-            if (characterName) {
+            if (seg.character_id) {
               const speakerKey = seg.speaker_asr_label
                 ? normalizeSpeakerKey(`Speaker ${seg.speaker_asr_label}`)
                 : normalizeSpeakerKey(seg.speaker);
-              mappings[speakerKey] = characterName;
+              mappings[speakerKey] = seg.character_id;
             }
           });
         }
 
         setSpeakerMappings(mappings);
-        console.log('🔗 Mappings loaded:', mappings);
+        console.log('🔗 Mappings loaded from segments:', mappings);
       } catch (error) {
-        console.error('Failed to load mappings:', error);
+        console.error('❌ Failed to load mappings:', error);
+        toast({
+          title: "Load Failed",
+          description: "Could not load character mappings",
+          variant: "destructive"
+        });
       }
     };
 
     loadMappings();
-  }, [videoId, language]);
+  }, [videoId, language, characters, toast, getCharacterUuid]);
 
-  // Save mapping to database
-  const saveMappingToDatabase = async (speakerKey: string, characterName: string) => {
+  // Save mapping to database with retry logic
+  const saveMappingToDatabase = async (speakerKey: string, characterId: string, retryCount = 0): Promise<void> => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000;
+
     try {
+      console.log(`💾 Saving mapping: ${speakerKey} → ${characterId} (attempt ${retryCount + 1})`);
+
       // Extract bare ASR label
       const match = speakerKey.match(/(\d+|[A-Z])$/);
       const asrLabelBare = match ? match[1] : speakerKey;
 
-      // Get character ID
-      const { data: character } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('video_id', videoId)
-        .eq('name', characterName)
-        .maybeSingle();
-
-      if (!character) {
-        throw new Error(`Character "${characterName}" not found in database`);
-      }
-
-      // Apply mapping via RPC
-      const { error } = await supabase.rpc('apply_specific_mapping', {
-        p_video_id: videoId,
-        p_language: language,
-        p_asr_label: asrLabelBare,
-        p_character_id: character.id
-      });
-
-      if (error) throw error;
-
-      // Sync character properties to segments
-      await supabase.rpc('sync_character_to_segments', {
-        p_video_id: videoId,
-        p_language: language,
-        p_character_id: character.id
-      });
-
-      // Save to speaker_mappings table
-      const { error: upsertError } = await supabase
-        .from('speaker_mappings')
-        .upsert({
-          video_id: videoId,
-          language: language,
-          mappings: { ...speakerMappings, [speakerKey]: characterName }
-        }, {
-          onConflict: 'video_id,language'
+      // Step 1: Apply mapping via RPC
+      try {
+        const { error: rpcError } = await supabase.rpc('apply_specific_mapping', {
+          p_video_id: videoId,
+          p_language: language,
+          p_asr_label: asrLabelBare,
+          p_character_id: characterId
         });
 
-      if (upsertError) throw upsertError;
+        if (rpcError) {
+          console.error('❌ RPC apply_specific_mapping failed:', rpcError);
+          throw new Error(`Failed to apply mapping: ${rpcError.message}`);
+        }
+        console.log('✅ Step 1: RPC apply_specific_mapping succeeded');
+      } catch (rpcErr) {
+        throw new Error(`Step 1 failed (apply_specific_mapping): ${rpcErr instanceof Error ? rpcErr.message : 'Unknown error'}`);
+      }
 
-      console.log(`✅ Saved mapping: ${speakerKey} → ${characterName}`);
+      // Step 2: Sync character properties to segments
+      try {
+        const { error: syncError } = await supabase.rpc('sync_character_to_segments', {
+          p_video_id: videoId,
+          p_language: language,
+          p_character_id: characterId
+        });
+
+        if (syncError) {
+          console.error('❌ RPC sync_character_to_segments failed:', syncError);
+          throw new Error(`Failed to sync character: ${syncError.message}`);
+        }
+        console.log('✅ Step 2: RPC sync_character_to_segments succeeded');
+      } catch (syncErr) {
+        throw new Error(`Step 2 failed (sync_character_to_segments): ${syncErr instanceof Error ? syncErr.message : 'Unknown error'}`);
+      }
+
+      // Step 3: Save to speaker_mappings table with UUID
+      try {
+        const updatedMappings = { ...speakerMappings, [speakerKey]: characterId };
+        
+        const { error: upsertError } = await supabase
+          .from('speaker_mappings')
+          .upsert({
+            video_id: videoId,
+            language: language,
+            mappings: updatedMappings
+          }, {
+            onConflict: 'video_id,language'
+          });
+
+        if (upsertError) {
+          console.error('❌ speaker_mappings upsert failed:', upsertError);
+          throw new Error(`Failed to save mappings: ${upsertError.message}`);
+        }
+        console.log('✅ Step 3: speaker_mappings upsert succeeded');
+      } catch (upsertErr) {
+        throw new Error(`Step 3 failed (speaker_mappings upsert): ${upsertErr instanceof Error ? upsertErr.message : 'Unknown error'}`);
+      }
+
+      console.log(`✅ Mapping saved successfully: ${speakerKey} → ${getCharacterName(characterId)}`);
     } catch (error) {
-      console.error('Failed to save mapping:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Save mapping failed (attempt ${retryCount + 1}/${MAX_RETRIES}):`, errorMessage);
+
+      // Retry logic for transient failures (excluding authentication errors)
+      if (retryCount < MAX_RETRIES && !errorMessage.includes('401') && !errorMessage.includes('403')) {
+        console.log(`🔄 Retrying in ${RETRY_DELAY * (retryCount + 1)}ms...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+        return saveMappingToDatabase(speakerKey, characterId, retryCount + 1);
+      }
+
+      throw new Error(`${errorMessage} (after ${retryCount + 1} attempts)`);
     }
   };
 
   const handleMappingChange = async (characterName: string, selectedSpeaker: string) => {
     if (savingMappings.has(characterName)) return;
+
+    const characterId = getCharacterUuid(characterName);
+    if (!characterId && selectedSpeaker !== 'unassigned') {
+      toast({
+        title: "Error",
+        description: `Character "${characterName}" not found`,
+        variant: "destructive"
+      });
+      return;
+    }
 
     setSavingMappings(prev => new Set(prev).add(characterName));
 
@@ -205,25 +282,25 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
         ? normalizeSpeakerKey(selectedSpeaker) 
         : selectedSpeaker;
 
-      // Update local state
+      // Update local state with UUID
       setSpeakerMappings(prev => {
         const next: Record<string, string> = {};
-        // Remove previous mapping to this character
-        for (const [speaker, char] of Object.entries(prev)) {
-          if (char !== characterName) {
-            next[speaker] = char;
+        // Remove previous mapping to this character UUID
+        for (const [speaker, charId] of Object.entries(prev)) {
+          if (charId !== characterId) {
+            next[speaker] = charId;
           }
         }
-        // Add new mapping
-        if (normalized !== 'unassigned') {
-          next[normalized] = characterName;
+        // Add new mapping with UUID
+        if (normalized !== 'unassigned' && characterId) {
+          next[normalized] = characterId;
         }
         return next;
       });
 
       // Save to database
-      if (normalized !== 'unassigned') {
-        await saveMappingToDatabase(normalized, characterName);
+      if (normalized !== 'unassigned' && characterId) {
+        await saveMappingToDatabase(normalized, characterId);
       }
 
       toast({
@@ -240,12 +317,29 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
         }));
       }, 300);
     } catch (error) {
-      console.error('Failed to save mapping:', error);
+      console.error('❌ Failed to save mapping:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Provide specific error message based on failure
+      let description = "Could not save character mapping";
+      if (errorMessage.includes('apply_specific_mapping')) {
+        description = "Failed to apply mapping to transcript segments";
+      } else if (errorMessage.includes('sync_character_to_segments')) {
+        description = "Failed to sync character properties";
+      } else if (errorMessage.includes('speaker_mappings')) {
+        description = "Failed to save mapping to database";
+      } else if (errorMessage.includes('not found')) {
+        description = errorMessage;
+      }
+
       toast({
         title: "Save Failed",
-        description: "Could not save character mapping",
+        description,
         variant: "destructive"
       });
+
+      // Revert local state on failure
+      setSpeakerMappings(prev => prev);
     } finally {
       setSavingMappings(prev => {
         const next = new Set(prev);
@@ -256,7 +350,8 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
   };
 
   const getMappedSpeaker = (characterName: string): string => {
-    return Object.keys(speakerMappings).find(sp => speakerMappings[sp] === characterName) || 'unassigned';
+    const characterId = getCharacterUuid(characterName);
+    return Object.keys(speakerMappings).find(sp => speakerMappings[sp] === characterId) || 'unassigned';
   };
 
   if (characters.length === 0) return null;
