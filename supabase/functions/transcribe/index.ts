@@ -849,6 +849,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     body.language_detection = true;
   }
 
+  console.log('🎙️ Transcribing with AssemblyAI (sentiment enabled)...');
   const createRes = await fetch("https://api.assemblyai.com/v2/transcript", {
     method: "POST",
     headers,
@@ -894,6 +895,10 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
   if (status !== "completed") {
     throw new Error("AssemblyAI transcription timeout");
   }
+
+  // Get sentiment results
+  const sentimentResults = resultData.sentiment_analysis_results || [];
+  console.log(`✅ Received ${sentimentResults.length} sentiment analyses`);
 
   // Build segments from utterances when available
   const segments: any[] = [];
