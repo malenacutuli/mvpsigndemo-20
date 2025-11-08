@@ -419,12 +419,13 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setDetectedLanguage(data.language);
       }
 
-      // Save to database
-      await saveTranscript();
+      // ✅ Backend already saves segments via SpeakerAssignmentService
+      // No need to save again from frontend to avoid duplicate key errors
+      console.log('✅ Segments already saved by backend transcribe function');
 
       toast({
         title: "Transcript Extracted Successfully",
-        description: `Extracted ${extractedSegments.length} segments`,
+        description: `Extracted ${extractedSegments.length} segments (saved by backend)`,
         variant: "default",
       });
 

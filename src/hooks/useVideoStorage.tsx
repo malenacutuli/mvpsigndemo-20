@@ -279,6 +279,12 @@ export const useVideoStorage = (videoId: string) => {
           sampleRows: toSave.slice(0, 3),
           totalRows: toSave.length
         });
+        
+        // ✅ Add helpful context for duplicate key errors
+        if (upsertError.message?.includes('duplicate key')) {
+          console.error('💡 TIP: Check if backend transcribe function already saved these segments');
+        }
+        
         throw new Error(`Failed to save transcript: ${upsertError.message}`);
       }
 

@@ -1260,15 +1260,14 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // ALWAYS clear existing base segments (transcript_id IS NULL) for this video/language
-    // This prevents the uq_transcript_pos constraint violation
+    // ALWAYS clear existing segments for this video/language before saving new ones
+    // This prevents duplicate key constraint violations
     console.log('🗑️ Clearing existing base segments for video:', videoId, 'language:', transcriptionResult.language || 'en');
     const { error: deleteError } = await supabase
       .from('transcript_segments_clean')
       .delete()
       .eq('video_id', videoId)
-      .eq('language', transcriptionResult.language || 'en')
-      .is('transcript_id', null);
+      .eq('language', transcriptionResult.language || 'en');
     
     if (deleteError) {
       console.error('⚠️ Failed to clear existing segments:', deleteError);
@@ -1310,14 +1309,13 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       console.log('⚠️ Using legacy save method (no utterance format detected)');
       console.log('⚠️ This means speaker labels may not be properly assigned!');
       
-      // ALWAYS clear existing base segments to avoid constraint violations
+      // ALWAYS clear existing segments to avoid constraint violations
       console.log('🗑️ Legacy method: Clearing existing base segments...');
       const { error: legacyDeleteError } = await supabase
         .from('transcript_segments_clean')
         .delete()
         .eq('video_id', videoId)
-        .eq('language', transcriptionResult.language || 'en')
-        .is('transcript_id', null);
+        .eq('language', transcriptionResult.language || 'en');
       
       if (legacyDeleteError) {
         console.error('⚠️ Failed to clear existing segments (legacy):', legacyDeleteError);
