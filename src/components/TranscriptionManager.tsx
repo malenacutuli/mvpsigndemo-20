@@ -133,29 +133,53 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
         setTranscripts(segments);
         setHasExistingTranscript(true);
         
-        // ✅ FIX: Poll database to wait for edge function save
+        // Check if backend already saved segments
+        console.log('📥 [TranscriptionManager] Backend save status:', {
+          savedToDatabase: data.savedToDatabase,
+          segmentCount: segments.length,
+          language: data.language || 'en'
+        });
+
         const lang = data.language || 'en';
         let dbSegments: any[] = [];
-        
-        for (let attempt = 0; attempt < 10; attempt++) {
-          await new Promise(r => setTimeout(r, 300));
 
+        if (data.savedToDatabase === true) {
+          // Backend confirmed save - load directly
+          console.log('✅ [TranscriptionManager] Backend saved segments - loading from database');
           dbSegments = await loadTranscriptSegments(lang);
-          if (dbSegments.length > 0) break;
+          
+          if (dbSegments.length === 0) {
+            // Still poll a few times in case of race condition
+            for (let attempt = 0; attempt < 3; attempt++) {
+              await new Promise(r => setTimeout(r, 300));
+              dbSegments = await loadTranscriptSegments(lang);
+              if (dbSegments.length > 0) break;
+            }
+          }
+        } else {
+          // Backend didn't save - poll database to wait for edge function save
+          console.log('⚠️ [TranscriptionManager] Backend did not save - polling database');
+          
+          for (let attempt = 0; attempt < 10; attempt++) {
+            await new Promise(r => setTimeout(r, 300));
 
-          // Also probe base rows directly in case transcript_id path is empty
-          const { data: baseRows } = await supabase
-            .from('transcript_segments_clean')
-            .select('id')
-            .eq('video_id', videoId)
-            .eq('language', lang)
-            .is('transcript_id', null)
-            .limit(1);
-
-          if (baseRows?.length) {
-            // Force reload via the normal path
             dbSegments = await loadTranscriptSegments(lang);
             if (dbSegments.length > 0) break;
+
+            // Also probe base rows directly in case transcript_id path is empty
+            const { data: baseRows } = await supabase
+              .from('transcript_segments_clean')
+              .select('id')
+              .eq('video_id', videoId)
+              .eq('language', lang)
+              .is('transcript_id', null)
+              .limit(1);
+
+            if (baseRows?.length) {
+              // Force reload via the normal path
+              dbSegments = await loadTranscriptSegments(lang);
+              if (dbSegments.length > 0) break;
+            }
           }
         }
 
@@ -165,7 +189,7 @@ export const TranscriptionManager: React.FC<TranscriptionManagerProps> = ({
             description: 'Segments will appear shortly. Try refresh in a few seconds.',
             variant: 'destructive'
           });
-          return; // 🚫 Don't fallback-save generic segments
+          return;
         }
 
         // Convert DB segments to display format

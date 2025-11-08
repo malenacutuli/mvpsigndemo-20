@@ -419,15 +419,45 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         setDetectedLanguage(data.language);
       }
 
-      // ✅ Backend already saves segments via SpeakerAssignmentService
-      // No need to save again from frontend to avoid duplicate key errors
-      console.log('✅ Segments already saved by backend transcribe function');
-
-      toast({
-        title: "Transcript Extracted Successfully",
-        description: `Extracted ${extractedSegments.length} segments (saved by backend)`,
-        variant: "default",
+      // Smart segment handling - check if backend already saved
+      console.log('📥 [TranscriptWorkflow] Received segments from backend:', {
+        count: extractedSegments.length,
+        savedToDatabase: data.savedToDatabase,
+        language: data.language
       });
+
+      // Check if backend already saved to database
+      if (data.savedToDatabase === true) {
+        console.log('✅ [TranscriptWorkflow] Segments already saved by backend - skipping frontend save');
+        
+        toast({
+          title: "Transcript Extracted Successfully",
+          description: `Extracted ${extractedSegments.length} segments (saved by backend)`,
+          variant: "default",
+        });
+
+      } else {
+        console.log('⚠️ [TranscriptWorkflow] Backend did not save segments - saving from frontend');
+        
+        try {
+          // Only save if backend failed to do so
+          await saveTranscript();
+          
+          toast({
+            title: "Transcript Extracted Successfully",
+            description: `Extracted and saved ${extractedSegments.length} segments`,
+            variant: "default",
+          });
+        } catch (saveError) {
+          console.error('❌ [TranscriptWorkflow] Failed to save segments:', saveError);
+          
+          toast({
+            title: "Transcription Complete, Save Failed",
+            description: "Transcript extracted but failed to save to database. Please try refreshing.",
+            variant: "destructive",
+          });
+        }
+      }
 
     } catch (error: any) {
       console.error('❌ Transcript extraction failed:', error);
@@ -442,12 +472,19 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   };
 
   const saveTranscript = async () => {
-    if (segments.length === 0 || isSaving) return;
+    if (segments.length === 0 || isSaving) {
+      console.warn('⚠️ [saveTranscript] No segments to save or already saving');
+      return;
+    }
     
     setIsSaving(true);
     
     try {
-      console.log('💾 Saving transcript - PRESERVING ASR speaker data');
+      console.log('💾 [saveTranscript] Saving segments:', {
+        videoId,
+        count: segments.length,
+        operation: 'UPSERT'
+      });
       
       // Harmonize speaker names before saving
       const isGeneric = (name: string) => /^speaker\s*\d+$/i.test(name?.trim() || '');
@@ -476,7 +513,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // ✅ CRITICAL FIX: Use UPSERT to preserve ASR fields instead of DELETE+INSERT
+      // ✅ Use UPSERT to handle potential conflicts gracefully
       const segmentsToUpsert = toSave.map((segment, idx) => {
         const matchingChar = characters.find(c => c.name === segment.speaker);
         
@@ -496,36 +533,44 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
           is_off_camera: false,
           words: segment.words || [],
           confidence: 0.95,
-          // ✅ PRESERVE these ASR fields - they will be kept from DB on conflict
-          // The upsert will keep existing values for fields not in this object
         };
       });
       
-      // Use upsert with onConflict to preserve ASR data
-      const { error: upsertError } = await supabase
+      // Use upsert with onConflict to handle duplicates gracefully
+      const { data, error: upsertError } = await supabase
         .from('transcript_segments_clean')
         .upsert(segmentsToUpsert, {
           onConflict: 'video_id,language,idx',
-          ignoreDuplicates: false  // Update existing records
-        });
+          ignoreDuplicates: false  // Update if exists
+        })
+        .select('id');
       
       if (upsertError) {
-        console.error('❌ Failed to upsert segments:', upsertError);
+        // Check if it's a duplicate key error (shouldn't happen with upsert, but defensive)
+        if (upsertError.message?.includes('duplicate key')) {
+          console.warn('⚠️ [saveTranscript] Segments already exist - this is OK');
+          toast({
+            title: "Segments Already Saved",
+            description: "Transcript segments already exist in database",
+          });
+          return;
+        }
         throw upsertError;
       }
       
-      console.log('✅ Successfully saved', segmentsToUpsert.length, 'segments with ASR data preserved');
+      console.log(`✅ [saveTranscript] Saved ${data?.length || 0} segments`);
       toast({
         title: "Saved",
-        description: `Transcript saved. ASR speaker data preserved.`,
+        description: `Transcript saved successfully`,
       });
     } catch (error) {
-      console.error('❌ Failed to save transcript:', error);
+      console.error('❌ [saveTranscript] Failed:', error);
       toast({
         title: "Save Failed",
         description: error instanceof Error ? error.message : "Failed to save transcript changes",
         variant: "destructive",
       });
+      throw error; // Re-throw to let caller handle
     } finally {
       setIsSaving(false);
     }
