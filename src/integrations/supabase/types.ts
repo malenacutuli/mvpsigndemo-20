@@ -1071,16 +1071,21 @@ export type Database = {
           character_id: string | null
           confidence: number | null
           created_at: string
+          edit_history: Json | null
           emotion_metadata: Json | null
           emphasis: string | null
           end_ms: number | null
           end_time: number
           id: string
           idx: number | null
+          is_manually_edited: boolean | null
           is_music: boolean | null
           is_off_camera: boolean | null
           is_sound_effect: boolean | null
           language: string
+          last_edited_at: string | null
+          last_edited_by: string | null
+          locked_by_user: boolean | null
           overall_intensity: string | null
           overall_pitch: string | null
           pitch: string | null
@@ -1107,16 +1112,21 @@ export type Database = {
           character_id?: string | null
           confidence?: number | null
           created_at?: string
+          edit_history?: Json | null
           emotion_metadata?: Json | null
           emphasis?: string | null
           end_ms?: number | null
           end_time: number
           id?: string
           idx?: number | null
+          is_manually_edited?: boolean | null
           is_music?: boolean | null
           is_off_camera?: boolean | null
           is_sound_effect?: boolean | null
           language?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          locked_by_user?: boolean | null
           overall_intensity?: string | null
           overall_pitch?: string | null
           pitch?: string | null
@@ -1143,16 +1153,21 @@ export type Database = {
           character_id?: string | null
           confidence?: number | null
           created_at?: string
+          edit_history?: Json | null
           emotion_metadata?: Json | null
           emphasis?: string | null
           end_ms?: number | null
           end_time?: number
           id?: string
           idx?: number | null
+          is_manually_edited?: boolean | null
           is_music?: boolean | null
           is_off_camera?: boolean | null
           is_sound_effect?: boolean | null
           language?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          locked_by_user?: boolean | null
           overall_intensity?: string | null
           overall_pitch?: string | null
           pitch?: string | null
