@@ -1731,22 +1731,22 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
       {/* Accessibility Panel */}
       {showAccessibilityPanel && (
-        <div className="absolute top-0 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm z-50 overflow-y-auto">
+        <div className="absolute top-0 left-0 right-0 bottom-0 bg-white shadow-soft z-50 overflow-y-auto">
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Accessibility Panel</h2>
+              <h2 className="text-lg font-light text-foreground">Accessibility Panel</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAccessibilityPanel(false)}
-                className="text-white hover:bg-white/20"
+                className="text-foreground hover:bg-accent/50 rounded-full font-light"
               >
                 ✕
               </Button>
             </div>
             
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 bg-muted/20">
+              <TabsList className="grid w-full grid-cols-7 bg-muted/20 rounded-full font-light">
                 <TabsTrigger value="info">Info</TabsTrigger>
                 <TabsTrigger value="grader">Grader</TabsTrigger>
                 <TabsTrigger value="language">Language</TabsTrigger>
@@ -1778,8 +1778,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </TabsContent>
               
               <TabsContent value="language" className="mt-4">
-                <div className="space-y-4 text-white">
-                  <h3 className="text-lg font-medium">Multi-Language Settings</h3>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-light text-foreground">Multi-Language Settings</h3>
                   <LanguageSelector
                     currentLanguage={currentLanguage}
                     originalLanguage={originalLanguage}
@@ -1788,9 +1788,9 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
                     onLanguageChange={(lang) => handleLanguageChange(lang)}
                     onTranslatedContentUpdate={(content) => handleLanguageChange(content.language, content)}
                   />
-                  <div className="p-4 border border-muted/20 rounded-lg">
-                    <h4 className="font-medium mb-2">Language Features</h4>
-                    <div className="text-sm space-y-1 text-muted-foreground">
+                  <div className="p-4 border border-border rounded-lg bg-white shadow-sm">
+                    <h4 className="font-light mb-2 text-foreground">Language Features</h4>
+                    <div className="text-sm space-y-1 text-muted-foreground font-light">
                       <div>Current: {currentLanguage === 'en' ? 'English (Original)' : `Translated to ${currentLanguage.toUpperCase()}`}</div>
                       <div>Translated Captions: {translatedContent?.captions?.length ? 'Available' : 'Not Available'}</div>
                       <div>Translated Audio Description: {translatedContent?.audioDescription?.length ? 'Available' : 'Not Available'}</div>
@@ -1800,13 +1800,13 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </TabsContent>
               
               <TabsContent value="transcripts" className="mt-4">
-                <div className="text-white space-y-4">
-                  <h3 className="text-lg font-medium">Transcript Management</h3>
-                  <p className="text-sm text-muted-foreground">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-light text-foreground">Transcript Management</h3>
+                  <p className="text-sm text-muted-foreground font-light">
                     Use the dedicated transcript workflow on the video detail page to extract, edit, and save transcripts with full accessibility features.
                   </p>
-                  <div className="p-4 border border-muted/20 rounded-lg">
-                    <div className="text-sm space-y-1">
+                  <div className="p-4 border border-border rounded-lg bg-white shadow-sm">
+                    <div className="text-sm space-y-1 font-light text-foreground">
                       <div>Current Captions: {generatedCaptions?.length || 0} segments</div>
                       <div>Status: {generatedCaptions?.length ? 'Ready' : 'No captions generated'}</div>
                     </div>
@@ -1838,24 +1838,24 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </TabsContent>
               
               <TabsContent value="settings" className="mt-4">
-                <div className="space-y-4 text-white">
-                  <h3 className="text-lg font-medium">Player Settings</h3>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-light text-foreground">Player Settings</h3>
                   <div className="grid gap-4">
-                    <div className="p-4 border border-muted rounded-lg">
-                      <h4 className="font-medium mb-2">Video Information</h4>
-                      <div className="text-sm space-y-1 text-muted-foreground">
+                    <div className="p-4 border border-border rounded-lg bg-white shadow-sm">
+                      <h4 className="font-light mb-2 text-foreground">Video Information</h4>
+                      <div className="text-sm space-y-1 text-muted-foreground font-light">
                         <div>Title: {title}</div>
                         <div>Type: {contentType}</div>
                         <div>Duration: {formatTime(duration)}</div>
                       </div>
                     </div>
                     
-                    <div className="p-4 border border-muted rounded-lg">
-                      <h4 className="font-medium mb-2">Immersive Features</h4>
-                      <div className="text-sm space-y-1 text-muted-foreground">
+                    <div className="p-4 border border-border rounded-lg bg-white shadow-sm">
+                      <h4 className="font-light mb-2 text-foreground">Immersive Features</h4>
+                      <div className="text-sm space-y-1 text-muted-foreground font-light">
                         <div>Captions: {showCaptions ? 'Enabled' : 'Disabled'}</div>
                         <div>Audio Description: {showAudioDescription ? 'Enabled' : 'Disabled'}</div>
-                        <div className="text-amber-600 dark:text-amber-400 font-medium">💡 Tip: Use the immersive controls instead of accessibility controls</div>
+                        <div className="text-amber-600 dark:text-amber-400 font-light">💡 Tip: Use the immersive controls instead of accessibility controls</div>
                         <div>Keyboard Navigation: {keyboardNavEnabled ? 'Enabled' : 'Disabled'}</div>
                       </div>
                     </div>

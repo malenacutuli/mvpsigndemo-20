@@ -217,7 +217,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <div className="flex items-center gap-2">
       <Select value={currentLanguage} onValueChange={handleLanguageChange}>
-        <SelectTrigger className="w-40 bg-black/50 border-white/20 text-white">
+        <SelectTrigger className="w-40 bg-white border-border shadow-sm font-light rounded-full">
           <SelectValue>
             <div className="flex items-center gap-2">
               <Globe className="w-3 h-3" />
@@ -225,9 +225,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </div>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-background border-border z-50">
+        <SelectContent className="bg-background border-border z-50 shadow-soft">
           {LANGUAGES.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
+            <SelectItem key={lang.code} value={lang.code} className="font-light">
               <div className="flex items-center gap-2">
                 {lang.name}
                 {isTranslating && currentLanguage === lang.code && (
@@ -244,7 +244,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => translateContent(currentLanguage)}
-          className="text-white hover:bg-white/20 text-xs"
+          className="text-foreground hover:bg-accent/50 text-xs font-light rounded-full"
           disabled={isTranslating}
         >
           {isTranslating ? (
