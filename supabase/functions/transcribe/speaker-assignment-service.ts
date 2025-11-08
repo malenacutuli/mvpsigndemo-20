@@ -6,8 +6,14 @@ interface AssemblyAIUtterance {
   text: string;
   start: number;
   end: number;
+  start_ms?: number;  // ✅ NEW: Millisecond precision
+  end_ms?: number;    // ✅ NEW: Millisecond precision
   confidence: number;
   emphasis?: string; // Sentiment-based emphasis
+  overall_intensity?: string;  // ✅ NEW: 7-level intensity
+  overall_pitch?: string;      // ✅ NEW: Pitch
+  words_source?: string;       // ✅ NEW: Source marker
+  timing_confidence?: number;  // ✅ NEW: Timing confidence
   emotion_metadata?: any; // Full sentiment data
   sentiment?: string; // Top-level sentiment
   sentiment_confidence?: number; // Top-level confidence
@@ -15,6 +21,9 @@ interface AssemblyAIUtterance {
     text: string;
     start: number;
     end: number;
+    start_ms?: number;  // ✅ NEW: Millisecond precision
+    end_ms?: number;    // ✅ NEW: Millisecond precision
+    duration_ms?: number; // ✅ NEW: Duration
     speaker?: string;
     confidence: number;
     sentiment?: string;
@@ -36,14 +45,20 @@ interface ProcessedSegment {
   text: string;
   start_time: number;
   end_time: number;
+  start_ms?: number;   // ✅ NEW: Millisecond precision
+  end_ms?: number;     // ✅ NEW: Millisecond precision
   speaker: string;
   speaker_color: string;
   character_id: string | null;
   language: string;
   confidence: number;
   speaker_asr_label?: string;
+  words_source?: string;       // ✅ NEW
+  timing_confidence?: number;  // ✅ NEW
   words?: any[];
   emphasis?: string;
+  overall_intensity?: string;  // ✅ NEW
+  overall_pitch?: string;      // ✅ NEW
   emotion_metadata?: any;
   sentiment?: string;
   sentiment_confidence?: number;
@@ -311,11 +326,14 @@ export class SpeakerAssignmentService {
         }
       }
 
-      // Transform word timings with sentiment data
+      // Transform word timings with millisecond precision
       const words = utterance.words?.map(w => ({
         text: w.text,
-        startTime: w.start / 1000, // Convert ms to seconds
-        endTime: w.end / 1000,
+        start_ms: w.start_ms || w.start,  // ✅ Prefer milliseconds
+        end_ms: w.end_ms || w.end,
+        startTime: (w.start_ms || w.start) / 1000,  // Convert to seconds for compatibility
+        endTime: (w.end_ms || w.end) / 1000,
+        duration_ms: w.duration_ms || ((w.end_ms || w.end) - (w.start_ms || w.start)),
         confidence: w.confidence,
         sentiment: w.sentiment,
         sentimentConfidence: w.sentimentConfidence
@@ -323,16 +341,22 @@ export class SpeakerAssignmentService {
 
       segments.push({
         text: utterance.text,
-        start_time: utterance.start / 1000, // Convert ms to seconds
-        end_time: utterance.end / 1000,
+        start_ms: utterance.start_ms || utterance.start,  // ✅ Milliseconds
+        end_ms: utterance.end_ms || utterance.end,        // ✅ Milliseconds
+        start_time: (utterance.start_ms || utterance.start) / 1000, // Seconds for compatibility
+        end_time: (utterance.end_ms || utterance.end) / 1000,
         speaker: speakerLabel,
         speaker_color: speakerColor,
         character_id: characterId,
         language: language, // Use detected language, NOT 'auto'
         confidence: utterance.confidence || 0,
         speaker_asr_label: originalLabel,
+        words_source: utterance.words_source || 'asr',  // ✅ NEW
+        timing_confidence: utterance.timing_confidence || utterance.confidence,  // ✅ NEW
         words: words.length > 0 ? words : undefined,
         emphasis: utterance.emphasis || 'normal',
+        overall_intensity: utterance.overall_intensity || 'normal',  // ✅ NEW
+        overall_pitch: utterance.overall_pitch || 'normal',          // ✅ NEW
         emotion_metadata: utterance.emotion_metadata || null,
         sentiment: utterance.sentiment || null,
         sentiment_confidence: utterance.sentiment_confidence || null
@@ -391,17 +415,23 @@ export class SpeakerAssignmentService {
           video_id: this.videoId,
           idx: i + idx,
           text: seg.text,
+          start_ms: seg.start_ms,  // ✅ NEW: Milliseconds
+          end_ms: seg.end_ms,      // ✅ NEW: Milliseconds
           start_time: seg.start_time,
           end_time: seg.end_time,
           speaker: seg.speaker,
           speaker_color: seg.speaker_color,
           speaker_asr_label: seg.speaker_asr_label,
+          words_source: seg.words_source || 'asr',  // ✅ NEW
+          timing_confidence: seg.timing_confidence,  // ✅ NEW
           character_id: seg.character_id,
           language: seg.language,
           confidence: seg.confidence,
           words: seg.words,
           segment_type: 'dialogue',
           emphasis: seg.emphasis || 'normal',
+          overall_intensity: seg.overall_intensity || 'normal',  // ✅ NEW
+          overall_pitch: seg.overall_pitch || 'normal',          // ✅ NEW
           pitch: 'normal',
           is_off_camera: false,
           emotion_metadata: seg.emotion_metadata || null,

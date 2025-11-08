@@ -922,24 +922,69 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     });
   }
   
+  // 7-Level Intensity Mapping Function
+  function mapSentimentToIntensity(
+    sentiment: string,
+    confidence: number,
+    duration_ms: number
+  ): string {
+    // Very low confidence → normal
+    if (confidence < 0.6) return 'normal';
+    
+    // Extreme confidence + strong emotion → screaming
+    if (confidence > 0.95 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
+      return 'screaming';
+    }
+    
+    // Very high confidence + strong emotion → yelling
+    if (confidence > 0.85 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
+      return 'yelling';
+    }
+    
+    // High confidence + emotion → loud
+    if (confidence > 0.75 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
+      return 'loud';
+    }
+    
+    // Duration-based: very long utterances are emphatic
+    if (duration_ms > 800) return 'loud';
+    
+    // Medium confidence → quiet for neutral, normal for others
+    if (confidence > 0.65 && sentiment === 'NEUTRAL') {
+      return 'quiet';
+    }
+    
+    // Very soft speech indicators
+    if (duration_ms < 300 && confidence < 0.7) {
+      return 'whisper';
+    }
+    
+    return 'normal';
+  }
+  
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
     console.log(`🎯 Processing ${resultData.utterances.length} utterances with speaker labels...`);
     for (let i = 0; i < resultData.utterances.length; i++) {
       const u = resultData.utterances[i];
-      const startTime = (u.start || 0) / 1000;
-      const endTime = (u.end || 0) / 1000;
+      const start_ms = u.start || 0;  // ✅ MILLISECONDS - NO CONVERSION
+      const end_ms = u.end || 0;      // ✅ MILLISECONDS - NO CONVERSION
+      const duration_ms = end_ms - start_ms;
+      
+      const startTimeSeconds = start_ms / 1000;
+      const endTimeSeconds = end_ms / 1000;
       
       // Skip segments that start after the max duration
-      if (startTime > maxDurationSeconds) {
-        console.log(`⏭️ Skipping segment starting at ${startTime}s (exceeds ${maxDurationSeconds}s limit)`);
+      if (startTimeSeconds > maxDurationSeconds) {
+        console.log(`⏭️ Skipping segment starting at ${startTimeSeconds}s (exceeds ${maxDurationSeconds}s limit)`);
         continue;
       }
       
       console.log(`   📍 Utterance: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
       
-      // Map sentiment to emphasis using improved logic
+      // Map sentiment to intensity using 7-level spectrum
       const sentimentData = sentimentMap.get(i);
       let emphasis = 'normal';
+      let overall_intensity = 'normal';
       let emotionMetadata: any = null;
       let sentiment: string | null = null;
       let sentimentConfidence: number | null = null;
@@ -949,16 +994,9 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         const confidence = sentimentData.confidence || 0;
         sentimentConfidence = confidence;
         
-        // Improved sentiment-to-emphasis mapping
-        if (confidence < 0.6) {
-          emphasis = 'normal';
-        } else if (confidence > 0.85 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
-          emphasis = 'yelling'; // High intensity emotion
-        } else if (confidence > 0.75 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
-          emphasis = 'loud'; // Medium intensity emotion
-        } else {
-          emphasis = 'normal';
-        }
+        // ✅ 7-Level Intensity Mapping
+        overall_intensity = mapSentimentToIntensity(sentiment, confidence, duration_ms);
+        emphasis = overall_intensity; // Keep for backward compatibility
         
         // Store complete sentiment data for database
         emotionMetadata = {
@@ -967,35 +1005,55 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           confidence: confidence,
           speaker: sentimentData.speaker || u.speaker,
           text: sentimentData.text || u.text,
-          detected_at: new Date().toISOString()
+          detected_at: new Date().toISOString(),
+          intensity: overall_intensity
         };
         
         if (i < 5) {
-          console.log(`   😊 Sentiment: ${sentiment} (conf: ${confidence.toFixed(2)}) → emphasis: ${emphasis}`);
+          console.log(`   😊 Sentiment: ${sentiment} (conf: ${confidence.toFixed(2)}) → intensity: ${overall_intensity}`);
         }
       }
       
       segments.push({
         text: u.text,
-        start: startTime,
-        end: Math.min(endTime, maxDurationSeconds),
+        start_ms: start_ms,  // ✅ MILLISECONDS
+        end_ms: end_ms,      // ✅ MILLISECONDS
+        start: startTimeSeconds,  // Keep for compatibility
+        end: Math.min(endTimeSeconds, maxDurationSeconds),
+        speaker_asr_label: u.speaker || 'Speaker',  // ✅ Preserve ASR label
+        speaker: u.speaker || undefined,
+        words_source: 'asr',  // ✅ Mark as ASR source
+        timing_confidence: u.confidence || 0.95,
+        confidence: u.confidence || 0.95,
+        
+        // ✅ NEW: 7-level intensity spectrum
+        overall_intensity: overall_intensity,
+        overall_pitch: 'normal',  // TODO: Add pitch detection
+        
+        emphasis: emphasis,  // Keep for backward compatibility
+        
+        // ✅ Emotion metadata
+        emotion_metadata: emotionMetadata,
+        sentiment: sentiment,
+        sentiment_confidence: sentimentConfidence,
+        
+        // ✅ Words with millisecond precision
         words: (u.words || []).map((w: any) => ({
-          start: (w.start || 0) / 1000,
+          text: w.text ?? w.word,
+          start_ms: w.start || 0,  // ✅ MILLISECONDS
+          end_ms: w.end || 0,      // ✅ MILLISECONDS
+          start: (w.start || 0) / 1000,  // Keep for compatibility
           end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
           word: w.text ?? w.word,
+          duration_ms: (w.end || 0) - (w.start || 0),  // ✅ Duration
           confidence: w.confidence,
-          sentiment: sentiment, // ✅ Add sentiment to words
-          sentimentConfidence: sentimentConfidence // ✅ Add confidence to words
-        })).filter((w: any) => w.start <= maxDurationSeconds),
-        speaker: u.speaker || undefined, // ✅ PRESERVE speaker label (real names if Speaker ID enabled!)
-        confidence: u.confidence || 0.95,
-        emphasis: emphasis, // ✅ Sentiment-based emphasis (normal/loud/yelling)
-        emotion_metadata: emotionMetadata, // ✅ Store full sentiment data
-        sentiment: sentiment, // ✅ Top-level sentiment for easy queries
-        sentiment_confidence: sentimentConfidence // ✅ Top-level confidence for easy queries
+          speaker: w.speaker || u.speaker,
+          sentiment: sentiment,
+          sentimentConfidence: sentimentConfidence
+        })).filter((w: any) => (w.start_ms / 1000) <= maxDurationSeconds)
       });
     }
-    console.log(`✅ Built ${segments.length} segments from utterances with speakers and sentiment analysis`);
+    console.log(`✅ Built ${segments.length} segments from utterances with 7-level intensity mapping`);
   } else if (Array.isArray(resultData.words) && resultData.words.length > 0) {
     // Group words into ~5s sentences
     let current: any = { text: "", start: null as number | null, end: null as number | null, words: [] as any[] };
