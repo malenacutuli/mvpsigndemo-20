@@ -37,20 +37,20 @@ export const AudioDescriptionDeleteDialog: React.FC<AudioDescriptionDeleteDialog
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-white border shadow-soft">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
+          <AlertDialogTitle className="flex items-center gap-2 text-2xl font-light text-foreground">
             <AlertTriangle className="w-5 h-5 text-destructive" />
             Delete Audio Description{descriptionCount > 1 ? 's' : ''}?
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-3">
+          <AlertDialogDescription className="space-y-3 font-light text-muted-foreground">
             <p>
               Are you sure you want to delete {descriptionCount} audio description{descriptionCount > 1 ? 's' : ''}?
             </p>
             
             {hasTranslations && (
-              <div className="bg-muted p-3 rounded-md space-y-2">
-                <p className="text-sm font-medium text-foreground">
+              <div className="bg-accent/50 border rounded-lg p-3 space-y-2">
+                <p className="text-sm font-light text-foreground">
                   This description has translations in other languages.
                 </p>
                 <div className="flex items-start gap-2">
@@ -61,7 +61,7 @@ export const AudioDescriptionDeleteDialog: React.FC<AudioDescriptionDeleteDialog
                   />
                   <Label 
                     htmlFor="delete-translations" 
-                    className="text-sm cursor-pointer leading-tight"
+                    className="text-sm font-light cursor-pointer leading-tight"
                   >
                     Also delete all translations of this description
                   </Label>
@@ -71,10 +71,10 @@ export const AudioDescriptionDeleteDialog: React.FC<AudioDescriptionDeleteDialog
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="rounded-full font-light">Cancel</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full font-light"
           >
             Delete
           </AlertDialogAction>

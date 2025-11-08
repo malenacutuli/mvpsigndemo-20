@@ -1371,13 +1371,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-xl shadow-soft border">
+      <Card className="bg-white rounded-2xl shadow-soft border">
         <CardHeader>
-          <CardTitle className="text-2xl font-light text-foreground flex items-center gap-2">
-            <Wand2 className="w-5 h-5" />
+          <CardTitle className="text-3xl font-light text-foreground flex items-center gap-2">
+            <Wand2 className="w-6 h-6" />
             Audio Description Editor
           </CardTitle>
-          <p className="text-base font-light text-muted-foreground leading-relaxed">
+          <p className="text-lg font-light text-muted-foreground leading-relaxed">
             Generate and manage audio descriptions to describe visual elements for accessibility.
           </p>
         </CardHeader>
@@ -1482,15 +1482,16 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             {/* Bulk Actions Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="font-light">
+                <Button variant="outline" size="sm" className="rounded-full font-light">
                   <Languages className="w-4 h-4 mr-2" />
                   Actions
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-white border shadow-soft">
                 <DropdownMenuItem
                   onClick={() => setLanguagePickerOpen(true)}
                   disabled={isTranslating || descriptions.length === 0}
+                  className="font-light"
                 >
                   <Languages className="w-4 h-4 mr-2" />
                   Translate to New Language
@@ -1499,6 +1500,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   <DropdownMenuItem
                     onClick={() => handleRegenerateTranslations(currentLanguage)}
                     disabled={isTranslating}
+                    className="font-light"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Regenerate {getLanguageDisplay(currentLanguage).split(' ')[1]}
@@ -1510,6 +1512,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                     <DropdownMenuItem
                       onClick={handleFixLanguages}
                       disabled={isFixingLanguages}
+                      className="font-light"
                     >
                       {isFixingLanguages ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1592,7 +1595,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Button 
               onClick={generateAIDescriptions} 
-              className="w-full font-light" 
+              className="w-full rounded-full font-light" 
               disabled={isGenerating || isLoading}
               variant="outline"
             >
@@ -1611,7 +1614,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
             <Button 
               onClick={generateTwelveLabsDescriptions} 
-              className="w-full font-light" 
+              className="w-full rounded-full font-light" 
               disabled={isGenerating || isLoading}
             >
               {isGenerating && isUsingTwelveLabs ? (
@@ -1633,7 +1636,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             <Button 
               onClick={handleAnalyzeEAD}
               variant="outline"
-              className="flex-1 font-light"
+              className="flex-1 rounded-full font-light"
               disabled={isAnalyzingEAD || descriptions.length === 0}
             >
               {isAnalyzingEAD ? (
@@ -1654,7 +1657,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
             <Button 
               onClick={() => setShowManualForm(!showManualForm)}
               variant="outline"
-              className="flex-1 font-light"
+              className="flex-1 rounded-full font-light"
             >
               <Plus className="w-4 h-4 mr-2" />
               {showManualForm ? 'Cancel' : 'Add Manual Segment'}
@@ -1664,7 +1667,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                 onClick={() => saveDescriptionsToDatabase(descriptions)}
                 disabled={isSaving}
                 variant="secondary"
-                className="font-light"
+                className="rounded-full font-light"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1677,9 +1680,9 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           </div>
 
           {showManualForm && (
-            <Card className="border-dashed rounded-xl">
+            <Card className="border-dashed bg-white rounded-xl border shadow-soft">
               <CardContent className="p-4 space-y-3">
-                <h4 className="text-lg font-light">Add Manual Audio Description</h4>
+                <h4 className="text-xl font-light text-foreground">Add Manual Audio Description</h4>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

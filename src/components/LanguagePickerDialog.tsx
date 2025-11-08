@@ -56,24 +56,24 @@ export const LanguagePickerDialog: React.FC<LanguagePickerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="bg-white border shadow-soft">
         <DialogHeader>
-          <DialogTitle>Translate to New Language</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-light text-foreground">Translate to New Language</DialogTitle>
+          <DialogDescription className="text-base font-light text-muted-foreground">
             Select a language to translate your audio descriptions to.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Target Language</Label>
+            <Label className="text-base font-light text-foreground">Target Language</Label>
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-white border font-light">
                 <SelectValue placeholder="Select a language..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border shadow-soft">
                 {newLanguages.map(lang => (
-                  <SelectItem key={lang.code} value={lang.code}>
+                  <SelectItem key={lang.code} value={lang.code} className="font-light">
                     {lang.name}
                   </SelectItem>
                 ))}
@@ -82,19 +82,20 @@ export const LanguagePickerDialog: React.FC<LanguagePickerDialogProps> = ({
           </div>
           
           {newLanguages.length === 0 && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-light text-muted-foreground">
               All supported languages already have translations.
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full font-light">
             Cancel
           </Button>
           <Button 
             onClick={handleConfirm}
             disabled={!selectedLanguage || newLanguages.length === 0}
+            className="rounded-full font-light"
           >
             Translate
           </Button>
