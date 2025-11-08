@@ -389,9 +389,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     setCharacters(updatedCharacters);
     setNewCharacterName('');
 
+    // ✅ Auto-map: If there's an unmapped speaker, auto-assign it
+    const unmappedSpeakers = availableSpeakers.filter(sp => {
+      const key = toSpeakerKey(sp);
+      return !speakerMappings[key];
+    });
+    
+    if (unmappedSpeakers.length > 0) {
+      const firstUnmapped = toSpeakerKey(unmappedSpeakers[0]);
+      updateMappingForCharacter(newCharacter.name, firstUnmapped);
+      console.log(`✅ Auto-mapped ${firstUnmapped} to ${newCharacter.name}`);
+    }
+
     toast({
       title: "Character Added",
-      description: `${newCharacter.name} assigned color ${availableColors[0].name}. Don't forget to save changes.`
+      description: `${newCharacter.name} assigned color ${availableColors[0].name}. ${unmappedSpeakers.length > 0 ? 'Auto-mapped to ' + toSpeakerKey(unmappedSpeakers[0]) + '.' : ''} Don't forget to save changes.`
     });
   };
 
@@ -414,6 +426,11 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       
       // Trigger parent component update after database operations complete
       onCharactersUpdate?.(characters);
+      
+      // ✅ Emit transcript-segments-updated event for video player refresh
+      window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
+        detail: { videoId, language }
+      }));
       
       toast({
         title: "Colors synchronized!",
@@ -655,10 +672,10 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             <div>
               <Label className="text-sm font-light">Type</Label>
               <Select value={newCharacterType} onValueChange={(value) => setNewCharacterType(value as Character['type'])}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-8 bg-background z-50">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-background z-50 shadow-lg">
+                <SelectContent className="bg-background z-[100] shadow-lg border">
                   <SelectItem value="hero">Hero (Main)</SelectItem>
                   <SelectItem value="villain">Villain (Main)</SelectItem>
                   <SelectItem value="main">Main Character</SelectItem>
@@ -706,20 +723,6 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                               className="h-8 min-w-[120px] font-medium"
                               placeholder="Character name"
                             />
-                            {/* ✅ Show which ASR speaker (A, B, C, D) this character is mapped to */}
-                            {(() => {
-                              const mappedSpeaker = getMappedSpeakerForCharacter(character.name);
-                              const asrLabel = availableSpeakers.find(s => s.name === mappedSpeaker)?.asr_label;
-                              
-                              if (asrLabel) {
-                                return (
-                                  <Badge variant="outline" className="text-xs bg-primary/10">
-                                    Speaker {asrLabel}
-                                  </Badge>
-                                );
-                              }
-                              return null;
-                            })()}
                             {character.isOffCamera && (
                               <Badge variant="secondary" className="text-xs">Off-camera</Badge>
                             )}
@@ -741,6 +744,60 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         </Button>
                       </div>
 
+                      {/* ✅ Speaker Mapping Dropdown */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-light">Detected Speaker Mapping</Label>
+                        <Select
+                          value={getMappedSpeakerForCharacter(character.name)}
+                          onValueChange={(selectedSpeaker) => {
+                            updateMappingForCharacter(character.name, selectedSpeaker);
+                            toast({
+                              title: "Mapping Updated",
+                              description: `${character.name} ${selectedSpeaker === 'unassigned' ? 'unmapped' : 'mapped to ' + selectedSpeaker}. Don't forget to save.`,
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="h-8 bg-background z-50">
+                            <SelectValue placeholder="Select detected speaker..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-[100] shadow-lg border">
+                            <SelectItem value="unassigned" className="font-light">
+                              Unassigned
+                            </SelectItem>
+                            {availableSpeakers.map((sp) => {
+                              const key = toSpeakerKey(sp);
+                              const normalized = normalizeSpeakerKey(key);
+                              const isCurrentlyMapped = getMappedSpeakerForCharacter(character.name) === normalized;
+                              const isMappedToOther = speakerMappings[normalized] && speakerMappings[normalized] !== character.name;
+                              
+                              return (
+                                <SelectItem 
+                                  key={key} 
+                                  value={normalized}
+                                  className="font-light"
+                                  disabled={isMappedToOther}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <span>{normalized}</span>
+                                    {isCurrentlyMapped && (
+                                      <Badge variant="default" className="ml-2 text-[10px]">Current</Badge>
+                                    )}
+                                    {isMappedToOther && (
+                                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                                        → {speakerMappings[normalized]}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground font-light">
+                          Map this character to a detected speaker (A, B, C, etc.) for automatic color attribution
+                        </p>
+                      </div>
+
                        {/* Character Properties Grid */}
                        <div className="grid grid-cols-3 gap-4">
                          {/* Character Type */}
@@ -757,16 +814,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                                }
                              }}
                            >
-                             <SelectTrigger className="h-8">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                               <SelectItem value="hero">Hero</SelectItem>
-                               <SelectItem value="villain">Villain</SelectItem>
-                               <SelectItem value="main">Main Character</SelectItem>
-                               <SelectItem value="supporting">Supporting</SelectItem>
-                               <SelectItem value="minor">Minor</SelectItem>
-                             </SelectContent>
+                              <SelectTrigger className="h-8 bg-background z-50">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background z-[100] shadow-lg border">
+                                <SelectItem value="hero">Hero</SelectItem>
+                                <SelectItem value="villain">Villain</SelectItem>
+                                <SelectItem value="main">Main Character</SelectItem>
+                                <SelectItem value="supporting">Supporting</SelectItem>
+                                <SelectItem value="minor">Minor</SelectItem>
+                              </SelectContent>
                            </Select>
                          </div>
 
@@ -777,22 +834,22 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                              value={character.color}
                              onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
                            >
-                             <SelectTrigger className="h-8">
-                               <SelectValue />
-                             </SelectTrigger>
-                              <SelectContent className="max-h-60 bg-background z-50 shadow-lg">
-                                {getAllColorsForType(character.type).map(({ name, color }) => (
-                                  <SelectItem key={color} value={color}>
-                                    <div className="flex items-center gap-2">
-                                      <div 
-                                        className="w-4 h-4 rounded border"
-                                        style={{ backgroundColor: color }}
-                                      />
-                                      {name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
+                            <SelectTrigger className="h-8 bg-background z-50">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 bg-background z-[100] shadow-lg border">
+                              {getAllColorsForType(character.type).map(({ name, color }) => (
+                                <SelectItem key={color} value={color}>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-4 h-4 rounded border"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                    {name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                            </Select>
                          </div>
 
@@ -819,14 +876,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                              value={character.emphasis || 'normal'}
                              onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
                            >
-                             <SelectTrigger className="h-8">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                               <SelectItem value="quiet">Quiet</SelectItem>
-                               <SelectItem value="normal">Normal</SelectItem>
-                               <SelectItem value="loud">Loud</SelectItem>
-                             </SelectContent>
+                              <SelectTrigger className="h-8 bg-background z-50">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="h-8 bg-background z-50">
+                                <SelectItem value="quiet">Quiet</SelectItem>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="loud">Loud</SelectItem>
+                              </SelectContent>
                            </Select>
                          </div>
 
@@ -837,14 +894,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                              value={character.pitch || 'normal'}
                              onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
                            >
-                             <SelectTrigger className="h-8">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                               <SelectItem value="low">Low</SelectItem>
-                               <SelectItem value="normal">Normal</SelectItem>
-                               <SelectItem value="high">High</SelectItem>
-                             </SelectContent>
+                              <SelectTrigger className="h-8 bg-background z-50">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background z-50">
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                              </SelectContent>
                            </Select>
                          </div>
                        </div>
