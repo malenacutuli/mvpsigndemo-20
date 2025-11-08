@@ -927,44 +927,31 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     });
   }
   
-  // 7-Level Intensity Mapping Function
+  /**
+   * Maps AssemblyAI sentiment to 7-level intensity scale
+   * @param sentiment - POSITIVE, NEGATIVE, or NEUTRAL
+   * @param confidence - 0.0 to 1.0
+   * @returns intensity level for caption styling
+   */
   function mapSentimentToIntensity(
-    sentiment: string,
-    confidence: number,
-    duration_ms: number
+    sentiment: string | undefined,
+    confidence: number | undefined
   ): string {
-    // Very low confidence → normal
-    if (confidence < 0.6) return 'normal';
-    
-    // Extreme confidence + strong emotion → screaming
-    if (confidence > 0.95 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
-      return 'screaming';
+    if (!sentiment || !confidence || confidence < 0.6) {
+      return 'normal';
     }
     
-    // Very high confidence + strong emotion → yelling
-    if (confidence > 0.85 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
-      return 'yelling';
-    }
+    const isStrongEmotion = sentiment === 'POSITIVE' || sentiment === 'NEGATIVE';
     
-    // High confidence + emotion → loud
-    if (confidence > 0.75 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
-      return 'loud';
-    }
+    // 7-level intensity mapping
+    if (confidence > 0.90 && isStrongEmotion) return 'screaming';  // Level 6
+    if (confidence > 0.85 && isStrongEmotion) return 'yelling';    // Level 5
+    if (confidence > 0.75 && isStrongEmotion) return 'loud';       // Level 4
+    if (confidence > 0.60 && isStrongEmotion) return 'normal';     // Level 3
+    if (confidence < 0.4) return 'quiet';                          // Level 2
+    if (confidence < 0.3) return 'whisper';                        // Level 1
     
-    // Duration-based: very long utterances are emphatic
-    if (duration_ms > 800) return 'loud';
-    
-    // Medium confidence → quiet for neutral, normal for others
-    if (confidence > 0.65 && sentiment === 'NEUTRAL') {
-      return 'quiet';
-    }
-    
-    // Very soft speech indicators
-    if (duration_ms < 300 && confidence < 0.7) {
-      return 'whisper';
-    }
-    
-    return 'normal';
+    return 'normal';  // Level 3 (default)
   }
   
   if (Array.isArray(resultData.utterances) && resultData.utterances.length > 0) {
@@ -1000,7 +987,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
         sentimentConfidence = confidence;
         
         // ✅ 7-Level Intensity Mapping
-        overall_intensity = mapSentimentToIntensity(sentiment, confidence, duration_ms);
+        overall_intensity = mapSentimentToIntensity(sentiment, confidence);
         emphasis = overall_intensity; // Keep for backward compatibility
         
         // Store complete sentiment data for database
