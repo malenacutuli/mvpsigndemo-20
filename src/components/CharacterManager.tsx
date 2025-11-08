@@ -447,6 +447,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
     }
   };
 
+  // Helper function to extract bare ASR label from speaker key
+  const extractBareLabel = (speakerKey: string): string => {
+    // Extract trailing letter/number from "Speaker A" → "A", "Speaker 1" → "1"
+    const match = speakerKey.match(/(\d+|[A-Z])$/);
+    return match ? match[1] : speakerKey;
+  };
+
   const applyCharacterMappings = async () => {
     try {
       // Type mapping to ensure valid database values
@@ -506,15 +513,25 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       // Apply mappings for each language using existing RPC
       for (const lang of allLanguages) {
         for (const [speakerLabel, charId] of Object.entries(mappingsForRPC)) {
+          // ✅ Extract bare ASR label before passing to RPC
+          const bareLabel = extractBareLabel(speakerLabel);
+          
+          console.log(`🔄 [${lang}] Applying mapping: ${speakerLabel} (bare: ${bareLabel}) → ${charId}`);
+          
           const { error } = await supabase.rpc('apply_specific_mapping', {
             p_video_id: videoId,
             p_language: lang,
-            p_asr_label: speakerLabel,
+            p_asr_label: bareLabel,  // ✅ Now passing "A" instead of "Speaker A"
             p_character_id: charId
           });
           
           if (error) {
-            console.error(`❌ [${lang}] Failed to apply mapping for ${speakerLabel}:`, error);
+            console.error(`❌ [${lang}] Failed to apply mapping:`, {
+              speakerLabel,
+              bareLabel,
+              characterId: charId,
+              error
+            });
             throw error;
           }
 
