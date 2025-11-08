@@ -1080,6 +1080,8 @@ export type Database = {
           is_off_camera: boolean | null
           is_sound_effect: boolean | null
           language: string
+          overall_intensity: string | null
+          overall_pitch: string | null
           pitch: string | null
           segment_type: string | null
           sentiment: string | null
@@ -1110,6 +1112,8 @@ export type Database = {
           is_off_camera?: boolean | null
           is_sound_effect?: boolean | null
           language?: string
+          overall_intensity?: string | null
+          overall_pitch?: string | null
           pitch?: string | null
           segment_type?: string | null
           sentiment?: string | null
@@ -1140,6 +1144,8 @@ export type Database = {
           is_off_camera?: boolean | null
           is_sound_effect?: boolean | null
           language?: string
+          overall_intensity?: string | null
+          overall_pitch?: string | null
           pitch?: string | null
           segment_type?: string | null
           sentiment?: string | null
