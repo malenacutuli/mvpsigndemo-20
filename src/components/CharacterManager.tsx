@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, Crown, Star, Users, Palette, Volume2, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { VoiceSelector } from './VoiceSelector';
+import { SpeakerMappingManager } from './SpeakerMappingManager';
 import { useVideoStorage } from '@/hooks/useVideoStorage';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -609,142 +610,13 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         </Card>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Speaker Mapping Section */}
-        {characters.length > 0 && (
-          <Card className="border-orange-200/50 bg-orange-50/30 rounded-xl">
-            <CardContent className="p-4 space-y-3">
-              <h4 className="text-lg font-light text-orange-800">
-                Speaker Assignment
-              </h4>
-              <p className="text-base font-light leading-relaxed text-orange-700">
-                Map each character to a detected transcript speaker. Colors come from Character Management. You can still edit text and intonation word-by-word in the transcript editor.
-              </p>
-              <div className="text-sm font-light text-orange-600 bg-orange-100/80 p-3 rounded-lg border border-orange-200">
-                <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
-              </div>
-              <div className="space-y-2">
-              {characters.map((char) => {
-                // FIX 2: Use normalized keys for stable dropdown value
-                const mappedSpeaker = Object.keys(speakerMappings).find(sp => speakerMappings[sp] === char.name) || 'unassigned';
-                return (
-                  <div key={char.id} className="flex items-center gap-3 text-sm">
-                    <Badge variant="outline" className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: char.color }} />
-                        {char.name} ({char.type})
-                      </div>
-                    </Badge>
-                    <span className="text-muted-foreground">→</span>
-                    <div className="flex items-center gap-2">
-                    <Select 
-                      value={mappedSpeaker}
-                      disabled={savingMappings.has(char.name)}
-                      onValueChange={async (value) => {
-                        // Prevent double-click during save
-                        if (savingMappings.has(char.name)) return;
-                        
-                        // Mark as saving
-                        setSavingMappings(prev => new Set(prev).add(char.name));
-                        
-                        // FIX 2: Normalize the selected value to "Speaker X" format
-                        const normalized = value !== 'unassigned' ? normalizeSpeakerKey(value) : value;
-                        
-                        // Calculate new mappings ONCE and store in variable
-                        let newMappings: Record<string, string> = {};
-                        setSpeakerMappings(prev => {
-                          const next: Record<string, string> = {};
-                          for (const [sp, ch] of Object.entries(prev)) {
-                            if (ch !== char.name) next[sp] = ch;
-                          }
-                          if (normalized !== 'unassigned') next[normalized] = char.name;
-                          newMappings = next; // Store for async operations
-                          return next;
-                        });
-                        
-                        // Auto-save using the NEW mappings variable
-                        try {
-                          await saveSpeakerMappings(newMappings, language);
-                          
-                          // Find character in the list
-                          const character = characters.find(c => c.name === char.name);
-                          if (character && normalized !== 'unassigned') {
-                            // Extract bare ASR label (digits/letters) from normalized key
-                            const m = normalized.match(/(\d+|[A-Z])$/);
-                            const asrLabelBare = m ? m[1] : normalized;
-                            
-                            // Apply mapping to database
-                            const { data: savedChars } = await supabase
-                              .from('characters')
-                              .select('id')
-                              .eq('video_id', videoId)
-                              .eq('name', char.name)
-                              .single();
-                            
-                            if (savedChars?.id) {
-                              await supabase.rpc('apply_specific_mapping', {
-                                p_video_id: videoId,
-                                p_language: language,
-                                p_asr_label: asrLabelBare,
-                                p_character_id: savedChars.id
-                              });
-                            }
-                          }
-                          
-                          toast({
-                            title: "Mapping Saved",
-                            description: normalized === 'unassigned' 
-                              ? `${char.name} unmapped` 
-                              : `${char.name} → ${normalized}`
-                          });
-                          
-                          // Trigger refresh in video player (delayed to allow save to complete)
-                          setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('transcript-segments-updated', {
-                              detail: { videoId, language }
-                            }));
-                          }, 300);
-                        } catch (error) {
-                          console.error('Failed to save mapping:', error);
-                          toast({
-                            title: "Save Failed",
-                            description: "Could not save character mapping. Please try 'Save All Changes' button.",
-                            variant: "destructive"
-                          });
-                        } finally {
-                          // Remove from saving set
-                          setSavingMappings(prev => {
-                            const next = new Set(prev);
-                            next.delete(char.name);
-                            return next;
-                          });
-                        }
-                      }}
-                    >
-                        <SelectTrigger className="h-7 w-56">
-                          <SelectValue placeholder="Select detected speaker..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background z-50 shadow-lg">
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {availableSpeakers.map(sp => (
-                            <SelectItem key={sp.name} value={toSpeakerKey(sp)}>
-                              {sp.name} {sp.asr_label ? `(Speaker ${sp.asr_label})` : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Loading indicator during save */}
-                      {savingMappings.has(char.name) && (
-                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Speaker Mapping Section - Now handled by dedicated component */}
+        <SpeakerMappingManager
+          videoId={videoId}
+          language={language}
+          characters={characters}
+          existingSpeakers={existingSpeakers}
+        />
 
 
         <Card className="border-accent/30 bg-accent/5 rounded-xl">
