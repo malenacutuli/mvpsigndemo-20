@@ -43,6 +43,7 @@ import { WordLevelEditor, type WordData } from './WordLevelEditor';
 import { SignLanguageUploader } from './SignLanguageUploader';
 import { useVideoStorage, type TranscriptSegment as StorageTranscriptSegment } from '@/hooks/useVideoStorage';
 import { VocalIntensityIndicator } from './VocalIntensityIndicator';
+import { ManualSegmentEditor } from './video/ManualSegmentEditor';
 
 // Captions with Intention - Official Color Palette
 const CI_MAIN_COLORS = [
@@ -216,6 +217,8 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const [useWordLevelEditing, setUseWordLevelEditing] = useState(false);
   const [showIntensity, setShowIntensity] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
+  const [useManualEditor, setUseManualEditor] = useState(false);
   const [availableCharacters, setAvailableCharacters] = useState<Array<{
     id: string;
     name: string;
@@ -1468,6 +1471,49 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             filteredSegments.map((segment, filteredIndex) => {
               // Find the real index in the original array for proper editing
               const realIndex = editingTranscript.findIndex(s => s.id === segment.id);
+              
+              // Check if this segment is being edited with ManualSegmentEditor
+              if (editingSegmentId === segment.id && useManualEditor) {
+                return (
+                  <ManualSegmentEditor
+                    key={segment.id}
+                    segment={{
+                      ...segment,
+                      idx: realIndex,
+                      start_ms: segment.startTime * 1000,
+                      end_ms: segment.endTime * 1000,
+                      overall_intensity: segment.emphasis || 'normal',
+                      overall_pitch: segment.pitch || 'normal',
+                      is_manually_edited: false,
+                      locked_by_user: false,
+                      edit_history: []
+                    }}
+                    onSave={(updatedSegment) => {
+                      // Update the segment in editingTranscript
+                      const updated = [...editingTranscript];
+                      updated[realIndex] = {
+                        ...updated[realIndex],
+                        text: updatedSegment.text,
+                        startTime: updatedSegment.start_ms / 1000,
+                        endTime: updatedSegment.end_ms / 1000,
+                        emphasis: updatedSegment.overall_intensity,
+                        pitch: updatedSegment.overall_pitch
+                      };
+                      setEditingTranscript(updated);
+                      setEditingSegmentId(null);
+                      setUseManualEditor(false);
+                      
+                      // Save to database
+                      saveTranscriptData(updated, selectedLanguage);
+                    }}
+                    onCancel={() => {
+                      setEditingSegmentId(null);
+                      setUseManualEditor(false);
+                    }}
+                  />
+                );
+              }
+              
               return (
                <div key={segment.id} className={`p-3 border rounded-xl ${searchQuery && (segment.text.toLowerCase().includes(searchQuery.toLowerCase()) || segment.speaker?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bg-yellow-100 border-yellow-300' : 'bg-muted/20'}`}>
                  <div className="flex items-start justify-between mb-2">
@@ -1519,17 +1565,29 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                        </Badge>
                      )}
                    </div>
-                   {editingIndex !== realIndex && (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing(realIndex)}
-                        className="h-6 w-6 p-0"
-                        title="Edit segment"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
+                    {editingIndex !== realIndex && (
+                     <div className="flex gap-1">
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => startEditing(realIndex)}
+                         className="h-6 w-6 p-0"
+                         title="Quick Edit"
+                       >
+                         <Edit className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => {
+                           setEditingSegmentId(segment.id);
+                           setUseManualEditor(true);
+                         }}
+                         className="h-6 w-6 p-0"
+                         title="Manual Editor (Advanced)"
+                       >
+                         <HandHelping className="w-3 h-3" />
+                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
