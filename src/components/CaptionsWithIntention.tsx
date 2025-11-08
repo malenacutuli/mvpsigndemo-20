@@ -78,17 +78,17 @@ type TimedWord = {
   confidence?: number;
 };
 
-// Helper to detect real provider timings (they ALWAYS include confidence scores)
+// ✅ FIX: Check for valid timings without requiring confidence scores
+// (edited/synthesized words may not have confidence, but still have valid timing)
 const hasProviderWordTimings = (words?: WordSegment[]): boolean => {
   if (!words || words.length === 0) return false;
   
-  const firstWord = words[0];
-  // Provider timings (AssemblyAI/Deepgram) ALWAYS have confidence scores
-  return (
-    typeof firstWord.startTime === 'number' &&
-    typeof firstWord.endTime === 'number' &&
-    firstWord.confidence !== undefined &&
-    firstWord.confidence !== null
+  // Real provider timings have ALL words with valid startTime and endTime
+  return words.every(w => 
+    typeof w.startTime === 'number' &&
+    typeof w.endTime === 'number' &&
+    w.startTime >= 0 &&
+    w.endTime > w.startTime
   );
 };
 
@@ -135,8 +135,8 @@ function naiveSyllabify(text: string): string[] {
 
 type Word = { text: string; startTime?: number; endTime?: number; emphasis?: string; pitch?: string; syllables?: Array<{ text: string; startTime: number; endTime: number }> };
 
+// ✅ FIX: Use real syllable timings when available (from ASR)
 function expandWordsToSyllables(words: Word[], segStart: number, segEnd: number) {
-  // Ensure words have timings (keep existing; otherwise distribute evenly)
   const duration = Math.max(0.05, segEnd - segStart);
   const baseStep = duration / Math.max(1, words.length);
 
@@ -149,18 +149,46 @@ function expandWordsToSyllables(words: Word[], segStart: number, segEnd: number)
 
     const parts = (w.syllables && w.syllables.length > 0) ? w.syllables : naiveSyllabify(w.text);
     const span = Math.max(0.04, wEnd - wStart);
-    const step = span / Math.max(1, parts.length);
 
-    parts.forEach((p, i) => {
-      const sStart = wStart + i * step;
-      const sEnd   = (i === parts.length - 1) ? wEnd : (wStart + (i + 1) * step);
-      expanded.push({
-        ...w,
-        _syllableText: p,
-        startTime: sStart,
-        endTime: sEnd
+    // ✅ FIX: Check if syllables have real timing data
+    const hasRealSyllableTiming = Array.isArray(w.syllables) && 
+      w.syllables.length > 0 &&
+      w.syllables.some(s => typeof s.startTime === 'number' && typeof s.endTime === 'number');
+
+    if (hasRealSyllableTiming) {
+      // Use real syllable timings from ASR (convert relative to absolute if needed)
+      parts.forEach((p: any, i) => {
+        let sStart = p.startTime;
+        let sEnd = p.endTime;
+        
+        // If timings look relative (0-1 range within word duration), convert to absolute
+        if (typeof sStart === 'number' && typeof sEnd === 'number' && 
+            sStart >= 0 && sEnd <= span && sEnd > sStart) {
+          sStart = wStart + sStart;
+          sEnd = wStart + sEnd;
+        }
+        
+        expanded.push({
+          ...w,
+          _syllableText: typeof p === 'string' ? p : p.text,
+          startTime: sStart || (wStart + (i / parts.length) * span),
+          endTime: sEnd || (wStart + ((i + 1) / parts.length) * span)
+        });
       });
-    });
+    } else {
+      // Fallback: distribute evenly (naive)
+      const step = span / Math.max(1, parts.length);
+      parts.forEach((p: any, i) => {
+        const sStart = wStart + i * step;
+        const sEnd   = (i === parts.length - 1) ? wEnd : (wStart + (i + 1) * step);
+        expanded.push({
+          ...w,
+          _syllableText: typeof p === 'string' ? p : p.text,
+          startTime: sStart,
+          endTime: sEnd
+        });
+      });
+    }
 
     cursor = wEnd;
   });
@@ -290,7 +318,7 @@ const getPitchBasedStyle = (pitch?: number | 'high' | 'low' | 'normal'): React.C
   };
 };
 
-// Accept any words that have text; synthesize timings if missing while preserving emphasis/pitch
+// ✅ FIX: Only normalize if ALL words are missing timing (trust upstream timings)
 function normalizeWords(
   words: WordSegment[] | undefined,
   segStart: number,
@@ -298,25 +326,28 @@ function normalizeWords(
 ): WordSegment[] | undefined {
   if (!words || !words.length) return undefined;
   
-  // Check if words need timing backfill
-  const hasAnyTiming = words.some(w => 
-    typeof w.startTime === 'number' && typeof w.endTime === 'number'
+  // ✅ TRUST upstream timings: Only synthesize if ALL words missing timing
+  const allMissingTiming = words.every(w => 
+    typeof w.startTime !== 'number' || typeof w.endTime !== 'number'
   );
   
-  // If all words already have timing, return as-is (preserves manual edits)
-  if (hasAnyTiming && words.every(w => typeof w.startTime === 'number' && typeof w.endTime === 'number')) {
-    return words;
+  // If any words have timing, trust them (prevents double normalization)
+  if (!allMissingTiming) {
+    return words.map(w => ({
+      ...w,
+      emphasis: w.emphasis || 'normal',
+      pitch: w.pitch || 'normal'
+    }));
   }
   
-  // Backfill missing timings while preserving emphasis and pitch
+  // Only synthesize if ALL words truly missing timing (defensive fallback)
   const duration = Math.max(0.01, segEnd - segStart);
   const step = duration / words.length;
   
   return words.map((w, i) => ({
     ...w,
-    startTime: typeof w.startTime === 'number' ? w.startTime : segStart + i * step,
-    endTime: typeof w.endTime === 'number' ? w.endTime : segStart + (i + 1) * step,
-    // ✅ CRITICAL: Preserve manual emphasis/pitch edits
+    startTime: segStart + i * step,
+    endTime: segStart + (i + 1) * step,
     emphasis: w.emphasis || 'normal',
     pitch: w.pitch || 'normal'
   }));
