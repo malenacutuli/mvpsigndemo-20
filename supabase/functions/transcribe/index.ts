@@ -621,7 +621,13 @@ serve(async (req) => {
       resultKeys: Object.keys(transcriptionResult)
     });
 
-    return new Response(JSON.stringify(transcriptionResult), {
+    // Add savedToDatabase flag to response
+    const response = {
+      ...transcriptionResult,
+      savedToDatabase: !!(videoId && transcriptionResult.segments)
+    };
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
@@ -1237,6 +1243,81 @@ async function autoCreateCharacters(videoId: string, segments: any[], supabaseCl
   return speakerToCharIdMap;
 }
 
+// ============================================================
+// ROBUST SEGMENT SAVE WITH RETRY LOGIC
+// ============================================================
+
+async function saveSegmentsBatch(
+  supabase: any,
+  videoId: string,
+  language: string,
+  segments: any[],
+  maxRetries: number = 3
+): Promise<{ success: boolean; count: number }> {
+  const BATCH_SIZE = 50;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      attempt++;
+      console.log(`💾 [Attempt ${attempt}/${maxRetries}] Saving ${segments.length} segments...`);
+
+      // Step 1: Delete ALL existing segments for this video+language
+      const { error: deleteError, count: deletedCount } = await supabase
+        .from('transcript_segments_clean')
+        .delete({ count: 'exact' })
+        .eq('video_id', videoId)
+        .eq('language', language);
+
+      if (deleteError) {
+        console.error('❌ Failed to delete old segments:', deleteError);
+        throw deleteError;
+      }
+
+      console.log(`🗑️ Cleared ${deletedCount || 0} existing segments`);
+
+      // Step 2: UPSERT segments in batches (idempotent operation)
+      let totalSaved = 0;
+      for (let i = 0; i < segments.length; i += BATCH_SIZE) {
+        const batch = segments.slice(i, i + BATCH_SIZE);
+        const { data: savedBatch, error: upsertError } = await supabase
+          .from('transcript_segments_clean')
+          .upsert(batch, {
+            onConflict: 'video_id,language,idx',
+            ignoreDuplicates: false
+          })
+          .select('id');
+
+        if (upsertError) {
+          console.error(`❌ Failed to upsert batch ${Math.floor(i/BATCH_SIZE) + 1}:`, upsertError);
+          throw upsertError;
+        }
+
+        totalSaved += savedBatch?.length || 0;
+        console.log(`✅ Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${savedBatch?.length || 0} segments`);
+      }
+
+      console.log(`✅ Saved ${totalSaved} segments successfully`);
+      return { success: true, count: totalSaved };
+
+    } catch (error) {
+      console.error(`❌ Attempt ${attempt} failed:`, error);
+      
+      if (attempt >= maxRetries) {
+        console.error('💥 All retry attempts exhausted');
+        throw error;
+      }
+
+      // Wait before retry (exponential backoff)
+      const waitMs = Math.pow(2, attempt) * 1000;
+      console.log(`⏳ Waiting ${waitMs}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
+  }
+
+  throw new Error('Failed to save segments after all retries');
+}
+
 // Save transcript to database with enhanced speaker assignment
 async function saveTranscriptToDatabase(videoId: string, transcriptionResult: any, forceReExtract: boolean) {
   console.log(`💾 Saving ${transcriptionResult.segments.length} segments to database with speaker assignment service...`);
@@ -1259,21 +1340,6 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // ALWAYS clear existing segments for this video/language before saving new ones
-    // This prevents duplicate key constraint violations
-    console.log('🗑️ Clearing existing base segments for video:', videoId, 'language:', transcriptionResult.language || 'en');
-    const { error: deleteError } = await supabase
-      .from('transcript_segments_clean')
-      .delete()
-      .eq('video_id', videoId)
-      .eq('language', transcriptionResult.language || 'en');
-    
-    if (deleteError) {
-      console.error('⚠️ Failed to clear existing segments:', deleteError);
-    } else {
-      console.log('✅ Cleared existing base segments');
-    }
     
     // Check if we have AssemblyAI utterances format (with speaker labels)
     console.log('🔍 Utterance format check:', {
@@ -1308,18 +1374,6 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
       // Fallback to old method for non-utterance formats
       console.log('⚠️ Using legacy save method (no utterance format detected)');
       console.log('⚠️ This means speaker labels may not be properly assigned!');
-      
-      // ALWAYS clear existing segments to avoid constraint violations
-      console.log('🗑️ Legacy method: Clearing existing base segments...');
-      const { error: legacyDeleteError } = await supabase
-        .from('transcript_segments_clean')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', transcriptionResult.language || 'en');
-      
-      if (legacyDeleteError) {
-        console.error('⚠️ Failed to clear existing segments (legacy):', legacyDeleteError);
-      }
       
       // Auto-create characters for detected speakers (old method)
       const speakerToCharIdMap = await autoCreateCharacters(videoId, transcriptionResult.segments, supabase);
@@ -1394,31 +1448,16 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
         };
       });
       
-      // Save in batches - clear existing segments first to avoid unique-idx conflicts
+      // Save segments using robust retry logic
       const targetLang = transcriptionResult.language || 'en';
-      const { error: delErr } = await supabase
-        .from('transcript_segments_clean')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('language', targetLang);
-      if (delErr) {
-        console.warn('⚠️ Failed to clear existing segments before upsert:', delErr);
-      }
-
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < segmentsToSave.length; i += BATCH_SIZE) {
-        const batch = segmentsToSave.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase
-          .from('transcript_segments_clean')
-          .upsert(batch, { onConflict: 'video_id,language,idx' });
-        if (error) {
-          console.error(`Database batch ${Math.floor(i/BATCH_SIZE) + 1} error:`, error);
-        } else {
-          console.log(`Saved batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} segments`);
-        }
-      }
+      const saveResult = await saveSegmentsBatch(
+        supabase,
+        videoId,
+        targetLang,
+        segmentsToSave
+      );
       
-      console.log(`✅ Database save complete: ${segmentsToSave.length} segments (legacy method)`);
+      console.log(`✅ Database save complete: ${saveResult.count} segments (legacy method)`);
     }
     
   } catch (error) {
