@@ -426,84 +426,113 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
         console.log('Using resumable upload for large file...');
         
-        // Verify bucket exists
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        if (bucketError) {
-          console.error('Failed to list buckets:', bucketError);
-          throw new Error('Storage configuration error. Please try again.');
-        }
-        
-        const videoBucket = buckets?.find(b => b.name === 'videos');
-        if (!videoBucket) {
-          console.error('Videos bucket does not exist');
-          throw new Error('Storage bucket not configured. Please contact support.');
-        }
-        
-        // Get authentication token
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
-        if (!accessToken) {
-          throw new Error('You must be signed in to upload large files.');
-        }
-
-        // Construct dynamic TUS endpoint from Supabase URL
-        const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://faeyekynudyzeotbjfsj.supabase.co';
-        const storageUrl = supabaseUrl.replace('.supabase.co', '.storage.supabase.co');
-        const endpoint = `${storageUrl}/storage/v1/upload/resumable`;
         const objectPath = `originals/${fileName}`;
         
-        console.log('TUS endpoint:', endpoint);
+        try {
+          // Get authentication token
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+          if (!accessToken) {
+            throw new Error('You must be signed in to upload large files.');
+          }
 
-        await new Promise<void>((resolve, reject) => {
-          const upload = new TusUpload(videoFile, {
-            endpoint,
-            retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
-            headers: {
-              authorization: `Bearer ${accessToken}`,
-              'x-upsert': 'false',
-            },
-            uploadDataDuringCreation: true,
-            removeFingerprintOnSuccess: true,
-            metadata: {
-              bucketName: 'videos',
-              objectName: objectPath,
-              contentType: videoFile.type || 'video/mp4',
+          // Construct dynamic TUS endpoint from Supabase URL
+          const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://faeyekynudyzeotbjfsj.supabase.co';
+          const storageUrl = supabaseUrl.replace('.supabase.co', '.storage.supabase.co');
+          const endpoint = `${storageUrl}/storage/v1/upload/resumable`;
+          
+          console.log('TUS endpoint:', endpoint);
+
+          let retryCount = 0;
+          const maxRetries = 3;
+
+          await new Promise<void>((resolve, reject) => {
+            const upload = new TusUpload(videoFile, {
+              endpoint,
+              retryDelays: [0, 3000, 5000, 10000, 20000],
+              parallelUploads: 1,
+              removeFingerprintOnSuccess: true,
+              metadata: {
+                bucketName: 'videos',
+                objectName: objectPath,
+                contentType: videoFile.type,
+                cacheControl: '3600',
+              },
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                'x-upsert': 'true',
+                'tus-resumable': '1.0.0',
+                'Content-Type': 'application/offset+octet-stream',
+              },
+              chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
+              onError: (err) => {
+                console.error('TUS upload error:', err);
+                console.error('Error details:', {
+                  message: err.message,
+                  endpoint,
+                  objectPath,
+                  fileSize: videoFile.size,
+                  fileName: videoFile.name,
+                  retryCount
+                });
+
+                // Provide user-friendly error messages
+                const errorMsg = err.message?.toLowerCase().includes('cors') 
+                  ? 'Upload blocked by browser security. Please try again or contact support.'
+                  : err.message?.includes('401') || err.message?.includes('403')
+                  ? 'Authentication expired. Please refresh the page and try again.'
+                  : `Upload failed: ${err.message || 'Network error'}`;
+
+                // Retry for transient errors (but not auth errors)
+                if (retryCount < maxRetries && !err.message?.includes('401') && !err.message?.includes('403')) {
+                  retryCount++;
+                  console.log(`Retrying TUS upload (attempt ${retryCount}/${maxRetries})...`);
+                  setTimeout(() => {
+                    upload.start();
+                  }, 1000 * retryCount); // Exponential backoff
+                } else {
+                  reject(new Error(errorMsg));
+                }
+              },
+              onProgress: (bytesUploaded, bytesTotal) => {
+                const pct = Math.min(60, Math.round((bytesUploaded / bytesTotal) * 60)); // cap at 60% until post-processing
+                setUploadProgress(pct);
+              },
+              onSuccess: () => {
+                console.log('TUS upload completed successfully');
+                resolve();
+              },
+            });
+
+            upload.findPreviousUploads().then((previous) => {
+              if (previous.length) {
+                console.log('Resuming from previous upload');
+                upload.resumeFromPreviousUpload(previous[0]);
+              }
+              upload.start();
+            }).catch((err) => {
+              console.error('Failed to check previous uploads:', err);
+              // Continue with new upload even if resume check fails
+              upload.start();
+            });
+          });
+        } catch (tusError) {
+          console.warn('TUS upload failed, falling back to standard upload:', tusError);
+          
+          // Fallback to standard Supabase upload
+          const { error: uploadError } = await supabase.storage
+            .from('videos')
+            .upload(objectPath, videoFile, {
               cacheControl: '3600',
-            },
-            chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
-            onError: (err) => {
-              console.error('TUS upload error:', err);
-              console.error('Error details:', {
-                message: err.message,
-                endpoint,
-                objectPath,
-                fileSize: videoFile.size,
-                fileName: videoFile.name
-              });
-              reject(new Error(`Upload failed: ${err.message || 'Network error'}. Please check your connection and try again.`));
-            },
-            onProgress: (bytesUploaded, bytesTotal) => {
-              const pct = Math.min(60, Math.round((bytesUploaded / bytesTotal) * 60)); // cap at 60% until post-processing
-              setUploadProgress(pct);
-            },
-            onSuccess: () => {
-              console.log('TUS upload completed successfully');
-              resolve();
-            },
-          });
+              upsert: true,
+            });
 
-          upload.findPreviousUploads().then((previous) => {
-            if (previous.length) {
-              console.log('Resuming from previous upload');
-              upload.resumeFromPreviousUpload(previous[0]);
-            }
-            upload.start();
-          }).catch((err) => {
-            console.error('Failed to check previous uploads:', err);
-            // Continue with new upload even if resume check fails
-            upload.start();
-          });
-        });
+          if (uploadError) {
+            throw new Error(`Upload failed: ${uploadError.message}`);
+          }
+          
+          console.log('Standard upload completed successfully');
+        }
 
         // Mimic Supabase upload response
         uploadData = { path: objectPath } as any;
