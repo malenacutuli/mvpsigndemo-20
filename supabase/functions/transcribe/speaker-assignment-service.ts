@@ -7,12 +7,18 @@ interface AssemblyAIUtterance {
   start: number;
   end: number;
   confidence: number;
+  emphasis?: string; // Sentiment-based emphasis
+  emotion_metadata?: any; // Full sentiment data
+  sentiment?: string; // Top-level sentiment
+  sentiment_confidence?: number; // Top-level confidence
   words: Array<{
     text: string;
     start: number;
     end: number;
     speaker?: string;
     confidence: number;
+    sentiment?: string;
+    sentimentConfidence?: number;
   }>;
 }
 
@@ -37,6 +43,10 @@ interface ProcessedSegment {
   confidence: number;
   speaker_asr_label?: string;
   words?: any[];
+  emphasis?: string;
+  emotion_metadata?: any;
+  sentiment?: string;
+  sentiment_confidence?: number;
 }
 
 export class SpeakerAssignmentService {
@@ -301,12 +311,14 @@ export class SpeakerAssignmentService {
         }
       }
 
-      // Transform word timings
+      // Transform word timings with sentiment data
       const words = utterance.words?.map(w => ({
         text: w.text,
         startTime: w.start / 1000, // Convert ms to seconds
         endTime: w.end / 1000,
-        confidence: w.confidence
+        confidence: w.confidence,
+        sentiment: w.sentiment,
+        sentimentConfidence: w.sentimentConfidence
       })) || [];
 
       segments.push({
@@ -319,7 +331,11 @@ export class SpeakerAssignmentService {
         language: language, // Use detected language, NOT 'auto'
         confidence: utterance.confidence || 0,
         speaker_asr_label: originalLabel,
-        words: words.length > 0 ? words : undefined
+        words: words.length > 0 ? words : undefined,
+        emphasis: utterance.emphasis || 'normal',
+        emotion_metadata: utterance.emotion_metadata || null,
+        sentiment: utterance.sentiment || null,
+        sentiment_confidence: utterance.sentiment_confidence || null
       });
     }
 
@@ -385,9 +401,12 @@ export class SpeakerAssignmentService {
           confidence: seg.confidence,
           words: seg.words,
           segment_type: 'dialogue',
-          emphasis: 'normal',
+          emphasis: seg.emphasis || 'normal',
           pitch: 'normal',
           is_off_camera: false,
+          emotion_metadata: seg.emotion_metadata || null,
+          sentiment: seg.sentiment || null,
+          sentiment_confidence: seg.sentiment_confidence || null,
           created_at: new Date().toISOString()
         })), {
           onConflict: 'video_id,language,idx',

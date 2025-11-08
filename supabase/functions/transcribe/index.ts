@@ -142,7 +142,7 @@ serve(async (req) => {
       new TextEncoder().encode(body)
     );
     
-    let { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false } = JSON.parse(decodedBody);
+    let { videoUrl, videoId, language, forceReExtract, fullTranscript, wordTimestamps, rangeBytes, maxDurationMinutes, useTestingMode = false, skipQualityCheck = false, knownSpeakers } = JSON.parse(decodedBody);
     
     console.log("Request parameters:", {
       videoUrl: videoUrl ? videoUrl.substring(0, 100) + '...' : 'none',
@@ -281,7 +281,8 @@ serve(async (req) => {
           resolvedVideoUrl, 
           language, 
           maxDurationMinutes,
-          true  // Use test key
+          true,  // Use test key
+          knownSpeakers
         );
         
         if (testResult && !testResult.error) {
@@ -374,7 +375,7 @@ serve(async (req) => {
       if (ASSEMBLYAI_API_KEY) {
         try {
           console.log("🟣 PRIORITY 1: AssemblyAI transcription (PRIMARY)...");
-          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false);
+          const assemblyResult = await transcribeWithAssemblyAI(resolvedVideoUrl, language, maxDurationMinutes, false, knownSpeakers);
           if (assemblyResult && !assemblyResult.error) {
             console.log("✅ AssemblyAI transcription successful!");
             transcriptionResult = {
@@ -790,8 +791,8 @@ function deduplicateSegments(segments: any[]): any[] {
 }
 
 // Fallback: Use AssemblyAI for URL-based long-form transcription
-async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false): Promise<any> {
-  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes, useTestKey });
+async function transcribeWithAssemblyAI(audioUrl: string, language?: string, maxDurationMinutes?: number, useTestKey = false, knownSpeakers?: string[]): Promise<any> {
+  console.log("Using AssemblyAI transcription (URL-based)...", { audioUrl, maxDurationMinutes, useTestKey, knownSpeakers });
 
   const apiKey = useTestKey 
     ? Deno.env.get("ASSEMBLYAI_API_KEY_TEST")
@@ -817,7 +818,7 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     punctuate: true,
     format_text: true,
     speaker_labels: true,
-    // speakers_expected removed - let AssemblyAI auto-detect all speakers
+    speakers_expected: knownSpeakers?.length || 2, // Use provided count or default to 2
     speech_model: 'best', // Use the most accurate model for better diarization
     word_boost: [], // No custom vocabulary
     boost_param: 'default', // Default boost parameter
@@ -828,15 +829,20 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
     content_safety: false,
     auto_highlights: false,
     dual_channel: false, // Set to true if audio has separate left/right channels
-    speech_understanding: {
+  };
+  
+  // Enable FREE Speaker Identification if names provided
+  if (knownSpeakers && knownSpeakers.length > 0) {
+    console.log(`🎭 Enabling Speaker Identification with ${knownSpeakers.length} known speakers:`, knownSpeakers);
+    body.speech_understanding = {
       request: {
         speaker_identification: {
           speaker_type: "name",
-          known_values: [] // Can be populated with known speaker names
+          known_values: knownSpeakers
         }
       }
-    }
-  };
+    };
+  }
   if (languageCode) {
     body.language_code = languageCode;
   } else {
@@ -931,26 +937,42 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
       
       console.log(`   📍 Utterance: speaker="${u.speaker || 'NONE'}" text="${u.text.substring(0, 30)}..."`);
       
-      // Map sentiment to emphasis
+      // Map sentiment to emphasis using improved logic
       const sentimentData = sentimentMap.get(i);
       let emphasis = 'normal';
       let emotionMetadata: any = null;
+      let sentiment: string | null = null;
+      let sentimentConfidence: number | null = null;
       
       if (sentimentData) {
-        const sentiment = sentimentData.sentiment;
+        sentiment = sentimentData.sentiment;
         const confidence = sentimentData.confidence || 0;
+        sentimentConfidence = confidence;
         
-        // Map POSITIVE/NEGATIVE with high confidence to 'loud'
-        if ((sentiment === 'POSITIVE' || sentiment === 'NEGATIVE') && confidence > 0.75) {
-          emphasis = 'loud';
+        // Improved sentiment-to-emphasis mapping
+        if (confidence < 0.6) {
+          emphasis = 'normal';
+        } else if (confidence > 0.85 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
+          emphasis = 'yelling'; // High intensity emotion
+        } else if (confidence > 0.75 && (sentiment === 'POSITIVE' || sentiment === 'NEGATIVE')) {
+          emphasis = 'loud'; // Medium intensity emotion
+        } else {
+          emphasis = 'normal';
         }
         
-        // Store sentiment data for database
+        // Store complete sentiment data for database
         emotionMetadata = {
+          provider: 'assemblyai',
           sentiment: sentiment,
           confidence: confidence,
-          text: sentimentData.text || u.text
+          speaker: sentimentData.speaker || u.speaker,
+          text: sentimentData.text || u.text,
+          detected_at: new Date().toISOString()
         };
+        
+        if (i < 5) {
+          console.log(`   😊 Sentiment: ${sentiment} (conf: ${confidence.toFixed(2)}) → emphasis: ${emphasis}`);
+        }
       }
       
       segments.push({
@@ -962,11 +984,15 @@ async function transcribeWithAssemblyAI(audioUrl: string, language?: string, max
           end: Math.min((w.end || 0) / 1000, maxDurationSeconds),
           word: w.text ?? w.word,
           confidence: w.confidence,
+          sentiment: sentiment, // ✅ Add sentiment to words
+          sentimentConfidence: sentimentConfidence // ✅ Add confidence to words
         })).filter((w: any) => w.start <= maxDurationSeconds),
-        speaker: u.speaker || undefined, // ✅ PRESERVE speaker label (A, B, C, etc.)
+        speaker: u.speaker || undefined, // ✅ PRESERVE speaker label (real names if Speaker ID enabled!)
         confidence: u.confidence || 0.95,
-        emphasis: emphasis, // ✅ Sentiment-based emphasis
-        emotion_metadata: emotionMetadata // ✅ Store sentiment data
+        emphasis: emphasis, // ✅ Sentiment-based emphasis (normal/loud/yelling)
+        emotion_metadata: emotionMetadata, // ✅ Store full sentiment data
+        sentiment: sentiment, // ✅ Top-level sentiment for easy queries
+        sentiment_confidence: sentimentConfidence // ✅ Top-level confidence for easy queries
       });
     }
     console.log(`✅ Built ${segments.length} segments from utterances with speakers and sentiment analysis`);
@@ -1311,7 +1337,9 @@ async function saveTranscriptToDatabase(videoId: string, transcriptionResult: an
           is_off_camera: false,
           words: words, // Save provider word timings as JSON
           character_id: characterId, // ✅ Link to auto-created character
-          emotion_metadata: segment.emotion_metadata || null // ✅ Store sentiment data
+          emotion_metadata: segment.emotion_metadata || null, // ✅ Store sentiment data
+          sentiment: segment.sentiment || null, // ✅ Top-level sentiment
+          sentiment_confidence: segment.sentiment_confidence || null // ✅ Top-level confidence
         };
       });
       
