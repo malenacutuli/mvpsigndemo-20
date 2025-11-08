@@ -1073,6 +1073,7 @@ export type Database = {
           created_at: string
           emotion_metadata: Json | null
           emphasis: string | null
+          end_ms: number | null
           end_time: number
           id: string
           idx: number | null
@@ -1092,12 +1093,15 @@ export type Database = {
           speaker_color: string | null
           speaker_norm: string | null
           speaker_normalized: string | null
+          start_ms: number | null
           start_time: number
           text: string
+          timing_confidence: number | null
           transcript_id: string | null
           video_id: string
           vocal_intensity: string | null
           words: Json | null
+          words_source: string | null
         }
         Insert: {
           character_id?: string | null
@@ -1105,6 +1109,7 @@ export type Database = {
           created_at?: string
           emotion_metadata?: Json | null
           emphasis?: string | null
+          end_ms?: number | null
           end_time: number
           id?: string
           idx?: number | null
@@ -1124,12 +1129,15 @@ export type Database = {
           speaker_color?: string | null
           speaker_norm?: string | null
           speaker_normalized?: string | null
+          start_ms?: number | null
           start_time: number
           text: string
+          timing_confidence?: number | null
           transcript_id?: string | null
           video_id: string
           vocal_intensity?: string | null
           words?: Json | null
+          words_source?: string | null
         }
         Update: {
           character_id?: string | null
@@ -1137,6 +1145,7 @@ export type Database = {
           created_at?: string
           emotion_metadata?: Json | null
           emphasis?: string | null
+          end_ms?: number | null
           end_time?: number
           id?: string
           idx?: number | null
@@ -1156,12 +1165,15 @@ export type Database = {
           speaker_color?: string | null
           speaker_norm?: string | null
           speaker_normalized?: string | null
+          start_ms?: number | null
           start_time?: number
           text?: string
+          timing_confidence?: number | null
           transcript_id?: string | null
           video_id?: string
           vocal_intensity?: string | null
           words?: Json | null
+          words_source?: string | null
         }
         Relationships: [
           {
