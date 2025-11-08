@@ -1082,6 +1082,8 @@ export type Database = {
           language: string
           pitch: string | null
           segment_type: string | null
+          sentiment: string | null
+          sentiment_confidence: number | null
           speaker: string | null
           speaker_asr_label: string | null
           speaker_asr_norm: string | null
@@ -1110,6 +1112,8 @@ export type Database = {
           language?: string
           pitch?: string | null
           segment_type?: string | null
+          sentiment?: string | null
+          sentiment_confidence?: number | null
           speaker?: string | null
           speaker_asr_label?: string | null
           speaker_asr_norm?: string | null
@@ -1138,6 +1142,8 @@ export type Database = {
           language?: string
           pitch?: string | null
           segment_type?: string | null
+          sentiment?: string | null
+          sentiment_confidence?: number | null
           speaker?: string | null
           speaker_asr_label?: string | null
           speaker_asr_norm?: string | null
