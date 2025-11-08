@@ -1071,6 +1071,7 @@ export type Database = {
           character_id: string | null
           confidence: number | null
           created_at: string
+          emotion_metadata: Json | null
           emphasis: string | null
           end_time: number
           id: string
@@ -1098,6 +1099,7 @@ export type Database = {
           character_id?: string | null
           confidence?: number | null
           created_at?: string
+          emotion_metadata?: Json | null
           emphasis?: string | null
           end_time: number
           id?: string
@@ -1125,6 +1127,7 @@ export type Database = {
           character_id?: string | null
           confidence?: number | null
           created_at?: string
+          emotion_metadata?: Json | null
           emphasis?: string | null
           end_time?: number
           id?: string
