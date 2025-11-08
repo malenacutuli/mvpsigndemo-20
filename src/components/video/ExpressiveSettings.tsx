@@ -84,8 +84,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Expressive Captions Settings</CardTitle>
-        <CardDescription>
+        <CardTitle className="font-light">Expressive Captions Settings</CardTitle>
+        <CardDescription className="font-light">
           Configure emotion-driven caption styling and intensity detection
         </CardDescription>
       </CardHeader>
@@ -93,8 +93,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
         {/* Master Toggle */}
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label className="text-base font-semibold">Enable Expressive Captions</Label>
-            <p className="text-sm text-muted-foreground">
+            <Label className="text-base font-light">Enable Expressive Captions</Label>
+            <p className="text-sm text-muted-foreground font-light">
               Activate emotion and intensity-based caption rendering
             </p>
           </div>
@@ -108,12 +108,12 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
         {/* Advanced Features */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold">Advanced Features</h3>
+          <h3 className="text-sm font-light">Advanced Features</h3>
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Dynamic Font Sizing 🆕</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Dynamic Font Sizing 🆕</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Whispers appear smaller, yelling appears larger
               </p>
             </div>
@@ -126,8 +126,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Show Sentiment Badge</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Show Sentiment Badge</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Display emotion indicators (positive/negative/neutral)
               </p>
             </div>
@@ -140,8 +140,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Highlight Pitch Variations</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Highlight Pitch Variations</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Visual cues for high/low pitch changes
               </p>
             </div>
@@ -157,12 +157,12 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
         {/* EC Protocol */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold">EC Protocol Features</h3>
+          <h3 className="text-sm font-light">EC Protocol Features</h3>
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Use Expressive Styles</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Use Expressive Styles</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 ALL CAPS for emphasis, bold text for intensity
               </p>
             </div>
@@ -175,9 +175,9 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Lengthen Words</Label>
-              <p className="text-sm text-muted-foreground">
-                Elongate vowels for sustained sounds (e.g., "noooo")
+              <Label className="font-light">Lengthen Words</Label>
+              <p className="text-sm text-muted-foreground font-light">
+                Elongate vowels for sustained sounds (e.g., &quot;noooo&quot;)
               </p>
             </div>
             <Switch
@@ -189,8 +189,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Show Sound Labels</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Show Sound Labels</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Display [laughter], [applause], etc.
               </p>
             </div>
@@ -203,8 +203,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Show Environmental Sounds</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Show Environmental Sounds</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Include background sounds and effects
               </p>
             </div>
@@ -220,12 +220,12 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
         {/* Intensity Thresholds */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold">Intensity Thresholds</h3>
+          <h3 className="text-sm font-light">Intensity Thresholds</h3>
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Whisper Threshold (dB)</Label>
-              <span className="text-sm text-muted-foreground">{value.whisperThreshold}</span>
+              <Label className="font-light">Whisper Threshold (dB)</Label>
+              <span className="text-sm text-muted-foreground font-light">{value.whisperThreshold}</span>
             </div>
             <Slider
               value={[value.whisperThreshold]}
@@ -235,15 +235,15 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
               step={1}
               disabled={!value.enabled}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-light">
               Audio below this level is considered a whisper
             </p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Yell Threshold (dB)</Label>
-              <span className="text-sm text-muted-foreground">{value.yellThreshold}</span>
+              <Label className="font-light">Yell Threshold (dB)</Label>
+              <span className="text-sm text-muted-foreground font-light">{value.yellThreshold}</span>
             </div>
             <Slider
               value={[value.yellThreshold]}
@@ -253,7 +253,7 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
               step={1}
               disabled={!value.enabled}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-light">
               Audio above this level is considered yelling
             </p>
           </div>
@@ -263,12 +263,12 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
         {/* Accessibility */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold">Accessibility</h3>
+          <h3 className="text-sm font-light">Accessibility</h3>
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Minimum Font Size (px)</Label>
-              <span className="text-sm text-muted-foreground">{value.minFontSize}</span>
+              <Label className="font-light">Minimum Font Size (px)</Label>
+              <span className="text-sm text-muted-foreground font-light">{value.minFontSize}</span>
             </div>
             <Slider
               value={[value.minFontSize]}
@@ -278,15 +278,15 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
               step={1}
               disabled={!value.enabled}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground font-light">
               Smallest allowed font size for whispers
             </p>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Reduce Motion</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">Reduce Motion</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Minimize animations for accessibility
               </p>
             </div>
@@ -299,8 +299,8 @@ export function ExpressiveSettingsPanel({ value, onChange }: ExpressiveSettingsP
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>High Contrast Mode</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="font-light">High Contrast Mode</Label>
+              <p className="text-sm text-muted-foreground font-light">
                 Increase text contrast for better readability
               </p>
             </div>
