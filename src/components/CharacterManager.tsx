@@ -464,29 +464,52 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         'minor': 'minor'
       };
       
-      // First, save characters to database and get their IDs
+      // ✅ Step 1: Check for duplicate character names
+      const names = characters.map(c => c.name.trim().toLowerCase());
+      const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+      if (dupes.length) {
+        toast({
+          title: "Duplicate character names",
+          description: "Please ensure each character has a unique name.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // ✅ Step 2: Prepare upsert rows WITHOUT id field
+      const upsertRows = characters.map(char => ({
+        // id is intentionally omitted - let DB handle it
+        video_id: videoId,
+        name: char.name,
+        type: typeMapping[char.type] ?? 'minor',
+        color: char.color,
+        is_off_camera: char.isOffCamera || false,
+        voice_id: char.voiceId,
+        voice_name: char.voiceName,
+        voice_type: char.voiceType,
+        emphasis: char.emphasis || 'normal',
+        pitch: char.pitch || 'normal'
+      }));
+
+      // ✅ Step 3: Upsert with better error logging
       const { data: savedChars, error: saveError } = await supabase
         .from('characters')
-        .upsert(
-          characters.map(char => ({
-            id: char.id.startsWith('char-') ? undefined : char.id,
-            video_id: videoId,
-            name: char.name,
-            type: typeMapping[char.type] ?? 'minor',
-            color: char.color,
-            is_off_camera: char.isOffCamera || false,
-            voice_id: char.voiceId,
-            voice_name: char.voiceName,
-            voice_type: char.voiceType,
-            emphasis: char.emphasis || 'normal',
-            pitch: char.pitch || 'normal'
-          })),
-          { onConflict: 'video_id,name', ignoreDuplicates: false }
-        )
+        .upsert(upsertRows, { 
+          onConflict: 'video_id,name', 
+          ignoreDuplicates: false 
+        })
         .select();
-      
+
+      // ✅ Step 4: Enhanced error logging
       if (saveError) {
-        console.error('❌ Failed to save characters:', saveError);
+        console.error('❌ Failed to save characters upsert:', {
+          code: saveError.code,
+          message: saveError.message,
+          details: (saveError as any).details,
+          hint: (saveError as any).hint,
+          sampleRows: upsertRows.slice(0, 3),
+          totalRows: upsertRows.length
+        });
         throw saveError;
       }
       
