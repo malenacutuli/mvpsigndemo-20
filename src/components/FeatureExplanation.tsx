@@ -45,7 +45,7 @@ export const FeatureExplanation: React.FC = () => {
           <h3 className="font-medium text-orange-400">Sign Language Avatar</h3>
         </div>
         <p className="text-sm text-orange-200">
-          Virtual ASL interpreter that signs the video content in real-time. 
+          Virtual SL interpreter that signs the video content in real-time. 
           Provides accessibility for deaf and hard-of-hearing users.
         </p>
       </Card>
