@@ -58,14 +58,54 @@ const READAHEAD_SECONDS = 3;
 // Disable read-ahead (prevents double overlay)
 const SHOW_READAHEAD_PREVIEW = false;
 
-export interface WordSegment {
+// ✅ Updated interfaces for millisecond precision and 7-level intensity
+export interface CaptionWord {
   text: string;
-  startTime: number;
+  start_ms?: number;    // ✅ Milliseconds
+  end_ms?: number;
+  startTime: number;    // Keep for compatibility (seconds)
   endTime: number;
+  confidence?: number;
+  syllables?: Array<{ text: string; startTime: number; endTime: number }>;
+  
+  // ✅ 7-level intensity spectrum
+  intensity?: 'whisper' | 'quiet' | 'normal' | 'loud' | 'yelling' | 'screaming';
+  overall_intensity?: string;  // Alternative field name
+  
+  // Legacy emphasis field (keep for compatibility)
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling' | 'whisper';
   pitch?: 'high' | 'low' | 'normal';
-  syllables?: Array<{ text: string; startTime: number; endTime: number }>;
-  confidence?: number;
+  
+  // ✅ Emotion data
+  sentiment?: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+  sentimentConfidence?: number;
+  emotionMetadata?: any;
+  
+  // ✅ Calculated
+  duration_ms?: number;
+}
+
+export interface WordSegment extends CaptionWord {}
+
+export interface Caption {
+  id?: string;
+  start_ms?: number;
+  end_ms?: number;
+  startTime: number;
+  endTime: number;
+  text: string;
+  speaker: string;
+  speakerColor?: string;  // ✅ Character color
+  speakerAsrLabel?: string;
+  isOffCamera?: boolean;
+  words?: CaptionWord[];
+  overall_intensity?: string;
+  sentiment?: string;
+  sentimentConfidence?: number;
+  emotionMetadata?: any;
+  vocal_intensity?: string;
+  volume?: number;
+  type?: 'dialogue' | 'soundeffect' | 'music';
 }
 
 type TimedWord = {
@@ -196,14 +236,139 @@ function expandWordsToSyllables(words: Word[], segStart: number, segEnd: number)
   return expanded;
 }
 
+// ✅ NEW: Calculate intensity from emotion AI data
+function calculateIntensity(word: CaptionWord): string {
+  // Priority 1: Explicit intensity field (7-level)
+  if (word.intensity) return word.intensity;
+  if (word.overall_intensity) return word.overall_intensity;
+  
+  // Priority 2: High-confidence sentiment (AssemblyAI)
+  if (word.sentimentConfidence && word.sentimentConfidence > 0.95) {
+    if (word.sentiment === 'POSITIVE' || word.sentiment === 'NEGATIVE') {
+      return 'screaming';
+    }
+  }
+  
+  if (word.sentimentConfidence && word.sentimentConfidence > 0.85) {
+    if (word.sentiment === 'POSITIVE' || word.sentiment === 'NEGATIVE') {
+      return 'yelling';
+    }
+  }
+  
+  if (word.sentimentConfidence && word.sentimentConfidence > 0.75) {
+    if (word.sentiment === 'POSITIVE' || word.sentiment === 'NEGATIVE') {
+      return 'loud';
+    }
+  }
+  
+  // Priority 3: Prosody from Hume AI (if available)
+  if (word.emotionMetadata?.prosody) {
+    const loudness = word.emotionMetadata.prosody.loudness_mean;
+    if (loudness > -5) return 'yelling';
+    if (loudness > -10) return 'loud';
+    if (loudness < -25) return 'whisper';
+    if (loudness < -20) return 'quiet';
+  }
+  
+  // Priority 4: Duration-based intensity
+  const duration_ms = word.duration_ms || 
+    (word.end_ms && word.start_ms ? word.end_ms - word.start_ms : 
+     (word.endTime - word.startTime) * 1000);
+  
+  if (duration_ms > 800) return 'loud';
+  if (duration_ms < 200) return 'whisper';
+  
+  // Priority 5: Legacy emphasis field
+  if (word.emphasis) {
+    switch (word.emphasis) {
+      case 'yelling': return 'yelling';
+      case 'loud': return 'loud';
+      case 'quiet': return 'quiet';
+      case 'whisper': return 'whisper';
+    }
+  }
+  
+  return 'normal';
+}
+
+// ✅ NEW: Get font size multiplier for 7-level intensity
+function getFontSizeMultiplier(intensity: string): number {
+  switch (intensity) {
+    case 'whisper':   return 0.85;  // 15% smaller
+    case 'quiet':     return 0.90;  // 10% smaller
+    case 'normal':    return 1.00;  // Baseline
+    case 'loud':      return 1.05;  // 5% larger
+    case 'yelling':   return 1.10;  // 10% larger
+    case 'screaming': return 1.15;  // 15% larger
+    default:          return 1.00;
+  }
+}
+
+// ✅ NEW: Get font weight for intensity
+function getFontWeight(intensity: string): number {
+  switch (intensity) {
+    case 'whisper':   return 300;  // Light
+    case 'quiet':     return 400;  // Normal
+    case 'normal':    return 500;  // Medium
+    case 'loud':      return 600;  // Semi-bold
+    case 'yelling':   return 700;  // Bold
+    case 'screaming': return 700;  // Bold
+    default:          return 500;
+  }
+}
+
+// ✅ NEW: Check if should use ALL CAPS
+function shouldUseAllCaps(intensity: string): boolean {
+  return intensity === 'yelling' || intensity === 'screaming';
+}
+
+// ✅ NEW: Elongate vowels for EC protocol
+function elongateWord(text: string, intensity: number): string {
+  const vowels = /[aeiou]/gi;
+  let count = 0;
+  return text.replace(vowels, (match) => {
+    count++;
+    // Only elongate first vowel
+    return count === 1 ? match.repeat(Math.min(intensity, 4)) : match;
+  });
+}
+
+// ✅ NEW: Render expressive word with EC transformations
+function renderExpressiveWord(
+  word: CaptionWord,
+  enableLengthening: boolean,
+  enableStyles: boolean
+): string {
+  let text = word.text || '';
+  
+  // 1. Elongation (if enabled and word is long duration)
+  const duration_ms = word.duration_ms || 
+    (word.end_ms && word.start_ms ? word.end_ms - word.start_ms : 
+     (word.endTime - word.startTime) * 1000);
+  
+  if (enableLengthening && duration_ms > 400) {
+    const elongateIntensity = duration_ms < 600 ? 2 : duration_ms < 800 ? 3 : 4;
+    text = elongateWord(text, elongateIntensity);
+  }
+  
+  // 2. ALL CAPS (if yelling/screaming)
+  const intensity = calculateIntensity(word);
+  if (enableStyles && shouldUseAllCaps(intensity)) {
+    text = text.toUpperCase();
+  }
+  
+  return text;
+}
+
 /**
  * Calculate font size based on vocal intensity, volume, or emphasis - REDUCED SIZES
+ * ✅ Updated to support 7-level intensity
  */
 const getIntonationBasedFontSize = (
   screenHeight: number, 
-  vocalIntensity?: 'whisper' | 'normal' | 'yell' | 'shout',
+  vocalIntensity?: 'whisper' | 'normal' | 'yell' | 'shout' | 'quiet' | 'loud' | 'yelling' | 'screaming',
   volume?: number,
-  emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'
+  emphasis?: 'whisper' | 'quiet' | 'normal' | 'loud' | 'yelling' | 'screaming'
 ): number => {
   // Design Guide: Type size = % of screen height (3-12%)
   const BASELINE_PERCENT = 0.045;  // 4.5% baseline
@@ -219,11 +384,18 @@ const getIntonationBasedFontSize = (
     switch (vocalIntensity) {
       case 'whisper':
         return minSize;
+      case 'quiet':
+        return minSize * 1.15;
+      case 'normal':
+        return baseSize;
+      case 'loud':
+        return Math.min(maxSize, baseSize * 1.15);
       case 'yell':
+      case 'yelling':
         return Math.min(maxSize, baseSize * 1.3);
       case 'shout':
+      case 'screaming':
         return Math.min(maxSize, baseSize * 1.5);
-      case 'normal':
       default:
         return baseSize;
     }
@@ -232,13 +404,18 @@ const getIntonationBasedFontSize = (
   // Priority 2: Use manual emphasis from transcript editing
   if (emphasis) {
     switch (emphasis) {
-      case 'quiet':
+      case 'whisper':
         return minSize;
-      case 'loud':
-        return Math.min(maxSize, baseSize * 1.3);
-      case 'yelling':
-        return Math.min(maxSize, baseSize * 1.5);
+      case 'quiet':
+        return minSize * 1.15;
       case 'normal':
+        return baseSize;
+      case 'loud':
+        return Math.min(maxSize, baseSize * 1.15);
+      case 'yelling':
+        return Math.min(maxSize, baseSize * 1.3);
+      case 'screaming':
+        return Math.min(maxSize, baseSize * 1.5);
       default:
         return baseSize;
     }
@@ -255,18 +432,23 @@ const getIntonationBasedFontSize = (
 };
 
 /**
- * Get word-specific font size based on emphasis
+ * Get word-specific font size based on emphasis (LEGACY - kept for compatibility)
+ * ✅ Updated to support 7-level intensity
  */
-const getWordFontSize = (baseSize: number, emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling'): number => {
+const getWordFontSize = (baseSize: number, emphasis?: 'whisper' | 'quiet' | 'normal' | 'loud' | 'yelling' | 'screaming'): number => {
   if (!emphasis || emphasis === 'normal') return baseSize;
   
   switch (emphasis) {
-    case 'loud':
-      return baseSize * 1.4; // 40% larger for shouting
-    case 'yelling':
-      return baseSize * 1.6; // 60% larger for yelling
+    case 'whisper':
+      return baseSize * 0.7;  // 30% smaller for whispering
     case 'quiet':
-      return baseSize * 0.7; // 30% smaller for whispering
+      return baseSize * 0.85; // 15% smaller for quiet
+    case 'loud':
+      return baseSize * 1.15; // 15% larger for loud
+    case 'yelling':
+      return baseSize * 1.30; // 30% larger for yelling
+    case 'screaming':
+      return baseSize * 1.45; // 45% larger for screaming
     default:
       return baseSize;
   }
@@ -383,6 +565,12 @@ function computeFontForSegment(seg: any, screenH: number, volume: number): FontO
   };
 }
 
+// ✅ Settings for EC protocol features
+interface ExpressiveSettings {
+  lengthenWords: boolean;
+  useStyles: boolean;
+}
+
 export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   captions,
   currentTime,
@@ -391,6 +579,12 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 }) => {
   const [customSpeakerColors, setCustomSpeakerColors] = useState<Record<string, string>>({});
   const { getIntensityStyles } = useVocalIntensityAnalysis();
+  
+  // ✅ EC Protocol settings (can be made configurable later)
+  const [expressiveSettings] = useState<ExpressiveSettings>({
+    lengthenWords: true,  // Enable vowel elongation
+    useStyles: true       // Enable ALL CAPS for yelling/screaming
+  });
 
   // Process captions: normalize words, precompute syllable charStart/charEnd
   const processed = React.useMemo(() => {
@@ -623,9 +817,9 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
   if (!displayedCaption) return null;
   const cap = displayedCaption;
 
-  // Neutral color until a character is assigned
-  const tint = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
-  const words = (cap.words || []) as any[];
+  // ✅ Character color (NEVER generic colors)
+  const characterColor = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
+  const words = (cap.words || []) as CaptionWord[];
   
   // Phase 4: Compute base font size for segment
   const baseFontSize = getIntonationBasedFontSize(
@@ -637,6 +831,25 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
   // Read-ahead color: white at 90% opacity
   const READ_AHEAD_COLOR = 'rgba(255, 255, 255, 0.9)';
+  
+  // ✅ Process words with emotion AI and EC transformations
+  const processedWords = React.useMemo(() => {
+    return words.map((word) => {
+      const intensity = calculateIntensity(word);
+      const displayText = renderExpressiveWord(word, expressiveSettings.lengthenWords, expressiveSettings.useStyles);
+      const sizeMultiplier = getFontSizeMultiplier(intensity);
+      const fontWeight = getFontWeight(intensity);
+      
+      return {
+        ...word,
+        displayText,
+        intensity,
+        sizeMultiplier,
+        fontWeight,
+        color: characterColor  // ✅ Always character color
+      };
+    });
+  }, [words, characterColor, expressiveSettings]);
 
   return (
     <div className="relative w-full">
@@ -651,79 +864,84 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         {cap.speaker && (
           <div
             className="text-xs font-medium mb-1 text-center"
-            style={{ color: tint }}
+            style={{ color: characterColor }}
           >
             {cap.speaker}
           </div>
         )}
 
-        {/* Captions with Intention: Word-level color + 15% scale pop */}
+        {/* ✅ Captions with Intention: 7-level intensity + EC protocol */}
         <div
           className="leading-tight px-1 flex flex-wrap justify-center gap-x-[0.35em]"
           style={{
             fontFamily: 'Roboto Flex, system-ui, sans-serif',
             lineHeight: window.innerWidth < 640 ? '1.25' : '1.3',
-            fontStyle: cap.isOffCamera ? 'italic' : 'normal', // Apply italic for off-camera dialogue
+            fontStyle: cap.isOffCamera ? 'italic' : 'normal', // ✅ Off-camera italics
           }}
         >
-          {words.map((word, i) => {
+          {processedWords.map((word, i) => {
             // Word-level active state (instant color change)
             const isWordActive =
-              currentTime >= word.startTime! - WORD_TOLERANCE &&
-              currentTime <= word.endTime! + WORD_TOLERANCE;
+              currentTime >= word.startTime - WORD_TOLERANCE &&
+              currentTime <= word.endTime + WORD_TOLERANCE;
 
-        // Find active syllable for 15% scale pop timing
-        let activeSyllableIdx = -1;
-        let shouldApplyPop = false;
+            // Find active syllable for 15% scale pop timing
+            let shouldApplyPop = false;
 
-        if (isWordActive) {
-          // Tier 1: If word has syllables, use syllable-level timing
-          if (Array.isArray(word.syllables) && word.syllables.length > 0) {
-            for (let idx = 0; idx < word.syllables.length; idx++) {
-              const syl = word.syllables[idx];
-              if (
-                currentTime >= syl.startTime - SYLLABLE_TOLERANCE &&
-                currentTime <= syl.endTime + SYLLABLE_TOLERANCE
-              ) {
-                activeSyllableIdx = idx;
+            if (isWordActive) {
+              // Tier 1: If word has syllables, use syllable-level timing
+              if (Array.isArray(word.syllables) && word.syllables.length > 0) {
+                for (let idx = 0; idx < word.syllables.length; idx++) {
+                  const syl = word.syllables[idx];
+                  if (
+                    currentTime >= syl.startTime - SYLLABLE_TOLERANCE &&
+                    currentTime <= syl.endTime + SYLLABLE_TOLERANCE
+                  ) {
+                    shouldApplyPop = true;
+                    break;
+                  }
+                }
+              } else {
+                // Tier 2: If word has NO syllables, apply pop for entire word duration
                 shouldApplyPop = true;
-                break;
               }
             }
-          } else {
-            // Tier 2: If word has NO syllables, apply pop for entire word duration
-            shouldApplyPop = true;
-          }
-        }
 
-        // Apply 15% scale pop when word is active
-        const scale = shouldApplyPop ? 1.15 : 1.0;
+            // Apply 15% scale pop when word is active
+            const scale = shouldApplyPop ? 1.15 : 1.0;
 
             // Word color: character color when active, white at 90% when not
-            const wordColor = isWordActive ? tint : READ_AHEAD_COLOR;
+            const wordColor = isWordActive ? word.color : READ_AHEAD_COLOR;
 
-            // Apply per-word intonation (size + variable font)
-            const wordFontSize = getWordFontSize(baseFontSize, word.emphasis);
+            // ✅ Apply 7-level intensity sizing
+            const finalFontSize = baseFontSize * word.sizeMultiplier;
             const pitchStyles = getPitchBasedStyle(word.pitch);
 
-            const wordText = word.text || '';
+            // ✅ Use transformed text (EC protocol: ALL CAPS + elongation)
+            const displayText = word.displayText;
 
             // Render entire word as single span with instant color change + pop
             return (
               <span
-                key={`${i}-${Math.round(word.startTime! * 1000)}`}
+                key={`${i}-${word.start_ms || Math.round(word.startTime * 1000)}`}
                 style={{
                   display: 'inline-block',
                   marginRight: '0.3em',
                   color: wordColor,
-                  fontSize: `${wordFontSize}px`,
+                  fontSize: `${finalFontSize}px`,
+                  fontWeight: word.fontWeight,  // ✅ Dynamic weight
                   transform: `scale(${scale})`,
                   transformOrigin: 'center bottom',
                   ...pitchStyles,
-                  transition: 'color 0.05s ease-out, transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bounce easing for pop
+                  textShadow: isWordActive 
+                    ? `0 0 10px ${word.color}80, 0 2px 4px rgba(0,0,0,0.8)`
+                    : '0 2px 4px rgba(0,0,0,0.8)',
+                  transition: 'color 0.05s ease-out, transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1), text-shadow 0.1s ease-out',
                 }}
+                data-intensity={word.intensity}
+                data-sentiment={word.sentiment}
               >
-                {wordText}
+                {displayText}
               </span>
             );
           })}
