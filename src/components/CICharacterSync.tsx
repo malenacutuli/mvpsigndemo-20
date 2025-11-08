@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface CICharacterSyncProps {
   videoId: string;
@@ -7,12 +8,8 @@ interface CICharacterSyncProps {
 }
 
 /**
- * Captions with Intention Character Synchronization Component
- * 
- * This component ensures that all character colors and speaker assignments
- * are synchronized across the entire application following CI guidelines.
- * 
- * It listens for database changes and updates localStorage for instant sync.
+ * Captions with Intention Character Synchronization
+ * Ensures character data stays in sync across the application
  */
 export const CICharacterSync: React.FC<CICharacterSyncProps> = ({ 
   videoId, 
@@ -20,9 +17,9 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
 }) => {
   
   useEffect(() => {
-    console.log('🔄 CI Character Sync: Initializing for video', videoId, 'language', language);
+    console.log('[CI-Sync] Initializing for video', videoId, 'language', language);
     
-    // Set up real-time listener for transcript segment changes
+    // Set up real-time listeners
     const segmentChannel = supabase
       .channel(`transcript-segments-${videoId}`)
       .on(
@@ -34,13 +31,12 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
           filter: `video_id=eq.${videoId}`
         },
         (payload) => {
-          console.log('🔄 CI Character Sync: Transcript segment changed', payload);
-          syncCharacterColors();
+          console.log('[CI-Sync] Transcript segment changed', payload);
+          syncCharacterData();
         }
       )
       .subscribe();
 
-    // Set up real-time listener for character changes
     const characterChannel = supabase
       .channel(`characters-${videoId}`)
       .on(
@@ -52,14 +48,14 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
           filter: `video_id=eq.${videoId}`
         },
         (payload) => {
-          console.log('🔄 CI Character Sync: Character changed', payload);
-          syncCharacterColors();
+          console.log('[CI-Sync] Character changed', payload);
+          syncCharacterData();
         }
       )
       .subscribe();
 
     // Initial sync
-    syncCharacterColors();
+    syncCharacterData();
 
     return () => {
       supabase.removeChannel(segmentChannel);
@@ -67,69 +63,107 @@ export const CICharacterSync: React.FC<CICharacterSyncProps> = ({
     };
   }, [videoId, language]);
 
-  const syncCharacterColors = async () => {
+  const syncCharacterData = async () => {
     try {
-      console.log('🎨 CI Character Sync: Starting color synchronization from DATABASE');
+      console.log('[CI-Sync] Syncing from database');
       
-      // ALWAYS fetch from database - never trust localStorage alone
+      // Fetch characters
       const { data: characters, error: charError } = await supabase
         .from('characters')
-        .select('name, color')
+        .select('id, name, color, is_off_camera, type')
         .eq('video_id', videoId);
 
       if (charError) {
-        console.error('❌ CI Character Sync: Failed to fetch characters', charError);
+        console.error('[CI-Sync] Failed to fetch characters', charError);
+        toast({
+          title: "Sync Error",
+          description: "Failed to sync character data",
+          variant: "destructive"
+        });
         return;
       }
 
-      // Get all unique speakers from transcript segments
+      // Fetch segments with character assignments
       const { data: segments, error: segError } = await supabase
         .from('transcript_segments_clean')
-        .select('speaker, speaker_color')
+        .select('speaker, speaker_color, speaker_asr_label, character_id')
         .eq('video_id', videoId)
         .eq('language', language);
 
       if (segError) {
-        console.error('❌ CI Character Sync: Failed to fetch segments', segError);
+        console.error('[CI-Sync] Failed to fetch segments', segError);
+        toast({
+          title: "Sync Error",
+          description: "Failed to sync transcript data",
+          variant: "destructive"
+        });
         return;
       }
 
-      // Build unified color mapping from SERVER data
-      const colorMapping: Record<string, string> = {};
+      // Build unified character data
+      const characterData: Record<string, {
+        id: string;
+        color: string;
+        is_off_camera: boolean;
+        type: string;
+      }> = {};
 
-      // Priority 1: Character definitions from database
+      // Priority 1: Characters from database
       if (characters) {
         characters.forEach(char => {
           if (char.name && char.color) {
-            colorMapping[char.name] = char.color;
+            characterData[char.name] = {
+              id: char.id,
+              color: char.color,
+              is_off_camera: char.is_off_camera || false,
+              type: char.type || 'main'
+            };
           }
         });
       }
 
-      // Priority 2: Speaker colors from segments (if not already defined by characters)
+      // Priority 2: Speaker colors from segments (fallback)
       if (segments) {
         segments.forEach(seg => {
-          if (seg.speaker && seg.speaker_color && !colorMapping[seg.speaker]) {
-            colorMapping[seg.speaker] = seg.speaker_color;
+          if (seg.speaker && seg.speaker_color && !characterData[seg.speaker]) {
+            characterData[seg.speaker] = {
+              id: seg.character_id || '',
+              color: seg.speaker_color,
+              is_off_camera: false,
+              type: 'supporting'
+            };
           }
         });
       }
 
-      // Update localStorage ONLY as read-through cache (database is source of truth)
-      localStorage.setItem('character-colors', JSON.stringify(colorMapping));
-      localStorage.setItem('character-colors-timestamp', Date.now().toString());
+      // Update localStorage as cache
+      localStorage.setItem('character-data', JSON.stringify(characterData));
+      localStorage.setItem('character-data-timestamp', Date.now().toString());
       
-      // Dispatch event to notify all components of SERVER-synced data
-      window.dispatchEvent(new CustomEvent('character-colors-updated', { 
-        detail: { colors: colorMapping, videoId, language, source: 'database' } 
+      // Dispatch event for components
+      window.dispatchEvent(new CustomEvent('character-data-updated', { 
+        detail: { 
+          characters: characterData, 
+          videoId, 
+          language, 
+          source: 'database' 
+        } 
       }));
 
-      console.log('✅ CI Character Sync: Synced from database across all devices', colorMapping);
+      console.log('[CI-Sync] Synced successfully', {
+        characterCount: Object.keys(characterData).length,
+        characters: Object.keys(characterData)
+      });
 
     } catch (error) {
-      console.error('❌ CI Character Sync: Synchronization failed', error);
+      console.error('[CI-Sync] Synchronization failed', error);
+      toast({
+        title: "Sync Failed",
+        description: "Character synchronization failed",
+        variant: "destructive"
+      });
     }
   };
 
-  return null; // This is a headless component
+  return null;
 };
