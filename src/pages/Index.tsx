@@ -7,6 +7,9 @@ import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 import captionsWithIntention from '@/assets/captions-with-intention.jpg';
 import audioDescriptions from '@/assets/audio-descriptions.jpg';
 import signLanguage from '@/assets/sign-language.jpg';
+import euLogo from '@/assets/eu-logo.png';
+import bscLogo from '@/assets/bsc-ai-factory-logo.jpg';
+import nvidiaLogo from '@/assets/nvidia-inception-logo.png';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -50,6 +53,28 @@ const Index = () => {
                     {t('hero.shareContent')}
                   </Link>
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Recognition & Partners Section */}
+      <section className="py-16 bg-white border-y">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <h3 className="text-xl md:text-2xl font-light text-center text-muted-foreground mb-12">
+              Recognized for Innovation in AI for Good
+            </h3>
+            <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
+              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
+              </div>
+              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
+              </div>
+              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
               </div>
             </div>
           </div>
