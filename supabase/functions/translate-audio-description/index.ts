@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { franc } from "npm:franc-min@6.2.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -144,6 +145,24 @@ serve(async (req) => {
     }
 
     console.log('✨ Translated text:', translatedText ? translatedText.substring(0, 100) : '[empty]');
+
+    // Validate the translation using language detection
+    const detectedLang = franc(translatedText);
+    const langMap: Record<string, string> = {
+      'eng': 'en', 'spa': 'es', 'fra': 'fr', 
+      'deu': 'de', 'ita': 'it', 'por': 'pt', 
+      'ara': 'ar', 'jpn': 'ja', 'kor': 'ko', 
+      'cmn': 'zh', 'rus': 'ru'
+    };
+    const expectedLangCode = langMap[detectedLang];
+
+    if (expectedLangCode && expectedLangCode !== target_language) {
+      console.warn(`⚠️ Language mismatch in translation: expected ${target_language}, detected ${expectedLangCode}`);
+      console.warn('Translation text:', translatedText.substring(0, 150));
+      // Still save with target_language (user's intention), but log the discrepancy
+    } else if (expectedLangCode === target_language) {
+      console.log(`✅ Language validation passed: ${target_language}`);
+    }
 
     // Create new audio description record
     const { data: newAD, error: insertError } = await supabase

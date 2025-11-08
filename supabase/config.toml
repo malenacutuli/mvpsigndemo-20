@@ -141,6 +141,12 @@ verify_jwt = true
 [functions.translate-audio-description]
 verify_jwt = true
 
+[functions.delete-audio-descriptions]
+verify_jwt = true
+
+[functions.fix-audio-description-languages]
+verify_jwt = true
+
 [functions.admin-subscribers]
 verify_jwt = true
 

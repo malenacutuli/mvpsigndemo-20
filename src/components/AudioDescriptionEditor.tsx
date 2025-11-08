@@ -8,10 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus, Volume2, CheckCircle2, AlertCircle, RefreshCw, Zap } from 'lucide-react';
+import { Loader2, Wand2, Save, Edit, X, Clock, Trash2, Plus, Volume2, CheckCircle2, AlertCircle, RefreshCw, Zap, Languages, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceOption, getFilteredVoices, getCategoryColor, findVoiceById } from "@/types/voice";
 import { analyzeAndPopulateEAD, getEADStatusBadge, type EADAnalysisResult } from '@/lib/ad/eadAnalyzer';
+import { AudioDescriptionDeleteDialog } from './AudioDescriptionDeleteDialog';
+import { LanguagePickerDialog } from './LanguagePickerDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -76,6 +80,12 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
   const [isChangingLanguage, setIsChangingLanguage] = useState(false);
+  const [translationCounts, setTranslationCounts] = useState<Record<string, number>>({});
+  const [isFixingLanguages, setIsFixingLanguages] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ ids: string[], hasTranslations: boolean } | null>(null);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const { isAdmin } = useAdminCheck();
   
   // Memoize filtered voices to prevent recalculation on every render
   const filteredVoices = React.useMemo(() => 
@@ -164,7 +174,15 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       if (allLanguages) {
         const uniqueLanguages = [...new Set(allLanguages.map(l => l.language))];
         setAvailableLanguages(uniqueLanguages);
-        console.log('📚 Available languages:', uniqueLanguages);
+        
+        // Count descriptions per language
+        const counts: Record<string, number> = {};
+        allLanguages.forEach(l => {
+          counts[l.language] = (counts[l.language] || 0) + 1;
+        });
+        setTranslationCounts(counts);
+        
+        console.log('📚 Available languages:', uniqueLanguages, 'Counts:', counts);
       }
     } catch (error) {
       console.error('Failed to load audio descriptions:', error);
@@ -192,34 +210,43 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       // Delete descriptions that are no longer in the list
       const idsToDelete = Array.from(existingIds).filter(id => !keptIds.has(id));
       if (idsToDelete.length > 0) {
-        try {
-          // Attempt to delete descriptions - foreign key constraint will prevent deletion if translations exist
-          const { error: deleteError } = await (supabase
-            .from('audio_descriptions')
-            .delete()
-            .in('id', idsToDelete) as any);
-          
-          if (deleteError) {
-            console.error('Delete error:', deleteError);
-            // Check if it's a foreign key constraint violation
-            if (deleteError.message?.includes('foreign key') || deleteError.message?.includes('violates')) {
-              toast.warning('Cannot delete descriptions that have translations. Please delete translations first.');
-            } else {
-              toast.error('Failed to delete some descriptions');
-            }
-          } else {
-            console.log('✅ Deleted', idsToDelete.length, 'descriptions');
-          }
-        } catch (err: any) {
-          console.error('Failed to delete descriptions:', err);
-          if (err.message?.includes('foreign key') || err.message?.includes('violates')) {
-            toast.warning('Cannot delete descriptions that have translations.');
-          } else {
-            toast.error('Failed to delete some descriptions');
-          }
+        // Check if any have translations before showing dialog
+        const { data: translationCheck } = await supabase
+          .from('audio_descriptions')
+          .select('id')
+          .in('source_description_id', idsToDelete)
+          .limit(1);
+        
+        const hasTranslations = translationCheck && translationCheck.length > 0;
+        
+        if (hasTranslations) {
+          // Store the save operation to complete after dialog
+          setDeleteTarget({ ids: idsToDelete, hasTranslations: true });
+          setDeleteDialogOpen(true);
+          setIsSaving(false);
+          // Store descriptions to save for later
+          (window as any)._pendingSaveDescriptions = descriptionsToSave;
+          return;
+        } else {
+          // No translations, safe to delete directly
+          await handleDeleteDescriptions(idsToDelete, false);
         }
       }
 
+      // Continue with upsert (this will also be called from dialog confirmation)
+      await performUpsert(descriptionsToSave);
+      
+    } catch (error) {
+      console.error('Failed to save audio descriptions:', error);
+      toast.error('Failed to save audio descriptions');
+      setIsSaving(false);
+    }
+  };
+
+  // Separated upsert logic to be called independently
+  const performUpsert = async (descriptionsToSave: AudioDescriptionSegment[]) => {
+    setIsSaving(true);
+    try {
       // UPSERT descriptions (update existing, insert new)
       if (descriptionsToSave.length > 0) {
         const { error } = await supabase
@@ -363,6 +390,94 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       'ru': '🇷🇺 Русский'
     };
     return languageNames[code] || code;
+  };
+
+  // Handle deletion with cascade option
+  const handleDeleteDescriptions = async (ids: string[], deleteTranslations: boolean) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-audio-descriptions', {
+        body: { description_ids: ids, delete_translations: deleteTranslations }
+      });
+
+      if (error) throw error;
+
+      if (data?.hasTranslations && !deleteTranslations) {
+        toast.warning('Cannot delete descriptions with translations. Enable "Delete with translations" option.');
+        return;
+      }
+
+      toast.success(data?.message || 'Descriptions deleted successfully');
+      await loadExistingDescriptions(currentLanguage);
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Failed to delete descriptions');
+    }
+  };
+
+  // Fix language labels using language detection
+  const handleFixLanguages = async () => {
+    if (!videoId) return;
+    
+    setIsFixingLanguages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-audio-description-languages', {
+        body: { video_id: videoId }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Fixed ${data?.updated || 0} language labels out of ${data?.total || 0} descriptions`);
+      
+      if (data?.changes && data.changes.length > 0) {
+        console.log('Language corrections:', data.changes);
+      }
+      
+      // Reload to see corrected languages
+      await loadExistingDescriptions(currentLanguage);
+    } catch (error: any) {
+      console.error('Language fix error:', error);
+      toast.error(error.message || 'Failed to fix language labels');
+    } finally {
+      setIsFixingLanguages(false);
+    }
+  };
+
+  // Regenerate all translations for a specific language
+  const handleRegenerateTranslations = async (targetLanguage: string) => {
+    if (!videoId) return;
+    
+    if (targetLanguage === detectedLanguage) {
+      toast.error('Cannot regenerate original language');
+      return;
+    }
+
+    // Confirmation
+    const confirmed = window.confirm(
+      `This will delete and recreate all ${translationCounts[targetLanguage] || 0} translations for ${getLanguageDisplay(targetLanguage)}. Continue?`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      // Step 1: Delete existing translations
+      const { error: deleteError } = await supabase
+        .from('audio_descriptions')
+        .delete()
+        .eq('video_id', videoId)
+        .eq('language', targetLanguage)
+        .eq('is_translation', true);
+      
+      if (deleteError) throw deleteError;
+
+      toast.info(`Deleted old translations. Regenerating...`);
+
+      // Step 2: Regenerate translations
+      await translateAllDescriptions(targetLanguage);
+      
+    } catch (error: any) {
+      console.error('Regeneration error:', error);
+      toast.error(error.message || 'Failed to regenerate translations');
+    }
   };
 
   // Handle language change
@@ -1364,6 +1479,57 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               </div>
             )}
 
+            {/* Bulk Actions Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="font-light">
+                  <Languages className="w-4 h-4 mr-2" />
+                  Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  onClick={() => setLanguagePickerOpen(true)}
+                  disabled={isTranslating || descriptions.length === 0}
+                >
+                  <Languages className="w-4 h-4 mr-2" />
+                  Translate to New Language
+                </DropdownMenuItem>
+                {currentLanguage !== detectedLanguage && availableLanguages.includes(currentLanguage) && (
+                  <DropdownMenuItem
+                    onClick={() => handleRegenerateTranslations(currentLanguage)}
+                    disabled={isTranslating}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Regenerate {getLanguageDisplay(currentLanguage).split(' ')[1]}
+                  </DropdownMenuItem>
+                )}
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleFixLanguages}
+                      disabled={isFixingLanguages}
+                    >
+                      {isFixingLanguages ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Wrench className="w-4 h-4 mr-2" />
+                      )}
+                      Fix Language Labels (Admin)
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Show translation count badge */}
+            {translationCounts[currentLanguage] && (
+              <Badge variant="secondary" className="font-light">
+                {translationCounts[currentLanguage]} description{translationCounts[currentLanguage] !== 1 ? 's' : ''}
+              </Badge>
+            )}
+
             {/* Translation Controls */}
             {currentLanguage !== detectedLanguage && !availableLanguages.includes(currentLanguage) && descriptions.length > 0 && (
               <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
@@ -1924,6 +2090,40 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           )}
         </CardContent>
       </Card>
+      
+      {/* Delete Confirmation Dialog */}
+      <AudioDescriptionDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={async (deleteTranslations) => {
+          if (deleteTarget) {
+            await handleDeleteDescriptions(deleteTarget.ids, deleteTranslations);
+            setDeleteDialogOpen(false);
+            setDeleteTarget(null);
+            
+            // Complete the save if there were pending descriptions
+            const pending = (window as any)._pendingSaveDescriptions;
+            if (pending) {
+              await performUpsert(pending);
+              (window as any)._pendingSaveDescriptions = null;
+            }
+          }
+        }}
+        descriptionCount={deleteTarget?.ids.length || 0}
+        hasTranslations={deleteTarget?.hasTranslations || false}
+      />
+      
+      {/* Language Picker Dialog */}
+      <LanguagePickerDialog
+        open={languagePickerOpen}
+        onOpenChange={setLanguagePickerOpen}
+        onConfirm={(language) => {
+          setLanguagePickerOpen(false);
+          translateAllDescriptions(language);
+        }}
+        availableLanguages={supportedLanguages}
+        currentLanguages={availableLanguages}
+      />
     </div>
   );
 };
