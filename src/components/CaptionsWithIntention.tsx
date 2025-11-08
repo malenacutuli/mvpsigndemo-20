@@ -814,26 +814,23 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     }
   }, [activeCandidate, currentTime, displayedCaption, displayUntil]);
 
-  if (!displayedCaption) return null;
+  // ✅ Process words with emotion AI and EC transformations - MUST be before early return
   const cap = displayedCaption;
-
-  // ✅ Character color (NEVER generic colors)
-  const characterColor = cap.speakerColor || customSpeakerColors[cap.speaker] || DEFAULT_NEUTRAL;
-  const words = (cap.words || []) as CaptionWord[];
+  const characterColor = cap?.speakerColor || customSpeakerColors[cap?.speaker] || DEFAULT_NEUTRAL;
+  const words = (cap?.words || []) as CaptionWord[];
   
-  // Phase 4: Compute base font size for segment
   const baseFontSize = getIntonationBasedFontSize(
     screenHeight,
-    cap.vocal_intensity,
-    cap.volume,
+    cap?.vocal_intensity,
+    cap?.volume,
     words[0]?.emphasis
   );
 
-  // Read-ahead color: white at 90% opacity
   const READ_AHEAD_COLOR = 'rgba(255, 255, 255, 0.9)';
   
-  // ✅ Process words with emotion AI and EC transformations
   const processedWords = React.useMemo(() => {
+    if (!cap || !words.length) return [];
+    
     return words.map((word) => {
       const intensity = calculateIntensity(word);
       const displayText = renderExpressiveWord(word, expressiveSettings.lengthenWords, expressiveSettings.useStyles);
@@ -846,10 +843,13 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
         intensity,
         sizeMultiplier,
         fontWeight,
-        color: characterColor  // ✅ Always character color
+        color: characterColor
       };
     });
-  }, [words, characterColor, expressiveSettings]);
+  }, [cap, words, characterColor, expressiveSettings]);
+
+  // ✅ Early return AFTER all hooks
+  if (!displayedCaption) return null;
 
   return (
     <div className="relative w-full">
