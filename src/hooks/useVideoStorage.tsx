@@ -4,8 +4,15 @@ import { useAuth } from './useAuth';
 
 export interface WordData {
   text: string;
+  start_ms?: number;
+  end_ms?: number;
   startTime?: number;
   endTime?: number;
+  duration_ms?: number;
+  confidence?: number;
+  intensity?: 'whisper' | 'quiet' | 'normal' | 'loud' | 'yelling' | 'screaming';
+  sentiment?: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+  sentimentConfidence?: number;
   emphasis?: 'loud' | 'quiet' | 'normal' | 'yelling';
   pitch?: 'high' | 'low' | 'normal';
 }
@@ -14,20 +21,36 @@ export interface TranscriptSegment {
   id?: string;
   transcriptId?: string | null; // ✅ Link to transcripts table
   text: string;
+  start_ms?: number;
+  end_ms?: number;
   startTime: number;
   endTime: number;
   speaker?: string;
   speakerColor?: string;
   speakerAsrLabel?: string; // Original AssemblyAI label (A, B, C)
+  speaker_asr_label?: string;
   emphasis?: 'normal' | 'loud' | 'quiet' | 'yelling';
   pitch?: 'normal' | 'high' | 'low';
   words?: WordData[];
+  words_source?: string;
+  timing_confidence?: number;
   isOffCamera?: boolean;
   segmentType?: 'dialogue' | 'soundeffect' | 'music';
   confidence?: number;
   characterId?: string | null; // ✅ FIX #1: Link to characters table (camelCase)
   character_id?: string | null; // ✅ FIX #1: Link to characters table (snake_case)
   idx?: number; // ✅ Segment index for ordering
+  
+  // ✅ NEW: Emotion fields
+  overall_intensity?: string;
+  overallIntensity?: string;
+  overall_pitch?: string;
+  overallPitch?: string;
+  sentiment?: string;
+  sentiment_confidence?: number;
+  sentimentConfidence?: number;
+  emotion_metadata?: any;
+  emotionMetadata?: any;
 }
 
 export interface AudioDescription {
@@ -71,6 +94,34 @@ export const useVideoStorage = (videoId: string) => {
     }
   };
 
+  // Helper function to parse words with duration and emotion data
+  const parseWordsWithDuration = (wordsJson: any): WordData[] | undefined => {
+    if (!wordsJson) return undefined;
+    
+    try {
+      if (Array.isArray(wordsJson)) {
+        return wordsJson
+          .filter(word => word && typeof word === 'object' && typeof word.text === 'string')
+          .map(w => ({
+            text: w.text,
+            start_ms: w.start_ms,
+            end_ms: w.end_ms,
+            startTime: w.start_ms / 1000,
+            endTime: w.end_ms / 1000,
+            duration_ms: w.end_ms - w.start_ms,
+            confidence: w.confidence,
+            intensity: w.intensity,
+            sentiment: w.sentiment,
+            sentimentConfidence: w.sentimentConfidence
+          }));
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Failed to parse words with duration:', error);
+      return undefined;
+    }
+  };
+
   const saveTranscriptSegments = async (segments: TranscriptSegment[], language: string = 'en') => {
     if (!user) {
       console.warn('⚠️ User not authenticated - transcript changes will be lost on page refresh');
@@ -84,9 +135,6 @@ export const useVideoStorage = (videoId: string) => {
 
     try {
       console.log('💾 Saving transcript segments to database:', segments.length, 'segments for video:', videoId);
-
-      // ✅ Quantize helper: Round to 10ms steps to reduce drift
-      const quantize = (t: number) => Math.round(t * 100) / 100;
 
       // ✅ Fetch or CREATE transcript_id for this video+language (FORCE transcript_id to always exist)
       let transcriptId: string;
@@ -128,40 +176,65 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`💾 Created new transcript_id: ${transcriptId}`);
       }
 
-      // Prepare segments with quantized timing
+      // Prepare segments with exact millisecond timing (NO quantization)
       const rows = segments.map((seg: TranscriptSegment, i: number) => {
-        const qStart = quantize(seg.startTime);
-        const qEnd = Math.max(quantize(seg.endTime), qStart + 0.1); // Ensure end > start
+        const startMs = seg.start_ms || Math.floor(seg.startTime * 1000);
+        const endMs = seg.end_ms || Math.floor(seg.endTime * 1000);
         
         return {
           video_id: videoId,
           language,
           transcript_id: transcriptId,
           idx: seg.idx ?? i,
-          start_time: qStart,
-          end_time: qEnd,
+          // ✅ NEW: Milliseconds (NO quantization)
+          start_ms: startMs,
+          end_ms: endMs,
+          // ✅ Backwards compatibility: keep old seconds fields
+          start_time: startMs / 1000,
+          end_time: endMs / 1000,
           text: seg.text,
           emphasis: seg.emphasis ?? null,
           pitch: seg.pitch ?? null,
-          words: seg.words && seg.words.length > 0 ? JSON.parse(JSON.stringify(seg.words)) : null,
+          words_source: seg.words_source || 'asr',
+          timing_confidence: seg.timing_confidence,
+          speaker_asr_label: seg.speakerAsrLabel || seg.speaker_asr_label,
           character_id: seg.characterId ?? seg.character_id ?? null,
           speaker: seg.speaker ?? null,
-          speaker_asr_label: seg.speakerAsrLabel ?? null,
-          speaker_color: seg.speakerColor ?? null
+          speaker_color: seg.speakerColor ?? null,
+          is_off_camera: seg.isOffCamera ?? false,
+          
+          // ✅ NEW: Emotion fields
+          overall_intensity: seg.overall_intensity || seg.overallIntensity,
+          overall_pitch: seg.overall_pitch || seg.overallPitch,
+          sentiment: seg.sentiment,
+          sentiment_confidence: seg.sentiment_confidence || seg.sentimentConfidence,
+          emotion_metadata: seg.emotion_metadata || seg.emotionMetadata,
+          
+          // ✅ Words with duration
+          words: seg.words && seg.words.length > 0 ? seg.words.map(w => ({
+            text: w.text,
+            start_ms: w.start_ms || Math.floor((w.startTime || 0) * 1000),
+            end_ms: w.end_ms || Math.floor((w.endTime || 0) * 1000),
+            confidence: w.confidence,
+            duration_ms: (w.end_ms || Math.floor((w.endTime || 0) * 1000)) - (w.start_ms || Math.floor((w.startTime || 0) * 1000)),
+            intensity: w.intensity,
+            sentiment: w.sentiment,
+            sentimentConfidence: w.sentimentConfidence
+          })) : null
         };
       });
 
       console.log('[saveTranscriptSegments]',
-        { transcriptId, rows: rows.length, sample: rows[0] && { st: rows[0].start_time, sp: rows[0].speaker } });
+        { transcriptId, rows: rows.length, sample: rows[0] && { start_ms: rows[0].start_ms, sp: rows[0].speaker } });
 
       // ✅ STRONGER DEDUPE: By idx (stable identity), with priority selection
       const dedupMap = new Map<string, typeof rows[number]>();
       
       for (const r of rows) {
-        // Key by (transcriptId, idx) if idx exists, else by (quantized timing + text)
+        // Key by (transcriptId, idx) if idx exists, else by (millisecond timing + text)
         const key = r.idx !== undefined && r.idx !== null
           ? `${r.transcript_id}|${r.idx}`
-          : `${r.start_time}|${r.end_time}|${r.text.trim()}`;
+          : `${r.start_ms}|${r.end_ms}|${r.text.trim()}`;
         
         const existing = dedupMap.get(key);
         
@@ -171,7 +244,7 @@ export const useVideoStorage = (videoId: string) => {
           // Selection priority: character_id > words > longer duration
           const hasChar = r.character_id && !existing.character_id;
           const hasWords = r.words && !existing.words;
-          const longerDuration = (r.end_time - r.start_time) > (existing.end_time - existing.start_time);
+          const longerDuration = (r.end_ms - r.start_ms) > (existing.end_ms - existing.start_ms);
           
           if (hasChar || (hasWords && !existing.character_id) || (longerDuration && !existing.character_id && !existing.words)) {
             dedupMap.set(key, r);
@@ -279,7 +352,14 @@ export const useVideoStorage = (videoId: string) => {
         // ✅ STEP 2: Load segments from ONE canonical source only (include transcript_id)
         const segQuery = supabase
           .from('transcript_segments_clean')
-          .select('id, transcript_id, idx, start_time, end_time, text, words, speaker, speaker_asr_label, speaker_color, character_id, is_off_camera, characters(id, name, color, is_off_camera)')
+          .select(`
+            id, transcript_id, idx, start_ms, end_ms, text, 
+            words, words_source, timing_confidence,
+            speaker, speaker_asr_label, speaker_color, character_id, is_off_camera,
+            overall_intensity, overall_pitch,
+            sentiment, sentiment_confidence, emotion_metadata,
+            characters(id, name, color, is_off_camera, type)
+          `)
           .eq('video_id', videoId)
           .eq('language', language)
           .order('idx', { ascending: true });
@@ -334,20 +414,43 @@ export const useVideoStorage = (videoId: string) => {
           }
 
           // Map results with character data + transcript_id
+          const CHARACTER_COLORS: Record<string, string> = {
+            main: '#3B82F6',
+            supporting: '#8B5CF6',
+            minor: '#EC4899'
+          };
+
           const segments: TranscriptSegment[] = cleanedRows.map((r: any) => ({
             id: r.id,
             transcriptId: r.transcript_id, // ✅ Include transcript_id
             idx: r.idx,
             text: r.text,
-            startTime: r.start_time,
-            endTime: r.end_time,
+            start_ms: r.start_ms,
+            end_ms: r.end_ms,
+            startTime: r.start_ms / 1000,  // ✅ Convert to seconds for render
+            endTime: r.end_ms / 1000,
+            
+            // Speaker/Character
             speaker: r.characters?.name ?? r.speaker ?? 'Unassigned',
-            speakerColor: r.characters?.color ?? r.speaker_color ?? '#9CA3AF',
+            speakerColor: r.characters?.color ?? CHARACTER_COLORS[r.characters?.type] ?? '#3B82F6',
             speakerAsrLabel: r.speaker_asr_label ?? null,
             characterId: r.character_id ?? null,
             character_id: r.character_id ?? null,
             isOffCamera: r.characters?.is_off_camera ?? r.is_off_camera ?? false,
-            words: r.words ? parseWordsData(r.words) : undefined
+            
+            // Timing metadata
+            words_source: r.words_source || 'asr',
+            timing_confidence: r.timing_confidence,
+            
+            // ✅ NEW: Emotion
+            overall_intensity: r.overall_intensity,
+            overall_pitch: r.overall_pitch,
+            sentiment: r.sentiment,
+            sentiment_confidence: r.sentiment_confidence,
+            emotion_metadata: r.emotion_metadata,
+            
+            // Words
+            words: r.words ? parseWordsWithDuration(r.words) : undefined
           }));
 
           console.log(`✅ STORAGE: Loaded ${segments.length} segments (deduplicated)`);
