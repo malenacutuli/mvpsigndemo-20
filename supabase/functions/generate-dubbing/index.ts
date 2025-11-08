@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, targetLanguage, voiceId, translateOnly } = await req.json();
+    const { text, targetLanguage, voiceId, translateOnly, videoId, sourceLanguage = 'en' } = await req.json();
 
     if (!text || !targetLanguage) {
       throw new Error('Text and target language are required');
@@ -23,6 +24,38 @@ serve(async (req) => {
 
     if (!openaiKey || !elevenlabsKey) {
       throw new Error('API keys not configured');
+    }
+
+    // Initialize Supabase client with user's auth
+    const authHeader = req.headers.get('Authorization')!;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Check for cached dubbing if videoId provided
+    if (videoId && !translateOnly) {
+      const { data: existing } = await supabase
+        .from('video_dubbing')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('target_language', targetLanguage)
+        .eq('audio_generation_status', 'completed')
+        .maybeSingle();
+
+      if (existing && existing.audio_url) {
+        console.log('✅ Returning cached dubbing');
+        return new Response(JSON.stringify({
+          originalText: existing.original_text,
+          translatedText: existing.translated_text,
+          audioUrl: existing.audio_url,
+          language: targetLanguage,
+          cached: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     console.log(`Translating text to ${targetLanguage}:`, text.substring(0, 100));
@@ -92,21 +125,79 @@ serve(async (req) => {
       throw new Error(`TTS failed: ${error}`);
     }
 
-    // Convert audio to base64 (handle large files in chunks)
-    const audioBuffer = await ttsResponse.arrayBuffer();
-    const uint8Array = new Uint8Array(audioBuffer);
-    
-    // Process in chunks to avoid stack overflow
+    const audioBuffer = new Uint8Array(await ttsResponse.arrayBuffer());
+
+    // Step 3: Save to storage and database if videoId provided
+    if (videoId) {
+      const dubbingId = crypto.randomUUID();
+      const audioPath = `${videoId}/${targetLanguage}/${dubbingId}.mp3`;
+      
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('dubbed-audio')
+        .upload(audioPath, audioBuffer, {
+          contentType: 'audio/mpeg',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('dubbed-audio')
+        .getPublicUrl(audioPath);
+
+      const audioUrl = urlData.publicUrl;
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('video_dubbing')
+        .upsert({
+          video_id: videoId,
+          target_language: targetLanguage,
+          source_language: sourceLanguage,
+          original_text: text,
+          translated_text: translatedText,
+          audio_url: audioUrl,
+          audio_generation_status: 'completed',
+          audio_generated_at: new Date().toISOString(),
+          voice_id: voiceId,
+          voice_name: getLanguageName(targetLanguage),
+          generation_params: { model: 'gpt-4o-mini', tts_model: 'eleven_multilingual_v2' }
+        }, {
+          onConflict: 'video_id,target_language'
+        });
+
+      if (dbError) {
+        console.error('Database save error:', dbError);
+      }
+
+      console.log('✅ Dubbing saved to database and storage');
+
+      return new Response(JSON.stringify({
+        originalText: text,
+        translatedText,
+        audioUrl,
+        language: targetLanguage,
+        cached: false
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fallback: return base64 for preview/testing without videoId
     let binaryString = '';
     const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
+    for (let i = 0; i < audioBuffer.length; i += chunkSize) {
+      const chunk = audioBuffer.slice(i, i + chunkSize);
       binaryString += String.fromCharCode(...chunk);
     }
-    
     const audioBase64 = btoa(binaryString);
 
-    console.log('Dubbing generated successfully');
+    console.log('Dubbing generated (preview mode)');
 
     return new Response(JSON.stringify({
       originalText: text,

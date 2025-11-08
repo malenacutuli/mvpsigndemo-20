@@ -1474,6 +1474,71 @@ export type Database = {
           },
         ]
       }
+      video_dubbing: {
+        Row: {
+          audio_error_message: string | null
+          audio_generated_at: string | null
+          audio_generation_status: string | null
+          audio_url: string | null
+          created_at: string
+          estimated_duration: number | null
+          generation_params: Json | null
+          id: string
+          original_text: string
+          source_language: string
+          target_language: string
+          translated_text: string
+          updated_at: string
+          video_id: string
+          voice_id: string | null
+          voice_name: string | null
+        }
+        Insert: {
+          audio_error_message?: string | null
+          audio_generated_at?: string | null
+          audio_generation_status?: string | null
+          audio_url?: string | null
+          created_at?: string
+          estimated_duration?: number | null
+          generation_params?: Json | null
+          id?: string
+          original_text: string
+          source_language?: string
+          target_language: string
+          translated_text: string
+          updated_at?: string
+          video_id: string
+          voice_id?: string | null
+          voice_name?: string | null
+        }
+        Update: {
+          audio_error_message?: string | null
+          audio_generated_at?: string | null
+          audio_generation_status?: string | null
+          audio_url?: string | null
+          created_at?: string
+          estimated_duration?: number | null
+          generation_params?: Json | null
+          id?: string
+          original_text?: string
+          source_language?: string
+          target_language?: string
+          translated_text?: string
+          updated_at?: string
+          video_id?: string
+          voice_id?: string | null
+          voice_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_dubbing_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_exports: {
         Row: {
           completed_at: string | null

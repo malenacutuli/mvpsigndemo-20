@@ -40,13 +40,37 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
       return;
     }
 
+    // Check for cached dubbing first
+    if (videoId) {
+      const { data: existing } = await supabase
+        .from('video_dubbing')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('target_language', selectedLanguage)
+        .eq('audio_generation_status', 'completed')
+        .maybeSingle();
+
+      if (existing && existing.audio_url) {
+        setDubbingResult({
+          translatedText: existing.translated_text,
+          audioUrl: existing.audio_url,
+          cached: true
+        });
+        setAudioUrl(existing.audio_url);
+        toast.success(`Loaded cached dubbing in ${getLanguageDisplay(selectedLanguage)}!`);
+        return;
+      }
+    }
+
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-dubbing', {
         body: {
           text: sourceText,
           targetLanguage: selectedLanguage,
-          voiceId: getVoiceForLanguage(selectedLanguage)
+          voiceId: getVoiceForLanguage(selectedLanguage),
+          videoId: videoId,
+          sourceLanguage: originalLanguage || 'en'
         }
       });
 
@@ -54,15 +78,22 @@ export const VideoDubbingManager: React.FC<VideoDubbingManagerProps> = ({
 
       setDubbingResult(data);
       
-      // Create audio URL from base64
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
-        { type: 'audio/mpeg' }
-      );
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
+      // Use audioUrl if available, otherwise create from base64
+      if (data.audioUrl) {
+        setAudioUrl(data.audioUrl);
+      } else if (data.audioBase64) {
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
+          { type: 'audio/mpeg' }
+        );
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+      }
 
-      toast.success(`Dubbing generated in ${getLanguageDisplay(selectedLanguage)}!`);
+      toast.success(data.cached ? 
+        `Loaded cached dubbing in ${getLanguageDisplay(selectedLanguage)}!` :
+        `Dubbing generated in ${getLanguageDisplay(selectedLanguage)}!`
+      );
     } catch (error: any) {
       console.error('Dubbing error:', error);
       toast.error(error.message || 'Failed to generate dubbing');

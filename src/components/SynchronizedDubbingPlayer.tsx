@@ -13,6 +13,7 @@ interface DubbedAudio {
 }
 
 interface SynchronizedDubbingPlayerProps {
+  videoId?: string;
   transcriptText?: string;
   audioDescriptions?: Array<{ text: string; startTime: number; endTime: number; voiceStyle?: string }>;
   currentTime: number;
@@ -37,6 +38,7 @@ const LANGUAGES = [
 ];
 
 export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps> = ({
+  videoId,
   transcriptText = '',
   audioDescriptions = [],
   currentTime,
@@ -54,6 +56,31 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
   const [isEnabled, setIsEnabled] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Load existing dubbing from database on mount
+  useEffect(() => {
+    const loadExistingDubbings = async () => {
+      if (!videoId) return;
+
+      const { data, error } = await supabase
+        .from('video_dubbing')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('audio_generation_status', 'completed');
+
+      if (data && data.length > 0) {
+        console.log(`✅ Loaded ${data.length} cached dubbings from database`);
+        const cachedAudios = data.map(d => ({
+          language: d.target_language,
+          audioUrl: d.audio_url,
+          translatedText: d.translated_text
+        }));
+        setDubbedAudios(cachedAudios);
+      }
+    };
+
+    loadExistingDubbings();
+  }, [videoId]);
 
   const getSourceText = () => {
     const t = (transcriptText || '').trim();
@@ -112,28 +139,34 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
         body: {
           text: source,
           targetLanguage: language,
-          voiceId: getVoiceForLanguage(language)
+          voiceId: getVoiceForLanguage(language),
+          videoId: videoId,
+          sourceLanguage: 'en'
         }
       });
 
       if (error) throw error;
 
-      const audioBlob = new Blob([new Uint8Array(atob(data.audioBase64).split('').map(c => c.charCodeAt(0)))], {
-        type: 'audio/mpeg'
-      });
+      // Handle both audioUrl (from storage) and audioBase64 (fallback)
+      const audioUrl = data.audioUrl || (data.audioBase64 ? 
+        URL.createObjectURL(new Blob(
+          [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
+          { type: 'audio/mpeg' }
+        )) : null
+      );
       
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      const newDubbedAudio: DubbedAudio = {
-        language,
-        audioUrl,
-        translatedText: data.translatedText || source
-      };
+      if (audioUrl) {
+        const newDubbedAudio: DubbedAudio = {
+          language,
+          audioUrl,
+          translatedText: data.translatedText || source
+        };
 
-      setDubbedAudios(prev => {
-        const filtered = prev.filter(audio => audio.language !== language);
-        return [...filtered, newDubbedAudio];
-      });
+        setDubbedAudios(prev => {
+          const filtered = prev.filter(audio => audio.language !== language);
+          return [...filtered, newDubbedAudio];
+        });
+      }
 
     } catch (error) {
       console.error('Error generating dubbing:', error);
@@ -156,8 +189,29 @@ export const SynchronizedDubbingPlayer: React.FC<SynchronizedDubbingPlayerProps>
       return;
     }
 
-    // Check if we have dubbed audio for this language
-    const existingAudio = dubbedAudios.find(audio => audio.language === language);
+    // Check if we have dubbed audio in state
+    let existingAudio = dubbedAudios.find(audio => audio.language === language);
+    
+    // If not in state, check database
+    if (!existingAudio && videoId) {
+      const { data } = await supabase
+        .from('video_dubbing')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('target_language', language)
+        .eq('audio_generation_status', 'completed')
+        .maybeSingle();
+
+      if (data && data.audio_url) {
+        existingAudio = {
+          language: data.target_language,
+          audioUrl: data.audio_url,
+          translatedText: data.translated_text
+        };
+        setDubbedAudios(prev => [...prev, existingAudio!]);
+        console.log('✅ Loaded dubbing from database');
+      }
+    }
     
     if (existingAudio) {
       // Stop previous
