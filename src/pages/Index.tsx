@@ -130,7 +130,7 @@ const Index = () => {
               
               <div className="text-center space-y-6 group">
                 <div className="flex items-center justify-center mx-auto h-80">
-                  <img src={audioDescriptions} alt="Creative Audio Descriptions" className="w-80 h-80 object-contain" />
+                  <img src={audioDescriptions} alt="Emotive Audio Descriptions" className="w-80 h-80 object-contain" />
                 </div>
                 <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.audioDescTitle')}</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
