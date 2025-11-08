@@ -42,6 +42,7 @@ interface TranscriptWorkflowProps {
   videoId: string;
   videoUrl: string;
   videoLanguage?: string;
+  videoMetadata?: any;
   onTranscriptReady: (segments: CaptionSegment[]) => void;
   onWorkflowComplete: () => void;
   onCharactersUpdate?: (characters: any[]) => void;
@@ -52,6 +53,7 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
   videoId,
   videoUrl,
   videoLanguage,
+  videoMetadata,
   onTranscriptReady,
   onWorkflowComplete,
   onCharactersUpdate,
@@ -322,6 +324,10 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
         
         console.log('🚀 Starting Whisper transcription...');
         
+        // Extract knownSpeakers from video metadata
+        const knownSpeakers = videoMetadata?.knownSpeakers || [];
+        console.log('🎭 Known speakers from metadata:', knownSpeakers);
+        
         const response = await supabase.functions.invoke('transcribe', {
           body: { 
             videoUrl,
@@ -332,7 +338,8 @@ export const TranscriptWorkflow: React.FC<TranscriptWorkflowProps> = ({
             language: detectedLanguage === 'auto' ? 'en' : detectedLanguage,
             maxDurationMinutes: 60, // Index up to 60 minutes by default
             useTestingMode, // Add testing mode flag
-            skipQualityCheck: true // Bypass validation to unblock immediately
+            skipQualityCheck: true, // Bypass validation to unblock immediately
+            knownSpeakers // ✅ Pass known speakers for identification
           }
         });
         

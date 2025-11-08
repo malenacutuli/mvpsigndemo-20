@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Video, FileText, Languages } from 'lucide-react';
+import { Upload, Video, FileText, Languages, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
@@ -37,6 +39,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en'); // Default to English
   const [contentType, setContentType] = useState<string>('education');
+  const [knownSpeakers, setKnownSpeakers] = useState<string[]>([]);
+  const [newSpeaker, setNewSpeaker] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -119,7 +123,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         language,
         content_type: contentType,
         status: 'uploading' as const,
-        user_id: userId
+        user_id: userId,
+        metadata: knownSpeakers.length > 0 ? { knownSpeakers } : null
       };
       
       console.log('Creating video record...', insertData);
@@ -557,6 +562,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       setVideoFile(null);
       setTitle('');
       setDescription('');
+      setKnownSpeakers([]);
+      setNewSpeaker('');
       setUploadProgress(0);
 
       if (onUploadComplete) {
@@ -733,6 +740,87 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             </div>
           </div>
         </div>
+
+        {/* Speaker & Emotion Detection */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-base font-light">Speaker & Emotion Detection</CardTitle>
+            <CardDescription className="font-light">
+              Automatic emotion detection with optional speaker identification
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="font-light">Known Speakers (Optional)</Label>
+              <p className="text-sm text-muted-foreground font-light">
+                Provide names for automatic identification, or leave blank to auto-detect
+              </p>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Sarah Chen"
+                  value={newSpeaker}
+                  onChange={(e) => setNewSpeaker(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newSpeaker.trim() && !knownSpeakers.includes(newSpeaker.trim())) {
+                        setKnownSpeakers([...knownSpeakers, newSpeaker.trim()]);
+                        setNewSpeaker('');
+                      }
+                    }
+                  }}
+                  disabled={uploading}
+                  className="font-light"
+                />
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    if (newSpeaker.trim() && !knownSpeakers.includes(newSpeaker.trim())) {
+                      setKnownSpeakers([...knownSpeakers, newSpeaker.trim()]);
+                      setNewSpeaker('');
+                    }
+                  }}
+                  variant="secondary"
+                  disabled={uploading}
+                  className="font-light"
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {knownSpeakers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {knownSpeakers.map((speaker, idx) => (
+                    <Badge key={idx} variant="secondary" className="font-light">
+                      {speaker}
+                      <X 
+                        className="ml-1 h-3 w-3 cursor-pointer"
+                        onClick={() => setKnownSpeakers(knownSpeakers.filter((_, i) => i !== idx))}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-sm font-medium font-light">FREE Automatic Features</span>
+              </div>
+              <ul className="text-xs text-muted-foreground pl-4 space-y-0.5 font-light">
+                <li>✓ 7-level intensity detection (whisper → screaming)</li>
+                <li>✓ Sentiment analysis (POSITIVE/NEGATIVE/NEUTRAL)</li>
+                <li>✓ Dynamic font sizing (smaller whispers, larger yelling)</li>
+                <li>✓ Speaker name identification</li>
+                <li>✓ Character color attribution</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Upload Progress */}
         {uploading && (
