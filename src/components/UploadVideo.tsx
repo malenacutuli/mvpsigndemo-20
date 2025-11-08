@@ -426,15 +426,33 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
         console.log('Using resumable upload for large file...');
         
-        // Use Supabase Storage TUS (resumable) upload for large files
+        // Verify bucket exists
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.error('Failed to list buckets:', bucketError);
+          throw new Error('Storage configuration error. Please try again.');
+        }
+        
+        const videoBucket = buckets?.find(b => b.name === 'videos');
+        if (!videoBucket) {
+          console.error('Videos bucket does not exist');
+          throw new Error('Storage bucket not configured. Please contact support.');
+        }
+        
+        // Get authentication token
         const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData.session?.access_token;
         if (!accessToken) {
           throw new Error('You must be signed in to upload large files.');
         }
 
-        const endpoint = `https://faeyekynudyzeotbjfsj.storage.supabase.co/storage/v1/upload/resumable`;
+        // Construct dynamic TUS endpoint from Supabase URL
+        const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://faeyekynudyzeotbjfsj.supabase.co';
+        const storageUrl = supabaseUrl.replace('.supabase.co', '.storage.supabase.co');
+        const endpoint = `${storageUrl}/storage/v1/upload/resumable`;
         const objectPath = `originals/${fileName}`;
+        
+        console.log('TUS endpoint:', endpoint);
 
         await new Promise<void>((resolve, reject) => {
           const upload = new TusUpload(videoFile, {
@@ -454,23 +472,35 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             },
             chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
             onError: (err) => {
-              console.error('Resumable upload error:', err);
-              reject(err);
+              console.error('TUS upload error:', err);
+              console.error('Error details:', {
+                message: err.message,
+                endpoint,
+                objectPath,
+                fileSize: videoFile.size,
+                fileName: videoFile.name
+              });
+              reject(new Error(`Upload failed: ${err.message || 'Network error'}. Please check your connection and try again.`));
             },
             onProgress: (bytesUploaded, bytesTotal) => {
               const pct = Math.min(60, Math.round((bytesUploaded / bytesTotal) * 60)); // cap at 60% until post-processing
               setUploadProgress(pct);
             },
             onSuccess: () => {
-              console.log('Resumable upload completed.');
+              console.log('TUS upload completed successfully');
               resolve();
             },
           });
 
           upload.findPreviousUploads().then((previous) => {
             if (previous.length) {
+              console.log('Resuming from previous upload');
               upload.resumeFromPreviousUpload(previous[0]);
             }
+            upload.start();
+          }).catch((err) => {
+            console.error('Failed to check previous uploads:', err);
+            // Continue with new upload even if resume check fails
             upload.start();
           });
         });
