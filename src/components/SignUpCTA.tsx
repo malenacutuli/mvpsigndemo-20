@@ -73,7 +73,7 @@ export const SignUpCTA: React.FC = () => {
             Experience the accessibility transformation
           </CardTitle>
           <CardDescription className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Sign up to experience full accessibility: Speech recognition, captions with Intention, 
+            Sign up to experience full accessibility: Speech recognition, Captions with Intention, 
             Audio Transcriptions, American Sign Language and Spanish Sign Language Avatars.
           </CardDescription>
         </CardHeader>

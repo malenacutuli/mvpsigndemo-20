@@ -8,7 +8,7 @@ export const FeatureExplanation: React.FC = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <Card className="p-4 bg-blue-50 border-blue-200 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <img src={captionsIntention} alt="Captions with intention" className="w-5 h-5 object-contain" />
+          <img src={captionsIntention} alt="Captions with Intention" className="w-5 h-5 object-contain" />
           <h3 className="font-light text-blue-600">AI CC (Closed Captions)</h3>
         </div>
         <p className="text-sm text-blue-800 font-light">

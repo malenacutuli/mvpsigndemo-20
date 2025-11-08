@@ -12,7 +12,7 @@
     "title": "Where Every Story is",
     "titleAccent": "Truly Seen,",
     "titleEnd": "Heard, and Felt.",
-    "subtitle": "The world's first video platform designed for everyone - powered by captions with intention, Emotive Audio Descriptions, and immersive accessibility tools.",
+    "subtitle": "The world's first video platform designed for everyone - powered by Captions with Intention, Emotive Audio Descriptions, and immersive accessibility tools.",
     "headline": "Build something better.",
     "headlineSecond": "For everyone.",
     "description": "Create inclusive experiences that meet WCAG and EAA/ADA standards, thanks to the leading platform in digital accessibility and the support of expert services.",
@@ -356,7 +356,7 @@
       },
       "uploadVideo": {
         "title": "Upload Video", 
-        "description": "Upload your video and automate with captions with intention, audio descriptions and analyze video content"
+        "description": "Upload your video and automate with Captions with Intention, audio descriptions and analyze video content"
       },
       "manageVideos": {
         "title": "Manage Videos",
