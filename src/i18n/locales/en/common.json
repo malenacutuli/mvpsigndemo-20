@@ -761,14 +761,78 @@
     "accessibility": {
       "title": "Accessibility Features",
       "captions": "Smart Captions",
+      "captionsWith": "Captions with Intention",
+      "captionsDesc": "Emotional context and speaker identification",
       "audioDescription": "Audio Description",
+      "audioDescriptions": "Audio Descriptions",
+      "audioDescriptionsDesc": "Describes visual elements for screen readers",
       "signLanguage": "Sign Language",
-      "keyboardNavigation": "Keyboard Navigation"
+      "keyboardNavigation": "Keyboard Navigation",
+      "videoAnalysis": "Video Analysis",
+      "videoAnalysisDesc": "AI-powered analysis and narration generation"
     },
     "embed": {
       "title": "Embed Settings",
       "hideEmbedSettings": "Hide Embed Settings",
       "showEmbedSettings": "Show Embed Settings"
+    },
+    "tabs": {
+      "transcript": "Transcript Extraction & Character Management",
+      "audioDescription": "Audio Description and Video Analysis"
+    },
+    "transcriptTab": {
+      "title": "Transcript Extraction & Character Management",
+      "description": "Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.",
+      "autoEnhanced": "Auto-Enhanced:",
+      "autoEnhancedDesc": "Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.",
+      "speakerTitle": "Speaker & Character Management",
+      "speakerDesc": "Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol."
+    },
+    "videoAnalysis": {
+      "title": "Video Analysis",
+      "description": "Analyze video content for silent gaps and generate storytelling audio descriptions using AI.",
+      "readyToIndex": "Ready to Index",
+      "indexVideo": "Index Video",
+      "silentGapsTitle": "Silent Gaps and Narrations",
+      "silentGapsDesc": "Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.",
+      "runAnalysis": "Run Analysis",
+      "analysisPrompt": "Analysis Prompt",
+      "noResults": "Run analysis to see silent gaps and narrations.",
+      "noSegments": "No silent segments found in this video.",
+      "customAnalysisTitle": "Custom Analysis Insights",
+      "customAnalysisDesc": "Enter a custom prompt to extract specific insights from your video content (e.g., generate hashtags, identify themes, extract key quotes, summarize main points).",
+      "analyzeWithPrompt": "Analyze with Prompt",
+      "customPromptPlaceholder": "Enter a custom prompt to extract specific insights from your video (e.g., generate hashtags, identify themes, extract key quotes, etc.)",
+      "customPromptExample": "e.g. Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions...",
+      "customPromptEmpty": "Enter a custom prompt above and click \"Analyze\" to generate insights."
+    },
+    "audioDescEditor": {
+      "title": "Audio Description Generation",
+      "description": "Enable audio descriptions for visual elements in the video.",
+      "editorTitle": "Audio Description Editor",
+      "editorDesc": "Generate and manage audio descriptions to describe visual elements for accessibility.",
+      "howToUse": "How to Use Audio Descriptions:",
+      "step1": "Step 1: Select your preferred audio description voice from the dropdown above.",
+      "step2": "Step 2: Choose a generation method:",
+      "step2Basic": "Basic AI: Quick generation of simple descriptions for common scenarios",
+      "step2Advanced": "Advanced Analysis: Comprehensive video analysis that detects silent moments and generates detailed cinematic descriptions",
+      "step3": "Step 3: After generation, click \"Analyze for Extended Audio Description\" to check if descriptions fit within dialogue gaps.",
+      "step4": "Step 4: Edit descriptions as needed, then click \"Generate Audio\" for each segment or \"Generate All Audio\" for batch processing.",
+      "step5": "Step 5: Save your work using \"Save All\" to persist changes to the database.",
+      "voiceLabel": "Audio Description Voice",
+      "languageLabel": "Audio Description Language",
+      "originalLanguage": "(Original)",
+      "actions": "Actions",
+      "basicAI": "Basic AI Generation",
+      "generateAD": "Generate Audio Description",
+      "analyzeEAD": "Analyze for Extended Audio Description",
+      "addManual": "Add Manual Segment"
+    },
+    "export": {
+      "title": "Export Accessible Video",
+      "description": "Download your video with accessibility features burned-in.",
+      "currentLanguage": "Current language: {{language}}",
+      "finalizeExport": "Finalize & Export"
     },
     "loadingError": "Error loading video",
     "deleteSuccess": "Video deleted successfully",

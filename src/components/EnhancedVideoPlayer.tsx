@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AxessiblePlayer } from './AxessiblePlayer';
 import { TranscriptEditor } from './TranscriptEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
@@ -52,6 +53,7 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   videoStatus,
   onLanguageChange
 }) => {
+  const { t } = useTranslation();
   console.log('🚨 ENHANCED VIDEO PLAYER LOADED - videoId:', videoId, 'language:', language);
   
   const [captions, setCaptions] = useState<CaptionSegment[]>([]);
@@ -1318,26 +1320,26 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             value="transcript" 
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm font-light"
           >
-            Transcript Extraction & Character Management
+            {t('videoDetail.tabs.transcript')}
           </TabsTrigger>
           <TabsTrigger 
             value="audio-description"
             className="data-[state=active]:bg-background data-[state=active]:shadow-sm font-light"
           >
-            Audio Description and Video Analysis
+            {t('videoDetail.tabs.audioDescription')}
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="transcript" className="space-y-6">
           <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Transcript Extraction & Character Management</CardTitle>
+              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">{t('videoDetail.transcriptTab.title')}</CardTitle>
               <p className="text-base font-light text-muted-foreground leading-relaxed">
-                Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
+                {t('videoDetail.transcriptTab.description')}
               </p>
               <div className="bg-muted/50 border border-border rounded-xl p-4 mt-4">
                 <p className="text-base font-light text-muted-foreground leading-relaxed">
-                  <strong>Auto-Enhanced:</strong> Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+                  <strong>{t('videoDetail.transcriptTab.autoEnhanced')}</strong> {t('videoDetail.transcriptTab.autoEnhancedDesc')}
                 </p>
               </div>
             </CardHeader>
@@ -1359,9 +1361,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           {/* Integrated Speaker & Character Management inside Transcript tab */}
           <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-2xl font-light text-foreground">Speaker & Character Management</CardTitle>
+              <CardTitle className="text-2xl font-light text-foreground">{t('videoDetail.transcriptTab.speakerTitle')}</CardTitle>
               <p className="text-base font-light text-muted-foreground leading-relaxed">
-                Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.
+                {t('videoDetail.transcriptTab.speakerDesc')}
               </p>
             </CardHeader>
             <CardContent>
@@ -1391,9 +1393,9 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           
           <Card className="shadow-soft border-border rounded-xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Audio Description Generation</CardTitle>
+              <CardTitle className="text-3xl md:text-4xl font-light text-foreground">{t('videoDetail.audioDescEditor.title')}</CardTitle>
               <p className="text-base font-light text-muted-foreground leading-relaxed">
-                Enable audio descriptions for visual elements in the video.
+                {t('videoDetail.audioDescEditor.description')}
               </p>
             </CardHeader>
             <CardContent>
