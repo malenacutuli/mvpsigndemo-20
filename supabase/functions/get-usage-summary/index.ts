@@ -128,10 +128,10 @@ serve(async (req) => {
     const minutesRemaining = Math.max(0, minutesIncluded - minutesUsed);
     const overageMinutes = Math.max(0, minutesUsed - minutesIncluded);
     
-    // Get overage rate
+    // Get overage rate - CORRECT PRICING
     const overageRate = subscriber.subscription_tier === 'starter' ? 11.90 :
-                       subscriber.subscription_tier === 'standard' ? 5.99 :
-                       subscriber.subscription_tier === 'advanced' ? 4.99 : 0;
+                       subscriber.subscription_tier === 'standard' ? 8.99 :
+                       subscriber.subscription_tier === 'advanced' ? 5.99 : 0;
     
     const overageCost = overageMinutes * overageRate;
 

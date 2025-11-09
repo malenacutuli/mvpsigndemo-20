@@ -96,7 +96,7 @@ function generateEmailContent(
   cycleEnd.setMonth(cycleEnd.getMonth() + 1);
   const cycleEndStr = cycleEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const overageRate = usage.tier === 'starter' ? 11.90 : usage.tier === 'standard' ? 5.99 : 4.99;
+  const overageRate = usage.tier === 'starter' ? 11.90 : usage.tier === 'standard' ? 8.99 : 5.99;
 
   switch (type) {
     case 'warning_minutes_80':
@@ -287,8 +287,8 @@ function generateEmailContent(
     <h3>Action Required:</h3>
     <p>To avoid future overage charges and save money, we recommend upgrading to a higher tier plan:</p>
     <ul>
-      <li><strong>Standard Plan</strong>: 10 minutes/month at €5.99/minute overage</li>
-      <li><strong>Advanced Plan</strong>: 50 minutes/month at €4.99/minute overage</li>
+      <li><strong>Standard Plan</strong>: 10 minutes/month at €8.99/minute overage</li>
+      <li><strong>Advanced Plan</strong>: 50 minutes/month at €5.99/minute overage</li>
     </ul>
 
     <div style="text-align: center; margin: 30px 0;">
