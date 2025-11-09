@@ -150,7 +150,7 @@ export function ExportModal({
             </Label>
             {!available && (
               <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                Not available
+                {t('videoDetail.export.notAvailable')}
               </span>
             )}
             {key === 'audioDescription' && available && (availableFeatures as any).audioDescriptionsReady !== undefined && (
@@ -257,10 +257,10 @@ export function ExportModal({
             <Alert className="rounded-xl">
               <Download className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
-                <span className="text-base font-light">Need a copy now? Download the original video.</span>
+                <span className="text-base font-light">{t('videoDetail.export.originalPrompt')}</span>
                 <Button size="sm" variant="outline" onClick={handleForceDownloadOriginal} className="ml-2 font-light">
                   <Download className="w-4 h-4 mr-2" />
-                  Download original
+                  {t('videoDetail.export.downloadOriginal')}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -305,29 +305,29 @@ export function ExportModal({
           {!isProcessing && !downloadUrl && (
             <>
               <div>
-                <h3 className="text-2xl font-light mb-4">Select Accessibility Features</h3>
+                <h3 className="text-2xl font-light mb-4">{t('videoDetail.export.selectFeatures')}</h3>
                 <div className="space-y-3">
                   {renderFeatureOption(
                     'captions',
                     <FileText className="w-5 h-5" />,
-                    'Captions with Intention',
-                    'Burn-in word-by-word captions with character colors',
+                    t('videoDetail.export.captionsTitle'),
+                    t('videoDetail.export.captionsDesc'),
                     availableFeatures.hasTranscript
                   )}
                   
                   {renderFeatureOption(
                     'audioDescription',
                     <Volume2 className="w-5 h-5" />,
-                    'Audio Description',
-                    'Mix audio descriptions with ducked program audio',
+                    t('videoDetail.export.audioDescTitle'),
+                    t('videoDetail.export.audioDescDesc'),
                     availableFeatures.hasAudioDescriptions
                   )}
                   
                   {renderFeatureOption(
                     'signLanguage',
                     <Hand className="w-5 h-5" />,
-                    'Sign Language Interpretation',
-                    'Picture-in-picture sign language overlay',
+                    t('videoDetail.export.signLanguageTitle'),
+                    t('videoDetail.export.signLanguageDesc'),
                     availableFeatures.hasSignLanguage
                   )}
                 </div>
@@ -353,7 +353,7 @@ export function ExportModal({
                 <Alert className="rounded-xl">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription className="text-base font-light leading-relaxed">
-                    Please select at least one accessibility feature to export.
+                    {t('videoDetail.export.selectAtLeastOne')}
                   </AlertDescription>
                 </Alert>
               )}
@@ -368,7 +368,7 @@ export function ExportModal({
               disabled={isProcessing}
               className="flex-1 font-light"
             >
-              {isProcessing ? 'Processing...' : downloadUrl ? 'Close' : 'Cancel'}
+              {isProcessing ? 'Processing...' : downloadUrl ? 'Close' : t('common.cancel')}
             </Button>
             
             {!isProcessing && !downloadUrl && (
@@ -378,7 +378,7 @@ export function ExportModal({
                 className="flex-1 font-light"
               >
                 <Video className="w-4 h-4 mr-2" />
-                Start Export
+                {t('videoDetail.export.startExport')}
               </Button>
             )}
           </div>
