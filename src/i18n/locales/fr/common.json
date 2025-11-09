@@ -559,7 +559,8 @@
     "export": {
       "title": "Exporter la Vidéo Accessible",
       "description": "Téléchargez votre vidéo avec les fonctionnalités d'accessibilité intégrées.",
-      "currentLanguage": "Langue actuelle : {{language}}",
+      "video": "Vidéo",
+      "currentLanguage": "Langue actuelle",
       "finalizeExport": "Finaliser et Exporter",
       "noTranscript": "Générez d'abord une transcription pour activer l'exportation avec sous-titres."
     },

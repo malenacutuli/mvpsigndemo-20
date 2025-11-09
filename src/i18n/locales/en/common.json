@@ -847,7 +847,8 @@
     "export": {
       "title": "Export Accessible Video",
       "description": "Download your video with accessibility features burned-in.",
-      "currentLanguage": "Current language: {{language}}",
+      "video": "Video",
+      "currentLanguage": "Current language",
       "finalizeExport": "Finalize & Export",
       "noTranscript": "Generate a transcript first to enable export with captions."
     },

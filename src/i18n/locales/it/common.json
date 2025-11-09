@@ -559,7 +559,8 @@
     "export": {
       "title": "Esporta Video Accessibile",
       "description": "Scarica il tuo video con le funzionalità di accessibilità incorporate.",
-      "currentLanguage": "Lingua corrente: {{language}}",
+      "video": "Video",
+      "currentLanguage": "Lingua corrente",
       "finalizeExport": "Finalizza ed Esporta",
       "noTranscript": "Genera prima una trascrizione per abilitare l'esportazione con sottotitoli."
     },
