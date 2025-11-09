@@ -134,7 +134,7 @@ export default function Pricing() {
         }
       } else if (planKey === 'enterprise') {
         // Contact sales for enterprise
-        window.open('mailto:sales@axessible.com?subject=Enterprise Plan Inquiry', '_blank');
+        window.open('mailto:hello@axessible.ai?cc=malena@axessible.ai&subject=Enterprise Plan Inquiry', '_blank');
       } else {
         // For other paid plans
         if (user) {
@@ -292,7 +292,7 @@ export default function Pricing() {
             variant="outline"
             size="lg"
             className="font-light"
-            onClick={() => window.open('mailto:sales@axessible.com?subject=Pricing Questions', '_blank')}
+            onClick={() => window.open('mailto:hello@axessible.ai?cc=malena@axessible.ai&subject=Pricing Questions', '_blank')}
           >
             {t('pricing.contactUs')}
           </Button>
