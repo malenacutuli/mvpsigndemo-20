@@ -500,7 +500,14 @@
       "autoEnhanced": "Auto-Millorat:",
       "autoEnhancedDesc": "La identificació del parlant i l'anàlisi d'intensitat vocal s'executen automàticament quan generes o carregues transcripcions. Els resultats s'apliquen directament als subtítols per a una millor accessibilitat.",
       "speakerTitle": "Gestió de Parlants i Personatges",
-      "speakerDesc": "Gestiona els colors dels personatges i connecta els parlants als personatges. Els canvis actualitzen els subtítols immediatament i segueixen el protocol Captions with Intention."
+      "speakerDesc": "Gestiona els colors dels personatges i connecta els parlants als personatges. Els canvis actualitzen els subtítols immediatament i segueixen el protocol Captions with Intention.",
+      "extracting": "Extraient Transcripció Completa...",
+      "extractTranscript": "Extreure Transcripció Completa",
+      "saveChanges": "Desar Canvis al Vídeo",
+      "retranslate": "Re-traduir",
+      "translating": "Traduint...",
+      "addSegment": "Afegir Segment",
+      "export": "Exportar"
     },
     "videoAnalysis": {
       "title": "Anàlisi de Vídeo",

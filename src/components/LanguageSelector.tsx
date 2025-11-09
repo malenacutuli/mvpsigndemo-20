@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
   onTranslatedContentUpdate,
 }) => {
+  const { t } = useTranslation();
   const [translatedContent, setTranslatedContent] = useState<TranslatedContent[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
 
@@ -250,10 +252,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           {isTranslating ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              Translating...
+              {t('videoDetail.transcriptTab.translating')}
             </>
           ) : (
-            <>Re-translate</>
+            <>{t('videoDetail.transcriptTab.retranslate')}</>
           )}
         </Button>
       )}

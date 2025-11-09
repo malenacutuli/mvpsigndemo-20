@@ -500,7 +500,14 @@
       "autoEnhanced": "Auto-Migliorato:",
       "autoEnhancedDesc": "L'identificazione del parlante e l'analisi dell'intensità vocale vengono eseguite automaticamente quando generi o carichi trascrizioni. I risultati vengono applicati direttamente ai sottotitoli per una migliore accessibilità.",
       "speakerTitle": "Gestione Parlanti e Personaggi",
-      "speakerDesc": "Gestisci i colori dei personaggi e collega i parlanti ai personaggi. Le modifiche aggiornano immediatamente i sottotitoli e seguono il protocollo Captions with Intention."
+      "speakerDesc": "Gestisci i colori dei personaggi e collega i parlanti ai personaggi. Le modifiche aggiornano immediatamente i sottotitoli e seguono il protocollo Captions with Intention.",
+      "extracting": "Estrazione Trascrizione Completa...",
+      "extractTranscript": "Estrai Trascrizione Completa",
+      "saveChanges": "Salva Modifiche al Video",
+      "retranslate": "Ri-traduci",
+      "translating": "Traduzione...",
+      "addSegment": "Aggiungi Segmento",
+      "export": "Esporta"
     },
     "videoAnalysis": {
       "title": "Analisi Video",

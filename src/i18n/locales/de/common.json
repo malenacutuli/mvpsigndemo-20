@@ -500,7 +500,14 @@
       "autoEnhanced": "Auto-Verbessert:",
       "autoEnhancedDesc": "Sprecheridentifikation und Stimmintensitätsanalyse werden automatisch ausgeführt, wenn Sie Transkripte generieren oder laden. Die Ergebnisse werden direkt auf Untertitel für bessere Barrierefreiheit angewendet.",
       "speakerTitle": "Sprecher- und Charakterverwaltung",
-      "speakerDesc": "Verwalten Sie Charakterfarben und verbinden Sie Sprecher mit Charakteren. Änderungen aktualisieren Untertitel sofort und folgen dem Captions with Intention-Protokoll."
+      "speakerDesc": "Verwalten Sie Charakterfarben und verbinden Sie Sprecher mit Charakteren. Änderungen aktualisieren Untertitel sofort und folgen dem Captions with Intention-Protokoll.",
+      "extracting": "Vollständiges Transkript Extrahieren...",
+      "extractTranscript": "Vollständiges Transkript Extrahieren",
+      "saveChanges": "Änderungen am Video Speichern",
+      "retranslate": "Neu Übersetzen",
+      "translating": "Übersetzen...",
+      "addSegment": "Segment Hinzufügen",
+      "export": "Exportieren"
     },
     "videoAnalysis": {
       "title": "Videoanalyse",

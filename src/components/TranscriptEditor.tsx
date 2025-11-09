@@ -1303,7 +1303,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-2xl font-light text-foreground flex items-center justify-between">
-            Transcript & Content Generation
+            {t('videoDetail.transcriptTab.title')}
             <Badge variant="outline" className="font-light">
               {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
             </Badge>
@@ -1311,12 +1311,12 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
           <Card className="border-primary/20 bg-primary/5 mt-3 rounded-xl">
             <CardContent className="p-4">
               <p className="text-base font-light leading-relaxed">
-                Extract speech from the video with automatic speaker identification and vocal intensity analysis. Captions are automatically enhanced for accessibility.
+                {t('videoDetail.transcriptTab.description')}
               </p>
             </CardContent>
           </Card>
           <p className="mt-3 text-sm font-light text-muted-foreground leading-relaxed">
-            Auto-Enhanced: Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.
+            <strong>{t('videoDetail.transcriptTab.autoEnhanced')}</strong> {t('videoDetail.transcriptTab.autoEnhancedDesc')}
           </p>
         </CardHeader>
         
@@ -1429,7 +1429,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             variant="ghost"
             className="font-light"
           >
-            {isTranslating ? 'Translating...' : 'Re-translate'}
+            {isTranslating ? t('videoDetail.transcriptTab.translating') : t('videoDetail.transcriptTab.retranslate')}
           </Button>
 
           <Button
@@ -1440,7 +1440,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             className="font-light"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Segment
+            {t('videoDetail.transcriptTab.addSegment')}
           </Button>
 
           <Button
@@ -1451,7 +1451,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             className="font-light"
           >
             <Download className="w-4 h-4 mr-2" />
-            Export
+            {t('videoDetail.transcriptTab.export')}
           </Button>
         </div>
 

@@ -1023,7 +1023,14 @@
       "autoEnhanced": "Auto-Mejorado:",
       "autoEnhancedDesc": "La identificación del orador y el análisis de intensidad vocal se ejecutan automáticamente cuando generas o cargas transcripciones. Los resultados se aplican directamente a los subtítulos para una mejor accesibilidad.",
       "speakerTitle": "Gestión de Oradores y Personajes",
-      "speakerDesc": "Gestiona los colores de los personajes y conecta oradores con personajes. Los cambios actualizan los subtítulos inmediatamente y siguen el protocolo Captions with Intention."
+      "speakerDesc": "Gestiona los colores de los personajes y conecta oradores con personajes. Los cambios actualizan los subtítulos inmediatamente y siguen el protocolo Captions with Intention.",
+      "extracting": "Extrayendo Transcripción Completa...",
+      "extractTranscript": "Extraer Transcripción Completa",
+      "saveChanges": "Guardar Cambios al Video",
+      "retranslate": "Re-traducir",
+      "translating": "Traduciendo...",
+      "addSegment": "Agregar Segmento",
+      "export": "Exportar"
     },
     "videoAnalysis": {
       "title": "Análisis de Video",

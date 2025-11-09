@@ -576,27 +576,27 @@ const VideoDetail = () => {
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-light text-sm">CC</span>
                       </div>
-                      <h3 className="text-lg font-light text-foreground">Captions with Intention</h3>
+                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.captionsWith')}</h3>
                     </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">Emotional context and speaker identification</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.captionsDesc')}</p>
                   </Card>
                   <Card className="p-6 rounded-xl border shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                         <span className="text-green-600 font-light text-sm">AD</span>
                       </div>
-                      <h3 className="text-lg font-light text-foreground">Audio Descriptions</h3>
+                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.audioDescriptions')}</h3>
                     </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">Describes visual elements for screen readers</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.audioDescriptionsDesc')}</p>
                   </Card>
                   <Card className="p-6 rounded-xl border shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                         <span className="text-purple-600 font-light text-sm">VA</span>
                       </div>
-                      <h3 className="text-lg font-light text-foreground">Video Analysis</h3>
+                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.videoAnalysis')}</h3>
                     </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">AI-powered analysis and narration generation</p>
+                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.videoAnalysisDesc')}</p>
                   </Card>
                 </div>
                 
