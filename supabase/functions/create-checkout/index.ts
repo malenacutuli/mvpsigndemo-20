@@ -65,14 +65,14 @@ serve(async (req) => {
       case 'standard':
         priceAmount = 6500; // €65.00 in cents
         planName = 'Standard Plan';
-        storageLimit = 2048; // 2TB
-        includedMinutes = 15;
+        storageLimit = 650; // 650GB
+        includedMinutes = 10;
         break;
       case 'advanced':
         priceAmount = 25000; // €250.00 in cents
         planName = 'Advanced Plan';
-        storageLimit = 5120; // 5TB
-        includedMinutes = 80;
+        storageLimit = 2048; // 2TB
+        includedMinutes = 50;
         break;
       default:
         throw new Error("Invalid plan selected");

@@ -622,13 +622,13 @@
         "price": "€65",
         "cadence": "per month",
         "users": "5 users",
-        "storage": "2TB hosting • 15 minutes processing included",
+        "storage": "650GB hosting • 10 minutes processing included",
         "cta": "Try Standard",
         "features": [
           "Everything in Creators",
           "Expert team support for accessible video editing up to 5 videos a month",
           "Accessible Video Download",
-          "15 minutes video processing included",
+          "10 minutes video processing included",
           "Additional minutes: €8.99/minute"
         ]
       },
@@ -637,7 +637,7 @@
         "price": "€250",
         "cadence": "per month",
         "users": "10 users",
-        "storage": "5TB hosting • 80 minutes processing included",
+        "storage": "2TB hosting • 50 minutes processing included",
         "cta": "Go Advanced",
         "features": [
           "Everything in Standard",
@@ -646,7 +646,7 @@
           "WCAG/ADA compliance reporting",
           "Expert-led accessibility audit for your videos",
           "Human in the Loop expert support for Creative Storytelling Audio Description with synchronization for up to 15 videos a month",
-          "80 minutes video processing included",
+          "50 minutes video processing included",
           "Additional minutes: €5.99/minute"
         ]
       },

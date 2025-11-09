@@ -863,7 +863,7 @@
         "price": "$65",
         "cadence": "por mes",
         "users": "5 usuarios",
-        "storage": "Almacenamiento de 2TB",
+        "storage": "Almacenamiento de 650GB • 10 minutos de procesamiento incluidos",
         "cta": "Probar Estándar",
         "features": [
           "Todo lo de Inicial",
@@ -877,7 +877,7 @@
         "price": "$250",
         "cadence": "por mes",
         "users": "10 usuarios",
-        "storage": "Almacenamiento de 5TB",
+        "storage": "Almacenamiento de 2TB • 50 minutos de procesamiento incluidos",
         "cta": "Ir Avanzado",
         "features": [
           "Todo lo de Estándar",
