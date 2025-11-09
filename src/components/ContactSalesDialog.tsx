@@ -104,10 +104,10 @@ ${data.get("message")}`
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button type="submit" size="lg" className="flex-1">
+            <Button type="submit" size="lg" className="flex-1 font-light rounded-full">
               Send
             </Button>
-            <Button type="button" variant="outline" onClick={copyEmails}>
+            <Button type="button" variant="outline" size="lg" onClick={copyEmails} className="font-light rounded-full">
               Copy emails
             </Button>
           </div>
