@@ -614,15 +614,15 @@ const VideoDetail = () => {
           {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length > 0 && (
             <Card className="rounded-xl shadow-soft border">
               <CardHeader>
-                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Export Accessible Video</CardTitle>
+                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">{t('export.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-base font-light text-muted-foreground leading-relaxed">
-                    Download your video with accessibility features burned-in.
+                    {t('export.description')}
                     {captions.length > 0 && (
                       <span className="block mt-1">
-                        Current language: <strong>{currentLanguage.toUpperCase()}</strong>
+                        {t('export.currentLanguage', { language: currentLanguage.toUpperCase() })}
                       </span>
                     )}
                   </p>
@@ -641,13 +641,13 @@ const VideoDetail = () => {
           {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length === 0 && (
             <Card className="rounded-xl shadow-soft border">
               <CardHeader>
-                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">Export Accessible Video</CardTitle>
+                <CardTitle className="text-3xl md:text-4xl font-light text-foreground">{t('export.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Alert className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-base font-light leading-relaxed">
-                    Generate a transcript first to enable export with captions.
+                    {t('export.noTranscript')}
                   </AlertDescription>
                 </Alert>
               </CardContent>

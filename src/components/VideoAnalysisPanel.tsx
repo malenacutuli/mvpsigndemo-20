@@ -1027,7 +1027,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-6 px-8 pb-8">
           <div className="space-y-3">
-            <label className="text-base font-light text-foreground">Analysis Prompt</label>
+            <label className="text-base font-light text-foreground">{t('videoDetail.videoAnalysis.analysisPrompt')}</label>
             <Textarea
               value={silencePrompt}
               onChange={(e) => setSilencePrompt(e.target.value)}
@@ -1045,8 +1045,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           ) : silenceRows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoAnalysis.noSegments')}</p>
-              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.accessibility.accessibilityControls')}</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoDetail.videoAnalysis.noSegments')}</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.immersiveTip')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1124,7 +1124,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       <Card className="shadow-soft border-border rounded-2xl">
         <CardHeader className="pt-8 px-8">
           <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-            {t('videoAnalysis.customAnalysisTitle')}
+            {t('videoDetail.videoAnalysis.customAnalysisTitle')}
             {hasUnsavedInsightChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
                 Unsaved Changes
@@ -1134,7 +1134,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
             <CardContent className="p-6">
               <p className="text-base font-light leading-relaxed">
-                {t('videoAnalysis.customAnalysisDesc')}
+                {t('videoDetail.videoAnalysis.customAnalysisDesc')}
               </p>
             </CardContent>
           </Card>
@@ -1153,7 +1153,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               ) : (
                 <>
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  {t('videoAnalysis.analyzeWithPrompt')}
+                  {t('videoDetail.videoAnalysis.analyzeWithPrompt')}
                 </>
               )}
             </Button>
@@ -1188,22 +1188,22 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-6 px-8 pb-8">
           <div className="space-y-3">
-            <label className="text-base font-light text-foreground">{t('videoAnalysis.customPromptPlaceholder')}</label>
+            <label className="text-base font-light text-foreground">{t('videoDetail.videoAnalysis.customPromptPlaceholder')}</label>
             <p className="text-base text-muted-foreground font-light leading-relaxed">
-              {t('videoAnalysis.customPromptPlaceholder')}
+              {t('videoDetail.videoAnalysis.customPromptPlaceholder')}
             </p>
             <Textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               className="min-h-32 text-base font-light leading-relaxed rounded-xl"
-              placeholder={t('videoAnalysis.customPromptExample')}
+              placeholder={t('videoDetail.videoAnalysis.customPromptExample')}
             />
           </div>
           
           {!insightResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base font-light">{t('videoAnalysis.customPromptEmpty')}</p>
+              <p className="text-base font-light">{t('videoDetail.videoAnalysis.customPromptEmpty')}</p>
             </div>
           ) : insightResult.analysis_text ? (
             <div className="space-y-4">

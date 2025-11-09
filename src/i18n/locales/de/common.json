@@ -560,7 +560,8 @@
       "title": "Barrierefreies Video Exportieren",
       "description": "Laden Sie Ihr Video mit eingebrannten Barrierefreiheitsfunktionen herunter.",
       "currentLanguage": "Aktuelle Sprache: {{language}}",
-      "finalizeExport": "Finalisieren und Exportieren"
+      "finalizeExport": "Finalisieren und Exportieren",
+      "noTranscript": "Generieren Sie zuerst ein Transkript, um den Export mit Untertiteln zu aktivieren."
     },
     "loadingError": "Fehler beim Laden des Videos",
     "deleteSuccess": "Video erfolgreich gelöscht",

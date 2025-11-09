@@ -848,7 +848,8 @@
       "title": "Export Accessible Video",
       "description": "Download your video with accessibility features burned-in.",
       "currentLanguage": "Current language: {{language}}",
-      "finalizeExport": "Finalize & Export"
+      "finalizeExport": "Finalize & Export",
+      "noTranscript": "Generate a transcript first to enable export with captions."
     },
     "loadingError": "Error loading video",
     "deleteSuccess": "Video deleted successfully",

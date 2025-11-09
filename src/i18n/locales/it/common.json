@@ -560,7 +560,8 @@
       "title": "Esporta Video Accessibile",
       "description": "Scarica il tuo video con le funzionalità di accessibilità incorporate.",
       "currentLanguage": "Lingua corrente: {{language}}",
-      "finalizeExport": "Finalizza ed Esporta"
+      "finalizeExport": "Finalizza ed Esporta",
+      "noTranscript": "Genera prima una trascrizione per abilitare l'esportazione con sottotitoli."
     },
     "loadingError": "Errore nel caricamento del video",
     "deleteSuccess": "Video eliminato con successo",

@@ -1377,32 +1377,32 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardHeader>
           <CardTitle className="text-3xl font-light text-foreground flex items-center gap-2">
             <Wand2 className="w-6 h-6" />
-            {t('audioDescEditor.editorTitle')}
+            {t('videoDetail.audioDescEditor.editorTitle')}
           </CardTitle>
           <p className="text-lg font-light text-muted-foreground leading-relaxed">
-            {t('audioDescEditor.editorDesc')}
+            {t('videoDetail.audioDescEditor.editorDesc')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Card className="border-primary/20 bg-primary/5 rounded-xl">
             <CardContent className="p-4">
               <div className="space-y-3 text-sm font-light leading-relaxed">
-                <p className="font-light text-primary text-base">{t('audioDescEditor.howToUse')}</p>
+                <p className="font-light text-primary text-base">{t('videoDetail.audioDescEditor.howToUse')}</p>
                 
                 <div className="space-y-2">
-                  <p><span className="font-light text-primary">{t('audioDescEditor.step1')}</span></p>
+                  <p><span className="font-light text-primary">{t('videoDetail.audioDescEditor.step1')}</span></p>
                   
-                  <p><span className="font-light text-primary">{t('audioDescEditor.step2')}</span></p>
+                  <p><span className="font-light text-primary">{t('videoDetail.audioDescEditor.step2')}</span></p>
                   <ul className="ml-4 space-y-1 list-disc list-inside">
-                    <li><span className="font-light">{t('audioDescEditor.step2Basic')}</span></li>
-                    <li><span className="font-light">{t('audioDescEditor.step2Advanced')}</span></li>
+                    <li><span className="font-light">{t('videoDetail.audioDescEditor.step2Basic')}</span></li>
+                    <li><span className="font-light">{t('videoDetail.audioDescEditor.step2Advanced')}</span></li>
                   </ul>
                   
-                  <p><span className="font-light text-primary">{t('audioDescEditor.step3')}</span></p>
+                  <p><span className="font-light text-primary">{t('videoDetail.audioDescEditor.step3')}</span></p>
                   
-                  <p><span className="font-light text-primary">{t('audioDescEditor.step4')}</span></p>
+                  <p><span className="font-light text-primary">{t('videoDetail.audioDescEditor.step4')}</span></p>
                   
-                  <p><span className="font-light text-primary">{t('audioDescEditor.step5')}</span></p>
+                  <p><span className="font-light text-primary">{t('videoDetail.audioDescEditor.step5')}</span></p>
                 </div>
               </div>
             </CardContent>
@@ -1411,7 +1411,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           {/* Audio Description Voice */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm font-light">{t('audioDescEditor.voiceLabel')}</Label>
+              <Label className="text-sm font-light">{t('videoDetail.audioDescEditor.voiceLabel')}</Label>
                 <Select
                   value={selectedVoice?.id || ''}
                   onValueChange={(val) => {
@@ -1442,13 +1442,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
           {/* Multi-Language Audio Description Selector */}
           <div className="space-y-3">
-            <Label className="text-sm font-light">{t('audioDescEditor.languageLabel')}</Label>
+            <Label className="text-sm font-light">{t('videoDetail.audioDescEditor.languageLabel')}</Label>
             <Select value={currentLanguage} onValueChange={handleLanguageChange}>
               <SelectTrigger className="font-light">
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     <span>{getLanguageDisplay(currentLanguage)}</span>
-                    {currentLanguage === detectedLanguage && <span className="text-muted-foreground">{t('audioDescEditor.originalLanguage')}</span>}
+                    {currentLanguage === detectedLanguage && <span className="text-muted-foreground">{t('videoDetail.audioDescEditor.originalLanguage')}</span>}
                     {descriptions.length > 0 && (
                       <Badge variant="secondary" className="text-xs font-light ml-auto">
                         {descriptions.length}
@@ -1486,7 +1486,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full font-light">
                   <Languages className="w-4 h-4 mr-2" />
-                  {t('audioDescEditor.actions')}
+                  {t('videoDetail.audioDescEditor.actions')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-white border shadow-soft">
@@ -1609,7 +1609,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
-                  {t('audioDescEditor.basicAI')}
+                  {t('videoDetail.audioDescEditor.basicAI')}
                 </>
               )}
             </Button>
@@ -1627,7 +1627,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
-                  {t('audioDescEditor.generateAD')}
+                  {t('videoDetail.audioDescEditor.generateAD')}
                 </>
               )}
             </Button>
@@ -1649,7 +1649,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  {t('audioDescEditor.analyzeEAD')}
+                  {t('videoDetail.audioDescEditor.analyzeEAD')}
                 </>
               )}
             </Button>
@@ -1662,7 +1662,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               className="flex-1 rounded-full font-light"
             >
               <Plus className="w-4 h-4 mr-2" />
-              {showManualForm ? 'Cancel' : t('audioDescEditor.addManual')}
+              {showManualForm ? 'Cancel' : t('videoDetail.audioDescEditor.addManual')}
             </Button>
             {descriptions.length > 0 && (
               <Button 

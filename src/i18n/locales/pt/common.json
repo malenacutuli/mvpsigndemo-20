@@ -560,7 +560,8 @@
       "title": "Exportar Vídeo Acessível",
       "description": "Baixe seu vídeo com recursos de acessibilidade incorporados.",
       "currentLanguage": "Idioma atual: {{language}}",
-      "finalizeExport": "Finalizar e Exportar"
+      "finalizeExport": "Finalizar e Exportar",
+      "noTranscript": "Gere primeiro uma transcrição para habilitar a exportação com legendas."
     },
     "loadingError": "Erro ao carregar vídeo",
     "deleteSuccess": "Vídeo excluído com sucesso",
