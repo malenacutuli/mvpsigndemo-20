@@ -1097,7 +1097,10 @@
       "signLanguageDesc": "Superposición de lengua de señas en imagen dentro de imagen",
       "notAvailable": "No disponible",
       "selectAtLeastOne": "Selecciona al menos una función de accesibilidad para exportar.",
-      "startExport": "Iniciar exportación"
+      "startExport": "Iniciar exportación",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "processing": "Procesando..."
     },
     "loadingError": "Error al cargar el video",
     "deleteSuccess": "Video eliminado con éxito",

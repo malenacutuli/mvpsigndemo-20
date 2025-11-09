@@ -862,7 +862,10 @@
       "signLanguageDesc": "Picture-in-picture sign language overlay",
       "notAvailable": "Not available",
       "selectAtLeastOne": "Please select at least one accessibility feature to export.",
-      "startExport": "Start Export"
+      "startExport": "Start Export",
+      "cancel": "Cancel",
+      "close": "Close",
+      "processing": "Processing..."
     },
     "loadingError": "Error loading video",
     "deleteSuccess": "Video deleted successfully",
