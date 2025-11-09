@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Video } from 'lucide-react';
 import { ExportModal } from './ExportModal';
@@ -15,6 +16,7 @@ interface VideoExportButtonProps {
 }
 
 export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExportComplete }: VideoExportButtonProps) {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<RenderProgress>();
@@ -230,7 +232,7 @@ export function VideoExportButton({ videoId, videoTitle, currentLanguage, onExpo
     <>
       <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-light">
         <Video className="w-4 h-4" />
-        Finalize & Export
+        {t('videoDetail.export.finalizeExport')}
       </Button>
 
       <ExportModal

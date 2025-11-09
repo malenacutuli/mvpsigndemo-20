@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,6 +131,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
   language = 'en', // Default to English
   existingSpeakers
 }) => {
+  const { t } = useTranslation();
   const [characters, setCharacters] = useState<Character[]>(existingCharacters);
   const [newCharacterName, setNewCharacterName] = useState('');
   const [savingMappings, setSavingMappings] = useState<Set<string>>(new Set());
@@ -823,12 +825,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
       <CardHeader>
         <CardTitle className="text-2xl font-light text-foreground flex items-center gap-2">
           <Palette className="w-5 h-5" />
-          Character Color Attribution
+          {t('characterManager.colorAttribution')}
         </CardTitle>
         <Card className="border-primary/20 bg-primary/5 mt-3 rounded-xl">
           <CardContent className="p-4">
             <p className="text-base font-light leading-relaxed">
-              Assign colors to characters following the Captions with Intention protocol.
+              {t('characterManager.colorAttributionDesc')}
             </p>
           </CardContent>
         </Card>

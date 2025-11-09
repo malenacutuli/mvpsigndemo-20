@@ -25,6 +25,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -192,6 +193,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   onContentGenerated,
   onLanguageChange
 }) => {
+  const { t } = useTranslation();
   const [originalTranscript, setOriginalTranscript] = useState<TranscriptSegment[]>([]);
   const [editingTranscript, setEditingTranscript] = useState<TranscriptSegment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1329,7 +1331,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             className="font-light"
           >
             <Mic className="w-4 h-4 mr-2" />
-            {isGenerating ? 'Extracting Full Transcript...' : 'Extract Complete Transcript'}
+            {isGenerating ? t('videoDetail.transcriptTab.extracting') : t('videoDetail.transcriptTab.extractTranscript')}
           </Button>
           
           <Button
@@ -1340,7 +1342,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
             className="font-light"
           >
             <Save className="w-4 h-4 mr-2" />
-            Save Changes to Video
+            {t('videoDetail.transcriptTab.saveChanges')}
           </Button>
           
           <Select

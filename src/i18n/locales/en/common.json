@@ -787,6 +787,7 @@
       "autoEnhancedDesc": "Speaker identification and vocal intensity analysis run automatically when you generate or load transcripts. Results are applied directly to captions for better accessibility.",
       "speakerTitle": "Speaker & Character Management",
       "speakerDesc": "Manage character colors and connect speakers to characters. Changes update captions immediately and follow the Captions with Intention protocol.",
+      "extracting": "Extracting Full Transcript...",
       "extractTranscript": "Extract Complete Transcript",
       "saveChanges": "Save Changes to Video",
       "retranslate": "Re-translate",
