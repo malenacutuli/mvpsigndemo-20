@@ -1792,10 +1792,15 @@ export type Database = {
         }
         Returns: Json
       }
-      can_process_video: {
-        Args: { target_user_id: string; video_duration_seconds: number }
-        Returns: Json
-      }
+      can_process_video:
+        | {
+            Args: { target_user_id: string; video_duration_seconds: number }
+            Returns: Json
+          }
+        | {
+            Args: { target_user_id: string; video_duration_seconds: number }
+            Returns: Json
+          }
       check_and_notify_overages: {
         Args: never
         Returns: {
@@ -1901,6 +1906,16 @@ export type Database = {
           notification_type: string
           sent_at: string
           usage_snapshot: Json
+        }[]
+      }
+      get_overages_report: {
+        Args: never
+        Returns: {
+          email: string
+          estimated_cost: number
+          overage_minutes: number
+          subscription_tier: string
+          user_id: string
         }[]
       }
       get_rate_limit_status: {
