@@ -368,7 +368,7 @@ export function ExportModal({
               disabled={isProcessing}
               className="flex-1 font-light"
             >
-              {isProcessing ? 'Processing...' : downloadUrl ? 'Close' : t('common.cancel')}
+              {isProcessing ? 'Processing...' : downloadUrl ? t('common.close') : t('common.cancel')}
             </Button>
             
             {!isProcessing && !downloadUrl && (
