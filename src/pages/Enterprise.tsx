@@ -11,6 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Upload, Video, FolderOpen } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
 import { useTranslation } from 'react-i18next';
+import aicpaLogo from '@/assets/aicpa-logo.webp';
+import wcagLogo from '@/assets/wcag-logo.webp';
+import cvaaLogo from '@/assets/cvaa-logo.webp';
+import adaLogo from '@/assets/ada-logo.webp';
+import gdprLogo from '@/assets/gdpr-logo.webp';
 
 const Enterprise = () => {
   const { t } = useTranslation();
@@ -25,6 +30,28 @@ const Enterprise = () => {
       {/* Industry First Content */}
       <IndustryFirst />
       <Implementation />
+
+      {/* Compliance Logos Section */}
+      <section className="py-32 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-light text-foreground mb-6 leading-tight">
+              Turn Compliance from Cost Center to Revenue Driver
+            </h2>
+            <p className="text-lg text-muted-foreground font-light max-w-3xl mx-auto leading-relaxed">
+              Meet global accessibility and security standards with confidence
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-16 max-w-5xl mx-auto">
+            <img src={aicpaLogo} alt="AICPA SOC Compliance" className="h-24 md:h-28 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+            <img src={wcagLogo} alt="WCAG 2.0 AA Compliant" className="h-24 md:h-28 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+            <img src={cvaaLogo} alt="CVAA Compliant" className="h-24 md:h-28 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+            <img src={adaLogo} alt="ADA Compliant Website" className="h-24 md:h-28 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+            <img src={gdprLogo} alt="GDPR Compliant" className="h-24 md:h-28 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+          </div>
+        </div>
+      </section>
 
       {/* Quick Access Section */}
       <section className="py-32 bg-muted/20">
