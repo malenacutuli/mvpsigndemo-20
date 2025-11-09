@@ -849,12 +849,12 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           <CardContent className="p-4">
             <div className="flex justify-between items-center">
               <div>
-                <h4 className="text-lg font-light text-foreground">Character Management</h4>
-                <p className="text-base text-muted-foreground font-light leading-relaxed">Configure character colors, voices, and speech patterns</p>
+                <h4 className="text-lg font-light text-foreground">{t('characterManager.title')}</h4>
+                <p className="text-base text-muted-foreground font-light leading-relaxed">{t('characterManager.description')}</p>
               </div>
               <Button onClick={saveAllCharacters} size="sm" variant="default" className="font-light">
                 <Save className="w-4 h-4 mr-2" />
-                Save All Changes
+                {t('characterManager.saveAll')}
               </Button>
             </div>
           </CardContent>
@@ -865,38 +865,38 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
           <CardContent className="p-4 space-y-3">
             <h4 className="text-lg font-light text-foreground flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Add New Character
+              {t('characterManager.addNew')}
             </h4>
             <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label className="text-sm font-light">Name</Label>
+              <Label className="text-sm font-light">{t('characterManager.name')}</Label>
               <Input
                 value={newCharacterName}
                 onChange={(e) => setNewCharacterName(e.target.value)}
-                placeholder="Character name"
+                placeholder={t('characterManager.characterName')}
                 className="h-8"
                 onKeyPress={(e) => e.key === 'Enter' && addCharacter()}
               />
             </div>
             <div>
-              <Label className="text-sm font-light">Type</Label>
+              <Label className="text-sm font-light">{t('characterManager.type')}</Label>
               <Select value={newCharacterType} onValueChange={(value) => setNewCharacterType(value as Character['type'])}>
                 <SelectTrigger className="h-8 bg-background z-50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-[100] shadow-lg border">
-                  <SelectItem value="hero">Hero (Main)</SelectItem>
-                  <SelectItem value="villain">Villain (Main)</SelectItem>
-                  <SelectItem value="main">Main Character</SelectItem>
-                  <SelectItem value="supporting">Supporting</SelectItem>
-                  <SelectItem value="minor">Minor</SelectItem>
+                  <SelectItem value="hero">{t('characterManager.heroMain')}</SelectItem>
+                  <SelectItem value="villain">{t('characterManager.villainMain')}</SelectItem>
+                  <SelectItem value="main">{t('characterManager.mainCharacter')}</SelectItem>
+                  <SelectItem value="supporting">{t('characterManager.supporting')}</SelectItem>
+                  <SelectItem value="minor">{t('characterManager.minor')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-end">
               <Button onClick={addCharacter} size="sm" className="h-8 font-light">
                 <Plus className="w-4 h-4" />
-                Add
+                {t('characterManager.add')}
               </Button>
             </div>
           </div>
@@ -912,7 +912,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
             <div key={type} className="space-y-2">
               <h4 className="text-lg font-light capitalize flex items-center gap-2">
                 {getCharacterTypeIcon(type as Character['type'])}
-                {type} Characters
+                {t(`characterManager.${type}Characters`)}
               </h4>
               <div className="space-y-4">
                 {typeCharacters.map(character => {
@@ -926,14 +926,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Input
+                             <Input
                               value={character.name}
                               onChange={(e) => updateCharacterProperty(character.id, 'name', e.target.value)}
                               className="h-8 min-w-[120px] font-medium"
-                              placeholder="Character name"
+                              placeholder={t('characterManager.characterName')}
                             />
                             {character.isOffCamera && (
-                              <Badge variant="secondary" className="text-xs">Off-camera</Badge>
+                              <Badge variant="secondary" className="text-xs">{t('characterManager.offCamera')}</Badge>
                             )}
                             {character.voiceName && (
                               <Badge variant="outline" className="text-xs">
@@ -955,7 +955,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                       {/* ✅ Speaker Mapping Dropdown */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-light">Detected Speaker Mapping</Label>
+                        <Label className="text-sm font-light">{t('characterManager.detectedMapping')}</Label>
                         <Select
                           value={getMappedSpeakerForCharacter(character.name)}
                           onValueChange={(selectedSpeaker) => {
@@ -967,11 +967,11 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           }}
                         >
                           <SelectTrigger className="h-8 bg-background z-50">
-                            <SelectValue placeholder="Select detected speaker..." />
+                            <SelectValue placeholder={t('characterManager.selectSpeaker')} />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-[100] shadow-lg border">
                             <SelectItem value="unassigned" className="font-light">
-                              Unassigned
+                              {t('characterManager.unassigned')}
                             </SelectItem>
                             {availableSpeakers.map((sp) => {
                               const key = toSpeakerKey(sp);
@@ -989,7 +989,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                                   <div className="flex items-center justify-between w-full">
                                     <span>{normalized}</span>
                                     {isCurrentlyMapped && (
-                                      <Badge variant="default" className="ml-2 text-[10px]">Current</Badge>
+                                      <Badge variant="default" className="ml-2 text-[10px]">{t('characterManager.current')}</Badge>
                                     )}
                                     {isMappedToOther && (
                                       <Badge variant="secondary" className="ml-2 text-[10px]">
@@ -1003,7 +1003,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground font-light">
-                          Map this character to a detected speaker (A, B, C, etc.) for automatic color attribution
+                          {t('characterManager.detectedMappingDesc')}
                         </p>
                       </div>
 
@@ -1011,7 +1011,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                        <div className="grid grid-cols-3 gap-4">
                          {/* Character Type */}
                          <div className="space-y-2">
-                           <Label className="text-sm font-light">Character Type</Label>
+                           <Label className="text-sm font-light">{t('characterManager.characterType')}</Label>
                            <Select
                              value={character.type}
                              onValueChange={(type) => {
@@ -1027,18 +1027,18 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-background z-[100] shadow-lg border">
-                                <SelectItem value="hero">Hero</SelectItem>
-                                <SelectItem value="villain">Villain</SelectItem>
-                                <SelectItem value="main">Main Character</SelectItem>
-                                <SelectItem value="supporting">Supporting</SelectItem>
-                                <SelectItem value="minor">Minor</SelectItem>
+                                <SelectItem value="hero">{t('characterManager.hero')}</SelectItem>
+                                <SelectItem value="villain">{t('characterManager.villain')}</SelectItem>
+                                <SelectItem value="main">{t('characterManager.mainCharacter')}</SelectItem>
+                                <SelectItem value="supporting">{t('characterManager.supporting')}</SelectItem>
+                                <SelectItem value="minor">{t('characterManager.minor')}</SelectItem>
                               </SelectContent>
                            </Select>
                          </div>
 
                          {/* Color Selection */}
                          <div className="space-y-2">
-                           <Label className="text-sm font-light">Color</Label>
+                           <Label className="text-sm font-light">{t('characterManager.color')}</Label>
                            <Select
                              value={character.color}
                              onValueChange={(color) => updateCharacterProperty(character.id, 'color', color)}
@@ -1064,14 +1064,14 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                          {/* Off-Camera Toggle */}
                          <div className="space-y-2">
-                           <Label className="text-sm font-light">Camera Status</Label>
+                           <Label className="text-sm font-light">{t('characterManager.cameraStatus')}</Label>
                            <Button
                              size="sm"
                              variant={character.isOffCamera ? "default" : "outline"}
                              onClick={() => updateCharacterProperty(character.id, 'isOffCamera', !character.isOffCamera)}
                              className="h-8 w-full font-light"
                            >
-                             {character.isOffCamera ? 'Off-Camera' : 'On-Camera'}
+                             {character.isOffCamera ? t('characterManager.offCamera') : t('characterManager.onCamera')}
                            </Button>
                          </div>
                        </div>
@@ -1080,7 +1080,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                        <div className="grid grid-cols-2 gap-4">
                          {/* Emphasis */}
                          <div className="space-y-2">
-                           <Label className="text-sm font-light">Emphasis</Label>
+                           <Label className="text-sm font-light">{t('characterManager.emphasis')}</Label>
                            <Select
                              value={character.emphasis || 'normal'}
                              onValueChange={(emphasis) => updateCharacterProperty(character.id, 'emphasis', emphasis)}
@@ -1089,16 +1089,16 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="h-8 bg-background z-50">
-                                <SelectItem value="quiet">Quiet</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="loud">Loud</SelectItem>
+                                <SelectItem value="quiet">{t('characterManager.quiet')}</SelectItem>
+                                <SelectItem value="normal">{t('characterManager.normal')}</SelectItem>
+                                <SelectItem value="loud">{t('characterManager.loud')}</SelectItem>
                               </SelectContent>
                            </Select>
                          </div>
 
                          {/* Pitch */}
                          <div className="space-y-2">
-                           <Label className="text-sm font-light">Pitch</Label>
+                           <Label className="text-sm font-light">{t('characterManager.pitch')}</Label>
                            <Select
                              value={character.pitch || 'normal'}
                              onValueChange={(pitch) => updateCharacterProperty(character.id, 'pitch', pitch)}
@@ -1107,9 +1107,9 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-background z-50">
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="low">{t('characterManager.low')}</SelectItem>
+                                <SelectItem value="normal">{t('characterManager.normal')}</SelectItem>
+                                <SelectItem value="high">{t('characterManager.high')}</SelectItem>
                               </SelectContent>
                            </Select>
                          </div>
@@ -1117,7 +1117,7 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
 
                       {/* Voice Selection */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-light">Voice Assignment</Label>
+                        <Label className="text-sm font-light">{t('characterManager.voiceAssignment')}</Label>
                         <VoiceSelector
                           selectedVoiceId={character.voiceId}
                           onVoiceSelect={(voiceId, voiceName, voiceType) => 
@@ -1137,21 +1137,21 @@ export const CharacterManager: React.FC<CharacterManagerProps> = ({
         {characters.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-base font-light">No characters added yet</p>
-            <p className="text-sm font-light">Add characters to enable color-coded captions</p>
+            <p className="text-base font-light">{t('characterManager.noCharacters')}</p>
+            <p className="text-sm font-light">{t('characterManager.noCharactersDesc')}</p>
           </div>
         )}
 
         {/* Color Guidelines */}
         <Separator />
         <div className="text-sm text-muted-foreground space-y-2 font-light">
-          <h5 className="text-base font-light text-foreground">Color Guidelines:</h5>
+          <h5 className="text-base font-light text-foreground">{t('characterManager.colorGuidelines')}</h5>
           <ul className="space-y-1 pl-4 leading-relaxed">
-            <li>• Main characters use the 6 primary spectrum colors</li>
-            <li>• Supporting characters use colors between main character colors</li>
-            <li>• Minor characters use pastel tones from the center of the color wheel</li>
-            <li>• Hero and Villain should be positioned opposite on the spectrum</li>
-            <li>• Off-camera dialogue is displayed in italic</li>
+            <li>• {t('characterManager.guideline1')}</li>
+            <li>• {t('characterManager.guideline2')}</li>
+            <li>• {t('characterManager.guideline3')}</li>
+            <li>• {t('characterManager.guideline4')}</li>
+            <li>• {t('characterManager.guideline5')}</li>
           </ul>
         </div>
       </CardContent>
