@@ -64,7 +64,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <h3 className="text-xl md:text-2xl font-light text-center text-muted-foreground mb-12">
-              Recognized for Innovation in AI for Good
+              {t('recognition.title')}
             </h3>
             <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
               <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">

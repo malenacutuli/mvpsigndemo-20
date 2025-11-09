@@ -24,6 +24,9 @@
     "startWatching": "Comenzar a Ver",
     "shareContent": "Comparte tu Contenido"
   },
+  "recognition": {
+    "title": "Reconocido por la Innovación en IA para el Bien"
+  },
   "sections": {
     "whyWeExist": {
       "title": "Porque la mayoría de los videos excluyen a alguien.",

@@ -24,6 +24,9 @@
     "startWatching": "Començar a Veure",
     "shareContent": "Comparteix el teu Contingut"
   },
+  "recognition": {
+    "title": "Reconegut per la Innovació en IA per al Bé"
+  },
   "sections": {
     "whyWeExist": {
       "title": "Perquè la majoria de vídeos deixen algú fora.",
