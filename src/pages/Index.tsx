@@ -355,7 +355,7 @@ const Index = () => {
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.explore')}</Link>
                   <Link to="/upload" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.upload')}</Link>
                   <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
-                  <a href="https://axessplayer.com" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground hover:text-primary transition-colors">AVLM</a>
+                  <a href="https://axesshuman.com" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground hover:text-primary transition-colors">AVLM</a>
                 </div>
               </div>
               
