@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
+import { ContactSalesDialog } from '@/components/ContactSalesDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
@@ -118,6 +119,8 @@ export default function Pricing() {
   const { createCheckout, subscribed, subscription_tier, loading } = useSubscription();
   const navigate = useNavigate();
   const [planLoading, setPlanLoading] = React.useState<string | null>(null);
+  const [contactOpen, setContactOpen] = React.useState(false);
+  const [contactSubject, setContactSubject] = React.useState("Contact Sales");
 
   const plans = getPlanData(t);
   const comparisonFeatures = getComparisonFeatures(t);
@@ -134,7 +137,10 @@ export default function Pricing() {
         }
       } else if (planKey === 'enterprise') {
         // Contact sales for enterprise
-        window.open('mailto:hello@axessible.ai?cc=malena@axessible.ai&subject=Enterprise Plan Inquiry', '_blank');
+        setContactSubject('Enterprise Plan Inquiry');
+        setContactOpen(true);
+        setPlanLoading(null);
+        return;
       } else {
         // For other paid plans
         if (user) {
@@ -292,12 +298,21 @@ export default function Pricing() {
             variant="outline"
             size="lg"
             className="font-light"
-            onClick={() => window.open('mailto:hello@axessible.ai?cc=malena@axessible.ai&subject=Pricing Questions', '_blank')}
+            onClick={() => {
+              setContactSubject('Pricing Questions');
+              setContactOpen(true);
+            }}
           >
             {t('pricing.contactUs')}
           </Button>
         </div>
       </div>
+
+      <ContactSalesDialog 
+        open={contactOpen} 
+        onOpenChange={setContactOpen} 
+        defaultSubject={contactSubject} 
+      />
     </div>
   );
 }
