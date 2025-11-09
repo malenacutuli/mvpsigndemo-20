@@ -191,17 +191,17 @@ export function ExportModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-3xl md:text-4xl font-light">
             <Video className="w-5 h-5" />
-            {t('export.title')}
+            {t('videoDetail.export.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Video Info */}
           <div className="bg-muted/50 p-6 rounded-xl">
-            <h3 className="text-base font-light text-muted-foreground mb-1">{t('export.video')}</h3>
+            <h3 className="text-base font-light text-muted-foreground mb-1">{t('videoDetail.export.video')}</h3>
             <p className="text-xl font-light">{videoTitle}</p>
             <p className="text-sm font-light text-muted-foreground mt-2">
-              {t('export.currentLanguage')}: {currentLanguage.toUpperCase()}
+              {t('videoDetail.export.currentLanguage')}: {currentLanguage.toUpperCase()}
             </p>
           </div>
 
