@@ -16,6 +16,7 @@ import { AudioDescriptionDeleteDialog } from './AudioDescriptionDeleteDialog';
 import { LanguagePickerDialog } from './LanguagePickerDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { useTranslation } from 'react-i18next';
 
 interface AudioDescriptionSegment {
   id?: string;
@@ -50,6 +51,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   transcriptSegments = [],
   onDescriptionsUpdate
 }) => {
+  const { t } = useTranslation();
   console.log('🎬 AudioDescriptionEditor rendered with:', {
     videoId,
     detectedLanguage: videoData?.transcript_language || 'en',
@@ -1375,32 +1377,32 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
         <CardHeader>
           <CardTitle className="text-3xl font-light text-foreground flex items-center gap-2">
             <Wand2 className="w-6 h-6" />
-            Audio Description Editor
+            {t('audioDescEditor.editorTitle')}
           </CardTitle>
           <p className="text-lg font-light text-muted-foreground leading-relaxed">
-            Generate and manage audio descriptions to describe visual elements for accessibility.
+            {t('audioDescEditor.editorDesc')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Card className="border-primary/20 bg-primary/5 rounded-xl">
             <CardContent className="p-4">
               <div className="space-y-3 text-sm font-light leading-relaxed">
-                <p className="font-light text-primary text-base">How to Use Audio Descriptions:</p>
+                <p className="font-light text-primary text-base">{t('audioDescEditor.howToUse')}</p>
                 
                 <div className="space-y-2">
-                  <p><span className="font-light text-primary">Step 1:</span> Select your preferred audio description voice from the dropdown above.</p>
+                  <p><span className="font-light text-primary">{t('audioDescEditor.step1')}</span></p>
                   
-                  <p><span className="font-light text-primary">Step 2:</span> Choose a generation method:</p>
+                  <p><span className="font-light text-primary">{t('audioDescEditor.step2')}</span></p>
                   <ul className="ml-4 space-y-1 list-disc list-inside">
-                    <li><span className="font-light">Basic AI:</span> Quick generation of simple descriptions for common scenarios</li>
-                    <li><span className="font-light">Advanced Analysis:</span> Comprehensive video analysis that detects silent moments and generates detailed cinematic descriptions</li>
+                    <li><span className="font-light">{t('audioDescEditor.step2Basic')}</span></li>
+                    <li><span className="font-light">{t('audioDescEditor.step2Advanced')}</span></li>
                   </ul>
                   
-                  <p><span className="font-light text-primary">Step 3:</span> After generation, click "Analyze for Extended Audio Description" to check if descriptions fit within dialogue gaps.</p>
+                  <p><span className="font-light text-primary">{t('audioDescEditor.step3')}</span></p>
                   
-                  <p><span className="font-light text-primary">Step 4:</span> Edit descriptions as needed, then click "Generate Audio" for each segment or "Generate All Audio" for batch processing.</p>
+                  <p><span className="font-light text-primary">{t('audioDescEditor.step4')}</span></p>
                   
-                  <p><span className="font-light text-primary">Step 5:</span> Save your work using "Save All" to persist changes to the database.</p>
+                  <p><span className="font-light text-primary">{t('audioDescEditor.step5')}</span></p>
                 </div>
               </div>
             </CardContent>
@@ -1409,7 +1411,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
           {/* Audio Description Voice */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm font-light">Audio Description Voice</Label>
+              <Label className="text-sm font-light">{t('audioDescEditor.voiceLabel')}</Label>
                 <Select
                   value={selectedVoice?.id || ''}
                   onValueChange={(val) => {
@@ -1440,13 +1442,13 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
 
           {/* Multi-Language Audio Description Selector */}
           <div className="space-y-3">
-            <Label className="text-sm font-light">Audio Description Language</Label>
+            <Label className="text-sm font-light">{t('audioDescEditor.languageLabel')}</Label>
             <Select value={currentLanguage} onValueChange={handleLanguageChange}>
               <SelectTrigger className="font-light">
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     <span>{getLanguageDisplay(currentLanguage)}</span>
-                    {currentLanguage === detectedLanguage && <span className="text-muted-foreground">(Original)</span>}
+                    {currentLanguage === detectedLanguage && <span className="text-muted-foreground">{t('audioDescEditor.originalLanguage')}</span>}
                     {descriptions.length > 0 && (
                       <Badge variant="secondary" className="text-xs font-light ml-auto">
                         {descriptions.length}
@@ -1484,7 +1486,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full font-light">
                   <Languages className="w-4 h-4 mr-2" />
-                  Actions
+                  {t('audioDescEditor.actions')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-white border shadow-soft">
@@ -1607,7 +1609,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
-                  Basic AI Generation
+                  {t('audioDescEditor.basicAI')}
                 </>
               )}
             </Button>
@@ -1625,7 +1627,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Wand2 className="w-4 h-4 mr-2" />
-                  Generate Audio Description
+                  {t('audioDescEditor.generateAD')}
                 </>
               )}
             </Button>
@@ -1647,7 +1649,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  Analyze for Extended Audio Description
+                  {t('audioDescEditor.analyzeEAD')}
                 </>
               )}
             </Button>
@@ -1660,7 +1662,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
               className="flex-1 rounded-full font-light"
             >
               <Plus className="w-4 h-4 mr-2" />
-              {showManualForm ? 'Cancel' : 'Add Manual Segment'}
+              {showManualForm ? 'Cancel' : t('audioDescEditor.addManual')}
             </Button>
             {descriptions.length > 0 && (
               <Button 

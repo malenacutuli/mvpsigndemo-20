@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface VideoAnalysisPanelProps {
   assetId: string;
@@ -168,6 +169,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   videoElementId = "mainVideo",
   videoId
 }) => {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<'idle' | 'indexing' | 'ready' | 'failed'>('idle');
   const [silencePrompt, setSilencePrompt] = useState(DEFAULT_SILENCE_PROMPT);
   const [customPrompt, setCustomPrompt] = useState('');
@@ -871,13 +873,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         <CardContent className="pt-8 pb-8 px-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-2xl md:text-3xl font-light text-foreground mb-3">Video Analysis</h2>
+              <h2 className="text-2xl md:text-3xl font-light text-foreground mb-3">{t('videoAnalysis.title')}</h2>
               <p className="text-base md:text-lg text-muted-foreground font-light leading-relaxed max-w-2xl">
-                Analyze video content for silent gaps and generate storytelling audio descriptions using AI.
+                {t('videoAnalysis.description')}
               </p>
               <div className="flex items-center gap-2 mt-4">
                 <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-                  {status === 'idle' && 'Ready to Index'}
+                  {status === 'idle' && t('videoAnalysis.readyToIndex')}
                   {status === 'indexing' && 'Indexing...'}
                   {status === 'ready' && 'Ready'}
                   {status === 'failed' && 'Failed'}
@@ -912,7 +914,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 ) : (
                   <>
                     <Eye className="w-4 h-4 mr-2" />
-                    {status === 'ready' ? 'Re-index' : 'Index Video'}
+                    {status === 'ready' ? 'Re-index' : t('videoAnalysis.indexVideo')}
                   </>
                 )}
               </Button>
@@ -944,7 +946,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       <Card className="shadow-soft border-border rounded-2xl">
         <CardHeader className="pb-4 pt-8 px-8">
           <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-            Silent Gaps and Narrations
+            {t('videoAnalysis.silentGapsTitle')}
             {hasUnsavedSilenceChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
                 Unsaved Changes
@@ -954,7 +956,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
             <CardContent className="p-6">
               <p className="text-base font-light leading-relaxed">
-                Customize the prompt to adjust how silent gaps are detected and described. Will analyze the complete video duration (up to 1 hour) and process up to 100 silent moments for comprehensive coverage.
+                {t('videoAnalysis.silentGapsDesc')}
               </p>
             </CardContent>
           </Card>
@@ -973,7 +975,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Run Analysis
+                  {t('videoAnalysis.runAnalysis')}
                 </>
               )}
             </Button>
@@ -1037,14 +1039,14 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           {!silenceResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base sm:text-lg font-light leading-relaxed">Run analysis to see silent gaps and narrations.</p>
-              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoAnalysis.noResults')}</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.accessibility.accessibilityControls')}</p>
             </div>
           ) : silenceRows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base sm:text-lg font-light leading-relaxed">No silent segments found in this video.</p>
-              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoAnalysis.noSegments')}</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.accessibility.accessibilityControls')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1122,7 +1124,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       <Card className="shadow-soft border-border rounded-2xl">
         <CardHeader className="pt-8 px-8">
           <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-            Custom Analysis Insights
+            {t('videoAnalysis.customAnalysisTitle')}
             {hasUnsavedInsightChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
                 Unsaved Changes
@@ -1132,7 +1134,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
             <CardContent className="p-6">
               <p className="text-base font-light leading-relaxed">
-                Enter a custom prompt to extract specific insights from your video content (e.g., generate hashtags, identify themes, extract key quotes, summarize main points).
+                {t('videoAnalysis.customAnalysisDesc')}
               </p>
             </CardContent>
           </Card>
@@ -1151,7 +1153,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               ) : (
                 <>
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Analyze with Prompt
+                  {t('videoAnalysis.analyzeWithPrompt')}
                 </>
               )}
             </Button>
@@ -1186,22 +1188,22 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-6 px-8 pb-8">
           <div className="space-y-3">
-            <label className="text-base font-light text-foreground">Custom Analysis Prompt</label>
+            <label className="text-base font-light text-foreground">{t('videoAnalysis.customPromptPlaceholder')}</label>
             <p className="text-base text-muted-foreground font-light leading-relaxed">
-              Enter a custom prompt to extract specific insights from your video (e.g., generate hashtags, identify themes, extract key quotes, etc.)
+              {t('videoAnalysis.customPromptPlaceholder')}
             </p>
             <Textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               className="min-h-32 text-base font-light leading-relaxed rounded-xl"
-              placeholder="e.g. Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
+              placeholder={t('videoAnalysis.customPromptExample')}
             />
           </div>
           
           {!insightResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base font-light">Enter a custom prompt above and click "Analyze" to generate insights.</p>
+              <p className="text-base font-light">{t('videoAnalysis.customPromptEmpty')}</p>
             </div>
           ) : insightResult.analysis_text ? (
             <div className="space-y-4">
