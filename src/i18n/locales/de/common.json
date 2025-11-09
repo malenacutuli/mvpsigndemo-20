@@ -509,6 +509,13 @@
       "addSegment": "Segment Hinzufügen",
       "export": "Exportieren"
     },
+    "voiceSelector": {
+      "title": "Stimmauswahl",
+      "nativeVoices": "Native Stimmen (Kostenlos)",
+      "premiumVoices": "Premium-Stimmen",
+      "selectNative": "Wählen Sie eine native Stimme",
+      "selectPremium": "Wählen Sie eine Premium-Stimme"
+    },
     "videoAnalysis": {
       "title": "Videoanalyse",
       "description": "Analysieren Sie Videoinhalte auf stille Lücken und generieren Sie Erzählungs-Audiobeschreibungen mit KI.",

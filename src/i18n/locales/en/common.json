@@ -791,8 +791,16 @@
       "extractTranscript": "Extract Complete Transcript",
       "saveChanges": "Save Changes to Video",
       "retranslate": "Re-translate",
+      "translating": "Translating...",
       "addSegment": "Add Segment",
       "export": "Export"
+    },
+    "voiceSelector": {
+      "title": "Voice Selection",
+      "nativeVoices": "Native Voices (Free)",
+      "premiumVoices": "Premium Voices",
+      "selectNative": "Select a native voice",
+      "selectPremium": "Select a premium voice"
     },
     "videoAnalysis": {
       "title": "Video Analysis",
@@ -830,7 +838,9 @@
       "originalLanguage": "(Original)",
       "actions": "Actions",
       "basicAI": "Basic AI Generation",
+      "basicGenerating": "Basic Generation...",
       "generateAD": "Generate Audio Description",
+      "analyzingVideo": "Analyzing Video...",
       "analyzeEAD": "Analyze for Extended Audio Description",
       "addManual": "Add Manual Segment"
     },

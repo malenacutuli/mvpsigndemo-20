@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -106,6 +107,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   className = "",
   language = "en" // Default to English
 }) => {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<'elevenlabs' | 'native'>('native');
   const [selectedVoice, setSelectedVoice] = useState<string>(selectedVoiceId || '');
   const { toast } = useToast();
@@ -227,7 +229,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-light text-foreground flex items-center gap-2">
           <Volume2 className="w-4 h-4" />
-          Voice Selection {language !== 'en' && `(${language.toUpperCase()})`}
+          {t('videoDetail.voiceSelector.title')} {language !== 'en' && `(${language.toUpperCase()})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -239,7 +241,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
             onClick={() => setSelectedType('native')}
             className="font-light"
           >
-            Native Voices (Free)
+            {t('videoDetail.voiceSelector.nativeVoices')}
           </Button>
           <Button
             size="sm"
@@ -247,7 +249,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
             onClick={() => setSelectedType('elevenlabs')}
             className="font-light"
           >
-            Premium Voices
+            {t('videoDetail.voiceSelector.premiumVoices')}
             <ExternalLink className="w-3 h-3 ml-1" />
           </Button>
         </div>
@@ -256,7 +258,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         <div className="space-y-2">
           <Select value={selectedVoice} onValueChange={handleVoiceSelect}>
             <SelectTrigger className="h-9 font-light">
-              <SelectValue placeholder={`Select a ${selectedType === 'elevenlabs' ? 'premium' : 'native'} voice`} />
+              <SelectValue placeholder={selectedType === 'elevenlabs' ? t('videoDetail.voiceSelector.selectPremium') : t('videoDetail.voiceSelector.selectNative')} />
             </SelectTrigger>
             <SelectContent className="bg-background z-50 shadow-lg">
               {getCurrentVoices().map(voice => (

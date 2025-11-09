@@ -509,6 +509,13 @@
       "addSegment": "Ajouter un Segment",
       "export": "Exporter"
     },
+    "voiceSelector": {
+      "title": "Sélection de Voix",
+      "nativeVoices": "Voix Natives (Gratuit)",
+      "premiumVoices": "Voix Premium",
+      "selectNative": "Sélectionnez une voix native",
+      "selectPremium": "Sélectionnez une voix premium"
+    },
     "videoAnalysis": {
       "title": "Analyse Vidéo",
       "description": "Analysez le contenu vidéo pour détecter les silences et générer des descriptions audio narratives à l'aide de l'IA.",

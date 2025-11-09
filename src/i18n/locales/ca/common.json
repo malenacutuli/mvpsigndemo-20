@@ -509,6 +509,13 @@
       "addSegment": "Afegir Segment",
       "export": "Exportar"
     },
+    "voiceSelector": {
+      "title": "Selecció de Veu",
+      "nativeVoices": "Veus Natives (Gratis)",
+      "premiumVoices": "Veus Premium",
+      "selectNative": "Selecciona una veu nativa",
+      "selectPremium": "Selecciona una veu premium"
+    },
     "videoAnalysis": {
       "title": "Anàlisi de Vídeo",
       "description": "Analitza el contingut del vídeo per detectar buits silenciosos i generar descripcions d'àudio narratives utilitzant IA.",
