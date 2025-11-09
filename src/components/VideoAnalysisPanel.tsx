@@ -1037,14 +1037,14 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           {!silenceResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">Run analysis to see silent gaps and narrations.</p>
-              <p className="text-xs mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">Run analysis to see silent gaps and narrations.</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
             </div>
           ) : silenceRows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No silent segments found in this video.</p>
-              <p className="text-xs mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">No silent segments found in this video.</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">Use the accessibility controls in the video player to toggle these features on or off based on your preferences.</p>
             </div>
           ) : (
             <div className="space-y-4">
