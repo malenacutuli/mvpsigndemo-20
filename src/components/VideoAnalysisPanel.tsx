@@ -873,13 +873,13 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         <CardContent className="pt-8 pb-8 px-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-2xl md:text-3xl font-light text-foreground mb-3">{t('videoAnalysis.title')}</h2>
+              <h2 className="text-2xl md:text-3xl font-light text-foreground mb-3">{t('videoDetail.videoAnalysis.title')}</h2>
               <p className="text-base md:text-lg text-muted-foreground font-light leading-relaxed max-w-2xl">
-                {t('videoAnalysis.description')}
+                {t('videoDetail.videoAnalysis.description')}
               </p>
               <div className="flex items-center gap-2 mt-4">
                 <Badge variant={status === 'ready' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-                  {status === 'idle' && t('videoAnalysis.readyToIndex')}
+                  {status === 'idle' && t('videoDetail.videoAnalysis.readyToIndex')}
                   {status === 'indexing' && 'Indexing...'}
                   {status === 'ready' && 'Ready'}
                   {status === 'failed' && 'Failed'}
@@ -914,7 +914,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                 ) : (
                   <>
                     <Eye className="w-4 h-4 mr-2" />
-                    {status === 'ready' ? 'Re-index' : t('videoAnalysis.indexVideo')}
+                    {status === 'ready' ? 'Re-index' : t('videoDetail.videoAnalysis.indexVideo')}
                   </>
                 )}
               </Button>
@@ -946,7 +946,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
       <Card className="shadow-soft border-border rounded-2xl">
         <CardHeader className="pb-4 pt-8 px-8">
           <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-            {t('videoAnalysis.silentGapsTitle')}
+            {t('videoDetail.videoAnalysis.silentGapsTitle')}
             {hasUnsavedSilenceChanges && (
               <Badge variant="secondary" className="text-xs font-normal">
                 Unsaved Changes
@@ -956,7 +956,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
             <CardContent className="p-6">
               <p className="text-base font-light leading-relaxed">
-                {t('videoAnalysis.silentGapsDesc')}
+                {t('videoDetail.videoAnalysis.silentGapsDesc')}
               </p>
             </CardContent>
           </Card>
@@ -975,7 +975,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  {t('videoAnalysis.runAnalysis')}
+                  {t('videoDetail.videoAnalysis.runAnalysis')}
                 </>
               )}
             </Button>
@@ -1039,8 +1039,8 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           {!silenceResult ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoAnalysis.noResults')}</p>
-              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.accessibility.accessibilityControls')}</p>
+              <p className="text-base sm:text-lg font-light leading-relaxed">{t('videoDetail.videoAnalysis.noResults')}</p>
+              <p className="text-sm sm:text-base font-light leading-relaxed mt-2">{t('videoDetail.immersiveTip')}</p>
             </div>
           ) : silenceRows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
