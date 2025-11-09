@@ -607,6 +607,31 @@
     "guideline4": "Eroe e Cattivo dovrebbero essere posizionati opposti sullo spettro",
     "guideline5": "Il dialogo fuori camera viene visualizzato in corsivo"
   },
+  "speakerMapping": {
+    "title": "Assegnazione Oratori",
+    "description": "Mappa ogni personaggio a un oratore rilevato nella trascrizione. I colori provengono dalla Gestione Personaggi.",
+    "status": "Stato:",
+    "characters": "personaggi",
+    "detectedSpeakers": "oratori rilevati",
+    "unassigned": "Non assegnato",
+    "selectSpeaker": "Seleziona oratore rilevato...",
+    "errors": {
+      "error": "Errore",
+      "characterNotFound": "Personaggio \"{{name}}\" non trovato",
+      "saveFailed": "Salvataggio Fallito",
+      "couldNotSave": "Impossibile salvare la mappatura del personaggio",
+      "failedApplyMapping": "Impossibile applicare la mappatura ai segmenti di trascrizione",
+      "failedSyncCharacter": "Impossibile sincronizzare le proprietà del personaggio",
+      "failedSaveDatabase": "Impossibile salvare la mappatura nel database",
+      "loadFailed": "Caricamento Fallito",
+      "couldNotLoad": "Impossibile caricare le mappature dei personaggi"
+    },
+    "success": {
+      "mappingSaved": "Mappatura Salvata",
+      "unmapped": "{{name}} non mappato",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "I Tuoi Canali",
     "subtitle": "Crea e gestisci canali per organizzare i tuoi video",

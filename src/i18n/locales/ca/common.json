@@ -607,6 +607,31 @@
     "guideline4": "L'Heroi i el Dolent han d'estar posicionats oposats a l'espectre",
     "guideline5": "El diàleg fora de càmera es mostra en cursiva"
   },
+  "speakerMapping": {
+    "title": "Assignació de Parlants",
+    "description": "Mapeja cada personatge a un parlant detectat a la transcripció. Els colors provenen de la Gestió de Personatges.",
+    "status": "Estat:",
+    "characters": "personatges",
+    "detectedSpeakers": "parlants detectats",
+    "unassigned": "Sense assignar",
+    "selectSpeaker": "Seleccionar parlant detectat...",
+    "errors": {
+      "error": "Error",
+      "characterNotFound": "Personatge \"{{name}}\" no trobat",
+      "saveFailed": "Error en Desar",
+      "couldNotSave": "No s'ha pogut desar el mapatge del personatge",
+      "failedApplyMapping": "Error en aplicar el mapatge als segments de transcripció",
+      "failedSyncCharacter": "Error en sincronitzar les propietats del personatge",
+      "failedSaveDatabase": "Error en desar el mapatge a la base de dades",
+      "loadFailed": "Error en Carregar",
+      "couldNotLoad": "No s'han pogut carregar els mapatges de personatges"
+    },
+    "success": {
+      "mappingSaved": "Mapatge Desat",
+      "unmapped": "{{name}} sense assignar",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Els Teus Canals",
     "subtitle": "Crea i gestiona canals per organitzar els teus vídeos",

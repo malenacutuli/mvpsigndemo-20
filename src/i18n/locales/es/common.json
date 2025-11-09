@@ -1130,6 +1130,31 @@
     "guideline4": "El Héroe y el Villano deben estar posicionados opuestos en el espectro",
     "guideline5": "El diálogo fuera de cámara se muestra en cursiva"
   },
+  "speakerMapping": {
+    "title": "Asignación de Oradores",
+    "description": "Mapea cada personaje a un orador detectado en la transcripción. Los colores provienen de la Gestión de Personajes.",
+    "status": "Estado:",
+    "characters": "personajes",
+    "detectedSpeakers": "oradores detectados",
+    "unassigned": "Sin asignar",
+    "selectSpeaker": "Seleccionar orador detectado...",
+    "errors": {
+      "error": "Error",
+      "characterNotFound": "Personaje \"{{name}}\" no encontrado",
+      "saveFailed": "Error al Guardar",
+      "couldNotSave": "No se pudo guardar el mapeo del personaje",
+      "failedApplyMapping": "Error al aplicar el mapeo a los segmentos de transcripción",
+      "failedSyncCharacter": "Error al sincronizar las propiedades del personaje",
+      "failedSaveDatabase": "Error al guardar el mapeo en la base de datos",
+      "loadFailed": "Error al Cargar",
+      "couldNotLoad": "No se pudieron cargar los mapeos de personajes"
+    },
+    "success": {
+      "mappingSaved": "Mapeo Guardado",
+      "unmapped": "{{name}} sin asignar",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Tus Canales",
     "subtitle": "Crea y gestiona canales para organizar tus vídeos",

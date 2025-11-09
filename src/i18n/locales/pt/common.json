@@ -607,6 +607,31 @@
     "guideline4": "Herói e Vilão devem estar posicionados opostos no espectro",
     "guideline5": "Diálogo fora da câmera é exibido em itálico"
   },
+  "speakerMapping": {
+    "title": "Atribuição de Locutores",
+    "description": "Mapeie cada personagem para um locutor detectado na transcrição. As cores vêm da Gestão de Personagens.",
+    "status": "Status:",
+    "characters": "personagens",
+    "detectedSpeakers": "locutores detectados",
+    "unassigned": "Não atribuído",
+    "selectSpeaker": "Selecionar locutor detectado...",
+    "errors": {
+      "error": "Erro",
+      "characterNotFound": "Personagem \"{{name}}\" não encontrado",
+      "saveFailed": "Falha ao Salvar",
+      "couldNotSave": "Não foi possível salvar o mapeamento do personagem",
+      "failedApplyMapping": "Falha ao aplicar mapeamento aos segmentos de transcrição",
+      "failedSyncCharacter": "Falha ao sincronizar propriedades do personagem",
+      "failedSaveDatabase": "Falha ao salvar mapeamento no banco de dados",
+      "loadFailed": "Falha ao Carregar",
+      "couldNotLoad": "Não foi possível carregar os mapeamentos de personagens"
+    },
+    "success": {
+      "mappingSaved": "Mapeamento Salvo",
+      "unmapped": "{{name}} não mapeado",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Seus Canais",
     "subtitle": "Crie e gerencie canais para organizar seus vídeos",

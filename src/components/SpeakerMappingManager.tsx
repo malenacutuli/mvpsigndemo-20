@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 interface Character {
   id: string;
@@ -31,6 +32,7 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
   characters,
   existingSpeakers
 }) => {
+  const { t } = useTranslation();
   // Store speaker key -> character UUID mappings
   const [speakerMappings, setSpeakerMappings] = useState<Record<string, string>>({});
   const [availableSpeakers, setAvailableSpeakers] = useState<Speaker[]>([]);
@@ -166,8 +168,8 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
       } catch (error) {
         console.error('❌ Failed to load mappings:', error);
         toast({
-          title: "Load Failed",
-          description: "Could not load character mappings",
+          title: t('speakerMapping.errors.loadFailed'),
+          description: t('speakerMapping.errors.couldNotLoad'),
           variant: "destructive"
         });
       }
@@ -268,8 +270,8 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
     const characterId = getCharacterUuid(characterName);
     if (!characterId && selectedSpeaker !== 'unassigned') {
       toast({
-        title: "Error",
-        description: `Character "${characterName}" not found`,
+        title: t('speakerMapping.errors.error'),
+        description: t('speakerMapping.errors.characterNotFound', { name: characterName }),
         variant: "destructive"
       });
       return;
@@ -304,10 +306,10 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
       }
 
       toast({
-        title: "Mapping Saved",
+        title: t('speakerMapping.success.mappingSaved'),
         description: normalized === 'unassigned'
-          ? `${characterName} unmapped`
-          : `${characterName} → ${normalized}`
+          ? t('speakerMapping.success.unmapped', { name: characterName })
+          : t('speakerMapping.success.mapped', { name: characterName, speaker: normalized })
       });
 
       // Trigger UI refresh
@@ -321,19 +323,19 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       // Provide specific error message based on failure
-      let description = "Could not save character mapping";
+      let description = t('speakerMapping.errors.couldNotSave');
       if (errorMessage.includes('apply_specific_mapping')) {
-        description = "Failed to apply mapping to transcript segments";
+        description = t('speakerMapping.errors.failedApplyMapping');
       } else if (errorMessage.includes('sync_character_to_segments')) {
-        description = "Failed to sync character properties";
+        description = t('speakerMapping.errors.failedSyncCharacter');
       } else if (errorMessage.includes('speaker_mappings')) {
-        description = "Failed to save mapping to database";
+        description = t('speakerMapping.errors.failedSaveDatabase');
       } else if (errorMessage.includes('not found')) {
         description = errorMessage;
       }
 
       toast({
-        title: "Save Failed",
+        title: t('speakerMapping.errors.saveFailed'),
         description,
         variant: "destructive"
       });
@@ -360,13 +362,13 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
     <Card className="border-orange-200/50 bg-orange-50/30 rounded-xl">
       <CardContent className="p-4 space-y-3">
         <h4 className="text-lg font-light text-orange-800">
-          Speaker Assignment
+          {t('speakerMapping.title')}
         </h4>
         <p className="text-base font-light leading-relaxed text-orange-700">
-          Map each character to a detected transcript speaker. Colors come from Character Management.
+          {t('speakerMapping.description')}
         </p>
         <div className="text-sm font-light text-orange-600 bg-orange-100/80 p-3 rounded-lg border border-orange-200">
-          <strong>Status:</strong> {characters.length} characters • {availableSpeakers.length} detected speakers
+          <strong>{t('speakerMapping.status')}</strong> {characters.length} {t('speakerMapping.characters')} • {availableSpeakers.length} {t('speakerMapping.detectedSpeakers')}
         </div>
         <div className="space-y-2">
           {characters.map((char) => {
@@ -390,10 +392,10 @@ export const SpeakerMappingManager: React.FC<SpeakerMappingManagerProps> = ({
                     onValueChange={(value) => handleMappingChange(char.name, value)}
                   >
                     <SelectTrigger className="h-7 w-56">
-                      <SelectValue placeholder="Select detected speaker..." />
+                      <SelectValue placeholder={t('speakerMapping.selectSpeaker')} />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50 shadow-lg">
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">{t('speakerMapping.unassigned')}</SelectItem>
                       {availableSpeakers.map(sp => (
                         <SelectItem key={sp.name} value={toSpeakerKey(sp)}>
                           {sp.name} {sp.asr_label ? `(Speaker ${sp.asr_label})` : ''}

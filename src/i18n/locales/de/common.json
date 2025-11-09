@@ -607,6 +607,31 @@
     "guideline4": "Held und Bösewicht sollten im Spektrum gegenüberliegen",
     "guideline5": "Off-Kamera-Dialog wird kursiv angezeigt"
   },
+  "speakerMapping": {
+    "title": "Sprecherzuweisung",
+    "description": "Ordnen Sie jeden Charakter einem erkannten Transkript-Sprecher zu. Farben stammen aus der Charakterverwaltung.",
+    "status": "Status:",
+    "characters": "Charaktere",
+    "detectedSpeakers": "erkannte Sprecher",
+    "unassigned": "Nicht zugewiesen",
+    "selectSpeaker": "Erkannten Sprecher auswählen...",
+    "errors": {
+      "error": "Fehler",
+      "characterNotFound": "Charakter \"{{name}}\" nicht gefunden",
+      "saveFailed": "Speichern Fehlgeschlagen",
+      "couldNotSave": "Charakterzuordnung konnte nicht gespeichert werden",
+      "failedApplyMapping": "Zuordnung konnte nicht auf Transkriptsegmente angewendet werden",
+      "failedSyncCharacter": "Charaktereigenschaften konnten nicht synchronisiert werden",
+      "failedSaveDatabase": "Zuordnung konnte nicht in Datenbank gespeichert werden",
+      "loadFailed": "Laden Fehlgeschlagen",
+      "couldNotLoad": "Charakterzuordnungen konnten nicht geladen werden"
+    },
+    "success": {
+      "mappingSaved": "Zuordnung Gespeichert",
+      "unmapped": "{{name}} nicht zugeordnet",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Ihre Kanäle",
     "subtitle": "Erstellen und verwalten Sie Kanäle, um Ihre Videos zu organisieren",

@@ -607,6 +607,31 @@
     "guideline4": "Le Héros et le Méchant doivent être positionnés à l'opposé sur le spectre",
     "guideline5": "Le dialogue hors caméra est affiché en italique"
   },
+  "speakerMapping": {
+    "title": "Attribution de Locuteur",
+    "description": "Mappez chaque personnage à un locuteur détecté dans la transcription. Les couleurs proviennent de la Gestion des Personnages.",
+    "status": "Statut:",
+    "characters": "personnages",
+    "detectedSpeakers": "locuteurs détectés",
+    "unassigned": "Non assigné",
+    "selectSpeaker": "Sélectionner un locuteur détecté...",
+    "errors": {
+      "error": "Erreur",
+      "characterNotFound": "Personnage \"{{name}}\" introuvable",
+      "saveFailed": "Échec de l'Enregistrement",
+      "couldNotSave": "Impossible d'enregistrer le mappage du personnage",
+      "failedApplyMapping": "Échec de l'application du mappage aux segments de transcription",
+      "failedSyncCharacter": "Échec de la synchronisation des propriétés du personnage",
+      "failedSaveDatabase": "Échec de l'enregistrement du mappage dans la base de données",
+      "loadFailed": "Échec du Chargement",
+      "couldNotLoad": "Impossible de charger les mappages de personnages"
+    },
+    "success": {
+      "mappingSaved": "Mappage Enregistré",
+      "unmapped": "{{name}} non mappé",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Vos Chaînes",
     "subtitle": "Créez et gérez des chaînes pour organiser vos vidéos",

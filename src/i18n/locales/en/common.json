@@ -899,6 +899,31 @@
     "guideline4": "Hero and Villain should be positioned opposite on the spectrum",
     "guideline5": "Off-camera dialogue is displayed in italic"
   },
+  "speakerMapping": {
+    "title": "Speaker Assignment",
+    "description": "Map each character to a detected transcript speaker. Colors come from Character Management.",
+    "status": "Status:",
+    "characters": "characters",
+    "detectedSpeakers": "detected speakers",
+    "unassigned": "Unassigned",
+    "selectSpeaker": "Select detected speaker...",
+    "errors": {
+      "error": "Error",
+      "characterNotFound": "Character \"{{name}}\" not found",
+      "saveFailed": "Save Failed",
+      "couldNotSave": "Could not save character mapping",
+      "failedApplyMapping": "Failed to apply mapping to transcript segments",
+      "failedSyncCharacter": "Failed to sync character properties",
+      "failedSaveDatabase": "Failed to save mapping to database",
+      "loadFailed": "Load Failed",
+      "couldNotLoad": "Could not load character mappings"
+    },
+    "success": {
+      "mappingSaved": "Mapping Saved",
+      "unmapped": "{{name}} unmapped",
+      "mapped": "{{name}} → {{speaker}}"
+    }
+  },
   "channels": {
     "title": "Your Channels",
     "subtitle": "Create and manage channels to organize your videos",
