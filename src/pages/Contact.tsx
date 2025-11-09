@@ -21,7 +21,7 @@ Message:
 ${formData.get('message')}
     `);
     
-    window.location.href = `mailto:hello@axessible.ai?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:hello@axessible.ai?cc=malena@axessible.ai&subject=${subject}&body=${body}`;
   };
 
   return (
