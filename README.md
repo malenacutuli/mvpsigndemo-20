@@ -144,24 +144,38 @@ Supports 7+ languages with complete localization:
 
 ### Free Tier
 - 1GB storage
-- 1 video per month
 - Basic accessibility features
+- Community support
 
-### Starter ($9.99/month)
+### Starter (€26/month)
 - 100GB storage
-- 10 videos per month
-- Full accessibility suite
+- 5 minutes video processing included
+- Full accessibility suite (CWI, AD, Sign Language)
+- 30-day free trial
+- Additional minutes: €11.90/minute
 
-### Standard ($29.99/month)
+### Standard (€65/month)
 - 2TB storage
-- 100 videos per month
-- Advanced AI features
+- 15 minutes video processing included
+- Expert team support for up to 5 videos/month
+- Accessible video download
+- Additional minutes: €8.99/minute
 
-### Premium ($99.99/month)
-- Unlimited storage
-- Unlimited videos
-- Priority processing
-- Custom branding
+### Advanced (€250/month)
+- 5TB storage
+- 80 minutes video processing included
+- Multi-language dubbing (15+ languages)
+- WCAG/ADA compliance reporting
+- Expert-led accessibility audit
+- Additional minutes: €5.99/minute
+
+### Enterprise (Custom)
+- Custom storage limits
+- Unlimited video processing
+- SSO & governance
+- Dedicated account manager
+- Custom integrations
+- Priority support
 
 ## 🤝 Contributing
 
