@@ -359,7 +359,7 @@ export const useVideoStorage = (videoId: string) => {
         const segQuery = supabase
           .from('transcript_segments_clean')
           .select(`
-            id, transcript_id, idx, start_ms, end_ms, text, 
+            id, transcript_id, idx, start_ms, end_ms, start_time, end_time, text, 
             words, words_source, timing_confidence,
             speaker, speaker_asr_label, speaker_color, character_id, is_off_camera,
             overall_intensity, overall_pitch,
@@ -393,9 +393,11 @@ export const useVideoStorage = (videoId: string) => {
           for (const row of rows) {
             // Group by idx if present, else by rounded start|end|text
             const k = Number.isFinite(row.idx) ? row.idx : null;
+            const startSec = row.start_ms !== null ? row.start_ms / 1000 : row.start_time;
+            const endSec = row.end_ms !== null ? row.end_ms / 1000 : row.end_time;
             const key = k !== null 
               ? `idx:${k}`
-              : `time:${Math.round(row.start_time * 100) / 100}|${Math.round(row.end_time * 100) / 100}|${row.text.trim()}`;
+              : `time:${Math.round(startSec * 100) / 100}|${Math.round(endSec * 100) / 100}|${row.text.trim()}`;
             
             const arr = groups.get(key) || [];
             arr.push(row);
@@ -404,11 +406,13 @@ export const useVideoStorage = (videoId: string) => {
           
           // Pick best from each group: character_id > has words > longer duration
           const pickBest = (arr: any[]) => {
-            return arr.sort((a, b) => 
-              (b.character_id ? 1 : 0) - (a.character_id ? 1 : 0) ||
-              ((b.words?.length ? 1 : 0) - (a.words?.length ? 1 : 0)) ||
-              ((b.end_time - b.start_time) - (a.end_time - a.start_time))
-            )[0];
+            return arr.sort((a, b) => {
+              const aDur = (a.end_ms !== null ? a.end_ms / 1000 : a.end_time) - (a.start_ms !== null ? a.start_ms / 1000 : a.start_time);
+              const bDur = (b.end_ms !== null ? b.end_ms / 1000 : b.end_time) - (b.start_ms !== null ? b.start_ms / 1000 : b.start_time);
+              return (b.character_id ? 1 : 0) - (a.character_id ? 1 : 0) ||
+                ((b.words?.length ? 1 : 0) - (a.words?.length ? 1 : 0)) ||
+                (bDur - aDur);
+            })[0];
           };
           
           const cleanedRows = Array.from(groups.values())
@@ -431,10 +435,10 @@ export const useVideoStorage = (videoId: string) => {
             transcriptId: r.transcript_id, // ✅ Include transcript_id
             idx: r.idx,
             text: r.text,
-            start_ms: r.start_ms,
-            end_ms: r.end_ms,
-            startTime: r.start_ms / 1000,  // ✅ Convert to seconds for render
-            endTime: r.end_ms / 1000,
+            start_ms: r.start_ms ?? Math.round(r.start_time * 1000),
+            end_ms: r.end_ms ?? Math.round(r.end_time * 1000),
+            startTime: r.start_ms !== null ? r.start_ms / 1000 : r.start_time,  // ✅ Handle both formats
+            endTime: r.end_ms !== null ? r.end_ms / 1000 : r.end_time,
             
             // Speaker/Character
             speaker: r.characters?.name ?? r.speaker ?? 'Unassigned',
