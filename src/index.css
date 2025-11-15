@@ -236,6 +236,15 @@ Focused on high contrast, readable typography, and inclusive design.
     100% { text-shadow: 0 0 8px currentColor; }
   }
 
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
   /* Word state classes for synchronized caption highlighting */
   .caption-word {
     display: inline-block;
