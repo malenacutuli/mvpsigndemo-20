@@ -10,6 +10,7 @@ import it from './locales/it/common.json';
 import de from './locales/de/common.json';
 import pt from './locales/pt/common.json';
 import ca from './locales/ca/common.json';
+import ja from './locales/ja/common.json';
 
 i18n
   .use(LanguageDetector)
@@ -23,6 +24,7 @@ i18n
       de: { translation: de },
       pt: { translation: pt },
       ca: { translation: ca },
+      ja: { translation: ja },
     },
     fallbackLng: 'en',
     debug: false,
