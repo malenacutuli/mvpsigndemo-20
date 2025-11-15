@@ -386,10 +386,6 @@
         "fastTrack": "Via Rápida",
         "dedicated": "Dedicado"
       }
-    },
-    "common": {
-      "doneEditing": "Edição concluída",
-      "published": "Publicado"
     }
   },
   "videos": {
@@ -490,8 +486,8 @@
   },
   "common": {
     "cancel": "Cancelar",
-    "create": "Crear",
-    "update": "Actualizar",
+    "create": "Criar",
+    "update": "Atualizar",
     "error": "Erro",
     "doneEditing": "Edição concluída",
     "published": "Publicado"

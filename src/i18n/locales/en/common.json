@@ -166,7 +166,9 @@
     "language": "Language",
     "feature": "Feature",
     "refresh": "Refresh",
-    "na": "N/A"
+    "na": "N/A",
+    "doneEditing": "Done Editing",
+    "published": "Published"
   },
   "enterpriseHero": {
     "subtitle": "VIDEO ACCESSIBILITY PLATFORM DESIGNED FOR YOUR BUSINESS",
@@ -1026,10 +1028,6 @@
       "saveFailed": "Failed to save channel",
       "deleteFailed": "Failed to delete channel"
     }
-  },
-  "common": {
-    "doneEditing": "Done Editing",
-    "published": "Published"
   },
   "languages": {
     "en": "English",
