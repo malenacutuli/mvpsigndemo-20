@@ -71,6 +71,19 @@ export const AudioDescription: React.FC<AudioDescriptionProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
 
+  // Cleanup audio on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 AudioDescription cleanup on unmount');
+      if (descriptionAudio) {
+        descriptionAudio.pause();
+        descriptionAudio.src = '';
+        setDescriptionAudio(null);
+      }
+      setIsDescriptionPlaying(false);
+    };
+  }, []); // Empty deps = runs only on mount/unmount
+
   // Helper to resolve ElevenLabs voice id based on content and language
   const resolveVoiceId = () => {
     // If a specific voice ID is provided (e.g., ElevenLabs voice id), prefer it
@@ -138,8 +151,12 @@ useEffect(() => {
   // Enhanced TTS generation with cache-first approach - plays audio regardless of showOverlay
   useEffect(() => {
     if (!isPlaying) {
-      if (descriptionAudio && !descriptionAudio.paused) descriptionAudio.pause();
+      if (descriptionAudio) {
+        if (!descriptionAudio.paused) descriptionAudio.pause();
+        descriptionAudio.src = ''; // Clear the source
+      }
       setIsDescriptionPlaying(false);
+      setDescriptionAudio(null); // Clear the reference
       return;
     }
     if (!currentDescription) return;
@@ -201,6 +218,11 @@ useEffect(() => {
 
     return () => {
       cancelled = true;
+      // Stop audio if it's playing
+      if (descriptionAudio && !descriptionAudio.paused) {
+        console.log('🛑 Stopping audio due to description change');
+        descriptionAudio.pause();
+      }
     };
   }, [currentDescription, isPlaying, selectedVoice, contentType, language, dynamicDescriptions]);
 
