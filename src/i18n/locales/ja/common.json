@@ -147,13 +147,127 @@
     }
   },
   "pricing": {
-    "title": "料金",
-    "subtitle": "あなたのニーズに合わせたプラン",
+    "title": "すべての動画をAxessibleにするプラン",
+    "subtitle": "アクセシビリティニーズに最適なプランを選択",
+    "disclaimer": "価格は税抜きです。いつでもキャンセル可能。",
+    "free": "無料",
+    "starter": "スターター",
+    "standard": "スタンダード",
+    "advanced": "アドバンスド",
+    "enterprise": "エンタープライズ",
     "monthly": "月額",
-    "annually": "年額",
-    "perMonth": "/月",
+    "yearly": "年額",
     "getStarted": "始める",
-    "contactSales": "営業に問い合わせる"
+    "contactUs": "営業に問い合わせる",
+    "contactSales": "営業に問い合わせ",
+    "mostPopular": "最も人気",
+    "currentPlan": "現在のプラン",
+    "loading": "読み込み中...",
+    "startFree": "無料で始める",
+    "tryStandard": "スタンダードを試す",
+    "goAdvanced": "アドバンスドを選ぶ",
+    "talkToUs": "お問い合わせ",
+    "featureComparison": "機能比較",
+    "questionsAboutPricing": "料金についてご質問がありますか？",
+    "teamHelpChoose": "私たちのチームが、あなたのニーズに合った適切なプランを選ぶお手伝いをします。",
+    "plans": {
+      "starter": {
+        "name": "クリエイター",
+        "price": "€26",
+        "cadence": "月額",
+        "trial": "30日間無料トライアル",
+        "users": "1ユーザー",
+        "storage": "100GBホスティング • 5分の処理時間含む",
+        "cta": "無料トライアルを開始",
+        "features": [
+          "マルチファンクションAxessibleプレーヤー",
+          "独自のコンテンツライブラリで動画を編集",
+          "Captions with Intentionと音声解説の自動編集ツール",
+          "動画コンテンツを検索・理解するための動画分析：何でも見つけ、深い洞察を発見し、ソーシャルメディア投稿とSEOの感情タグ付けのサポートを受ける",
+          "動画リンクの埋め込み",
+          "エンゲージメント分析",
+          "プラットフォームに動画を公開",
+          "5分の動画処理時間含む",
+          "追加分：€11.90/分"
+        ]
+      },
+      "standard": {
+        "name": "スタンダード",
+        "price": "€65",
+        "cadence": "月額",
+        "users": "5ユーザー",
+        "storage": "650GBホスティング • 10分の処理時間含む",
+        "cta": "スタンダードを試す",
+        "features": [
+          "クリエイターのすべて",
+          "月5本までの動画に対するアクセシブル動画編集の専門チームサポート",
+          "アクセシブル動画のダウンロード",
+          "10分の動画処理時間含む",
+          "追加分：€8.99/分"
+        ]
+      },
+      "advanced": {
+        "name": "アドバンスド",
+        "price": "€250",
+        "cadence": "月額",
+        "users": "10ユーザー",
+        "storage": "2TBホスティング • 50分の処理時間含む",
+        "cta": "アドバンスドを選ぶ",
+        "features": [
+          "スタンダードのすべて",
+          "15以上の言語での吹き替え",
+          "マーケティング自動化統合",
+          "WCAG/ADAコンプライアンスレポート",
+          "動画の専門家主導のアクセシビリティ監査",
+          "月15本までの動画に対する同期付きクリエイティブストーリーテリング音声解説の専門家サポート（Human in the Loop）",
+          "50分の動画処理時間含む",
+          "追加分：€5.99/分"
+        ]
+      },
+      "enterprise": {
+        "name": "エンタープライズ",
+        "price": "お問い合わせ",
+        "cadence": "",
+        "users": "無制限",
+        "storage": "カスタム",
+        "cta": "営業に問い合わせ",
+        "features": [
+          "SSOとガバナンス",
+          "優先サポート",
+          "カスタムAI予算",
+          "セキュリティレビュー",
+          "カスタム統合",
+          "専任アカウントマネージャー",
+          "カスタム手話アバター",
+          "チームへのカスタムトレーニングとサポート",
+          "独自チャンネルカスタマイズオプション",
+          "多言語吹き替え"
+        ]
+      }
+    },
+    "comparison": {
+      "categories": {
+        "accessibilityFeatures": "アクセシビリティ機能",
+        "contentStorage": "コンテンツとストレージ"
+      },
+      "features": {
+        "axessiblePlayer": "Axessibleプレーヤー（CWI、AD、手話）",
+        "emotionTaggedCaptions": "感情タグ付き字幕",
+        "aiAudioDescriptions": "音声解説",
+        "signLanguageAvatarSupport": "手話アバターサポート",
+        "storage": "ストレージ",
+        "videoProcessing": "動画処理"
+      },
+      "values": {
+        "basic": "ベーシック",
+        "advanced": "アドバンスド",
+        "custom": "カスタム",
+        "standard": "スタンダード",
+        "priority": "優先",
+        "fastTrack": "ファストトラック",
+        "dedicated": "専用"
+      }
+    }
   },
   "enterprise": {
     "quickAccess": {
