@@ -100,6 +100,35 @@
       "shareContent": "Share Your Content"
     }
   },
+  "contact": {
+    "title": "Get in Touch",
+    "subtitle": "Have a question about accessibility, want to learn more about our platform, or interested in partnering with us? We'd love to hear from you.",
+    "form": {
+      "title": "Send us a message",
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "your.email@example.com",
+      "subject": "Subject",
+      "subjectPlaceholder": "What's this about?",
+      "message": "Message",
+      "messagePlaceholder": "Tell us more about your inquiry...",
+      "submit": "Send Message"
+    },
+    "info": {
+      "title": "Contact Information",
+      "email": "Email",
+      "locations": "Locations",
+      "helpWith": "What can we help you with?",
+      "consulting": "Accessibility consulting and implementation",
+      "demos": "Platform demos and technical questions",
+      "partnerships": "Partnership and collaboration opportunities",
+      "media": "Media inquiries and press requests",
+      "support": "General support and feedback",
+      "responseTitle": "Quick Response Times",
+      "responseText": "We typically respond to all inquiries within 24 hours during business days. For urgent accessibility questions, please mention \"URGENT\" in your subject line."
+    }
+  },
   "footer": {
     "tagline": "Hear the Unheard. See the Unseen.",
     "about": "About",

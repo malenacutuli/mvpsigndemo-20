@@ -100,6 +100,35 @@
       "shareContent": "Condividi i tuoi Contenuti"
     }
   },
+  "contact": {
+    "title": "Mettiti in Contatto",
+    "subtitle": "Hai una domanda sull'accessibilità, vuoi saperne di più sulla nostra piattaforma o sei interessato a collaborare con noi? Ci piacerebbe sentirti.",
+    "form": {
+      "title": "Inviaci un messaggio",
+      "name": "Nome",
+      "namePlaceholder": "Il tuo nome",
+      "email": "Email",
+      "emailPlaceholder": "tua.email@esempio.com",
+      "subject": "Oggetto",
+      "subjectPlaceholder": "Di cosa si tratta?",
+      "message": "Messaggio",
+      "messagePlaceholder": "Raccontaci di più sulla tua richiesta...",
+      "submit": "Invia Messaggio"
+    },
+    "info": {
+      "title": "Informazioni di Contatto",
+      "email": "Email",
+      "locations": "Sedi",
+      "helpWith": "Come possiamo aiutarti?",
+      "consulting": "Consulenza e implementazione dell'accessibilità",
+      "demos": "Demo della piattaforma e domande tecniche",
+      "partnerships": "Opportunità di partnership e collaborazione",
+      "media": "Richieste media e stampa",
+      "support": "Supporto generale e feedback",
+      "responseTitle": "Tempi di Risposta Rapidi",
+      "responseText": "Rispondiamo in genere a tutte le richieste entro 24 ore nei giorni lavorativi. Per domande urgenti sull'accessibilità, si prega di menzionare \"URGENTE\" nell'oggetto."
+    }
+  },
   "about": {
     "title": "Chi siamo",
     "mission": "Siamo un'azienda tecnologica e un laboratorio di ricerca che sviluppa un Modello di Linguaggio Audiovisivo Emotivo (AVLM), addestrato su contenuti creativi ottenuti eticamente. Insegnando all'IA a comprendere emozione, narrativa e intenzione nei media audiovisivi, sblocchiamo strumenti senza precedenti per creatori, brand e piattaforme.",

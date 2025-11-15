@@ -100,6 +100,35 @@
       "shareContent": "Comparteix el teu Contingut"
     }
   },
+  "contact": {
+    "title": "Posa't en Contacte",
+    "subtitle": "Tens una pregunta sobre accessibilitat, vols aprendre més sobre la nostra plataforma o estàs interessat en associar-te amb nosaltres? Ens encantaria saber de tu.",
+    "form": {
+      "title": "Envia'ns un missatge",
+      "name": "Nom",
+      "namePlaceholder": "El teu nom",
+      "email": "Correu electrònic",
+      "emailPlaceholder": "el.teu.email@exemple.com",
+      "subject": "Assumpte",
+      "subjectPlaceholder": "De què es tracta?",
+      "message": "Missatge",
+      "messagePlaceholder": "Explica'ns més sobre la teva consulta...",
+      "submit": "Enviar Missatge"
+    },
+    "info": {
+      "title": "Informació de Contacte",
+      "email": "Correu electrònic",
+      "locations": "Ubicacions",
+      "helpWith": "En què podem ajudar-te?",
+      "consulting": "Consultoria i implementació d'accessibilitat",
+      "demos": "Demos de la plataforma i preguntes tècniques",
+      "partnerships": "Oportunitats d'associació i col·laboració",
+      "media": "Consultes de mitjans i sol·licituds de premsa",
+      "support": "Suport general i comentaris",
+      "responseTitle": "Temps de Resposta Ràpids",
+      "responseText": "Normalment responem a totes les consultes en 24 hores durant els dies laborables. Per a preguntes urgents d'accessibilitat, si us plau menciona \"URGENT\" a la línia d'assumpte."
+    }
+  },
   "about": {
     "title": "Sobre",
     "mission": "Som una empresa tecnològica i un laboratori de recerca que desenvolupa un Model de Llenguatge Audiovisual Emocional (AVLM), entrenat amb contingut creatiu obtingut èticament. Ensenyant a l'IA a entendre l'emoció, la narrativa i la intenció en mitjans audiovisuals, desbloquejem eines sense precedents per a creadors, marques i plataformes.",
