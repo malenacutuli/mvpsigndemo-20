@@ -197,20 +197,20 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   };
 
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Smartphone className="w-5 h-5" />
+              <Scissors className="w-5 h-5" />
               Create Social Media Clips
             </CardTitle>
             <CardDescription>
-              Generate vertical clips optimized for TikTok, Instagram Reels, and YouTube Shorts
+              Generate vertical video clips optimized for TikTok, Instagram Reels, and YouTube Shorts
             </CardDescription>
           </div>
           {hasGeneratedClips && (
-            <Badge variant="outline">{generatedClips.length} clips created</Badge>
+            <Badge variant="outline" className="font-light">{generatedClips.length} clips created</Badge>
           )}
         </div>
       </CardHeader>
@@ -218,24 +218,24 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       <CardContent className="space-y-6">
         {/* Platform Selector */}
         <div>
-          <Label className="text-base font-semibold mb-3 block">1. Choose Platform</Label>
+          <Label className="text-base font-light mb-3 block text-foreground">1. Choose Platform</Label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {platforms.map((platform) => (
               <Card
                 key={platform.key}
                 className={cn(
-                  "cursor-pointer transition-all hover:shadow-md",
+                  "rounded-2xl cursor-pointer transition-all hover:shadow-md",
                   selectedPlatform === platform.key && "ring-2 ring-primary"
                 )}
                 onClick={() => setSelectedPlatform(platform.key)}
               >
                 <CardContent className="p-4 text-center">
                   <div className="text-3xl mb-2">{platform.icon}</div>
-                  <p className="font-semibold text-sm">{platform.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="font-light text-sm text-foreground">{platform.name}</p>
+                  <p className="text-xs font-light text-muted-foreground mt-1">
                     {platform.durations.join('s, ')}s
                   </p>
-                  <Badge variant="secondary" className="mt-2 text-xs">
+                  <Badge variant="secondary" className="mt-2 text-xs font-light">
                     {platform.aspectRatio}
                   </Badge>
                 </CardContent>
@@ -246,7 +246,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
 
         {/* Clip Selection Method */}
         <div>
-          <Label className="text-base font-semibold mb-3 block">2. Select Clip</Label>
+          <Label className="text-base font-light mb-3 block text-foreground">2. Select Clip</Label>
           <Tabs value={clipMode} onValueChange={(v) => setClipMode(v as 'auto' | 'manual')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="auto" className="gap-2">
@@ -295,16 +295,16 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                     >
                       <CardContent className="p-4">
                         <div className="flex gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h4 className="font-semibold text-sm line-clamp-1">{highlight.title}</h4>
-                              <Badge variant="secondary">
-                                Score: {highlight.engagement_score}/10
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                              {highlight.description}
-                            </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="font-light text-sm line-clamp-1 text-foreground">{highlight.title}</h4>
+                          <Badge variant="secondary" className="font-light">
+                            Score: {highlight.engagement_score}/10
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-light text-muted-foreground line-clamp-2 mb-2">
+                          {highlight.description}
+                        </p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span>{formatTime(highlight.start_time)} → {formatTime(highlight.end_time)}</span>
                               <span>•</span>
@@ -390,7 +390,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
 
         {/* Style Options */}
         <div>
-          <Label className="text-base font-semibold mb-3 block">3. Customize Style</Label>
+          <Label className="text-base font-light mb-3 block text-foreground">3. Customize Style</Label>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm">Caption Style</Label>
@@ -445,16 +445,16 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
         {/* Generated Clips List */}
         {generatedClips.length > 0 && (
           <div className="border-t pt-6">
-            <h3 className="font-semibold mb-3">Generated Clips ({generatedClips.length})</h3>
+            <h3 className="font-light text-foreground mb-3">Generated Clips ({generatedClips.length})</h3>
             <div className="grid gap-3">
               {generatedClips.map((clip) => (
-                <Card key={clip.id}>
+                <Card key={clip.id} className="rounded-2xl">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-semibold text-sm line-clamp-1">{clip.title}</h4>
-                          <Badge>{clip.platform.replace('_', ' ')}</Badge>
+                          <h4 className="font-light text-sm line-clamp-1 text-foreground">{clip.title}</h4>
+                          <Badge className="font-light">{clip.platform.replace('_', ' ')}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {Math.round(clip.duration)}s • {clip.resolution} • {clip.aspect_ratio}
