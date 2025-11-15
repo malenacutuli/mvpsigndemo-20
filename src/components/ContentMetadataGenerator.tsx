@@ -86,31 +86,13 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
       const { data, error } = await supabase.functions.invoke('generate-content-metadata', {
         body: {
           videoId: video.id,
-          platform: selectedPlatform,
-          videoTitle: video.title,
-          videoDuration: video.duration_seconds
+          type: selectedPlatform
         }
       });
 
       if (error) throw error;
 
       setGeneratedContent(data.content);
-      
-      // Save to database (without model in metadata)
-      const { error: saveError } = await supabase
-        .from('generated_metadata')
-        .insert({
-          video_id: video.id,
-          type: selectedPlatform,
-          content: data.content,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-          metadata: {
-            platform: selectedPlatform
-          }
-        });
-
-      if (saveError) throw saveError;
-
       toast.success(`${selectedPlatformConfig.name} content generated!`);
       await loadSavedContent();
 
