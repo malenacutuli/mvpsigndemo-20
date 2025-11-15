@@ -4,6 +4,9 @@ import disneyLogo from '@/assets/logos/disney.png';
 import mangoLogo from '@/assets/logos/mango.png';
 import appleLogo from '@/assets/logos/apple.png';
 import diageoLogo from '@/assets/logos/diageo.png';
+import unileverLogo from '@/assets/logos/unilever.png';
+import hmLogo from '@/assets/logos/hm.png';
+import pgLogo from '@/assets/logos/pg.png';
 
 const logos = [
   { src: disneyLogo, alt: 'Disney' },
@@ -12,6 +15,9 @@ const logos = [
   { src: adidasLogo, alt: 'Adidas' },
   { src: appleLogo, alt: 'Apple' },
   { src: diageoLogo, alt: 'Diageo' },
+  { src: unileverLogo, alt: 'Unilever' },
+  { src: hmLogo, alt: 'H&M' },
+  { src: pgLogo, alt: 'P&G' },
 ];
 
 export const MovingLogoStripe = () => {
