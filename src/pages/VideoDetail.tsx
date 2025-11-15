@@ -566,48 +566,6 @@ const VideoDetail = () => {
                 </div>
               )}
               
-              {/* Immersive Features Section */}
-              <div className="mt-6">
-                <h2 className="text-3xl md:text-4xl font-light text-foreground mb-8 flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  {t('videoDetail.immersiveFeatures')}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <Card className="p-6 rounded-xl border shadow-soft">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-light text-sm">CC</span>
-                      </div>
-                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.captionsWith')}</h3>
-                    </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.captionsDesc')}</p>
-                  </Card>
-                  <Card className="p-6 rounded-xl border shadow-soft">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-light text-sm">AD</span>
-                      </div>
-                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.audioDescriptions')}</h3>
-                    </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.audioDescriptionsDesc')}</p>
-                  </Card>
-                  <Card className="p-6 rounded-xl border shadow-soft">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-purple-600 font-light text-sm">VA</span>
-                      </div>
-                      <h3 className="text-lg font-light text-foreground">{t('videoDetail.accessibility.videoAnalysis')}</h3>
-                    </div>
-                    <p className="text-base font-light text-muted-foreground leading-relaxed">{t('videoDetail.accessibility.videoAnalysisDesc')}</p>
-                  </Card>
-                </div>
-                
-                <div className="p-6 bg-muted/50 rounded-xl">
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">
-                    {t('videoDetail.immersiveTip')}
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
