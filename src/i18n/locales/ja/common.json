@@ -173,6 +173,177 @@
       }
     }
   },
+  "featureBoxes": {
+    "compliance": {
+      "title": "コンプライアンス",
+      "description": "EAAコンプライアンスのためのWCAG 2.1 AAおよびUNE-EN 301549ベースの改善。"
+    },
+    "solutions": {
+      "title": "カスタマイズ可能なソリューション",
+      "description": "あらゆるタイプのビジネスに適応するように設計されたプラン。"
+    },
+    "heavyWork": {
+      "title": "私たちが重労働を担当します",
+      "description": "迅速な実装、簡単に。私たちが重い作業をします。"
+    },
+    "contactUs": "お問い合わせ"
+  },
+  "industryFirst": {
+    "badge": "業界初",
+    "title": "マルチモーダル動画アクセシビリティエンジン",
+    "description": "競合がポイントソリューションを提供する一方で、Axessibleはエンドツーエンドの自動化を提供します。特許出願中のプラットフォームは、動画アクセシビリティをコンプライアンス負担から競争優位性に変えます。",
+    "features": {
+      "aiSync": {
+        "title": "特許出願中のAI同期",
+        "description": "高度なニューラルネットワークが、視覚コンテンツとアクセシビリティ機能の完璧なタイミングを保証します。"
+      },
+      "emotionalCaptions": {
+        "title": "感情的知性字幕",
+        "description": "トーン検出とビジュアルスタイリングを備えたコンテキスト対応字幕で、理解を向上させます。"
+      },
+      "enterprise": {
+        "title": "エンタープライズ機能",
+        "compliance": "組み込みのコンプライアンス監査とレポート",
+        "whiteLabel": "ホワイトラベルの埋め込み可能なプレーヤー",
+        "sso": "エンタープライズSSOとユーザー管理"
+      },
+      "intellectualProperty": {
+        "title": "知的財産と特許分野",
+        "description": "私たちは独自の技術に関する堅牢な知的財産ポートフォリオを構築しています。特許戦略は3つの重要な分野に焦点を当てています：",
+        "emotionNarrative": "感情と物語の融合",
+        "explainableAVLM": "説明可能なAV-LM",
+        "interactiveCreative": "インタラクティブなクリエイティブ批評"
+      },
+      "cta": {
+        "title": "クリエイティブAIの未来を形作る準備はできていますか？",
+        "description": "人工知能が人間の創造性をどのように理解し向上させるかを革命的に変えることに参加してください。",
+        "exploreTechnology": "テクノロジーを探る",
+        "contactTeam": "チームに連絡"
+      }
+    },
+    "quote": "「私たちは動画を強化するだけでなく、未来に備えさせます。」"
+  },
+  "implementation": {
+    "badge": "実装",
+    "title": "数分で展開、数ヶ月ではありません",
+    "description": "エンタープライズグレードのアクセシビリティコンプライアンスへの3つの簡単なステップ",
+    "steps": {
+      "contentInput": {
+        "title": "コンテンツ入力",
+        "description": "既存の動画をアップロード",
+        "features": []
+      },
+      "featureSelection": {
+        "title": "機能選択",
+        "description": "ユースケースに合わせてアクセシビリティ機能を設定",
+        "features": ["感情的な字幕", "音声解説"]
+      },
+      "deployMonitor": {
+        "title": "展開と監視",
+        "description": "コンプライアンスレポート付きのエンタープライズ対応プレーヤー",
+        "features": ["埋め込み可能なプレーヤー", "リアルタイム分析", "コンプライアンス監査"]
+      }
+    },
+    "highlights": {
+      "zeroCode": "ゼロコード統合",
+      "userToggleable": "ユーザーが切り替え可能な機能",
+      "enterpriseSSO": "エンタープライズSSO対応"
+    },
+    "deployMessage": "エンタープライズグレードのインフラストラクチャで数百万人のユーザーに展開"
+  },
+  "techStack": {
+    "badge": "テクノロジースタック",
+    "title": "最先端のAIインフラストラクチャ",
+    "description": "エンタープライズグレードのクラウドサービスと高度なAIモデルを基盤に、比類のない動画アクセシビリティを大規模に提供します。",
+    "categories": {
+      "cloudInfrastructure": {
+        "title": "クラウドインフラストラクチャ",
+        "description": "スケーラブルなエンタープライズグレードのクラウドサービス"
+      },
+      "aiMachineLearning": {
+        "title": "AI & 機械学習",
+        "description": "アクセシビリティのための高度なAIモデル",
+        "technologies": ["ビジョン言語モデル", "AI統合"]
+      },
+      "voiceAudio": {
+        "title": "音声とオーディオ",
+        "description": "適応型音声合成",
+        "technologies": ["カスタム音声モデル", "オーディオ分析"]
+      },
+      "computerVision": {
+        "title": "コンピュータービジョン",
+        "description": "シーン分析と視覚的理解",
+        "technologies": []
+      },
+      "complianceSecurity": {
+        "title": "コンプライアンスとセキュリティ",
+        "description": "アクセシビリティ基準の遵守",
+        "technologies": ["WCAG 2.1 AA", "EAAコンプライアンス", "ADA基準", "セキュリティプロトコル"]
+      }
+    }
+  },
+  "patentClaims": {
+    "badge": "特許検証",
+    "title": "革新的なイノベーションの保護",
+    "description": "当プラットフォームは主要な特許クレームを直接検証し、アクセシビリティ市場で大きな競争優位性を生み出す独自の知的財産を実証しています。",
+    "validatedBy": "検証者：",
+    "claims": {
+      "dataProcessing": {
+        "number": "クレーム1",
+        "title": "データ処理ロジック",
+        "description": "インテリジェントなデータルーティングを備えた自動化されたマルチモーダル処理パイプライン",
+        "validatedBy": [
+          "正確な単語レベルのタイムスタンプを持つASR",
+          "高度な字幕生成アルゴリズム",
+          "コンテキストに応じたシーン分析と要約",
+          "エラー処理を含むモジュール式処理"
+        ],
+        "implementation": "完全な自動化されたワークフローオーケストレーション"
+      },
+      "complianceLayer": {
+        "number": "クレーム3",
+        "title": "統合コンプライアンスレイヤー",
+        "description": "自動化されたアクセシビリティコンプライアンス検証とフォーマット",
+        "validatedBy": [
+          "WCAG 2.1レベルAAコンプライアンスチェック",
+          "EAAおよびADA基準の遵守",
+          "視覚要素の自動再フォーマット",
+          "コンテンツ監査と検証"
+        ],
+        "implementation": "組み込みのアクセシビリティ検証システム"
+      }
+    }
+  },
+  "marketUrgency": {
+    "badge": "市場の緊急性",
+    "title": "130億ドルのアクセシビリティギャップ",
+    "description": "年間2億1500万時間以上の動画がアップロードされ、世界的にアクセシビリティ規制が強化される中、非コンプライアンスのコストはかつてないほど高くなっています。",
+    "stats": {
+      "userIssues": {
+        "title": "ユーザーアクセシビリティの問題",
+        "description": "デジタルコンテンツにアクセスする際の障壁を報告"
+      },
+      "brandAbandonment": {
+        "title": "ブランドの放棄",
+        "description": "アクセシブルでないユーザー体験による"
+      },
+      "eaaEnforcement": {
+        "date": "2025年6月",
+        "title": "EAA施行",
+        "description": "欧州アクセシビリティ法の罰則が開始"
+      }
+    },
+    "solution": {
+      "title": "コンプライアンスをコストセンターから収益ドライバーに変える",
+      "description": "Axessibleは、アクセシビリティを規制負担から競争優位性に変え、企業、政府、教育者が主要なすべての基準への完全なコンプライアンスを確保しながら、オーディエンスの100%にリーチできるようにします。"
+    },
+    "compliance": {
+      "wcag": "WCAG 2.1 AAA準拠",
+      "ada": "ADA互換",
+      "eaa": "EAA対応",
+      "section508": "セクション508認定"
+    }
+  },
   "explore": {
     "title": "没入型動画ライブラリ",
     "subtitle": "字幕、音声解説、手話でストーリーを体験",
