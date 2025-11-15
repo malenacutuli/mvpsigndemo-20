@@ -484,6 +484,85 @@ export type Database = {
           },
         ]
       }
+      feature_usage: {
+        Row: {
+          created_at: string | null
+          feature_name: string
+          id: string
+          metadata: Json | null
+          usage_count: number | null
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          feature_name: string
+          id?: string
+          metadata?: Json | null
+          usage_count?: number | null
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          feature_name?: string
+          id?: string
+          metadata?: Json | null
+          usage_count?: number | null
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_usage_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_metadata: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          type: string
+          updated_at: string | null
+          video_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          type: string
+          updated_at?: string | null
+          video_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          type?: string
+          updated_at?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_metadata_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           completed_at: string | null
