@@ -7,6 +7,8 @@ import diageoLogo from '@/assets/logos/diageo.png';
 import unileverLogo from '@/assets/logos/unilever.png';
 import hmLogo from '@/assets/logos/hm.png';
 import pgLogo from '@/assets/logos/pg.png';
+import amazonLogo from '@/assets/logos/amazon.png';
+import netflixLogo from '@/assets/logos/netflix.png';
 
 const logos = [
   { src: disneyLogo, alt: 'Disney' },
@@ -18,6 +20,8 @@ const logos = [
   { src: unileverLogo, alt: 'Unilever' },
   { src: hmLogo, alt: 'H&M' },
   { src: pgLogo, alt: 'P&G' },
+  { src: amazonLogo, alt: 'Amazon' },
+  { src: netflixLogo, alt: 'Netflix' },
 ];
 
 export const MovingLogoStripe = () => {
