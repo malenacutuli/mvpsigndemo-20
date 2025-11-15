@@ -155,6 +155,24 @@
     "getStarted": "始める",
     "contactSales": "営業に問い合わせる"
   },
+  "enterprise": {
+    "quickAccess": {
+      "title": "Axessible Videoを始める",
+      "subtitle": "自動アクセシビリティ機能で動画コンテンツを変換",
+      "exploreVideos": {
+        "title": "動画を探す",
+        "description": "コミュニティのアクセシブルな動画を発見し、チャンネルに登録し、興味のあるコンテンツを見つけましょう"
+      },
+      "uploadVideo": {
+        "title": "動画をアップロード",
+        "description": "動画をアップロードし、Captions with Intention、音声解説で自動化し、動画コンテンツを分析します"
+      },
+      "manageVideos": {
+        "title": "動画を管理",
+        "description": "アクセシブルな動画ライブラリを表示、整理、管理します"
+      }
+    }
+  },
   "explore": {
     "title": "没入型動画ライブラリ",
     "subtitle": "字幕、音声解説、手話でストーリーを体験",
