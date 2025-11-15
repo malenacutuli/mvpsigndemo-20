@@ -399,7 +399,9 @@
     "language": "Idioma",
     "feature": "Característica",
     "refresh": "Actualizar",
-    "na": "N/D"
+    "na": "N/D",
+    "doneEditing": "Edición completada",
+    "published": "Publicado"
   },
   "featureBoxes": {
     "compliance": {
@@ -1261,10 +1263,6 @@
       "saveFailed": "Error al guardar el canal",
      "deleteFailed": "Error al eliminar el canal"
     }
-  },
-  "common": {
-    "doneEditing": "Edición completada",
-    "published": "Publicado"
   },
   "languages": {
     "en": "Inglés",
