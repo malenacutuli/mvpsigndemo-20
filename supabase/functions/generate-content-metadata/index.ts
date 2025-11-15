@@ -1,195 +1,305 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
+
+interface ContentRequest {
+  videoId: string;
+  type: 'youtube' | 'tiktok' | 'instagram' | 'linkedin' | 'shownotes' | 'hashtags' | 'quotes' | 'custom';
+  customPrompt?: string;
+}
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { videoId, metadataTypes } = await req.json();
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Get request data
+    const { videoId, type, customPrompt }: ContentRequest = await req.json()
+
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization')!
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
-    if (!videoId || !Array.isArray(metadataTypes) || metadataTypes.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'videoId and metadataTypes array required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (authError || !user) {
+      throw new Error('Unauthorized')
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    console.log(`Generating ${type} content for video ${videoId}`)
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify video ownership
+    // Fetch video details
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select('id, title, description, duration_seconds, user_id')
+      .select('id, title, description, duration_seconds, language')
       .eq('id', videoId)
-      .single();
+      .single()
 
-    if (videoError || !video || video.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Video not found or unauthorized' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (videoError) throw videoError
 
-    // Get transcript data
-    const { data: segments, error: segmentsError } = await supabase
+    // Fetch transcript
+    const { data: segments, error: transcriptError } = await supabase
       .from('transcript_segments_clean')
-      .select('text, start_time, end_time, speaker')
+      .select('text, start_time, end_time')
       .eq('video_id', videoId)
-      .eq('language', 'en')
-      .order('start_time', { ascending: true });
+      .eq('language', video.language || 'en')
+      .order('start_time')
+      .limit(100) // Get first 100 segments for context
 
-    if (segmentsError) {
-      console.error('Failed to fetch transcript:', segmentsError);
+    if (transcriptError) {
+      console.error('Transcript error:', transcriptError)
     }
 
-    const transcript = segments?.map(s => `${s.speaker}: ${s.text}`).join('\n') || '';
+    // Combine transcript (limit to 3000 chars for API efficiency)
+    const fullTranscript = segments
+      ? segments.map(s => s.text).join(' ').slice(0, 3000)
+      : 'No transcript available'
 
-    // Get Twelve Labs video analysis for visual context
+    // Check if we have Twelve Labs analysis
+    let videoAnalysis = ''
     const { data: tlMapping } = await supabase
       .from('twelve_labs_mappings')
-      .select('tl_video_id')
+      .select('tl_video_id, status')
       .eq('asset_id', videoId)
-      .eq('status', 'ready')
-      .maybeSingle();
+      .single()
 
-    let videoContext = '';
-    if (tlMapping?.tl_video_id) {
-      const tlApiKey = Deno.env.get('TWELVELABS_API_KEY');
-      if (tlApiKey) {
-        try {
-          const tlResponse = await fetch('https://api.twelvelabs.io/v1.3/analyze', {
-            method: 'POST',
-            headers: {
-              'x-api-key': tlApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              video_id: tlMapping.tl_video_id,
-              prompt: 'Describe the key visual elements, scenes, and overall theme of this video in 2-3 sentences.',
-              temperature: 0.3,
-            })
-          });
+    if (tlMapping?.status === 'ready' && tlMapping.tl_video_id) {
+      // We have Twelve Labs analysis available
+      const { data: cachedAnalysis } = await supabase
+        .from('content_generation_cache')
+        .select('result_data')
+        .eq('video_id', videoId)
+        .eq('content_type', 'twelve_labs_summary')
+        .single()
 
-          if (tlResponse.ok) {
-            const tlData = await tlResponse.json();
-            videoContext = tlData.data || '';
-          }
-        } catch (e) {
-          console.log('Twelve Labs analysis unavailable:', e);
-        }
+      if (cachedAnalysis?.result_data) {
+        videoAnalysis = JSON.stringify(cachedAnalysis.result_data).slice(0, 1000)
       }
     }
 
-    // Generate content using Lovable AI
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    // Define prompts for each content type
+    const prompts = {
+      youtube: `Create a YouTube description for this video:
+
+Title: ${video.title}
+Duration: ${Math.floor((video.duration_seconds || 0) / 60)} minutes
+Transcript excerpt: ${fullTranscript}
+${videoAnalysis ? `Video analysis: ${videoAnalysis}` : ''}
+
+Include:
+- Engaging hook (2-3 sentences that make people want to watch)
+- Key topics covered (5-7 bullet points with emojis)
+- Timestamps for major sections (format: 00:00 Introduction)
+- 10-15 relevant hashtags
+- Clear call to action
+
+Keep under 5000 characters. Make it engaging and SEO-optimized.`,
+
+      tiktok: `Generate a viral TikTok caption for this video:
+
+Title: ${video.title}
+Content: ${fullTranscript.slice(0, 500)}
+
+Create a caption that:
+- Opens with a HOOK in the first 5 words
+- Includes the main value proposition
+- Has 3-5 trending hashtags
+- Ends with a question or CTA
+- Uses strategic emojis
+- Maximum 150 characters
+
+Make it punchy, engaging, and scroll-stopping!`,
+
+      instagram: `Create an Instagram post caption:
+
+Title: ${video.title}
+Content: ${fullTranscript.slice(0, 800)}
+
+Format:
+- Attention-grabbing first line (use emoji)
+- Story or context (3-4 sentences, use line breaks)
+- Key value or takeaway
+- 10-15 relevant hashtags (mix of popular and niche)
+- Engaging question to encourage comments
+
+Maximum 2200 characters. Use emojis strategically. Be authentic and relatable.`,
+
+      linkedin: `Create a professional LinkedIn post:
+
+Title: ${video.title}
+Content: ${fullTranscript.slice(0, 1000)}
+
+Professional format:
+- Strong professional hook
+- Key insights (3-4 paragraphs with value)
+- Business lesson or takeaway
+- 2-3 professional hashtags
+- Professional call to action
+
+Maximum 1300 characters. Professional tone but personable. Focus on value and insights.`,
+
+      shownotes: `Create detailed show notes:
+
+Title: ${video.title}
+Duration: ${Math.floor((video.duration_seconds || 0) / 60)} minutes
+Transcript: ${fullTranscript}
+
+Include:
+- Episode summary (3-4 sentences)
+- Key takeaways (5-7 numbered items)
+- Timestamp-linked topics (format: [MM:SS] Topic name)
+- Resources or links mentioned (if any)
+- Notable quotes (2-3)
+
+Format in Markdown. Be comprehensive and useful for viewers.`,
+
+      hashtags: `Analyze this video and generate hashtags:
+
+Title: ${video.title}
+Content: ${fullTranscript.slice(0, 1000)}
+
+Generate three lists:
+1. 10 SPECIFIC hashtags about the actual content
+2. 5 TRENDING hashtags in this niche
+3. 5 LONG-TAIL hashtags for discoverability
+
+Return as plain text list, one hashtag per line with #`,
+
+      quotes: `Extract the 5 most impactful quotes from this video:
+
+Title: ${video.title}
+Transcript: ${fullTranscript}
+
+For each quote provide:
+- The exact quote
+- Approximate timestamp (based on position in transcript)
+- Speaker name (if identifiable)
+- Why it's significant (1 sentence)
+
+Format as numbered list. Choose quotes that are:
+- Self-contained and understandable
+- Impactful or insightful
+- Shareable on social media`,
+
+      custom: customPrompt || 'Analyze this video content and provide insights.'
+    }
+
+    const prompt = prompts[type] || prompts.custom
+
+    // Call Lovable AI (Gemini) via gateway
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
     if (!lovableApiKey) {
-      return new Response(
-        JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('LOVABLE_API_KEY not configured')
     }
 
-    const results = [];
-
-    for (const type of metadataTypes) {
-      const systemPrompt = getSystemPrompt(type);
-      const userPrompt = buildUserPrompt(type, video, transcript, videoContext);
-
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.7,
-        })
-      });
-
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error(`AI generation failed for ${type}:`, errorText);
-        continue;
-      }
-
-      const aiData = await aiResponse.json();
-      const content = aiData.choices?.[0]?.message?.content || '';
-
-      // Store in database
-      const { data: metadata, error: insertError } = await supabase
-        .from('generated_metadata')
-        .insert({
-          video_id: videoId,
-          type,
-          content,
-          created_by: user.id,
-          metadata: {
-            model: 'google/gemini-2.5-flash',
-            has_twelve_labs_context: !!videoContext,
-            transcript_length: transcript.length,
+    console.log('Calling Lovable AI...')
+    
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert content marketing specialist. Create engaging, platform-optimized content that drives engagement and views.'
+          },
+          {
+            role: 'user',
+            content: prompt
           }
-        })
-        .select()
-        .single();
+        ],
+        temperature: 0.8,
+        max_tokens: 2000
+      })
+    })
 
-      if (insertError) {
-        console.error(`Failed to save ${type}:`, insertError);
-        continue;
-      }
-
-      results.push(metadata);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text()
+      console.error('AI API error:', errorText)
+      throw new Error(`AI generation failed: ${aiResponse.status}`)
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        generated: results.length,
-        results 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const aiResult = await aiResponse.json()
+    const generatedContent = aiResult.choices[0].message.content
 
-  } catch (e: any) {
-    console.error('Error:', e);
+    console.log('Content generated successfully')
+
+    // Store in database
+    const { data: savedMetadata, error: saveError } = await supabase
+      .from('generated_metadata')
+      .insert({
+        video_id: videoId,
+        type: type,
+        content: generatedContent,
+        created_by: user.id,
+        metadata: {
+          model: 'gemini-2.5-flash',
+          prompt_length: prompt.length,
+          response_length: generatedContent.length,
+          has_transcript: !!segments?.length,
+          has_twelve_labs: !!videoAnalysis
+        }
+      })
+      .select()
+      .single()
+
+    if (saveError) {
+      console.error('Save error:', saveError)
+      throw saveError
+    }
+
+    // Track usage
+    await supabase.from('feature_usage').insert({
+      user_id: user.id,
+      feature_name: 'content_generator',
+      video_id: videoId,
+      metadata: { type }
+    })
+
+    console.log('Metadata saved, returning result')
+
     return new Response(
-      JSON.stringify({ error: e.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({
+        success: true,
+        content: generatedContent,
+        metadata: savedMetadata,
+        characterCount: generatedContent.length
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+
+  } catch (error) {
+    console.error('Error in generate-content-metadata:', error)
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
   }
-});
+})
 
 function getSystemPrompt(type: string): string {
   const prompts: Record<string, string> = {
