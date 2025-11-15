@@ -221,15 +221,21 @@ Format as numbered list. Choose quotes that are:
             role: 'user',
             content: prompt
           }
-        ],
-        temperature: 0.8,
-        max_tokens: 2000
+        ]
       })
     })
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text()
       console.error('AI API error:', errorText)
+      
+      if (aiResponse.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.')
+      }
+      if (aiResponse.status === 402) {
+        throw new Error('Payment required. Please add credits to your Lovable workspace.')
+      }
+      
       throw new Error(`AI generation failed: ${aiResponse.status}`)
     }
 
@@ -247,7 +253,7 @@ Format as numbered list. Choose quotes that are:
         content: generatedContent,
         created_by: user.id,
         metadata: {
-          model: 'gemini-2.5-flash',
+          model: 'google/gemini-2.5-flash',
           prompt_length: prompt.length,
           response_length: generatedContent.length,
           has_transcript: !!segments?.length,
