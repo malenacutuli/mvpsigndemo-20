@@ -150,3 +150,6 @@ verify_jwt = true
 [functions.admin-subscribers]
 verify_jwt = true
 
+[functions.generate-content-metadata]
+verify_jwt = true
+
