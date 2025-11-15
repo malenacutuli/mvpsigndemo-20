@@ -6,7 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare, Download } from 'lucide-react';
+import { Loader2, Play, Eye, AlertCircle, Edit3, AudioLines, MessageSquare, Download, Sparkles, Copy, RefreshCw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -189,7 +191,66 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
   const [savingInsightResults, setSavingInsightResults] = useState(false);
   const [hasUnsavedSilenceChanges, setHasUnsavedSilenceChanges] = useState(false);
   const [hasUnsavedInsightChanges, setHasUnsavedInsightChanges] = useState(false);
+  
+  // Content generation states
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('custom');
+  const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [savedMetadata, setSavedMetadata] = useState<any[]>([]);
+  
   const { toast } = useToast();
+  
+  // Template configuration
+  const contentTemplates = [
+    { 
+      value: 'custom', 
+      label: 'Custom Prompt',
+      icon: '✏️',
+      description: 'Write your own analysis prompt'
+    },
+    { 
+      value: 'youtube', 
+      label: 'YouTube Description',
+      icon: '📺',
+      description: 'SEO-optimized description with timestamps'
+    },
+    { 
+      value: 'tiktok', 
+      label: 'TikTok Caption',
+      icon: '🎵',
+      description: 'Viral short-form caption (150 chars)'
+    },
+    { 
+      value: 'instagram', 
+      label: 'Instagram Caption',
+      icon: '📸',
+      description: 'Engaging post with hashtags'
+    },
+    { 
+      value: 'linkedin', 
+      label: 'LinkedIn Post',
+      icon: '💼',
+      description: 'Professional thought leadership'
+    },
+    { 
+      value: 'shownotes', 
+      label: 'Show Notes',
+      icon: '📝',
+      description: 'Episode summary with timestamps'
+    },
+    { 
+      value: 'hashtags', 
+      label: 'Hashtag Generator',
+      icon: '#️⃣',
+      description: 'Platform-specific hashtag lists'
+    },
+    { 
+      value: 'quotes', 
+      label: 'Key Quotes',
+      icon: '💬',
+      description: 'Extract shareable quotes'
+    }
+  ];
   
   // Store polling interval reference for proper cleanup
   const pollingIntervalRef = useRef<number | null>(null);
@@ -725,6 +786,107 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     }
   };
 
+  // Content generation handlers
+  const handleGenerateContent = async () => {
+    if (!videoId) {
+      toast({
+        title: "Error",
+        description: "Video ID not available",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedTemplate === 'custom' && !customPrompt.trim()) {
+      toast({
+        title: "Prompt Required",
+        description: "Please enter a custom analysis prompt",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-content-metadata', {
+        body: { 
+          videoId, 
+          type: selectedTemplate,
+          customPrompt: selectedTemplate === 'custom' ? customPrompt : undefined
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.content) {
+        setGeneratedContent(data.content);
+        toast({
+          title: "Content Generated",
+          description: `Successfully generated ${contentTemplates.find(t => t.value === selectedTemplate)?.label}`,
+        });
+        
+        // Refresh saved metadata
+        fetchSavedMetadata();
+      } else {
+        throw new Error('Failed to generate content');
+      }
+    } catch (error: any) {
+      console.error('Content generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || 'Failed to generate content',
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownloadContent = () => {
+    if (!generatedContent) return;
+
+    const blob = new Blob([generatedContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const template = contentTemplates.find(t => t.value === selectedTemplate);
+    a.download = `${template?.label.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Complete",
+      description: "Content saved to file"
+    });
+  };
+
+  const fetchSavedMetadata = async () => {
+    if (!videoId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('generated_metadata')
+        .select('*')
+        .eq('video_id', videoId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setSavedMetadata(data || []);
+    } catch (error: any) {
+      console.error('Error fetching saved metadata:', error);
+    }
+  };
+
+  // Fetch saved metadata on mount
+  useEffect(() => {
+    if (videoId) {
+      fetchSavedMetadata();
+    }
+  }, [videoId]);
+
   const downloadSilenceAnalysis = () => {
     if (!silenceResult) return;
 
@@ -1120,104 +1282,185 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Custom Analysis Insights Section */}
+      {/* Custom Analysis Insights Section - Enhanced with Content Generator */}
       <Card className="shadow-soft border-border rounded-2xl">
         <CardHeader className="pt-8 px-8">
-          <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-            {t('videoDetail.videoAnalysis.customAnalysisTitle')}
-            {hasUnsavedInsightChanges && (
-              <Badge variant="secondary" className="text-xs font-normal">
-                Unsaved Changes
-              </Badge>
-            )}
-          </CardTitle>
-          <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
-            <CardContent className="p-6">
-              <p className="text-base font-light leading-relaxed">
-                {t('videoDetail.videoAnalysis.customAnalysisDesc')}
-              </p>
-            </CardContent>
-          </Card>
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
-            <Button
-              onClick={analyzeInsights}
-              disabled={status !== 'ready' || analyzingInsight || !customPrompt.trim()}
-              size="sm"
-              className="font-light rounded-full"
-            >
-              {analyzingInsight ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  {t('videoDetail.videoAnalysis.analyzeWithPrompt')}
-                </>
-              )}
-            </Button>
-            {insightResult && (
-              <>
-                <Button
-                  onClick={saveInsightResults}
-                  disabled={savingInsightResults}
-                  size="sm"
-                  variant={hasUnsavedInsightChanges ? "secondary" : "outline"}
-                  className="font-light rounded-full"
-                >
-                  {savingInsightResults ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <Edit3 className="w-4 h-4 mr-1" />
-                  )}
-                  {hasUnsavedInsightChanges ? "Save Changes" : "Save Analysis"}
-                </Button>
-                <Button
-                  onClick={downloadCustomAnalysis}
-                  size="sm"
-                  variant="outline"
-                  className="font-light rounded-full"
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download Analysis
-                </Button>
-              </>
-            )}
+          <div>
+            <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Content Generator
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Generate platform-optimized content from your video
+            </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-6 px-8 pb-8">
-          <div className="space-y-3">
-            <label className="text-base font-light text-foreground">{t('videoDetail.videoAnalysis.customPromptPlaceholder')}</label>
-            <p className="text-base text-muted-foreground font-light leading-relaxed">
-              {t('videoDetail.videoAnalysis.customPromptPlaceholder')}
-            </p>
-            <Textarea
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              className="min-h-32 text-base font-light leading-relaxed rounded-xl"
-              placeholder={t('videoDetail.videoAnalysis.customPromptExample')}
-            />
+          {/* Template Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="template-select">Choose Template</Label>
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <SelectTrigger id="template-select" className="w-full">
+                <SelectValue placeholder="Select content type" />
+              </SelectTrigger>
+              <SelectContent>
+                {contentTemplates.map((template) => (
+                  <SelectItem key={template.value} value={template.value}>
+                    <div className="flex items-center gap-2">
+                      <span>{template.icon}</span>
+                      <div>
+                        <div className="font-medium">{template.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {template.description}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
-          {!insightResult ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base font-light">{t('videoDetail.videoAnalysis.customPromptEmpty')}</p>
+
+          {/* Custom prompt textarea - only show for custom */}
+          {selectedTemplate === 'custom' && (
+            <div className="space-y-2">
+              <Label htmlFor="custom-prompt">Custom Prompt</Label>
+              <Textarea
+                id="custom-prompt"
+                placeholder="e.g., Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
+                className="min-h-[120px]"
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+              />
             </div>
-          ) : insightResult.analysis_text ? (
-            <div className="space-y-4">
-              <div className="p-8 bg-muted/30 rounded-2xl border border-border">
-                <h4 className="text-lg font-light mb-4 text-foreground">Analysis Result</h4>
-                <div className="text-base text-foreground font-light leading-relaxed whitespace-pre-wrap">
-                  {insightResult.analysis_text}
+          )}
+
+          {/* Generate Button */}
+          <Button
+            onClick={handleGenerateContent}
+            disabled={isGenerating || status !== 'ready'}
+            className="w-full"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate {contentTemplates.find(t => t.value === selectedTemplate)?.label || 'Content'}
+              </>
+            )}
+          </Button>
+
+          {/* Results Display */}
+          {generatedContent && (
+            <Card className="border-primary/20">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Generated Content
+                </CardTitle>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedContent);
+                      toast({
+                        title: "Copied!",
+                        description: "Content copied to clipboard"
+                      });
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownloadContent}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateContent}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <pre className="whitespace-pre-wrap font-sans text-sm bg-muted/30 p-4 rounded-lg">
+                    {generatedContent}
+                  </pre>
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <span className="text-sm text-muted-foreground">
+                    {generatedContent.length} characters
+                  </span>
+                  <Badge variant="outline">
+                    {contentTemplates.find(t => t.value === selectedTemplate)?.label}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Saved Content History */}
+          {savedMetadata.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold">Previously Generated</h4>
+              <div className="space-y-2">
+                {savedMetadata.map((item) => (
+                  <Card key={item.id} className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">
+                          {contentTemplates.find(t => t.value === item.type)?.icon}
+                        </span>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {contentTemplates.find(t => t.value === item.type)?.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setGeneratedContent(item.content);
+                            setSelectedTemplate(item.type);
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.content);
+                            toast({
+                              title: "Copied!",
+                              description: "Content copied to clipboard"
+                            });
+                          }}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base font-light">No insights generated. Try adjusting your prompt.</p>
             </div>
           )}
         </CardContent>
