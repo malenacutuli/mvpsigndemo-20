@@ -96,7 +96,7 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
 
       setGeneratedContent(data.content);
       
-      // Save to database
+      // Save to database (without model in metadata)
       const { error: saveError } = await supabase
         .from('generated_metadata')
         .insert({
@@ -105,7 +105,6 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
           content: data.content,
           created_by: (await supabase.auth.getUser()).data.user?.id,
           metadata: {
-            model: data.model || 'gemini-2.5-flash',
             platform: selectedPlatform
           }
         });
