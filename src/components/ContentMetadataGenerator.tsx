@@ -150,11 +150,11 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
   };
 
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
-          Content Metadata Generator
+          Social Media Content Generator
         </CardTitle>
         <CardDescription>
           Generate optimized titles, descriptions, and captions for social platforms
@@ -190,8 +190,8 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
                       {platform.icon && <platform.icon className={cn("w-8 h-8", platform.color)} />}
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Generate {platform.name} Content</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-lg font-light text-foreground mb-1">Generate {platform.name} Content</h3>
+                      <p className="text-sm font-light text-muted-foreground">
                         Create optimized {platform.types.join(', ')} for this video
                       </p>
                     </div>
@@ -218,16 +218,16 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
 
               {/* Generated Content */}
               {generatedContent && (
-                <Card>
+                <Card className="rounded-2xl">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">Latest Generated Content</CardTitle>
-                      <Badge variant="secondary">Just now</Badge>
+                      <CardTitle className="text-base font-light">Latest Generated Content</CardTitle>
+                      <Badge variant="secondary" className="font-light">Just now</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                    <div className="bg-muted/50 rounded-2xl p-4">
+                      <pre className="whitespace-pre-wrap text-sm font-mono font-light">
                         {generatedContent}
                       </pre>
                     </div>
@@ -258,26 +258,21 @@ export const ContentMetadataGenerator: React.FC<ContentMetadataGeneratorProps> =
               {/* History */}
               {savedHistory.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-muted-foreground">
+                  <h3 className="text-sm font-light text-muted-foreground">
                     Previous Versions ({savedHistory.length})
                   </h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {savedHistory.map((item) => (
-                      <Card key={item.id} className="hover:shadow-md transition-shadow">
+                      <Card key={item.id} className="rounded-2xl hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-start justify-between gap-2">
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs font-light text-muted-foreground">
                                 {formatDate(item.created_at)}
                               </div>
-                              {item.metadata?.model && (
-                                <Badge variant="outline" className="text-xs">
-                                  {item.metadata.model}
-                                </Badge>
-                              )}
                             </div>
-                            <div className="bg-muted/30 rounded p-3 max-h-32 overflow-y-auto">
-                              <pre className="whitespace-pre-wrap text-xs font-mono">
+                            <div className="bg-muted/30 rounded-2xl p-3 max-h-32 overflow-y-auto">
+                              <pre className="whitespace-pre-wrap text-xs font-mono font-light">
                                 {item.content}
                               </pre>
                             </div>
