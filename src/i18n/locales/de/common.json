@@ -100,6 +100,35 @@
       "shareContent": "Inhalte Teilen"
     }
   },
+  "contact": {
+    "title": "Kontaktieren Sie Uns",
+    "subtitle": "Haben Sie eine Frage zur Barrierefreiheit, möchten Sie mehr über unsere Plattform erfahren oder sind Sie an einer Partnerschaft mit uns interessiert? Wir würden uns freuen, von Ihnen zu hören.",
+    "form": {
+      "title": "Senden Sie uns eine Nachricht",
+      "name": "Name",
+      "namePlaceholder": "Ihr Name",
+      "email": "E-Mail",
+      "emailPlaceholder": "ihre.email@beispiel.com",
+      "subject": "Betreff",
+      "subjectPlaceholder": "Worum geht es?",
+      "message": "Nachricht",
+      "messagePlaceholder": "Erzählen Sie uns mehr über Ihre Anfrage...",
+      "submit": "Nachricht Senden"
+    },
+    "info": {
+      "title": "Kontaktinformationen",
+      "email": "E-Mail",
+      "locations": "Standorte",
+      "helpWith": "Wie können wir Ihnen helfen?",
+      "consulting": "Barrierefreiheitsberatung und -implementierung",
+      "demos": "Plattform-Demos und technische Fragen",
+      "partnerships": "Partnerschafts- und Kooperationsmöglichkeiten",
+      "media": "Medienanfragen und Presseanfragen",
+      "support": "Allgemeiner Support und Feedback",
+      "responseTitle": "Schnelle Antwortzeiten",
+      "responseText": "Wir antworten in der Regel innerhalb von 24 Stunden an Werktagen auf alle Anfragen. Für dringende Fragen zur Barrierefreiheit geben Sie bitte \"DRINGEND\" in Ihrer Betreffzeile an."
+    }
+  },
   "about": {
     "title": "Über uns",
     "mission": "Wir sind ein Technologieunternehmen und Forschungslabor, das ein Emotionales Audiovisuelles Sprachmodell (AVLM) entwickelt, trainiert auf ethisch bezogenen kreativen Inhalten. Indem wir KI beibringen, Emotion, Erzählung und Absicht in audiovisuellen Medien zu verstehen, erschließen wir beispiellose Werkzeuge für Kreative, Marken und Plattformen.",

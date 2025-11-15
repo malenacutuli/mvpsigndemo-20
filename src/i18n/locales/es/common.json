@@ -335,6 +335,35 @@
       "contactTeam": "Contacta Nuestro Equipo"
     }
   },
+  "contact": {
+    "title": "Ponte en Contacto",
+    "subtitle": "¿Tienes una pregunta sobre accesibilidad, quieres aprender más sobre nuestra plataforma o estás interesado en asociarte con nosotros? Nos encantaría saber de ti.",
+    "form": {
+      "title": "Envíanos un mensaje",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu.email@ejemplo.com",
+      "subject": "Asunto",
+      "subjectPlaceholder": "¿De qué se trata?",
+      "message": "Mensaje",
+      "messagePlaceholder": "Cuéntanos más sobre tu consulta...",
+      "submit": "Enviar Mensaje"
+    },
+    "info": {
+      "title": "Información de Contacto",
+      "email": "Correo electrónico",
+      "locations": "Ubicaciones",
+      "helpWith": "¿En qué podemos ayudarte?",
+      "consulting": "Consultoría e implementación de accesibilidad",
+      "demos": "Demos de la plataforma y preguntas técnicas",
+      "partnerships": "Oportunidades de asociación y colaboración",
+      "media": "Consultas de medios y solicitudes de prensa",
+      "support": "Soporte general y comentarios",
+      "responseTitle": "Tiempos de Respuesta Rápidos",
+      "responseText": "Normalmente respondemos a todas las consultas dentro de las 24 horas durante los días laborables. Para preguntas urgentes de accesibilidad, por favor menciona \"URGENTE\" en la línea de asunto."
+    }
+  },
   "footer": {
     "tagline": "Escucha lo No Escuchado. Ve lo No Visto.",
     "about": "Sobre Nosotros",
