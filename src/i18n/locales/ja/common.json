@@ -543,6 +543,102 @@
     "comingSoon": "近日公開",
     "comingSoonDesc": "この機能は開発中で、まもなく利用可能になります。"
   },
+  "videos": {
+    "title": "マイビデオ",
+    "subtitle": "動画を管理し、Exploreに公開し、チャンネルで整理します",
+    "tabs": {
+      "myVideos": "マイビデオ",
+      "channels": "チャンネル"
+    },
+    "actions": {
+      "uploadNew": "新しい動画をアップロード",
+      "uploadFirst": "最初の動画をアップロード",
+      "view": "表示"
+    },
+    "search": "動画を検索...",
+    "filters": {
+      "language": "言語",
+      "status": "ステータス",
+      "allLanguages": "すべての言語",
+      "allStatuses": "すべてのステータス"
+    },
+    "status": {
+      "uploaded": "アップロード済み",
+      "processing": "処理中",
+      "ready": "準備完了",
+      "error": "エラー",
+      "uploading": "アップロード中"
+    },
+    "badges": {
+      "public": "公開"
+    },
+    "empty": {
+      "title": "動画が見つかりません",
+      "description": "最初の動画をアップロードして、アクセシブルなコンテンツを作成しましょう。",
+      "noMatch": "現在のフィルターに一致する動画はありません。",
+      "uploadButton": "動画をアップロード"
+    },
+    "loading": "動画を読み込み中...",
+    "toast": {
+      "deletedTitle": "動画を削除しました",
+      "deletedDesc": "動画が正常に削除されました。",
+      "deleteErrorTitle": "動画の削除エラー",
+      "deleteErrorDesc": "動画の削除中にエラーが発生しました。もう一度お試しください。"
+    },
+    "createdAt": "作成日",
+    "duration": "再生時間",
+    "noVideos": "利用可能な動画はありません。"
+  },
+  "upload": {
+    "pageTitle": "数秒でアクセシブルな動画をアップロードして作成",
+    "pageSubtitle": "自動アクセシビリティ機能で動画コンテンツを変換",
+    "cardTitle": "アクセシビリティ処理のために動画をアップロード",
+    "dropZone": "動画ファイルをここにドロップするか、クリックして参照",
+    "supportedFormats": "MP4、MOV、AVIをサポート（最大5GB）",
+    "title": "タイトル",
+    "titleRequired": "タイトルは必須です",
+    "titlePlaceholder": "動画のタイトルを入力",
+    "description": "説明",
+    "descriptionPlaceholder": "動画の説明を入力（オプション）",
+    "transcriptOptions": {
+      "title": "📝 文字起こしオプション",
+      "description": "アップロード後、自動的に文字起こしを抽出するか、独自の文字起こしファイルをアップロードしてCaptions with Intentionで編集できます。",
+      "autoExtract": "自動抽出：AIがタイムスタンプ付きで動画を文字起こしします",
+      "uploadTranscript": "文字起こしをアップロード：タイムスタンプ付きの既存のSRT、VTT、またはTXTファイルを使用",
+      "editIntonation": "イントネーションを編集：より良いアクセシビリティのために強調とピッチを調整"
+    },
+    "language": "言語",
+    "languageHelp": "💡 正確な文字起こしのために、動画で話されている主要な言語を選択してください",
+    "contentType": "コンテンツタイプ",
+    "voiceSelection": "音声選択",
+    "slCharacter": "手話アバターキャラクター",
+    "uploadButton": "アップロードして動画を処理",
+    "uploadInfo": {
+      "line1": "• 動画は自動的にアクセシビリティ機能のために処理されます",
+      "line2": "• プロフェッショナルな字幕、音声解説、手話サポート",
+      "line3": "• 処理には通常、動画の長さに応じて2〜5分かかります"
+    },
+    "features": {
+      "captions": {
+        "title": "スマート字幕",
+        "description": "コミュニケーションを強化するための感情と意図検出を備えたAI駆動の字幕"
+      },
+      "audioDescriptions": {
+        "title": "音声解説",
+        "description": "コンテンツと完璧にタイミングを合わせたプロフェッショナルな音声解説"
+      },
+      "sl": {
+        "title": "手話サポート",
+        "description": "包括的な包摂のための手話アバターと視覚的アクセシビリティ機能"
+      }
+    },
+    "uploading": "アップロード中...",
+    "processing": "処理中...",
+    "uploadComplete": "アップロード完了",
+    "selectLanguage": "言語を選択",
+    "makePublic": "この動画を公開する",
+    "enableAccessibility": "アクセシビリティ機能を有効にする"
+  },
   "footer": {
     "tagline": "すべての人のための動画体験を作る",
     "product": "プロダクト",
