@@ -803,21 +803,21 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         {/* Speaker & Emotion Detection */}
         <Card className="border-primary/20">
           <CardHeader>
-            <CardTitle className="text-base font-light">Speaker & Emotion Detection</CardTitle>
+            <CardTitle className="text-base font-light">{t('speakerEmotionDetection.title')}</CardTitle>
             <CardDescription className="font-light">
-              Automatic emotion detection with optional speaker identification
+              {t('speakerEmotionDetection.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="font-light">Known Speakers (Optional)</Label>
+              <Label className="font-light">{t('speakerEmotionDetection.knownSpeakers')}</Label>
               <p className="text-sm text-muted-foreground font-light">
-                Provide names for automatic identification, or leave blank to auto-detect
+                {t('speakerEmotionDetection.knownSpeakersHelp')}
               </p>
               
               <div className="flex gap-2">
                 <Input
-                  placeholder="e.g., Sarah Chen"
+                  placeholder={t('speakerEmotionDetection.speakerPlaceholder')}
                   value={newSpeaker}
                   onChange={(e) => setNewSpeaker(e.target.value)}
                   onKeyDown={(e) => {
@@ -844,7 +844,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                   disabled={uploading}
                   className="font-light"
                 >
-                  Add
+                  {t('speakerEmotionDetection.add')}
                 </Button>
               </div>
               
@@ -868,14 +868,14 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-sm font-medium font-light">FREE Automatic Features</span>
+                <span className="text-sm font-medium font-light">{t('speakerEmotionDetection.automaticFeatures')}</span>
               </div>
               <ul className="text-xs text-muted-foreground pl-4 space-y-0.5 font-light">
-                <li>✓ 7-level intensity detection (whisper → screaming)</li>
-                <li>✓ Sentiment analysis (POSITIVE/NEGATIVE/NEUTRAL)</li>
-                <li>✓ Dynamic font sizing (smaller whispers, larger yelling)</li>
-                <li>✓ Speaker name identification</li>
-                <li>✓ Character color attribution</li>
+                <li>{t('speakerEmotionDetection.feature1')}</li>
+                <li>{t('speakerEmotionDetection.feature2')}</li>
+                <li>{t('speakerEmotionDetection.feature3')}</li>
+                <li>{t('speakerEmotionDetection.feature4')}</li>
+                <li>{t('speakerEmotionDetection.feature5')}</li>
               </ul>
             </div>
           </CardContent>

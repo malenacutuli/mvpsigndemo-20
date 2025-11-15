@@ -1046,6 +1046,20 @@
     "hi": "Hindi",
     "ru": "Russian"
   },
+  "speakerEmotionDetection": {
+    "title": "Speaker & Emotion Detection",
+    "description": "Automatic emotion detection with optional speaker identification",
+    "knownSpeakers": "Known Speakers (Optional)",
+    "knownSpeakersHelp": "Provide names for automatic identification, or leave blank to auto-detect",
+    "speakerPlaceholder": "e.g., Sarah Chen",
+    "add": "Add",
+    "automaticFeatures": "FREE Automatic Features",
+    "feature1": "✓ 7-level intensity detection (whisper → screaming)",
+    "feature2": "✓ Sentiment analysis (POSITIVE/NEGATIVE/NEUTRAL)",
+    "feature3": "✓ Dynamic font sizing (smaller whispers, larger yelling)",
+    "feature4": "✓ Speaker name identification",
+    "feature5": "✓ Character color attribution"
+  },
   "upload": {
     "pageTitle": "Upload and Create Accessible Videos in Seconds",
     "pageSubtitle": "Transform your video content with automatic accessibility features",
