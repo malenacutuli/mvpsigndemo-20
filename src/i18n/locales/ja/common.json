@@ -1,0 +1,173 @@
+{
+  "nav": {
+    "explore": "ショーケース",
+    "enterprise": "エンタープライズ",
+    "pricing": "料金",
+    "dashboard": "ダッシュボード",
+    "myVideos": "マイビデオ",
+    "getStarted": "始める",
+    "start": "スタート"
+  },
+  "hero": {
+    "title": "すべてのストーリーが",
+    "titleAccent": "本当に見られ、",
+    "titleEnd": "聞かれ、感じられる。",
+    "subtitle": "すべての人のために設計された世界初の動画プラットフォーム - Captions with Intention、Emotive Audio Descriptions、没入型アクセシビリティツールで実現。",
+    "headline": "より良いものを作る。",
+    "headlineSecond": "すべての人のために。",
+    "description": "WCAGおよびEAA/ADA基準を満たす包括的な体験を、デジタルアクセシビリティのリーディングプラットフォームと専門家サービスのサポートで実現します。",
+    "cta": "アップロードを開始",
+    "inclusivity": {
+      "title": "包括性は標準装備",
+      "description": "カスタマイズ可能な字幕から高コントラストカラーまで、Axessibleのすべての動画ホストに組み込まれているため、アクセシビリティについて考える必要はありません。それはただ、あなたの動画のあり方なのです。"
+    },
+    "startWatching": "視聴を開始",
+    "shareContent": "動画を変換"
+  },
+  "recognition": {
+    "title": "AIによる社会貢献の革新で認められています"
+  },
+  "sections": {
+    "enterpriseCTA": {
+      "title": "動画を感情的にアクセシブルなコンテンツに変換",
+      "titleTime": "2時間以内に",
+      "subtitle": "規制基準のアクセシビリティと感情的知性を、手動サービスの1/10のコストで提供するAIプラットフォーム。",
+      "processFirstVideo": "最初の動画を無料で処理",
+      "viewPricing": "料金を見る",
+      "bookDemo": "デモを予約",
+      "trustedBy": "以下にサービスを提供する代理店から信頼されています："
+    },
+    "whyWeExist": {
+      "title": "ほとんどの動画は誰かを排除しているから。",
+      "description": "他のプラットフォームでは、動画の共有は簡単ですが、体験するのは必ずしも簡単ではありません。",
+      "captionsMiss": "字幕はニュアンスを見逃す。",
+      "audioDescriptionsRare": "音声解説はまれか機械的。",
+      "signLanguageNever": "手話？ほとんどない。",
+      "belief": "私たちは、アクセスは機能ではないと信じています。それはストーリーテリングの未来です。"
+    },
+    "axessibleExperience": {
+      "title": "障壁のない動画。",
+      "captionsTitle": "Captions with Intention",
+      "captionsDesc": "言葉以上のもの。感情とともに動き、一時停止し、流れるダイナミックで表現力豊かな字幕。",
+      "audioDescTitle": "Emotive Audio Descriptions",
+      "audioDescDesc": "機械的ではなく、シーンを描く映画的なナレーションで、聞く人がすべてを感じられます。",
+      "signLanguageTitle": "あなたの動画に手話解説を作成するために私たちと協力してください",
+      "signLanguageDesc": "専門家によって推進され、包括を自然にします。"
+    },
+    "forViewers": {
+      "title": "より豊かな視聴方法を楽しむ。",
+      "description": "Axessibleは障害者だけのものではありません。ストーリーを愛するすべての人のためのものです：",
+      "captionsDesign": "デザインとしても機能する字幕。",
+      "narrationDimension": "奥行きを加えるナレーション。",
+      "signLanguageArt": "生きた芸術としての手話。",
+      "watchingFeels": "ここでの視聴はより人間的に感じられます。",
+      "startWatching": "視聴を開始"
+    },
+    "forCreators": {
+      "title": "あなたの動画を誰もが共有できる体験に変える。",
+      "description": "コンテンツをアップロードすると、プラットフォームが次のように変換します：",
+      "aiTools": "AI駆動のアクセシビリティツール",
+      "humanGuidance": "人間によるガイド付き改善",
+      "compliance": "グローバルアクセシビリティ基準への自動準拠",
+      "storiesReach": "あなたのストーリーはより多くの人に届くだけでなく…",
+      "storiesMove": "より多くの人を動かします。",
+      "shareContent": "動画を変換"
+    },
+    "community": {
+      "title": "コミュニティのためだけでなく、コミュニティと共に構築されたプラットフォーム。",
+      "collaborate": "私たちは、すべての機能を設計するために、聴覚障害者、視覚障害者、障害のあるクリエイター、教育者、そして支援者と協力しています。",
+      "everyVideo": "ここに追加されるすべての動画が、インターネットをより包括的にするのに役立ちます。",
+      "becauseBetter": "より良いものは、一緒にあるべきだから。",
+      "joinMovement": "ムーブメントに参加"
+    },
+    "compliance": {
+      "title": "Standards-Ready, Out of the Box",
+      "description": "Built to meet global accessibility standards right from the start:",
+      "wcagCompliant": "WCAG 2.1 AA/AAA Compliant",
+      "eaaReady": "European Accessibility Act (EAA) Ready",
+      "adaAligned": "ADA Guidelines Aligned",
+      "cvaaSupport": "CVAA Support (21st Century Video Accessibility)",
+      "caption": "No guesswork. No retrofitting. Just accessible by design."
+    }
+  },
+  "features": {
+    "captionsWithIntention": {
+      "title": "Captions with Intention",
+      "description": "感情とともに動く字幕。単なる言葉ではなく、体験です。",
+      "learnMore": "詳細を見る"
+    },
+    "emotiveAudioDescriptions": {
+      "title": "Emotive Audio Descriptions",
+      "description": "映画のように感じられる音声解説。見えないものを感じさせます。",
+      "learnMore": "詳細を見る"
+    },
+    "signLanguage": {
+      "title": "手話統合",
+      "description": "専門家による手話で、真の包括性を実現します。",
+      "learnMore": "詳細を見る"
+    }
+  },
+  "contact": {
+    "title": "お問い合わせ",
+    "subtitle": "アクセシビリティについてのご質問、プラットフォームの詳細、パートナーシップにご興味がありますか？ぜひお聞かせください。",
+    "form": {
+      "title": "メッセージを送信",
+      "name": "お名前",
+      "namePlaceholder": "お名前",
+      "email": "メールアドレス",
+      "emailPlaceholder": "your.email@example.com",
+      "subject": "件名",
+      "subjectPlaceholder": "何についてですか？",
+      "message": "メッセージ",
+      "messagePlaceholder": "お問い合わせの詳細をお聞かせください...",
+      "submit": "メッセージを送信"
+    },
+    "info": {
+      "title": "お問い合わせ先",
+      "email": "メール",
+      "locations": "拠点",
+      "barcelona": "バルセロナ、スペイン",
+      "zurich": "チューリッヒ、スイス",
+      "london": "ロンドン、イギリス",
+      "miami": "マイアミ、アメリカ",
+      "buenosAires": "ブエノスアイレス、アルゼンチン",
+      "mexicoDF": "メキシコシティ、メキシコ"
+    },
+    "help": {
+      "title": "どのようなお手伝いができますか？",
+      "consulting": "アクセシビリティコンサルティングと実装",
+      "demos": "プラットフォームデモと技術的な質問",
+      "partnerships": "パートナーシップとコラボレーションの機会",
+      "media": "メディアに関するお問い合わせとプレスリクエスト",
+      "support": "一般的なサポートとフィードバック"
+    },
+    "response": {
+      "title": "迅速な対応時間",
+      "description": "通常、営業日内に24時間以内にすべてのお問い合わせに対応します。緊急のアクセシビリティに関する質問がある場合は、件名に「緊急」と記載してください。"
+    }
+  },
+  "pricing": {
+    "title": "料金",
+    "subtitle": "あなたのニーズに合わせたプラン",
+    "monthly": "月額",
+    "annually": "年額",
+    "perMonth": "/月",
+    "getStarted": "始める",
+    "contactSales": "営業に問い合わせる"
+  },
+  "footer": {
+    "tagline": "すべての人のための動画体験を作る",
+    "product": "プロダクト",
+    "features": "機能",
+    "pricing": "料金",
+    "enterprise": "エンタープライズ",
+    "company": "会社",
+    "about": "私たちについて",
+    "contact": "お問い合わせ",
+    "legal": "法的情報",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約",
+    "accessibility": "アクセシビリティ声明",
+    "allRightsReserved": "全著作権所有"
+  }
+}
