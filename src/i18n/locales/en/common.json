@@ -28,6 +28,15 @@
     "title": "Recognized for Innovation in AI for Good"
   },
   "sections": {
+    "enterpriseCTA": {
+      "title": "Transform Videos into Emotionally Accessible Content",
+      "titleTime": "in Under 2 Hours",
+      "subtitle": "The AI platform that delivers regulatory-grade accessibility with emotional intelligence — at 1/10th the cost of manual services.",
+      "processFirstVideo": "Process Your First Video Free",
+      "viewPricing": "View Pricing",
+      "bookDemo": "Book Demo",
+      "trustedBy": "Trusted by agencies serving:"
+    },
     "whyWeExist": {
       "title": "Because most videos leave someone out.",
       "description": "On other platforms, videos are easy to share - but not always easy to experience.",

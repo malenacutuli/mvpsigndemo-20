@@ -116,30 +116,29 @@ const Index = () => {
           <div className="max-w-5xl mx-auto text-center space-y-12">
             <div className="space-y-6">
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight">
-                Transform Videos into Emotionally Accessible Content{" "}
-                <span className="block">in Under 2 Hours</span>
+                {t('sections.enterpriseCTA.title')}{" "}
+                <span className="block">{t('sections.enterpriseCTA.titleTime')}</span>
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground font-light max-w-3xl mx-auto">
-                The AI platform that delivers regulatory-grade accessibility
-                with emotional intelligence — at 1/10th the cost of manual services.
+                {t('sections.enterpriseCTA.subtitle')}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/upload">Process Your First Video Free</Link>
+                <Link to="/upload">{t('sections.enterpriseCTA.processFirstVideo')}</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/pricing">View Pricing</Link>
+                <Link to="/pricing">{t('sections.enterpriseCTA.viewPricing')}</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/contact">Book Demo</Link>
+                <Link to="/contact">{t('sections.enterpriseCTA.bookDemo')}</Link>
               </Button>
             </div>
 
             <div className="pt-12">
               <p className="text-sm text-muted-foreground font-light mb-6">
-                Trusted by agencies serving:
+                {t('sections.enterpriseCTA.trustedBy')}
               </p>
               <MovingLogoStripe />
             </div>

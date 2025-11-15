@@ -28,6 +28,15 @@
     "title": "Anerkannt für Innovation in KI für das Gute"
   },
   "sections": {
+    "enterpriseCTA": {
+      "title": "Verwandeln Sie Videos in Emotional Zugängliche Inhalte",
+      "titleTime": "in Unter 2 Stunden",
+      "subtitle": "Die KI-Plattform, die regulatorische Barrierefreiheit mit emotionaler Intelligenz liefert — zu 1/10 der Kosten manueller Dienste.",
+      "processFirstVideo": "Verarbeiten Sie Ihr Erstes Video Kostenlos",
+      "viewPricing": "Preise Ansehen",
+      "bookDemo": "Demo Buchen",
+      "trustedBy": "Vertraut von Agenturen, die dienen:"
+    },
     "whyWeExist": {
       "title": "Weil die meisten Videos jemanden ausschließen.",
       "description": "Auf anderen Plattformen sind Videos einfach zu teilen - aber nicht immer einfach zu erleben.",

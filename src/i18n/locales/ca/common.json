@@ -28,6 +28,15 @@
     "title": "Reconegut per la Innovació en IA per al Bé"
   },
   "sections": {
+    "enterpriseCTA": {
+      "title": "Transforma Vídeos en Contingut Emocionalment Accessible",
+      "titleTime": "en Menys de 2 Hores",
+      "subtitle": "La plataforma d'IA que ofereix accessibilitat de grau regulatori amb intel·ligència emocional — a 1/10 del cost dels serveis manual.",
+      "processFirstVideo": "Processa el Teu Primer Vídeo Gratis",
+      "viewPricing": "Veure Preus",
+      "bookDemo": "Reservar Demo",
+      "trustedBy": "De confiança per agències que serveixen:"
+    },
     "whyWeExist": {
       "title": "Perquè la majoria de vídeos deixen algú fora.",
       "description": "En altres plataformes, els vídeos són fàcils de compartir - però no sempre fàcils d'experimentar.",
