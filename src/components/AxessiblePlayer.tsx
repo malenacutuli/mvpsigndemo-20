@@ -276,6 +276,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // Extended Audio Description (EAD) state
   const [eadEnabled, setEadEnabled] = useState(false);
+  const [eadPreferencesLoaded, setEadPreferencesLoaded] = useState(false); // Track if preferences are loaded
   const [eadPreferences, setEadPreferences] = useState<UserEADPreferences>({
     eadEnabled: false,
     maxExtensionDuration: 5.0,
@@ -295,36 +296,67 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const maybeTriggerEAD = React.useCallback((now: number) => {
     if (!eadEnabled || !generatedAD?.length) return;
 
-    // Find first matching EAD segment at current time
+    const PRE_ROLL_BUFFER = 0.15; // Check 0.15s before segment starts for smooth transition
+
+    // Find upcoming or current EAD segment (with pre-roll detection)
     const seg = generatedAD.find(ad =>
       ad.requiresExtension &&
       !!ad.audioUrl &&
       ad.id &&
-      now >= ad.startTime &&
+      now >= (ad.startTime - PRE_ROLL_BUFFER) &&
       now < ad.endTime
     );
 
     if (!seg || !seg.id) return;
     if (eadPlayedIdsRef.current.has(seg.id)) return; // Already played
 
-    console.log('🎬 EAD Trigger:', {
+    // Only trigger if we're within pre-roll window or at exact time
+    const timeUntilStart = seg.startTime - now;
+    if (timeUntilStart > PRE_ROLL_BUFFER) return;
+
+    console.log('🎬 EAD Trigger (with pre-roll):', {
       id: seg.id,
       text: seg.text?.slice(0, 60),
-      at: now.toFixed(2),
+      currentTime: now.toFixed(3),
+      startTime: seg.startTime.toFixed(3),
+      preRoll: timeUntilStart.toFixed(3),
       extType: seg.extensionType,
       extDur: seg.extensionDuration,
     });
 
+    // Mark as played immediately to prevent duplicate triggers
+    eadPlayedIdsRef.current.add(seg.id);
+
+    // Verify audio URL before pausing
+    if (!seg.audioUrl) {
+      console.warn('⚠️ EAD segment has no audio URL, skipping');
+      return;
+    }
+
     // Pause or slow down video
     if (seg.extensionType === 'pause' && videoRef.current) {
       videoRef.current.pause();
+      console.log('⏸️ Video paused for EAD at', now.toFixed(3));
     } else if (seg.extensionType === 'slowdown' && videoRef.current) {
       videoRef.current.playbackRate = 0.75;
     }
 
     // Play AD audio, then resume/restore
     const audio = new Audio(seg.audioUrl);
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ EAD audio timeout - resuming video');
+      if (videoRef.current) {
+        if (seg.extensionType === 'pause') {
+          videoRef.current.play();
+        } else if (seg.extensionType === 'slowdown') {
+          videoRef.current.playbackRate = 1.0;
+        }
+      }
+    }, (seg.extensionDuration || 5) * 1000 + 2000); // Timeout with 2s buffer
+
     audio.onended = () => {
+      clearTimeout(timeoutId);
+      console.log('✅ EAD audio complete, resuming video');
       if (seg.extensionType === 'pause' && videoRef.current) {
         videoRef.current.play();
       } else if (seg.extensionType === 'slowdown' && videoRef.current) {
@@ -332,6 +364,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       }
     };
     audio.onerror = (err) => {
+      clearTimeout(timeoutId);
       console.warn('⚠️ EAD audio play failed:', err);
       // Restore video state even on error
       if (videoRef.current) {
@@ -342,9 +375,18 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         }
       }
     };
-    audio.play().catch(err => console.warn('⚠️ EAD audio play failed:', err));
-
-    eadPlayedIdsRef.current.add(seg.id);
+    audio.play().catch(err => {
+      clearTimeout(timeoutId);
+      console.warn('⚠️ EAD audio play failed:', err);
+      // Restore on play failure too
+      if (videoRef.current) {
+        if (seg.extensionType === 'pause') {
+          videoRef.current.play();
+        } else if (seg.extensionType === 'slowdown') {
+          videoRef.current.playbackRate = 1.0;
+        }
+      }
+    });
   }, [eadEnabled, generatedAD]);
 
   // Helper: Deduplicate segments by time (to avoid duplicates from DB)
@@ -376,7 +418,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const loadEADPreferences = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          // No user logged in - use defaults and mark as loaded
+          console.log('📍 No user logged in, using default EAD preferences');
+          setEadPreferencesLoaded(true);
+          return;
+        }
 
         const { data, error } = await supabase
           .from('user_ead_preferences')
@@ -386,6 +433,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
         if (error) {
           console.error('Error loading EAD preferences:', error);
+          setEadPreferencesLoaded(true); // Mark as loaded even on error to prevent blocking
           return;
         }
 
@@ -402,8 +450,12 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           setEadPreferences(prefs);
           setEadEnabled(data.ead_enabled);
         }
+        
+        // Mark as loaded after successful load
+        setEadPreferencesLoaded(true);
       } catch (error) {
         console.error('Failed to load EAD preferences:', error);
+        setEadPreferencesLoaded(true); // Mark as loaded even on error to prevent blocking
       }
     };
 
@@ -554,11 +606,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     const MAX_DIAGNOSTIC_SAMPLES = 100;
     
     const updateTimeWithPrecision = (nowPerf?: number, metadata?: any) => {
-      if (video && !video.paused && !video.ended) {
-        // Use metadata.mediaTime if available (rVFC), otherwise video.currentTime
-        const videoTime = metadata?.mediaTime ?? video.currentTime;
-        setCurrentTime(videoTime);
-        
+      if (!video) return;
+      
+      // Use metadata.mediaTime if available (rVFC), otherwise video.currentTime
+      const videoTime = metadata?.mediaTime ?? video.currentTime;
+      
+      // Always update current time (even when paused)
+      setCurrentTime(videoTime);
+      
+      // Only run diagnostics and timing analysis when playing
+      if (!video.paused && !video.ended) {
         // Diagnostic: measure timing accuracy
         if (diagnosticSamples < MAX_DIAGNOSTIC_SAMPLES && nowPerf) {
           const perfDelta = nowPerf - lastPerformanceTime;
@@ -589,13 +646,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           lastPerformanceTime = nowPerf;
           lastVideoTime = videoTime;
         }
-        
-        // Trigger EAD check using unified function (via ref to avoid stale closure)
-        if (maybeTriggerEADRef.current) {
-          maybeTriggerEADRef.current(videoTime);
-        }
-        
-        // Continue loop
+      }
+      
+      // CRITICAL: Always trigger EAD check, regardless of paused state
+      // This allows EAD to trigger at the right moment even when video is paused
+      if (maybeTriggerEADRef.current) {
+        maybeTriggerEADRef.current(videoTime);
+      }
+      
+      // Continue timing loop when playing
+      if (!video.paused && !video.ended) {
         if ('requestVideoFrameCallback' in video) {
           (video as any).requestVideoFrameCallback(updateTimeWithPrecision);
         } else {
@@ -696,11 +756,16 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
 
   // Toggle EAD enabled state
   const handleToggleEAD = (enabled: boolean) => {
+    console.log('🔄 EAD toggle:', enabled ? 'ENABLED' : 'DISABLED');
     setEadEnabled(enabled);
     // EAD depends on AD – turn AD on automatically
     if (enabled && !adEnabled) {
       setAdEnabled(true);
       toast.info('Audio Description enabled to support Extended AD');
+    }
+    // Clear played IDs when toggling to allow re-triggering
+    if (enabled) {
+      eadPlayedIdsRef.current.clear();
     }
     saveEADPreferences({ eadEnabled: enabled });
   };
@@ -1395,7 +1460,8 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
       )}
 
         {/* Audio Description - Controlled by adEnabled state */}
-        {adEnabled && (() => {
+        {/* CRITICAL: Only render after EAD preferences are loaded to prevent interference */}
+        {adEnabled && eadPreferencesLoaded && (() => {
           const filteredAD = generatedAD && generatedAD.length > 0 
             ? dedupeByTime(
                 eadEnabled 
@@ -1407,6 +1473,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
           console.log('🔊 AudioDescription render:', {
             adEnabled,
             eadEnabled,
+            eadPreferencesLoaded,
             totalAD: generatedAD?.length || 0,
             filteredAD: filteredAD?.length || 0,
             withAudio: generatedAD?.filter(ad => ad.audioUrl).length || 0,
@@ -1429,6 +1496,14 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
             />
           );
         })()}
+        
+        {/* Loading indicator while EAD preferences load */}
+        {adEnabled && !eadPreferencesLoaded && (
+          <div className="absolute top-4 right-4 bg-secondary/90 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 z-50">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading accessibility settings...</span>
+          </div>
+        )}
 
         {/* Extended Audio Description Overlay - Shows when video is paused for description */}
         {eadState.isActive && eadPreferences.showVisualIndicator && (
