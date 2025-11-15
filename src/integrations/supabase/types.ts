@@ -852,6 +852,105 @@ export type Database = {
         }
         Relationships: []
       }
+      social_clips: {
+        Row: {
+          aspect_ratio: string
+          caption_position: string | null
+          caption_style: string | null
+          clip_url: string | null
+          created_at: string | null
+          created_by: string | null
+          crop_mode: string | null
+          duration: number | null
+          end_time: number
+          error_message: string | null
+          file_size_bytes: number | null
+          highlight_id: string | null
+          id: string
+          metadata: Json | null
+          platform: string
+          processing_completed_at: string | null
+          processing_started_at: string | null
+          resolution: string
+          start_time: number
+          status: string | null
+          storage_path: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_id: string
+        }
+        Insert: {
+          aspect_ratio?: string
+          caption_position?: string | null
+          caption_style?: string | null
+          clip_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crop_mode?: string | null
+          duration?: number | null
+          end_time: number
+          error_message?: string | null
+          file_size_bytes?: number | null
+          highlight_id?: string | null
+          id?: string
+          metadata?: Json | null
+          platform: string
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          resolution?: string
+          start_time: number
+          status?: string | null
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_id: string
+        }
+        Update: {
+          aspect_ratio?: string
+          caption_position?: string | null
+          caption_style?: string | null
+          clip_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crop_mode?: string | null
+          duration?: number | null
+          end_time?: number
+          error_message?: string | null
+          file_size_bytes?: number | null
+          highlight_id?: string | null
+          id?: string
+          metadata?: Json | null
+          platform?: string
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          resolution?: string
+          start_time?: number
+          status?: string | null
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_clips_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "video_highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_clips_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speaker_mappings: {
         Row: {
           language: string
@@ -1706,6 +1805,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "video_exports_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_highlights: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          duration: number | null
+          end_time: number
+          engagement_score: number | null
+          highlight_type: string | null
+          id: string
+          metadata: Json | null
+          start_time: number
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration?: number | null
+          end_time: number
+          engagement_score?: number | null
+          highlight_type?: string | null
+          id?: string
+          metadata?: Json | null
+          start_time: number
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration?: number | null
+          end_time?: number
+          engagement_score?: number | null
+          highlight_type?: string | null
+          id?: string
+          metadata?: Json | null
+          start_time?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_highlights_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
