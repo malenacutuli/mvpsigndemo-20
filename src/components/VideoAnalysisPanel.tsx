@@ -205,49 +205,41 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
     { 
       value: 'custom', 
       label: 'Custom Prompt',
-      icon: '✏️',
       description: 'Write your own analysis prompt'
     },
     { 
       value: 'youtube', 
       label: 'YouTube Description',
-      icon: '📺',
       description: 'SEO-optimized description with timestamps'
     },
     { 
       value: 'tiktok', 
       label: 'TikTok Caption',
-      icon: '🎵',
       description: 'Viral short-form caption (150 chars)'
     },
     { 
       value: 'instagram', 
       label: 'Instagram Caption',
-      icon: '📸',
       description: 'Engaging post with hashtags'
     },
     { 
       value: 'linkedin', 
       label: 'LinkedIn Post',
-      icon: '💼',
       description: 'Professional thought leadership'
     },
     { 
       value: 'shownotes', 
       label: 'Show Notes',
-      icon: '📝',
       description: 'Episode summary with timestamps'
     },
     { 
       value: 'hashtags', 
       label: 'Hashtag Generator',
-      icon: '#️⃣',
       description: 'Platform-specific hashtag lists'
     },
     { 
       value: 'quotes', 
       label: 'Key Quotes',
-      icon: '💬',
       description: 'Extract shareable quotes'
     }
   ];
@@ -1284,35 +1276,34 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
       {/* Custom Analysis Insights Section - Enhanced with Content Generator */}
       <Card className="shadow-soft border-border rounded-2xl">
-        <CardHeader className="pt-8 px-8">
-          <div>
-            <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              Content Generator
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Generate platform-optimized content from your video
-            </p>
-          </div>
+        <CardHeader className="pb-4 pt-8 px-8">
+          <CardTitle className="text-xl md:text-2xl font-light text-foreground flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Content Generator
+          </CardTitle>
+          <Card className="border-primary/20 bg-primary/5 mt-3 rounded-2xl">
+            <CardContent className="p-6">
+              <p className="text-base font-light leading-relaxed">
+                Generate platform-optimized content from your video
+              </p>
+            </CardContent>
+          </Card>
         </CardHeader>
         <CardContent className="space-y-6 px-8 pb-8">
           {/* Template Selector */}
-          <div className="space-y-2">
-            <Label htmlFor="template-select">Choose Template</Label>
+          <div className="space-y-3">
+            <label className="text-base font-light text-foreground">Choose Template</label>
             <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-              <SelectTrigger id="template-select" className="w-full">
+              <SelectTrigger id="template-select" className="w-full font-light">
                 <SelectValue placeholder="Select content type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 {contentTemplates.map((template) => (
-                  <SelectItem key={template.value} value={template.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{template.icon}</span>
-                      <div>
-                        <div className="font-medium">{template.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {template.description}
-                        </div>
+                  <SelectItem key={template.value} value={template.value} className="font-light">
+                    <div>
+                      <div className="font-light">{template.label}</div>
+                      <div className="text-xs text-muted-foreground font-light">
+                        {template.description}
                       </div>
                     </div>
                   </SelectItem>
@@ -1323,12 +1314,12 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
           {/* Custom prompt textarea - only show for custom */}
           {selectedTemplate === 'custom' && (
-            <div className="space-y-2">
-              <Label htmlFor="custom-prompt">Custom Prompt</Label>
+            <div className="space-y-3">
+              <label className="text-base font-light text-foreground">Custom Prompt</label>
               <Textarea
                 id="custom-prompt"
                 placeholder="e.g., Generate 10 relevant hashtags for this video, or Summarize the main points discussed, or Extract all product mentions..."
-                className="min-h-[120px]"
+                className="min-h-[120px] font-light"
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
               />
@@ -1339,7 +1330,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           <Button
             onClick={handleGenerateContent}
             disabled={isGenerating || status !== 'ready'}
-            className="w-full"
+            className="w-full font-light rounded-full"
             size="lg"
           >
             {isGenerating ? (
@@ -1357,9 +1348,9 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
 
           {/* Results Display */}
           {generatedContent && (
-            <Card className="border-primary/20">
+            <Card className="border-primary/20 rounded-2xl">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <CardTitle className="text-base font-light flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   Generated Content
                 </CardTitle>
@@ -1367,6 +1358,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="font-light rounded-full"
                     onClick={() => {
                       navigator.clipboard.writeText(generatedContent);
                       toast({
@@ -1380,6 +1372,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="font-light rounded-full"
                     onClick={handleDownloadContent}
                   >
                     <Download className="w-4 h-4" />
@@ -1387,6 +1380,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="font-light rounded-full"
                     onClick={handleGenerateContent}
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -1395,15 +1389,15 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <pre className="whitespace-pre-wrap font-sans text-sm bg-muted/30 p-4 rounded-lg">
+                  <pre className="whitespace-pre-wrap font-light text-sm bg-muted/30 p-4 rounded-lg">
                     {generatedContent}
                   </pre>
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground font-light">
                     {generatedContent.length} characters
                   </span>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="font-light">
                     {contentTemplates.find(t => t.value === selectedTemplate)?.label}
                   </Badge>
                 </div>
@@ -1414,20 +1408,17 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
           {/* Saved Content History */}
           {savedMetadata.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">Previously Generated</h4>
+              <h4 className="text-base font-light text-foreground">Previously Generated</h4>
               <div className="space-y-2">
                 {savedMetadata.map((item) => (
-                  <Card key={item.id} className="p-3">
+                  <Card key={item.id} className="p-3 rounded-2xl">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">
-                          {contentTemplates.find(t => t.value === item.type)?.icon}
-                        </span>
                         <div>
-                          <p className="text-sm font-medium">
+                          <p className="text-sm font-light">
                             {contentTemplates.find(t => t.value === item.type)?.label}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground font-light">
                             {new Date(item.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -1436,6 +1427,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="font-light rounded-full"
                           onClick={() => {
                             setGeneratedContent(item.content);
                             setSelectedTemplate(item.type);
@@ -1446,6 +1438,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="font-light rounded-full"
                           onClick={() => {
                             navigator.clipboard.writeText(item.content);
                             toast({
