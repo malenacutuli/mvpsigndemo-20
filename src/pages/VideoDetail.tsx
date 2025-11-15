@@ -15,6 +15,8 @@ import { EmbedAnalytics } from "@/components/EmbedAnalytics";
 import { VideoExportButton } from "@/components/VideoExportButton";
 import { VideoPublishingControls } from "@/components/VideoPublishingControls";
 import { VideoAnalysisPanel } from "@/components/VideoAnalysisPanel";
+import { ContentMetadataGenerator } from "@/components/ContentMetadataGenerator";
+import { SocialClipsSection } from "@/components/SocialClipsSection";
 
 import { useToast } from "@/hooks/use-toast";
 import type { CaptionSegment } from "@/components/CaptionsWithIntention";
@@ -609,6 +611,18 @@ const VideoDetail = () => {
             </CardContent>
           </Card>
 
+          {/* Content Metadata Generator */}
+          {videoUrl && video.status === 'uploaded' && (
+            <ContentMetadataGenerator video={video} />
+          )}
+
+          {/* Social Clips Generator */}
+          {videoUrl && video.status === 'uploaded' && video.duration_seconds && (
+            <SocialClipsSection 
+              video={video} 
+              videoDuration={video.duration_seconds} 
+            />
+          )}
 
           {/* Export Accessible Video with Current Language */}
           {videoUrl && ['uploaded', 'processing', 'ready'].includes(video.status) && captions.length > 0 && (
