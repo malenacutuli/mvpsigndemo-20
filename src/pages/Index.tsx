@@ -10,6 +10,7 @@ import signLanguage from '@/assets/sign-language.jpg';
 import euLogo from '@/assets/eu-logo.png';
 import bscLogo from '@/assets/bsc-ai-factory-logo.jpg';
 import nvidiaLogo from '@/assets/nvidia-inception-logo-clean.png';
+import { MovingLogoStripe } from '@/components/MovingLogoStripe';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -177,6 +178,43 @@ const Index = () => {
             <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
               <Link to="/explore">{t('sections.forViewers.startWatching')}</Link>
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Enterprise CTA Section */}
+      <section className="py-32 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto text-center space-y-12">
+            <div className="space-y-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight">
+                Transform Videos into Emotionally Accessible Content{" "}
+                <span className="block">in Under 2 Hours</span>
+              </h2>
+              <p className="text-lg md:text-xl text-muted-foreground font-light max-w-3xl mx-auto">
+                The AI platform that delivers regulatory-grade accessibility
+                with emotional intelligence — at 1/10th the cost of manual services.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
+                <Link to="/upload">Process Your First Video Free</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
+                <Link to="/pricing">View Pricing</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
+                <Link to="/contact">Book Demo</Link>
+              </Button>
+            </div>
+
+            <div className="pt-12">
+              <p className="text-sm text-muted-foreground font-light mb-6">
+                Trusted by agencies serving:
+              </p>
+              <MovingLogoStripe />
+            </div>
           </div>
         </div>
       </section>

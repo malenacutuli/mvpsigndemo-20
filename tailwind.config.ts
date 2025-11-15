@@ -171,6 +171,14 @@ export default {
 						width: 'var(--box-width)',
 						opacity: '1'
 					}
+				},
+				'scroll': {
+					'0%': {
+						transform: 'translateX(0)'
+					},
+					'100%': {
+						transform: 'translateX(-50%)'
+					}
 				}
 			},
 			animation: {
@@ -181,7 +189,8 @@ export default {
 				'caption-exit': 'caption-exit 0.3s ease-in-out',
 				'word-highlight': 'word-highlight 0.2s ease-out',
 				'emphasis-bounce': 'emphasis-bounce 0.6s ease-in-out',
-				'box-resize': 'box-resize 0.3s ease-out'
+				'box-resize': 'box-resize 0.3s ease-out',
+				'scroll': 'scroll 30s linear infinite'
 			}
 		}
 	},
