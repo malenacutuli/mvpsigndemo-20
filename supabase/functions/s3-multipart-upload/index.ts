@@ -14,9 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    // Use SERVICE_ROLE_KEY for server-side operations (JWT already verified by Supabase)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -26,8 +27,11 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
+      console.error('[S3-MULTIPART] No user found in JWT');
       throw new Error('Unauthorized');
     }
+    
+    console.log('[S3-MULTIPART] User authenticated:', user.id);
 
     const { action, fileName, fileSize, uploadId, parts, key } = await req.json();
 
