@@ -26,13 +26,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { 
-  formatCaptionsForLambda, 
-  getVideoUrl, 
-  generateClipId,
-  VideoProcessingError 
-} from '@/services/videoProcessing';
-import { generateSocialClip, pollClipStatus } from '@/services/clipGeneration';
+import { generateSocialClip } from '@/services/clipGeneration';
+import { processClipInBrowser } from '@/services/socialClipProcessor';
 import { SegmentTimeline } from '@/components/video-editor/SegmentTimeline';
 import { WaveformTimeline } from '@/components/video-editor/WaveformTimeline';
 
@@ -420,7 +415,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
 
       toast.loading('Preparing clip generation...', { id: toastId });
 
-      // Call Edge Function to generate clip
+      // Step 1: Create database record via edge function
       const response = await generateSocialClip({
         videoId: video.id,
         highlightId: selectedHighlight || undefined,
@@ -436,34 +431,44 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
         throw new Error(response.error || 'Failed to initiate clip generation');
       }
 
-      console.log('✅ Clip generation initiated:', response);
+      if (!response.videoUrl) {
+        throw new Error('Video URL not available');
+      }
 
-      toast.loading('Processing video...', {
-        id: toastId,
-        description: 'This typically takes 30-60 seconds'
+      console.log('✅ Clip record created:', response.clipId);
+
+      // Step 2: Process video in browser with FFmpeg
+      const result = await processClipInBrowser({
+        clipId: response.clipId,
+        videoUrl: response.videoUrl,
+        startTime: clipStartTime,
+        endTime: clipEndTime,
+        platform: selectedPlatform as 'tiktok' | 'instagram_reel' | 'youtube_short' | 'linkedin',
+        onProgress: (progress, stage) => {
+          toast.loading(stage, {
+            id: toastId,
+            description: `${Math.round(progress)}%`
+          });
+        }
       });
 
-      // Poll for completion
-      const pollResult = await pollClipStatus(response.clipId);
-
-      if (pollResult.status === 'completed' && pollResult.clipUrl) {
-        toast.success('Clip generated successfully!', {
-          id: toastId,
-          description: 'Your clip is ready to download'
-        });
-
-        setLastGeneratedClip({
-          id: response.clipId,
-          clipUrl: pollResult.clipUrl,
-          platform: selectedPlatform
-        });
-
-        // Refresh clips list
-        await loadGeneratedClips();
-
-      } else {
-        throw new Error(pollResult.error || 'Clip generation failed');
+      if (!result.success) {
+        throw new Error(result.error || 'Processing failed');
       }
+
+      toast.success('Clip generated successfully!', {
+        id: toastId,
+        description: 'Your clip is ready'
+      });
+
+      setLastGeneratedClip({
+        id: response.clipId,
+        clipUrl: result.clipUrl!,
+        platform: selectedPlatform
+      });
+
+      // Refresh clips list
+      await loadGeneratedClips();
 
     } catch (err: any) {
       console.error('❌ Clip generation error:', err);
@@ -764,8 +769,19 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                   
                   {!transcriptLoading && hasTranscript && !segmentsLoading && segments.length > 0 && (
                     <>
+                      {/* Video Preview */}
+                      <Card className="p-4">
+                        <h3 className="text-sm font-medium mb-3">Video Preview</h3>
+                        <video
+                          src={supabase.storage.from('videos').getPublicUrl(video.storage_path).data.publicUrl}
+                          className="w-full max-h-[400px] rounded-lg bg-black"
+                          controls
+                          controlsList="nodownload"
+                        />
+                      </Card>
+
                       <WaveformTimeline
-                        videoUrl={getVideoUrl(video.storage_path)}
+                        videoUrl={supabase.storage.from('videos').getPublicUrl(video.storage_path).data.publicUrl}
                         duration={actualDuration}
                         segments={segments}
                         selectedSegments={selectedSegments}
