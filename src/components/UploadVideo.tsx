@@ -637,8 +637,9 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           }
         }
       } else if (isLargeFile) {
-        // Use R2 for large files (>5GB)
-        console.log('Using R2 for large file upload');
+        // Use R2 for extremely large files (>10GB)
+        logUploadAttempt('R2', 'started', videoFile.name, videoFile.size, video.id);
+        console.log('Using R2 for very large file upload');
         console.log('File details:', {
           name: videoFile.name,
           size: videoFile.size,
@@ -721,17 +722,29 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           throw new Error('Failed to upload large file. Please try again.');
         }
       } else {
-        // Use Supabase Storage with TUS for smaller files (<5GB)
+        // Use Supabase Storage with TUS for files up to 10GB (100GB limit available)
+        logUploadAttempt('TUS', 'started', videoFile.name, videoFile.size, video.id);
+        
         const fileExt = videoFile.name.split('.').pop();
         const fileName = `${video.id}.${fileExt}`;
         
-        console.log('Uploading file to Supabase Storage...');
+        console.log('Uploading file to Supabase Storage with TUS...');
+        console.log('File details:', {
+          name: videoFile.name,
+          size: videoFile.size,
+          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          type: videoFile.type
+        });
         
-        // For files larger than 6MB, use resumable upload
+        toast({
+          title: "Starting upload",
+          description: "Using Supabase Storage with resumable upload...",
+        });
+        
+        // Always use TUS resumable upload (works for any size up to 100GB limit)
         let uploadData, uploadError;
         
-        if (videoFile.size > 6 * 1024 * 1024) { // 6MB threshold
-        console.log('Using resumable upload for large file...');
+        console.log('Using TUS resumable upload...');
         
         const objectPath = `originals/${fileName}`;
         
@@ -842,27 +855,19 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         // Mimic Supabase upload response
         uploadData = { path: objectPath } as any;
         uploadError = null;
-      } else {
-        console.log('Using standard upload for small file...');
-        
-        // Use standard upload for small files
-        const { data, error } = await supabase.storage
-          .from('videos')
-          .upload(`originals/${fileName}`, videoFile, {
-            contentType: videoFile.type,
-            upsert: false
-          });
-          
-        uploadData = data;
-        uploadError = error;
-      }
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
-      }
+        if (uploadError) {
+          console.error('Supabase TUS upload error:', uploadError);
+          throw uploadError;
+        }
 
-      console.log('File uploaded successfully:', uploadData);
+        if (!uploadData?.path) {
+          throw new Error('Upload failed: no path returned');
+        }
+
+        storagePath = uploadData.path;
+        logUploadAttempt('TUS', 'success', videoFile.name, videoFile.size, video.id, { path: storagePath });
+        console.log('TUS upload complete:', storagePath);
 
       // Extract video frame for thumbnail
       setUploadProgress(75);
