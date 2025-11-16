@@ -30,6 +30,52 @@ interface VideoData {
   status: string;
 }
 
+type UploadErrorType = 'AUTHENTICATION' | 'NETWORK' | 'SIZE_LIMIT' | 'SERVICE' | 'UNKNOWN';
+
+interface UploadError {
+  type: UploadErrorType;
+  message: string;
+  originalError: any;
+  method: 'S3' | 'R2' | 'TUS';
+}
+
+const classifyError = (error: any, method: 'S3' | 'R2' | 'TUS'): UploadError => {
+  const message = error?.message || String(error);
+  const lowerMsg = message.toLowerCase();
+  
+  let type: UploadErrorType = 'UNKNOWN';
+  
+  if (lowerMsg.includes('unauthorized') || lowerMsg.includes('401') || lowerMsg.includes('403')) {
+    type = 'AUTHENTICATION';
+  } else if (lowerMsg.includes('network') || lowerMsg.includes('timeout') || lowerMsg.includes('fetch')) {
+    type = 'NETWORK';
+  } else if (lowerMsg.includes('413') || lowerMsg.includes('too large') || lowerMsg.includes('size limit')) {
+    type = 'SIZE_LIMIT';
+  } else if (lowerMsg.includes('500') || lowerMsg.includes('503') || lowerMsg.includes('service')) {
+    type = 'SERVICE';
+  }
+  
+  return { type, message, originalError: error, method };
+};
+
+const logUploadAttempt = (
+  method: string,
+  status: 'started' | 'success' | 'failed',
+  fileName: string,
+  fileSize: number,
+  videoId: string,
+  details?: any
+) => {
+  console.log(`[UPLOAD-${method.toUpperCase()}] ${status}:`, {
+    timestamp: new Date().toISOString(),
+    fileName,
+    fileSize,
+    fileSizeGB: (fileSize / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+    videoId,
+    ...details
+  });
+};
+
 export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -93,6 +139,116 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
     event.preventDefault();
   };
 
+  const attemptR2Upload = async (
+    file: File,
+    videoId: string,
+    onProgress: (pct: number) => void
+  ): Promise<{ success: boolean; url?: string; storagePath?: string; error?: UploadError }> => {
+    logUploadAttempt('R2', 'started', file.name, file.size, videoId);
+    
+    try {
+      const result = await uploadToR2(file, (progress) => {
+        onProgress(progress * 0.9);
+      });
+      
+      if (!result.success) {
+        const error = classifyError(result.error || 'R2 upload failed', 'R2');
+        logUploadAttempt('R2', 'failed', file.name, file.size, videoId, { error });
+        return { success: false, error };
+      }
+      
+      logUploadAttempt('R2', 'success', file.name, file.size, videoId, { url: result.url });
+      
+      return {
+        success: true,
+        url: result.url!,
+        storagePath: `r2:${result.url}`
+      };
+    } catch (error) {
+      const uploadError = classifyError(error, 'R2');
+      logUploadAttempt('R2', 'failed', file.name, file.size, videoId, { error: uploadError });
+      return { success: false, error: uploadError };
+    }
+  };
+
+  const attemptSupabaseTUSUpload = async (
+    file: File,
+    videoId: string,
+    onProgress: (pct: number) => void
+  ): Promise<{ success: boolean; path?: string; error?: UploadError }> => {
+    logUploadAttempt('TUS', 'started', file.name, file.size, videoId);
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${videoId}.${fileExt}`;
+    const objectPath = `originals/${fileName}`;
+    
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('You must be signed in to upload.');
+      }
+
+      const supabaseUrl = 'https://faeyekynudyzeotbjfsj.supabase.co';
+      const storageUrl = supabaseUrl.replace('.supabase.co', '.storage.supabase.co');
+      const endpoint = `${storageUrl}/storage/v1/upload/resumable`;
+
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      await new Promise<void>((resolve, reject) => {
+        const upload = new TusUpload(file, {
+          endpoint,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          parallelUploads: 1,
+          removeFingerprintOnSuccess: true,
+          metadata: {
+            bucketName: 'videos',
+            objectName: objectPath,
+            contentType: file.type,
+            cacheControl: '3600',
+          },
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            'x-upsert': 'true',
+          },
+          chunkSize: 6 * 1024 * 1024,
+          onError: (err) => {
+            if (retryCount < maxRetries && !err.message?.includes('401') && !err.message?.includes('403')) {
+              retryCount++;
+              setTimeout(() => upload.start(), 1000 * retryCount);
+            } else {
+              reject(err);
+            }
+          },
+          onProgress: (bytesUploaded, bytesTotal) => {
+            const pct = Math.min(90, Math.round((bytesUploaded / bytesTotal) * 90));
+            onProgress(pct);
+          },
+          onSuccess: () => resolve(),
+        });
+
+        upload.findPreviousUploads().then((previous) => {
+          if (previous.length) {
+            upload.resumeFromPreviousUpload(previous[0]);
+          }
+          upload.start();
+        }).catch(() => {
+          upload.start();
+        });
+      });
+
+      logUploadAttempt('TUS', 'success', file.name, file.size, videoId, { path: objectPath });
+      return { success: true, path: objectPath };
+      
+    } catch (error) {
+      const uploadError = classifyError(error, 'TUS');
+      logUploadAttempt('TUS', 'failed', file.name, file.size, videoId, { error: uploadError });
+      return { success: false, error: uploadError };
+    }
+  };
+
   const uploadVideo = async () => {
     if (!videoFile || !title.trim()) {
       toast({
@@ -150,18 +306,11 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       let publicUrl = '';
 
       if (useS3Direct) {
-        // Use S3 direct multipart upload for files 1GB-5GB
-        console.log('Using S3 direct multipart upload');
-        console.log('File details:', {
-          name: videoFile.name,
-          size: videoFile.size,
-          sizeGB: (videoFile.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
-          type: videoFile.type
-        });
+        logUploadAttempt('S3', 'started', videoFile.name, videoFile.size, video.id);
         
         toast({
           title: "Large file detected",
-          description: "Using optimized S3 direct upload...",
+          description: "Using optimized S3 upload...",
         });
 
         try {
@@ -329,9 +478,163 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             }
           }).catch((err) => console.warn('⚠️ Thumbnail upload failed:', err));
           
-        } catch (error) {
-          console.error('S3 direct upload failed:', error);
-          throw new Error('Failed to upload file via S3. Please try again.');
+          logUploadAttempt('S3', 'success', videoFile.name, videoFile.size, video.id, { storagePath });
+          setUploadProgress(100);
+          toast({
+            title: "Upload successful",
+            description: "Your video has been uploaded successfully"
+          });
+          
+        } catch (s3Error) {
+          const error = classifyError(s3Error, 'S3');
+          logUploadAttempt('S3', 'failed', videoFile.name, videoFile.size, video.id, { error });
+          
+          toast({
+            title: "S3 upload failed",
+            description: "Trying alternative upload method...",
+            variant: "default"
+          });
+          
+          // Fallback 1: Try R2 upload
+          console.log('[FALLBACK] Attempting R2 upload...');
+          setUploadProgress(0);
+          
+          const r2Result = await attemptR2Upload(videoFile, video.id, setUploadProgress);
+          
+          if (r2Result.success) {
+            publicUrl = r2Result.url!;
+            storagePath = r2Result.storagePath!;
+            
+            toast({
+              title: "Upload successful via R2",
+              description: "Your video was uploaded using an alternative method",
+            });
+            
+            // Extract thumbnail
+            setUploadProgress(90);
+            let thumbnailUrl: string | null = null;
+            
+            try {
+              const extractedFrame = await extractVideoFrame(videoFile, {
+                quality: 0.9,
+                maxWidth: 1280,
+                maxHeight: 720
+              });
+
+              const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+              const { error: thumbnailUploadError } = await supabase.storage
+                .from('thumbnails')
+                .upload(thumbnailFileName, extractedFrame.blob, {
+                  contentType: 'image/jpeg',
+                  upsert: true
+                });
+
+              if (!thumbnailUploadError) {
+                const { data: { publicUrl: thumbUrl } } = supabase.storage
+                  .from('thumbnails')
+                  .getPublicUrl(thumbnailFileName);
+                
+                thumbnailUrl = thumbUrl;
+              }
+            } catch (frameError) {
+              console.warn('⚠️ Frame extraction failed:', frameError);
+            }
+            
+            // Update video record
+            const { error: updateError } = await supabase
+              .from('videos')
+              .update({
+                storage_path: storagePath,
+                status: 'uploaded' as const,
+                ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+              })
+              .eq('id', video.id);
+
+            if (updateError) throw updateError;
+            
+            setUploadProgress(100);
+            
+          } else {
+            // Fallback 2: Try Supabase TUS upload
+            console.log('[FALLBACK] R2 failed, attempting Supabase TUS...');
+            console.error('[FALLBACK] R2 error:', r2Result.error);
+            
+            toast({
+              title: "Trying final upload method",
+              description: "Using Supabase Storage...",
+            });
+            
+            setUploadProgress(0);
+            
+            const tusResult = await attemptSupabaseTUSUpload(videoFile, video.id, setUploadProgress);
+            
+            if (tusResult.success) {
+              storagePath = tusResult.path!;
+              
+              toast({
+                title: "Upload successful via Supabase",
+                description: "Your video was uploaded successfully",
+              });
+              
+              // Extract thumbnail
+              setUploadProgress(90);
+              let thumbnailUrl: string | null = null;
+              
+              try {
+                const extractedFrame = await extractVideoFrame(videoFile, {
+                  quality: 0.9,
+                  maxWidth: 1280,
+                  maxHeight: 720
+                });
+
+                const thumbnailFileName = `${video.id}-thumbnail.jpg`;
+                const { error: thumbnailUploadError } = await supabase.storage
+                  .from('thumbnails')
+                  .upload(thumbnailFileName, extractedFrame.blob, {
+                    contentType: 'image/jpeg',
+                    upsert: true
+                  });
+
+                if (!thumbnailUploadError) {
+                  const { data: { publicUrl: thumbUrl } } = supabase.storage
+                    .from('thumbnails')
+                    .getPublicUrl(thumbnailFileName);
+                  
+                  thumbnailUrl = thumbUrl;
+                }
+              } catch (frameError) {
+                console.warn('⚠️ Frame extraction failed:', frameError);
+              }
+              
+              // Update video record
+              const { error: updateError } = await supabase
+                .from('videos')
+                .update({
+                  storage_path: storagePath,
+                  status: 'uploaded' as const,
+                  ...(thumbnailUrl && { thumbnail_url: thumbnailUrl })
+                })
+                .eq('id', video.id);
+
+              if (updateError) throw updateError;
+              
+              setUploadProgress(100);
+              
+            } else {
+              // All methods failed
+              console.error('[FALLBACK] All upload methods failed:', {
+                s3: error,
+                r2: r2Result.error,
+                tus: tusResult.error
+              });
+              
+              throw new Error(
+                `Upload failed after trying multiple methods. ` +
+                `S3: ${error.type}, R2: ${r2Result.error?.type}, TUS: ${tusResult.error?.type}. ` +
+                `Please try again or contact support.`
+              );
+            }
+          }
         }
       } else if (isLargeFile) {
         // Use R2 for large files (>5GB)
