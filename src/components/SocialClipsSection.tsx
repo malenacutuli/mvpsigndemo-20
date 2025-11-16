@@ -95,6 +95,8 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   video, 
   videoDuration 
 }) => {
+  const [actualDuration, setActualDuration] = useState(videoDuration || 0);
+  const [isCalculatingDuration, setIsCalculatingDuration] = useState(videoDuration === 0);
   const [selectedPlatform, setSelectedPlatform] = useState('tiktok');
   const [clipMode, setClipMode] = useState<'auto' | 'manual'>('auto');
   const [startTime, setStartTime] = useState(0);
@@ -120,6 +122,52 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   const [processingStage, setProcessingStage] = useState<string>('');
   const [processingProgress, setProcessingProgress] = useState(0);
   const [lastGeneratedClip, setLastGeneratedClip] = useState<any>(null);
+
+  // Calculate duration if missing
+  useEffect(() => {
+    if (videoDuration === 0 && video.storage_path) {
+      const calculateDuration = async () => {
+        try {
+          setIsCalculatingDuration(true);
+          const { data: videoData } = await supabase.storage
+            .from('videos')
+            .getPublicUrl(video.storage_path);
+          
+          const videoElement = document.createElement('video');
+          videoElement.src = videoData.publicUrl;
+          
+          videoElement.addEventListener('loadedmetadata', async () => {
+            const duration = Math.floor(videoElement.duration);
+            setActualDuration(duration);
+            setEndTime(Math.min(30, duration));
+            
+            // Update database
+            await supabase
+              .from('videos')
+              .update({ duration_seconds: duration })
+              .eq('id', video.id);
+            
+            setIsCalculatingDuration(false);
+            console.log('✅ Duration calculated and saved:', duration);
+          });
+
+          videoElement.addEventListener('error', () => {
+            setIsCalculatingDuration(false);
+            toast.error('Could not calculate video duration', {
+              description: 'Please try refreshing the page'
+            });
+          });
+        } catch (error) {
+          console.error('Failed to calculate duration:', error);
+          setIsCalculatingDuration(false);
+        }
+      };
+      
+      calculateDuration();
+    } else {
+      setActualDuration(videoDuration);
+    }
+  }, [videoDuration, video.id, video.storage_path]);
   const [error, setError] = useState<string | null>(null);
 
   const selectedPlatformConfig = platforms.find(p => p.key === selectedPlatform)!;
@@ -480,6 +528,16 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* Duration Calculation Loading */}
+        {isCalculatingDuration && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              Calculating video duration...
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Platform Selector */}
         <div>
           <Label className="text-base font-light mb-3 block text-foreground">1. Choose Platform</Label>
@@ -608,14 +666,15 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <Label className="text-sm">Start Time (seconds)</Label>
-                      <Input
+                       <Input
                         type="number"
                         step="0.1"
                         min="0"
-                        max={videoDuration}
+                        max={actualDuration}
                         value={startTime}
                         onChange={(e) => setStartTime(Number(e.target.value))}
                         className="mt-1"
+                        disabled={isCalculatingDuration}
                       />
                     </div>
                     <div className="flex-1">
@@ -624,10 +683,11 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                         type="number"
                         step="0.1"
                         min={startTime}
-                        max={videoDuration}
+                        max={actualDuration}
                         value={endTime}
                         onChange={(e) => setEndTime(Number(e.target.value))}
                         className="mt-1"
+                        disabled={isCalculatingDuration}
                       />
                     </div>
                     <div className="flex-1">
@@ -648,13 +708,14 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                         setEndTime(end);
                       }}
                       min={0}
-                      max={videoDuration}
+                      max={actualDuration}
                       step={0.1}
                       className="w-full"
+                      disabled={isCalculatingDuration}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>0:00</span>
-                      <span>{formatTime(videoDuration)}</span>
+                      <span>{formatTime(actualDuration)}</span>
                     </div>
                   </div>
 
@@ -672,7 +733,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                 <div className="space-y-4">
                   <WaveformTimeline
                     videoUrl={getVideoUrl(video.storage_path)}
-                    duration={video.duration_seconds || videoDuration}
+                    duration={actualDuration}
                     segments={segments}
                     selectedSegments={selectedSegments}
                     onSegmentClick={(segmentId) => {
@@ -881,6 +942,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
           onClick={handleGenerateClip}
           disabled={
             isGenerating || 
+            isCalculatingDuration ||
             (clipMode === 'auto' && !selectedHighlight) || 
             (clipMode === 'manual' && editMode === 'simple' && !isValidDuration) ||
             (clipMode === 'manual' && editMode === 'segments' && selectedSegments.size === 0)

@@ -575,10 +575,10 @@ const VideoDetail = () => {
           )}
 
           {/* Social Clips Generator */}
-          {videoUrl && video.status === 'uploaded' && video.duration_seconds && (
+          {videoUrl && video.status === 'uploaded' && (
             <SocialClipsSection 
               video={video} 
-              videoDuration={video.duration_seconds} 
+              videoDuration={video.duration_seconds || 0} 
             />
           )}
 
