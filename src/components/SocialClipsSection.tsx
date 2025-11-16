@@ -29,6 +29,7 @@ import {
   VideoProcessingError 
 } from '@/services/videoProcessing';
 import { SegmentTimeline } from '@/components/video-editor/SegmentTimeline';
+import { WaveformTimeline } from '@/components/video-editor/WaveformTimeline';
 
 interface SocialClipsSectionProps {
   video: any;
@@ -108,6 +109,7 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   const [editMode, setEditMode] = useState<'simple' | 'segments'>('simple');
   const [segments, setSegments] = useState<SelectedSegment[]>([]);
   const [selectedSegments, setSelectedSegments] = useState<Set<string>>(new Set());
+  const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
 
   const selectedPlatformConfig = platforms.find(p => p.key === selectedPlatform)!;
   
@@ -602,40 +604,63 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                   )}
                 </div>
               ) : (
-                <SegmentTimeline
-                  segments={segments}
-                  selectedSegments={selectedSegments}
-                  onToggleSegment={(id) => {
-                    setSelectedSegments(prev => {
-                      const newSet = new Set(prev);
-                      if (newSet.has(id)) {
-                        newSet.delete(id);
-                      } else {
-                        newSet.add(id);
-                      }
-                      return newSet;
-                    });
-                  }}
-                  onToggleSpeaker={(speaker) => {
-                    const speakerSegmentIds = segments
-                      .filter(s => s.speaker === speaker)
-                      .map(s => s.id);
-
-                    const allSelected = speakerSegmentIds.every(id => selectedSegments.has(id));
-
-                    setSelectedSegments(prev => {
-                      const newSet = new Set(prev);
-                      speakerSegmentIds.forEach(id => {
-                        if (allSelected) {
+                <div className="space-y-4">
+                  <WaveformTimeline
+                    videoUrl={getVideoUrl(video.storage_path)}
+                    duration={video.duration_seconds || videoDuration}
+                    segments={segments}
+                    selectedSegments={selectedSegments}
+                    onSegmentClick={(segmentId) => {
+                      setSelectedSegments(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(segmentId)) {
+                          newSet.delete(segmentId);
+                        } else {
+                          newSet.add(segmentId);
+                        }
+                        return newSet;
+                      });
+                    }}
+                    onTimeUpdate={(time) => {
+                      setCurrentPlaybackTime(time);
+                    }}
+                  />
+                  
+                  <SegmentTimeline
+                    segments={segments}
+                    selectedSegments={selectedSegments}
+                    onToggleSegment={(id) => {
+                      setSelectedSegments(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(id)) {
                           newSet.delete(id);
                         } else {
                           newSet.add(id);
                         }
+                        return newSet;
                       });
-                      return newSet;
-                    });
-                  }}
-                />
+                    }}
+                    onToggleSpeaker={(speaker) => {
+                      const speakerSegmentIds = segments
+                        .filter(s => s.speaker === speaker)
+                        .map(s => s.id);
+
+                      const allSelected = speakerSegmentIds.every(id => selectedSegments.has(id));
+
+                      setSelectedSegments(prev => {
+                        const newSet = new Set(prev);
+                        speakerSegmentIds.forEach(id => {
+                          if (allSelected) {
+                            newSet.delete(id);
+                          } else {
+                            newSet.add(id);
+                          }
+                        });
+                        return newSet;
+                      });
+                    }}
+                  />
+                </div>
               )}
             </TabsContent>
           </Tabs>
