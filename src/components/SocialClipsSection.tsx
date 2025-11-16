@@ -21,6 +21,13 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { 
+  generateSocialClipWithRetry, 
+  formatCaptionsForLambda, 
+  getVideoUrl, 
+  generateClipId,
+  VideoProcessingError 
+} from '@/services/videoProcessing';
 
 interface SocialClipsSectionProps {
   video: any;
@@ -141,31 +148,125 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
     const clipEndTime = clipMode === 'auto' && highlight ? highlight.end_time : endTime;
 
     setIsGenerating(true);
+    
+    const toastId = toast.loading('Preparing your clip...', {
+      description: 'Fetching video and captions'
+    });
+
     try {
-      const { data, error } = await supabase.functions.invoke('generate-social-clip', {
-        body: {
-          videoId: video.id,
-          highlightId: selectedHighlight,
-          platform: selectedPlatform,
-          startTime: clipStartTime,
-          endTime: clipEndTime,
-          captionStyle,
-          cropMode
-        }
+      // 1. Get video URL
+      const videoUrl = video.url || getVideoUrl(video.storage_path);
+      if (!videoUrl) {
+        throw new Error('Video URL not found');
+      }
+
+      // 2. Fetch transcript segments with speaker colors
+      toast.loading('Loading captions with speaker colors...', { id: toastId });
+      
+      const { data: segments, error: segmentsError } = await supabase
+        .from('transcript_segments_clean')
+        .select('text, start_time, end_time, speaker, speaker_color, words')
+        .eq('video_id', video.id)
+        .eq('language', 'en')
+        .gte('start_time', clipStartTime - 1)
+        .lte('end_time', clipEndTime + 1)
+        .order('start_time');
+
+      if (segmentsError) throw segmentsError;
+
+      // 3. Format captions for Lambda
+      const captions = formatCaptionsForLambda(segments || [], clipStartTime, clipEndTime);
+      
+      console.log('Formatted captions for Lambda:', {
+        segmentCount: segments?.length,
+        captionGroups: captions.length,
+        totalWords: captions.reduce((sum, seg) => sum + seg.words.length, 0)
       });
 
-      if (error) throw error;
+      // 4. Create database record
+      toast.loading('Creating clip record...', { id: toastId });
+      
+      const clipId = generateClipId();
+      const { data: clipRecord, error: clipError } = await supabase
+        .from('social_clips')
+        .insert({
+          video_id: video.id,
+          highlight_id: selectedHighlight,
+          platform: selectedPlatform,
+          title: highlight?.title || `${selectedPlatform} clip`,
+          start_time: clipStartTime,
+          end_time: clipEndTime,
+          duration: clipEndTime - clipStartTime,
+          aspect_ratio: selectedPlatformConfig.aspectRatio,
+          resolution: selectedPlatformConfig.resolution,
+          caption_style: captionStyle,
+          crop_mode: cropMode,
+          status: 'processing',
+          processing_started_at: new Date().toISOString(),
+          metadata: {
+            has_captions: captions.length > 0,
+            caption_groups: captions.length,
+            total_words: captions.reduce((sum, seg) => sum + seg.words.length, 0)
+          }
+        })
+        .select()
+        .single();
 
-      toast.success('Clip created! Processing will begin in browser...', {
-        description: 'This may take a few minutes'
+      if (clipError) throw clipError;
+
+      // 5. Call Lambda to process video
+      toast.loading('Processing video with AWS Lambda...', { 
+        id: toastId,
+        description: 'This typically takes 30-60 seconds'
+      });
+
+      const lambdaResponse = await generateSocialClipWithRetry({
+        videoUrl,
+        startTime: clipStartTime,
+        endTime: clipEndTime,
+        platform: selectedPlatform as any,
+        clipId,
+        captions
+      });
+
+      // 6. Update database with Lambda response
+      toast.loading('Finalizing clip...', { id: toastId });
+      
+      const { error: updateError } = await supabase
+        .from('social_clips')
+        .update({
+          clip_url: lambdaResponse.clipUrl,
+          file_size_bytes: lambdaResponse.fileSize,
+          status: 'completed',
+          processing_completed_at: new Date().toISOString(),
+          storage_path: lambdaResponse.clipUrl
+        })
+        .eq('id', clipRecord.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Clip generated successfully!', {
+        id: toastId,
+        description: `${Math.round(clipEndTime - clipStartTime)}s ${selectedPlatformConfig.name} clip is ready`,
+        action: {
+          label: 'Download',
+          onClick: () => window.open(lambdaResponse.clipUrl, '_blank')
+        }
       });
 
       // Reload clips list
       await loadGeneratedClips();
+      
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error('Failed to create clip', {
-        description: error.message
+      
+      const errorMessage = error instanceof VideoProcessingError 
+        ? error.getUserMessage()
+        : error.message || 'An unexpected error occurred';
+      
+      toast.error('Failed to generate clip', {
+        id: toastId,
+        description: errorMessage
       });
     } finally {
       setIsGenerating(false);
@@ -457,10 +558,12 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                           <Badge className="font-light">{clip.platform.replace('_', ' ')}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {Math.round(clip.duration)}s • {clip.resolution} • {clip.aspect_ratio}
+                          {Math.round(clip.duration || (clip.end_time - clip.start_time))}s • {clip.resolution} • {clip.aspect_ratio}
+                          {clip.status === 'processing' && ' • Processing...'}
+                          {clip.status === 'failed' && ' • Failed'}
                         </p>
                         <div className="flex gap-2 mt-3">
-                          {clip.status === 'ready' && clip.clip_url && (
+                          {(clip.status === 'completed' || clip.status === 'ready') && clip.clip_url && (
                             <>
                               <Button 
                                 size="sm" 
@@ -473,7 +576,12 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => window.open(clip.clip_url, '_blank')}
+                                onClick={() => {
+                                  const a = document.createElement('a');
+                                  a.href = clip.clip_url;
+                                  a.download = `${clip.title}.mp4`;
+                                  a.click();
+                                }}
                               >
                                 <Download className="w-3 h-3 mr-1" />
                                 Download
@@ -481,13 +589,16 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                             </>
                           )}
                           {clip.status === 'processing' && (
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" className="font-light">
                               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                               Processing...
                             </Badge>
                           )}
                           {clip.status === 'failed' && (
-                            <Badge variant="destructive">Failed</Badge>
+                            <Badge variant="destructive" className="font-light">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Failed
+                            </Badge>
                           )}
                           <Button 
                             size="sm" 
