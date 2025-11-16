@@ -79,8 +79,8 @@ serve(async (req) => {
 
     console.log('Using Twelve Labs to find highlights...')
 
-    // Twelve Labs /generate endpoint for highlight detection
-    const generateResponse = await fetch('https://api.twelvelabs.io/v1.2/generate', {
+    // Twelve Labs /summarize endpoint for highlight detection
+    const summarizeResponse = await fetch('https://api.twelvelabs.io/v1.3/summarize', {
       method: 'POST',
       headers: {
         'x-api-key': twelveLabsApiKey,
@@ -88,71 +88,42 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         video_id: tlMapping.tl_video_id,
-        prompt: `Identify the ${count} most engaging, viral-worthy moments from this video for ${platform}. 
-
-For each moment:
-- It should be ${durations.ideal} seconds long (between ${durations.min}-${durations.max}s)
-- Hook attention immediately
-- Have emotional peaks or exciting content
-- Work as standalone clips
-- Rate engagement potential 1-10
-
-Return the moments with their start/end timestamps in seconds.`,
+        type: 'highlight',
+        prompt: `Identify the ${count} most engaging, viral-worthy moments for ${platform}. Each should be ${durations.ideal} seconds (${durations.min}-${durations.max}s), hook attention immediately, and work as standalone clips.`,
         temperature: 0.7
       })
     })
 
-    if (!generateResponse.ok) {
-      const errorText = await generateResponse.text()
-      throw new Error(`Twelve Labs generation failed: ${errorText}`)
+    if (!summarizeResponse.ok) {
+      const errorText = await summarizeResponse.text()
+      throw new Error(`Twelve Labs highlight generation failed: ${errorText}`)
     }
 
-    const generateResult = await generateResponse.json()
-    console.log('Twelve Labs response:', generateResult)
+    const summarizeResult = await summarizeResponse.json()
+    console.log('Twelve Labs highlights response:', summarizeResult)
 
-    // Parse Twelve Labs response to extract highlights
-    const responseText = generateResult.data || generateResult.text || ''
-    
-    // Extract timestamps and content using regex
-    // Twelve Labs typically returns format like: "1. [00:15-00:45] Title - Description"
-    const timestampRegex = /\[?(\d+):(\d+)[\s-]+(\d+):(\d+)\]?\s*(.+?)(?=\[|\d+\.|$)/gs
+    // Parse Twelve Labs highlights response
+    const tlHighlights = summarizeResult.highlights || []
     let highlights = []
-    let match
-    let highlightIndex = 0
-
-    while ((match = timestampRegex.exec(responseText)) !== null && highlightIndex < count) {
-      const startMin = parseInt(match[1])
-      const startSec = parseInt(match[2])
-      const endMin = parseInt(match[3])
-      const endSec = parseInt(match[4])
-      const description = match[5].trim()
-
-      const startTime = startMin * 60 + startSec
-      const endTime = endMin * 60 + endSec
+    
+    console.log(`Found ${tlHighlights.length} highlights from Twelve Labs`)
+    
+    for (let i = 0; i < Math.min(tlHighlights.length, count); i++) {
+      const highlight = tlHighlights[i]
+      const startTime = highlight.start_sec || highlight.start || 0
+      const endTime = highlight.end_sec || highlight.end || startTime + durations.ideal
       
-      // Extract title (first sentence or up to first dash/colon)
-      const titleMatch = description.match(/^([^-:\.]+)/)
-      const title = titleMatch ? titleMatch[1].trim() : `Highlight ${highlightIndex + 1}`
-      
-      // Estimate engagement score based on keywords
-      const engagementKeywords = ['exciting', 'surprising', 'funny', 'emotional', 'peak', 'climax', 'intense']
-      const engagementScore = Math.min(10, 5 + engagementKeywords.filter(kw => 
-        description.toLowerCase().includes(kw)
-      ).length)
-
       highlights.push({
-        title: title.slice(0, 100),
-        description: description.slice(0, 200),
+        title: (highlight.highlight || `Highlight ${i + 1}`).slice(0, 100),
+        description: (highlight.highlight || `Segment from ${formatTime(startTime)} to ${formatTime(endTime)}`).slice(0, 200),
         startTime,
         endTime,
-        engagementScore,
+        engagementScore: 8,
         reason: `Identified by Twelve Labs as engaging for ${platform}`
       })
-
-      highlightIndex++
     }
 
-    // If regex parsing didn't work well, fall back to simple segmentation
+    // If no highlights found, fall back to simple segmentation
     if (highlights.length === 0) {
       console.log('Falling back to simple highlight generation')
       const videoDuration = video.duration_seconds || 300
