@@ -14,6 +14,7 @@ export interface ClipGenerationParams {
 export interface ClipGenerationResponse {
   success: boolean;
   clipId: string;
+  videoUrl?: string;
   clipUrl?: string;
   status: string;
   message?: string;

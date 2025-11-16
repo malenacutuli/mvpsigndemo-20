@@ -56,6 +56,13 @@ serve(async (req) => {
 
     if (videoError) throw videoError
 
+    // Compute public URL from storage_path
+    const videoPublicUrl = supabase.storage
+      .from('videos')
+      .getPublicUrl(video.storage_path).data.publicUrl;
+
+    console.log('✅ Video URL computed:', videoPublicUrl);
+
     // Platform configurations
     const platformConfig = {
       tiktok: { aspectRatio: '9:16', resolution: '1080x1920', fps: 30 },
@@ -114,7 +121,7 @@ serve(async (req) => {
     const response = {
       success: true,
       clipId: clipRecord.id,
-      videoUrl: video.url,
+      videoUrl: videoPublicUrl,
       startTime,
       endTime,
       duration: endTime - startTime,

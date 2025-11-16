@@ -73,59 +73,75 @@ serve(async (req) => {
 
     // Use Twelve Labs to find highlights directly
     const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY')
+    let useFallback = false;
+
     if (!twelveLabsApiKey) {
-      throw new Error('TWELVELABS_API_KEY not configured')
+      console.warn('⚠️ TWELVELABS_API_KEY not configured, using fallback highlights')
+      useFallback = true;
     }
 
-    console.log('Using Twelve Labs to find highlights...')
-
-    // Twelve Labs /summarize endpoint for highlight detection
-    const summarizeResponse = await fetch('https://api.twelvelabs.io/v1.3/summarize', {
-      method: 'POST',
-      headers: {
-        'x-api-key': twelveLabsApiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        video_id: tlMapping.tl_video_id,
-        type: 'highlight',
-        prompt: `Identify the ${count} most engaging, viral-worthy moments for ${platform}. Each should be ${durations.ideal} seconds (${durations.min}-${durations.max}s), hook attention immediately, and work as standalone clips.`,
-        temperature: 0.7
-      })
-    })
-
-    if (!summarizeResponse.ok) {
-      const errorText = await summarizeResponse.text()
-      throw new Error(`Twelve Labs highlight generation failed: ${errorText}`)
-    }
-
-    const summarizeResult = await summarizeResponse.json()
-    console.log('Twelve Labs highlights response:', summarizeResult)
-
-    // Parse Twelve Labs highlights response
-    const tlHighlights = summarizeResult.highlights || []
     let highlights = []
-    
-    console.log(`Found ${tlHighlights.length} highlights from Twelve Labs`)
-    
-    for (let i = 0; i < Math.min(tlHighlights.length, count); i++) {
-      const highlight = tlHighlights[i]
-      const startTime = highlight.start_sec || highlight.start || 0
-      const endTime = highlight.end_sec || highlight.end || startTime + durations.ideal
-      
-      highlights.push({
-        title: (highlight.highlight || `Highlight ${i + 1}`).slice(0, 100),
-        description: (highlight.highlight || `Segment from ${formatTime(startTime)} to ${formatTime(endTime)}`).slice(0, 200),
-        startTime,
-        endTime,
-        engagementScore: 8,
-        reason: `Identified by Twelve Labs as engaging for ${platform}`
-      })
+
+    if (!useFallback) {
+      try {
+        console.log('Using Twelve Labs to find highlights...')
+
+        const summarizeResponse = await fetch('https://api.twelvelabs.io/v1.3/summarize', {
+          method: 'POST',
+          headers: {
+            'x-api-key': twelveLabsApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            video_id: tlMapping.tl_video_id,
+            type: 'highlight',
+            prompt: `Identify the ${count} most engaging, viral-worthy moments for ${platform}. Each should be ${durations.ideal} seconds (${durations.min}-${durations.max}s), hook attention immediately, and work as standalone clips.`,
+            temperature: 0.7
+          })
+        })
+
+        if (!summarizeResponse.ok) {
+          const errorText = await summarizeResponse.text()
+          console.error('❌ Twelve Labs error:', errorText)
+          throw new Error(`Twelve Labs highlight generation failed: ${errorText}`)
+        }
+
+        const summarizeResult = await summarizeResponse.json()
+        console.log('✅ Twelve Labs highlights response:', summarizeResult)
+
+        const tlHighlights = summarizeResult.highlights || []
+        console.log(`Found ${tlHighlights.length} highlights from Twelve Labs`)
+        
+        for (let i = 0; i < Math.min(tlHighlights.length, count); i++) {
+          const highlight = tlHighlights[i]
+          const startTime = highlight.start_sec || highlight.start || 0
+          const endTime = highlight.end_sec || highlight.end || startTime + durations.ideal
+          
+          highlights.push({
+            title: (highlight.highlight || `Highlight ${i + 1}`).slice(0, 100),
+            description: (highlight.highlight || `Segment from ${formatTime(startTime)} to ${formatTime(endTime)}`).slice(0, 200),
+            startTime,
+            endTime,
+            engagementScore: 8,
+            reason: `Identified by Twelve Labs as engaging for ${platform}`
+          })
+        }
+
+        if (highlights.length === 0) {
+          console.warn('⚠️ Twelve Labs returned 0 highlights, using fallback')
+          useFallback = true;
+        }
+
+      } catch (error) {
+        console.error('❌ Twelve Labs API failed:', error)
+        console.log('🔄 Falling back to evenly-spaced highlights')
+        useFallback = true;
+      }
     }
 
-    // If no highlights found, fall back to simple segmentation
-    if (highlights.length === 0) {
-      console.log('Falling back to simple highlight generation')
+    // Fallback: Generate evenly-spaced highlights
+    if (useFallback) {
+      console.log('📊 Generating fallback highlights...')
       const videoDuration = video.duration_seconds || 300
       const segmentSize = durations.ideal
       const maxHighlights = Math.min(count, Math.floor(videoDuration / segmentSize))
