@@ -44,7 +44,7 @@ serve(async (req) => {
     // Get video details
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select('id, title, duration_seconds, url')
+      .select('id, title, duration_seconds, storage_path')
       .eq('id', videoId)
       .single()
 
