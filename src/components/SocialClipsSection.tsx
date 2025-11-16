@@ -28,10 +28,21 @@ import {
   generateClipId,
   VideoProcessingError 
 } from '@/services/videoProcessing';
+import { SegmentTimeline } from '@/components/video-editor/SegmentTimeline';
 
 interface SocialClipsSectionProps {
   video: any;
   videoDuration: number;
+}
+
+interface SelectedSegment {
+  id: string;
+  startTime: number;
+  endTime: number;
+  speaker: string;
+  speakerColor: string;
+  text: string;
+  isIncluded: boolean;
 }
 
 // Platform configurations
@@ -92,6 +103,11 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   
   const [generatedClips, setGeneratedClips] = useState<any[]>([]);
   const [hasGeneratedClips, setHasGeneratedClips] = useState(false);
+  
+  // Multi-segment selection state
+  const [editMode, setEditMode] = useState<'simple' | 'segments'>('simple');
+  const [segments, setSegments] = useState<SelectedSegment[]>([]);
+  const [selectedSegments, setSelectedSegments] = useState<Set<string>>(new Set());
 
   const selectedPlatformConfig = platforms.find(p => p.key === selectedPlatform)!;
   
@@ -103,6 +119,35 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   useEffect(() => {
     loadGeneratedClips();
   }, [video.id]);
+
+  // Fetch transcript segments for multi-segment mode
+  useEffect(() => {
+    async function fetchTranscriptSegments() {
+      const { data, error } = await supabase
+        .from('transcript_segments')
+        .select('id, start_time, end_time, speaker, speaker_color, text')
+        .eq('video_id', video.id)
+        .order('start_time', { ascending: true });
+
+      if (data) {
+        const mappedSegments = data.map(seg => ({
+          id: seg.id,
+          startTime: seg.start_time,
+          endTime: seg.end_time,
+          speaker: seg.speaker || 'Unknown',
+          speakerColor: seg.speaker_color || '#FFFFFF',
+          text: seg.text,
+          isIncluded: true
+        }));
+        setSegments(mappedSegments);
+        setSelectedSegments(new Set(mappedSegments.map(s => s.id)));
+      }
+    }
+
+    if (video.id && editMode === 'segments') {
+      fetchTranscriptSegments();
+    }
+  }, [video.id, editMode]);
 
   const loadGeneratedClips = async () => {
     const { data, error } = await supabase
@@ -143,9 +188,35 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   };
 
   const handleGenerateClip = async () => {
-    const highlight = autoHighlights.find(h => h.id === selectedHighlight);
-    const clipStartTime = clipMode === 'auto' && highlight ? highlight.start_time : startTime;
-    const clipEndTime = clipMode === 'auto' && highlight ? highlight.end_time : endTime;
+    let clipStartTime: number;
+    let clipEndTime: number;
+    let captionsToUse: any;
+
+    // Determine clip times and captions based on mode
+    if (clipMode === 'auto') {
+      const highlight = autoHighlights.find(h => h.id === selectedHighlight);
+      if (!highlight) {
+        toast.error('Please select a highlight');
+        return;
+      }
+      clipStartTime = highlight.start_time;
+      clipEndTime = highlight.end_time;
+    } else if (editMode === 'segments') {
+      // Multi-segment mode: use selected segments
+      const selectedSegs = segments.filter(s => selectedSegments.has(s.id));
+      
+      if (selectedSegs.length === 0) {
+        toast.error('Please select at least one segment');
+        return;
+      }
+
+      clipStartTime = Math.min(...selectedSegs.map(s => s.startTime));
+      clipEndTime = Math.max(...selectedSegs.map(s => s.endTime));
+    } else {
+      // Simple manual mode
+      clipStartTime = startTime;
+      clipEndTime = endTime;
+    }
 
     setIsGenerating(true);
     
@@ -160,40 +231,63 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
         throw new Error('Video URL not found');
       }
 
-      // 2. Fetch transcript segments with speaker colors
+      // 2. Fetch or use transcript segments with speaker colors
       toast.loading('Loading captions with speaker colors...', { id: toastId });
       
-      const { data: segments, error: segmentsError } = await supabase
-        .from('transcript_segments_clean')
-        .select('text, start_time, end_time, speaker, speaker_color, words')
-        .eq('video_id', video.id)
-        .eq('language', 'en')
-        .gte('start_time', clipStartTime - 1)
-        .lte('end_time', clipEndTime + 1)
-        .order('start_time');
+      let segmentsData;
+      
+      if (editMode === 'segments') {
+        // Use already-selected segments
+        segmentsData = segments
+          .filter(s => selectedSegments.has(s.id))
+          .map(s => ({
+            text: s.text,
+            start_time: s.startTime,
+            end_time: s.endTime,
+            speaker: s.speaker,
+            speaker_color: s.speakerColor
+          }));
+      } else {
+        // Fetch segments for simple/auto modes
+        const { data, error: segmentsError } = await supabase
+          .from('transcript_segments_clean')
+          .select('text, start_time, end_time, speaker, speaker_color, words')
+          .eq('video_id', video.id)
+          .eq('language', 'en')
+          .gte('start_time', clipStartTime - 1)
+          .lte('end_time', clipEndTime + 1)
+          .order('start_time');
 
-      if (segmentsError) throw segmentsError;
+        if (segmentsError) throw segmentsError;
+        segmentsData = data || [];
+      }
 
       // 3. Format captions for Lambda
-      const captions = formatCaptionsForLambda(segments || [], clipStartTime, clipEndTime);
+      const captions = formatCaptionsForLambda(segmentsData, clipStartTime, clipEndTime);
       
       console.log('Formatted captions for Lambda:', {
-        segmentCount: segments?.length,
+        segmentCount: segmentsData?.length,
         captionGroups: captions.length,
-        totalWords: captions.reduce((sum, seg) => sum + seg.words.length, 0)
+        totalWords: captions.reduce((sum, seg) => sum + seg.words.length, 0),
+        editMode,
+        selectedSegmentCount: editMode === 'segments' ? selectedSegments.size : null
       });
 
       // 4. Create database record
       toast.loading('Creating clip record...', { id: toastId });
       
       const clipId = generateClipId();
+      const clipTitle = clipMode === 'auto' && selectedHighlight
+        ? autoHighlights.find(h => h.id === selectedHighlight)?.title || `${selectedPlatform} clip`
+        : `${selectedPlatform} clip`;
+      
       const { data: clipRecord, error: clipError } = await supabase
         .from('social_clips')
         .insert({
           video_id: video.id,
           highlight_id: selectedHighlight,
           platform: selectedPlatform,
-          title: highlight?.title || `${selectedPlatform} clip`,
+          title: clipTitle,
           start_time: clipStartTime,
           end_time: clipEndTime,
           duration: clipEndTime - clipStartTime,
@@ -206,7 +300,9 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
           metadata: {
             has_captions: captions.length > 0,
             caption_groups: captions.length,
-            total_words: captions.reduce((sum, seg) => sum + seg.words.length, 0)
+            total_words: captions.reduce((sum, seg) => sum + seg.words.length, 0),
+            editMode,
+            selectedSegmentCount: editMode === 'segments' ? selectedSegments.size : null
           }
         })
         .select()
@@ -421,70 +517,126 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
             </TabsContent>
 
             <TabsContent value="manual" className="space-y-4 mt-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Label className="text-sm">Start Time (seconds)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max={videoDuration}
-                      value={startTime}
-                      onChange={(e) => setStartTime(Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm">End Time (seconds)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min={startTime}
-                      max={videoDuration}
-                      value={endTime}
-                      onChange={(e) => setEndTime(Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm">Duration</Label>
-                    <Input
-                      value={`${duration.toFixed(1)}s`}
-                      disabled
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Slider
-                    value={[startTime, endTime]}
-                    onValueChange={([start, end]) => {
-                      setStartTime(start);
-                      setEndTime(end);
-                    }}
-                    min={0}
-                    max={videoDuration}
-                    step={0.1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0:00</span>
-                    <span>{formatTime(videoDuration)}</span>
-                  </div>
-                </div>
-
-                {!isValidDuration && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Invalid Duration</AlertTitle>
-                    <AlertDescription>
-                      {selectedPlatformConfig.name} supports: {selectedPlatformConfig.durations.join('s, ')}s clips
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {/* Edit Mode Toggle */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={editMode === 'simple' ? 'default' : 'outline'}
+                  onClick={() => setEditMode('simple')}
+                  size="sm"
+                >
+                  Simple Trim
+                </Button>
+                <Button
+                  variant={editMode === 'segments' ? 'default' : 'outline'}
+                  onClick={() => setEditMode('segments')}
+                  size="sm"
+                >
+                  Multi-Segment
+                </Button>
               </div>
+
+              {/* Conditional Rendering */}
+              {editMode === 'simple' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Label className="text-sm">Start Time (seconds)</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max={videoDuration}
+                        value={startTime}
+                        onChange={(e) => setStartTime(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-sm">End Time (seconds)</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min={startTime}
+                        max={videoDuration}
+                        value={endTime}
+                        onChange={(e) => setEndTime(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-sm">Duration</Label>
+                      <Input
+                        value={`${duration.toFixed(1)}s`}
+                        disabled
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Slider
+                      value={[startTime, endTime]}
+                      onValueChange={([start, end]) => {
+                        setStartTime(start);
+                        setEndTime(end);
+                      }}
+                      min={0}
+                      max={videoDuration}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>0:00</span>
+                      <span>{formatTime(videoDuration)}</span>
+                    </div>
+                  </div>
+
+                  {!isValidDuration && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Invalid Duration</AlertTitle>
+                      <AlertDescription>
+                        {selectedPlatformConfig.name} supports: {selectedPlatformConfig.durations.join('s, ')}s clips
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              ) : (
+                <SegmentTimeline
+                  segments={segments}
+                  selectedSegments={selectedSegments}
+                  onToggleSegment={(id) => {
+                    setSelectedSegments(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(id)) {
+                        newSet.delete(id);
+                      } else {
+                        newSet.add(id);
+                      }
+                      return newSet;
+                    });
+                  }}
+                  onToggleSpeaker={(speaker) => {
+                    const speakerSegmentIds = segments
+                      .filter(s => s.speaker === speaker)
+                      .map(s => s.id);
+
+                    const allSelected = speakerSegmentIds.every(id => selectedSegments.has(id));
+
+                    setSelectedSegments(prev => {
+                      const newSet = new Set(prev);
+                      speakerSegmentIds.forEach(id => {
+                        if (allSelected) {
+                          newSet.delete(id);
+                        } else {
+                          newSet.add(id);
+                        }
+                      });
+                      return newSet;
+                    });
+                  }}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -526,7 +678,12 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
         {/* Generate Button */}
         <Button 
           onClick={handleGenerateClip}
-          disabled={isGenerating || (clipMode === 'auto' && !selectedHighlight) || (clipMode === 'manual' && !isValidDuration)}
+          disabled={
+            isGenerating || 
+            (clipMode === 'auto' && !selectedHighlight) || 
+            (clipMode === 'manual' && editMode === 'simple' && !isValidDuration) ||
+            (clipMode === 'manual' && editMode === 'segments' && selectedSegments.size === 0)
+          }
           className="w-full"
           size="lg"
         >
