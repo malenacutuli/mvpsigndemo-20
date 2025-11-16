@@ -27,6 +27,30 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // CHECK ADMIN STATUS FIRST
+    const { data: isAdmin, error: roleError } = await supabase.rpc(
+      "has_role",
+      { _user_id: userId, _role: "admin" }
+    );
+
+    if (roleError) {
+      console.error("Error checking admin status:", roleError);
+    }
+
+    // ADMIN BYPASS: Always allow uploads for admins
+    if (isAdmin) {
+      return new Response(
+        JSON.stringify({
+          allowed: true,
+          currentUsage: 0,
+          limit: 0,
+          tier: 'admin',
+          message: 'Admin user - unlimited storage',
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get current storage usage
     const { data: usage, error: usageError } = await supabase.rpc(
       "get_user_storage_usage",

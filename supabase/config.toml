@@ -1,5 +1,8 @@
 project_id = "faeyekynudyzeotbjfsj"
 
+[functions.validate-upload]
+verify_jwt = true
+
 [functions.speaker-diarization]
 verify_jwt = true
 

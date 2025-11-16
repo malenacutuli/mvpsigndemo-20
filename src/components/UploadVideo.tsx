@@ -107,10 +107,13 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
     // Use authenticated user ID or demo UUID if not authenticated
     const userId = user?.id || crypto.randomUUID();
-    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB
-    const S3_DIRECT_THRESHOLD = 1 * 1024 * 1024 * 1024; // 1GB - use S3 direct for files larger than this
+    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024 * 1024; // 5GB - use R2 for very large files
+    const S3_DIRECT_THRESHOLD = 100 * 1024 * 1024; // 100MB - use S3 direct (was 1GB)
+    const TUS_THRESHOLD = 6 * 1024 * 1024; // 6MB - use TUS for Supabase
     const isLargeFile = videoFile.size > LARGE_FILE_THRESHOLD;
     const useS3Direct = videoFile.size > S3_DIRECT_THRESHOLD && videoFile.size <= LARGE_FILE_THRESHOLD;
+
+    let video: VideoData | null = null;
 
     try {
       setUploading(true);
@@ -129,17 +132,18 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       
       console.log('Creating video record...', insertData);
 
-      const { data: video, error: videoError } = await supabase
+      const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .insert(insertData)
         .select()
         .maybeSingle() as { data: VideoData | null, error: any };
 
-      if (videoError || !video) {
+      if (videoError || !videoData) {
         console.error('Database error:', videoError);
         throw videoError || new Error('Failed to create video record');
       }
 
+      video = videoData;
       console.log('Video record created:', video);
 
       let storagePath = '';
@@ -461,8 +465,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               headers: {
                 authorization: `Bearer ${accessToken}`,
                 'x-upsert': 'true',
-                'tus-resumable': '1.0.0',
-                'Content-Type': 'application/offset+octet-stream',
               },
               chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase TUS
               onError: (err) => {
@@ -631,6 +633,19 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
     } catch (error) {
       console.error('Upload error:', error);
+      
+      // Clean up failed video record
+      if (video?.id) {
+        const { error: deleteError } = await supabase
+          .from('videos')
+          .delete()
+          .eq('id', video.id);
+        
+        if (deleteError) {
+          console.error('Failed to clean up video record:', deleteError);
+        }
+      }
+      
       let desc = error instanceof Error ? (error.message || 'An error occurred during upload') : 'An error occurred during upload';
       const lower = desc.toLowerCase();
       if (lower.includes('413') || lower.includes('maximum size') || lower.includes('payload too large')) {
@@ -641,6 +656,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         description: desc,
         variant: "destructive"
       });
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
