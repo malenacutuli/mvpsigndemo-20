@@ -389,7 +389,6 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
           title: clipTitle,
           start_time: clipStartTime,
           end_time: clipEndTime,
-          duration: clipEndTime - clipStartTime,
           aspect_ratio: selectedPlatformConfig.aspectRatio,
           resolution: selectedPlatformConfig.resolution,
           caption_style: captionStyle,
