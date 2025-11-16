@@ -2213,31 +2213,18 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
-      get_user_storage_usage:
-        | {
-            Args: { target_user_id?: string }
-            Returns: {
-              files_count: number
-              is_near_limit: boolean
-              is_over_limit: boolean
-              storage_limit_bytes: number
-              storage_used_bytes: number
-              tier: string
-              usage_percentage: number
-            }[]
-          }
-        | {
-            Args: never
-            Returns: {
-              files_count: number
-              is_near_limit: boolean
-              is_over_limit: boolean
-              storage_limit_bytes: number
-              storage_used_bytes: number
-              tier: string
-              usage_percentage: number
-            }[]
-          }
+      get_user_storage_usage: {
+        Args: { target_user_id?: string }
+        Returns: {
+          files_count: number
+          is_near_limit: boolean
+          is_over_limit: boolean
+          storage_limit_bytes: number
+          storage_used_bytes: number
+          tier: string
+          usage_percentage: number
+        }[]
+      }
       get_user_subscription_info: {
         Args: never
         Returns: {
