@@ -27,12 +27,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { 
-  generateSocialClipWithRetry, 
   formatCaptionsForLambda, 
   getVideoUrl, 
   generateClipId,
   VideoProcessingError 
 } from '@/services/videoProcessing';
+import { generateSocialClip, pollClipStatus } from '@/services/clipGeneration';
 import { SegmentTimeline } from '@/components/video-editor/SegmentTimeline';
 import { WaveformTimeline } from '@/components/video-editor/WaveformTimeline';
 
@@ -98,6 +98,11 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   const [actualDuration, setActualDuration] = useState(videoDuration || 0);
   const [isCalculatingDuration, setIsCalculatingDuration] = useState(videoDuration === 0);
   const [selectedPlatform, setSelectedPlatform] = useState('tiktok');
+  
+  // Transcript state
+  const [hasTranscript, setHasTranscript] = useState(false);
+  const [transcriptLoading, setTranscriptLoading] = useState(true);
+  const [segmentsLoading, setSegmentsLoading] = useState(false);
   const [clipMode, setClipMode] = useState<'auto' | 'manual'>('auto');
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(30);
@@ -177,9 +182,96 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
     Math.abs(duration - d) < 5 // Within 5 seconds of target
   );
 
+  // Check for transcript on mount
+  useEffect(() => {
+    async function checkTranscript() {
+      setTranscriptLoading(true);
+      const { data, error, count } = await supabase
+        .from('transcript_segments')
+        .select('id', { count: 'exact', head: true })
+        .eq('video_id', video.id);
+      
+      if (error) {
+        console.error('❌ Error checking transcript:', error);
+        setHasTranscript(false);
+      } else {
+        setHasTranscript((count || 0) > 0);
+        console.log(`✅ Found ${count} transcript segments for video ${video.id}`);
+      }
+      setTranscriptLoading(false);
+    }
+    
+    if (video.id) {
+      checkTranscript();
+    }
+  }, [video.id]);
+
   useEffect(() => {
     loadGeneratedClips();
   }, [video.id]);
+
+  // Fetch transcript segments for multi-segment mode
+  useEffect(() => {
+    async function fetchTranscriptSegments() {
+      if (!video.id || editMode !== 'segments') return;
+      
+      console.log('🔍 Fetching transcript segments for video:', video.id);
+      setSegmentsLoading(true);
+      
+      try {
+        const { data, error, count } = await supabase
+          .from('transcript_segments')
+          .select('id, start_time, end_time, speaker, speaker_color, text, words', { count: 'exact' })
+          .eq('video_id', video.id)
+          .order('start_time', { ascending: true });
+        
+        if (error) {
+          console.error('❌ Error fetching segments:', error);
+          throw error;
+        }
+        
+        console.log(`✅ Loaded ${count} segments`);
+        
+        if (!data || data.length === 0) {
+          console.warn('⚠️ No transcript segments found for this video');
+          setSegments([]);
+          setSelectedSegments(new Set());
+          return;
+        }
+        
+        // Transform to editor format
+        const mappedSegments = data.map(seg => ({
+          id: seg.id,
+          startTime: seg.start_time,
+          endTime: seg.end_time,
+          speaker: seg.speaker || 'Unknown Speaker',
+          speakerColor: seg.speaker_color || '#FFFFFF',
+          text: seg.text || '',
+          isIncluded: true,
+          words: seg.words || []
+        }));
+        
+        setSegments(mappedSegments);
+        setSelectedSegments(new Set(mappedSegments.map(s => s.id)));
+        
+        console.log('✅ Segments loaded and selected:', {
+          total: mappedSegments.length,
+          speakers: [...new Set(mappedSegments.map(s => s.speaker))],
+          totalDuration: mappedSegments.reduce((sum, s) => sum + (s.endTime - s.startTime), 0)
+        });
+        
+      } catch (error) {
+        console.error('❌ Failed to fetch segments:', error);
+        toast.error('Failed to load segments', {
+          description: 'Could not load transcript segments. Please try refreshing.'
+        });
+      } finally {
+        setSegmentsLoading(false);
+      }
+    }
+    
+    fetchTranscriptSegments();
+  }, [video.id, editMode]);
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -212,34 +304,13 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [editMode, segments]);
 
-  // Fetch transcript segments for multi-segment mode
+  // Remove duplicate segment fetching
   useEffect(() => {
-    async function fetchTranscriptSegments() {
-      const { data, error } = await supabase
-        .from('transcript_segments')
-        .select('id, start_time, end_time, speaker, speaker_color, text')
-        .eq('video_id', video.id)
-        .order('start_time', { ascending: true });
-
-      if (data) {
-        const mappedSegments = data.map(seg => ({
-          id: seg.id,
-          startTime: seg.start_time,
-          endTime: seg.end_time,
-          speaker: seg.speaker || 'Unknown',
-          speakerColor: seg.speaker_color || '#FFFFFF',
-          text: seg.text,
-          isIncluded: true
-        }));
-        setSegments(mappedSegments);
-        setSelectedSegments(new Set(mappedSegments.map(s => s.id)));
-      }
+    if (video.id && editMode === 'segments' && segments.length === 0) {
+      // Segments already loaded by the main useEffect above
+      console.log('📌 Segments mode activated, segments already loaded');
     }
-
-    if (video.id && editMode === 'segments') {
-      fetchTranscriptSegments();
-    }
-  }, [video.id, editMode]);
+  }, [video.id, editMode, segments]);
 
   const loadGeneratedClips = async () => {
     const { data, error } = await supabase
@@ -280,201 +351,127 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   };
 
   const handleGenerateClip = async () => {
-    let clipStartTime: number;
-    let clipEndTime: number;
-    let captionsToUse: any;
-
-    // Determine clip times and captions based on mode
-    if (clipMode === 'auto') {
-      const highlight = autoHighlights.find(h => h.id === selectedHighlight);
-      if (!highlight) {
-        toast.error('Please select a highlight');
-        return;
-      }
-      clipStartTime = highlight.start_time;
-      clipEndTime = highlight.end_time;
-    } else if (editMode === 'segments') {
-      // Multi-segment mode: use selected segments
-      const selectedSegs = segments.filter(s => selectedSegments.has(s.id));
-      
-      if (selectedSegs.length === 0) {
-        toast.error('Please select at least one segment');
-        return;
-      }
-
-      clipStartTime = Math.min(...selectedSegs.map(s => s.startTime));
-      clipEndTime = Math.max(...selectedSegs.map(s => s.endTime));
-    } else {
-      // Simple manual mode
-      clipStartTime = startTime;
-      clipEndTime = endTime;
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.id) {
+      toast.error('Authentication required', {
+        description: 'Please sign in to generate clips.'
+      });
+      return;
     }
 
     setIsGenerating(true);
     setError(null);
-    setProcessingStage('Preparing');
-    setProcessingProgress(10);
     
-    const toastId = toast.loading('Preparing your clip...', {
-      description: 'Fetching video and captions'
-    });
-
+    const toastId = 'clip-generation';
+    
     try {
-      // 1. Get video URL
-      const videoUrl = video.url || getVideoUrl(video.storage_path);
-      if (!videoUrl) {
-        throw new Error('Video URL not found');
-      }
+      let clipStartTime: number;
+      let clipEndTime: number;
+      let segmentIds: string[] | undefined;
 
-      // 2. Fetch or use transcript segments with speaker colors
-      setProcessingProgress(25);
-      setProcessingStage('Loading captions');
-      toast.loading('Loading captions with speaker colors...', { id: toastId });
-      
-      let segmentsData;
-      
-      if (editMode === 'segments') {
-        // Use already-selected segments
-        segmentsData = segments
-          .filter(s => selectedSegments.has(s.id))
-          .map(s => ({
-            text: s.text,
-            start_time: s.startTime,
-            end_time: s.endTime,
-            speaker: s.speaker,
-            speaker_color: s.speakerColor
-          }));
+      if (clipMode === 'auto') {
+        const highlight = autoHighlights.find(h => h.id === selectedHighlight);
+        if (!highlight) {
+          toast.error('Please select a highlight');
+          return;
+        }
+        clipStartTime = highlight.start_time;
+        clipEndTime = highlight.end_time;
+      } else if (editMode === 'segments') {
+        // Multi-segment mode
+        const selectedSegs = segments.filter(s => selectedSegments.has(s.id));
+        
+        if (selectedSegs.length === 0) {
+          toast.error('Please select at least one segment');
+          return;
+        }
+
+        clipStartTime = Math.min(...selectedSegs.map(s => s.startTime));
+        clipEndTime = Math.max(...selectedSegs.map(s => s.endTime));
+        segmentIds = Array.from(selectedSegments);
+        
+        console.log('🎬 Multi-segment clip:', {
+          segments: selectedSegs.length,
+          startTime: clipStartTime,
+          endTime: clipEndTime,
+          totalDuration: clipEndTime - clipStartTime
+        });
       } else {
-        // Fetch segments for simple/auto modes
-        const { data, error: segmentsError } = await supabase
-          .from('transcript_segments_clean')
-          .select('text, start_time, end_time, speaker, speaker_color, words')
-          .eq('video_id', video.id)
-          .eq('language', 'en')
-          .gte('start_time', clipStartTime - 1)
-          .lte('end_time', clipEndTime + 1)
-          .order('start_time');
-
-        if (segmentsError) throw segmentsError;
-        segmentsData = data || [];
+        // Simple mode
+        clipStartTime = startTime;
+        clipEndTime = endTime;
+        
+        console.log('🎬 Simple clip:', {
+          startTime: clipStartTime,
+          endTime: clipEndTime,
+          duration: clipEndTime - clipStartTime
+        });
       }
 
-      // 3. Format captions for Lambda
-      const captions = formatCaptionsForLambda(segmentsData, clipStartTime, clipEndTime);
-      
-      console.log('Formatted captions for Lambda:', {
-        segmentCount: segmentsData?.length,
-        captionGroups: captions.length,
-        totalWords: captions.reduce((sum, seg) => sum + seg.words.length, 0),
-        editMode,
-        selectedSegmentCount: editMode === 'segments' ? selectedSegments.size : null
+      // Validate duration
+      const duration = clipEndTime - clipStartTime;
+      if (duration < 5) {
+        throw new Error('Clip must be at least 5 seconds long');
+      }
+      if (duration > 180) {
+        throw new Error('Clip cannot be longer than 3 minutes');
+      }
+
+      toast.loading('Preparing clip generation...', { id: toastId });
+
+      // Call Edge Function to generate clip
+      const response = await generateSocialClip({
+        videoId: video.id,
+        highlightId: selectedHighlight || undefined,
+        platform: selectedPlatform,
+        startTime: clipStartTime,
+        endTime: clipEndTime,
+        captionStyle,
+        cropMode,
+        segments: segmentIds
       });
 
-      // 4. Create database record
-      setProcessingProgress(40);
-      setProcessingStage('Creating clip record');
-      toast.loading('Creating clip record...', { id: toastId });
-      
-      const clipId = generateClipId();
-      const clipTitle = clipMode === 'auto' && selectedHighlight
-        ? autoHighlights.find(h => h.id === selectedHighlight)?.title || `${selectedPlatform} clip`
-        : `${selectedPlatform} clip`;
-      
-      const { data: clipRecord, error: clipError } = await supabase
-        .from('social_clips')
-        .insert({
-          video_id: video.id,
-          highlight_id: selectedHighlight,
-          platform: selectedPlatform,
-          title: clipTitle,
-          start_time: clipStartTime,
-          end_time: clipEndTime,
-          aspect_ratio: selectedPlatformConfig.aspectRatio,
-          resolution: selectedPlatformConfig.resolution,
-          caption_style: captionStyle,
-          crop_mode: cropMode,
-          status: 'processing',
-          processing_started_at: new Date().toISOString(),
-          metadata: {
-            has_captions: captions.length > 0,
-            caption_groups: captions.length,
-            total_words: captions.reduce((sum, seg) => sum + seg.words.length, 0),
-            editMode,
-            selectedSegmentCount: editMode === 'segments' ? selectedSegments.size : null
-          }
-        })
-        .select()
-        .single();
+      if (!response.success || !response.clipId) {
+        throw new Error(response.error || 'Failed to initiate clip generation');
+      }
 
-      if (clipError) throw clipError;
+      console.log('✅ Clip generation initiated:', response);
 
-      // 5. Call Lambda to process video
-      setProcessingProgress(50);
-      setProcessingStage('Processing video');
-      toast.loading('Processing video with AWS Lambda...', { 
+      toast.loading('Processing video...', {
         id: toastId,
         description: 'This typically takes 30-60 seconds'
       });
 
-      const lambdaResponse = await generateSocialClipWithRetry({
-        videoUrl,
-        startTime: clipStartTime,
-        endTime: clipEndTime,
-        platform: selectedPlatform as any,
-        clipId,
-        captions
-      });
+      // Poll for completion
+      const pollResult = await pollClipStatus(response.clipId);
 
-      // 6. Update database with Lambda response
-      setProcessingProgress(90);
-      setProcessingStage('Finalizing');
-      toast.loading('Finalizing clip...', { id: toastId });
+      if (pollResult.status === 'completed' && pollResult.clipUrl) {
+        toast.success('Clip generated successfully!', {
+          id: toastId,
+          description: 'Your clip is ready to download'
+        });
+
+        setLastGeneratedClip({
+          id: response.clipId,
+          clipUrl: pollResult.clipUrl,
+          platform: selectedPlatform
+        });
+
+        // Refresh clips list
+        await loadGeneratedClips();
+
+      } else {
+        throw new Error(pollResult.error || 'Clip generation failed');
+      }
+
+    } catch (err: any) {
+      console.error('❌ Clip generation error:', err);
       
-      const { error: updateError } = await supabase
-        .from('social_clips')
-        .update({
-          clip_url: lambdaResponse.clipUrl,
-          file_size_bytes: lambdaResponse.fileSize,
-          status: 'completed',
-          processing_completed_at: new Date().toISOString(),
-          storage_path: lambdaResponse.clipUrl
-        })
-        .eq('id', clipRecord.id);
-
-      if (updateError) throw updateError;
-
-      setProcessingProgress(100);
-      setProcessingStage('Complete');
-      setLastGeneratedClip({
-        ...clipRecord,
-        clip_url: lambdaResponse.clipUrl,
-        duration: clipEndTime - clipStartTime
-      });
-
-      toast.success('Clip generated successfully!', {
-        id: toastId,
-        description: `${Math.round(clipEndTime - clipStartTime)}s ${selectedPlatformConfig.name} clip is ready`,
-        action: {
-          label: 'Download',
-          onClick: () => window.open(lambdaResponse.clipUrl, '_blank')
-        }
-      });
-
-      // Reload clips list
-      await loadGeneratedClips();
-      
-    } catch (error: any) {
-      console.error('Generation error:', error);
-      
-      const errorMessage = error instanceof VideoProcessingError 
-        ? error.getUserMessage()
-        : error.message || 'An unexpected error occurred';
-      
+      const errorMessage = err.message || 'Video processing failed. Please try again.';
       setError(errorMessage);
-      setProcessingProgress(0);
-      setProcessingStage('');
       
-      toast.error('Failed to generate clip', {
+      toast.error('Processing failed', {
         id: toastId,
         description: errorMessage
       });
@@ -730,61 +727,100 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <WaveformTimeline
-                    videoUrl={getVideoUrl(video.storage_path)}
-                    duration={actualDuration}
-                    segments={segments}
-                    selectedSegments={selectedSegments}
-                    onSegmentClick={(segmentId) => {
-                      setSelectedSegments(prev => {
-                        const newSet = new Set(prev);
-                        if (newSet.has(segmentId)) {
-                          newSet.delete(segmentId);
-                        } else {
-                          newSet.add(segmentId);
-                        }
-                        return newSet;
-                      });
-                    }}
-                    onTimeUpdate={(time) => {
-                      setCurrentPlaybackTime(time);
-                    }}
-                  />
+                  {/* Transcript Loading States */}
+                  {transcriptLoading && (
+                    <Alert>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <AlertDescription>Checking for transcript...</AlertDescription>
+                    </Alert>
+                  )}
                   
-                  <SegmentTimeline
-                    segments={segments}
-                    selectedSegments={selectedSegments}
-                    onToggleSegment={(id) => {
-                      setSelectedSegments(prev => {
-                        const newSet = new Set(prev);
-                        if (newSet.has(id)) {
-                          newSet.delete(id);
-                        } else {
-                          newSet.add(id);
-                        }
-                        return newSet;
-                      });
-                    }}
-                    onToggleSpeaker={(speaker) => {
-                      const speakerSegmentIds = segments
-                        .filter(s => s.speaker === speaker)
-                        .map(s => s.id);
+                  {!transcriptLoading && !hasTranscript && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>No Transcript Available</AlertTitle>
+                      <AlertDescription>
+                        This video needs to be transcribed first to use multi-segment editing.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {!transcriptLoading && hasTranscript && segmentsLoading && (
+                    <Alert>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <AlertDescription>Loading transcript segments...</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {!transcriptLoading && hasTranscript && !segmentsLoading && segments.length === 0 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>No Segments Found</AlertTitle>
+                      <AlertDescription>
+                        Transcript exists but no segments were loaded. This may be a database error.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {!transcriptLoading && hasTranscript && !segmentsLoading && segments.length > 0 && (
+                    <>
+                      <WaveformTimeline
+                        videoUrl={getVideoUrl(video.storage_path)}
+                        duration={actualDuration}
+                        segments={segments}
+                        selectedSegments={selectedSegments}
+                        onSegmentClick={(segmentId) => {
+                          setSelectedSegments(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(segmentId)) {
+                              newSet.delete(segmentId);
+                            } else {
+                              newSet.add(segmentId);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        onTimeUpdate={(time) => {
+                          setCurrentPlaybackTime(time);
+                        }}
+                      />
+                      
+                      <SegmentTimeline
+                        segments={segments}
+                        selectedSegments={selectedSegments}
+                        onToggleSegment={(id) => {
+                          setSelectedSegments(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(id)) {
+                              newSet.delete(id);
+                            } else {
+                              newSet.add(id);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        onToggleSpeaker={(speaker) => {
+                          const speakerSegmentIds = segments
+                            .filter(s => s.speaker === speaker)
+                            .map(s => s.id);
 
-                      const allSelected = speakerSegmentIds.every(id => selectedSegments.has(id));
+                          const allSelected = speakerSegmentIds.every(id => selectedSegments.has(id));
 
-                      setSelectedSegments(prev => {
-                        const newSet = new Set(prev);
-                        speakerSegmentIds.forEach(id => {
-                          if (allSelected) {
-                            newSet.delete(id);
-                          } else {
-                            newSet.add(id);
-                          }
-                        });
-                        return newSet;
-                      });
-                    }}
-                  />
+                          setSelectedSegments(prev => {
+                            const newSet = new Set(prev);
+                            speakerSegmentIds.forEach(id => {
+                              if (allSelected) {
+                                newSet.delete(id);
+                              } else {
+                                newSet.add(id);
+                              }
+                            });
+                            return newSet;
+                          });
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
               )}
             </TabsContent>
