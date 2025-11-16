@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { 
   Sparkles, 
   Loader2, 
@@ -16,7 +17,11 @@ import {
   Download, 
   Trash2,
   Scissors,
-  AlertCircle
+  AlertCircle,
+  CheckCircle,
+  Link2,
+  Share2,
+  Info
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -110,6 +115,12 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   const [segments, setSegments] = useState<SelectedSegment[]>([]);
   const [selectedSegments, setSelectedSegments] = useState<Set<string>>(new Set());
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
+  
+  // Enhanced UI state
+  const [processingStage, setProcessingStage] = useState<string>('');
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [lastGeneratedClip, setLastGeneratedClip] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedPlatformConfig = platforms.find(p => p.key === selectedPlatform)!;
   
@@ -121,6 +132,37 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
   useEffect(() => {
     loadGeneratedClips();
   }, [video.id]);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only handle shortcuts when not typing in inputs
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      
+      // Space: Play/Pause (only in segments mode)
+      if (e.key === ' ' && editMode === 'segments') {
+        e.preventDefault();
+        // Waveform handles play/pause internally
+      }
+      
+      // Ctrl/Cmd + A: Select all segments
+      if (e.key === 'a' && (e.ctrlKey || e.metaKey) && editMode === 'segments') {
+        e.preventDefault();
+        setSelectedSegments(new Set(segments.map(s => s.id)));
+        toast.success('All segments selected');
+      }
+      
+      // Ctrl/Cmd + D: Deselect all segments
+      if (e.key === 'd' && (e.ctrlKey || e.metaKey) && editMode === 'segments') {
+        e.preventDefault();
+        setSelectedSegments(new Set());
+        toast.success('All segments deselected');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [editMode, segments]);
 
   // Fetch transcript segments for multi-segment mode
   useEffect(() => {
@@ -221,6 +263,9 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
     }
 
     setIsGenerating(true);
+    setError(null);
+    setProcessingStage('Preparing');
+    setProcessingProgress(10);
     
     const toastId = toast.loading('Preparing your clip...', {
       description: 'Fetching video and captions'
@@ -234,6 +279,8 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       }
 
       // 2. Fetch or use transcript segments with speaker colors
+      setProcessingProgress(25);
+      setProcessingStage('Loading captions');
       toast.loading('Loading captions with speaker colors...', { id: toastId });
       
       let segmentsData;
@@ -276,6 +323,8 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       });
 
       // 4. Create database record
+      setProcessingProgress(40);
+      setProcessingStage('Creating clip record');
       toast.loading('Creating clip record...', { id: toastId });
       
       const clipId = generateClipId();
@@ -313,6 +362,8 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       if (clipError) throw clipError;
 
       // 5. Call Lambda to process video
+      setProcessingProgress(50);
+      setProcessingStage('Processing video');
       toast.loading('Processing video with AWS Lambda...', { 
         id: toastId,
         description: 'This typically takes 30-60 seconds'
@@ -328,6 +379,8 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       });
 
       // 6. Update database with Lambda response
+      setProcessingProgress(90);
+      setProcessingStage('Finalizing');
       toast.loading('Finalizing clip...', { id: toastId });
       
       const { error: updateError } = await supabase
@@ -342,6 +395,14 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
         .eq('id', clipRecord.id);
 
       if (updateError) throw updateError;
+
+      setProcessingProgress(100);
+      setProcessingStage('Complete');
+      setLastGeneratedClip({
+        ...clipRecord,
+        clip_url: lambdaResponse.clipUrl,
+        duration: clipEndTime - clipStartTime
+      });
 
       toast.success('Clip generated successfully!', {
         id: toastId,
@@ -361,6 +422,10 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
       const errorMessage = error instanceof VideoProcessingError 
         ? error.getUserMessage()
         : error.message || 'An unexpected error occurred';
+      
+      setError(errorMessage);
+      setProcessingProgress(0);
+      setProcessingStage('');
       
       toast.error('Failed to generate clip', {
         id: toastId,
@@ -699,6 +764,117 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Progress Indicator */}
+        {isGenerating && (
+          <Card className="p-4 border-primary">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div className="flex-1">
+                  <h4 className="font-medium">Processing Your Clip...</h4>
+                  <p className="text-sm text-muted-foreground">
+                    This usually takes 30-60 seconds
+                  </p>
+                </div>
+              </div>
+              
+              <Progress value={processingProgress} className="h-2" />
+              
+              <div className="text-xs text-muted-foreground">
+                {processingStage === 'Preparing' && '⏳ Step 1/4: Preparing video...'}
+                {processingStage === 'Loading captions' && '📝 Step 2/4: Loading captions...'}
+                {processingStage === 'Creating clip record' && '💾 Step 3/4: Creating clip record...'}
+                {processingStage === 'Processing video' && '🎬 Step 4/4: Processing video...'}
+                {processingStage === 'Finalizing' && '✨ Finalizing your clip...'}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Success State */}
+        {lastGeneratedClip && !isGenerating && (
+          <Card className="p-4 border-green-500 bg-green-50 dark:bg-green-950">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <h4 className="font-medium text-green-900 dark:text-green-100">
+                  Clip Generated Successfully!
+                </h4>
+              </div>
+              
+              {lastGeneratedClip.clip_url && (
+                <>
+                  <video 
+                    src={lastGeneratedClip.clip_url} 
+                    controls 
+                    className="w-full rounded-lg border"
+                  />
+                  
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      size="sm"
+                      onClick={() => window.open(lastGeneratedClip.clip_url, '_blank')}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(lastGeneratedClip.clip_url);
+                        toast.success('Link copied to clipboard!');
+                      }}
+                    >
+                      <Link2 className="h-4 w-4 mr-2" />
+                      Copy Link
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLastGeneratedClip(null)}
+                    >
+                      Create Another
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Error Alert */}
+        {error && !isGenerating && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Processing Failed</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{error}</p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    setError(null);
+                    handleGenerateClip();
+                  }}
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => setError(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Generate Button */}
         <Button 
