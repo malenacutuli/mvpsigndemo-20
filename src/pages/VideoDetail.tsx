@@ -6,7 +6,7 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Play, Share, Edit, Mic, AlertCircle } from "lucide-react";
+import { ArrowLeft, Play, Share, Edit, Mic, AlertCircle, Sparkles } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoPlayerWithTranscript } from "@/components/VideoPlayerWithTranscript";
@@ -498,6 +498,14 @@ const VideoDetail = () => {
                 onDelete={deleteVideo}
                 isDeleting={deletingVideo}
               />
+              <Button 
+                variant="default"
+                onClick={() => navigate(`/video/${video.id}/edit`)}
+                className="font-light"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Premium Editor
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setShowEmbedSettings(!showEmbedSettings)}
