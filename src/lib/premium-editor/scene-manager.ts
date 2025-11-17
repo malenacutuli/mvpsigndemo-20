@@ -500,11 +500,20 @@ class SceneManager {
       const newOrder = originalScene.scene_order + 1;
 
       // Shift all subsequent scenes
-      await supabase
+      const { data: subsequentScenes } = await supabase
         .from('project_scenes')
-        .update({ scene_order: supabase.rpc('scene_order') + 1 })
+        .select('id, scene_order')
         .eq('project_id', originalScene.project_id)
         .gte('scene_order', newOrder);
+
+      if (subsequentScenes) {
+        for (const scene of subsequentScenes) {
+          await supabase
+            .from('project_scenes')
+            .update({ scene_order: scene.scene_order + 1 })
+            .eq('id', scene.id);
+        }
+      }
 
       // Create new scene with same properties
       const { id, created_at, updated_at, timeline_start, timeline_end, ...sceneData } = originalScene;
