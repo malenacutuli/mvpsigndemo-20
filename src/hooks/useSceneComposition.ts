@@ -4,14 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Scene {
   id: string;
   project_id: string;
-  scene_index: number;
-  scene_name?: string;
+  scene_order: number;
+  name?: string;
   video_id?: string;
-  start_time?: number;
-  end_time?: number;
+  timeline_start?: number;
+  timeline_end?: number;
+  duration_seconds?: number;
   layout_type: string;
   transition_type: string;
-  transition_duration: number;
+  transition_duration_ms: number;
   caption_template_id?: string;
   scene_config: any;
   created_at: string;
@@ -26,7 +27,7 @@ export function useProjectScenes(projectId: string) {
         .from('project_scenes')
         .select('*')
         .eq('project_id', projectId)
-        .order('scene_index');
+        .order('scene_order');
 
       if (error) throw error;
       return data as Scene[];
@@ -54,25 +55,26 @@ export function useAddScene() {
       layoutType: string;
       sceneName?: string;
     }) => {
-      // Get current max scene_index
+      // Get current max scene_order
       const { data: scenes } = await supabase
         .from('project_scenes')
-        .select('scene_index')
+        .select('scene_order')
         .eq('project_id', projectId)
-        .order('scene_index', { ascending: false })
+        .order('scene_order', { ascending: false })
         .limit(1);
 
-      const nextIndex = (scenes?.[0]?.scene_index ?? -1) + 1;
+      const nextOrder = (scenes?.[0]?.scene_order ?? -1) + 1;
 
       const { data, error } = await supabase
         .from('project_scenes')
         .insert({
           project_id: projectId,
-          scene_index: nextIndex,
+          scene_order: nextOrder,
           video_id: videoId,
-          start_time: startTime,
-          end_time: endTime,
-          scene_name: sceneName || `Scene ${nextIndex + 1}`,
+          timeline_start: startTime,
+          timeline_end: endTime,
+          duration_seconds: endTime - startTime,
+          name: sceneName || `Scene ${nextOrder + 1}`,
           layout_type: layoutType,
           transition_type: 'none',
           transition_duration: 0.5,
@@ -147,11 +149,11 @@ export function useReorderScenes() {
       projectId: string;
       sceneIds: string[];
     }) => {
-      // Update each scene with new index
+      // Update each scene with new order
       for (let i = 0; i < sceneIds.length; i++) {
         await supabase
           .from('project_scenes')
-          .update({ scene_index: i })
+          .update({ scene_order: i })
           .eq('id', sceneIds[i]);
       }
     },
