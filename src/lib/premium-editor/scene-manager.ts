@@ -42,9 +42,7 @@ class SceneManager {
         };
       }
 
-      const nextOrder = existingScenes && existingScenes.length > 0 
-        ? existingScenes[0].scene_order + 1 
-        : 1;
+      const nextOrder = (existingScenes?.[0]?.scene_order ?? -1) + 1;
 
       // Prepare scene data with defaults
       const sceneData = {
