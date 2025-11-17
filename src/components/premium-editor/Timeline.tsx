@@ -76,14 +76,15 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
         .from('project_scenes')
         .insert({
           project_id: project.id,
-          scene_index: scenes.length,
-          scene_name: sceneData.name || `Scene ${scenes.length + 1}`,
+          scene_order: scenes.length,
+          name: sceneData.name || `Scene ${scenes.length + 1}`,
           video_id: videoId,
-          start_time: sceneData.startTime,
-          end_time: sceneData.endTime,
+          timeline_start: sceneData.startTime,
+          timeline_end: sceneData.endTime,
           layout_type: sceneData.layoutType,
           transition_type: 'none',
-          scene_config: {}
+          scene_config: {},
+          duration_seconds: sceneData.endTime - sceneData.startTime
         })
         .select()
         .single();
@@ -126,7 +127,7 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
       const updates = reorderedScenes.map((scene, index) => 
         supabase
           .from('project_scenes')
-          .update({ scene_index: index })
+          .update({ scene_order: index })
           .eq('id', scene.id)
       );
       
@@ -171,7 +172,7 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
 
   const pixelsPerSecond = 100 * zoom;
   const totalDuration = scenes.reduce((max, scene) => 
-    Math.max(max, scene.end_time || 0), 60
+    Math.max(max, scene.timeline_end || 0), 60
   );
 
   if (isLoading) {
@@ -328,7 +329,7 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm">
-                                  {scene.scene_name || `Scene ${index + 1}`}
+                                  {scene.name || `Scene ${index + 1}`}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {scene.layout_type}
@@ -340,13 +341,13 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
                                   className="absolute h-full bg-primary/30 border-2 border-primary rounded"
                                   style={{
                                     left: 0,
-                                    width: `${((scene.end_time - scene.start_time) * pixelsPerSecond) / 2}px`
+                                    width: `${(scene.duration_seconds || 0) * pixelsPerSecond}px`
                                   }}
                                 />
                                 <span className="absolute left-2 top-0.5 text-xs text-foreground/70">
-                                  {scene.start_time}s - {scene.end_time}s
+                                  {scene.timeline_start}s - {scene.timeline_end}s
                                   {' '}
-                                  ({(scene.end_time - scene.start_time).toFixed(1)}s)
+                                  ({(scene.duration_seconds || 0).toFixed(1)}s)
                                 </span>
                               </div>
                             </div>
