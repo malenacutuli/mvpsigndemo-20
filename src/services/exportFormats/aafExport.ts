@@ -5,7 +5,7 @@ export async function generateAAFTimeline(projectId: string): Promise<Blob> {
   // Get project details
   const { data: project } = await supabase
     .from('video_projects')
-    .select('name, framerate')
+    .select('name')
     .eq('id', projectId)
     .single();
 
@@ -41,7 +41,7 @@ export async function generateAAFTimeline(projectId: string): Promise<Blob> {
   // Generate AAF content
   const aafContent = generateAAF({
     projectName: project.name || 'Untitled Project',
-    frameRate: project.framerate || 30,
+    frameRate: 30, // Default framerate
     segments: formattedSegments
   });
 
