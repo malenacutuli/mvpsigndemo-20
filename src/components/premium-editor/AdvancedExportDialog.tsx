@@ -19,12 +19,13 @@ import { generateDOCX, downloadDOCX } from '@/lib/exports/docxExporter';
 import { generateSRT, generateVTT, downloadSubtitle } from '@/lib/exports/subtitleExporter';
 
 interface AdvancedExportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   projectId: string;
   videoId: string;
 }
 
-export function AdvancedExportDialog({ projectId, videoId }: AdvancedExportDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AdvancedExportDialog({ open, onOpenChange, projectId, videoId }: AdvancedExportDialogProps) {
   const [exporting, setExporting] = useState(false);
   const [includeTimestamps, setIncludeTimestamps] = useState(true);
   const [includeSpeakers, setIncludeSpeakers] = useState(true);
@@ -184,7 +185,7 @@ export function AdvancedExportDialog({ projectId, videoId }: AdvancedExportDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Download className="w-4 h-4 mr-2" />
