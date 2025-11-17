@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_chat_sessions: {
+        Row: {
+          ai_credits_used: number | null
+          current_context: string | null
+          id: string
+          last_action: string | null
+          last_message_at: string
+          message_count: number | null
+          messages: Json[] | null
+          project_id: string | null
+          session_metadata: Json | null
+          started_at: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          ai_credits_used?: number | null
+          current_context?: string | null
+          id?: string
+          last_action?: string | null
+          last_message_at?: string
+          message_count?: number | null
+          messages?: Json[] | null
+          project_id?: string | null
+          session_metadata?: Json | null
+          started_at?: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          ai_credits_used?: number | null
+          current_context?: string | null
+          id?: string
+          last_action?: string | null
+          last_message_at?: string
+          message_count?: number | null
+          messages?: Json[] | null
+          project_id?: string | null
+          session_metadata?: Json | null
+          started_at?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_chat_sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_cost_tracking: {
         Row: {
           api_endpoint: string
@@ -182,6 +242,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      caption_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_premium: boolean | null
+          name: string
+          preview_url: string | null
+          style_config: Json
+          template_type: string | null
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name: string
+          preview_url?: string | null
+          style_config?: Json
+          template_type?: string | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name?: string
+          preview_url?: string | null
+          style_config?: Json
+          template_type?: string | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       channel_subscriptions: {
         Row: {
@@ -634,6 +736,90 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_video_edits: {
+        Row: {
+          created_at: string
+          created_by: string
+          credits_cost: number | null
+          duration_seconds: number | null
+          edit_data: Json
+          edit_type: string
+          error_message: string | null
+          file_size_bytes: number | null
+          id: string
+          output_storage_path: string | null
+          output_url: string | null
+          processing_completed_at: string | null
+          processing_duration_ms: number | null
+          processing_started_at: string | null
+          progress: number | null
+          project_id: string | null
+          retry_count: number | null
+          status: string | null
+          updated_at: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          credits_cost?: number | null
+          duration_seconds?: number | null
+          edit_data: Json
+          edit_type: string
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          output_storage_path?: string | null
+          output_url?: string | null
+          processing_completed_at?: string | null
+          processing_duration_ms?: number | null
+          processing_started_at?: string | null
+          progress?: number | null
+          project_id?: string | null
+          retry_count?: number | null
+          status?: string | null
+          updated_at?: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          credits_cost?: number | null
+          duration_seconds?: number | null
+          edit_data?: Json
+          edit_type?: string
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          output_storage_path?: string | null
+          output_url?: string | null
+          processing_completed_at?: string | null
+          processing_duration_ms?: number | null
+          processing_started_at?: string | null
+          progress?: number | null
+          project_id?: string | null
+          retry_count?: number | null
+          status?: string | null
+          updated_at?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_video_edits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premium_video_edits_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -663,6 +849,93 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_scenes: {
+        Row: {
+          audio_fade_in: boolean | null
+          audio_fade_out: boolean | null
+          audio_volume: number | null
+          caption_template_id: string | null
+          created_at: string
+          id: string
+          layout_config: Json | null
+          layout_type: string | null
+          metadata: Json | null
+          project_id: string
+          scene_index: number
+          show_captions: boolean | null
+          source_end_time: number
+          source_start_time: number
+          timeline_duration: number
+          timeline_start: number
+          transition_duration: number | null
+          transition_in: string | null
+          transition_out: string | null
+          updated_at: string
+          video_id: string | null
+        }
+        Insert: {
+          audio_fade_in?: boolean | null
+          audio_fade_out?: boolean | null
+          audio_volume?: number | null
+          caption_template_id?: string | null
+          created_at?: string
+          id?: string
+          layout_config?: Json | null
+          layout_type?: string | null
+          metadata?: Json | null
+          project_id: string
+          scene_index: number
+          show_captions?: boolean | null
+          source_end_time: number
+          source_start_time?: number
+          timeline_duration: number
+          timeline_start?: number
+          transition_duration?: number | null
+          transition_in?: string | null
+          transition_out?: string | null
+          updated_at?: string
+          video_id?: string | null
+        }
+        Update: {
+          audio_fade_in?: boolean | null
+          audio_fade_out?: boolean | null
+          audio_volume?: number | null
+          caption_template_id?: string | null
+          created_at?: string
+          id?: string
+          layout_config?: Json | null
+          layout_type?: string | null
+          metadata?: Json | null
+          project_id?: string
+          scene_index?: number
+          show_captions?: boolean | null
+          source_end_time?: number
+          source_start_time?: number
+          timeline_duration?: number
+          timeline_start?: number
+          transition_duration?: number | null
+          transition_in?: string | null
+          transition_out?: string | null
+          updated_at?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_scenes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_scenes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_video_views: {
         Row: {
@@ -857,6 +1130,7 @@ export type Database = {
           aspect_ratio: string
           caption_position: string | null
           caption_style: string | null
+          caption_template_id: string | null
           clip_url: string | null
           created_at: string | null
           created_by: string | null
@@ -872,6 +1146,7 @@ export type Database = {
           processing_completed_at: string | null
           processing_started_at: string | null
           resolution: string
+          source_segments: Json | null
           start_time: number
           status: string | null
           storage_path: string | null
@@ -884,6 +1159,7 @@ export type Database = {
           aspect_ratio?: string
           caption_position?: string | null
           caption_style?: string | null
+          caption_template_id?: string | null
           clip_url?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -899,6 +1175,7 @@ export type Database = {
           processing_completed_at?: string | null
           processing_started_at?: string | null
           resolution?: string
+          source_segments?: Json | null
           start_time: number
           status?: string | null
           storage_path?: string | null
@@ -911,6 +1188,7 @@ export type Database = {
           aspect_ratio?: string
           caption_position?: string | null
           caption_style?: string | null
+          caption_template_id?: string | null
           clip_url?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -926,6 +1204,7 @@ export type Database = {
           processing_completed_at?: string | null
           processing_started_at?: string | null
           resolution?: string
+          source_segments?: Json | null
           start_time?: number
           status?: string | null
           storage_path?: string | null
@@ -935,6 +1214,13 @@ export type Database = {
           video_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "social_clips_caption_template_id_fkey"
+            columns: ["caption_template_id"]
+            isOneToOne: false
+            referencedRelation: "caption_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "social_clips_highlight_id_fkey"
             columns: ["highlight_id"]
@@ -1871,6 +2157,54 @@ export type Database = {
           },
         ]
       }
+      video_projects: {
+        Row: {
+          aspect_ratio: string | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          framerate: number | null
+          id: string
+          metadata: Json | null
+          name: string
+          resolution: string | null
+          status: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          framerate?: number | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          resolution?: string | null
+          status?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aspect_ratio?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          framerate?: number | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          resolution?: string | null
+          status?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           channel_id: string | null
@@ -2028,6 +2362,14 @@ export type Database = {
           p_video_id: string
         }
         Returns: Json
+      }
+      calculate_project_duration: {
+        Args: { p_project_id: string }
+        Returns: number
+      }
+      can_access_premium_editor: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       can_process_video:
         | {
@@ -2233,6 +2575,10 @@ export type Database = {
           is_active: boolean
           tier_name: string
         }[]
+      }
+      get_user_subscription_tier: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       get_users_approaching_limits: {
         Args: never
