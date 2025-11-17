@@ -5,21 +5,17 @@ export interface Scene {
   id: string;
   project_id: string;
   scene_index: number;
-  video_id: string;
-  source_start_time: number;
-  source_end_time: number;
-  timeline_start: number;
-  timeline_duration: number;
-  layout_type: 'fullscreen' | 'split' | 'pip';
-  layout_config: Record<string, any>;
-  transition_in: string;
-  transition_out: string;
+  scene_name?: string;
+  video_id?: string;
+  start_time?: number;
+  end_time?: number;
+  layout_type: string;
+  transition_type: string;
   transition_duration: number;
   caption_template_id?: string;
-  show_captions: boolean;
-  audio_fade_in: boolean;
-  audio_fade_out: boolean;
-  audio_volume: number;
+  scene_config: any;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useProjectScenes(projectId: string) {
@@ -28,10 +24,7 @@ export function useProjectScenes(projectId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_scenes')
-        .select(`
-          *,
-          video:videos(*)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('scene_index');
 
@@ -51,13 +44,15 @@ export function useAddScene() {
       videoId,
       startTime,
       endTime,
-      layoutType
+      layoutType,
+      sceneName
     }: {
       projectId: string;
       videoId: string;
       startTime: number;
       endTime: number;
       layoutType: string;
+      sceneName?: string;
     }) => {
       // Get current max scene_index
       const { data: scenes } = await supabase
@@ -69,40 +64,19 @@ export function useAddScene() {
 
       const nextIndex = (scenes?.[0]?.scene_index ?? -1) + 1;
 
-      // Get timeline_start (end of last scene)
-      const { data: lastScene } = await supabase
-        .from('project_scenes')
-        .select('timeline_start, timeline_duration')
-        .eq('project_id', projectId)
-        .order('scene_index', { ascending: false })
-        .limit(1)
-        .single();
-
-      const timelineStart = lastScene
-        ? lastScene.timeline_start + lastScene.timeline_duration
-        : 0;
-
-      const duration = endTime - startTime;
-
       const { data, error } = await supabase
         .from('project_scenes')
         .insert({
           project_id: projectId,
           scene_index: nextIndex,
           video_id: videoId,
-          source_start_time: startTime,
-          source_end_time: endTime,
-          timeline_start: timelineStart,
-          timeline_duration: duration,
+          start_time: startTime,
+          end_time: endTime,
+          scene_name: sceneName || `Scene ${nextIndex + 1}`,
           layout_type: layoutType,
-          layout_config: {},
-          transition_in: 'none',
-          transition_out: 'none',
+          transition_type: 'none',
           transition_duration: 0.5,
-          show_captions: true,
-          audio_fade_in: false,
-          audio_fade_out: false,
-          audio_volume: 1.0
+          scene_config: {}
         })
         .select()
         .single();
@@ -173,25 +147,12 @@ export function useReorderScenes() {
       projectId: string;
       sceneIds: string[];
     }) => {
-      // Update each scene with new index and recalculate timeline positions
-      let currentTimelineStart = 0;
-
+      // Update each scene with new index
       for (let i = 0; i < sceneIds.length; i++) {
-        const { data: scene } = await supabase
-          .from('project_scenes')
-          .select('timeline_duration')
-          .eq('id', sceneIds[i])
-          .single();
-
         await supabase
           .from('project_scenes')
-          .update({
-            scene_index: i,
-            timeline_start: currentTimelineStart
-          })
+          .update({ scene_index: i })
           .eq('id', sceneIds[i]);
-
-        currentTimelineStart += scene?.timeline_duration || 0;
       }
     },
     onSuccess: (_, variables) => {

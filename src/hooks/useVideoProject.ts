@@ -10,12 +10,11 @@ export function useVideoProject(videoId: string) {
   const { data: project, isLoading } = useQuery({
     queryKey: ['videoProject', videoId],
     queryFn: async () => {
-      // First, try to find existing project
+      // First, try to find existing project by video ID (project id = video id)
       const { data: existingProject } = await supabase
         .from('video_projects')
         .select('*')
-        .eq('user_id', user!.id)
-        .limit(1)
+        .eq('id', videoId)
         .single();
 
       if (existingProject) return existingProject;
@@ -27,13 +26,14 @@ export function useVideoProject(videoId: string) {
         .eq('id', videoId)
         .single();
 
-      // Create new project
+      // Create new project using video ID as project ID
       const { data: newProject } = await supabase
         .from('video_projects')
         .insert({
-          user_id: user!.id,
+          id: videoId,
+          created_by: user!.id,
           name: video?.title || 'Untitled Project',
-          metadata: { source_video_id: videoId }
+          description: 'Auto-created from video'
         })
         .select()
         .single();

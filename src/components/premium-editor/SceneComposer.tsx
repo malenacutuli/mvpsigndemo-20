@@ -141,7 +141,7 @@ export function SceneComposer({ projectId, videoId }: SceneComposerProps) {
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium">Scene {index + 1}</span>
                             <span className="text-sm text-muted-foreground">
-                              {scene.timeline_duration.toFixed(1)}s
+                              {((scene.end_time || 0) - (scene.start_time || 0)).toFixed(1)}s
                             </span>
                           </div>
                           

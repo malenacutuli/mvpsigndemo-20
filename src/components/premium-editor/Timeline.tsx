@@ -19,7 +19,10 @@ export function Timeline({ videoId }: TimelineProps) {
     return <div>Loading timeline...</div>;
   }
 
-  const totalDuration = project?.duration_seconds || 0;
+  // Calculate total duration from scenes
+  const totalDuration = scenes.length > 0 
+    ? Math.max(...scenes.map(s => (s.end_time || 0))) 
+    : 0;
   const pixelsPerSecond = 100 / 10; // 100px per 10 seconds
 
   return (
@@ -65,20 +68,24 @@ export function Timeline({ videoId }: TimelineProps) {
             </div>
             
             {/* Scene blocks */}
-            {scenes.map(scene => (
-              <div
-                key={scene.id}
-                className="absolute h-16 bg-primary/20 border-2 border-primary rounded"
-                style={{
-                  left: `${scene.timeline_start * pixelsPerSecond}px`,
-                  width: `${scene.timeline_duration * pixelsPerSecond}px`
-                }}
-              >
-                <div className="p-1 text-xs truncate">
-                  Scene {scene.scene_index + 1}
+            {scenes.map(scene => {
+              const duration = (scene.end_time || 0) - (scene.start_time || 0);
+              const startPos = (scene.start_time || 0) * pixelsPerSecond;
+              return (
+                <div
+                  key={scene.id}
+                  className="absolute h-16 bg-primary/20 border-2 border-primary rounded"
+                  style={{
+                    left: `${startPos}px`,
+                    width: `${duration * pixelsPerSecond}px`
+                  }}
+                >
+                  <div className="p-1 text-xs truncate">
+                    {scene.scene_name || `Scene ${scene.scene_index + 1}`}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

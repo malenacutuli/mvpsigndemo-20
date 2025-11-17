@@ -65,13 +65,6 @@ export type Database = {
             referencedRelation: "video_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "ai_chat_sessions_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "videos"
-            referencedColumns: ["id"]
-          },
         ]
       }
       api_cost_tracking: {
@@ -245,43 +238,52 @@ export type Database = {
       }
       caption_templates: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
           is_premium: boolean | null
           name: string
-          preview_url: string | null
+          preview_image_url: string | null
+          preview_video_url: string | null
           style_config: Json
           template_type: string | null
+          tier_required: string | null
           updated_at: string
-          usage_count: number | null
+          use_count: number | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_premium?: boolean | null
           name: string
-          preview_url?: string | null
-          style_config?: Json
+          preview_image_url?: string | null
+          preview_video_url?: string | null
+          style_config: Json
           template_type?: string | null
+          tier_required?: string | null
           updated_at?: string
-          usage_count?: number | null
+          use_count?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_premium?: boolean | null
           name?: string
-          preview_url?: string | null
+          preview_image_url?: string | null
+          preview_video_url?: string | null
           style_config?: Json
           template_type?: string | null
+          tier_required?: string | null
           updated_at?: string
-          usage_count?: number | null
+          use_count?: number | null
         }
         Relationships: []
       }
@@ -736,6 +738,59 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_transcript_segments: {
+        Row: {
+          created_at: string
+          end_time: number
+          id: string
+          is_deleted: boolean | null
+          is_modified: boolean | null
+          original_segment_id: string | null
+          original_text: string | null
+          project_id: string
+          speaker: string | null
+          start_time: number
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: number
+          id?: string
+          is_deleted?: boolean | null
+          is_modified?: boolean | null
+          original_segment_id?: string | null
+          original_text?: string | null
+          project_id: string
+          speaker?: string | null
+          start_time: number
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: number
+          id?: string
+          is_deleted?: boolean | null
+          is_modified?: boolean | null
+          original_segment_id?: string | null
+          original_text?: string | null
+          project_id?: string
+          speaker?: string | null
+          start_time?: number
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_transcript_segments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       premium_video_edits: {
         Row: {
           created_at: string
@@ -805,17 +860,66 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "premium_video_edits_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "video_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "premium_video_edits_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_videos: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration: number | null
+          error_message: string | null
+          export_config: Json
+          id: string
+          media_minutes_used: number | null
+          output_size_mb: number | null
+          output_url: string | null
+          progress: number | null
+          project_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          error_message?: string | null
+          export_config: Json
+          id?: string
+          media_minutes_used?: number | null
+          output_size_mb?: number | null
+          output_url?: string | null
+          progress?: number | null
+          project_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          error_message?: string | null
+          export_config?: Json
+          id?: string
+          media_minutes_used?: number | null
+          output_size_mb?: number | null
+          output_url?: string | null
+          progress?: number | null
+          project_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_videos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -852,87 +956,66 @@ export type Database = {
       }
       project_scenes: {
         Row: {
-          audio_fade_in: boolean | null
-          audio_fade_out: boolean | null
-          audio_volume: number | null
           caption_template_id: string | null
           created_at: string
+          end_time: number | null
           id: string
-          layout_config: Json | null
           layout_type: string | null
-          metadata: Json | null
           project_id: string
+          scene_config: Json | null
           scene_index: number
-          show_captions: boolean | null
-          source_end_time: number
-          source_start_time: number
-          timeline_duration: number
-          timeline_start: number
+          scene_name: string | null
+          start_time: number | null
           transition_duration: number | null
-          transition_in: string | null
-          transition_out: string | null
+          transition_type: string | null
           updated_at: string
           video_id: string | null
         }
         Insert: {
-          audio_fade_in?: boolean | null
-          audio_fade_out?: boolean | null
-          audio_volume?: number | null
           caption_template_id?: string | null
           created_at?: string
+          end_time?: number | null
           id?: string
-          layout_config?: Json | null
           layout_type?: string | null
-          metadata?: Json | null
           project_id: string
+          scene_config?: Json | null
           scene_index: number
-          show_captions?: boolean | null
-          source_end_time: number
-          source_start_time?: number
-          timeline_duration: number
-          timeline_start?: number
+          scene_name?: string | null
+          start_time?: number | null
           transition_duration?: number | null
-          transition_in?: string | null
-          transition_out?: string | null
+          transition_type?: string | null
           updated_at?: string
           video_id?: string | null
         }
         Update: {
-          audio_fade_in?: boolean | null
-          audio_fade_out?: boolean | null
-          audio_volume?: number | null
           caption_template_id?: string | null
           created_at?: string
+          end_time?: number | null
           id?: string
-          layout_config?: Json | null
           layout_type?: string | null
-          metadata?: Json | null
           project_id?: string
+          scene_config?: Json | null
           scene_index?: number
-          show_captions?: boolean | null
-          source_end_time?: number
-          source_start_time?: number
-          timeline_duration?: number
-          timeline_start?: number
+          scene_name?: string | null
+          start_time?: number | null
           transition_duration?: number | null
-          transition_in?: string | null
-          transition_out?: string | null
+          transition_type?: string | null
           updated_at?: string
           video_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "project_scenes_caption_template_id_fkey"
+            columns: ["caption_template_id"]
+            isOneToOne: false
+            referencedRelation: "caption_templates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_scenes_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "video_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_scenes_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
@@ -1214,13 +1297,6 @@ export type Database = {
           video_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "social_clips_caption_template_id_fkey"
-            columns: ["caption_template_id"]
-            isOneToOne: false
-            referencedRelation: "caption_templates"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "social_clips_highlight_id_fkey"
             columns: ["highlight_id"]
@@ -2159,49 +2235,31 @@ export type Database = {
       }
       video_projects: {
         Row: {
-          aspect_ratio: string | null
           created_at: string
+          created_by: string
           description: string | null
-          duration_seconds: number | null
-          framerate: number | null
           id: string
-          metadata: Json | null
           name: string
-          resolution: string | null
-          status: string | null
           thumbnail_url: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
-          aspect_ratio?: string | null
           created_at?: string
+          created_by: string
           description?: string | null
-          duration_seconds?: number | null
-          framerate?: number | null
           id?: string
-          metadata?: Json | null
           name: string
-          resolution?: string | null
-          status?: string | null
           thumbnail_url?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
-          aspect_ratio?: string | null
           created_at?: string
+          created_by?: string
           description?: string | null
-          duration_seconds?: number | null
-          framerate?: number | null
           id?: string
-          metadata?: Json | null
           name?: string
-          resolution?: string | null
-          status?: string | null
           thumbnail_url?: string | null
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

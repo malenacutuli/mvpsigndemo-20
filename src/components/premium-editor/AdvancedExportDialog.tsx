@@ -67,7 +67,7 @@ export function AdvancedExportDialog({ projectId, videoId }: AdvancedExportDialo
 
       const aafContent = generateAAF({
         projectName: project.name || 'Untitled Project',
-        frameRate: project.framerate || 30,
+        frameRate: 30, // Default framerate
         segments: segments.map(s => ({
           start_time: s.start_time,
           end_time: s.end_time,

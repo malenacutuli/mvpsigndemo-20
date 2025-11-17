@@ -83,16 +83,13 @@ export async function executeAIAction(
       case 'create_scene': {
         const { data: lastScene } = await supabase
           .from('project_scenes')
-          .select('scene_index, timeline_start, timeline_duration')
+          .select('scene_index')
           .eq('project_id', projectId)
           .order('scene_index', { ascending: false })
           .limit(1)
           .single();
 
         const nextIndex = (lastScene?.scene_index ?? -1) + 1;
-        const timelineStart = lastScene
-          ? lastScene.timeline_start + lastScene.timeline_duration
-          : 0;
 
         const { data: scene } = await supabase
           .from('project_scenes')
@@ -100,10 +97,8 @@ export async function executeAIAction(
             project_id: projectId,
             video_id: videoId,
             scene_index: nextIndex,
-            source_start_time: 0,
-            source_end_time: action.duration,
-            timeline_start: timelineStart,
-            timeline_duration: action.duration,
+            start_time: 0,
+            end_time: action.duration,
             layout_type: action.layout
           })
           .select()
