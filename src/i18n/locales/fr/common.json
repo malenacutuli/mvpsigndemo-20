@@ -719,5 +719,34 @@
       "saveFailed": "Échec de l'enregistrement de la chaîne",
       "deleteFailed": "Échec de la suppression de la chaîne"
     }
+  },
+  "premiumEditor": {
+    "title": "Éditeur Vidéo Premium",
+    "currentPlan": "Vous êtes actuellement sur le plan {{tier}}",
+    "availability": "L'éditeur vidéo premium est disponible à partir du plan Standard",
+    "features": {
+      "textEditing": {
+        "title": "Édition Basée sur le Texte",
+        "description": "Supprimez des segments de transcription pour rogner automatiquement la vidéo"
+      },
+      "sceneComposition": {
+        "title": "Composition de Scènes",
+        "description": "Combinez plusieurs vidéos avec des mises en page et des transitions"
+      },
+      "aiAssistant": {
+        "title": "Assistant IA",
+        "description": "Assistant d'édition avec commandes en langage naturel"
+      },
+      "captionTemplates": {
+        "title": "Modèles de Sous-titres",
+        "description": "10 préréglages professionnels CWI + créateur de modèles personnalisés"
+      },
+      "advancedExports": {
+        "title": "Exports Avancés",
+        "description": "Timeline AAF, transcription DOCX, fichiers SRT/VTT séparés"
+      }
+    },
+    "goBack": "Retour",
+    "upgradeButton": "Passer au Standard"
   }
 }

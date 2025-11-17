@@ -732,5 +732,34 @@
     "terms": "利用規約",
     "accessibility": "アクセシビリティ声明",
     "allRightsReserved": "全著作権所有"
+  },
+  "premiumEditor": {
+    "title": "プレミアムビデオエディター",
+    "currentPlan": "現在{{tier}}プランをご利用中です",
+    "availability": "プレミアムビデオエディターはスタンダードプラン以上でご利用いただけます",
+    "features": {
+      "textEditing": {
+        "title": "テキストベース編集",
+        "description": "トランスクリプトセグメントを削除して動画を自動的にトリミング"
+      },
+      "sceneComposition": {
+        "title": "シーン構成",
+        "description": "レイアウトとトランジションで複数の動画を組み合わせ"
+      },
+      "aiAssistant": {
+        "title": "AIアシスタント",
+        "description": "自然言語コマンドでの編集アシスタント"
+      },
+      "captionTemplates": {
+        "title": "字幕テンプレート",
+        "description": "10種類のプロフェッショナルCWIプリセット+カスタムテンプレート作成"
+      },
+      "advancedExports": {
+        "title": "高度なエクスポート",
+        "description": "AAFタイムライン、DOCXトランスクリプト、個別のSRT/VTTファイル"
+      }
+    },
+    "goBack": "戻る",
+    "upgradeButton": "スタンダードにアップグレード"
   }
 }

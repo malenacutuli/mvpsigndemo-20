@@ -719,5 +719,34 @@
       "saveFailed": "Error en desar el canal",
       "deleteFailed": "Error en eliminar el canal"
     }
+  },
+  "premiumEditor": {
+    "title": "Editor de Vídeo Premium",
+    "currentPlan": "Actualment estàs al pla {{tier}}",
+    "availability": "L'editor de vídeo premium està disponible a partir del pla Standard",
+    "features": {
+      "textEditing": {
+        "title": "Edició Basada en Text",
+        "description": "Elimina segments de transcripció per retallar el vídeo automàticament"
+      },
+      "sceneComposition": {
+        "title": "Composició d'Escenes",
+        "description": "Combina diversos vídeos amb dissenys i transicions"
+      },
+      "aiAssistant": {
+        "title": "Assistent IA",
+        "description": "Assistent d'edició amb comandes en llenguatge natural"
+      },
+      "captionTemplates": {
+        "title": "Plantilles de Subtítols",
+        "description": "10 predefinicions professionals CWI + creador de plantilles personalitzades"
+      },
+      "advancedExports": {
+        "title": "Exportacions Avançades",
+        "description": "Línia de temps AAF, transcripció DOCX, fitxers SRT/VTT separats"
+      }
+    },
+    "goBack": "Tornar",
+    "upgradeButton": "Actualitzar a Standard"
   }
 }
