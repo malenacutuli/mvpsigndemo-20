@@ -1,7 +1,7 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCaptionTemplates } from '@/hooks/useCaptionTemplates';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 interface TemplatePreviewProps {
   templateId: string;
@@ -16,88 +16,71 @@ export function TemplatePreview({
   onClose,
   onApply
 }: TemplatePreviewProps) {
-  const { data: templates } = useCaptionTemplates();
-  const template = templates?.find(t => t.id === templateId);
+  const { data: templates = [] } = useCaptionTemplates();
+  const template = templates.find(t => t.id === templateId);
 
   if (!template) return null;
-
-  const { style_config } = template;
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{template.name}</DialogTitle>
+          <DialogTitle>{template.name} - Preview</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Live Preview Area */}
-          <div className="aspect-video bg-muted rounded-lg relative overflow-hidden flex items-center justify-center">
-            <div
-              className="absolute"
+          {/* Video Player with Template Applied (simplified for now) */}
+          <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+            <div 
+              className="text-center p-8"
               style={{
-                fontFamily: style_config.fontFamily,
-                fontSize: `${style_config.fontSize}px`,
-                fontWeight: style_config.fontWeight,
-                color: style_config.colors.main,
-                textAlign: style_config.textAlign as any,
-                lineHeight: style_config.lineHeight,
-                maxWidth: `${style_config.maxWidth}%`,
-                ...(style_config.background?.enabled && {
-                  backgroundColor: style_config.background.color,
-                  opacity: style_config.background.opacity,
-                  padding: `${style_config.background.padding}px`,
-                  borderRadius: style_config.background.borderRadius ? `${style_config.background.borderRadius}px` : undefined
-                }),
-                ...(style_config.shadow?.enabled && {
-                  textShadow: `${style_config.shadow.offsetX}px ${style_config.shadow.offsetY}px ${style_config.shadow.blur}px ${style_config.shadow.color}`
-                }),
-                ...(style_config.stroke?.enabled && {
-                  WebkitTextStroke: `${style_config.stroke.width}px ${style_config.stroke.color}`
-                })
+                fontFamily: template.style_config.fontFamily,
+                fontSize: template.style_config.fontSize,
+                fontWeight: template.style_config.fontWeight,
+                color: template.style_config.colors.main,
+                backgroundColor: template.style_config.background?.enabled
+                  ? `${template.style_config.background.color}${Math.round(template.style_config.background.opacity * 255).toString(16)}`
+                  : 'transparent',
+                padding: template.style_config.background?.padding,
+                borderRadius: template.style_config.background?.borderRadius,
+                textShadow: template.style_config.shadow?.enabled
+                  ? `${template.style_config.shadow.offsetX}px ${template.style_config.shadow.offsetY}px ${template.style_config.shadow.blur}px ${template.style_config.shadow.color}`
+                  : 'none'
               }}
             >
-              This is a preview of how your captions will look with this template
+              This is how your captions will look
             </div>
           </div>
 
           {/* Template Details */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-muted-foreground">Font:</span>{' '}
-              <span className="font-medium">{style_config.fontFamily}</span>
+              <span className="font-medium">Font:</span> {template.style_config.fontFamily}
             </div>
             <div>
-              <span className="text-muted-foreground">Size:</span>{' '}
-              <span className="font-medium">{style_config.fontSize}px</span>
+              <span className="font-medium">Size:</span> {template.style_config.fontSize}px
             </div>
             <div>
-              <span className="text-muted-foreground">Position:</span>{' '}
-              <span className="font-medium capitalize">
-                {style_config.position.vertical} {style_config.position.horizontal}
-              </span>
+              <span className="font-medium">Alignment:</span> {template.style_config.textAlign}
             </div>
             <div>
-              <span className="text-muted-foreground">Animation:</span>{' '}
-              <span className="font-medium capitalize">
-                {style_config.animation?.entrance || 'None'}
-              </span>
+              <span className="font-medium">Character Colors:</span>{' '}
+              {template.style_config.characterColors ? 'Enabled' : 'Disabled'}
             </div>
           </div>
 
-          {template.description && (
-            <p className="text-sm text-muted-foreground">{template.description}</p>
-          )}
+          {/* Actions */}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button variant="default" onClick={onApply}>
+              <Check className="w-4 h-4 mr-2" />
+              Apply Template
+            </Button>
+          </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-          <Button onClick={onApply}>
-            Apply Template
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
