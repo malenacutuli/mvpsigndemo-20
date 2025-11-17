@@ -162,3 +162,6 @@ verify_jwt = true
 [functions.generate-social-clip]
 verify_jwt = true
 
+[functions.axessible-ai-command]
+verify_jwt = true
+
