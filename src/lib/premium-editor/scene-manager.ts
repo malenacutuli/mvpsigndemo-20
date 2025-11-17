@@ -43,13 +43,17 @@ class SceneManager {
       }
 
       const nextOrder = (existingScenes?.[0]?.scene_order ?? -1) + 1;
+      const duration = options.duration || 5;
 
       // Prepare scene data with defaults
       const sceneData = {
         project_id: projectId,
+        video_id: options.videoId || null,
         scene_order: nextOrder,
-        name: options.name || `Scene ${nextOrder}`,
-        duration_seconds: options.duration || 5,
+        name: options.name || `Scene ${nextOrder + 1}`,
+        duration_seconds: duration,
+        timeline_start: 0,
+        timeline_end: duration,
         layout_type: options.layoutType || 'fullscreen',
         background_type: options.backgroundType || 'solid',
         background_config: options.backgroundColor 
@@ -59,9 +63,8 @@ class SceneManager {
         transition_duration_ms: 500,
         media_type: 'video',
         media_start_time: options.mediaStartTime || 0,
-        video_id: options.videoId || null,
+        media_end_time: options.mediaEndTime || duration,
         media_url: options.mediaUrl || null,
-        media_end_time: options.mediaEndTime || null,
         scene_config: {},
       };
 
