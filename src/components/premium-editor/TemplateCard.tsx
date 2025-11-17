@@ -1,7 +1,7 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Eye } from 'lucide-react';
+import { Crown, Eye, Check } from 'lucide-react';
 import { CaptionTemplate } from '@/hooks/useCaptionTemplates';
 
 interface TemplateCardProps {
@@ -19,70 +19,85 @@ export function TemplateCard({
   canAccessPremium,
   applyingToScene
 }: TemplateCardProps) {
-  const isLocked = template.is_premium && !canAccessPremium;
+  const isPremiumLocked = template.is_premium && !canAccessPremium;
 
   return (
-    <Card className={`group relative overflow-hidden transition-all hover:shadow-lg ${isLocked ? 'opacity-60' : ''}`}>
-      {/* Preview Image or Style Demo */}
-      <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden">
-        {template.preview_url ? (
-          <img 
-            src={template.preview_url} 
-            alt={template.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full p-4">
-            <div 
-              className="text-center"
-              style={{
-                fontFamily: template.style_config.fontFamily,
-                fontSize: `${Math.min(template.style_config.fontSize / 3, 20)}px`,
-                fontWeight: template.style_config.fontWeight,
-                color: template.style_config.colors.main
-              }}
-            >
-              Sample Text
-            </div>
-          </div>
-        )}
-        
-        {isLocked && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-            <Crown className="w-8 h-8 text-primary" />
-          </div>
-        )}
+    <Card className={`relative overflow-hidden hover:shadow-lg transition-shadow ${
+      isPremiumLocked ? 'opacity-75' : ''
+    }`}>
+      {template.is_premium && (
+        <Badge className="absolute top-2 right-2 z-10" variant="secondary">
+          <Crown className="w-3 h-3 mr-1" />
+          Premium
+        </Badge>
+      )}
 
-        {/* Hover Actions */}
-        <div className="absolute inset-0 bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-          <Button size="sm" variant="secondary" onClick={onPreview}>
-            <Eye className="w-4 h-4 mr-1" />
-            Preview
-          </Button>
-          {!isLocked && (
-            <Button size="sm" onClick={onApply}>
-              Apply {applyingToScene ? 'to Scene' : 'to All'}
-            </Button>
-          )}
+      <CardContent className="p-4">
+        {/* Preview Image (generate from style_config) */}
+        <div 
+          className="w-full h-32 rounded-md mb-3 flex items-center justify-center text-center"
+          style={{
+            background: template.style_config.background?.enabled
+              ? template.style_config.background.color
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            fontFamily: template.style_config.fontFamily,
+            fontSize: template.style_config.fontSize / 4,
+            fontWeight: template.style_config.fontWeight,
+            color: template.style_config.colors.main,
+            padding: '8px',
+            position: 'relative'
+          }}
+        >
+          <span 
+            style={{
+              textShadow: template.style_config.shadow?.enabled
+                ? `${template.style_config.shadow.offsetX}px ${template.style_config.shadow.offsetY}px ${template.style_config.shadow.blur}px ${template.style_config.shadow.color}`
+                : 'none',
+              WebkitTextStroke: template.style_config.stroke?.enabled
+                ? `${template.style_config.stroke.width / 2}px ${template.style_config.stroke.color}`
+                : 'none'
+            }}
+          >
+            Sample Caption
+          </span>
         </div>
-      </div>
 
-      {/* Template Info */}
-      <div className="p-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium text-sm line-clamp-1">{template.name}</h3>
-          {template.is_premium && (
-            <Badge variant="secondary" className="shrink-0">
-              <Crown className="w-3 h-3" />
-            </Badge>
-          )}
+        <h3 className="font-semibold mb-1">{template.name}</h3>
+        <p className="text-xs text-muted-foreground line-clamp-2">
+          {template.description}
+        </p>
+      </CardContent>
+
+      <CardFooter className="p-4 pt-0 flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onPreview}
+          className="flex-1"
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          Preview
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onApply}
+          disabled={isPremiumLocked}
+          className="flex-1"
+        >
+          <Check className="w-3 h-3 mr-1" />
+          {applyingToScene ? 'Apply to Scene' : 'Apply to All'}
+        </Button>
+      </CardFooter>
+
+      {isPremiumLocked && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center p-4">
+            <Crown className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-sm font-medium">Advanced Plan Required</p>
+          </div>
         </div>
-        {template.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {template.description}
-          </p>
-        )}
-      </div>
+      )}
     </Card>
   );
 }
