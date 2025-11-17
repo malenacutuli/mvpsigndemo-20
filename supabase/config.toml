@@ -165,3 +165,12 @@ verify_jwt = true
 [functions.axessible-ai-command]
 verify_jwt = true
 
+[functions.ai-remove-filler-words]
+verify_jwt = true
+
+[functions.ai-generate-highlights]
+verify_jwt = true
+
+[functions.ai-generate-chapters]
+verify_jwt = true
+
