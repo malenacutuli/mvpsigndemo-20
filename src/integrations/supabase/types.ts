@@ -2602,6 +2602,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
       increment_video_views: {
         Args: { video_uuid: string }
         Returns: undefined
