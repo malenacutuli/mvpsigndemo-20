@@ -26,6 +26,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import AdminSubscribers from "./pages/AdminSubscribers";
+import PremiumVideoEditor from "./pages/PremiumVideoEditor";
 
 
 const queryClient = new QueryClient();
@@ -76,6 +77,11 @@ const App = () => (
             <Route path="/admin/subscribers" element={
               <ProtectedRoute>
                 <AdminSubscribers />
+              </ProtectedRoute>
+            } />
+            <Route path="/video/:id/edit" element={
+              <ProtectedRoute>
+                <PremiumVideoEditor />
               </ProtectedRoute>
             } />
             
