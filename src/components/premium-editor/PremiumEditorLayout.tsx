@@ -1,48 +1,71 @@
+// src/components/premium-editor/PremiumEditorLayout.tsx
+// REPLACE entire file with this
+
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { 
+  ArrowLeft,
+  Save, 
+  Download, 
+  Sparkles,
+  Film,
+  FileText,
+  Scissors,
+  Upload
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Save, Download, ArrowLeft, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Import all components
 import { Timeline } from './Timeline';
 import { TextBasedEditor } from './TextBasedEditor';
 import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
-import { AdvancedExportModal } from './AdvancedExportModal';
 import { AIAssistant } from './AIAssistant';
+import { AdvancedExportDialog } from './AdvancedExportDialog';
+import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+
+// Import hooks
 import { useVideoProject } from '@/hooks/useVideoProject';
-import { toast } from 'sonner';
+import { useSubscription } from '@/hooks/useSubscription';
 
-interface PremiumEditorLayoutProps {
-  videoId: string;
-}
-
-export function PremiumEditorLayout({ videoId }: PremiumEditorLayoutProps) {
+export function PremiumEditorLayout() {
+  const { videoId } = useParams<{ videoId: string }>();
+  
   const [activeTab, setActiveTab] = useState('timeline');
+  const [isSaving, setIsSaving] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAI, setShowAI] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const { project, isLoading } = useVideoProject(videoId);
-
-  // Fetch transcript segments for MultiSegmentClipCreator
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  
+  const { data: subscription, isLoading: subLoading } = useSubscription();
+  const { project, isLoading: projectLoading } = useVideoProject(videoId);
+  
   const { data: segments = [] } = useQuery({
     queryKey: ['transcriptSegments', videoId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!videoId) return [];
+      const { data } = await supabase
         .from('transcript_segments_clean')
-        .select('id, start_time, end_time, text')
+        .select('id, start_time, end_time, text, speaker')
         .eq('video_id', videoId)
         .order('idx');
-
-      if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!videoId
   });
 
+  const hasAccess = subscription?.subscription_tier && 
+    ['standard', 'advanced', 'enterprise'].includes(subscription.subscription_tier.toLowerCase());
+
   const handleSave = async () => {
-    if (!project) return;
+    if (!project) {
+      toast.error('No project to save');
+      return;
+    }
     
     setIsSaving(true);
     try {
@@ -61,44 +84,192 @@ export function PremiumEditorLayout({ videoId }: PremiumEditorLayoutProps) {
     }
   };
 
-  if (isLoading) {
+  const handleSceneSelect = (sceneId: string) => {
+    setSelectedSceneId(sceneId);
+  };
+
+  if (subLoading || projectLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading project...</p>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading premium editor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="p-8 max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Premium Feature</h2>
+          <p className="text-muted-foreground mb-6">
+            The Premium Video Editor is available on Standard plan and above. 
+            Upgrade to unlock text-based editing, scene composition, AI assistant, and advanced exports.
+          </p>
+          <Button className="w-full" asChild>
+            <Link to="/pricing">Upgrade Now</Link>
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-screen bg-background">
-...
-      {/* Export Modal */}
-      {project && (
-        <AdvancedExportModal 
-          open={showExportDialog} 
+      <div className="border-b bg-card">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <Link to="/videos">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                My Videos
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-lg font-semibold">
+                {project?.name || 'Premium Video Editor'}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {segments.length} transcript segments
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showAI ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAI(!showAI)}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Ask AI
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSave} 
+              disabled={isSaving || !project}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => setShowExportDialog(true)}
+              disabled={!project}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="w-full justify-start border-b rounded-none px-4">
+              <TabsTrigger value="timeline" className="gap-2">
+                <Film className="w-4 h-4" />
+                Timeline
+              </TabsTrigger>
+              <TabsTrigger value="transcript" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Transcript
+              </TabsTrigger>
+              <TabsTrigger value="social" className="gap-2">
+                <Scissors className="w-4 h-4" />
+                Social Clips
+              </TabsTrigger>
+              <TabsTrigger value="export" className="gap-2">
+                <Upload className="w-4 h-4" />
+                Export
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="timeline" className="m-0 h-full">
+                {videoId && (
+                  <Timeline 
+                    videoId={videoId}
+                    onSceneSelect={handleSceneSelect}
+                    selectedSceneId={selectedSceneId}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="transcript" className="m-0 h-full overflow-auto">
+                {videoId && <TextBasedEditor videoId={videoId} />}
+              </TabsContent>
+
+              <TabsContent value="social" className="m-0 h-full overflow-auto">
+                {videoId && <MultiSegmentClipCreator videoId={videoId} segments={segments} />}
+              </TabsContent>
+
+              <TabsContent value="export" className="m-0 p-4">
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Export Options</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Export your project in various professional formats including DOCX transcripts, 
+                    AAF timelines, and SRT/VTT subtitles.
+                  </p>
+                  <Button 
+                    onClick={() => setShowExportDialog(true)} 
+                    size="lg" 
+                    className="w-full"
+                    disabled={!project}
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Open Export Dialog
+                  </Button>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+
+        <div className="w-80 border-l bg-card overflow-hidden">
+          <ScenePropertiesPanel 
+            selectedSceneId={selectedSceneId}
+            projectId={project?.id}
+          />
+        </div>
+
+        {showAI && project && videoId && (
+          <div className="w-96 border-l bg-card flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-semibold">AI Assistant</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowAI(false)}
+              >
+                ×
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AIAssistant 
+                projectId={project.id}
+                videoId={videoId}
+                currentContext={activeTab}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {project && videoId && (
+        <AdvancedExportDialog
+          open={showExportDialog}
           onOpenChange={setShowExportDialog}
           projectId={project.id}
           videoId={videoId}
         />
-      )}
-
-      {/* AI Assistant Floating Button */}
-      <Button
-        className="fixed bottom-4 right-4 rounded-full w-14 h-14 shadow-lg z-50"
-        onClick={() => setShowAI(!showAI)}
-      >
-        <Sparkles className="w-6 h-6" />
-      </Button>
-
-      {/* AI Assistant Panel */}
-      {showAI && project && (
-        <div className="fixed bottom-20 right-4 w-96 h-[500px] shadow-2xl rounded-lg overflow-hidden z-50 border bg-card">
-          <AIAssistant 
-            projectId={project.id}
-            videoId={videoId}
-            currentContext={activeTab}
-          />
-        </div>
       )}
     </div>
   );
