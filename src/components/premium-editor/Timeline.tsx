@@ -2,7 +2,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, ZoomIn, ZoomOut } from 'lucide-react';
 import { useVideoProject } from '@/hooks/useVideoProject';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface TimelineProps {
   videoId: string;
@@ -12,14 +11,7 @@ export function Timeline({ videoId }: TimelineProps) {
   const { project, scenes, isLoading } = useVideoProject(videoId);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Card className="p-4">
-          <Skeleton className="h-24 w-full" />
-        </Card>
-      </div>
-    );
+    return <div>Loading timeline...</div>;
   }
 
   const totalDuration = project?.duration_seconds || 0;
@@ -58,7 +50,7 @@ export function Timeline({ videoId }: TimelineProps) {
             <div className="flex text-xs text-muted-foreground mb-2">
               {Array.from({ length: Math.ceil(totalDuration / 10) }).map((_, i) => (
                 <div key={i} style={{ width: '100px' }}>
-                  {Math.floor(i / 6)}:{String((i % 6) * 10).padStart(2, '0')}
+                  {i}:00
                 </div>
               ))}
             </div>
@@ -67,7 +59,7 @@ export function Timeline({ videoId }: TimelineProps) {
             {scenes.map(scene => (
               <div
                 key={scene.id}
-                className="absolute h-16 bg-primary/20 border-2 border-primary rounded cursor-pointer hover:bg-primary/30 transition-colors"
+                className="absolute h-16 bg-primary/20 border-2 border-primary rounded"
                 style={{
                   left: `${scene.timeline_start * pixelsPerSecond}px`,
                   width: `${scene.timeline_duration * pixelsPerSecond}px`
