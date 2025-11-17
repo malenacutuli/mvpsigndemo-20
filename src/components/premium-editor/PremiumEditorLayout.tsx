@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Save, Download } from 'lucide-react';
+import { Save, Download, ArrowLeft } from 'lucide-react';
 import { Timeline } from './Timeline';
 
 interface PremiumEditorLayoutProps {
@@ -18,6 +19,12 @@ export function PremiumEditorLayout({ videoId }: PremiumEditorLayoutProps) {
       <div className="border-b bg-card">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/videos">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                My Videos
+              </Link>
+            </Button>
             <h1 className="text-lg font-semibold">Premium Video Editor</h1>
           </div>
           <div className="flex items-center gap-2">
