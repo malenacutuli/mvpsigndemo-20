@@ -51,7 +51,7 @@ export function useVideoProject(videoId: string) {
         .from('project_scenes')
         .select('*')
         .eq('project_id', project!.id)
-        .order('scene_index', { ascending: true });
+        .order('scene_order', { ascending: true });
       
       return data || [];
     },

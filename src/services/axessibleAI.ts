@@ -122,9 +122,9 @@ export async function executeAIAction(
           .from('project_scenes')
           .select('id')
           .eq('project_id', projectId)
-          .order('scene_index')
+          .order('scene_order')
           .limit(1)
-          .range(action.scene_index, action.scene_index);
+          .range(action.scene_order, action.scene_order);
 
         if (!scenes || scenes.length === 0) {
           return { success: false, error: 'Scene not found' };

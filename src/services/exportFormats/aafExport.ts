@@ -16,7 +16,7 @@ export async function generateAAFTimeline(projectId: string): Promise<Blob> {
     .from('project_scenes')
     .select('*')
     .eq('project_id', projectId)
-    .order('scene_index');
+    .order('scene_order');
 
   if (!scenes || scenes.length === 0) {
     throw new Error('No scenes found in project');

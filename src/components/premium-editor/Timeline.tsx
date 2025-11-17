@@ -62,7 +62,7 @@ export function Timeline({ videoId, onSceneSelect, selectedSceneId }: TimelinePr
         .from('project_scenes')
         .select('*')
         .eq('project_id', project.id)
-        .order('scene_index', { ascending: true });
+        .order('scene_order', { ascending: true });
       return data || [];
     },
     enabled: !!project?.id
