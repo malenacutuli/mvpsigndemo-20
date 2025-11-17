@@ -133,7 +133,7 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
     );
   }
 
-  const duration = (scene.end_time || 0) - (scene.start_time || 0);
+  const duration = scene.duration_seconds ?? 0;
   const sceneConfig = (scene.scene_config || {}) as Record<string, any>;
 
   return (
@@ -143,7 +143,7 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
           <div className="flex-1">
             <h3 className="font-semibold text-sm mb-1">Scene Properties</h3>
             <p className="text-xs text-muted-foreground">
-              {scene.scene_name || 'Untitled Scene'}
+              {scene.name || 'Untitled Scene'}
             </p>
           </div>
           <Badge variant="secondary" className="ml-2">
@@ -164,8 +164,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
               <Label htmlFor="scene-name" className="text-xs">Scene Name</Label>
               <Input
                 id="scene-name"
-                value={scene.scene_name || ''}
-                onChange={(e) => handleUpdate({ scene_name: e.target.value })}
+                value={scene.name || ''}
+                onChange={(e) => handleUpdate({ name: e.target.value })}
                 placeholder="Enter scene name"
                 className="h-8 text-sm"
               />
@@ -212,8 +212,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
                   id="start-time"
                   type="number"
                   step="0.1"
-                  value={scene.start_time || 0}
-                  onChange={(e) => handleUpdate({ start_time: Number(e.target.value) })}
+                  value={scene.timeline_start ?? 0}
+                  onChange={(e) => handleUpdate({ timeline_start: Number(e.target.value) })}
                   className="h-8 text-sm"
                 />
               </div>
@@ -223,8 +223,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
                   id="end-time"
                   type="number"
                   step="0.1"
-                  value={scene.end_time || 0}
-                  onChange={(e) => handleUpdate({ end_time: Number(e.target.value) })}
+                  value={scene.timeline_end ?? 0}
+                  onChange={(e) => handleUpdate({ timeline_end: Number(e.target.value) })}
                   className="h-8 text-sm"
                 />
               </div>
