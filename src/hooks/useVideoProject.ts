@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -10,19 +10,15 @@ export function useVideoProject(videoId: string) {
   const { data: project, isLoading } = useQuery({
     queryKey: ['videoProject', videoId],
     queryFn: async () => {
-      if (!user) return null;
-
-      // First, try to find existing project linked to this video
-      const { data: existingProjects } = await supabase
+      // First, try to find existing project
+      const { data: existingProject } = await supabase
         .from('video_projects')
         .select('*')
-        .eq('user_id', user.id)
-        .contains('metadata', { source_video_id: videoId })
-        .limit(1);
+        .eq('user_id', user!.id)
+        .limit(1)
+        .single();
 
-      if (existingProjects && existingProjects.length > 0) {
-        return existingProjects[0];
-      }
+      if (existingProject) return existingProject;
 
       // Get video details for default name
       const { data: video } = await supabase
@@ -32,21 +28,15 @@ export function useVideoProject(videoId: string) {
         .single();
 
       // Create new project
-      const { data: newProject, error } = await supabase
+      const { data: newProject } = await supabase
         .from('video_projects')
         .insert({
-          user_id: user.id,
+          user_id: user!.id,
           name: video?.title || 'Untitled Project',
-          duration_seconds: video?.duration_seconds || 0,
           metadata: { source_video_id: videoId }
         })
         .select()
         .single();
-
-      if (error) {
-        console.error('Error creating project:', error);
-        throw error;
-      }
 
       return newProject;
     },
@@ -57,12 +47,10 @@ export function useVideoProject(videoId: string) {
   const { data: scenes = [] } = useQuery({
     queryKey: ['projectScenes', project?.id],
     queryFn: async () => {
-      if (!project?.id) return [];
-
       const { data } = await supabase
         .from('project_scenes')
         .select('*')
-        .eq('project_id', project.id)
+        .eq('project_id', project!.id)
         .order('scene_index', { ascending: true });
       
       return data || [];
