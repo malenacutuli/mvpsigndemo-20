@@ -719,5 +719,34 @@
       "saveFailed": "Salvataggio del canale non riuscito",
       "deleteFailed": "Eliminazione del canale non riuscita"
     }
+  },
+  "premiumEditor": {
+    "title": "Editor Video Premium",
+    "currentPlan": "Sei attualmente sul piano {{tier}}",
+    "availability": "L'editor video premium è disponibile dal piano Standard in su",
+    "features": {
+      "textEditing": {
+        "title": "Editing Basato su Testo",
+        "description": "Elimina i segmenti di trascrizione per tagliare automaticamente il video"
+      },
+      "sceneComposition": {
+        "title": "Composizione Scene",
+        "description": "Combina più video con layout e transizioni"
+      },
+      "aiAssistant": {
+        "title": "Assistente IA",
+        "description": "Assistente di editing con comandi in linguaggio naturale"
+      },
+      "captionTemplates": {
+        "title": "Modelli di Sottotitoli",
+        "description": "10 preset professionali CWI + creatore di modelli personalizzati"
+      },
+      "advancedExports": {
+        "title": "Export Avanzati",
+        "description": "Timeline AAF, trascrizione DOCX, file SRT/VTT separati"
+      }
+    },
+    "goBack": "Indietro",
+    "upgradeButton": "Passa a Standard"
   }
 }

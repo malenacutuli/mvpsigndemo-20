@@ -1328,5 +1328,34 @@
     "selectLanguage": "Seleccionar Idioma",
     "makePublic": "Hacer este video público",
     "enableAccessibility": "Habilitar características de accesibilidad"
+  },
+  "premiumEditor": {
+    "title": "Editor de Video Premium",
+    "currentPlan": "Actualmente estás en el plan {{tier}}",
+    "availability": "El editor de video premium está disponible en el plan Standard y superiores",
+    "features": {
+      "textEditing": {
+        "title": "Edición Basada en Texto",
+        "description": "Elimina segmentos de transcripción para recortar el video automáticamente"
+      },
+      "sceneComposition": {
+        "title": "Composición de Escenas",
+        "description": "Combina múltiples videos con diseños y transiciones"
+      },
+      "aiAssistant": {
+        "title": "Asistente IA",
+        "description": "Asistente de edición con comandos en lenguaje natural"
+      },
+      "captionTemplates": {
+        "title": "Plantillas de Subtítulos",
+        "description": "10 preajustes profesionales CWI + creador de plantillas personalizadas"
+      },
+      "advancedExports": {
+        "title": "Exportaciones Avanzadas",
+        "description": "Línea de tiempo AAF, transcripción DOCX, archivos SRT/VTT separados"
+      }
+    },
+    "goBack": "Volver",
+    "upgradeButton": "Actualizar a Standard"
   }
 }

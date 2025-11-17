@@ -1203,5 +1203,34 @@
       "exploreTechnology": "Explore Our Technology",
       "contactTeam": "Contact Our Team"
     }
+  },
+  "premiumEditor": {
+    "title": "Premium Video Editor",
+    "currentPlan": "You're currently on the {{tier}} plan",
+    "availability": "Premium Video Editor is available on Standard plan and above",
+    "features": {
+      "textEditing": {
+        "title": "Text-Based Editing",
+        "description": "Delete transcript segments to automatically trim video"
+      },
+      "sceneComposition": {
+        "title": "Scene Composition",
+        "description": "Combine multiple videos with layouts and transitions"
+      },
+      "aiAssistant": {
+        "title": "AI Assistant",
+        "description": "Underlord-style editing assistant with natural language commands"
+      },
+      "captionTemplates": {
+        "title": "Caption Templates",
+        "description": "10 professional CWI presets + custom template creator"
+      },
+      "advancedExports": {
+        "title": "Advanced Exports",
+        "description": "AAF timeline, DOCX transcript, separate SRT/VTT files"
+      }
+    },
+    "goBack": "Go Back",
+    "upgradeButton": "Upgrade to Standard"
   }
 }
