@@ -27,10 +27,12 @@ import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
 import { AIAssistant } from './AIAssistant';
 import { AdvancedExportDialog } from './AdvancedExportDialog';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+import { SubscriptionGate } from './SubscriptionGate';
+import { Badge } from '@/components/ui/badge';
 
 // Import hooks
 import { useVideoProject } from '@/hooks/useVideoProject';
-import { useSubscription } from '@/hooks/useSubscription';
+import { usePremiumAccess } from '@/hooks/usePremiumAccess';
 
 export function PremiumEditorLayout() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -41,7 +43,7 @@ export function PremiumEditorLayout() {
   const [showAI, setShowAI] = useState(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   
-  const { subscription_tier, loading: subLoading } = useSubscription();
+  const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
   
   const { data: segments = [] } = useQuery({
@@ -58,8 +60,8 @@ export function PremiumEditorLayout() {
     enabled: !!videoId
   });
 
-  const hasAccess = subscription_tier && 
-    ['standard', 'advanced', 'enterprise'].includes(subscription_tier.toLowerCase());
+  // Admin users and premium tier users have access
+  const hasAccess = canAccess || isAdmin;
 
   const handleSave = async () => {
     if (!project) {
@@ -88,12 +90,12 @@ export function PremiumEditorLayout() {
     setSelectedSceneId(sceneId);
   };
 
-  if (subLoading || projectLoading) {
+  if (accessLoading || projectLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading premium editor...</p>
+          <p className="text-muted-foreground font-light">Loading premium editor...</p>
         </div>
       </div>
     );
@@ -101,18 +103,7 @@ export function PremiumEditorLayout() {
 
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Card className="p-8 max-w-md">
-          <h2 className="text-2xl font-bold mb-4">Premium Feature</h2>
-          <p className="text-muted-foreground mb-6">
-            The Premium Video Editor is available on Standard plan and above. 
-            Upgrade to unlock text-based editing, scene composition, AI assistant, and advanced exports.
-          </p>
-          <Button className="w-full" asChild>
-            <Link to="/pricing">Upgrade Now</Link>
-          </Button>
-        </Card>
-      </div>
+      <SubscriptionGate currentTier={tier} videoId={videoId || ''} />
     );
   }
 
@@ -127,13 +118,20 @@ export function PremiumEditorLayout() {
                 My Videos
               </Button>
             </Link>
-            <div>
-              <h1 className="text-lg font-semibold">
-                {project?.name || 'Premium Video Editor'}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {segments.length} transcript segments
-              </p>
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-lg font-semibold">
+                  {project?.name || 'Premium Video Editor'}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  {segments.length} transcript segments
+                </p>
+              </div>
+              {isAdmin && (
+                <Badge variant="secondary" className="text-xs font-light">
+                  Admin Access
+                </Badge>
+              )}
             </div>
           </div>
           
