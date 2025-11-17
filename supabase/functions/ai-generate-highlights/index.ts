@@ -42,9 +42,9 @@ serve(async (req) => {
       `[${s.start_time.toFixed(2)}s-${s.end_time.toFixed(2)}s] ${s.text}`
     ).join('\n');
 
-    // Call Lovable AI
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) throw new Error('LOVABLE_API_KEY not configured');
+    // Call Google Gemini API
+    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!geminiApiKey) throw new Error('GOOGLE_GEMINI_API_KEY not configured');
 
     const criteriaDescriptions = {
       'humor': 'funny, entertaining, or comedic moments',
@@ -53,25 +53,29 @@ serve(async (req) => {
       'key-points': 'most important points and key takeaways'
     };
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a video editing assistant specializing in creating highlight reels. Identify the best moments for clips. Return valid JSON only.'
-          },
-          {
-            role: 'user',
-            content: `Analyze this video transcript and identify the 3-5 best moments for ${criteriaDescriptions[criteria]}. Each clip should be 10-30 seconds long.\n\nTranscript:\n${transcript}\n\nReturn JSON array: [{"startTime": number, "endTime": number, "score": 0-100, "reason": "why this is great", "title": "clip title (4-6 words)"}]`
-          }
-        ],
-        temperature: 0.3,
+        contents: [{
+          parts: [{
+            text: `You are a video editing assistant specializing in creating highlight reels. Identify the best moments for clips. Return valid JSON only.
+
+Analyze this video transcript and identify the 3-5 best moments for ${criteriaDescriptions[criteria]}. Each clip should be 10-30 seconds long.
+
+Transcript:
+${transcript}
+
+Return JSON array: [{"startTime": number, "endTime": number, "score": 0-100, "reason": "why this is great", "title": "clip title (4-6 words)"}]`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topP: 0.8,
+          topK: 10,
+        },
       }),
     });
 
@@ -81,7 +85,7 @@ serve(async (req) => {
     }
 
     const aiResult = await aiResponse.json();
-    const content = aiResult.choices?.[0]?.message?.content;
+    const content = aiResult.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!content) throw new Error('No content in AI response');
 
     const jsonMatch = content.match(/\[[\s\S]*\]/);

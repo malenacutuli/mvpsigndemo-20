@@ -39,31 +39,35 @@ serve(async (req) => {
       `[${s.start_time.toFixed(2)}s] ${s.text}`
     ).join('\n');
 
-    // Call Lovable AI
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Call Google Gemini API
+    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
     }
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a video editing assistant. Identify filler words and phrases (um, uh, like, you know, so, actually, basically, sort of, kind of, I mean, right, okay, well) in transcripts. Return valid JSON only.'
-          },
-          {
-            role: 'user',
-            content: `Analyze this transcript and identify all filler words. For each filler word, return its timing and context.\n\nTranscript:\n${transcript}\n\nReturn JSON array: [{"startTime": number, "endTime": number, "text": "filler word", "reason": "explanation", "confidence": 0-1}]`
-          }
-        ],
-        temperature: 0.1,
+        contents: [{
+          parts: [{
+            text: `You are a video editing assistant. Identify filler words and phrases (um, uh, like, you know, so, actually, basically, sort of, kind of, I mean, right, okay, well) in transcripts. Return valid JSON only.
+
+Analyze this transcript and identify all filler words. For each filler word, return its timing and context.
+
+Transcript:
+${transcript}
+
+Return JSON array: [{"startTime": number, "endTime": number, "text": "filler word", "reason": "explanation", "confidence": 0-1}]`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topP: 0.8,
+          topK: 10,
+        },
       }),
     });
 
@@ -73,7 +77,7 @@ serve(async (req) => {
     }
 
     const aiResult = await aiResponse.json();
-    const content = aiResult.choices?.[0]?.message?.content;
+    const content = aiResult.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
       throw new Error('No content in AI response');
