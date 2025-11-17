@@ -133,7 +133,7 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
     );
   }
 
-  const duration = (scene.end_time || 0) - (scene.start_time || 0);
+  const duration = scene.duration_seconds || 0;
   const sceneConfig = (scene.scene_config || {}) as Record<string, any>;
 
   return (
@@ -143,7 +143,7 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
           <div className="flex-1">
             <h3 className="font-semibold text-sm mb-1">Scene Properties</h3>
             <p className="text-xs text-muted-foreground">
-              {scene.scene_name || 'Untitled Scene'}
+              {scene.name || 'Untitled Scene'}
             </p>
           </div>
           <Badge variant="secondary" className="ml-2">
@@ -164,8 +164,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
               <Label htmlFor="scene-name" className="text-xs">Scene Name</Label>
               <Input
                 id="scene-name"
-                value={scene.scene_name || ''}
-                onChange={(e) => handleUpdate({ scene_name: e.target.value })}
+                value={scene.name || ''}
+                onChange={(e) => handleUpdate({ name: e.target.value })}
                 placeholder="Enter scene name"
                 className="h-8 text-sm"
               />
@@ -207,31 +207,32 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label htmlFor="start-time" className="text-xs">Start (s)</Label>
+                <Label htmlFor="timeline-start" className="text-xs">Timeline Start (s)</Label>
                 <Input
-                  id="start-time"
+                  id="timeline-start"
                   type="number"
                   step="0.1"
-                  value={scene.start_time || 0}
-                  onChange={(e) => handleUpdate({ start_time: Number(e.target.value) })}
+                  value={scene.timeline_start || 0}
+                  onChange={(e) => handleUpdate({ timeline_start: Number(e.target.value) })}
                   className="h-8 text-sm"
+                  disabled
                 />
               </div>
               <div>
-                <Label htmlFor="end-time" className="text-xs">End (s)</Label>
+                <Label htmlFor="duration" className="text-xs">Duration (s)</Label>
                 <Input
-                  id="end-time"
+                  id="duration"
                   type="number"
                   step="0.1"
-                  value={scene.end_time || 0}
-                  onChange={(e) => handleUpdate({ end_time: Number(e.target.value) })}
+                  value={scene.duration_seconds || 0}
+                  onChange={(e) => handleUpdate({ duration_seconds: Number(e.target.value) })}
                   className="h-8 text-sm"
                 />
               </div>
             </div>
 
             <div className="p-2 bg-muted rounded text-xs text-center">
-              Duration: <span className="font-semibold">{duration.toFixed(2)}s</span>
+              Timeline: <span className="font-semibold">{(scene.timeline_start || 0).toFixed(2)}s - {(scene.timeline_end || 0).toFixed(2)}s</span>
             </div>
           </div>
         </Card>
@@ -265,12 +266,12 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
             {scene.transition_type !== 'none' && (
               <div>
                 <Label htmlFor="transition-duration" className="text-xs">
-                  Duration: {scene.transition_duration || 0.5}s
+                  Duration: {((scene.transition_duration_ms || 500) / 1000).toFixed(1)}s
                 </Label>
                 <Slider
                   id="transition-duration"
-                  value={[scene.transition_duration || 0.5]}
-                  onValueChange={([value]) => handleUpdate({ transition_duration: value })}
+                  value={[(scene.transition_duration_ms || 500) / 1000]}
+                  onValueChange={([value]) => handleUpdate({ transition_duration_ms: value * 1000 })}
                   min={0.1}
                   max={2}
                   step={0.1}
@@ -375,8 +376,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
           <h4 className="font-semibold text-xs mb-2 text-muted-foreground">Scene Info</h4>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Scene Index:</span>
-              <span className="font-mono">{scene.scene_index}</span>
+              <span className="text-muted-foreground">Scene Order:</span>
+              <span className="font-mono">{scene.scene_order}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Created:</span>

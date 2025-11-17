@@ -83,23 +83,33 @@ export async function executeAIAction(
       case 'create_scene': {
         const { data: lastScene } = await supabase
           .from('project_scenes')
-          .select('scene_index')
+          .select('scene_order')
           .eq('project_id', projectId)
-          .order('scene_index', { ascending: false })
+          .order('scene_order', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
-        const nextIndex = (lastScene?.scene_index ?? -1) + 1;
+        const nextOrder = (lastScene?.scene_order ?? -1) + 1;
+        const duration = action.duration || 10;
 
         const { data: scene } = await supabase
           .from('project_scenes')
           .insert({
             project_id: projectId,
             video_id: videoId,
-            scene_index: nextIndex,
-            start_time: 0,
-            end_time: action.duration,
-            layout_type: action.layout
+            scene_order: nextOrder,
+            timeline_start: 0,
+            timeline_end: duration,
+            duration_seconds: duration,
+            name: `Scene ${nextOrder + 1}`,
+            layout_type: action.layout,
+            background_type: 'solid',
+            background_config: { color: '#000000' },
+            transition_type: 'fade',
+            transition_duration_ms: 500,
+            media_type: 'video',
+            media_start_time: 0,
+            scene_config: {}
           })
           .select()
           .single();
