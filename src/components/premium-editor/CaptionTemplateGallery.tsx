@@ -11,21 +11,23 @@ import { Sparkles, Search, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CaptionTemplateGalleryProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  projectId: string;
-  premiumVideoId: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  projectId?: string;
+  premiumVideoId?: string;
   currentSceneId?: string;
-  userTier: string;
+  userTier?: string;
+  onTemplateApply?: (templateId: string) => void;
 }
 
 export function CaptionTemplateGallery({
-  open,
-  onOpenChange,
+  open = false,
+  onOpenChange = () => {},
   projectId,
   premiumVideoId,
   currentSceneId,
-  userTier
+  userTier = 'free',
+  onTemplateApply
 }: CaptionTemplateGalleryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'free' | 'premium'>('all');
@@ -51,7 +53,16 @@ export function CaptionTemplateGallery({
   });
 
   const handleApply = async (templateId: string) => {
+    // If custom handler provided, use it
+    if (onTemplateApply) {
+      onTemplateApply(templateId);
+      return;
+    }
+
+    // Otherwise use default behavior
     try {
+      if (!projectId) return;
+      
       await applyTemplate.mutateAsync({
         projectId,
         templateId,

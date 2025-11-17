@@ -41,7 +41,7 @@ export function PremiumEditorLayout() {
   const [showAI, setShowAI] = useState(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   
-  const { data: subscription, isLoading: subLoading } = useSubscription();
+  const { subscription_tier, loading: subLoading } = useSubscription();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
   
   const { data: segments = [] } = useQuery({
@@ -58,8 +58,8 @@ export function PremiumEditorLayout() {
     enabled: !!videoId
   });
 
-  const hasAccess = subscription?.subscription_tier && 
-    ['standard', 'advanced', 'enterprise'].includes(subscription.subscription_tier.toLowerCase());
+  const hasAccess = subscription_tier && 
+    ['standard', 'advanced', 'enterprise'].includes(subscription_tier.toLowerCase());
 
   const handleSave = async () => {
     if (!project) {
