@@ -270,7 +270,8 @@ Return JSON only:`;
   }
 
   /**
-   * Remove filler words (um, uh, like, you know) from video transcript
+   * Remove filler words from transcript
+   * Detects: um, uh, like, you know, so, actually, basically, etc.
    * 
    * @param videoId - Video to analyze
    * @param projectId - Optional project ID
@@ -278,52 +279,70 @@ Return JSON only:`;
    * 
    * @example
    * const result = await removeFillerWords('video-123');
-   * console.log(`Found ${result.data.fillerCount} filler words`);
+   * console.log(`Found ${result.data.count} filler words`);
    */
-  async removeFillerWords(videoId: string, projectId?: string): Promise<APIResponse<{ fillerCount: number; fillers: FillerWord[] }>> {
+  async removeFillerWords(
+    videoId: string,
+    projectId?: string
+  ): Promise<APIResponse<{ detected: FillerWord[]; count: number }>> {
     try {
-      console.log('[AI Orchestrator] Starting filler word removal for video:', videoId);
+      console.log('[AI Orchestrator] Removing filler words for video:', videoId);
       
-      // Load transcript
+      // Step 1: Load transcript
       const segments = await this.loadTranscript(videoId);
       if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+        return {
+          success: false,
+          error: {
+            code: 'NO_TRANSCRIPT',
+            message: 'No transcript found for this video'
+          }
+        };
       }
       
-      console.log(`[AI Orchestrator] Loaded ${segments.length} transcript segments`);
-      
-      // Format transcript for AI
+      // Step 2: Format transcript for AI
       const transcriptText = this.formatTranscriptForAI(segments);
       
-      // Analyze with AI
+      // Step 3: Use Gemini to identify filler words
       const model = getModel();
-      const prompt = `Analyze this video transcript and identify ALL filler words (um, uh, like, you know, so, basically, actually, etc.).
+      const prompt = `Analyze this video transcript and identify ALL filler words and phrases.
+
+Common filler words to detect:
+- um, uh, er, ah
+- like, you know, I mean
+- so, actually, basically, literally
+- kind of, sort of
+- right, okay, well
 
 Transcript:
 ${transcriptText}
 
-Return ONLY valid JSON (no markdown) with this structure:
+For each filler word detected, return JSON:
 {
   "fillers": [
     {
-      "startTime": 12.5,
-      "endTime": 12.8,
-      "text": "um",
-      "reason": "Filler word that interrupts speech flow",
-      "confidence": 0.95
+      "segmentId": "extract from [time] markers",
+      "startTime": number (in seconds),
+      "endTime": number (in seconds),
+      "text": "the filler word/phrase",
+      "reason": "brief explanation why this is a filler",
+      "confidence": 0.0-1.0 (how confident you are this is a filler)
     }
   ]
 }
 
-Be thorough - include ALL filler words found.`;
+Only include segments that are clearly filler words. Be conservative - don't flag words that add meaning.
+Return ONLY valid JSON (no markdown, no explanation):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
-      const parsed = this.parseAIResponse<{ fillers: Array<{ startTime: number; endTime: number; text: string; reason: string; confidence: number }> }>(responseText);
       
-      console.log(`[AI Orchestrator] AI found ${parsed.fillers.length} filler words`);
+      // Step 4: Parse AI response
+      const parsed = this.parseAIResponse<{ fillers: FillerWord[] }>(responseText);
       
-      // Create suggestions in database
+      console.log('[AI Orchestrator] Detected fillers:', parsed.fillers.length);
+      
+      // Step 5: Create AI suggestions for each filler
       for (const filler of parsed.fillers) {
         await this.createSuggestion({
           video_id: videoId,
@@ -334,24 +353,18 @@ Be thorough - include ALL filler words found.`;
           confidence: filler.confidence,
           reason: filler.reason,
           suggested_action: 'remove',
-          action_parameters: { text: filler.text }
+          action_parameters: {
+            text: filler.text,
+            segmentId: filler.segmentId
+          }
         });
       }
-      
-      console.log('[AI Orchestrator] Created suggestions in database');
       
       return {
         success: true,
         data: {
-          fillerCount: parsed.fillers.length,
-          fillers: parsed.fillers.map((f, i) => ({
-            segmentId: `filler-${i}`,
-            startTime: f.startTime,
-            endTime: f.endTime,
-            text: f.text,
-            reason: f.reason,
-            confidence: f.confidence
-          }))
+          detected: parsed.fillers,
+          count: parsed.fillers.length
         }
       };
       
@@ -369,7 +382,7 @@ Be thorough - include ALL filler words found.`;
   }
 
   /**
-   * Generate highlight clips based on criteria
+   * Generate highlight clips from video
    * 
    * @param videoId - Video to analyze
    * @param criteria - What to look for (humor, insights, action, key-points)
@@ -383,52 +396,76 @@ Be thorough - include ALL filler words found.`;
     videoId: string,
     criteria: 'humor' | 'insights' | 'action' | 'key-points' = 'key-points',
     projectId?: string
-  ): Promise<APIResponse<{ highlights: Highlight[] }>> {
+  ): Promise<APIResponse<{ highlights: Highlight[]; count: number }>> {
     try {
       console.log('[AI Orchestrator] Generating highlights with criteria:', criteria);
       
+      // Step 1: Load transcript
       const segments = await this.loadTranscript(videoId);
       if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+        return {
+          success: false,
+          error: {
+            code: 'NO_TRANSCRIPT',
+            message: 'No transcript found for this video'
+          }
+        };
       }
       
+      // Step 2: Format transcript
       const transcriptText = this.formatTranscriptForAI(segments);
       
+      // Step 3: Get video duration
+      const duration = segments[segments.length - 1]?.end_time || 0;
+      
+      // Step 4: Use Gemini to find best moments
       const model = getModel();
-      const criteriaPrompts = {
-        humor: 'funny moments, jokes, or amusing situations',
-        insights: 'key insights, important information, or valuable takeaways',
-        action: 'exciting or dynamic moments with energy and movement',
-        'key-points': 'most important and valuable content'
+      const criteriaInstructions = {
+        humor: 'funny moments, jokes, laughter, amusing situations',
+        insights: 'key insights, important revelations, aha moments, valuable information',
+        action: 'exciting moments, high energy, important events, dramatic scenes',
+        'key-points': 'most important points, main takeaways, core messages, essential content'
       };
       
-      const prompt = `Analyze this video transcript and identify 3-5 highlight-worthy moments focused on: ${criteriaPrompts[criteria]}.
+      const prompt = `Analyze this video transcript and identify the BEST moments for a highlight reel.
+
+Criteria: ${criteriaInstructions[criteria]}
+Video duration: ${duration.toFixed(1)} seconds
 
 Transcript:
 ${transcriptText}
 
-Return ONLY valid JSON (no markdown) with this structure:
+Create 3-5 highlight clips that:
+- Are 10-30 seconds long each
+- Capture the best ${criteria} moments
+- Have clear start and end points
+- Tell a complete mini-story
+- Work well as standalone clips
+
+Return JSON:
 {
   "highlights": [
     {
-      "startTime": 45.0,
-      "endTime": 67.5,
-      "score": 0.92,
-      "title": "Key insight about topic",
-      "reason": "This section contains valuable information because..."
+      "startTime": number (in seconds),
+      "endTime": number (in seconds),
+      "score": 0-100 (how good this highlight is),
+      "reason": "detailed explanation why this is a great highlight",
+      "title": "catchy title for this clip (3-5 words)"
     }
   ]
 }
 
-Each highlight should be 15-45 seconds long and highly engaging.`;
+Return ONLY valid JSON (no markdown):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
+      
+      // Step 5: Parse AI response
       const parsed = this.parseAIResponse<{ highlights: Highlight[] }>(responseText);
       
-      console.log(`[AI Orchestrator] Generated ${parsed.highlights.length} highlights`);
+      console.log('[AI Orchestrator] Generated highlights:', parsed.highlights.length);
       
-      // Create suggestions in database
+      // Step 6: Create AI suggestions for each highlight
       for (const highlight of parsed.highlights) {
         await this.createSuggestion({
           video_id: videoId,
@@ -436,16 +473,46 @@ Each highlight should be 15-45 seconds long and highly engaging.`;
           suggestion_type: 'highlight',
           start_time: highlight.startTime,
           end_time: highlight.endTime,
-          confidence: highlight.score,
+          confidence: highlight.score / 100,
           reason: highlight.reason,
-          suggested_action: 'create_highlight',
-          action_parameters: { title: highlight.title, criteria }
+          suggested_action: 'create-clip',
+          action_parameters: {
+            title: highlight.title,
+            score: highlight.score,
+            criteria: criteria
+          }
         });
+        
+        // If project exists, create actual scene
+        if (projectId) {
+          await supabase
+            .from('project_scenes')
+            .insert({
+              project_id: projectId,
+              video_id: videoId,
+              name: highlight.title,
+              scene_order: 0,
+              duration_seconds: highlight.endTime - highlight.startTime,
+              timeline_start: highlight.startTime,
+              timeline_end: highlight.endTime,
+              layout_type: 'fullscreen',
+              background_type: 'solid',
+              transition_type: 'fade',
+              transition_duration_ms: 500,
+              media_type: 'video',
+              media_start_time: highlight.startTime,
+              media_end_time: highlight.endTime,
+              visual_description: `Highlight: ${highlight.reason}`
+            });
+        }
       }
       
       return {
         success: true,
-        data: { highlights: parsed.highlights }
+        data: {
+          highlights: parsed.highlights,
+          count: parsed.highlights.length
+        }
       };
       
     } catch (error: any) {
@@ -471,65 +538,80 @@ Each highlight should be 15-45 seconds long and highly engaging.`;
    * @example
    * const result = await generateChapters('video-123');
    */
-  async generateChapters(videoId: string, projectId?: string): Promise<APIResponse<{ chapters: Chapter[] }>> {
+  async generateChapters(
+    videoId: string,
+    projectId?: string
+  ): Promise<APIResponse<{ chapters: Chapter[]; count: number }>> {
     try {
       console.log('[AI Orchestrator] Generating chapters for video:', videoId);
       
       const segments = await this.loadTranscript(videoId);
       if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+        return {
+          success: false,
+          error: {
+            code: 'NO_TRANSCRIPT',
+            message: 'No transcript found for this video'
+          }
+        };
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      
       const model = getModel();
-      const prompt = `Analyze this video transcript and create chapter markers for natural topic breaks.
+      
+      const prompt = `Analyze this video transcript and identify natural chapter breaks.
 
 Transcript:
 ${transcriptText}
 
-Return ONLY valid JSON (no markdown) with this structure:
+Create 5-10 chapters that:
+- Mark natural topic transitions
+- Have clear, descriptive titles (3-5 words)
+- Are evenly distributed throughout the video
+- Group related content together
+
+Return JSON:
 {
   "chapters": [
     {
-      "startTime": 0.0,
-      "title": "Introduction",
-      "description": "Overview of the topic"
-    },
-    {
-      "startTime": 45.0,
-      "title": "Main Topic",
-      "description": "Deep dive into core concepts"
+      "startTime": number (in seconds),
+      "title": "Chapter Title",
+      "description": "Brief 1-sentence summary of this chapter"
     }
   ]
 }
 
-Create 3-7 chapters based on natural topic transitions.`;
+Return ONLY valid JSON (no markdown):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
       const parsed = this.parseAIResponse<{ chapters: Chapter[] }>(responseText);
       
-      console.log(`[AI Orchestrator] Generated ${parsed.chapters.length} chapters`);
+      console.log('[AI Orchestrator] Generated chapters:', parsed.chapters.length);
       
-      // Create suggestions in database
       for (const chapter of parsed.chapters) {
         await this.createSuggestion({
           video_id: videoId,
           project_id: projectId,
           suggestion_type: 'chapter',
           start_time: chapter.startTime,
-          end_time: chapter.startTime, // Chapters are markers, not ranges
-          confidence: 0.9,
+          end_time: chapter.startTime,
+          confidence: 0.85,
           reason: chapter.description,
-          suggested_action: 'add_chapter',
-          action_parameters: { title: chapter.title, description: chapter.description }
+          suggested_action: 'add-marker',
+          action_parameters: {
+            title: chapter.title,
+            description: chapter.description
+          }
         });
       }
       
       return {
         success: true,
-        data: { chapters: parsed.chapters }
+        data: {
+          chapters: parsed.chapters,
+          count: parsed.chapters.length
+        }
       };
       
     } catch (error: any) {
@@ -546,7 +628,7 @@ Create 3-7 chapters based on natural topic transitions.`;
   }
 
   /**
-   * Shorten video to target duration by removing less important sections
+   * Shorten video to target duration
    * 
    * @param videoId - Video to analyze
    * @param targetDuration - Desired duration in seconds
@@ -560,99 +642,98 @@ Create 3-7 chapters based on natural topic transitions.`;
     videoId: string,
     targetDuration: number,
     projectId?: string
-  ): Promise<APIResponse<{ segmentsToRemove: SegmentToRemove[]; currentDuration: number; reduction: number }>> {
+  ): Promise<APIResponse<{ segments: SegmentToRemove[]; totalRemoved: number }>> {
     try {
-      console.log(`[AI Orchestrator] Shortening video to ${targetDuration} seconds`);
+      console.log('[AI Orchestrator] Shortening video to', targetDuration, 'seconds');
       
-      // Get video duration
-      const { data: video, error: videoError } = await supabase
-        .from('videos')
-        .select('duration_seconds')
-        .eq('id', videoId)
-        .single();
-      
-      if (videoError) throw videoError;
-      if (!video) throw new Error('Video not found');
-      
-      const currentDuration = video.duration_seconds || 0;
-      const reduction = currentDuration - targetDuration;
-      
-      if (reduction <= 0) {
+      const segments = await this.loadTranscript(videoId);
+      if (!segments || segments.length === 0) {
         return {
           success: false,
           error: {
-            code: 'INVALID_TARGET',
-            message: 'Target duration must be shorter than current duration'
+            code: 'NO_TRANSCRIPT',
+            message: 'No transcript found for this video'
           }
         };
       }
       
-      const segments = await this.loadTranscript(videoId);
-      if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+      const currentDuration = segments[segments.length - 1]?.end_time || 0;
+      const reductionNeeded = currentDuration - targetDuration;
+      
+      if (reductionNeeded <= 0) {
+        return {
+          success: false,
+          error: {
+            code: 'ALREADY_SHORT_ENOUGH',
+            message: `Video is already ${currentDuration.toFixed(1)}s, shorter than target ${targetDuration}s`
+          }
+        };
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      
       const model = getModel();
-      const prompt = `Analyze this ${currentDuration}s video and suggest which segments to remove to reach ${targetDuration}s (remove ${reduction}s total).
+      
+      const prompt = `This video is ${currentDuration.toFixed(1)} seconds long and needs to be shortened to ${targetDuration} seconds.
+You need to remove approximately ${reductionNeeded.toFixed(1)} seconds of content.
 
-Prioritize removing:
-- Pauses and silence
-- Repetitive content
-- Tangents
-- Less important information
-
-Transcript:
+Transcript (with durations):
 ${transcriptText}
 
-Return ONLY valid JSON (no markdown) with this structure:
+Identify segments to remove while:
+- Preserving the core message and key points
+- Maintaining narrative flow
+- Prioritizing removal of:
+  * Long pauses or silence
+  * Repetitive content
+  * Tangential points
+  * Less important details
+
+Return JSON with segments to remove:
 {
-  "segmentsToRemove": [
+  "segments": [
     {
-      "startTime": 23.5,
-      "endTime": 31.2,
-      "duration": 7.7,
-      "reason": "Repetitive explanation already covered"
+      "segmentId": "extract from [time] markers",
+      "startTime": number,
+      "endTime": number,
+      "duration": number,
+      "reason": "why this can be safely removed"
     }
   ]
 }
 
-Total removed duration should equal approximately ${reduction}s.`;
+Make sure the total duration of removed segments is approximately ${reductionNeeded.toFixed(1)} seconds.
+Return ONLY valid JSON (no markdown):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
-      const parsed = this.parseAIResponse<{ segmentsToRemove: Array<{ startTime: number; endTime: number; duration: number; reason: string }> }>(responseText);
+      const parsed = this.parseAIResponse<{ segments: SegmentToRemove[] }>(responseText);
       
-      console.log(`[AI Orchestrator] Suggested ${parsed.segmentsToRemove.length} segments for removal`);
+      const totalRemoved = parsed.segments.reduce((sum, s) => sum + s.duration, 0);
       
-      // Create suggestions
-      for (const segment of parsed.segmentsToRemove) {
+      console.log('[AI Orchestrator] Suggested', parsed.segments.length, 'cuts totaling', totalRemoved.toFixed(1), 'seconds');
+      
+      for (const segment of parsed.segments) {
         await this.createSuggestion({
           video_id: videoId,
           project_id: projectId,
           suggestion_type: 'silent-gap',
           start_time: segment.startTime,
           end_time: segment.endTime,
-          confidence: 0.85,
+          confidence: 0.75,
           reason: segment.reason,
           suggested_action: 'remove',
-          action_parameters: { duration: segment.duration }
+          action_parameters: {
+            duration: segment.duration,
+            segmentId: segment.segmentId
+          }
         });
       }
       
       return {
         success: true,
         data: {
-          segmentsToRemove: parsed.segmentsToRemove.map((s, i) => ({
-            segmentId: `remove-${i}`,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-            reason: s.reason
-          })),
-          currentDuration,
-          reduction
+          segments: parsed.segments,
+          totalRemoved: totalRemoved
         }
       };
       
@@ -661,7 +742,7 @@ Total removed duration should equal approximately ${reduction}s.`;
       return {
         success: false,
         error: {
-          code: 'SHORTEN_TO_DURATION_FAILED',
+          code: 'SHORTEN_DURATION_FAILED',
           message: error.message || 'Failed to shorten video',
           details: error
         }
@@ -670,7 +751,7 @@ Total removed duration should equal approximately ${reduction}s.`;
   }
 
   /**
-   * Detect retakes and repeated phrases in the video
+   * Detect retakes and repeated content
    * 
    * @param videoId - Video to analyze
    * @param projectId - Optional project ID
@@ -679,45 +760,57 @@ Total removed duration should equal approximately ${reduction}s.`;
    * @example
    * const result = await detectRetakes('video-123');
    */
-  async detectRetakes(videoId: string, projectId?: string): Promise<APIResponse<{ retakes: any[] }>> {
+  async detectRetakes(
+    videoId: string,
+    projectId?: string
+  ): Promise<APIResponse<{ retakes: any[]; count: number }>> {
     try {
       console.log('[AI Orchestrator] Detecting retakes for video:', videoId);
       
       const segments = await this.loadTranscript(videoId);
       if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+        return {
+          success: false,
+          error: {
+            code: 'NO_TRANSCRIPT',
+            message: 'No transcript found'
+          }
+        };
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      
       const model = getModel();
-      const prompt = `Analyze this transcript and identify false starts, repeated takes, and do-overs where the speaker restarts.
+      
+      const prompt = `Analyze this transcript and identify likely retakes, false starts, and repeated attempts.
+
+Look for:
+- Repeated phrases or sentences
+- False starts (starting a sentence, stopping, starting again)
+- Multiple attempts at saying the same thing
 
 Transcript:
 ${transcriptText}
 
-Return ONLY valid JSON (no markdown) with this structure:
+Return JSON:
 {
   "retakes": [
     {
-      "startTime": 12.5,
-      "endTime": 18.3,
-      "originalAttempt": "Let me start that again...",
-      "reason": "Speaker restarted explanation",
-      "confidence": 0.88
+      "startTime": number,
+      "endTime": number,
+      "reason": "why this is likely a retake",
+      "confidence": 0.0-1.0
     }
   ]
 }
 
-Look for phrases like "let me try that again", "actually", or repeated similar sentences.`;
+Return ONLY valid JSON (no markdown):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
       const parsed = this.parseAIResponse<{ retakes: any[] }>(responseText);
       
-      console.log(`[AI Orchestrator] Detected ${parsed.retakes.length} retakes`);
+      console.log('[AI Orchestrator] Detected retakes:', parsed.retakes.length);
       
-      // Create suggestions
       for (const retake of parsed.retakes) {
         await this.createSuggestion({
           video_id: videoId,
@@ -725,16 +818,19 @@ Look for phrases like "let me try that again", "actually", or repeated similar s
           suggestion_type: 'retake',
           start_time: retake.startTime,
           end_time: retake.endTime,
-          confidence: retake.confidence || 0.8,
+          confidence: retake.confidence,
           reason: retake.reason,
           suggested_action: 'remove',
-          action_parameters: { originalAttempt: retake.originalAttempt }
+          action_parameters: retake
         });
       }
       
       return {
         success: true,
-        data: { retakes: parsed.retakes }
+        data: {
+          retakes: parsed.retakes,
+          count: parsed.retakes.length
+        }
       };
       
     } catch (error: any) {
@@ -751,7 +847,7 @@ Look for phrases like "let me try that again", "actually", or repeated similar s
   }
 
   /**
-   * Suggest transitions between scenes based on content flow
+   * Suggest appropriate transitions between scenes
    * 
    * @param videoId - Video to analyze
    * @param projectId - Optional project ID
@@ -760,67 +856,110 @@ Look for phrases like "let me try that again", "actually", or repeated similar s
    * @example
    * const result = await suggestTransitions('video-123', 'project-456');
    */
-  async suggestTransitions(videoId: string, projectId?: string): Promise<APIResponse<{ transitions: any[] }>> {
+  async suggestTransitions(
+    videoId: string,
+    projectId?: string
+  ): Promise<APIResponse<{ suggestions: any[]; count: number }>> {
     try {
       console.log('[AI Orchestrator] Suggesting transitions for video:', videoId);
       
-      const segments = await this.loadTranscript(videoId);
-      if (!segments || segments.length === 0) {
-        throw new Error('No transcript found for video');
+      if (!projectId) {
+        return {
+          success: false,
+          error: {
+            code: 'PROJECT_REQUIRED',
+            message: 'Project ID required for transition suggestions'
+          }
+        };
       }
       
-      const transcriptText = this.formatTranscriptForAI(segments);
+      const { data: scenes } = await supabase
+        .from('project_scenes')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('scene_order', { ascending: true });
+      
+      if (!scenes || scenes.length < 2) {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_ENOUGH_SCENES',
+            message: 'Need at least 2 scenes for transition suggestions'
+          }
+        };
+      }
       
       const model = getModel();
-      const prompt = `Analyze this transcript and suggest where transitions would improve the flow.
+      const sceneDescriptions = scenes.map(s =>
+        `Scene ${s.scene_order}: "${s.name}" (${s.duration_seconds}s, layout: ${s.layout_type})`
+      ).join('\n');
+      
+      const prompt = `Analyze these video scenes and suggest the best transition for each scene change.
 
-Transcript:
-${transcriptText}
+Scenes:
+${sceneDescriptions}
 
-Suggest transitions for:
-- Topic changes
-- Speaker changes
-- Tone shifts
-- Scene changes
+Available transitions:
+- none: No transition (hard cut)
+- fade: Gradual fade
+- crossfade: Overlapping fade
+- wipe-left/right/up/down: Directional wipe
+- blur: Motion blur
+- zoom: Zoom in/out
+- slide: Slide transition
 
-Return ONLY valid JSON (no markdown) with this structure:
+Return JSON:
 {
-  "transitions": [
+  "suggestions": [
     {
-      "time": 45.2,
-      "transitionType": "fade",
-      "reason": "Topic change from intro to main content",
-      "confidence": 0.9
+      "fromScene": 0,
+      "toScene": 1,
+      "recommendedTransition": "transition-type",
+      "duration": milliseconds (300-1000),
+      "reason": "why this transition works best"
     }
   ]
 }
 
-Types: fade, crossfade, cut, wipe, slide`;
+Return ONLY valid JSON (no markdown):`;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
-      const parsed = this.parseAIResponse<{ transitions: any[] }>(responseText);
+      const parsed = this.parseAIResponse<{ suggestions: any[] }>(responseText);
       
-      console.log(`[AI Orchestrator] Suggested ${parsed.transitions.length} transitions`);
+      console.log('[AI Orchestrator] Generated transition suggestions:', parsed.suggestions.length);
       
-      // Create suggestions
-      for (const transition of parsed.transitions) {
-        await this.createSuggestion({
-          video_id: videoId,
-          project_id: projectId,
-          suggestion_type: 'transition',
-          start_time: transition.time,
-          end_time: transition.time,
-          confidence: transition.confidence || 0.85,
-          reason: transition.reason,
-          suggested_action: 'add_transition',
-          action_parameters: { transitionType: transition.transitionType }
-        });
+      for (const suggestion of parsed.suggestions) {
+        const scene = scenes.find(s => s.scene_order === suggestion.fromScene);
+        if (scene) {
+          await supabase
+            .from('project_scenes')
+            .update({
+              transition_type: suggestion.recommendedTransition,
+              transition_duration_ms: suggestion.duration
+            })
+            .eq('id', scene.id);
+          
+          await this.createSuggestion({
+            video_id: videoId,
+            project_id: projectId,
+            suggestion_type: 'transition',
+            start_time: scene.timeline_end,
+            end_time: scene.timeline_end,
+            confidence: 0.8,
+            reason: suggestion.reason,
+            suggested_action: 'apply-transition',
+            action_parameters: suggestion
+          });
+        }
       }
       
       return {
         success: true,
-        data: { transitions: parsed.transitions }
+        data: {
+          suggestions: parsed.suggestions,
+          count: parsed.suggestions.length
+        }
       };
       
     } catch (error: any) {
