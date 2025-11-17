@@ -26,8 +26,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { generateSocialClip } from '@/services/clipGeneration';
-import { processClipInBrowser } from '@/services/socialClipProcessor';
+import { processMultiSegmentClip } from '@/services/multiSegmentProcessor';
 import { SegmentTimeline } from '@/components/video-editor/SegmentTimeline';
 import { WaveformTimeline } from '@/components/video-editor/WaveformTimeline';
 
@@ -415,56 +414,86 @@ export const SocialClipsSection: React.FC<SocialClipsSectionProps> = ({
 
       toast.loading('Preparing clip generation...', { id: toastId });
 
-      // Step 1: Create database record via edge function
-      const response = await generateSocialClip({
-        videoId: video.id,
-        highlightId: selectedHighlight || undefined,
+      // CRITICAL: Create database record for social clip
+      const platform = platforms.find(p => p.key === selectedPlatform);
+      if (!platform) throw new Error('Invalid platform selected');
+
+      const clipData = {
+        video_id: video.id,
         platform: selectedPlatform,
-        startTime: clipStartTime,
-        endTime: clipEndTime,
-        captionStyle,
-        cropMode,
-        segments: segmentIds
-      });
+        title: `${platform.name} Clip - ${new Date().toLocaleDateString()}`,
+        caption_template_id: null,
+        source_segments: editMode === 'segments' 
+          ? segments.filter(s => selectedSegments.has(s.id)).map(s => ({
+              segment_id: s.id,
+              start_time: s.startTime,
+              end_time: s.endTime,
+              text: s.text
+            }))
+          : [{
+              segment_id: null,
+              start_time: clipStartTime,
+              end_time: clipEndTime,
+              text: ''
+            }],
+        start_time: clipStartTime,
+        end_time: clipEndTime,
+        duration,
+        status: 'pending',
+        aspect_ratio: platform.aspectRatio,
+        resolution: platform.resolution,
+        caption_style: captionStyle,
+        crop_mode: cropMode,
+        highlight_id: selectedHighlight || null
+      };
 
-      if (!response.success || !response.clipId) {
-        throw new Error(response.error || 'Failed to initiate clip generation');
-      }
+      const { data: clip, error: clipError } = await supabase
+        .from('social_clips')
+        .insert(clipData)
+        .select()
+        .single();
 
-      if (!response.videoUrl) {
-        throw new Error('Video URL not available');
-      }
+      if (clipError) throw clipError;
+      if (!clip) throw new Error('Failed to create clip record');
 
-      console.log('✅ Clip record created:', response.clipId);
+      console.log('✅ Clip record created:', clip.id);
+      toast.loading('Processing video...', { id: toastId });
 
-      // Step 2: Process video in browser with FFmpeg
-      const result = await processClipInBrowser({
-        clipId: response.clipId,
-        videoUrl: response.videoUrl,
-        startTime: clipStartTime,
-        endTime: clipEndTime,
-        platform: selectedPlatform as 'tiktok' | 'instagram_reel' | 'youtube_short' | 'linkedin',
-        onProgress: (progress, stage) => {
-          toast.loading(stage, {
-            id: toastId,
-            description: `${Math.round(progress)}%`
-          });
-        }
-      });
+      // CRITICAL: Process clip in browser with status updates
+      const segmentsData = editMode === 'segments' 
+        ? segments.filter(s => selectedSegments.has(s.id)).map(s => ({
+            segmentId: s.id,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            text: s.text
+          }))
+        : [{
+            segmentId: null as any,
+            startTime: clipStartTime,
+            endTime: clipEndTime,
+            text: ''
+          }];
 
-      if (!result.success) {
-        throw new Error(result.error || 'Processing failed');
+      await processMultiSegmentClip(clip.id, video.id, segmentsData, null);
+
+      // Fetch the updated clip to get the clip URL
+      const { data: updatedClip } = await supabase
+        .from('social_clips')
+        .select('*')
+        .eq('id', clip.id)
+        .single();
+
+      if (updatedClip?.clip_url) {
+        setLastGeneratedClip({
+          id: updatedClip.id,
+          clip_url: updatedClip.clip_url,
+          platform: selectedPlatform
+        });
       }
 
       toast.success('Clip generated successfully!', {
         id: toastId,
         description: 'Your clip is ready'
-      });
-
-      setLastGeneratedClip({
-        id: response.clipId,
-        clipUrl: result.clipUrl!,
-        platform: selectedPlatform
       });
 
       // Refresh clips list
