@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ZoomIn, ZoomOut } from 'lucide-react';
+import { Plus, ZoomIn, ZoomOut, Palette } from 'lucide-react';
 import { useVideoProject } from '@/hooks/useVideoProject';
+import { useSubscription } from '@/hooks/useSubscription';
+import { CaptionTemplateGallery } from './CaptionTemplateGallery';
 
 interface TimelineProps {
   videoId: string;
@@ -9,6 +12,8 @@ interface TimelineProps {
 
 export function Timeline({ videoId }: TimelineProps) {
   const { project, scenes, isLoading } = useVideoProject(videoId);
+  const { subscription_tier } = useSubscription();
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
 
   if (isLoading) {
     return <div>Loading timeline...</div>;
@@ -23,6 +28,10 @@ export function Timeline({ videoId }: TimelineProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-light">Timeline</h2>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowTemplateGallery(true)}>
+            <Palette className="w-4 h-4 mr-2" />
+            Caption Templates
+          </Button>
           <Button variant="outline" size="sm">
             <ZoomOut className="w-4 h-4" />
           </Button>
@@ -73,6 +82,17 @@ export function Timeline({ videoId }: TimelineProps) {
           </div>
         )}
       </Card>
+
+      {/* Caption Template Gallery */}
+      {project && (
+        <CaptionTemplateGallery
+          open={showTemplateGallery}
+          onOpenChange={setShowTemplateGallery}
+          projectId={project.id}
+          premiumVideoId={videoId}
+          userTier={subscription_tier || 'free'}
+        />
+      )}
     </div>
   );
 }
