@@ -265,12 +265,12 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
             {scene.transition_type !== 'none' && (
               <div>
                 <Label htmlFor="transition-duration" className="text-xs">
-                  Duration: {scene.transition_duration || 0.5}s
+                  Duration: {(scene.transition_duration_ms || 500) / 1000}s
                 </Label>
                 <Slider
                   id="transition-duration"
-                  value={[scene.transition_duration || 0.5]}
-                  onValueChange={([value]) => handleUpdate({ transition_duration: value })}
+                  value={[(scene.transition_duration_ms || 500) / 1000]}
+                  onValueChange={([value]) => handleUpdate({ transition_duration_ms: value * 1000 })}
                   min={0.1}
                   max={2}
                   step={0.1}
@@ -375,8 +375,8 @@ export function ScenePropertiesPanel({ selectedSceneId, projectId }: SceneProper
           <h4 className="font-semibold text-xs mb-2 text-muted-foreground">Scene Info</h4>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Scene Index:</span>
-              <span className="font-mono">{scene.scene_index}</span>
+              <span className="text-muted-foreground">Scene Order:</span>
+              <span className="font-mono">{scene.scene_order}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Created:</span>
