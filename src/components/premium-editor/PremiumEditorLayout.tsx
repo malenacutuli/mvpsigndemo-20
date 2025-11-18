@@ -545,6 +545,16 @@ export function PremiumEditorLayout() {
       <div className="border-b bg-card">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/assets/axessible-logo.png"
+                alt="Axessible"
+                className="h-8 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+            </Link>
+            <div className="h-6 w-px bg-border" />
             <Link to="/videos">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
