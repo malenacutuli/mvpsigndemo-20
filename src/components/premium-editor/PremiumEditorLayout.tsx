@@ -11,7 +11,7 @@ import { usePremiumEditor } from '@/store/premiumEditorStore';
 // Import all components
 import { MultiTrackTimeline } from './MultiTrackTimeline';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
-import { VideoCanvas } from './VideoCanvas';
+import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { ElementsPanel } from './ElementsPanel';
 import { AIToolsPanel } from './AIToolsPanel';
 import { TextBasedEditor } from './TextBasedEditor';
@@ -31,6 +31,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [characters, setCharacters] = useState<any[]>([]);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
 
   // Use props first, fallback to route params
   const videoId = propsVideoId || routeVideoId;
@@ -291,13 +292,16 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
-          {/* LEFT PANEL - Text Editor / Transcript */}
-          <ResizablePanel
-            defaultSize={ui.leftPanelWidth}
-            minSize={20}
-            maxSize={40}
-          >
+        <ResizablePanelGroup direction="vertical">
+          {/* Top Panel - Horizontal Layout */}
+          <ResizablePanel defaultSize={75} minSize={50}>
+            <ResizablePanelGroup direction="horizontal">
+              {/* LEFT PANEL - Text Editor / Transcript */}
+              <ResizablePanel
+                defaultSize={ui.leftPanelWidth}
+                minSize={20}
+                maxSize={40}
+              >
             <div className="h-full border-r">
               <Tabs defaultValue="transcript" className="h-full flex flex-col">
                 <TabsList className="w-full">
@@ -341,23 +345,42 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           {/* CENTER PANEL - Video Canvas */}
           <ResizablePanel defaultSize={45} minSize={30}>
-            <div className="h-full flex flex-col">
-              <VideoCanvas
-                videoUrl={project.videoUrl}
-                currentTime={playback.currentTime}
-                isPlaying={playback.isPlaying}
-                playbackRate={playback.playbackRate}
-                volume={playback.volume}
-                isMuted={playback.isMuted}
-                elements={elements}
-                selectedElementId={selectedElementId}
-                onTimeUpdate={setCurrentTime}
-                onTogglePlayback={togglePlayback}
-                onVolumeChange={setVolume}
-                onToggleMute={toggleMute}
-                onElementSelect={selectElement}
-                onElementUpdate={updateElement}
+            <div className="h-full relative">
+              <EnhancedVideoPlayer
+                videoSrc={project.videoUrl}
+                posterSrc={project.thumbnailUrl || undefined}
+                title={project.name}
+                videoId={project.videoId}
+                language={currentLanguage}
+                contentType="education"
+                className="w-full h-full"
+                onLanguageChange={setCurrentLanguage}
               />
+              
+              {/* Element overlay layer for shapes/text */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="relative w-full h-full pointer-events-auto">
+                  {elements
+                    .sort((a, b) => a.zIndex - b.zIndex)
+                    .map(element => (
+                      <div
+                        key={element.id}
+                        style={{
+                          position: 'absolute',
+                          left: `${element.x}px`,
+                          top: `${element.y}px`,
+                          width: `${element.width}px`,
+                          height: `${element.height}px`,
+                          transform: `rotate(${element.rotation}deg)`,
+                          opacity: element.opacity,
+                          backgroundColor: element.data?.fill || 'transparent',
+                          zIndex: element.zIndex,
+                        }}
+                        onClick={() => selectElement(element.id)}
+                      />
+                    ))}
+                </div>
+              </div>
             </div>
           </ResizablePanel>
 
@@ -405,17 +428,41 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                 </TabsContent>
               </Tabs>
             </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
 
-      {/* Bottom Timeline */}
-      <div className="border-t" style={{ height: ui.timelineHeight }}>
-        {/* Timeline component - to be implemented */}
-        <div className="h-full flex items-center justify-center text-muted-foreground">
-          <p className="text-sm">Timeline (to be implemented)</p>
-        </div>
-      </div>
+        <ResizableHandle withHandle />
+
+        {/* Bottom Panel - Timeline */}
+        <ResizablePanel 
+          defaultSize={25} 
+          minSize={22}
+          maxSize={40}
+        >
+          <div className="h-full bg-background border-t-2 border-border" style={{ minHeight: '220px' }}>
+            {scenes.length > 0 ? (
+              <MultiTrackTimeline
+                scenes={scenes.map(scene => ({
+                  ...scene,
+                  layout: 'default',
+                  elements: []
+                }))}
+                duration={project.duration || 0}
+                currentTime={playback.currentTime}
+                zoom={ui.timelineZoom}
+                onTimeUpdate={setCurrentTime}
+                onSceneSelect={(id) => selectScene(id || null)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <p>Loading timeline...</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
 
       {/* Keyboard Shortcuts */}
       <KeyboardShortcuts
