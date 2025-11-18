@@ -41,31 +41,31 @@ export function RightPanelTabs({
       className="h-full flex flex-col"
     >
       <TabsList className="grid grid-cols-7 w-full rounded-none border-b">
-        <TabsTrigger value="ai-tools" className="gap-2">
+        <TabsTrigger value="ai-tools" className="gap-2 font-light">
           <Wand2 className="h-4 w-4" />
           <span className="hidden xl:inline">AI</span>
         </TabsTrigger>
-        <TabsTrigger value="elements" className="gap-2">
+        <TabsTrigger value="elements" className="gap-2 font-light">
           <Layers className="h-4 w-4" />
           <span className="hidden xl:inline">Elements</span>
         </TabsTrigger>
-        <TabsTrigger value="captions" className="gap-2">
+        <TabsTrigger value="captions" className="gap-2 font-light">
           <Type className="h-4 w-4" />
           <span className="hidden xl:inline">Captions</span>
         </TabsTrigger>
-        <TabsTrigger value="media" className="gap-2">
+        <TabsTrigger value="media" className="gap-2 font-light">
           <Image className="h-4 w-4" />
           <span className="hidden xl:inline">Media</span>
         </TabsTrigger>
-        <TabsTrigger value="properties" className="gap-2">
+        <TabsTrigger value="properties" className="gap-2 font-light">
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Props</span>
         </TabsTrigger>
-        <TabsTrigger value="accessibility" className="gap-2">
+        <TabsTrigger value="accessibility" className="gap-2 font-light">
           <Accessibility className="h-4 w-4" />
           <span className="hidden xl:inline">A11y</span>
         </TabsTrigger>
-        <TabsTrigger value="underlord" className="gap-2">
+        <TabsTrigger value="underlord" className="gap-2 font-light">
           <Sparkles className="h-4 w-4" />
           <span className="hidden xl:inline">Underlord</span>
         </TabsTrigger>
@@ -81,15 +81,15 @@ export function RightPanelTabs({
         </TabsContent>
 
         <TabsContent value="elements" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground">Elements panel coming soon...</div>
+          <div className="text-sm text-muted-foreground font-light">Elements panel coming soon...</div>
         </TabsContent>
 
         <TabsContent value="captions" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground">Captions panel coming soon...</div>
+          <div className="text-sm text-muted-foreground font-light">Captions panel coming soon...</div>
         </TabsContent>
 
         <TabsContent value="media" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground">Media library coming soon...</div>
+          <div className="text-sm text-muted-foreground font-light">Media library coming soon...</div>
         </TabsContent>
 
         <TabsContent value="properties" className="h-full m-0">
@@ -97,8 +97,8 @@ export function RightPanelTabs({
             {selectedSceneId ? (
               <>
                 <Settings className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm font-medium">Scene Properties</p>
-                <p className="text-xs text-muted-foreground">Scene ID: {selectedSceneId}</p>
+                <p className="text-sm font-light">Scene Properties</p>
+                <p className="text-xs text-muted-foreground font-light">Scene ID: {selectedSceneId}</p>
               </>
             ) : (
               <>

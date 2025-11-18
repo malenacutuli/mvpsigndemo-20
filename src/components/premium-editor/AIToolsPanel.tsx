@@ -422,7 +422,7 @@ export function AIToolsPanel({
           {Object.entries(groupedTools).map(([category, tools]) => (
             <div key={category}>
               {/* Category Header */}
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wide mb-3">
                 {CATEGORY_NAMES[category as AIToolCategory]}
               </h3>
 
@@ -454,19 +454,19 @@ export function AIToolsPanel({
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">
+                            <span className="font-light text-sm">
                               {tool.name}
                             </span>
                             {tool.badge && (
                               <Badge 
                                 variant="secondary" 
-                                className="text-xs px-1.5 py-0"
+                                className="text-xs px-1.5 py-0 font-light"
                               >
                                 {tool.badge}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
+                          <p className="text-xs text-muted-foreground font-light leading-relaxed">
                             {tool.description}
                           </p>
                         </div>

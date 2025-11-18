@@ -779,11 +779,11 @@ export function PremiumEditorLayout() {
                     <div className="px-4 pt-4 pb-2">
                       <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <h2 className="font-semibold text-foreground">
+                          <h2 className="font-light text-foreground">
                             {videoTitle || 'Video Preview'}
                           </h2>
                           {selectedSceneId && (
-                            <Badge variant="outline" className="font-mono text-xs">
+                            <Badge variant="outline" className="font-mono text-xs font-light">
                               Scene {scenes.findIndex(s => s.id === selectedSceneId) + 1} of {scenes.length}
                             </Badge>
                           )}
@@ -817,17 +817,17 @@ export function PremiumEditorLayout() {
                           <div className="w-full h-full flex items-center justify-center">
                             <div className="text-center">
                               <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
-                              <span className="text-sm text-muted-foreground">Loading video...</span>
+                              <span className="text-sm text-muted-foreground font-light">Loading video...</span>
                             </div>
                           </div>
                         ) : !videoUrl ? (
                           <div className="w-full h-full flex items-center justify-center">
                             <div className="text-center">
-                              <p className="text-destructive mb-2">Failed to load video</p>
-                              <p className="text-sm text-muted-foreground mb-4">
+                              <p className="text-destructive font-light mb-2">Failed to load video</p>
+                              <p className="text-sm text-muted-foreground font-light mb-4">
                                 The video URL could not be loaded. Please refresh the page.
                               </p>
-                              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                              <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="font-light">
                                 Refresh Page
                               </Button>
                             </div>
@@ -835,12 +835,12 @@ export function PremiumEditorLayout() {
                         ) : scenes.length === 0 ? (
                           <div className="w-full h-full flex items-center justify-center">
                             <div className="text-center">
-                              <p className="text-muted-foreground mb-2">No scenes available</p>
-                              <p className="text-sm text-muted-foreground mb-4">
+                              <p className="text-muted-foreground font-light mb-2">No scenes available</p>
+                              <p className="text-sm text-muted-foreground font-light mb-4">
                                 Create scenes from your transcript to start editing
                               </p>
                               {!isGeneratingScenes && (
-                                <Button onClick={handleGenerateScenes} size="sm">
+                                <Button onClick={handleGenerateScenes} size="sm" className="font-light">
                                   <Sparkles className="w-4 h-4 mr-2" />
                                   Generate Scenes
                                 </Button>
@@ -967,15 +967,15 @@ export function PremiumEditorLayout() {
 
               <TabsContent value="export" className="m-0 p-4">
                 <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Export Options</h3>
-                  <p className="text-muted-foreground mb-6">
+                  <h3 className="text-lg font-light mb-4">Export Options</h3>
+                  <p className="text-muted-foreground font-light mb-6">
                     Export your project in various professional formats including DOCX transcripts, 
                     AAF timelines, and SRT/VTT subtitles.
                   </p>
                   <Button 
                     onClick={() => setShowExportDialog(true)} 
                     size="lg" 
-                    className="w-full"
+                    className="w-full font-light"
                     disabled={!project}
                   >
                     <Download className="w-5 h-5 mr-2" />
@@ -989,7 +989,7 @@ export function PremiumEditorLayout() {
 
         <div className="w-80 border-l bg-card overflow-auto flex flex-col">
           <div className="p-4 border-b border-border">
-            <h3 className="font-semibold text-sm">Scene Properties</h3>
+            <h3 className="font-light text-sm">Scene Properties</h3>
           </div>
           
           {selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
@@ -1053,7 +1053,7 @@ export function PremiumEditorLayout() {
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">
-              <div className="text-center text-muted-foreground">
+              <div className="text-center text-muted-foreground font-light">
                 <p>Select a scene to view properties</p>
               </div>
             </div>
@@ -1069,11 +1069,12 @@ export function PremiumEditorLayout() {
         {showAI && project && videoId && (
           <div className="w-96 border-l bg-card flex flex-col">
             <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold">AI Assistant</h3>
+              <h3 className="font-light">AI Assistant</h3>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowAI(false)}
+                className="font-light"
               >
                 ×
               </Button>
