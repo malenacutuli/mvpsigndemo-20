@@ -108,6 +108,37 @@ export function PremiumEditorLayout() {
     enabled: !!videoId
   });
   
+  // Test Supabase connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      if (!videoId) return;
+      
+      console.log('🧪 Testing Supabase connection...');
+      
+      // Test auth status
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session:', session ? 'Active' : 'None', session?.expires_at);
+      
+      // Test query
+      const { data, error } = await supabase
+        .from('videos')
+        .select('id, title')
+        .eq('id', videoId)
+        .single();
+      
+      console.log('Test query result:', { data, error });
+      
+      if (error) {
+        console.error('❌ Supabase connection test failed:', error);
+        toast.error('Database connection issue. Please refresh the page.');
+      } else {
+        console.log('✅ Supabase connection test passed');
+      }
+    };
+    
+    testConnection();
+  }, [videoId]);
+
   // Load all video data on mount
   useEffect(() => {
     const loadVideoData = async () => {
@@ -249,6 +280,15 @@ export function PremiumEditorLayout() {
     });
   }, [dbScenes, transcriptSegments, characters, audioDescriptions]);
 
+  // Auto-select first scene when scenes load
+  useEffect(() => {
+    if (scenes.length > 0 && !selectedSceneId) {
+      console.log('🎬 Auto-selecting first scene:', scenes[0].id);
+      setSelectedSceneId(scenes[0].id);
+      setCurrentTime(scenes[0].startTime);
+    }
+  }, [scenes, selectedSceneId]);
+
   // Fetch AI suggestions
   const { data: aiSuggestions = [] } = useQuery({
     queryKey: ['aiSuggestions', project?.id],
@@ -287,10 +327,27 @@ export function PremiumEditorLayout() {
 
   // Auto-generate scenes from transcript if none exist
   useEffect(() => {
-    if (project?.id && videoId && scenes.length === 0 && !projectLoading) {
-      generateScenesFromTranscript(project.id, videoId);
+    if (project?.id && videoId && scenes.length === 0 && !projectLoading && !isGeneratingScenes) {
+      setIsGeneratingScenes(true);
+      generateScenesFromTranscript(project.id, videoId)
+        .finally(() => setIsGeneratingScenes(false));
     }
-  }, [project?.id, videoId, scenes.length, projectLoading]);
+  }, [project?.id, videoId, scenes.length, projectLoading, isGeneratingScenes]);
+
+  const handleGenerateScenes = async () => {
+    if (!project?.id || !videoId) return;
+    
+    setIsGeneratingScenes(true);
+    try {
+      await generateScenesFromTranscript(project.id, videoId);
+      toast.success('Scenes generated successfully');
+    } catch (error) {
+      console.error('Failed to generate scenes:', error);
+      toast.error('Failed to generate scenes');
+    } finally {
+      setIsGeneratingScenes(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!project) {
@@ -748,7 +805,41 @@ export function PremiumEditorLayout() {
                       </div>
 
                       <div className="bg-muted/30 rounded-lg p-4" style={{ height: '400px' }}>
-                        {selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
+                        {videoDataLoading || projectLoading ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+                              <span className="text-sm text-muted-foreground">Loading video...</span>
+                            </div>
+                          </div>
+                        ) : !videoUrl ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-destructive mb-2">Failed to load video</p>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                The video URL could not be loaded. Please refresh the page.
+                              </p>
+                              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                                Refresh Page
+                              </Button>
+                            </div>
+                          </div>
+                        ) : scenes.length === 0 ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-muted-foreground mb-2">No scenes available</p>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Create scenes from your transcript to start editing
+                              </p>
+                              {!isGeneratingScenes && (
+                                <Button onClick={handleGenerateScenes} size="sm">
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Generate Scenes
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ) : selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
                           <SceneCanvasPreview
                             scene={scenes.find(s => s.id === selectedSceneId)!}
                             videoUrl={videoUrl}
@@ -763,7 +854,7 @@ export function PremiumEditorLayout() {
                             <div className="text-center">
                               <p className="text-muted-foreground mb-2">No scene selected</p>
                               <p className="text-sm text-muted-foreground">
-                                Click a scene in the timeline to start editing
+                                The first scene will be selected automatically
                               </p>
                             </div>
                           </div>
