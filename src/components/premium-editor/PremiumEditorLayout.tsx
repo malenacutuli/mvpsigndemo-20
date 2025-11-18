@@ -19,7 +19,9 @@ import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { SignLanguageManager } from './SignLanguageManager';
 import { ExportManager } from './ExportManager';
 import { CharacterManager } from '@/components/CharacterManager';
-import { RightPanelTabs } from './RightPanelTabs';
+import { PremiumEditorSidebar } from './PremiumEditorSidebar';
+import { VideoAnalysisPanel } from '@/components/VideoAnalysisPanel';
+import { MediaLibrary } from './MediaLibrary';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -32,6 +34,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [characters, setCharacters] = useState<any[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [activeView, setActiveView] = useState('transcript');
 
   // Use props first, fallback to route params
   const videoId = propsVideoId || routeVideoId;
@@ -291,61 +294,123 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="vertical">
-          {/* Top Panel - Horizontal Layout */}
-          <ResizablePanel defaultSize={75} minSize={50}>
-            <ResizablePanelGroup direction="horizontal">
-              {/* LEFT PANEL - Text Editor / Transcript */}
-              <ResizablePanel
-                defaultSize={ui.leftPanelWidth}
-                minSize={20}
-                maxSize={40}
-              >
-            <div className="h-full border-r">
-              <Tabs defaultValue="transcript" className="h-full flex flex-col">
-                <TabsList className="w-full">
-                  <TabsTrigger value="transcript" className="flex-1">Transcript</TabsTrigger>
-                  <TabsTrigger value="ad" className="flex-1">AD</TabsTrigger>
-                  <TabsTrigger value="asl" className="flex-1">ASL</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="transcript" className="flex-1 overflow-hidden">
-                  <TextBasedEditor
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    onTimeUpdate={setCurrentTime}
-                  />
-                </TabsContent>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <PremiumEditorSidebar
+          activeView={activeView}
+          onViewChange={setActiveView}
+        />
 
-                <TabsContent value="ad" className="flex-1 overflow-hidden">
-                  <AudioDescriptionEditor 
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    onTimeUpdate={setCurrentTime}
-                    scenes={scenes}
-                  />
-                </TabsContent>
-
-                <TabsContent value="asl" className="flex-1 overflow-hidden">
-                  <SignLanguageManager 
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    characters={[]}
-                  />
-                </TabsContent>
-              </Tabs>
+        {/* Main Content Area */}
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          
+          {/* Left Panel - Dynamic View */}
+          <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
+            <div className="h-full overflow-y-auto bg-background">
+              {activeView === 'transcript' && (
+                <TextBasedEditor
+                  videoId={project.videoId}
+                  videoUrl={project.videoUrl}
+                  currentTime={playback.currentTime}
+                  onTimeUpdate={setCurrentTime}
+                />
+              )}
+              
+              {activeView === 'characters' && (
+                <CharacterManager
+                  videoId={project.videoId}
+                  onCharactersUpdate={() => loadProject(projectId, videoId)}
+                />
+              )}
+              
+              {activeView === 'captions' && (
+                <div className="p-4">
+                  <h3 className="font-semibold mb-4">Captions with Intention</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Advanced caption styling and synchronization
+                  </p>
+                </div>
+              )}
+              
+              {activeView === 'audio-descriptions' && (
+                <AudioDescriptionEditor 
+                  videoId={project.videoId}
+                  videoUrl={project.videoUrl}
+                  currentTime={playback.currentTime}
+                  onTimeUpdate={setCurrentTime}
+                  scenes={scenes}
+                />
+              )}
+              
+              {activeView === 'sign-language' && (
+                <SignLanguageManager 
+                  videoId={project.videoId}
+                  videoUrl={project.videoUrl}
+                  currentTime={playback.currentTime}
+                  characters={characters}
+                />
+              )}
+              
+              {activeView === 'timeline' && (
+                <div className="p-4">
+                  <h3 className="font-semibold mb-4">Timeline View</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Timeline controls and scene management (see bottom panel)
+                  </p>
+                </div>
+              )}
+              
+              {activeView === 'analysis' && (
+                <VideoAnalysisPanel 
+                  videoId={project.videoId}
+                  assetId={project.videoId}
+                  playbackUrl={project.videoUrl}
+                />
+              )}
+              
+              {activeView === 'ai-tools' && (
+                <AIToolsPanel
+                  videoId={project.videoId}
+                  selectedSceneId={null}
+                  onToolExecute={() => {}}
+                />
+              )}
+              
+              {activeView === 'runway' && (
+                <div className="p-4">
+                  <h3 className="font-semibold mb-4">Runway ML Video Generation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    AI-powered video generation from text prompts
+                  </p>
+                </div>
+              )}
+              
+              {activeView === 'media' && (
+                <MediaLibrary 
+                  videoId={project.videoId}
+                  onMediaSelect={(media) => toast.success('Media added to project')}
+                />
+              )}
+              
+              {activeView === 'elements' && (
+                <ElementsPanel videoId={project.videoId} />
+              )}
+              
+              {activeView === 'export' && (
+                <ExportManager
+                  videoId={project.videoId}
+                  projectId={project.id}
+                  duration={project.duration}
+                />
+              )}
             </div>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
-          {/* CENTER PANEL - Video Canvas */}
-          <ResizablePanel defaultSize={45} minSize={30}>
-            <div className="h-full relative">
+          {/* Center - Video Player (Always Visible) */}
+          <ResizablePanel defaultSize={45} minSize={35}>
+            <div className="h-full relative bg-black">
               <EnhancedVideoPlayer
                 videoSrc={project.videoUrl}
                 posterSrc={project.thumbnailUrl || undefined}
@@ -386,83 +451,54 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           <ResizableHandle withHandle />
 
-          {/* RIGHT PANEL - Tools */}
-          <ResizablePanel
-            defaultSize={ui.rightPanelWidth}
-            minSize={20}
-            maxSize={35}
-          >
-            <div className="h-full border-l">
-              <Tabs value={ui.selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="h-full flex flex-col">
-                <TabsList className="w-full grid grid-cols-4">
-                  <TabsTrigger value="ai-tools">AI</TabsTrigger>
-                  <TabsTrigger value="elements">Elements</TabsTrigger>
-                  <TabsTrigger value="properties">Props</TabsTrigger>
-                  <TabsTrigger value="export">Export</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="ai-tools" className="flex-1 overflow-hidden">
-                  <AIToolsPanel
-                    videoId={project.videoId}
-                    selectedSceneId={null}
-                    onToolExecute={() => {}}
-                  />
-                </TabsContent>
-
-                <TabsContent value="elements" className="flex-1 overflow-hidden">
-                  <ElementsPanel videoId={project.videoId} />
-                </TabsContent>
-
-                <TabsContent value="properties" className="flex-1 overflow-hidden p-4">
-                  <p className="text-sm text-muted-foreground">
-                    Properties panel (implement detailed properties)
+          {/* Right Panel - Properties/Context */}
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <div className="h-full border-l p-4 overflow-y-auto bg-background">
+              <h3 className="font-semibold mb-4">Properties</h3>
+              {selectedElementId ? (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Element properties for selected item
                   </p>
-                </TabsContent>
-
-                <TabsContent value="export" className="flex-1 overflow-hidden">
-                  <ExportManager
-                    videoId={project.videoId}
-                    projectId={project.id}
-                    duration={project.duration}
-                  />
-                </TabsContent>
-              </Tabs>
+                  {/* Element properties UI would go here */}
+                  <div className="space-y-2">
+                    <div className="p-3 border rounded bg-muted/50">
+                      <p className="text-xs font-medium">Selected Element</p>
+                      <p className="text-xs text-muted-foreground mt-1">ID: {selectedElementId}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select an element to edit properties
+                </p>
+              )}
             </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
 
-        <ResizableHandle withHandle />
-
-        {/* Bottom Panel - Timeline */}
-        <ResizablePanel 
-          defaultSize={25} 
-          minSize={22}
-          maxSize={40}
-        >
-          <div className="h-full bg-background border-t-2 border-border" style={{ minHeight: '220px' }}>
-            {scenes.length > 0 ? (
-              <MultiTrackTimeline
-                scenes={scenes.map(scene => ({
-                  ...scene,
-                  layout: 'default',
-                  elements: []
-                }))}
-                duration={project.duration || 0}
-                currentTime={playback.currentTime}
-                zoom={ui.timelineZoom}
-                onTimeUpdate={setCurrentTime}
-                onSceneSelect={(id) => selectScene(id || null)}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <p>Loading timeline...</p>
-              </div>
-            )}
+      {/* Bottom Timeline (Always Visible) */}
+      <div className="border-t bg-background" style={{ height: '240px', minHeight: '200px' }}>
+        {scenes.length > 0 ? (
+          <MultiTrackTimeline
+            scenes={scenes.map(scene => ({
+              ...scene,
+              layout: 'default',
+              elements: []
+            }))}
+            duration={project.duration || 0}
+            currentTime={playback.currentTime}
+            zoom={ui.timelineZoom}
+            onTimeUpdate={setCurrentTime}
+            onSceneSelect={(id) => selectScene(id || null)}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>Loading timeline...</p>
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+        )}
+      </div>
 
       {/* Keyboard Shortcuts */}
       <KeyboardShortcuts
