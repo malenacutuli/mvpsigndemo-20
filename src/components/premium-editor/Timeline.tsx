@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -49,8 +49,9 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab'
   };
 
   const sceneStart = (scene.timeline_start / totalDuration) * timelineWidth;
@@ -65,12 +66,14 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
         width: `${sceneWidth}px`
       }}
       className={`
-        scene-block absolute h-20 rounded-lg border-2 cursor-pointer
-        transition-all duration-200
+        scene-block group absolute h-20 rounded-lg border-2
+        transition-all duration-300 ease-in-out
+        hover:shadow-md hover:scale-[1.02] hover:z-10
         ${isSelected 
-          ? 'border-primary bg-primary/30 shadow-lg shadow-primary/50' 
-          : 'border-border bg-muted hover:border-muted-foreground'
+          ? 'border-primary bg-primary/20 shadow-lg shadow-primary/30 ring-2 ring-primary/50' 
+          : 'border-border bg-muted/80 hover:border-primary/50 hover:bg-muted'
         }
+        ${isDragging ? 'shadow-2xl scale-105 rotate-2' : ''}
       `}
       onClick={onClick}
       {...attributes}
@@ -83,31 +86,34 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
           </span>
           
           {isSelected && (
-            <div className="flex gap-1">
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
-                className="p-1 hover:bg-accent rounded"
+                className="p-1 hover:bg-accent rounded transition-colors duration-150 hover:scale-110"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSplit(scene.timeline_start + scene.duration_seconds / 2);
                 }}
+                title="Split scene (at playhead)"
               >
                 <Scissors className="h-3 w-3" />
               </button>
               <button
-                className="p-1 hover:bg-accent rounded"
+                className="p-1 hover:bg-accent rounded transition-colors duration-150 hover:scale-110"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDuplicate();
                 }}
+                title="Duplicate scene (Cmd/Ctrl+D)"
               >
                 <Copy className="h-3 w-3" />
               </button>
               <button
-                className="p-1 hover:bg-destructive rounded"
+                className="p-1 hover:bg-destructive rounded transition-colors duration-150 hover:scale-110"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                 }}
+                title="Delete scene (Delete)"
               >
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -122,8 +128,11 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
       </div>
 
       {scene.transition_type !== 'none' && (
-        <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center">
-          ⚡
+        <div 
+          className="absolute -right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-xs flex items-center justify-center shadow-lg animate-pulse"
+          title={`Transition: ${scene.transition_type}`}
+        >
+          <span className="text-[10px]">⚡</span>
         </div>
       )}
     </div>
@@ -146,6 +155,59 @@ export const Timeline: React.FC<TimelineProps> = ({
   const playheadRef = useRef<HTMLDivElement>(null);
 
   const timelineWidth = Math.max(1000, duration * 50 * zoom);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Space: Play/Pause
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setIsPlaying(prev => !prev);
+      }
+      
+      // Left/Right arrows: Move playhead
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        const newTime = Math.max(0, currentTime - (e.shiftKey ? 5 : 1));
+        onTimeChange(newTime);
+      }
+      if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        const newTime = Math.min(duration, currentTime + (e.shiftKey ? 5 : 1));
+        onTimeChange(newTime);
+      }
+      
+      // Delete: Delete selected scene
+      if (e.code === 'Delete' && selectedSceneId) {
+        e.preventDefault();
+        const selectedScene = scenes.find(s => s.id === selectedSceneId);
+        if (selectedScene) {
+          sceneManager.deleteScene(selectedSceneId).then(result => {
+            if (result.success) {
+              toast.success('Scene deleted!');
+              setSelectedSceneId(null);
+            }
+          });
+        }
+      }
+      
+      // Cmd/Ctrl + D: Duplicate scene
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyD' && selectedSceneId) {
+        e.preventDefault();
+        const selectedScene = scenes.find(s => s.id === selectedSceneId);
+        if (selectedScene) {
+          sceneManager.duplicateScene(selectedSceneId).then(result => {
+            if (result.success) {
+              toast.success('Scene duplicated!');
+            }
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentTime, duration, selectedSceneId, scenes, onTimeChange]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -211,8 +273,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   const playheadPosition = (currentTime / duration) * timelineWidth;
 
   return (
-    <div className="timeline-container flex flex-col h-full bg-background text-foreground border-t">
-      <div className="timeline-header flex items-center justify-between px-4 py-2 bg-muted/50 border-b">
+    <div className="timeline-container flex flex-col h-full bg-background text-foreground border-t border-border">
+      <div className="timeline-header flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -355,18 +417,21 @@ export const Timeline: React.FC<TimelineProps> = ({
 
           <div
             ref={playheadRef}
-            className="playhead absolute top-0 bottom-0 w-0.5 bg-destructive pointer-events-none z-50"
+            className="playhead absolute top-0 bottom-0 w-0.5 bg-destructive pointer-events-none z-50 transition-all duration-100"
             style={{ left: `${playheadPosition}px` }}
           >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-destructive rounded-full" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-destructive rounded-full shadow-lg shadow-destructive/50" />
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-px h-full bg-destructive/80" />
           </div>
         </div>
       </div>
 
-      <div className="timeline-footer h-8 bg-muted/50 border-t flex items-center px-4 text-xs text-muted-foreground">
+      <div className="timeline-footer h-8 bg-muted/50 border-t border-border flex items-center px-4 text-xs text-muted-foreground backdrop-blur-sm">
         <span>{scenes.length} scenes</span>
         <span className="mx-2">•</span>
         <span>{duration.toFixed(1)}s total</span>
+        <span className="mx-2">•</span>
+        <span className="text-muted-foreground/70">Space: Play/Pause • ←/→: Seek • Del: Delete • Cmd+D: Duplicate</span>
       </div>
     </div>
   );
