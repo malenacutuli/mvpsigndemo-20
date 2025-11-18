@@ -1,7 +1,7 @@
 // src/components/premium-editor/PremiumEditorLayout.tsx
 // REPLACE entire file with this
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,7 +38,6 @@ import { DevTestingPanel } from './DevTestingPanel';
 // Import hooks
 import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
 import { usePremiumAccess } from '@/hooks/usePremiumAccess';
-import { useEffect } from 'react';
 
 export function PremiumEditorLayout() {
   const { id: videoId } = useParams<{ id: string }>();
@@ -53,9 +52,31 @@ export function PremiumEditorLayout() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isGeneratingScenes, setIsGeneratingScenes] = useState(false);
   
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
   
+  // Fetch video data for player
+  const { data: videoData } = useQuery({
+    queryKey: ['videoData', videoId],
+    queryFn: async () => {
+      if (!videoId) return null;
+      const { data } = await supabase
+        .from('videos')
+        .select('title, storage_path, thumbnail_url, language, duration_seconds')
+        .eq('id', videoId)
+        .single();
+      return data;
+    },
+    enabled: !!videoId
+  });
+
+  // Construct video URL from storage path
+  const videoUrl = videoData?.storage_path 
+    ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${videoData.storage_path}`
+    : '';
+
   const { data: segments = [] } = useQuery({
     queryKey: ['transcriptSegments', videoId],
     queryFn: async () => {
@@ -108,6 +129,23 @@ export function PremiumEditorLayout() {
 
   // Admin users and premium tier users have access
   const hasAccess = canAccess || isAdmin;
+
+  // Sync video playback with timeline
+  useEffect(() => {
+    if (videoRef.current && !isPlaying) {
+      videoRef.current.currentTime = currentTime;
+    }
+  }, [currentTime, isPlaying]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(() => setIsPlaying(false));
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
 
   // Auto-generate scenes from transcript if none exist
   useEffect(() => {
@@ -395,8 +433,33 @@ export function PremiumEditorLayout() {
                       </Button>
                     </div>
 
+                    {/* Video Preview */}
+                    <div className="px-4 pt-4 pb-2">
+                      <div className="bg-black rounded-lg overflow-hidden" style={{ maxHeight: '400px' }}>
+                        {videoUrl ? (
+                          <video 
+                            ref={videoRef}
+                            src={videoUrl}
+                            className="w-full h-full"
+                            onTimeUpdate={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              if (isPlaying) {
+                                setCurrentTime(video.currentTime);
+                              }
+                            }}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                          />
+                        ) : (
+                          <div className="w-full h-64 flex items-center justify-center text-muted-foreground">
+                            Loading video...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Waveform */}
-                    <div className="px-4 pt-4">
+                    <div className="px-4 pt-2">
                       <Waveform
                         duration={videoDuration}
                         currentTime={currentTime}
