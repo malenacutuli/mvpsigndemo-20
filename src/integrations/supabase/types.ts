@@ -1715,39 +1715,71 @@ export type Database = {
       }
       sign_language_clips: {
         Row: {
+          border_radius: number | null
           clip_url: string
           created_at: string
           created_by: string | null
           end_time_ms: number
+          has_border: boolean | null
           id: string
+          interpreter: string | null
+          language: string | null
+          opacity: number | null
+          position: string | null
+          size: string | null
           start_time_ms: number
+          synced_with_character: string | null
           transcript_segment_id: string | null
           updated_at: string
           video_id: string
         }
         Insert: {
+          border_radius?: number | null
           clip_url: string
           created_at?: string
           created_by?: string | null
           end_time_ms: number
+          has_border?: boolean | null
           id?: string
+          interpreter?: string | null
+          language?: string | null
+          opacity?: number | null
+          position?: string | null
+          size?: string | null
           start_time_ms: number
+          synced_with_character?: string | null
           transcript_segment_id?: string | null
           updated_at?: string
           video_id: string
         }
         Update: {
+          border_radius?: number | null
           clip_url?: string
           created_at?: string
           created_by?: string | null
           end_time_ms?: number
+          has_border?: boolean | null
           id?: string
+          interpreter?: string | null
+          language?: string | null
+          opacity?: number | null
+          position?: string | null
+          size?: string | null
           start_time_ms?: number
+          synced_with_character?: string | null
           transcript_segment_id?: string | null
           updated_at?: string
           video_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sign_language_clips_synced_with_character_fkey"
+            columns: ["synced_with_character"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       social_clips: {
         Row: {
