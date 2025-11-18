@@ -13,7 +13,7 @@ import { ThumbnailGenerator } from '@/components/ThumbnailGenerator';
 import { ASLClipUploader } from '@/components/ASLClipUploader';
 import { 
   Search, Upload, Image, Video, Music, Sparkles, 
-  Wand2, Play, Loader2, Download, RefreshCw 
+  Wand2, Play, Loader2, Download, RefreshCw, Plus 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,13 +36,14 @@ interface MediaAsset {
 
 interface AIGenerationTask {
   id: string;
-  type: 'image' | 'video';
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number;
+  type?: 'image' | 'video';
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress?: number;
   prompt: string;
   model: string;
   output?: string;
-  createdAt: Date;
+  error?: string;
+  createdAt: string;
 }
 
 export function MediaLibrary({ videoId, onMediaSelect }: MediaLibraryProps) {
@@ -203,98 +204,129 @@ export function MediaLibrary({ videoId, onMediaSelect }: MediaLibraryProps) {
   };
 
   const generateWithRunway = async () => {
-    const { data, error } = await supabase.functions.invoke('runway-generate', {
-      body: {
-        type: aiGenerationType,
-        model: aiModel,
-        prompt: aiPrompt,
-        referenceImage: aiReferenceImage,
-        videoId: videoId,
-        ratio: aiGenerationType === 'image' ? '1920:1080' : '1280:720',
-        duration: aiGenerationType === 'video' ? 5 : undefined
-      }
-    });
-
-    if (error) throw error;
-
-    // Create task tracker
-    const task: AIGenerationTask = {
-      id: data.taskId,
-      type: aiGenerationType,
-      status: 'pending',
-      progress: 0,
+    const taskId = crypto.randomUUID();
+    
+    // Add task to state immediately
+    setAiGenerationTasks(prev => [...prev, {
+      id: taskId,
       prompt: aiPrompt,
       model: aiModel,
-      createdAt: new Date()
-    };
+      status: 'queued',
+      createdAt: new Date().toISOString()
+    }]);
 
-    setAiGenerationTasks(prev => [task, ...prev]);
-    
-    // Poll for completion
-    pollRunwayTask(data.taskId);
-    
-    toast.success('AI generation started!');
+    try {
+      toast.info('Starting AI video generation...');
+
+      // Call Runway ML edge function
+      const { data, error } = await supabase.functions.invoke('prompt-to-video', {
+        body: {
+          action: 'start',
+          prompt: aiPrompt
+        }
+      });
+
+      if (error) throw error;
+
+      // Start polling for status
+      pollGenerationStatus(taskId, data.id);
+
+    } catch (error: any) {
+      console.error('Generation failed:', error);
+      toast.error('Failed to start generation');
+      
+      // Update task status
+      setAiGenerationTasks(prev =>
+        prev.map(t => t.id === taskId
+          ? { ...t, status: 'failed', error: error.message }
+          : t
+        )
+      );
+    }
   };
 
-  const pollRunwayTask = async (taskId: string) => {
-    const maxAttempts = 60; // 5 minutes
+  const pollGenerationStatus = async (taskId: string, runwayTaskId: string) => {
+    const maxAttempts = 120; // 10 minutes (5s intervals)
     let attempts = 0;
 
-    const poll = async () => {
+    const poll = async (): Promise<void> => {
       try {
-        const { data, error } = await supabase.functions.invoke('runway-task-status', {
-          body: { taskId }
+        attempts++;
+
+        // Check status via edge function
+        const { data, error } = await supabase.functions.invoke('prompt-to-video', {
+          body: {
+            action: 'status',
+            id: runwayTaskId
+          }
         });
 
         if (error) throw error;
 
-        // Update task status
-        setAiGenerationTasks(prev => prev.map(task => 
-          task.id === taskId 
-            ? { 
-                ...task, 
-                status: data.status.toLowerCase(),
-                progress: data.status === 'RUNNING' ? 50 : data.status === 'SUCCEEDED' ? 100 : task.progress,
-                output: data.output?.[0]
-              }
-            : task
-        ));
+        console.log(`Poll attempt ${attempts}: Status = ${data.status}`);
 
-        if (data.status === 'SUCCEEDED') {
-          toast.success('AI media generated successfully!');
-          
-          // Add to user media
-          const newMedia: MediaAsset = {
-            id: taskId,
-            type: aiGenerationType,
-            url: data.output[0],
-            thumbnail: data.output[0],
-            title: aiPrompt,
+        // Update task in state
+        setAiGenerationTasks(prev =>
+          prev.map(t => t.id === taskId
+            ? { 
+                ...t, 
+                status: data.status === 'succeeded' ? 'completed' : 
+                        data.status === 'failed' ? 'failed' : 
+                        data.status === 'processing' ? 'processing' : 'queued',
+                progress: data.status === 'processing' ? 50 : 
+                         data.status === 'succeeded' ? 100 : undefined,
+                output: data.videoUrl 
+              }
+            : t
+          )
+        );
+
+        if (data.status === 'succeeded' && data.videoUrl) {
+          // Add to media library
+          const promptText = aiGenerationTasks.find(t => t.id === taskId)?.prompt || 'AI Generated Video';
+          const newAsset: MediaAsset = {
+            id: crypto.randomUUID(),
+            type: 'video',
+            url: data.videoUrl,
+            thumbnail: data.videoUrl,
+            title: promptText,
             source: 'ai',
             provider: 'runway'
           };
           
-          setUserMedia(prev => [newMedia, ...prev]);
+          setUserMedia(prev => [newAsset, ...prev]);
+          toast.success('✨ Video generated successfully!', {
+            description: 'Added to your media library',
+            duration: 5000
+          });
           return;
         }
 
-        if (data.status === 'FAILED') {
-          toast.error('AI generation failed');
+        if (data.status === 'failed') {
+          toast.error('Generation failed', {
+            description: data.error || 'Unknown error'
+          });
           return;
         }
 
-        // Continue polling
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
-        } else {
-          toast.error('AI generation timeout');
+        // Continue polling if not complete
+        if (attempts < maxAttempts && ['queued', 'processing'].includes(data.status)) {
+          setTimeout(() => poll(), 5000);
+        } else if (attempts >= maxAttempts) {
+          toast.error('Generation timeout', {
+            description: 'Check Runway dashboard for status'
+          });
         }
+
       } catch (error) {
-        console.error('Polling failed:', error);
+        console.error('Polling error:', error);
+        if (attempts < maxAttempts) {
+          setTimeout(() => poll(), 5000);
+        }
       }
     };
 
+    // Start polling
     poll();
   };
 
@@ -318,7 +350,7 @@ export function MediaLibrary({ videoId, onMediaSelect }: MediaLibraryProps) {
       prompt: aiPrompt,
       model: aiModel,
       output: data.output,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
 
     setAiGenerationTasks(prev => [task, ...prev]);
@@ -374,10 +406,7 @@ export function MediaLibrary({ videoId, onMediaSelect }: MediaLibraryProps) {
       const storedTasks = localStorage.getItem(`ai_tasks_${videoId}`);
       if (storedTasks) {
         const tasks = JSON.parse(storedTasks);
-        setAiGenerationTasks(tasks.map((t: any) => ({
-          ...t,
-          createdAt: new Date(t.createdAt)
-        })));
+        setAiGenerationTasks(tasks);
       }
     } catch (error) {
       console.error('Failed to load AI tasks:', error);
@@ -571,81 +600,55 @@ export function MediaLibrary({ videoId, onMediaSelect }: MediaLibraryProps) {
                 </CardContent>
               </Card>
 
-              {/* Generation Tasks */}
+              {/* Active Generation Tasks */}
               {aiGenerationTasks.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold">Recent Generations</h3>
+                  <h3 className="font-semibold text-sm">Active Generations</h3>
                   {aiGenerationTasks.map(task => (
-                    <Card key={task.id}>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium line-clamp-2">
-                                {task.prompt}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  {task.model}
-                                </Badge>
-                                <Badge 
-                                  variant={
-                                    task.status === 'completed' ? 'default' :
-                                    task.status === 'failed' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {task.status}
-                                </Badge>
-                              </div>
-                            </div>
-                            {task.output && (
-                              <img
-                                src={task.output}
-                                alt={task.prompt}
-                                className="w-20 h-20 object-cover rounded ml-3"
-                              />
+                    <Card key={task.id} className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{task.prompt}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={
+                              task.status === 'completed' ? 'default' :
+                              task.status === 'failed' ? 'destructive' :
+                              'secondary'
+                            }>
+                              {task.status}
+                            </Badge>
+                            {task.progress && (
+                              <span className="text-xs text-muted-foreground">
+                                {task.progress}%
+                              </span>
                             )}
                           </div>
-
-                          {task.status === 'running' && (
-                            <Progress value={task.progress} />
-                          )}
-
-                          {task.output && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => {
-                                  const asset: MediaAsset = {
-                                    id: task.id,
-                                    type: task.type,
-                                    url: task.output!,
-                                    thumbnail: task.output!,
-                                    title: task.prompt,
-                                    source: 'ai',
-                                    provider: 'runway'
-                                  };
-                                  onMediaSelect(asset);
-                                }}
-                              >
-                                <Play className="w-4 h-4 mr-2" />
-                                Use in Editor
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => window.open(task.output, '_blank')}
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
+                          {task.status === 'processing' && task.progress && (
+                            <Progress value={task.progress} className="h-1 mt-2" />
                           )}
                         </div>
-                      </CardContent>
+                        {task.status === 'completed' && task.output && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const asset: MediaAsset = {
+                                id: task.id,
+                                type: task.type || 'video',
+                                url: task.output!,
+                                thumbnail: task.output!,
+                                title: task.prompt,
+                                source: 'ai',
+                                provider: 'runway'
+                              };
+                              onMediaSelect(asset);
+                              toast.success('Added to timeline');
+                            }}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </Card>
                   ))}
                 </div>
