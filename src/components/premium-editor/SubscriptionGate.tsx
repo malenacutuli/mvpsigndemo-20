@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Crown, CheckCircle2, Sparkles, FileText, Scissors, Film, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface SubscriptionGateProps {
   currentTier: string;
@@ -10,6 +11,7 @@ interface SubscriptionGateProps {
 
 export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/10 to-background p-4">
@@ -58,12 +60,12 @@ export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps
               </div>
 
               <div className="flex items-start gap-5 group hover:translate-x-1 transition-transform">
-                <div className="w-10 h-10 flex-shrink-0 mt-0.5 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 flex-shrink-0 mt-0.5 rounded-lg overflow-hidden bg-background flex items-center justify-center">
+                  <img src="/assets/axessible-logo-assistant.avif" alt="Axessible" className="w-full h-full object-contain" />
                 </div>
                 <div className="space-y-1.5 flex-1">
-                  <h3 className="font-semibold text-lg text-foreground">AI Assistant</h3>
-                  <p className="text-muted-foreground font-light leading-relaxed">Underlord-style editing assistant with natural language commands</p>
+                  <h3 className="font-semibold text-lg text-foreground">{t('premiumEditor.features.aiAssistant.title')}</h3>
+                  <p className="text-muted-foreground font-light leading-relaxed">{t('premiumEditor.features.aiAssistant.description')}</p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 text-primary/60 flex-shrink-0 mt-1" />
               </div>

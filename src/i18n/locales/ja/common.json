@@ -748,7 +748,7 @@
       },
       "aiAssistant": {
         "title": "AIアシスタント",
-        "description": "自然言語コマンドでの編集アシスタント"
+        "description": "自然言語コマンドでのAxessible編集アシスタント"
       },
       "captionTemplates": {
         "title": "字幕テンプレート",
