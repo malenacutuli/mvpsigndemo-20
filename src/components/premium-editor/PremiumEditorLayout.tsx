@@ -169,7 +169,7 @@ export function PremiumEditorLayout() {
     : 60;
 
   // Fetch project scenes
-  const { data: scenes = [] } = useQuery({
+  const { data: dbScenes = [] } = useQuery({
     queryKey: ['projectScenes', project?.id],
     queryFn: async () => {
       if (!project?.id) return [];
@@ -182,6 +182,16 @@ export function PremiumEditorLayout() {
     },
     enabled: !!project?.id
   });
+
+  // Transform database scenes to Timeline Scene format
+  const scenes = dbScenes.map(scene => ({
+    id: scene.id,
+    name: scene.name || `Scene ${scene.scene_order + 1}`,
+    startTime: scene.timeline_start || 0,
+    endTime: scene.timeline_end || (scene.timeline_start || 0) + (scene.duration_seconds || 0),
+    speakerColor: '#3B82F6',
+    transcriptSegmentId: scene.video_id || '',
+  }));
 
   // Fetch AI suggestions
   const { data: aiSuggestions = [] } = useQuery({
