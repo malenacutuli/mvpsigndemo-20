@@ -183,15 +183,64 @@ export function PremiumEditorLayout() {
     enabled: !!project?.id
   });
 
-  // Transform database scenes to Timeline Scene format
-  const scenes = dbScenes.map(scene => ({
-    id: scene.id,
-    name: scene.name || `Scene ${scene.scene_order + 1}`,
-    startTime: scene.timeline_start || 0,
-    endTime: scene.timeline_end || (scene.timeline_start || 0) + (scene.duration_seconds || 0),
-    speakerColor: '#3B82F6',
-    transcriptSegmentId: scene.video_id || '',
-  }));
+  // Transform database scenes to Timeline Scene format with full data
+  const scenes = useMemo(() => {
+    if (dbScenes.length === 0) return [];
+    
+    return dbScenes.map((scene, index) => {
+      // Find matching transcript segment
+      const segment = transcriptSegments.find(s => s.id === scene.video_id);
+      const speaker = segment?.speaker || 'Speaker';
+      const text = segment?.text || '';
+      
+      // Get character and color
+      const character = characters.find(c => c.name === speaker);
+      const speakerColor = character?.color || '#3B82F6';
+      
+      // Convert words format
+      const words = segment?.words?.map((w: any) => ({
+        text: w.text,
+        startTime: w.startTime || w.start_time || w.start,
+        endTime: w.endTime || w.end_time || w.end
+      })) || [];
+      
+      const startTime = scene.timeline_start || 0;
+      const endTime = scene.timeline_end || startTime + (scene.duration_seconds || 0);
+      
+      // Find audio descriptions for this scene
+      const sceneADs = audioDescriptions.filter(ad => 
+        (ad.start_time >= startTime && ad.start_time < endTime) ||
+        (ad.end_time > startTime && ad.end_time <= endTime)
+      );
+      
+      return {
+        id: scene.id,
+        name: scene.name || `Scene ${scene.scene_order + 1}`,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        transcriptSegmentId: scene.video_id || '',
+        speaker,
+        speakerColor,
+        characterType: character?.type as any,
+        text,
+        words,
+        layout: (scene.layout_type as any) || 'fullscreen',
+        order: index,
+        hasAudioDescription: sceneADs.length > 0,
+        hasSignLanguage: false,
+        audioDescriptions: sceneADs.length > 0 ? sceneADs.map(ad => ({
+          id: ad.id,
+          video_id: ad.video_id,
+          start_time: ad.start_time,
+          end_time: ad.end_time,
+          description: ad.description,
+          audio_url: ad.audio_url
+        })) : undefined,
+        signLanguageClipUrl: undefined
+      };
+    });
+  }, [dbScenes, transcriptSegments, characters, audioDescriptions]);
 
   // Fetch AI suggestions
   const { data: aiSuggestions = [] } = useQuery({
@@ -709,10 +758,59 @@ export function PremiumEditorLayout() {
         </div>
 
         <div className="w-80 border-l bg-card overflow-auto flex flex-col gap-4 p-4">
-          <ScenePropertiesPanel 
-            selectedSceneId={selectedSceneId}
-            projectId={project?.id}
-          />
+          {selectedSceneId && scenes.find(s => s.id === selectedSceneId) && (
+            <ScenePropertiesPanel 
+              scene={scenes.find(s => s.id === selectedSceneId)!}
+              videoId={videoId!}
+              videoUrl={videoUrl}
+              videoData={videoData}
+              onSceneUpdate={(updates) => {
+                // Update scene in state
+                const updatedScenes = scenes.map(s =>
+                  s.id === selectedSceneId ? { ...s, ...updates } : s
+                );
+                // Save to database
+                if (project?.id) {
+                  supabase
+                    .from('project_scenes')
+                    .update({
+                      name: updates.name,
+                      timeline_start: updates.startTime,
+                      timeline_end: updates.endTime,
+                      duration_seconds: updates.endTime && updates.startTime 
+                        ? updates.endTime - updates.startTime 
+                        : undefined,
+                      layout_type: updates.layout as any,
+                    })
+                    .eq('id', selectedSceneId)
+                    .then(({ error }) => {
+                      if (error) console.error('Failed to update scene:', error);
+                    });
+                }
+              }}
+              onTranscriptUpdate={(segments) => {
+                setTranscriptSegments(segments);
+              }}
+              onCharactersUpdate={(updatedCharacters) => {
+                setCharacters(updatedCharacters);
+              }}
+              onAudioDescriptionsUpdate={(descriptions) => {
+                // Convert AudioDescriptionSegment[] to proper format
+                const formattedADs = descriptions.map(d => ({
+                  id: d.id || '',
+                  video_id: videoId!,
+                  start_time: d.startTime,
+                  end_time: d.endTime,
+                  description: d.text,
+                  audio_url: d.audio_url,
+                  language: 'en',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }));
+                setAudioDescriptions(formattedADs);
+              }}
+            />
+          )}
           {import.meta.env.DEV && project && videoId && (
             <DevTestingPanel projectId={project.id} videoId={videoId} />
           )}
