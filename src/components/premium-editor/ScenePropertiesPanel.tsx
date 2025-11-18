@@ -1,402 +1,385 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+/**
+ * Scene Properties Panel
+ * 
+ * Comprehensive editor for scene properties that integrates:
+ * - Scene settings (name, layout, duration)
+ * - Transcript editing
+ * - Character management
+ * - Audio descriptions
+ * - Sign language clips
+ */
+
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Settings, 
-  Palette, 
-  Video, 
-  Volume2,
-  Sparkles,
-  Clock,
-  Trash2
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TranscriptEditor } from '@/components/TranscriptEditor';
+import { CharacterManager } from '@/components/CharacterManager';
+import { AudioDescriptionEditor } from '@/components/AudioDescriptionEditor';
+import { SignLanguageUploader } from '@/components/SignLanguageUploader';
+import { Scene } from '@/lib/premium-editor/scene-manager';
+import { cn } from '@/lib/utils';
 
 interface ScenePropertiesPanelProps {
-  selectedSceneId: string | null;
-  projectId?: string;
+  scene: Scene;
+  videoId: string;
+  onSceneUpdate: (updatedScene: Partial<Scene>) => void;
+  onTranscriptUpdate: (segments: any[]) => void;
+  onCharactersUpdate: (characters: any[]) => void;
+  onAudioDescriptionsUpdate: (descriptions: any[]) => void;
 }
 
-export function ScenePropertiesPanel({ selectedSceneId, projectId }: ScenePropertiesPanelProps) {
-  const queryClient = useQueryClient();
+const SCENE_LAYOUTS = [
+  {
+    id: 'fullscreen',
+    name: 'Fullscreen',
+    description: 'Video fills entire frame',
+    icon: '🖼️',
+  },
+  {
+    id: 'pip',
+    name: 'Picture-in-Picture',
+    description: 'Main video with overlay',
+    icon: '📺',
+  },
+  {
+    id: 'split',
+    name: 'Split Screen',
+    description: 'Two videos side-by-side',
+    icon: '⚡',
+  },
+  {
+    id: 'multicam',
+    name: 'Multi-camera',
+    description: 'Multiple camera angles',
+    icon: '📹',
+  },
+  {
+    id: 'intro',
+    name: 'Intro',
+    description: 'Opening scene template',
+    icon: '🎬',
+  },
+] as const;
 
-  const { data: scene, isLoading } = useQuery({
-    queryKey: ['scene', selectedSceneId],
-    queryFn: async () => {
-      if (!selectedSceneId) return null;
-      const { data } = await supabase
-        .from('project_scenes')
-        .select('*')
-        .eq('id', selectedSceneId)
-        .single();
-      return data;
-    },
-    enabled: !!selectedSceneId
-  });
+export function ScenePropertiesPanel({
+  scene,
+  videoId,
+  onSceneUpdate,
+  onTranscriptUpdate,
+  onCharactersUpdate,
+  onAudioDescriptionsUpdate,
+}: ScenePropertiesPanelProps) {
+  const [activeTab, setActiveTab] = useState('layout');
+  const [backgroundType, setBackgroundType] = useState('none');
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['captionTemplates'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('caption_templates')
-        .select('*')
-        .order('use_count', { ascending: false });
-      return data || [];
-    }
-  });
-
-  const updateSceneMutation = useMutation({
-    mutationFn: async ({ sceneId, updates }: { sceneId: string; updates: any }) => {
-      const { data, error } = await supabase
-        .from('project_scenes')
-        .update(updates)
-        .eq('id', sceneId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projectScenes'] });
-      queryClient.invalidateQueries({ queryKey: ['scene', selectedSceneId] });
-      toast.success('Scene updated');
-    },
-    onError: (error) => {
-      console.error('Update error:', error);
-      toast.error('Failed to update scene');
-    }
-  });
-
-  const deleteSceneMutation = useMutation({
-    mutationFn: async (sceneId: string) => {
-      const { error } = await supabase
-        .from('project_scenes')
-        .delete()
-        .eq('id', sceneId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projectScenes'] });
-      toast.success('Scene deleted');
-    },
-    onError: () => {
-      toast.error('Failed to delete scene');
-    }
-  });
-
-  const handleUpdate = (updates: any) => {
-    if (!selectedSceneId) return;
-    updateSceneMutation.mutate({ sceneId: selectedSceneId, updates });
-  };
-
-  const handleDelete = () => {
-    if (!selectedSceneId) return;
-    if (confirm('Are you sure you want to delete this scene?')) {
-      deleteSceneMutation.mutate(selectedSceneId);
-    }
-  };
-
-  if (!selectedSceneId) {
-    return (
-      <div className="p-6 text-center space-y-4">
-        <Settings className="w-12 h-12 mx-auto text-muted-foreground opacity-30" />
-        <div>
-          <h3 className="font-semibold text-sm mb-1">No Scene Selected</h3>
-          <p className="text-xs text-muted-foreground">
-            Select a scene from the timeline to edit its properties
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading || !scene) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-3/4"></div>
-          <div className="h-8 bg-muted rounded"></div>
-          <div className="h-8 bg-muted rounded"></div>
-          <div className="h-8 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
-  }
-
-  const duration = scene.duration_seconds || 0;
-  const sceneConfig = (scene.scene_config || {}) as Record<string, any>;
+  const sceneDuration = scene.endTime - scene.startTime;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-4 border-b bg-muted/30">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm mb-1">Scene Properties</h3>
-            <p className="text-xs text-muted-foreground">
-              {scene.name || 'Untitled Scene'}
-            </p>
-          </div>
-          <Badge variant="secondary" className="ml-2">
-            {duration.toFixed(1)}s
+    <div className="h-full flex flex-col bg-background border-l border-border">
+      {/* Scene Header */}
+      <div className="p-4 border-b border-border space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-foreground">Scene Properties</h3>
+          <Badge variant="outline" className="font-mono">
+            {sceneDuration.toFixed(1)}s
+          </Badge>
+        </div>
+        
+        {/* Scene Name Input */}
+        <div className="space-y-2">
+          <Label htmlFor="scene-name" className="text-sm font-medium">
+            Scene Name
+          </Label>
+          <Input
+            id="scene-name"
+            value={scene.name}
+            onChange={(e) => onSceneUpdate({ name: e.target.value })}
+            placeholder="Enter scene name..."
+            className="h-9"
+          />
+        </div>
+
+        {/* Scene Order Badge */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Order:</span>
+          <Badge variant="secondary" className="font-mono">
+            #{scene.order + 1}
           </Badge>
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Settings className="w-4 h-4" />
-            <h4 className="font-semibold text-sm">Basic Settings</h4>
-          </div>
+      {/* Tabbed Content */}
+      <Tabs 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col overflow-hidden"
+      >
+        <TabsList className="w-full justify-start border-b rounded-none px-4 h-12 bg-muted/30">
+          <TabsTrigger value="layout" className="text-xs">
+            Layout
+          </TabsTrigger>
+          <TabsTrigger value="transcript" className="text-xs">
+            Transcript
+          </TabsTrigger>
+          <TabsTrigger value="characters" className="text-xs">
+            Characters
+          </TabsTrigger>
+          <TabsTrigger value="audio-description" className="text-xs">
+            Audio Description
+          </TabsTrigger>
+          <TabsTrigger value="sign-language" className="text-xs">
+            Sign Language
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="scene-name" className="text-xs">Scene Name</Label>
-              <Input
-                id="scene-name"
-                value={scene.name || ''}
-                onChange={(e) => handleUpdate({ name: e.target.value })}
-                placeholder="Enter scene name"
-                className="h-8 text-sm"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="layout-type" className="text-xs">Layout Type</Label>
-              <Select
-                value={scene.layout_type || 'fullscreen'}
-                onValueChange={(value) => handleUpdate({ layout_type: value })}
-              >
-                <SelectTrigger id="layout-type" className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fullscreen">
-                    <div className="flex items-center gap-2">
-                      <Video className="w-3 h-3" />
-                      Fullscreen
+        {/* LAYOUT TAB */}
+        <TabsContent 
+          value="layout" 
+          className="flex-1 overflow-y-auto p-4 m-0 data-[state=active]:flex data-[state=active]:flex-col"
+        >
+          <div className="space-y-6">
+            {/* Scene Layout Selection */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Scene Layout</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose how this scene is displayed
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {SCENE_LAYOUTS.map((layout) => (
+                  <button
+                    key={layout.id}
+                    onClick={() => onSceneUpdate({ layout: layout.id })}
+                    className={cn(
+                      'p-3 border-2 rounded-lg text-left transition-all hover:border-primary hover:shadow-sm',
+                      scene.layout === layout.id 
+                        ? 'border-primary bg-primary/5 shadow-sm' 
+                        : 'border-border'
+                    )}
+                  >
+                    <div className="text-2xl mb-2">{layout.icon}</div>
+                    <div className="font-medium text-sm">{layout.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {layout.description}
                     </div>
-                  </SelectItem>
-                  <SelectItem value="camera">Camera</SelectItem>
-                  <SelectItem value="screen">Screen Share</SelectItem>
-                  <SelectItem value="media">Media</SelectItem>
-                  <SelectItem value="multicam">Multicam</SelectItem>
-                  <SelectItem value="intro">Intro/Outro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4" />
-            <h4 className="font-semibold text-sm">Timing</h4>
-          </div>
-
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="timeline-start" className="text-xs">Timeline Start (s)</Label>
-                <Input
-                  id="timeline-start"
-                  type="number"
-                  step="0.1"
-                  value={scene.timeline_start || 0}
-                  onChange={(e) => handleUpdate({ timeline_start: Number(e.target.value) })}
-                  className="h-8 text-sm"
-                  disabled
-                />
-              </div>
-              <div>
-                <Label htmlFor="duration" className="text-xs">Duration (s)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  step="0.1"
-                  value={scene.duration_seconds || 0}
-                  onChange={(e) => handleUpdate({ duration_seconds: Number(e.target.value) })}
-                  className="h-8 text-sm"
-                />
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="p-2 bg-muted rounded text-xs text-center">
-              Timeline: <span className="font-semibold">{(scene.timeline_start || 0).toFixed(2)}s - {(scene.timeline_end || 0).toFixed(2)}s</span>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4" />
-            <h4 className="font-semibold text-sm">Transitions</h4>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="transition-type" className="text-xs">Transition Type</Label>
-              <Select
-                value={scene.transition_type || 'none'}
-                onValueChange={(value) => handleUpdate({ transition_type: value })}
-              >
-                <SelectTrigger id="transition-type" className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="crossfade">Crossfade</SelectItem>
-                  <SelectItem value="wipe">Wipe</SelectItem>
-                  <SelectItem value="zoom">Zoom</SelectItem>
-                  <SelectItem value="slide">Slide</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {scene.transition_type !== 'none' && (
-              <div>
-                <Label htmlFor="transition-duration" className="text-xs">
-                  Duration: {((scene.transition_duration_ms || 500) / 1000).toFixed(1)}s
-                </Label>
-                <Slider
-                  id="transition-duration"
-                  value={[(scene.transition_duration_ms || 500) / 1000]}
-                  onValueChange={([value]) => handleUpdate({ transition_duration_ms: value * 1000 })}
-                  min={0.1}
-                  max={2}
-                  step={0.1}
-                  className="mt-2"
-                />
+            {/* Background Options (if not fullscreen) */}
+            {scene.layout !== 'fullscreen' && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Background</Label>
+                <Select
+                  value={backgroundType}
+                  onValueChange={(value) => {
+                    setBackgroundType(value);
+                    onSceneUpdate({ background: value } as any);
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select background" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="blur">Blur</SelectItem>
+                    <SelectItem value="color">Solid Color</SelectItem>
+                    <SelectItem value="gradient">Gradient</SelectItem>
+                    <SelectItem value="image">Custom Image</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
-          </div>
-        </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Palette className="w-4 h-4" />
-            <h4 className="font-semibold text-sm">Caption Style</h4>
-          </div>
-
-          <div>
-            <Label htmlFor="caption-template" className="text-xs">Template</Label>
-            <Select
-              value={scene.caption_template_id || 'none'}
-              onValueChange={(value) => handleUpdate({ 
-                caption_template_id: value === 'none' ? null : value 
-              })}
-            >
-              <SelectTrigger id="caption-template" className="h-8 text-sm">
-                <SelectValue placeholder="Select template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Template</SelectItem>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Volume2 className="w-4 h-4" />
-            <h4 className="font-semibold text-sm">Audio & Visual</h4>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="volume" className="text-xs">
-                Volume: {Math.round((sceneConfig.volume || 1) * 100)}%
-              </Label>
-              <Slider
-                id="volume"
-                value={[(sceneConfig.volume || 1) * 100]}
-                onValueChange={([value]) => handleUpdate({ 
-                  scene_config: { 
-                    ...sceneConfig, 
-                    volume: value / 100 
-                  }
-                })}
-                min={0}
-                max={100}
-                step={1}
-                className="mt-2"
-              />
-            </div>
-
-            <Separator />
-
+            {/* Timing Controls */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-captions" className="text-xs">Show Captions</Label>
-                <Switch
-                  id="show-captions"
-                  checked={sceneConfig.show_captions !== false}
-                  onCheckedChange={(checked) => handleUpdate({ 
-                    scene_config: { 
-                      ...sceneConfig, 
-                      show_captions: checked 
-                    }
-                  })}
-                />
+              <Label className="text-sm font-medium">Timing</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="start-time" className="text-xs text-muted-foreground">
+                    Start Time (s)
+                  </Label>
+                  <Input
+                    id="start-time"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={scene.startTime.toFixed(1)}
+                    onChange={(e) => {
+                      const newStart = parseFloat(e.target.value);
+                      if (!isNaN(newStart) && newStart < scene.endTime) {
+                        onSceneUpdate({ 
+                          startTime: newStart,
+                          duration: scene.endTime - newStart
+                        });
+                      }
+                    }}
+                    className="h-9 font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end-time" className="text-xs text-muted-foreground">
+                    End Time (s)
+                  </Label>
+                  <Input
+                    id="end-time"
+                    type="number"
+                    step="0.1"
+                    min={scene.startTime + 0.1}
+                    value={scene.endTime.toFixed(1)}
+                    onChange={(e) => {
+                      const newEnd = parseFloat(e.target.value);
+                      if (!isNaN(newEnd) && newEnd > scene.startTime) {
+                        onSceneUpdate({ 
+                          endTime: newEnd,
+                          duration: newEnd - scene.startTime
+                        });
+                      }
+                    }}
+                    className="h-9 font-mono"
+                  />
+                </div>
               </div>
+              
+              {/* Duration Display */}
+              <div className="pt-2 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-mono font-medium">{sceneDuration.toFixed(2)}s</span>
+                </div>
+              </div>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="enable-audio" className="text-xs">Enable Audio</Label>
-                <Switch
-                  id="enable-audio"
-                  checked={sceneConfig.enable_audio !== false}
-                  onCheckedChange={(checked) => handleUpdate({ 
-                    scene_config: { 
-                      ...sceneConfig, 
-                      enable_audio: checked 
-                    }
-                  })}
+            {/* Speaker Info */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Speaker</Label>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <div 
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: scene.speakerColor }}
                 />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{scene.speaker || 'Unknown'}</div>
+                  {scene.characterType && (
+                    <div className="text-xs text-muted-foreground capitalize">
+                      {scene.characterType}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </Card>
+        </TabsContent>
 
-        <Card className="p-4 bg-muted/30">
-          <h4 className="font-semibold text-xs mb-2 text-muted-foreground">Scene Info</h4>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Scene Order:</span>
-              <span className="font-mono">{scene.scene_order}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Created:</span>
-              <span>{new Date(scene.created_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-        </Card>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          className="w-full"
-          onClick={handleDelete}
-          disabled={deleteSceneMutation.isPending}
+        {/* TRANSCRIPT TAB - Use existing component */}
+        <TabsContent 
+          value="transcript" 
+          className="flex-1 overflow-hidden m-0 data-[state=active]:flex data-[state=active]:flex-col"
         >
-          <Trash2 className="w-4 h-4 mr-2" />
-          {deleteSceneMutation.isPending ? 'Deleting...' : 'Delete Scene'}
-        </Button>
-      </div>
+          <div className="flex-1 overflow-y-auto">
+            <TranscriptEditor
+              videoId={videoId}
+              segments={[{
+                id: scene.transcriptSegmentId,
+                start_time: scene.startTime,
+                end_time: scene.endTime,
+                text: scene.text,
+                speaker: scene.speaker,
+                speaker_color: scene.speakerColor,
+                words: scene.words
+              }]}
+              onSegmentUpdate={(updatedSegments) => {
+                onTranscriptUpdate(updatedSegments);
+                // Update scene with new text
+                if (updatedSegments[0]) {
+                  onSceneUpdate({
+                    text: updatedSegments[0].text,
+                    words: updatedSegments[0].words,
+                    speaker: updatedSegments[0].speaker,
+                    speakerColor: updatedSegments[0].speaker_color
+                  });
+                }
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        {/* CHARACTERS TAB - Use existing component */}
+        <TabsContent 
+          value="characters" 
+          className="flex-1 overflow-hidden m-0 p-4 data-[state=active]:flex data-[state=active]:flex-col"
+        >
+          <div className="flex-1 overflow-y-auto">
+            <CharacterManager
+              videoId={videoId}
+              onUpdate={(characters) => {
+                onCharactersUpdate(characters);
+                // Update scene speaker color if changed
+                const sceneCharacter = characters.find(c => c.name === scene.speaker);
+                if (sceneCharacter) {
+                  onSceneUpdate({ 
+                    speakerColor: sceneCharacter.color,
+                    characterType: sceneCharacter.type as any
+                  });
+                }
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        {/* AUDIO DESCRIPTION TAB - Use existing component */}
+        <TabsContent 
+          value="audio-description" 
+          className="flex-1 overflow-hidden m-0 data-[state=active]:flex data-[state=active]:flex-col"
+        >
+          <div className="flex-1 overflow-y-auto">
+            <AudioDescriptionEditor
+              videoId={videoId}
+              segment={{
+                id: scene.transcriptSegmentId,
+                startTime: scene.startTime,
+                endTime: scene.endTime,
+                text: scene.text
+              }}
+              onUpdate={(descriptions) => {
+                onAudioDescriptionsUpdate(descriptions);
+                onSceneUpdate({
+                  audioDescriptions: descriptions,
+                  hasAudioDescription: descriptions.length > 0
+                });
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        {/* SIGN LANGUAGE TAB - Use existing component */}
+        <TabsContent 
+          value="sign-language" 
+          className="flex-1 overflow-hidden m-0 p-4 data-[state=active]:flex data-[state=active]:flex-col"
+        >
+          <div className="flex-1 overflow-y-auto">
+            <SignLanguageUploader
+              videoId={videoId}
+              segmentId={scene.transcriptSegmentId}
+              startTimeMs={scene.startTime * 1000}
+              endTimeMs={scene.endTime * 1000}
+              existingClipUrl={scene.signLanguageClipUrl}
+              onUploadComplete={(clipUrl) => {
+                onSceneUpdate({
+                  signLanguageClipUrl: clipUrl,
+                  hasSignLanguage: !!clipUrl
+                });
+              }}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
