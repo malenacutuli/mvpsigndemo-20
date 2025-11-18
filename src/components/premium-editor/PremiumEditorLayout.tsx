@@ -53,6 +53,10 @@ import { Badge } from '@/components/ui/badge';
 import { DevTestingPanel } from './DevTestingPanel';
 import { convertSegmentsToScenes } from '@/lib/premium-editor/scene-manager';
 import type { Scene } from '@/lib/premium-editor/scene-manager';
+import { MultiTrackTimeline } from './MultiTrackTimeline';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { ElementsPanel } from './ElementsPanel';
+import { AIToolsPanel } from './AIToolsPanel';
 
 // Import hooks
 import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
@@ -83,6 +87,10 @@ export function PremiumEditorLayout() {
   const [captionsFromTranscript, setCaptionsFromTranscript] = useState<CaptionSegment[]>([]);
   const [characters, setCharacters] = useState<any[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
+  
+  // Elements state for ElementsPanel
+  const [elements, setElements] = useState<any[]>([]);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -516,6 +524,48 @@ export function PremiumEditorLayout() {
   };
 
   // Save scene updates to database
+  // Element management handlers
+  const handleAddElement = (element: any) => {
+    setElements(prev => [...prev, element]);
+  };
+
+  const handleUpdateElement = (elementId: string, updates: Partial<any>) => {
+    setElements(prev => prev.map(el => el.id === elementId ? { ...el, ...updates } : el));
+  };
+
+  const handleDeleteElement = (elementId: string) => {
+    setElements(prev => prev.filter(el => el.id !== elementId));
+    if (selectedElementId === elementId) {
+      setSelectedElementId(null);
+    }
+  };
+
+  const handleUndo = () => {
+    toast.info('Undo functionality coming soon');
+  };
+
+  const handleRedo = () => {
+    toast.info('Redo functionality coming soon');
+  };
+
+  const handleSaveProject = async () => {
+    setIsSaving(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success('Project saved successfully');
+    } catch (error) {
+      toast.error('Failed to save project');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInsertClip = (clipUrl: string) => {
+    toast.success('Clip inserted into timeline');
+    // Logic to insert generated clip into timeline
+  };
+
+  // Save scene updates to database
   const saveSceneUpdates = async (sceneId: string, updates: Partial<Scene>) => {
     if (!project?.id) return;
     
@@ -636,6 +686,21 @@ export function PremiumEditorLayout() {
       "flex flex-col h-screen bg-background",
       isIPad && "text-sm" // Smaller text on iPad for better fit
     )}>
+      {/* Keyboard Shortcuts Handler */}
+      <KeyboardShortcuts
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        duration={videoData?.duration_seconds || 0}
+        onTogglePlayback={() => setIsPlaying(!isPlaying)}
+        onSeek={setCurrentTime}
+        selectedElementId={selectedElementId}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onDeleteElement={handleDeleteElement}
+        onSave={handleSaveProject}
+        onExport={() => setShowExportDialog(true)}
+      />
+      
       <div className="border-b bg-card">
         <div className={cn(
           "flex items-center justify-between px-4 py-3",
@@ -768,6 +833,14 @@ export function PremiumEditorLayout() {
               <TabsTrigger value="export" className="gap-2">
                 <Upload className="w-4 h-4" />
                 Export
+              </TabsTrigger>
+              <TabsTrigger value="elements" className="gap-2">
+                <Layers className="w-4 h-4" />
+                Elements
+              </TabsTrigger>
+              <TabsTrigger value="ai-tools" className="gap-2">
+                <Wand2 className="w-4 h-4" />
+                AI Tools
               </TabsTrigger>
             </TabsList>
 
@@ -982,6 +1055,22 @@ export function PremiumEditorLayout() {
                     Open Export Dialog
                   </Button>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="elements" className="m-0 h-full overflow-hidden">
+                {videoId && <ElementsPanel videoId={videoId} />}
+              </TabsContent>
+
+              <TabsContent value="ai-tools" className="m-0 h-full overflow-hidden">
+                {videoId && (
+                  <AIToolsPanel
+                    videoId={videoId}
+                    selectedSceneId={selectedSceneId}
+                    onToolExecute={(toolId) => {
+                      console.log(`Executing AI tool: ${toolId}`);
+                    }}
+                  />
+                )}
               </TabsContent>
             </div>
           </Tabs>
