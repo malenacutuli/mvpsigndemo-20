@@ -1,5 +1,5 @@
 /**
- * AI Tools Panel - Descript Underlord-style AI assistant
+ * AI Tools Panel - Axessible AI assistant
  * 
  * Provides categorized AI-powered tools for video editing,
  * with emphasis on accessibility features unique to Axessible.
