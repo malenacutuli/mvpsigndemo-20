@@ -66,11 +66,12 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     setSelectedTab
   } = usePremiumEditor();
 
-  // Load project
+  // Load project once IDs are available
   useEffect(() => {
-    if (projectId || videoId) {
-      loadProject(projectId, videoId);
-    }
+    if (!projectId && !videoId) return;
+
+    console.log('🔄 PremiumEditorLayout: loadProject effect', { projectId, videoId });
+    loadProject(projectId, videoId);
   }, [projectId, videoId]);
 
   // Auto-save
@@ -85,6 +86,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   }, [project, scenes, elements]);
 
   const loadProject = async (projectIdParam?: string, videoIdParam?: string) => {
+    console.log('🚀 PremiumEditorLayout.loadProject called', { projectIdParam, videoIdParam });
     setIsLoading(true);
     
     try {
@@ -319,7 +321,10 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
               {activeView === 'characters' && (
                 <CharacterManager
                   videoId={project.videoId}
-                  onCharactersUpdate={() => loadProject(projectId, videoId)}
+                  onCharactersUpdate={(updatedCharacters) => {
+                    console.log('🔁 PremiumEditorLayout: characters updated', updatedCharacters?.length);
+                    setCharacters(updatedCharacters);
+                  }}
                 />
               )}
               
