@@ -1,8 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wand2, Layers, Type, Image, Settings, Accessibility, Sparkles } from 'lucide-react';
+import { Wand2, Layers, Type, Image, Settings, Accessibility, Sparkles, Video } from 'lucide-react';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
 import { AIToolsPanel } from './AIToolsPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+import { MediaLibrary } from './MediaLibrary';
+import { CaptionTemplateGallery } from './CaptionTemplateGallery';
+import { ExportManager } from './ExportManager';
+import { VideoAnalysisPanel } from '@/components/VideoAnalysisPanel';
 import { toast } from 'sonner';
 
 interface RightPanelTabsProps {
@@ -40,34 +44,38 @@ export function RightPanelTabs({
       onValueChange={(value) => setSelectedTab(value as any)}
       className="h-full flex flex-col"
     >
-      <TabsList className="grid grid-cols-7 w-full rounded-none border-b">
-        <TabsTrigger value="ai-tools" className="gap-2 font-light">
+      <TabsList className="grid grid-cols-8 w-full rounded-none border-b">
+        <TabsTrigger value="ai-tools" className="gap-1 font-light text-xs">
           <Wand2 className="h-4 w-4" />
           <span className="hidden xl:inline">AI</span>
         </TabsTrigger>
-        <TabsTrigger value="elements" className="gap-2 font-light">
-          <Layers className="h-4 w-4" />
-          <span className="hidden xl:inline">Elements</span>
-        </TabsTrigger>
-        <TabsTrigger value="captions" className="gap-2 font-light">
-          <Type className="h-4 w-4" />
-          <span className="hidden xl:inline">Captions</span>
-        </TabsTrigger>
-        <TabsTrigger value="media" className="gap-2 font-light">
+        <TabsTrigger value="media" className="gap-1 font-light text-xs">
           <Image className="h-4 w-4" />
           <span className="hidden xl:inline">Media</span>
         </TabsTrigger>
-        <TabsTrigger value="properties" className="gap-2 font-light">
+        <TabsTrigger value="captions" className="gap-1 font-light text-xs">
+          <Type className="h-4 w-4" />
+          <span className="hidden xl:inline">Captions</span>
+        </TabsTrigger>
+        <TabsTrigger value="analysis" className="gap-1 font-light text-xs">
+          <Video className="h-4 w-4" />
+          <span className="hidden xl:inline">Analysis</span>
+        </TabsTrigger>
+        <TabsTrigger value="properties" className="gap-1 font-light text-xs">
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Props</span>
         </TabsTrigger>
-        <TabsTrigger value="accessibility" className="gap-2 font-light">
+        <TabsTrigger value="accessibility" className="gap-1 font-light text-xs">
           <Accessibility className="h-4 w-4" />
           <span className="hidden xl:inline">A11y</span>
         </TabsTrigger>
-        <TabsTrigger value="underlord" className="gap-2 font-light">
+        <TabsTrigger value="export" className="gap-1 font-light text-xs">
           <Sparkles className="h-4 w-4" />
-          <span className="hidden xl:inline">Underlord</span>
+          <span className="hidden xl:inline">Export</span>
+        </TabsTrigger>
+        <TabsTrigger value="elements" className="gap-1 font-light text-xs">
+          <Layers className="h-4 w-4" />
+          <span className="hidden xl:inline">Elements</span>
         </TabsTrigger>
       </TabsList>
 
@@ -80,16 +88,35 @@ export function RightPanelTabs({
           />
         </TabsContent>
 
+        <TabsContent value="media" className="h-full m-0">
+          <MediaLibrary 
+            videoId={videoId}
+            onMediaSelect={(media) => {
+              toast.success(`Selected ${media.type}: ${media.title}`);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="captions" className="h-full m-0">
+          <CaptionTemplateGallery 
+            open={true}
+            projectId={projectId}
+            onTemplateApply={(templateId) => {
+              toast.success(`Applied template: ${templateId}`);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="analysis" className="h-full m-0">
+          <VideoAnalysisPanel 
+            assetId={videoId}
+            playbackUrl={videoUrl}
+            videoId={videoId}
+          />
+        </TabsContent>
+
         <TabsContent value="elements" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground font-light">Elements panel coming soon...</div>
-        </TabsContent>
-
-        <TabsContent value="captions" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground font-light">Captions panel coming soon...</div>
-        </TabsContent>
-
-        <TabsContent value="media" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground font-light">Media library coming soon...</div>
+          <div className="text-sm text-muted-foreground font-light">Advanced elements coming soon...</div>
         </TabsContent>
 
         <TabsContent value="properties" className="h-full m-0">
