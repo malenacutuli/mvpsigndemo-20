@@ -43,6 +43,7 @@ export function PremiumEditorLayout() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
   
   const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
@@ -59,6 +60,26 @@ export function PremiumEditorLayout() {
       return data || [];
     },
     enabled: !!videoId
+  });
+
+  // Calculate duration from segments
+  const videoDuration = segments.length > 0 
+    ? segments[segments.length - 1].end_time 
+    : 60;
+
+  // Fetch project scenes
+  const { data: scenes = [] } = useQuery({
+    queryKey: ['projectScenes', project?.id],
+    queryFn: async () => {
+      if (!project?.id) return [];
+      const { data } = await supabase
+        .from('project_scenes')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('scene_order', { ascending: true });
+      return data || [];
+    },
+    enabled: !!project?.id
   });
 
   // Admin users and premium tier users have access
@@ -89,6 +110,24 @@ export function PremiumEditorLayout() {
 
   const handleSceneSelect = (sceneId: string) => {
     setSelectedSceneId(sceneId);
+  };
+
+  const handleScenesReorder = async (reorderedScenes: any[]) => {
+    try {
+      // Update scene orders in database
+      const updates = reorderedScenes.map((scene, index) => 
+        supabase
+          .from('project_scenes')
+          .update({ scene_order: index })
+          .eq('id', scene.id)
+      );
+      
+      await Promise.all(updates);
+      toast.success('Scenes reordered');
+    } catch (error) {
+      console.error('Reorder error:', error);
+      toast.error('Failed to reorder scenes');
+    }
   };
 
   if (accessLoading || projectLoading) {
@@ -193,11 +232,15 @@ export function PremiumEditorLayout() {
 
             <div className="flex-1 overflow-hidden">
               <TabsContent value="timeline" className="m-0 h-full">
-                {videoId && (
+                {videoId && project && (
                   <Timeline 
-                    videoId={videoId}
+                    projectId={project.id}
+                    scenes={scenes}
+                    currentTime={currentTime}
+                    duration={videoDuration}
                     onSceneSelect={handleSceneSelect}
-                    selectedSceneId={selectedSceneId}
+                    onTimeChange={setCurrentTime}
+                    onScenesReorder={handleScenesReorder}
                   />
                 )}
               </TabsContent>
