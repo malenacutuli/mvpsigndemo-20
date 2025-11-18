@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getSpeakerColor } from '@/lib/cwiPalette';
 
 /**
  * API Response wrapper for consistent error handling
@@ -704,6 +705,248 @@ export class SceneManager {
 
 // Export singleton instance
 export const sceneManager = new SceneManager();
+
+// ============= Timeline Scene Conversion Functions =============
+
+/**
+ * Scene representation for timeline display
+ */
+export interface Scene {
+  id: string;
+  name: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  transcriptSegmentId: string;
+  
+  // Character/Speaker data
+  speaker: string;
+  speakerColor: string;
+  characterType?: 'hero' | 'villain' | 'main' | 'supporting' | 'minor';
+  
+  // Scene content
+  text: string;
+  words: Array<{
+    text: string;
+    startTime: number;
+    endTime: number;
+  }>;
+  
+  // Scene properties
+  layout: 'fullscreen' | 'pip' | 'split' | 'multicam' | 'intro';
+  order: number;
+  
+  // Accessibility features
+  hasAudioDescription: boolean;
+  hasSignLanguage: boolean;
+  audioDescriptions?: AudioDescription[];
+  signLanguageClipUrl?: string;
+}
+
+export interface TranscriptSegment {
+  id: string;
+  start_time: number;
+  end_time: number;
+  text: string;
+  speaker?: string;
+  speaker_color?: string;
+  character_id?: string;
+  words?: Array<{
+    text: string;
+    start: number;
+    end: number;
+  }>;
+}
+
+export interface Character {
+  id: string;
+  name: string;
+  color: string;
+  type: string;
+  video_id: string;
+}
+
+export interface AudioDescription {
+  id: string;
+  video_id: string;
+  start_time: number;
+  end_time: number;
+  description: string;
+  audio_url?: string;
+}
+
+export interface SignLanguageClip {
+  id: string;
+  video_id: string;
+  clip_url: string;
+  start_time_ms: number;
+  end_time_ms: number;
+  transcript_segment_id?: string;
+}
+
+/**
+ * Convert transcript segments to timeline scenes
+ */
+export function convertSegmentsToScenes(
+  segments: TranscriptSegment[],
+  characters: Character[],
+  audioDescriptions: AudioDescription[],
+  signLanguageClips: SignLanguageClip[]
+): Scene[] {
+  if (!segments || segments.length === 0) return [];
+
+  const scenes: Scene[] = segments.map((segment, index) => {
+    const speaker = segment.speaker || 'Speaker';
+    const startTime = segment.start_time;
+    const endTime = segment.end_time;
+
+    // Get character and color
+    const character = findCharacterForSpeaker(speaker, characters);
+    const speakerColor = getSceneColor(speaker, characters, segment.speaker_color);
+    const characterType = mapCharacterType(character?.type);
+
+    // Convert words
+    const words = segment.words?.map(w => ({
+      text: w.text,
+      startTime: w.start,
+      endTime: w.end
+    })) || [];
+
+    // Find overlapping audio descriptions
+    const sceneADs = audioDescriptions.filter(ad => 
+      (ad.start_time >= startTime && ad.start_time < endTime) ||
+      (ad.end_time > startTime && ad.end_time <= endTime) ||
+      (ad.start_time <= startTime && ad.end_time >= endTime)
+    );
+
+    // Find sign language clip
+    const signClip = signLanguageClips.find(
+      clip => clip.transcript_segment_id === segment.id
+    );
+
+    return {
+      id: segment.id,
+      name: generateSceneName(segment.text),
+      startTime,
+      endTime,
+      duration: endTime - startTime,
+      transcriptSegmentId: segment.id,
+      speaker,
+      speakerColor,
+      characterType,
+      text: segment.text,
+      words,
+      layout: 'fullscreen',
+      order: index,
+      hasAudioDescription: sceneADs.length > 0,
+      hasSignLanguage: !!signClip,
+      audioDescriptions: sceneADs.length > 0 ? sceneADs : undefined,
+      signLanguageClipUrl: signClip?.clip_url
+    };
+  });
+
+  return scenes.sort((a, b) => a.startTime - b.startTime);
+}
+
+/**
+ * Generate scene name from text
+ */
+export function generateSceneName(text: string): string {
+  if (!text) return 'Untitled Scene';
+  const cleaned = text.trim().replace(/\s+/g, ' ');
+  if (cleaned.length <= 30) return cleaned;
+  const truncated = cleaned.substring(0, 30);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 20) return truncated.substring(0, lastSpace) + '...';
+  return truncated + '...';
+}
+
+/**
+ * Find character for speaker
+ */
+export function findCharacterForSpeaker(
+  speaker: string,
+  characters: Character[]
+): Character | undefined {
+  if (!speaker || !characters) return undefined;
+  
+  // Exact match
+  let match = characters.find(c => c.name === speaker);
+  if (match) return match;
+  
+  // Case-insensitive
+  const lower = speaker.toLowerCase();
+  match = characters.find(c => c.name.toLowerCase() === lower);
+  if (match) return match;
+  
+  // Normalized
+  const normalized = speaker.replace(/\s+/g, '').toLowerCase();
+  return characters.find(c => 
+    c.name.replace(/\s+/g, '').toLowerCase() === normalized
+  );
+}
+
+/**
+ * Get scene color using CWI palette
+ */
+export function getSceneColor(
+  speaker: string,
+  characters: Character[],
+  segmentColor?: string
+): string {
+  // Priority 1: Segment color
+  if (segmentColor && segmentColor !== '#3B82F6') {
+    return segmentColor;
+  }
+  
+  // Priority 2: Character color
+  const character = findCharacterForSpeaker(speaker, characters);
+  if (character?.color) return character.color;
+  
+  // Priority 3: Auto-assign from CWI palette
+  const characterType = mapCharacterType(character?.type);
+  return getSpeakerColor(speaker, undefined, undefined, characterType);
+}
+
+/**
+ * Map character type to CWI type
+ */
+function mapCharacterType(
+  dbType?: string
+): 'main' | 'supporting' | 'minor' | undefined {
+  if (!dbType) return undefined;
+  const type = dbType.toLowerCase();
+  if (type === 'hero' || type === 'villain' || type === 'main') return 'main';
+  if (type === 'supporting') return 'supporting';
+  if (type === 'minor') return 'minor';
+  return undefined;
+}
+
+/**
+ * Reorder scenes after drag-drop
+ */
+export function reorderScenes(
+  scenes: Scene[],
+  movedSceneId: string,
+  newStartTime: number
+): Scene[] {
+  const sceneIndex = scenes.findIndex(s => s.id === movedSceneId);
+  if (sceneIndex === -1) return scenes;
+
+  const movedScene = scenes[sceneIndex];
+  const updatedScene: Scene = {
+    ...movedScene,
+    startTime: newStartTime,
+    endTime: newStartTime + movedScene.duration
+  };
+
+  const updatedScenes = [...scenes];
+  updatedScenes[sceneIndex] = updatedScene;
+  updatedScenes.sort((a, b) => a.startTime - b.startTime);
+  updatedScenes.forEach((scene, index) => { scene.order = index; });
+
+  return updatedScenes;
+}
 
 /*
 // TEST USAGE EXAMPLES:
