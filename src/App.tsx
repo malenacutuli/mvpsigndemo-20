@@ -27,6 +27,8 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import AdminSubscribers from "./pages/AdminSubscribers";
 import PremiumVideoEditor from "./pages/PremiumVideoEditor";
+import TestPremiumEditor from "./pages/TestPremiumEditor";
+import { PremiumEditorLayout } from "./components/premium-editor/PremiumEditorLayout";
 
 
 const queryClient = new QueryClient();
@@ -82,6 +84,16 @@ const App = () => (
             <Route path="/video/:id/edit" element={
               <ProtectedRoute>
                 <PremiumVideoEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/premium-editor/:projectId" element={
+              <ProtectedRoute>
+                <PremiumEditorLayout />
+              </ProtectedRoute>
+            } />
+            <Route path="/test-premium-editor" element={
+              <ProtectedRoute>
+                <TestPremiumEditor />
               </ProtectedRoute>
             } />
             
