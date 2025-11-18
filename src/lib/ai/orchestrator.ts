@@ -1,9 +1,9 @@
 /**
  * AI Orchestrator - Descript Underlord equivalent for Premium Video Editor
  * Provides natural language video editing capabilities through Google Gemini AI
+ * Uses secure edge function calls to protect API keys
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -94,23 +94,37 @@ interface SegmentToRemove {
   reason: string;
 }
 
-// Initialize Gemini AI with optimal settings for video editing
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-
 /**
- * Get Gemini model instance with optimized settings for video editing
- * @returns Configured Gemini model
+ * Call Gemini AI through secure edge function
+ * @param prompt - The prompt to send to Gemini
+ * @returns AI response text
  */
-const getModel = () => {
-  return genAI.getGenerativeModel({ 
-    model: 'gemini-2.0-flash-exp',
-    generationConfig: {
-      temperature: 0.1,  // Very low for precise, consistent editing decisions
-      topP: 0.8,
-      topK: 10,
-      maxOutputTokens: 8192
+const callGemini = async (prompt: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('google-gemini', {
+      body: {
+        prompt,
+        model: 'gemini-2.0-flash-exp',
+        temperature: 0.1,  // Very low for precise, consistent editing decisions
+        maxTokens: 8192
+      }
+    });
+
+    if (error) throw error;
+    if (!data) throw new Error('No response from AI');
+
+    // Extract text from Gemini response structure
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.error('[AI Orchestrator] Unexpected response structure:', data);
+      throw new Error('Invalid response structure from AI');
     }
-  });
+
+    return text;
+  } catch (error: any) {
+    console.error('[AI Orchestrator] callGemini error:', error);
+    throw new Error(`Failed to call Gemini AI: ${error.message}`);
+  }
 };
 
 /**
@@ -208,8 +222,6 @@ export class AIOrchestrator {
   async parseCommand(command: string): Promise<{ type: string; parameters?: any }> {
     try {
       console.log('[AI Orchestrator] Parsing command:', command);
-      const model = getModel();
-      
       const prompt = `You are a video editing assistant. Parse this natural language command into a structured format.
 
 Command: "${command}"
@@ -236,8 +248,7 @@ Examples:
 
 Return JSON only:`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       
       // Clean response (remove markdown if present)
       const parsed = this.parseAIResponse<{ type: string; parameters?: any }>(responseText);
@@ -304,7 +315,6 @@ Return JSON only:`;
       const transcriptText = this.formatTranscriptForAI(segments);
       
       // Step 3: Use Gemini to identify filler words
-      const model = getModel();
       const prompt = `Analyze this video transcript and identify ALL filler words and phrases.
 
 Common filler words to detect:
@@ -334,8 +344,7 @@ For each filler word detected, return JSON:
 Only include segments that are clearly filler words. Be conservative - don't flag words that add meaning.
 Return ONLY valid JSON (no markdown, no explanation):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       
       // Step 4: Parse AI response
       const parsed = this.parseAIResponse<{ fillers: FillerWord[] }>(responseText);
@@ -419,7 +428,6 @@ Return ONLY valid JSON (no markdown, no explanation):`;
       const duration = segments[segments.length - 1]?.end_time || 0;
       
       // Step 4: Use Gemini to find best moments
-      const model = getModel();
       const criteriaInstructions = {
         humor: 'funny moments, jokes, laughter, amusing situations',
         insights: 'key insights, important revelations, aha moments, valuable information',
@@ -457,8 +465,7 @@ Return JSON:
 
 Return ONLY valid JSON (no markdown):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       
       // Step 5: Parse AI response
       const parsed = this.parseAIResponse<{ highlights: Highlight[] }>(responseText);
@@ -557,7 +564,6 @@ Return ONLY valid JSON (no markdown):`;
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      const model = getModel();
       
       const prompt = `Analyze this video transcript and identify natural chapter breaks.
 
@@ -583,8 +589,7 @@ Return JSON:
 
 Return ONLY valid JSON (no markdown):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       const parsed = this.parseAIResponse<{ chapters: Chapter[] }>(responseText);
       
       console.log('[AI Orchestrator] Generated chapters:', parsed.chapters.length);
@@ -671,7 +676,6 @@ Return ONLY valid JSON (no markdown):`;
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      const model = getModel();
       
       const prompt = `This video is ${currentDuration.toFixed(1)} seconds long and needs to be shortened to ${targetDuration} seconds.
 You need to remove approximately ${reductionNeeded.toFixed(1)} seconds of content.
@@ -704,8 +708,7 @@ Return JSON with segments to remove:
 Make sure the total duration of removed segments is approximately ${reductionNeeded.toFixed(1)} seconds.
 Return ONLY valid JSON (no markdown):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       const parsed = this.parseAIResponse<{ segments: SegmentToRemove[] }>(responseText);
       
       const totalRemoved = parsed.segments.reduce((sum, s) => sum + s.duration, 0);
@@ -779,7 +782,6 @@ Return ONLY valid JSON (no markdown):`;
       }
       
       const transcriptText = this.formatTranscriptForAI(segments);
-      const model = getModel();
       
       const prompt = `Analyze this transcript and identify likely retakes, false starts, and repeated attempts.
 
@@ -805,8 +807,7 @@ Return JSON:
 
 Return ONLY valid JSON (no markdown):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       const parsed = this.parseAIResponse<{ retakes: any[] }>(responseText);
       
       console.log('[AI Orchestrator] Detected retakes:', parsed.retakes.length);
@@ -889,7 +890,6 @@ Return ONLY valid JSON (no markdown):`;
         };
       }
       
-      const model = getModel();
       const sceneDescriptions = scenes.map(s =>
         `Scene ${s.scene_order}: "${s.name}" (${s.duration_seconds}s, layout: ${s.layout_type})`
       ).join('\n');
@@ -923,8 +923,7 @@ Return JSON:
 
 Return ONLY valid JSON (no markdown):`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const responseText = await callGemini(prompt);
       const parsed = this.parseAIResponse<{ suggestions: any[] }>(responseText);
       
       console.log('[AI Orchestrator] Generated transition suggestions:', parsed.suggestions.length);
