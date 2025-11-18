@@ -18,13 +18,12 @@ export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps
       <Card className="max-w-4xl w-full border shadow-elegant">
         <CardHeader className="text-center space-y-6 pt-16 pb-8">
           <div className="flex justify-center">
-            <div className="relative w-24 h-24">
+            <div className="w-40 h-40">
               <img 
                 src="/assets/axessible-logo-assistant.avif" 
                 alt="Axessible" 
-                className="w-full h-full object-contain animate-pulse" 
+                className="w-full h-full object-contain" 
               />
-              <Sparkles className="w-6 h-6 text-primary-glow absolute -top-2 -right-2" />
             </div>
           </div>
           <CardTitle className="text-5xl md:text-6xl font-light text-foreground tracking-tight">
