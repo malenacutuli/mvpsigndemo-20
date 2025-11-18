@@ -40,7 +40,7 @@ import { usePremiumAccess } from '@/hooks/usePremiumAccess';
 import { useEffect } from 'react';
 
 export function PremiumEditorLayout() {
-  const { videoId } = useParams<{ videoId: string }>();
+  const { id: videoId } = useParams<{ id: string }>();
   
   const [activeTab, setActiveTab] = useState('timeline');
   const [isSaving, setIsSaving] = useState(false);
@@ -210,6 +210,34 @@ export function PremiumEditorLayout() {
     setZoom(1);
   };
 
+  const handleCreateTestScenes = async () => {
+    if (!project?.id) {
+      toast.error('No project available');
+      return;
+    }
+
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const durations = [8, 15, 10];
+
+      for (let i = 0; i < durations.length; i++) {
+        const duration = durations[i];
+        await sceneManager.createScene(project.id, {
+          name: `Test Scene ${i + 1}`,
+          duration: duration,
+          layout: 'fullscreen',
+          videoId: videoId || project.id
+        });
+      }
+
+      toast.success('Created 3 test scenes!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Create test scenes error:', error);
+      toast.error('Failed to create test scenes');
+    }
+  };
+
   if (accessLoading || projectLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -344,6 +372,17 @@ export function PremiumEditorLayout() {
               <TabsContent value="timeline" className="m-0 h-full flex flex-col">
                 {videoId && project && (
                   <>
+                    {/* Test Controls */}
+                    <div className="px-4 py-2 border-b border-border bg-muted/30">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleCreateTestScenes}
+                      >
+                        Create Test Scenes
+                      </Button>
+                    </div>
+
                     {/* Waveform */}
                     <div className="px-4 pt-4">
                       <Waveform
