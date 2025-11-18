@@ -5,7 +5,7 @@
  * Provides real-time preview of scene layout and composition.
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
@@ -22,7 +22,7 @@ interface SceneCanvasPreviewProps {
   onPlayStateChange: (playing: boolean) => void;
 }
 
-export function SceneCanvasPreview({
+export const SceneCanvasPreview = memo(function SceneCanvasPreview({
   scene,
   videoUrl,
   videoId,
@@ -227,4 +227,13 @@ export function SceneCanvasPreview({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if these props actually changed
+  return (
+    prevProps.scene.id === nextProps.scene.id &&
+    prevProps.currentTime === nextProps.currentTime &&
+    prevProps.isPlaying === nextProps.isPlaying &&
+    prevProps.videoUrl === nextProps.videoUrl &&
+    prevProps.scene.hasAudioDescription === nextProps.scene.hasAudioDescription
+  );
+});
