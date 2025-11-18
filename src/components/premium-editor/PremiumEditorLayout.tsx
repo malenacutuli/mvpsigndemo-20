@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 // Import all components
 import { Timeline } from './Timeline';
 import { TimelineControls } from './TimelineControls';
+import { Waveform } from './Waveform';
 import { TextBasedEditor } from './TextBasedEditor';
 import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
 import { AIAssistant } from './AIAssistant';
@@ -83,6 +84,22 @@ export function PremiumEditorLayout() {
         .select('*')
         .eq('project_id', project.id)
         .order('scene_order', { ascending: true });
+      return data || [];
+    },
+    enabled: !!project?.id
+  });
+
+  // Fetch AI suggestions
+  const { data: aiSuggestions = [] } = useQuery({
+    queryKey: ['aiSuggestions', project?.id],
+    queryFn: async () => {
+      if (!project?.id) return [];
+      const { data } = await supabase
+        .from('ai_suggestions')
+        .select('*')
+        .eq('project_id', project.id)
+        .eq('status', 'pending')
+        .order('start_time', { ascending: true });
       return data || [];
     },
     enabled: !!project?.id
@@ -327,6 +344,18 @@ export function PremiumEditorLayout() {
               <TabsContent value="timeline" className="m-0 h-full flex flex-col">
                 {videoId && project && (
                   <>
+                    {/* Waveform */}
+                    <div className="px-4 pt-4">
+                      <Waveform
+                        duration={videoDuration}
+                        currentTime={currentTime}
+                        onTimeChange={setCurrentTime}
+                        aiSuggestions={aiSuggestions}
+                        height={60}
+                      />
+                    </div>
+
+                    {/* Timeline */}
                     <div className="flex-1">
                       <Timeline 
                         projectId={project.id}
@@ -338,6 +367,8 @@ export function PremiumEditorLayout() {
                         onScenesReorder={handleScenesReorder}
                       />
                     </div>
+
+                    {/* Controls */}
                     <TimelineControls
                       isPlaying={isPlaying}
                       currentTime={currentTime}
