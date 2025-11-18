@@ -171,7 +171,8 @@ export function SignLanguageManager({
           opacity: newClip.opacity,
           border_radius: newClip.borderRadius,
           has_border: newClip.hasBorder,
-          transcript_segment_id: null
+          transcript_segment_id: null,
+          created_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
         .single();

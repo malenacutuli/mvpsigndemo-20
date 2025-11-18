@@ -18,6 +18,8 @@ import { TextBasedEditor } from './TextBasedEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { SignLanguageManager } from './SignLanguageManager';
 import { ExportManager } from './ExportManager';
+import { CharacterManager } from '@/components/CharacterManager';
+import { RightPanelTabs } from './RightPanelTabs';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -28,6 +30,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const { projectId: routeProjectId, id: routeVideoId } = useParams<{ projectId?: string; id?: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [characters, setCharacters] = useState<any[]>([]);
 
   // Use props first, fallback to route params
   const videoId = propsVideoId || routeVideoId;
@@ -157,21 +160,39 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         updatedAt: projectData.updated_at
       });
 
-      // Load scenes/transcript from transcript_segments_clean
+      // Load characters
+      const { data: charactersData } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('video_id', video.id);
+      
+      if (charactersData) {
+        setCharacters(charactersData);
+      }
+
+      // Load scenes/transcript from transcript_segments
       const { data: scenesData } = await supabase
-        .from('transcript_segments_clean')
-        .select('*, characters(*)')
+        .from('transcript_segments')
+        .select('*')
         .eq('video_id', video.id)
         .order('start_time');
 
       if (scenesData) {
+        // Create a map of character_id to color for quick lookup
+        const characterColorMap = new Map<string, string>();
+        if (charactersData) {
+          charactersData.forEach(char => {
+            characterColorMap.set(char.id, char.color);
+          });
+        }
+
         const loadedScenes = scenesData.map((seg, index) => ({
           id: seg.id,
           startTime: seg.start_time,
           endTime: seg.end_time,
           text: seg.text,
           speaker: seg.speaker || 'Unknown',
-          speakerColor: seg.characters?.color || '#3b82f6',
+          speakerColor: seg.character_id ? characterColorMap.get(seg.character_id) : undefined,
           order: index
         }));
         setScenes(loadedScenes);
