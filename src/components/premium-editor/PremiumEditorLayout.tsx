@@ -15,7 +15,8 @@ import {
   FileText,
   Scissors,
   Upload,
-  Loader2
+  Loader2,
+  Plus
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -332,6 +333,17 @@ export function PremiumEditorLayout() {
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
+
+            {scenes.length === 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCreateTestScenes}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Test Scenes
+              </Button>
+            )}
 
             <Button 
               variant="default" 
