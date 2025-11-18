@@ -64,3 +64,118 @@ export function useVideoProject(videoId: string) {
     isLoading
   };
 }
+
+// Auto-generate scenes from transcript segments
+export async function generateScenesFromTranscript(projectId: string, videoId: string) {
+  try {
+    console.log('🎬 Generating scenes from transcript...');
+    
+    // Check if scenes already exist
+    const { data: existingScenes } = await supabase
+      .from('project_scenes')
+      .select('id')
+      .eq('project_id', projectId)
+      .limit(1);
+    
+    if (existingScenes && existingScenes.length > 0) {
+      console.log('✅ Scenes already exist, skipping generation');
+      return;
+    }
+    
+    // Fetch transcript segments
+    const { data: segments, error: segmentError } = await supabase
+      .from('transcript_segments_clean')
+      .select('*')
+      .eq('video_id', videoId)
+      .order('start_time', { ascending: true });
+    
+    if (segmentError) {
+      console.error('Error fetching segments:', segmentError);
+      return;
+    }
+    
+    if (!segments || segments.length === 0) {
+      console.log('⚠️ No transcript segments found');
+      return;
+    }
+    
+    console.log(`📝 Found ${segments.length} transcript segments`);
+    
+    // Group segments into logical scenes (every 5 segments = 1 scene, or 10-30 second chunks)
+    const sceneGroups: any[][] = [];
+    let currentGroup: any[] = [];
+    let groupDuration = 0;
+    
+    for (const segment of segments) {
+      const segmentDuration = segment.end_time - segment.start_time;
+      
+      // Start new scene if:
+      // - Current group has 5+ segments, OR
+      // - Current group duration > 30 seconds, OR
+      // - This is first segment
+      if (currentGroup.length >= 5 || groupDuration > 30 || currentGroup.length === 0) {
+        if (currentGroup.length > 0) {
+          sceneGroups.push(currentGroup);
+        }
+        currentGroup = [segment];
+        groupDuration = segmentDuration;
+      } else {
+        currentGroup.push(segment);
+        groupDuration += segmentDuration;
+      }
+    }
+    
+    // Add last group
+    if (currentGroup.length > 0) {
+      sceneGroups.push(currentGroup);
+    }
+    
+    console.log(`✂️ Creating ${sceneGroups.length} scenes...`);
+    
+    // Create scenes from groups
+    for (let i = 0; i < sceneGroups.length; i++) {
+      const group = sceneGroups[i];
+      const firstSegment = group[0];
+      const lastSegment = group[group.length - 1];
+      
+      // Scene name from first segment text (first 40 chars)
+      const sceneText = firstSegment.text.trim();
+      const sceneName = sceneText.length > 40 
+        ? sceneText.substring(0, 40) + '...'
+        : sceneText;
+      
+      // Calculate scene duration
+      const sceneDuration = lastSegment.end_time - firstSegment.start_time;
+      
+      // Create scene
+      const { error: sceneError } = await supabase
+        .from('project_scenes')
+        .insert({
+          project_id: projectId,
+          video_id: videoId,
+          name: sceneName || `Scene ${i + 1}`,
+          scene_order: i,
+          duration_seconds: sceneDuration,
+          timeline_start: firstSegment.start_time,
+          timeline_end: lastSegment.end_time,
+          layout_type: 'fullscreen',
+          background_type: 'solid',
+          background_config: { color: '#000000' },
+          transition_type: i === 0 ? 'none' : 'fade',
+          transition_duration_ms: 500,
+          media_type: 'video',
+          media_start_time: firstSegment.start_time,
+          media_end_time: lastSegment.end_time
+        });
+      
+      if (sceneError) {
+        console.error(`Error creating scene ${i + 1}:`, sceneError);
+      }
+    }
+    
+    console.log(`✅ Successfully created ${sceneGroups.length} scenes!`);
+    
+  } catch (error) {
+    console.error('Error generating scenes:', error);
+  }
+}

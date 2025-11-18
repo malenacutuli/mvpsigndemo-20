@@ -33,8 +33,9 @@ import { Badge } from '@/components/ui/badge';
 import { DevTestingPanel } from './DevTestingPanel';
 
 // Import hooks
-import { useVideoProject } from '@/hooks/useVideoProject';
+import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
 import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { useEffect } from 'react';
 
 export function PremiumEditorLayout() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -87,6 +88,13 @@ export function PremiumEditorLayout() {
 
   // Admin users and premium tier users have access
   const hasAccess = canAccess || isAdmin;
+
+  // Auto-generate scenes from transcript if none exist
+  useEffect(() => {
+    if (project?.id && videoId && scenes.length === 0 && !projectLoading) {
+      generateScenesFromTranscript(project.id, videoId);
+    }
+  }, [project?.id, videoId, scenes.length, projectLoading]);
 
   const handleSave = async () => {
     if (!project) {
