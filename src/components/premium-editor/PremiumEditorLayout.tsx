@@ -81,7 +81,6 @@ export function PremiumEditorLayout() {
   const [videoTitle, setVideoTitle] = useState<string>('');
   const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
   const [captionsFromTranscript, setCaptionsFromTranscript] = useState<CaptionSegment[]>([]);
-  const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
   const [characters, setCharacters] = useState<any[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
   
@@ -106,6 +105,24 @@ export function PremiumEditorLayout() {
       return data;
     },
     enabled: !!videoId
+  });
+
+  // Fetch audio descriptions with React Query for stability
+  const { data: audioDescriptions = [] } = useQuery({
+    queryKey: ['audioDescriptions', videoId, videoData?.language],
+    queryFn: async () => {
+      if (!videoId || !videoData?.language) return [];
+      const { data } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', videoData.language)
+        .order('start_time');
+      return data || [];
+    },
+    enabled: !!videoId && !!videoData?.language,
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent frequent refetches
+    refetchOnWindowFocus: false,
   });
   
   // Test Supabase connection on mount
@@ -159,15 +176,6 @@ export function PremiumEditorLayout() {
           .select('*')
           .eq('video_id', videoId);
         setCharacters(charactersData || []);
-        
-        // Load audio descriptions
-        const { data: adData } = await supabase
-          .from('audio_descriptions')
-          .select('*')
-          .eq('video_id', videoId)
-          .eq('language', videoData.language || 'en')
-          .order('start_time');
-        setAudioDescriptions(adData || []);
         
         // Convert segments to captions
         const captions = convertToCaptions(segments, charactersData || []);
@@ -1018,7 +1026,8 @@ export function PremiumEditorLayout() {
                     speakerColor: updatedCharacters.find(c => c.name === scene.speaker)?.color || scene.speakerColor
                   }));
                 }}
-                onAudioDescriptionsUpdate={(descriptions) => {
+                onAudioDescriptionsUpdate={async (descriptions) => {
+                  // Update database directly - React Query will refetch
                   const formattedADs = descriptions.map(d => ({
                     id: d.id || '',
                     video_id: videoId!,
@@ -1026,11 +1035,19 @@ export function PremiumEditorLayout() {
                     end_time: d.endTime,
                     description: d.text,
                     audio_url: d.audio_url,
-                    language: 'en',
+                    language: videoData?.language || 'en',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                   }));
-                  setAudioDescriptions(formattedADs);
+                  
+                  // Save to database and refetch
+                  try {
+                    await supabase
+                      .from('audio_descriptions')
+                      .upsert(formattedADs);
+                  } catch (error) {
+                    console.error('Failed to update audio descriptions:', error);
+                  }
                 }}
               />
             </div>
