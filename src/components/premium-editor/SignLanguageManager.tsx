@@ -89,7 +89,7 @@ export function SignLanguageManager({
         .from('sign_language_clips')
         .select('*')
         .eq('video_id', videoId)
-        .order('start_time', { ascending: true });
+        .order('start_time_ms', { ascending: true });
 
       if (error) {
         console.warn('Sign language clips table may not exist yet:', error);
@@ -100,15 +100,15 @@ export function SignLanguageManager({
         id: d.id,
         videoId: d.video_id,
         clipUrl: d.clip_url,
-        startTime: d.start_time,
-        endTime: d.end_time,
+        startTime: d.start_time_ms / 1000,
+        endTime: d.end_time_ms / 1000,
         interpreter: d.interpreter || 'Unknown',
-        language: d.language || 'ASL',
-        position: d.position || 'bottom-right',
-        size: d.size || 'medium',
-        opacity: d.opacity || 1.0,
-        borderRadius: d.border_radius || 8,
-        hasBorder: d.has_border !== false,
+        language: (d.language || 'ASL') as SignLanguageClip['language'],
+        position: (d.position || 'bottom-right') as SignLanguageClip['position'],
+        size: (d.size || 'medium') as SignLanguageClip['size'],
+        opacity: d.opacity ?? 1.0,
+        borderRadius: d.border_radius ?? 8,
+        hasBorder: d.has_border ?? true,
         syncedWithCharacter: d.synced_with_character
       }));
 
@@ -142,42 +142,45 @@ export function SignLanguageManager({
         .getPublicUrl(fileName);
 
       // Create database entry
-      const newClip = {
-        video_id: videoId,
-        clip_url: urlData.publicUrl,
-        start_time: currentTime,
-        end_time: currentTime + 10,
+      const newClip: SignLanguageClip = {
+        id: '', // Will be set after insert
+        videoId,
+        clipUrl: urlData.publicUrl,
+        startTime: currentTime,
+        endTime: currentTime + 10,
         interpreter: '',
         language: 'ASL',
         position: 'bottom-right',
         size: 'medium',
         opacity: 1.0,
-        border_radius: 8,
-        has_border: true
+        borderRadius: 8,
+        hasBorder: true
       };
 
       const { data: dbData, error: dbError } = await supabase
         .from('sign_language_clips')
-        .insert(newClip)
+        .insert({
+          video_id: newClip.videoId,
+          clip_url: newClip.clipUrl,
+          start_time_ms: Math.round(newClip.startTime * 1000),
+          end_time_ms: Math.round(newClip.endTime * 1000),
+          interpreter: newClip.interpreter,
+          language: newClip.language,
+          position: newClip.position,
+          size: newClip.size,
+          opacity: newClip.opacity,
+          border_radius: newClip.borderRadius,
+          has_border: newClip.hasBorder,
+          transcript_segment_id: null
+        })
         .select()
         .single();
 
       if (dbError) throw dbError;
 
       const savedClip: SignLanguageClip = {
-        id: dbData.id,
-        videoId: dbData.video_id,
-        clipUrl: dbData.clip_url,
-        startTime: dbData.start_time,
-        endTime: dbData.end_time,
-        interpreter: dbData.interpreter || '',
-        language: dbData.language || 'ASL',
-        position: dbData.position || 'bottom-right',
-        size: dbData.size || 'medium',
-        opacity: dbData.opacity || 1.0,
-        borderRadius: dbData.border_radius || 8,
-        hasBorder: dbData.has_border !== false,
-        syncedWithCharacter: dbData.synced_with_character
+        ...newClip,
+        id: dbData.id
       };
 
       setClips(prev => [...prev, savedClip].sort((a, b) => a.startTime - b.startTime));
@@ -199,8 +202,8 @@ export function SignLanguageManager({
       const { error } = await supabase
         .from('sign_language_clips')
         .update({
-          start_time: clip.startTime,
-          end_time: clip.endTime,
+          start_time_ms: Math.round(clip.startTime * 1000),
+          end_time_ms: Math.round(clip.endTime * 1000),
           interpreter: clip.interpreter,
           language: clip.language,
           position: clip.position,
