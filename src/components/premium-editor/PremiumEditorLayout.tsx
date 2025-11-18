@@ -616,8 +616,45 @@ export function PremiumEditorLayout() {
                         scenes={scenes}
                         currentTime={currentTime}
                         duration={videoDuration}
+                        isPlaying={isPlaying}
                         onSceneSelect={handleSceneSelect}
                         onTimeChange={setCurrentTime}
+                        onSeek={(time: number) => {
+                          setCurrentTime(time);
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = time;
+                          }
+                        }}
+                        onSceneReorder={async (sceneId: string, newStartTime: number) => {
+                          try {
+                            const sceneIndex = scenes.findIndex(s => s.id === sceneId);
+                            if (sceneIndex === -1) return;
+                            
+                            const movedScene = scenes[sceneIndex];
+                            const sceneDuration = movedScene.endTime - movedScene.startTime;
+                            const newEndTime = newStartTime + sceneDuration;
+                            
+                            // Update database
+                            const { error } = await supabase
+                              .from('project_scenes')
+                              .update({
+                                timeline_start: newStartTime,
+                                timeline_end: newEndTime
+                              })
+                              .eq('id', sceneId);
+                            
+                            if (error) {
+                              console.error('Failed to update scene:', error);
+                              toast.error('Failed to save scene position');
+                              return;
+                            }
+                            
+                            toast.success('Scene repositioned');
+                          } catch (error) {
+                            console.error('Scene reorder error:', error);
+                            toast.error('Failed to reorder scene');
+                          }
+                        }}
                         onScenesReorder={handleScenesReorder}
                       />
                     </div>
