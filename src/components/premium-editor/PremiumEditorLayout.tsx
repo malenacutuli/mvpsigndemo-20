@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 
 // Import all components
 import { Timeline } from './Timeline';
+import { TimelineControls } from './TimelineControls';
 import { TextBasedEditor } from './TextBasedEditor';
 import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
 import { AIAssistant } from './AIAssistant';
@@ -43,6 +44,8 @@ export function PremiumEditorLayout() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   
   const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
@@ -128,6 +131,56 @@ export function PremiumEditorLayout() {
       console.error('Reorder error:', error);
       toast.error('Failed to reorder scenes');
     }
+  };
+
+  const handleSplitScene = async () => {
+    if (!selectedSceneId || !project) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.splitScene(selectedSceneId, currentTime);
+      if (result.success) {
+        toast.success('Scene split successfully');
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Split error:', error);
+      toast.error('Failed to split scene');
+    }
+  };
+
+  const handleDeleteScene = async () => {
+    if (!selectedSceneId) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.deleteScene(selectedSceneId);
+      if (result.success) {
+        toast.success('Scene deleted');
+        setSelectedSceneId(null);
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete scene');
+    }
+  };
+
+  const handleDuplicateScene = async () => {
+    if (!selectedSceneId) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.duplicateScene(selectedSceneId);
+      if (result.success) {
+        toast.success('Scene duplicated');
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      toast.error('Failed to duplicate scene');
+    }
+  };
+
+  const handleFitToView = () => {
+    setZoom(1);
   };
 
   if (accessLoading || projectLoading) {
@@ -231,17 +284,35 @@ export function PremiumEditorLayout() {
             </TabsList>
 
             <div className="flex-1 overflow-hidden">
-              <TabsContent value="timeline" className="m-0 h-full">
+              <TabsContent value="timeline" className="m-0 h-full flex flex-col">
                 {videoId && project && (
-                  <Timeline 
-                    projectId={project.id}
-                    scenes={scenes}
-                    currentTime={currentTime}
-                    duration={videoDuration}
-                    onSceneSelect={handleSceneSelect}
-                    onTimeChange={setCurrentTime}
-                    onScenesReorder={handleScenesReorder}
-                  />
+                  <>
+                    <div className="flex-1">
+                      <Timeline 
+                        projectId={project.id}
+                        scenes={scenes}
+                        currentTime={currentTime}
+                        duration={videoDuration}
+                        onSceneSelect={handleSceneSelect}
+                        onTimeChange={setCurrentTime}
+                        onScenesReorder={handleScenesReorder}
+                      />
+                    </div>
+                    <TimelineControls
+                      isPlaying={isPlaying}
+                      currentTime={currentTime}
+                      duration={videoDuration}
+                      zoom={zoom}
+                      selectedSceneId={selectedSceneId}
+                      onPlayPause={() => setIsPlaying(!isPlaying)}
+                      onSeek={setCurrentTime}
+                      onZoomChange={setZoom}
+                      onSplitScene={handleSplitScene}
+                      onDeleteScene={handleDeleteScene}
+                      onDuplicateScene={handleDuplicateScene}
+                      onFitToView={handleFitToView}
+                    />
+                  </>
                 )}
               </TabsContent>
 
