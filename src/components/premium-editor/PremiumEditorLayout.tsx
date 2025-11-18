@@ -1,12 +1,16 @@
 // src/components/premium-editor/PremiumEditorLayout.tsx
 // REPLACE entire file with this
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { AxessiblePlayer } from '@/components/AxessiblePlayer';
+import { TranscriptEditor } from '@/components/TranscriptEditor';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
+import type { CaptionSegment } from '@/components/CaptionsWithIntention';
 import { 
   ArrowLeft,
   Save, 
@@ -66,13 +70,24 @@ export function PremiumEditorLayout() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   
+  // Video data state
+  const [videoTitle, setVideoTitle] = useState<string>('');
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
+  const [captionsFromTranscript, setCaptionsFromTranscript] = useState<CaptionSegment[]>([]);
+  const [audioDescriptions, setAudioDescriptions] = useState<any[]>([]);
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Use video storage hook
+  const { loadTranscriptSegments } = useVideoStorage(videoId || '');
   
   const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
   
   // Fetch video data for player
-  const { data: videoData } = useQuery({
+  const { data: videoData, isLoading: videoDataLoading } = useQuery({
     queryKey: ['videoData', videoId],
     queryFn: async () => {
       if (!videoId) return null;
@@ -85,6 +100,49 @@ export function PremiumEditorLayout() {
     },
     enabled: !!videoId
   });
+  
+  // Load all video data on mount
+  useEffect(() => {
+    const loadVideoData = async () => {
+      if (!videoId || !videoData) return;
+      
+      try {
+        // Set video metadata
+        setVideoTitle(videoData.title);
+        setThumbnailUrl(videoData.thumbnail_url);
+        
+        // Load transcript segments
+        const segments = await loadTranscriptSegments(videoData.language || 'en');
+        setTranscriptSegments(segments);
+        
+        // Load characters
+        const { data: charactersData } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('video_id', videoId);
+        setCharacters(charactersData || []);
+        
+        // Load audio descriptions
+        const { data: adData } = await supabase
+          .from('audio_descriptions')
+          .select('*')
+          .eq('video_id', videoId)
+          .eq('language', videoData.language || 'en')
+          .order('start_time');
+        setAudioDescriptions(adData || []);
+        
+        // Convert segments to captions
+        const captions = convertToCaptions(segments, charactersData || []);
+        setCaptionsFromTranscript(captions);
+        
+      } catch (error) {
+        console.error('Failed to load video data:', error);
+        toast.error('Failed to load video data');
+      }
+    };
+    
+    loadVideoData();
+  }, [videoId, videoData, loadTranscriptSegments]);
 
   // Construct video URL from storage path
   const videoUrl = videoData?.storage_path 
@@ -296,14 +354,66 @@ export function PremiumEditorLayout() {
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+  
+  // Convert transcript segments to captions
+  const convertToCaptions = (segments: any[], chars: any[]): CaptionSegment[] => {
+    return segments.map(seg => ({
+      id: seg.id || `seg-${seg.idx}`,
+      startTime: seg.start_time || seg.startTime,
+      endTime: seg.end_time || seg.endTime,
+      text: seg.text,
+      speaker: seg.speaker || 'Speaker',
+      speakerColor: chars.find(c => c.id === seg.character_id)?.color || seg.speaker_color || '#3B82F6',
+      words: seg.words || [],
+      emphasis: seg.emphasis || 'normal',
+      pitch: seg.pitch || 'normal'
+    }));
+  };
+  
+  // Find active segment at current time
+  const getActiveSegment = (time: number, segments: any[]) => {
+    return segments.find(seg => 
+      time >= (seg.start_time || seg.startTime) && 
+      time <= (seg.end_time || seg.endTime)
+    );
+  };
+  
+  // Handle transcript updates
+  const handleTranscriptUpdate = (updatedSegments: any[]) => {
+    setTranscriptSegments(updatedSegments);
+    const captions = convertToCaptions(updatedSegments, characters);
+    setCaptionsFromTranscript(captions);
+  };
+  
+  // Handle segment selection from transcript
+  const handleSegmentSelect = (segmentId: string) => {
+    const segment = transcriptSegments.find(s => s.id === segmentId);
+    if (segment && videoRef.current) {
+      videoRef.current.currentTime = segment.start_time || segment.startTime;
+    }
+  };
 
-  if (accessLoading || projectLoading) {
+  if (accessLoading || projectLoading || videoDataLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground font-light">Loading premium editor...</p>
         </div>
+      </div>
+    );
+  }
+  
+  if (!videoData) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="p-6 max-w-md">
+          <h2 className="text-lg font-semibold mb-2">Video Not Found</h2>
+          <p className="text-muted-foreground mb-4">The requested video could not be loaded.</p>
+          <Link to="/videos">
+            <Button>Back to Videos</Button>
+          </Link>
+        </Card>
       </div>
     );
   }
