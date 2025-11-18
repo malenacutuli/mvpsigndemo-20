@@ -13,5 +13,30 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'x-client-info': 'axessible-premium-editor@1.0.0'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2 // Throttle real-time updates to reduce load
+    }
   }
 });
+
+// Query timeout wrapper to prevent hanging queries
+export const queryWithTimeout = async <T>(
+  queryPromise: Promise<T>,
+  timeoutMs = 10000
+): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Query timeout - request took too long')), timeoutMs)
+  );
+  
+  return Promise.race([queryPromise, timeout]);
+};
