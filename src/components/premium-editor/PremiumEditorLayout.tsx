@@ -29,6 +29,7 @@ import { AdvancedExportDialog } from './AdvancedExportDialog';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
 import { SubscriptionGate } from './SubscriptionGate';
 import { Badge } from '@/components/ui/badge';
+import { DevTestingPanel } from './DevTestingPanel';
 
 // Import hooks
 import { useVideoProject } from '@/hooks/useVideoProject';
@@ -231,11 +232,14 @@ export function PremiumEditorLayout() {
           </Tabs>
         </div>
 
-        <div className="w-80 border-l bg-card overflow-hidden">
+        <div className="w-80 border-l bg-card overflow-auto flex flex-col gap-4 p-4">
           <ScenePropertiesPanel 
             selectedSceneId={selectedSceneId}
             projectId={project?.id}
           />
+          {import.meta.env.DEV && project && videoId && (
+            <DevTestingPanel projectId={project.id} videoId={videoId} />
+          )}
         </div>
 
         {showAI && project && videoId && (
