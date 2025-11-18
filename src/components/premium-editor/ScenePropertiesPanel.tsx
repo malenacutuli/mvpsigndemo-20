@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 interface ScenePropertiesPanelProps {
   scene: Scene;
   videoId: string;
+  videoUrl: string;
+  videoData?: any;
   onSceneUpdate: (updatedScene: Partial<Scene>) => void;
   onTranscriptUpdate: (segments: any[]) => void;
   onCharactersUpdate: (characters: any[]) => void;
@@ -67,6 +69,8 @@ const SCENE_LAYOUTS = [
 export function ScenePropertiesPanel({
   scene,
   videoId,
+  videoUrl,
+  videoData,
   onSceneUpdate,
   onTranscriptUpdate,
   onCharactersUpdate,
@@ -277,40 +281,23 @@ export function ScenePropertiesPanel({
           </div>
         </TabsContent>
 
-        {/* TRANSCRIPT TAB - Use existing component */}
+        {/* TRANSCRIPT TAB */}
         <TabsContent 
           value="transcript" 
           className="flex-1 overflow-hidden m-0 data-[state=active]:flex data-[state=active]:flex-col"
         >
           <div className="flex-1 overflow-y-auto">
             <TranscriptEditor
+              videoUrl={videoUrl}
               videoId={videoId}
-              segments={[{
-                id: scene.transcriptSegmentId,
-                start_time: scene.startTime,
-                end_time: scene.endTime,
-                text: scene.text,
-                speaker: scene.speaker,
-                speaker_color: scene.speakerColor,
-                words: scene.words
-              }]}
-              onSegmentUpdate={(updatedSegments) => {
-                onTranscriptUpdate(updatedSegments);
-                // Update scene with new text
-                if (updatedSegments[0]) {
-                  onSceneUpdate({
-                    text: updatedSegments[0].text,
-                    words: updatedSegments[0].words,
-                    speaker: updatedSegments[0].speaker,
-                    speakerColor: updatedSegments[0].speaker_color
-                  });
-                }
+              onTranscriptUpdate={(segments) => {
+                onTranscriptUpdate(segments);
               }}
             />
           </div>
         </TabsContent>
 
-        {/* CHARACTERS TAB - Use existing component */}
+        {/* CHARACTERS TAB */}
         <TabsContent 
           value="characters" 
           className="flex-1 overflow-hidden m-0 p-4 data-[state=active]:flex data-[state=active]:flex-col"
@@ -318,7 +305,7 @@ export function ScenePropertiesPanel({
           <div className="flex-1 overflow-y-auto">
             <CharacterManager
               videoId={videoId}
-              onUpdate={(characters) => {
+              onCharactersUpdate={(characters) => {
                 onCharactersUpdate(characters);
                 // Update scene speaker color if changed
                 const sceneCharacter = characters.find(c => c.name === scene.speaker);
@@ -333,25 +320,30 @@ export function ScenePropertiesPanel({
           </div>
         </TabsContent>
 
-        {/* AUDIO DESCRIPTION TAB - Use existing component */}
+        {/* AUDIO DESCRIPTION TAB */}
         <TabsContent 
           value="audio-description" 
           className="flex-1 overflow-hidden m-0 data-[state=active]:flex data-[state=active]:flex-col"
         >
           <div className="flex-1 overflow-y-auto">
             <AudioDescriptionEditor
+              videoUrl={videoUrl}
               videoId={videoId}
-              segment={{
-                id: scene.transcriptSegmentId,
-                startTime: scene.startTime,
-                endTime: scene.endTime,
-                text: scene.text
-              }}
-              onUpdate={(descriptions) => {
-                onAudioDescriptionsUpdate(descriptions);
+              videoData={videoData}
+              onDescriptionsUpdate={(descriptions) => {
+                // Convert to proper format and update parent
+                const formatted = descriptions.map(d => ({
+                  id: d.id || '',
+                  video_id: videoId,
+                  start_time: d.startTime,
+                  end_time: d.endTime,
+                  description: d.text,
+                  audio_url: d.audio_url
+                }));
+                onAudioDescriptionsUpdate(formatted);
                 onSceneUpdate({
-                  audioDescriptions: descriptions,
-                  hasAudioDescription: descriptions.length > 0
+                  audioDescriptions: formatted,
+                  hasAudioDescription: formatted.length > 0
                 });
               }}
             />
