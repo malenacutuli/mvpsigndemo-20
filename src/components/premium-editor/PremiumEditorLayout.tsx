@@ -820,7 +820,14 @@ export function PremiumEditorLayout() {
               </TabsContent>
 
               <TabsContent value="transcript" className="m-0 h-full overflow-auto">
-                {videoId && <TextBasedEditor videoId={videoId} />}
+                {videoId && videoUrl && (
+                  <TextBasedEditor 
+                    videoId={videoId} 
+                    videoUrl={videoUrl}
+                    onTimeUpdate={setCurrentTime}
+                    currentTime={currentTime}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="social" className="m-0 h-full overflow-auto">
