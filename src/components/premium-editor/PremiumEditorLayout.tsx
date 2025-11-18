@@ -18,10 +18,19 @@ import { TextBasedEditor } from './TextBasedEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { SignLanguageManager } from './SignLanguageManager';
 
-export function PremiumEditorLayout() {
-  const { projectId } = useParams<{ projectId: string }>();
+interface PremiumEditorLayoutProps {
+  videoId?: string;
+  projectId?: string;
+}
+
+export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsProjectId }: PremiumEditorLayoutProps) {
+  const { projectId: routeProjectId, id: routeVideoId } = useParams<{ projectId?: string; id?: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Use props first, fallback to route params
+  const videoId = propsVideoId || routeVideoId;
+  const projectId = propsProjectId || routeProjectId;
 
   const {
     project,
@@ -51,10 +60,10 @@ export function PremiumEditorLayout() {
 
   // Load project
   useEffect(() => {
-    if (projectId) {
-      loadProject(projectId);
+    if (projectId || videoId) {
+      loadProject(projectId, videoId);
     }
-  }, [projectId]);
+  }, [projectId, videoId]);
 
   // Auto-save
   useEffect(() => {
@@ -67,30 +76,74 @@ export function PremiumEditorLayout() {
     return () => clearInterval(autoSaveInterval);
   }, [project, scenes, elements]);
 
-  const loadProject = async (id: string) => {
+  const loadProject = async (projectIdParam?: string, videoIdParam?: string) => {
     setIsLoading(true);
     
     try {
-      // Load project with video
-      const { data: projectData, error: projectError } = await supabase
-        .from('video_projects')
-        .select('*, videos(*)')
-        .eq('id', id)
-        .single();
+      let projectData;
+      let video;
 
-      if (projectError) throw projectError;
+      // Case 1: Load by projectId
+      if (projectIdParam) {
+        const { data, error } = await supabase
+          .from('premium_projects')
+          .select('*, videos(*)')
+          .eq('id', projectIdParam)
+          .single();
 
-      // Extract video data (videos is an array in the response)
-      const video = Array.isArray(projectData.videos) ? projectData.videos[0] : projectData.videos;
-      
+        if (error) throw error;
+        projectData = data;
+        video = data.videos;
+      } 
+      // Case 2: Load by videoId (or create if doesn't exist)
+      else if (videoIdParam) {
+        // First, get video details
+        const { data: videoData, error: videoError } = await supabase
+          .from('videos')
+          .select('*')
+          .eq('id', videoIdParam)
+          .single();
+
+        if (videoError) throw videoError;
+        video = videoData;
+
+        // Try to find existing premium project
+        const { data: existingProject } = await supabase
+          .from('premium_projects')
+          .select('*')
+          .eq('video_id', videoIdParam)
+          .maybeSingle();
+
+        if (existingProject) {
+          projectData = { ...existingProject, videos: video };
+        } else {
+          // Create new premium project
+          const { data: newProject, error: createError } = await supabase
+            .from('premium_projects')
+            .insert({
+              video_id: videoIdParam,
+              name: video.title || 'Untitled Project',
+              user_id: (await supabase.auth.getUser()).data.user?.id
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          projectData = { ...newProject, videos: video };
+          toast.success('Created new premium project');
+        }
+      } else {
+        throw new Error('No projectId or videoId provided');
+      }
+
       if (!video) {
-        throw new Error('No video associated with project');
+        throw new Error('No video found');
       }
 
       // Construct video URL from storage path
       const videoUrl = video.storage_path
         ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`
-        : '';
+        : video.video_url || '';
 
       setProject({
         id: projectData.id,
@@ -103,9 +156,9 @@ export function PremiumEditorLayout() {
         updatedAt: projectData.updated_at
       });
 
-      // Load scenes/transcript
+      // Load scenes/transcript from transcript_segments_clean
       const { data: scenesData } = await supabase
-        .from('transcript_segments')
+        .from('transcript_segments_clean')
         .select('*, characters(*)')
         .eq('video_id', video.id)
         .order('start_time');
@@ -138,7 +191,7 @@ export function PremiumEditorLayout() {
     try {
       // Save project metadata
       await supabase
-        .from('video_projects')
+        .from('premium_projects')
         .update({
           updated_at: new Date().toISOString()
         })
