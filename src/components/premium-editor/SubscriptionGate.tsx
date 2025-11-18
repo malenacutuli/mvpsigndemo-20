@@ -20,7 +20,7 @@ export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps
           <div className="flex justify-center">
             <div className="w-40 h-40">
               <img 
-                src="/assets/axessible-logo-assistant.avif" 
+                src="/assets/axessible-logo.png" 
                 alt="Axessible" 
                 className="w-full h-full object-contain" 
               />
