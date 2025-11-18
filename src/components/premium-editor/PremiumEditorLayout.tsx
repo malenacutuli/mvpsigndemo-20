@@ -17,6 +17,7 @@ import { AIToolsPanel } from './AIToolsPanel';
 import { TextBasedEditor } from './TextBasedEditor';
 import { AudioDescriptionEditor } from './AudioDescriptionEditor';
 import { SignLanguageManager } from './SignLanguageManager';
+import { ExportManager } from './ExportManager';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -349,10 +350,11 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
           >
             <div className="h-full border-l">
               <Tabs value={ui.selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="h-full flex flex-col">
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-4">
                   <TabsTrigger value="ai-tools">AI</TabsTrigger>
                   <TabsTrigger value="elements">Elements</TabsTrigger>
                   <TabsTrigger value="properties">Props</TabsTrigger>
+                  <TabsTrigger value="export">Export</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="ai-tools" className="flex-1 overflow-hidden">
@@ -371,6 +373,14 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                   <p className="text-sm text-muted-foreground">
                     Properties panel (implement detailed properties)
                   </p>
+                </TabsContent>
+
+                <TabsContent value="export" className="flex-1 overflow-hidden">
+                  <ExportManager
+                    videoId={project.videoId}
+                    projectId={project.id}
+                    duration={project.duration}
+                  />
                 </TabsContent>
               </Tabs>
             </div>
