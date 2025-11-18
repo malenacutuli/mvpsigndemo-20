@@ -117,6 +117,7 @@ export function SignLanguageManager({
 
     } catch (error) {
       console.error('Failed to load sign language clips:', error);
+      toast.error('Failed to load sign language clips');
     }
   };
 
@@ -141,13 +142,12 @@ export function SignLanguageManager({
         .from('sign-language-clips')
         .getPublicUrl(fileName);
 
-      // Create database entry
-      const newClip: SignLanguageClip = {
-        id: '', // Will be set after insert
+      // Create database entry with correct column names
+      const newClip: Omit<SignLanguageClip, 'id'> = {
         videoId,
         clipUrl: urlData.publicUrl,
         startTime: currentTime,
-        endTime: currentTime + 10,
+        endTime: currentTime + 10, // Default 10 seconds
         interpreter: '',
         language: 'ASL',
         position: 'bottom-right',
