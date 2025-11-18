@@ -173,8 +173,8 @@ export function Timeline({
     return (
       <div className="h-full flex items-center justify-center bg-muted/30">
         <div className="text-center">
-          <p className="text-muted-foreground mb-2">No scenes yet</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground font-light mb-2">No scenes yet</p>
+          <p className="text-sm text-muted-foreground font-light">
             Generate scenes from transcript to get started
           </p>
         </div>
@@ -193,7 +193,7 @@ export function Timeline({
         >
           -
         </button>
-        <span className="text-xs text-muted-foreground min-w-[3rem] text-center">
+        <span className="text-xs text-muted-foreground font-light min-w-[3rem] text-center">
           {zoom}x
         </span>
         <button
@@ -235,7 +235,7 @@ export function Timeline({
                 style={{ left: `${time * PIXELS_PER_SECOND * zoom}px` }}
               >
                 <div className="w-px h-2 bg-border" />
-                <span className="text-xs text-muted-foreground mt-1">
+                <span className="text-xs text-muted-foreground font-light mt-1">
                   {formatTime(time)}
                 </span>
               </div>
@@ -273,7 +273,7 @@ export function Timeline({
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <span className="text-xs text-muted-foreground">Waveform</span>
+                <span className="text-xs text-muted-foreground font-light">Waveform</span>
               </div>
             )}
           </div>

@@ -64,10 +64,10 @@ export function TopBar({ project }: TopBarProps) {
         <Input
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
-          className="w-64 h-8"
+          className="w-64 h-8 font-light"
           placeholder="Project name"
         />
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground font-light">
           Last saved: {new Date(project.updatedAt).toLocaleTimeString()}
         </span>
       </div>
@@ -78,6 +78,7 @@ export function TopBar({ project }: TopBarProps) {
           size="sm"
           onClick={handleSave}
           disabled={isSaving}
+          className="font-light"
         >
           <Save className="h-4 w-4 mr-2" />
           {isSaving ? 'Saving...' : 'Save'}
@@ -86,6 +87,7 @@ export function TopBar({ project }: TopBarProps) {
           variant="default"
           size="sm"
           onClick={handleExport}
+          className="font-light"
         >
           <Download className="h-4 w-4 mr-2" />
           Export
@@ -94,6 +96,7 @@ export function TopBar({ project }: TopBarProps) {
           variant="outline"
           size="sm"
           onClick={handleShare}
+          className="font-light"
         >
           <Share2 className="h-4 w-4 mr-2" />
           Share

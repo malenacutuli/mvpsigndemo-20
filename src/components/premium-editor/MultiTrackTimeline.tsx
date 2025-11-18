@@ -151,8 +151,8 @@ export function MultiTrackTimeline({
       {/* Timeline Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Timeline</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-sm font-light">Timeline</span>
+          <span className="text-xs text-muted-foreground font-light">
             {scenes.length} scene{scenes.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -205,7 +205,7 @@ export function MultiTrackTimeline({
                 className="absolute top-0 bottom-0 border-l border-border"
                 style={{ left: `${(i / duration) * 100}%` }}
               >
-                <span className="text-xs text-muted-foreground ml-1">
+                <span className="text-xs text-muted-foreground font-light ml-1">
                   {Math.floor(i / 60)}:{(i % 60).toString().padStart(2, '0')}
                 </span>
               </div>
@@ -216,7 +216,7 @@ export function MultiTrackTimeline({
           {isGenerating ? (
             <div className="absolute top-8 left-0 right-0 h-20 border-b border-border flex items-center justify-center bg-muted/20">
               <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-              <span className="text-xs text-muted-foreground">Generating thumbnails...</span>
+              <span className="text-xs text-muted-foreground font-light">Generating thumbnails...</span>
             </div>
           ) : thumbnails.length > 0 ? (
             <div className="absolute top-8 left-0 right-0 h-20 border-b border-border flex overflow-hidden">
@@ -238,7 +238,7 @@ export function MultiTrackTimeline({
                     alt={`Frame at ${thumb.timestamp}s`}
                     className="h-full w-full object-cover rounded-sm"
                   />
-                  <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[10px] px-1 rounded">
+                  <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[10px] px-1 rounded font-light">
                     {Math.floor(thumb.timestamp / 60)}:{Math.floor(thumb.timestamp % 60).toString().padStart(2, '0')}
                   </span>
                 </div>

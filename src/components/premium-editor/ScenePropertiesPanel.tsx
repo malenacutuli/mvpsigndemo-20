@@ -86,15 +86,15 @@ export function ScenePropertiesPanel({
       {/* Scene Header */}
       <div className="p-4 border-b border-border space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">Scene Properties</h3>
-          <Badge variant="outline" className="font-mono">
+          <h3 className="text-lg font-light text-foreground">Scene Properties</h3>
+          <Badge variant="outline" className="font-mono font-light">
             {sceneDuration.toFixed(1)}s
           </Badge>
         </div>
         
         {/* Scene Name Input */}
         <div className="space-y-2">
-          <Label htmlFor="scene-name" className="text-sm font-medium">
+          <Label htmlFor="scene-name" className="text-sm font-light">
             Scene Name
           </Label>
           <Input
@@ -102,14 +102,14 @@ export function ScenePropertiesPanel({
             value={scene.name}
             onChange={(e) => onSceneUpdate({ name: e.target.value })}
             placeholder="Enter scene name..."
-            className="h-9"
+            className="h-9 font-light"
           />
         </div>
 
         {/* Scene Order Badge */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
           <span>Order:</span>
-          <Badge variant="secondary" className="font-mono">
+          <Badge variant="secondary" className="font-mono font-light">
             #{scene.order + 1}
           </Badge>
         </div>
@@ -121,7 +121,7 @@ export function ScenePropertiesPanel({
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="w-full justify-start border-b rounded-none px-4 h-12 bg-muted/30">
+        <TabsList className="w-full justify-start border-b rounded-none px-4 h-12 bg-muted/30 font-light">
           <TabsTrigger value="layout" className="text-xs">
             Layout
           </TabsTrigger>
