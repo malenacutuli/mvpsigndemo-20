@@ -31,7 +31,8 @@ import {
   Play,
   Pause,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Monitor
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,9 +57,12 @@ import type { Scene } from '@/lib/premium-editor/scene-manager';
 // Import hooks
 import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
 import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { useResponsive } from '@/hooks/useResponsive';
+import { cn } from '@/lib/utils';
 
 export function PremiumEditorLayout() {
   const { id: videoId } = useParams<{ id: string }>();
+  const { isDesktop, isIPad, isMobile } = useResponsive();
   
   const [activeTab, setActiveTab] = useState('timeline');
   const [isSaving, setIsSaving] = useState(false);
@@ -519,6 +523,28 @@ export function PremiumEditorLayout() {
       </div>
     );
   }
+
+  // Block mobile devices
+  if (isMobile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-8 bg-background">
+        <div className="text-center max-w-md">
+          <Monitor className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold mb-2">Desktop Required</h2>
+          <p className="text-muted-foreground mb-4">
+            Premium Video Editor is designed for desktop and iPad Pro.
+            Please switch to a larger screen for the best experience.
+          </p>
+          <Link to={`/video/${videoId}`}>
+            <Button variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Video
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   if (!videoData) {
     return (
@@ -541,9 +567,15 @@ export function PremiumEditorLayout() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className={cn(
+      "flex flex-col h-screen bg-background",
+      isIPad && "text-sm" // Smaller text on iPad for better fit
+    )}>
       <div className="border-b bg-card">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className={cn(
+          "flex items-center justify-between px-4 py-3",
+          isIPad && "px-3 py-2" // Compact padding on iPad
+        )}>
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center">
               <img
