@@ -2,10 +2,11 @@
 // REPLACE entire file with this
 
 import { useState, useRef, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { 
   ArrowLeft,
   Save, 
@@ -16,7 +17,17 @@ import {
   Scissors,
   Upload,
   Loader2,
-  Plus
+  Plus,
+  FolderOpen,
+  Settings,
+  Layers,
+  Type,
+  Image,
+  Wand2,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +62,9 @@ export function PremiumEditorLayout() {
   const [zoom, setZoom] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [isGeneratingScenes, setIsGeneratingScenes] = useState(false);
+  const [activeRightPanel, setActiveRightPanel] = useState<string | null>(null);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -275,6 +289,12 @@ export function PremiumEditorLayout() {
       console.error('Create test scenes error:', error);
       toast.error('Failed to create test scenes');
     }
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (accessLoading || projectLoading) {
