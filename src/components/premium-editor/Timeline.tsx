@@ -351,43 +351,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                 strategy={horizontalListSortingStrategy}
               >
                 {scenes.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50">
-                    <div className="bg-gray-800 rounded-xl p-8 max-w-md text-center border border-gray-700 shadow-xl">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center p-8 bg-gray-800 rounded-xl border border-gray-700 max-w-md">
                       <div className="text-6xl mb-4">🎬</div>
                       <h3 className="text-2xl font-bold text-white mb-2">
                         No Scenes Yet
                       </h3>
-                      <p className="text-gray-400 mb-6">
-                        Your timeline is empty. Scenes should be auto-generated from your transcript, 
-                        or you can create one manually.
-                      </p>
-                      <div className="flex flex-col gap-3">
-                        <Button 
-                          onClick={handleAddScene}
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create First Scene
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={async () => {
-                            if (projectId) {
-                              const { generateScenesFromTranscript } = await import('@/hooks/useVideoProject');
-                              await generateScenesFromTranscript(projectId, projectId);
-                              window.location.reload();
-                            }
-                          }}
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Generate from Transcript
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-4">
-                        Tip: Scenes are usually auto-generated. If you see this, try refreshing the page.
+                      <p className="text-gray-400 mb-4">
+                        Click "Create Test Scenes" in the header to get started.
                       </p>
                     </div>
                   </div>
