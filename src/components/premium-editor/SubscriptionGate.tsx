@@ -18,8 +18,12 @@ export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps
       <Card className="max-w-4xl w-full border shadow-elegant">
         <CardHeader className="text-center space-y-6 pt-16 pb-8">
           <div className="flex justify-center">
-            <div className="relative">
-              <Crown className="w-24 h-24 text-primary animate-pulse" />
+            <div className="relative w-24 h-24">
+              <img 
+                src="/assets/axessible-logo-assistant.avif" 
+                alt="Axessible" 
+                className="w-full h-full object-contain animate-pulse" 
+              />
               <Sparkles className="w-6 h-6 text-primary-glow absolute -top-2 -right-2" />
             </div>
           </div>
@@ -60,8 +64,8 @@ export function SubscriptionGate({ currentTier, videoId }: SubscriptionGateProps
               </div>
 
               <div className="flex items-start gap-5 group hover:translate-x-1 transition-transform">
-                <div className="w-10 h-10 flex-shrink-0 mt-0.5 rounded-lg overflow-hidden bg-background flex items-center justify-center">
-                  <img src="/assets/axessible-logo-assistant.avif" alt="Axessible" className="w-full h-full object-contain" />
+                <div className="w-10 h-10 flex-shrink-0 mt-0.5 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-primary" />
                 </div>
                 <div className="space-y-1.5 flex-1">
                   <h3 className="font-semibold text-lg text-foreground">{t('premiumEditor.features.aiAssistant.title')}</h3>
