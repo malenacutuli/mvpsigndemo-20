@@ -29,5 +29,5 @@ export default function PremiumVideoEditor() {
     return <SubscriptionGate currentTier={tier} videoId={videoId} />;
   }
 
-  return <PremiumEditorLayout />;
+  return <PremiumEditorLayout videoId={videoId} />;
 }
