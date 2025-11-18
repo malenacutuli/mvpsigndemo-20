@@ -46,9 +46,12 @@ import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
 import { AIAssistant } from './AIAssistant';
 import { AdvancedExportDialog } from './AdvancedExportDialog';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+import { SceneCanvasPreview } from './SceneCanvasPreview';
 import { SubscriptionGate } from './SubscriptionGate';
 import { Badge } from '@/components/ui/badge';
 import { DevTestingPanel } from './DevTestingPanel';
+import { convertSegmentsToScenes } from '@/lib/premium-editor/scene-manager';
+import type { Scene } from '@/lib/premium-editor/scene-manager';
 
 // Import hooks
 import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
@@ -413,6 +416,60 @@ export function PremiumEditorLayout() {
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Scene navigation helpers
+  const navigateToPreviousScene = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    if (currentIndex > 0) {
+      const prevScene = scenes[currentIndex - 1];
+      setSelectedSceneId(prevScene.id);
+      setCurrentTime(prevScene.startTime);
+    }
+  };
+
+  const navigateToNextScene = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    if (currentIndex < scenes.length - 1) {
+      const nextScene = scenes[currentIndex + 1];
+      setSelectedSceneId(nextScene.id);
+      setCurrentTime(nextScene.startTime);
+    }
+  };
+
+  const canNavigatePrevious = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    return currentIndex > 0;
+  };
+
+  const canNavigateNext = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    return currentIndex < scenes.length - 1;
+  };
+
+  // Save scene updates to database
+  const saveSceneUpdates = async (sceneId: string, updates: Partial<Scene>) => {
+    if (!project?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('project_scenes')
+        .update({
+          name: updates.name,
+          timeline_start: updates.startTime,
+          timeline_end: updates.endTime,
+          duration_seconds: updates.duration,
+          layout_type: updates.layout as any,
+        })
+        .eq('id', sceneId);
+      
+      if (error) throw error;
+      
+      toast.success('Scene updated');
+    } catch (error) {
+      console.error('Failed to save scene:', error);
+      toast.error('Failed to save changes');
+    }
+  };
   
   // Convert transcript segments to captions
   const convertToCaptions = (segments: any[], chars: any[]): CaptionSegment[] => {
@@ -611,37 +668,62 @@ export function PremiumEditorLayout() {
               <TabsContent value="timeline" className="m-0 h-full flex flex-col">
                 {videoId && project && (
                   <>
-                    {/* Test Controls */}
-                    <div className="px-4 py-2 border-b border-border bg-muted/30">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleCreateTestScenes}
-                      >
-                        Create Test Scenes
-                      </Button>
-                    </div>
-
-                    {/* Video Preview */}
+                    {/* Scene Canvas Preview */}
                     <div className="px-4 pt-4 pb-2">
-                      <div className="bg-black rounded-lg overflow-hidden" style={{ maxHeight: '400px' }}>
-                        {videoUrl ? (
-                          <video 
-                            ref={videoRef}
-                            src={videoUrl}
-                            className="w-full h-full"
-                            onTimeUpdate={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              if (isPlaying) {
-                                setCurrentTime(video.currentTime);
-                              }
-                            }}
-                            onPlay={() => setIsPlaying(true)}
-                            onPause={() => setIsPlaying(false)}
+                      <div className="mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h2 className="font-semibold text-foreground">
+                            {videoTitle || 'Video Preview'}
+                          </h2>
+                          {selectedSceneId && (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              Scene {scenes.findIndex(s => s.id === selectedSceneId) + 1} of {scenes.length}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Scene Navigation */}
+                        {selectedSceneId && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={navigateToPreviousScene}
+                              disabled={!canNavigatePrevious()}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={navigateToNextScene}
+                              disabled={!canNavigateNext()}
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-muted/30 rounded-lg p-4" style={{ height: '400px' }}>
+                        {selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
+                          <SceneCanvasPreview
+                            scene={scenes.find(s => s.id === selectedSceneId)!}
+                            videoUrl={videoUrl}
+                            videoId={videoId}
+                            currentTime={currentTime}
+                            isPlaying={isPlaying}
+                            onTimeUpdate={setCurrentTime}
+                            onPlayStateChange={setIsPlaying}
                           />
                         ) : (
-                          <div className="w-full h-64 flex items-center justify-center text-muted-foreground">
-                            Loading video...
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-muted-foreground mb-2">No scene selected</p>
+                              <p className="text-sm text-muted-foreground">
+                                Click a scene in the timeline to start editing
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -757,62 +839,73 @@ export function PremiumEditorLayout() {
           </Tabs>
         </div>
 
-        <div className="w-80 border-l bg-card overflow-auto flex flex-col gap-4 p-4">
-          {selectedSceneId && scenes.find(s => s.id === selectedSceneId) && (
-            <ScenePropertiesPanel 
-              scene={scenes.find(s => s.id === selectedSceneId)!}
-              videoId={videoId!}
-              videoUrl={videoUrl}
-              videoData={videoData}
-              onSceneUpdate={(updates) => {
-                // Update scene in state
-                const updatedScenes = scenes.map(s =>
-                  s.id === selectedSceneId ? { ...s, ...updates } : s
-                );
-                // Save to database
-                if (project?.id) {
-                  supabase
-                    .from('project_scenes')
-                    .update({
-                      name: updates.name,
-                      timeline_start: updates.startTime,
-                      timeline_end: updates.endTime,
-                      duration_seconds: updates.endTime && updates.startTime 
-                        ? updates.endTime - updates.startTime 
-                        : undefined,
-                      layout_type: updates.layout as any,
-                    })
-                    .eq('id', selectedSceneId)
-                    .then(({ error }) => {
-                      if (error) console.error('Failed to update scene:', error);
-                    });
-                }
-              }}
-              onTranscriptUpdate={(segments) => {
-                setTranscriptSegments(segments);
-              }}
-              onCharactersUpdate={(updatedCharacters) => {
-                setCharacters(updatedCharacters);
-              }}
-              onAudioDescriptionsUpdate={(descriptions) => {
-                // Convert AudioDescriptionSegment[] to proper format
-                const formattedADs = descriptions.map(d => ({
-                  id: d.id || '',
-                  video_id: videoId!,
-                  start_time: d.startTime,
-                  end_time: d.endTime,
-                  description: d.text,
-                  audio_url: d.audio_url,
-                  language: 'en',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }));
-                setAudioDescriptions(formattedADs);
-              }}
-            />
+        <div className="w-80 border-l bg-card overflow-auto flex flex-col">
+          <div className="p-4 border-b border-border">
+            <h3 className="font-semibold text-sm">Scene Properties</h3>
+          </div>
+          
+          {selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
+            <div className="flex-1 overflow-hidden">
+              <ScenePropertiesPanel 
+                scene={scenes.find(s => s.id === selectedSceneId)!}
+                videoId={videoId!}
+                videoUrl={videoUrl}
+                videoData={videoData}
+                onSceneUpdate={(updates) => {
+                  saveSceneUpdates(selectedSceneId, updates);
+                }}
+                onTranscriptUpdate={(segments) => {
+                  setTranscriptSegments(segments);
+                  const newScenes = convertSegmentsToScenes(
+                    segments.map(s => ({
+                      id: s.id,
+                      start_time: s.startTime || s.start_time,
+                      end_time: s.endTime || s.end_time,
+                      text: s.text,
+                      speaker: s.speaker,
+                      speaker_color: s.speakerColor || s.speaker_color,
+                      words: s.words
+                    })),
+                    characters,
+                    audioDescriptions,
+                    []
+                  );
+                }}
+                onCharactersUpdate={(updatedCharacters) => {
+                  setCharacters(updatedCharacters);
+                  const newScenes = scenes.map(scene => ({
+                    ...scene,
+                    speakerColor: updatedCharacters.find(c => c.name === scene.speaker)?.color || scene.speakerColor
+                  }));
+                }}
+                onAudioDescriptionsUpdate={(descriptions) => {
+                  const formattedADs = descriptions.map(d => ({
+                    id: d.id || '',
+                    video_id: videoId!,
+                    start_time: d.startTime,
+                    end_time: d.endTime,
+                    description: d.text,
+                    audio_url: d.audio_url,
+                    language: 'en',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }));
+                  setAudioDescriptions(formattedADs);
+                }}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center text-muted-foreground">
+                <p>Select a scene to view properties</p>
+              </div>
+            </div>
           )}
+          
           {import.meta.env.DEV && project && videoId && (
-            <DevTestingPanel projectId={project.id} videoId={videoId} />
+            <div className="p-4 border-t border-border">
+              <DevTestingPanel projectId={project.id} videoId={videoId} />
+            </div>
           )}
         </div>
 
