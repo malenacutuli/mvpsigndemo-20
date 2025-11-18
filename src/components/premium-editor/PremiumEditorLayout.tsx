@@ -14,7 +14,8 @@ import {
   Film,
   FileText,
   Scissors,
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,7 @@ export function PremiumEditorLayout() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isGeneratingScenes, setIsGeneratingScenes] = useState(false);
   
   const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
   const { project, isLoading: projectLoading } = useVideoProject(videoId);
@@ -245,6 +247,36 @@ export function PremiumEditorLayout() {
               <Sparkles className="w-4 h-4 mr-2" />
               Ask AI
             </Button>
+
+            {scenes.length === 0 && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={async () => {
+                  if (project?.id && videoId) {
+                    setIsGeneratingScenes(true);
+                    await generateScenesFromTranscript(project.id, videoId);
+                    setIsGeneratingScenes(false);
+                    toast.success('Scenes generated from transcript!');
+                    // Refresh to show new scenes
+                    window.location.reload();
+                  }
+                }}
+                disabled={isGeneratingScenes}
+              >
+                {isGeneratingScenes ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Scenes
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button 
               variant="ghost" 
