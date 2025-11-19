@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wand2, Layers, Type, Image, Settings, Accessibility, Sparkles, Video } from 'lucide-react';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
-import { AIToolsPanel } from './AIToolsPanel';
+import { AIToolsPanel } from './ai-tools/AIToolsPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
 import { MediaLibrary } from './MediaLibrary';
 import { CaptionTemplateGallery } from './CaptionTemplateGallery';
@@ -82,9 +82,12 @@ export function RightPanelTabs({
       <div className="flex-1 overflow-hidden">
         <TabsContent value="ai-tools" className="h-full m-0">
           <AIToolsPanel 
-            videoId={videoId}
-            selectedSceneId={selectedSceneId}
-            onToolExecute={handleToolExecute}
+            projectId={projectId}
+            videoUrl={videoUrl}
+            transcript=""
+            onJobComplete={() => {
+              toast.success('AI job completed!');
+            }}
           />
         </TabsContent>
 

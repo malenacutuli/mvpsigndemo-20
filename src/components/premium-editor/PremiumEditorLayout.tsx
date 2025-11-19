@@ -9,7 +9,7 @@ import { usePremiumPlayer } from '@/hooks/premium-editor/usePremiumPlayer';
 import { usePremiumTimeline } from '@/hooks/premium-editor/usePremiumTimeline';
 import { PremiumVideoPlayer } from './player/PremiumVideoPlayer';
 import { MultiTrackTimeline } from './timeline/MultiTrackTimeline';
-import { ScenePropertiesPanel } from './sidebar/ScenePropertiesPanel';
+import { RightPanelTabs } from './RightPanelTabs';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -24,6 +24,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('ai-tools');
 
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
@@ -287,12 +288,15 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           <ResizableHandle withHandle />
 
-          {/* Sidebar - Scene Properties */}
+          {/* Sidebar - Right Panel Tabs */}
           <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
             <div className="h-full bg-card border-l border-border">
-              <ScenePropertiesPanel
-                sceneId={selectedSceneId}
-                onSceneUpdate={() => timeline.reloadScenes()}
+              <RightPanelTabs
+                projectId={projectId || ''}
+                videoId={videoId || ''}
+                videoUrl={videoUrl}
+                currentTime={player.currentTime}
+                selectedTab={selectedTab}
               />
             </div>
           </ResizablePanel>
