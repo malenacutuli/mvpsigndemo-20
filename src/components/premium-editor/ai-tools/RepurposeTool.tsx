@@ -8,14 +8,16 @@ import { AIService } from '@/lib/premium/aiService';
 import { RepurposeOptions } from '@/types/premium-ai-tools';
 import { Loader2, Youtube, Instagram, Video as TikTok, Linkedin, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface RepurposeToolProps {
   projectId: string;
   videoUrl: string;
   onJobComplete?: () => void;
+  disabled?: boolean;
 }
 
-export function RepurposeTool({ projectId, videoUrl, onJobComplete }: RepurposeToolProps) {
+export function RepurposeTool({ projectId, videoUrl, onJobComplete, disabled = false }: RepurposeToolProps) {
   const [platform, setPlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'twitter'>('youtube');
   const [outputFormat, setOutputFormat] = useState<'short' | 'reel' | 'story' | 'post' | 'tweet'>('short');
   const [options, setOptions] = useState({
@@ -65,8 +67,20 @@ export function RepurposeTool({ projectId, videoUrl, onJobComplete }: RepurposeT
           setIsRepurposing(false);
         }
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to repurpose:', error);
+      
+      // Provide specific error messages
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error('AI repurpose service is not available yet. Please wait for deployment to complete.');
+      } else if (error.message?.includes('401') || error.message?.includes('403')) {
+        toast.error('Authentication error. Please refresh the page and try again.');
+      } else if (error.message?.includes('projectId')) {
+        toast.error('Invalid project. Please reload the editor.');
+      } else {
+        toast.error(error.message || 'Failed to start repurposing');
+      }
+      
       setIsRepurposing(false);
     }
   };
@@ -221,7 +235,7 @@ export function RepurposeTool({ projectId, videoUrl, onJobComplete }: RepurposeT
       {/* Repurpose button */}
       <Button
         onClick={handleRepurpose}
-        disabled={isRepurposing}
+        disabled={disabled || isRepurposing}
         className="w-full gap-2"
         size="lg"
       >

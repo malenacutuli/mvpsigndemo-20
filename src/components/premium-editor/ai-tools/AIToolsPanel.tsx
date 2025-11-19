@@ -5,13 +5,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GenerateTool } from './GenerateTool';
 import { RepurposeTool } from './RepurposeTool';
 import { WriteTool } from './WriteTool';
+import { useAIFeaturesStatus } from '@/hooks/useAIFeaturesStatus';
 import { 
   Sparkles, 
   RefreshCw, 
   Upload, 
   PenTool,
-  History
+  AlertCircle,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AIToolsPanelProps {
   projectId: string;
@@ -27,9 +31,37 @@ export function AIToolsPanel({
   onJobComplete
 }: AIToolsPanelProps) {
   const [activeTab, setActiveTab] = useState('generate');
+  const { isReady, isChecking, error } = useAIFeaturesStatus();
 
   return (
     <div className="h-full flex flex-col bg-background">
+      {/* Status Banner */}
+      {isChecking && (
+        <Alert className="m-4 mb-0 border-blue-200 bg-blue-50">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            Checking AI features availability...
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {!isChecking && !isReady && error && (
+        <Alert className="m-4 mb-0 border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {!isChecking && isReady && (
+        <Alert className="m-4 mb-0 border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            AI features are ready to use
+          </AlertDescription>
+        </Alert>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="w-full justify-start rounded-none bg-transparent border-b p-0">
           <TabsTrigger
@@ -67,6 +99,7 @@ export function AIToolsPanel({
             <GenerateTool
               projectId={projectId}
               onJobComplete={onJobComplete}
+              disabled={!isReady}
             />
           </TabsContent>
 
@@ -75,6 +108,7 @@ export function AIToolsPanel({
               projectId={projectId}
               videoUrl={videoUrl}
               onJobComplete={onJobComplete}
+              disabled={!isReady}
             />
           </TabsContent>
 
@@ -91,6 +125,7 @@ export function AIToolsPanel({
               projectId={projectId}
               context={transcript || ''}
               onJobComplete={onJobComplete}
+              disabled={!isReady}
             />
           </TabsContent>
         </div>

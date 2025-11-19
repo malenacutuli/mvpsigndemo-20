@@ -9,14 +9,16 @@ import { AIService } from '@/lib/premium/aiService';
 import { WriteOptions } from '@/types/premium-ai-tools';
 import { Loader2, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface WriteToolProps {
   projectId: string;
   context: string;
   onJobComplete?: () => void;
+  disabled?: boolean;
 }
 
-export function WriteTool({ projectId, context, onJobComplete }: WriteToolProps) {
+export function WriteTool({ projectId, context, onJobComplete, disabled = false }: WriteToolProps) {
   const [type, setType] = useState<'script' | 'description' | 'title' | 'tags' | 'captions' | 'blog'>('description');
   const [tone, setTone] = useState<'professional' | 'casual' | 'friendly' | 'formal' | 'humorous'>('professional');
   const [length, setLength] = useState<'short' | 'medium' | 'long'>('medium');
@@ -55,8 +57,19 @@ export function WriteTool({ projectId, context, onJobComplete }: WriteToolProps)
       const result = await AIService.write(projectId, context, writeOptions);
       setOutput(result);
       onJobComplete?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to write:', error);
+      
+      // Provide specific error messages
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error('AI writing service is not available yet. Please wait for deployment to complete.');
+      } else if (error.message?.includes('401') || error.message?.includes('403')) {
+        toast.error('Authentication error. Please refresh the page and try again.');
+      } else if (error.message?.includes('projectId')) {
+        toast.error('Invalid project. Please reload the editor.');
+      } else {
+        toast.error(error.message || 'Failed to generate content');
+      }
     } finally {
       setIsWriting(false);
     }
@@ -181,9 +194,9 @@ export function WriteTool({ projectId, context, onJobComplete }: WriteToolProps)
       </div>
 
       {/* Write button */}
-      <Button
-        onClick={handleWrite}
-        disabled={isWriting}
+      <Button 
+        onClick={handleWrite} 
+        disabled={disabled || isWriting}
         className="w-full gap-2"
         size="lg"
       >

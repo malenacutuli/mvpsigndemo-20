@@ -189,3 +189,6 @@ verify_jwt = true
 [functions.premium-ai-write]
 verify_jwt = true
 
+[functions.premium-ai-health]
+verify_jwt = false
+
