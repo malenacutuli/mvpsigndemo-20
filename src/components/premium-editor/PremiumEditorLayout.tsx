@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Upload, Download } from 'lucide-react';
+import { Loader2, Save, Upload, Download, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
@@ -113,24 +113,29 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
             .insert({
               video_id: videoIdParam,
               name: video.title || 'Untitled Project',
-              user_id: (await supabase.auth.getUser()).data.user?.id
+              user_id: video.user_id,
+              canvas_width: 1920,
+              canvas_height: 1080,
+              canvas_fps: 30,
+              status: 'draft'
             })
             .select()
             .single();
 
           if (createError) throw createError;
-          projectData = { ...newProject, videos: video };
-          toast.success('Created new premium project');
+          projectData = newProject;
         }
-      } else {
-        throw new Error('No projectId or videoId provided');
       }
 
-      if (!video) throw new Error('No video found');
+      if (!projectData || !video) {
+        throw new Error('No project or video data found');
+      }
 
-      const videoUrl = video.storage_path
-        ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`
-        : video.video_url || '';
+      const videoUrl = typeof video.url === 'string' 
+        ? video.url 
+        : video.storage_path 
+          ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/${video.storage_path}` 
+          : '';
 
       setProject({
         id: projectData.id,
@@ -143,22 +148,38 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         updatedAt: projectData.updated_at
       });
 
+      // ✅ FIX: Query transcript_segments_clean instead of transcript_segments
       const { data: charactersData } = await supabase
         .from('characters')
         .select('*')
         .eq('video_id', video.id);
-      
+
       if (charactersData) {
         setCharacters(charactersData);
       }
 
       const { data: scenesData } = await supabase
-        .from('transcript_segments')
-        .select('*')
+        .from('transcript_segments_clean')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          text,
+          speaker,
+          speaker_color,
+          character_id,
+          idx,
+          emphasis,
+          pitch,
+          is_off_camera,
+          words
+        `)
         .eq('video_id', video.id)
+        .eq('language', currentLanguage)
         .order('start_time');
 
-      if (scenesData) {
+      if (scenesData && scenesData.length > 0) {
+        // Build character color map for accurate color assignment
         const characterColorMap = new Map<string, string>();
         if (charactersData) {
           charactersData.forEach(char => {
@@ -172,10 +193,19 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
           endTime: seg.end_time,
           text: seg.text,
           speaker: seg.speaker || 'Unknown',
-          speakerColor: seg.character_id ? characterColorMap.get(seg.character_id) : undefined,
-          order: index
+          speakerColor: seg.character_id 
+            ? characterColorMap.get(seg.character_id) || seg.speaker_color
+            : seg.speaker_color || '#9CA3AF',
+          order: seg.idx || index,
+          layout: 'default',
+          elements: []
         }));
+        
         setScenes(loadedScenes);
+        console.log('✅ Loaded', loadedScenes.length, 'scenes from transcript_segments_clean');
+      } else {
+        console.warn('⚠️ No transcript segments found for video:', video.id, 'language:', currentLanguage);
+        setScenes([]);
       }
 
       toast.success('Project loaded');
@@ -251,7 +281,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
             <Save className="w-4 h-4 mr-2" />
             Save
           </Button>
-          <Button size="sm" onClick={handleExport}>
+          <Button variant="default" size="sm" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
@@ -306,15 +336,15 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
               <ResizableHandle withHandle />
 
-              {/* Timeline under video */}
+              {/* Timeline - Always Visible with Fallback */}
               <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
                 <div className="h-full bg-background border-t flex flex-col overflow-hidden">
                   {scenes.length > 0 ? (
                     <MultiTrackTimeline
                       scenes={scenes.map(scene => ({
                         ...scene,
-                        layout: 'default',
-                        elements: []
+                        layout: 'default' as any,
+                        elements: [] as any
                       }))}
                       duration={project.duration || 0}
                       currentTime={playback.currentTime}
@@ -323,8 +353,21 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                       onSceneSelect={(id) => selectScene(id || null)}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <p>Loading timeline...</p>
+                    <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
+                      <FileText className="w-12 h-12 text-muted-foreground/50" />
+                      <div>
+                        <p className="font-medium text-muted-foreground mb-1">No transcript loaded</p>
+                        <p className="text-sm text-muted-foreground/70">
+                          Generate a transcript in the <strong>Transcript</strong> tab to enable timeline editing
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setActiveView('transcript')}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Go to Transcript Editor
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -334,9 +377,10 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           <ResizableHandle withHandle />
 
-          {/* Right: Editor Tools Sidebar */}
+          {/* Right: Editor Tools Sidebar - FIXED OVERFLOW */}
           <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
-            <div className="h-full flex flex-col border-l bg-background overflow-hidden">
+            <div className="h-full flex flex-col border-l bg-background">
+              {/* Fixed Header */}
               <div className="flex-shrink-0">
                 <PremiumEditorSidebar
                   activeView={activeView}
@@ -344,8 +388,9 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                 />
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto border-t">
-                <div className="p-4">
+              {/* Scrollable Content Area */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="p-4 space-y-4">
                   {activeView === 'transcript' && (
                     <TextBasedEditor
                       videoId={project.videoId}
@@ -358,6 +403,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                   {activeView === 'characters' && (
                     <CharacterManager
                       videoId={project.videoId}
+                      language={currentLanguage}
                       onCharactersUpdate={setCharacters}
                     />
                   )}
@@ -423,27 +469,13 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                   )}
                   
                   {activeView === 'export' && (
-                    <ExportManager
+                    <ExportManager 
                       videoId={project.videoId}
                       projectId={project.id}
                       duration={project.duration}
                     />
                   )}
                 </div>
-              </div>
-
-              <div className="flex-shrink-0 border-t p-4 bg-muted/30 max-h-48 overflow-y-auto">
-                <h3 className="text-sm font-semibold mb-3">Properties</h3>
-                {selectedElementId ? (
-                  <div className="space-y-2">
-                    <div className="p-3 border rounded bg-background">
-                      <p className="text-xs font-medium">Selected Element</p>
-                      <p className="text-xs text-muted-foreground mt-1">ID: {selectedElementId}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Select an element</p>
-                )}
               </div>
             </div>
           </ResizablePanel>
@@ -459,11 +491,10 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         selectedElementId={selectedElementId}
         onUndo={undo}
         onRedo={redo}
-        onDeleteElement={deleteElement}
+        onDeleteElement={(id) => deleteElement(id)}
         onSave={handleSave}
-        onExport={handleExport}
-        onMarkIn={setInPoint}
-        onMarkOut={setOutPoint}
+        onMarkIn={(time) => setInPoint(time)}
+        onMarkOut={(time) => setOutPoint(time)}
       />
     </div>
   );
