@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Upload, Download, FileText } from 'lucide-react';
+import { Loader2, Save, Download, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePremiumEditor } from '@/store/premiumEditorStore';
-
-import { MultiTrackTimeline } from './MultiTrackTimeline';
-import { KeyboardShortcuts } from './KeyboardShortcuts';
-import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
-import { ElementsPanel } from './ElementsPanel';
-import { AIToolsPanel } from './AIToolsPanel';
-import { TextBasedEditor } from './TextBasedEditor';
-import { AudioDescriptionEditor } from './AudioDescriptionEditor';
-import { SignLanguageManager } from './SignLanguageManager';
-import { ExportManager } from './ExportManager';
-import { CharacterManager } from '@/components/CharacterManager';
-import { PremiumEditorSidebar } from './PremiumEditorSidebar';
-import { VideoAnalysisPanel } from '@/components/VideoAnalysisPanel';
-import { MediaLibrary } from './MediaLibrary';
+import { usePremiumPlayer } from '@/hooks/premium-editor/usePremiumPlayer';
+import { usePremiumTimeline } from '@/hooks/premium-editor/usePremiumTimeline';
+import { PremiumVideoPlayer } from './player/PremiumVideoPlayer';
+import { MultiTrackTimeline } from './timeline/MultiTrackTimeline';
+import { ScenePropertiesPanel } from './sidebar/ScenePropertiesPanel';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -28,186 +18,108 @@ interface PremiumEditorLayoutProps {
 
 export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsProjectId }: PremiumEditorLayoutProps) {
   const { projectId: routeProjectId, id: routeVideoId } = useParams<{ projectId?: string; id?: string }>();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [characters, setCharacters] = useState<any[]>([]);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [activeView, setActiveView] = useState('transcript');
+  const [project, setProject] = useState<any>(null);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
 
-  const {
-    project,
-    setProject,
-    playback,
-    scenes,
-    setScenes,
-    elements,
-    selectedElementId,
-    ui,
-    setCurrentTime,
-    togglePlayback,
-    selectElement,
-    selectScene,
-    setInPoint,
-    setOutPoint,
-    undo,
-    redo,
-    deleteElement,
-  } = usePremiumEditor();
+  // Initialize player
+  const player = usePremiumPlayer({
+    initialVolume: 1,
+    initialPlaybackRate: 1
+  });
 
+  // Initialize timeline
+  const timeline = usePremiumTimeline({
+    projectId: projectId || '',
+    onSceneSelect: (sceneId) => {
+      setSelectedSceneId(sceneId);
+      // Sync player time to scene start
+      if (sceneId) {
+        const clip = timeline.state.clips.find(c => c.sceneId === sceneId);
+        if (clip) {
+          player.onSeek(clip.startTime);
+        }
+      }
+    }
+  });
+
+  // Load project data
   useEffect(() => {
     if (!projectId && !videoId) return;
-    loadProject(projectId, videoId);
+    loadProject();
   }, [projectId, videoId]);
 
+  // Sync timeline with player
   useEffect(() => {
-    const autoSaveInterval = setInterval(() => {
-      if (project) {
-        saveProject();
-      }
-    }, 30000);
-    return () => clearInterval(autoSaveInterval);
-  }, [project, scenes, elements]);
+    timeline.setCurrentTime(player.currentTime);
+  }, [player.currentTime]);
 
-  const loadProject = async (projectIdParam?: string, videoIdParam?: string) => {
+  const loadProject = async () => {
     setIsLoading(true);
     
     try {
       let projectData;
       let video;
 
-      if (projectIdParam) {
+      if (projectId) {
+        // Load existing project
         const { data, error } = await supabase
           .from('premium_projects')
           .select('*, videos(*)')
-          .eq('id', projectIdParam)
+          .eq('id', projectId)
           .single();
 
         if (error) throw error;
         projectData = data;
         video = data.videos;
-      } 
-      else if (videoIdParam) {
+      } else if (videoId) {
+        // Load video and find/create project
         const { data: videoData, error: videoError } = await supabase
           .from('videos')
           .select('*')
-          .eq('id', videoIdParam)
+          .eq('id', videoId)
           .single();
 
         if (videoError) throw videoError;
         video = videoData;
 
+        // Check for existing project
         const { data: existingProject } = await supabase
           .from('premium_projects')
           .select('*')
-          .eq('video_id', videoIdParam)
+          .eq('video_id', videoId)
           .maybeSingle();
 
         if (existingProject) {
           projectData = { ...existingProject, videos: video };
         } else {
+          // Create new project
           const { data: newProject, error: createError } = await supabase
             .from('premium_projects')
             .insert({
-              video_id: videoIdParam,
+              video_id: videoId,
               name: video.title || 'Untitled Project',
-              user_id: video.user_id,
               canvas_width: 1920,
               canvas_height: 1080,
-              canvas_fps: 30,
-              status: 'draft'
+              canvas_fps: 30
             })
             .select()
             .single();
 
           if (createError) throw createError;
-          projectData = newProject;
+          projectData = { ...newProject, videos: video };
         }
       }
 
-      if (!projectData || !video) {
-        throw new Error('No project or video data found');
-      }
-
-      const videoUrl = typeof video.url === 'string' 
-        ? video.url 
-        : video.storage_path 
-          ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/${video.storage_path}` 
-          : '';
-
-      setProject({
-        id: projectData.id,
-        name: projectData.name,
-        videoId: video.id,
-        videoUrl,
-        thumbnailUrl: video.thumbnail_url,
-        duration: video.duration_seconds || 0,
-        createdAt: projectData.created_at,
-        updatedAt: projectData.updated_at
-      });
-
-      // ✅ FIX: Query transcript_segments_clean instead of transcript_segments
-      const { data: charactersData } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('video_id', video.id);
-
-      if (charactersData) {
-        setCharacters(charactersData);
-      }
-
-      const { data: scenesData } = await supabase
-        .from('transcript_segments_clean')
-        .select(`
-          id,
-          start_time,
-          end_time,
-          text,
-          speaker,
-          speaker_color,
-          character_id,
-          idx,
-          emphasis,
-          pitch,
-          is_off_camera,
-          words
-        `)
-        .eq('video_id', video.id)
-        .eq('language', currentLanguage)
-        .order('start_time');
-
-      if (scenesData && scenesData.length > 0) {
-        // Build character color map for accurate color assignment
-        const characterColorMap = new Map<string, string>();
-        if (charactersData) {
-          charactersData.forEach(char => {
-            characterColorMap.set(char.id, char.color);
-          });
-        }
-
-        const loadedScenes = scenesData.map((seg, index) => ({
-          id: seg.id,
-          startTime: seg.start_time,
-          endTime: seg.end_time,
-          text: seg.text,
-          speaker: seg.speaker || 'Unknown',
-          speakerColor: seg.character_id 
-            ? characterColorMap.get(seg.character_id) || seg.speaker_color
-            : seg.speaker_color || '#9CA3AF',
-          order: seg.idx || index,
-          layout: 'default',
-          elements: []
-        }));
-        
-        setScenes(loadedScenes);
-        console.log('✅ Loaded', loadedScenes.length, 'scenes from transcript_segments_clean');
-      } else {
-        console.warn('⚠️ No transcript segments found for video:', video.id, 'language:', currentLanguage);
-        setScenes([]);
-      }
-
+      setProject(projectData);
+      setVideoUrl(video?.url || video?.storage_path || '');
+      
       toast.success('Project loaded');
     } catch (error) {
       console.error('Failed to load project:', error);
@@ -217,285 +129,175 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     }
   };
 
-  const saveProject = async () => {
+  const handleSave = async () => {
     if (!project) return;
 
+    setSaving(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from('premium_projects')
-        .update({ updated_at: new Date().toISOString() })
+        .update({
+          updated_at: new Date().toISOString()
+        })
         .eq('id', project.id);
 
-      setLastSaved(new Date());
+      if (error) throw error;
+      
+      toast.success('Project saved');
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      console.error('Failed to save project:', error);
+      toast.error('Failed to save project');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSave = async () => {
-    await saveProject();
-    toast.success('Project saved');
-  };
-
   const handleExport = () => {
-    toast.info('Export');
+    toast.info('Export functionality coming soon');
   };
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-2">Loading Premium Editor...</span>
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading editor...</p>
+        </div>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <p>Project not found</p>
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Failed to load project</p>
+          <Button onClick={() => navigate('/dashboard')}>
+            Back to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Top Bar */}
-      <div className="h-14 border-b flex items-center justify-between px-4 bg-muted/50 flex-shrink-0">
+      {/* Header */}
+      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm">
-            <Upload className="w-4 h-4 mr-2" />
-            Home
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="h-6 w-px bg-border" />
-          <h1 className="font-semibold truncate max-w-md">{project.name}</h1>
+          <h1 className="text-lg font-bold text-foreground">Premium Editor</h1>
+          <span className="text-sm text-muted-foreground">
+            {project.name || 'Untitled Project'}
+          </span>
         </div>
-
+        
         <div className="flex items-center gap-2">
-          {lastSaved && (
-            <span className="text-xs text-muted-foreground">
-              Saved {lastSaved.toLocaleTimeString()}
-            </span>
-          )}
-          <Button variant="outline" size="sm" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-2" />
-            Save
+          <Button
+            variant="outline"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save
+              </>
+            )}
           </Button>
-          <Button variant="default" size="sm" onClick={handleExport}>
+          <Button onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left: Video + Timeline */}
+      {/* Main content */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Player + Timeline */}
           <ResizablePanel defaultSize={70} minSize={50}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* Video Player */}
-              <ResizablePanel defaultSize={65} minSize={40}>
-                <div className="h-full relative bg-black">
-                  <EnhancedVideoPlayer
-                    videoSrc={project.videoUrl}
-                    posterSrc={project.thumbnailUrl || undefined}
-                    title={project.name}
-                    videoId={project.videoId}
-                    language={currentLanguage}
-                    contentType="education"
-                    className="w-full h-full"
-                    onLanguageChange={setCurrentLanguage}
-                  />
-                  
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="relative w-full h-full pointer-events-auto">
-                      {elements
-                        .sort((a, b) => a.zIndex - b.zIndex)
-                        .map(element => (
-                          <div
-                            key={element.id}
-                            style={{
-                              position: 'absolute',
-                              left: `${element.x}px`,
-                              top: `${element.y}px`,
-                              width: `${element.width}px`,
-                              height: `${element.height}px`,
-                              transform: `rotate(${element.rotation}deg)`,
-                              opacity: element.opacity,
-                              backgroundColor: element.data?.fill || 'transparent',
-                              zIndex: element.zIndex,
-                            }}
-                            onClick={() => selectElement(element.id)}
-                          />
-                        ))}
+            <ResizablePanelGroup direction="vertical">
+              {/* Player */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <div className="h-full bg-black flex items-center justify-center">
+                  {videoUrl ? (
+                    <PremiumVideoPlayer
+                      videoSrc={videoUrl}
+                      currentTime={player.currentTime}
+                      isPlaying={player.isPlaying}
+                      volume={player.volume}
+                      isMuted={player.isMuted}
+                      playbackRate={player.playbackRate}
+                      onTimeUpdate={player.onTimeUpdate}
+                      onPlayPauseToggle={player.onPlayPauseToggle}
+                      onVolumeChange={player.onVolumeChange}
+                      onMuteToggle={player.onMuteToggle}
+                      onSeek={player.onSeek}
+                      onPlaybackRateChange={player.onPlaybackRateChange}
+                      onDurationChange={player.onDurationChange}
+                      markers={player.markers}
+                      onSetInPoint={player.onSetInPoint}
+                      onSetOutPoint={player.onSetOutPoint}
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-muted-foreground">No video source</p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
-              {/* Timeline - Always Visible with Fallback */}
-              <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
-                <div className="h-full bg-background border-t flex flex-col overflow-hidden">
-                  {scenes.length > 0 ? (
-                    <MultiTrackTimeline
-                      scenes={scenes.map(scene => ({
-                        ...scene,
-                        layout: 'default' as any,
-                        elements: [] as any
-                      }))}
-                      duration={project.duration || 0}
-                      currentTime={playback.currentTime}
-                      zoom={ui.timelineZoom}
-                      onTimeUpdate={setCurrentTime}
-                      onSceneSelect={(id) => selectScene(id || null)}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-                      <FileText className="w-12 h-12 text-muted-foreground/50" />
-                      <div>
-                        <p className="font-medium text-muted-foreground mb-1">No transcript loaded</p>
-                        <p className="text-sm text-muted-foreground/70">
-                          Generate a transcript in the <strong>Transcript</strong> tab to enable timeline editing
-                        </p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setActiveView('transcript')}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Go to Transcript Editor
-                      </Button>
-                    </div>
-                  )}
-                </div>
+              {/* Timeline */}
+              <ResizablePanel defaultSize={40} minSize={20}>
+                <MultiTrackTimeline
+                  tracks={timeline.state.tracks}
+                  clips={timeline.state.clips}
+                  currentTime={timeline.state.currentTime}
+                  duration={timeline.state.duration}
+                  zoom={timeline.state.zoom}
+                  scrollLeft={timeline.state.scrollLeft}
+                  selectedClipIds={timeline.state.selectedClipIds}
+                  onTimeChange={player.onSeek}
+                  onClipSelect={timeline.selectClip}
+                  onClipMove={timeline.moveClip}
+                  onClipTrim={timeline.trimClip}
+                  onClipDelete={timeline.deleteClip}
+                  onClipSplit={timeline.splitClip}
+                  onZoomIn={timeline.zoomIn}
+                  onZoomOut={timeline.zoomOut}
+                  onScrollChange={timeline.setScrollLeft}
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
-          {/* Right: Editor Tools Sidebar - FIXED OVERFLOW */}
-          <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
-            <div className="h-full flex flex-col border-l bg-background">
-              {/* Fixed Header */}
-              <div className="flex-shrink-0">
-                <PremiumEditorSidebar
-                  activeView={activeView}
-                  onViewChange={setActiveView}
-                />
-              </div>
-
-              {/* Scrollable Content Area */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <div className="p-4 space-y-4">
-                  {activeView === 'transcript' && (
-                    <TextBasedEditor
-                      videoId={project.videoId}
-                      videoUrl={project.videoUrl}
-                      currentTime={playback.currentTime}
-                      onTimeUpdate={setCurrentTime}
-                    />
-                  )}
-                  
-                  {activeView === 'characters' && (
-                    <CharacterManager
-                      videoId={project.videoId}
-                      language={currentLanguage}
-                      onCharactersUpdate={setCharacters}
-                    />
-                  )}
-                  
-                  {activeView === 'captions' && (
-                    <div>
-                      <h3 className="font-semibold mb-4">Captions with Intention</h3>
-                      <p className="text-sm text-muted-foreground">Caption styling and sync</p>
-                    </div>
-                  )}
-                  
-                  {activeView === 'audio-descriptions' && (
-                    <AudioDescriptionEditor 
-                      videoId={project.videoId}
-                      videoUrl={project.videoUrl}
-                      currentTime={playback.currentTime}
-                      onTimeUpdate={setCurrentTime}
-                      scenes={scenes}
-                    />
-                  )}
-                  
-                  {activeView === 'sign-language' && (
-                    <SignLanguageManager 
-                      videoId={project.videoId}
-                      videoUrl={project.videoUrl}
-                      currentTime={playback.currentTime}
-                      characters={characters}
-                    />
-                  )}
-                  
-                  {activeView === 'analysis' && (
-                    <VideoAnalysisPanel 
-                      videoId={project.videoId}
-                      assetId={project.videoId}
-                      playbackUrl={project.videoUrl}
-                    />
-                  )}
-                  
-                  {activeView === 'ai-tools' && (
-                    <AIToolsPanel
-                      videoId={project.videoId}
-                      selectedSceneId={null}
-                      onToolExecute={() => {}}
-                    />
-                  )}
-                  
-                  {activeView === 'runway' && (
-                    <div>
-                      <h3 className="font-semibold mb-4">AI Video Generation</h3>
-                      <p className="text-sm text-muted-foreground">Generate video from text</p>
-                    </div>
-                  )}
-                  
-                  {activeView === 'media' && (
-                    <MediaLibrary 
-                      videoId={project.videoId}
-                      onMediaSelect={() => toast.success('Media added')}
-                    />
-                  )}
-                  
-                  {activeView === 'elements' && (
-                    <ElementsPanel videoId={project.videoId} />
-                  )}
-                  
-                  {activeView === 'export' && (
-                    <ExportManager 
-                      videoId={project.videoId}
-                      projectId={project.id}
-                      duration={project.duration}
-                    />
-                  )}
-                </div>
-              </div>
+          {/* Sidebar - Scene Properties */}
+          <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
+            <div className="h-full bg-card border-l border-border">
+              <ScenePropertiesPanel
+                sceneId={selectedSceneId}
+                onSceneUpdate={() => timeline.reloadScenes()}
+              />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-
-      <KeyboardShortcuts
-        isPlaying={playback.isPlaying}
-        currentTime={playback.currentTime}
-        duration={project.duration}
-        onTogglePlayback={togglePlayback}
-        onSeek={setCurrentTime}
-        selectedElementId={selectedElementId}
-        onUndo={undo}
-        onRedo={redo}
-        onDeleteElement={(id) => deleteElement(id)}
-        onSave={handleSave}
-        onMarkIn={(time) => setInPoint(time)}
-        onMarkOut={(time) => setOutPoint(time)}
-      />
     </div>
   );
 }

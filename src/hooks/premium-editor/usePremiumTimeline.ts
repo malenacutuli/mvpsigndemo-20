@@ -73,21 +73,35 @@ export function usePremiumTimeline({ projectId, onSceneSelect }: UsePremiumTimel
   async function loadScenes() {
     try {
       setLoading(true);
+      const { data, error } = await supabase
+        .from('project_scenes')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('scene_order', { ascending: true });
+
+      if (error) throw error;
+
+      setScenes(data as any || []);
       
-      // For now, we'll use mock data since premium_scenes table structure needs to be verified
-      // In production, this would query the actual database
-      console.log('Loading scenes for project:', projectId);
-      
-      // Mock data for testing
-      const mockClips: TimelineClip[] = [];
-      
+      // Convert scenes to clips
+      const videoClips: TimelineClip[] = (data || []).map(scene => ({
+        id: scene.id,
+        trackId: 'video-track-1',
+        sceneId: scene.id,
+        startTime: scene.timeline_start || 0,
+        endTime: scene.timeline_end || scene.duration_seconds || 0,
+        duration: scene.duration_seconds || 0,
+        trimStart: scene.media_start_time || 0,
+        trimEnd: scene.media_end_time || scene.duration_seconds || 0,
+        color: getSceneColor(scene.layout_type || 'fullscreen'),
+        thumbnailUrl: scene.media_url
+      }));
+
       setState(prev => ({
         ...prev,
-        clips: mockClips,
-        duration: 0
+        clips: videoClips,
+        duration: Math.max(...videoClips.map(c => c.endTime), 0)
       }));
-      
-      setScenes([]);
     } catch (error) {
       console.error('Failed to load scenes:', error);
     } finally {
@@ -277,4 +291,17 @@ export function usePremiumTimeline({ projectId, onSceneSelect }: UsePremiumTimel
     splitClip,
     reloadScenes: loadScenes
   };
+}
+
+function getSceneColor(layoutType: string): string {
+  const colors: Record<string, string> = {
+    fullscreen: 'hsl(var(--primary))',
+    split: 'hsl(var(--accent))',
+    pip: 'hsl(var(--secondary))',
+    multicam: 'hsl(var(--destructive))',
+    screenCamera: 'hsl(var(--muted))',
+    lShape: 'hsl(var(--chart-1))',
+    custom: 'hsl(var(--chart-2))'
+  };
+  return colors[layoutType] || 'hsl(var(--primary))';
 }
