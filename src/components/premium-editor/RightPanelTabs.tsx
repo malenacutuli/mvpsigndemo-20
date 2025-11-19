@@ -14,7 +14,6 @@ interface RightPanelTabsProps {
   videoId: string;
   videoUrl: string;
   currentTime: number;
-  selectedTab: string;
 }
 
 export function RightPanelTabs({
@@ -22,9 +21,9 @@ export function RightPanelTabs({
   videoId,
   videoUrl,
   currentTime,
-  selectedTab,
 }: RightPanelTabsProps) {
-  const { setSelectedTab, selectedSceneId, scenes, updateScene } = usePremiumEditor();
+  const { ui, setSelectedTab, selectedSceneId, scenes, updateScene } = usePremiumEditor();
+  const selectedTab = ui.selectedTab;
   
   const handleToolExecute = (toolId: string) => {
     toast.info(`Executing tool: ${toolId}`);
