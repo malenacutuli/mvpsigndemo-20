@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Navigation } from '@/components/Navigation';
 import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { AccessibleVideoExporter } from '@/components/AccessibleVideoExporter';
+import { RightSidebarFixed } from '@/components/RightSidebarFixed';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -247,99 +248,79 @@ export default function VideoDetailWorkflow() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-        {/* Update VideoDetailWorkflow to pass callbacks */}
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/videos')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Videos
-            </Button>
-            
-            <div>
-              <h1 className="text-2xl font-bold">{video.title}</h1>
-              <div className="flex items-center gap-4 mt-2">
-                <Badge className={getStatusColor(video.status)}>
-                  {video.status}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {getLanguageDisplay(video.language)}
-                </span>
-                {video.duration_seconds && (
-                  <span className="text-sm text-muted-foreground">
-                    {formatDuration(video.duration_seconds)}
-                  </span>
-                )}
-              </div>
-            </div>
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      {/* Header - fixed height */}
+      <header className="h-16 border-b border-border flex-shrink-0">
+        <Navigation />
+      </header>
+      
+      {/* Sub-header with video info */}
+      <div className="h-20 border-b border-border flex-shrink-0 px-4 flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/videos')}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        
+        <div className="flex-1">
+          <h1 className="text-xl font-bold">{video.title}</h1>
+          <div className="flex items-center gap-4 mt-1">
+            <Badge className={getStatusColor(video.status)}>
+              {video.status}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {getLanguageDisplay(video.language)}
+            </span>
+            {video.duration_seconds && (
+              <span className="text-sm text-muted-foreground">
+                {formatDuration(video.duration_seconds)}
+              </span>
+            )}
           </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Video Player */}
-            <div className="lg:col-span-2 space-y-6">
-              {videoUrl && (
-                <EnhancedVideoPlayer
-                  videoSrc={videoUrl}
-                  posterSrc={video.thumbnail_url || undefined}
-                  title={video.title}
-                  videoId={video.id}
-                  language={video.language}
-                  contentType={video.content_type as 'recipe' | 'education'}
-                  onTranscriptUpdate={handleTranscriptReady}
-                  className="w-full"
-                />
-              )}
-
-              {/* Video Description */}
-              {video.description && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Description</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{video.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Video Info Panel */}
-            <div className="space-y-6">
-
-              {/* Video Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Video Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Language:</span>
-                    <span>{getLanguageDisplay(video.language)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Content Type:</span>
-                    <span className="capitalize">{video.content_type}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Created:</span>
-                    <span>{new Date(video.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Duration:</span>
-                    <span>{formatDuration(video.duration_seconds)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
         </div>
+
+        {videoUrl && userId && (
+          <AccessibleVideoExporter
+            videoId={video.id}
+            videoUrl={videoUrl}
+          />
+        )}
+      </div>
+      
+      {/* Main content area - fills remaining space */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Video Player */}
+        <div className="w-2/3 flex flex-col overflow-hidden">
+          <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+            {videoUrl && (
+              <EnhancedVideoPlayer
+                videoSrc={videoUrl}
+                posterSrc={video.thumbnail_url || undefined}
+                title={video.title}
+                videoId={video.id}
+                language={video.language}
+                contentType={video.content_type as 'recipe' | 'education'}
+                onTranscriptUpdate={handleTranscriptReady}
+                className="w-full h-full"
+              />
+            )}
+          </div>
+        </div>
+        
+        {/* Right: Sidebar - Fixed with scrollable content */}
+        <div className="w-1/3 flex flex-col overflow-hidden border-l border-border">
+          <RightSidebarFixed 
+            videoId={video.id}
+            videoUrl={videoUrl}
+            onTranscriptUpdate={handleTranscriptReady}
+            onCharactersUpdate={handleCharactersUpdate}
+            onAudioDescriptionsUpdate={handleAudioDescriptionsUpdate}
+          />
+        </div>
+      </div>
     </div>
   );
 }
