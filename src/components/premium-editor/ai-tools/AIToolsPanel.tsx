@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GenerateTool } from './GenerateTool';
+import { RepurposeTool } from './RepurposeTool';
+import { WriteTool } from './WriteTool';
 import { 
   Sparkles, 
   RefreshCw, 
@@ -69,11 +71,11 @@ export function AIToolsPanel({
           </TabsContent>
 
           <TabsContent value="repurpose" className="p-4 m-0">
-            <div className="text-center py-12">
-              <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-foreground font-medium mb-2">Repurpose Tool</p>
-              <p className="text-sm text-muted-foreground">Coming soon</p>
-            </div>
+            <RepurposeTool
+              projectId={projectId}
+              videoUrl={videoUrl}
+              onJobComplete={onJobComplete}
+            />
           </TabsContent>
 
           <TabsContent value="publish" className="p-4 m-0">
@@ -85,11 +87,11 @@ export function AIToolsPanel({
           </TabsContent>
 
           <TabsContent value="write" className="p-4 m-0">
-            <div className="text-center py-12">
-              <PenTool className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-foreground font-medium mb-2">Write Tool</p>
-              <p className="text-sm text-muted-foreground">Coming soon</p>
-            </div>
+            <WriteTool
+              projectId={projectId}
+              context={transcript || ''}
+              onJobComplete={onJobComplete}
+            />
           </TabsContent>
         </div>
       </Tabs>

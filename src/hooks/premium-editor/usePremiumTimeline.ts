@@ -71,6 +71,12 @@ export function usePremiumTimeline({ projectId, onSceneSelect }: UsePremiumTimel
   }, [projectId]);
 
   async function loadScenes() {
+    if (!projectId || projectId === '') {
+      setScenes([]);
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
