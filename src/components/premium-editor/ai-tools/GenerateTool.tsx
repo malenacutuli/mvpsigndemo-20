@@ -14,9 +14,10 @@ import { toast } from 'sonner';
 interface GenerateToolProps {
   projectId: string;
   onJobComplete?: () => void;
+  disabled?: boolean;
 }
 
-export function GenerateTool({ projectId, onJobComplete }: GenerateToolProps) {
+export function GenerateTool({ projectId, onJobComplete, disabled = false }: GenerateToolProps) {
   const [type, setType] = useState<'video' | 'audio' | 'image' | 'text'>('video');
   const [prompt, setPrompt] = useState('');
   const [options, setOptions] = useState<Partial<GenerateOptions>>({
@@ -75,9 +76,20 @@ export function GenerateTool({ projectId, onJobComplete }: GenerateToolProps) {
           toast.error('Failed to check generation status');
         }
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate:', error);
-      toast.error('Failed to start generation');
+      
+      // Provide specific error messages
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error('AI generation service is not available yet. Please wait for deployment to complete.');
+      } else if (error.message?.includes('401') || error.message?.includes('403')) {
+        toast.error('Authentication error. Please refresh the page and try again.');
+      } else if (error.message?.includes('projectId')) {
+        toast.error('Invalid project. Please reload the editor.');
+      } else {
+        toast.error(error.message || 'Failed to start generation');
+      }
+      
       setIsGenerating(false);
     }
   };
@@ -258,7 +270,7 @@ export function GenerateTool({ projectId, onJobComplete }: GenerateToolProps) {
 
       <Button
         onClick={handleGenerate}
-        disabled={!prompt.trim() || isGenerating}
+        disabled={disabled || !prompt.trim() || isGenerating}
         className="w-full gap-2"
         size="lg"
       >
