@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Upload, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
 
-// Import all components
 import { MultiTrackTimeline } from './MultiTrackTimeline';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
@@ -36,7 +34,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [activeView, setActiveView] = useState('transcript');
 
-  // Use props first, fallback to route params
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
 
@@ -49,51 +46,38 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     elements,
     selectedElementId,
     ui,
-    markers,
     setCurrentTime,
     togglePlayback,
-    setVolume,
-    toggleMute,
-    addElement,
-    updateElement,
-    deleteElement,
     selectElement,
     selectScene,
     setInPoint,
     setOutPoint,
     undo,
     redo,
-    setSelectedTab
+    deleteElement,
   } = usePremiumEditor();
 
-  // Load project once IDs are available
   useEffect(() => {
     if (!projectId && !videoId) return;
-
-    console.log('🔄 PremiumEditorLayout: loadProject effect', { projectId, videoId });
     loadProject(projectId, videoId);
   }, [projectId, videoId]);
 
-  // Auto-save
   useEffect(() => {
     const autoSaveInterval = setInterval(() => {
       if (project) {
         saveProject();
       }
-    }, 30000); // Every 30 seconds
-
+    }, 30000);
     return () => clearInterval(autoSaveInterval);
   }, [project, scenes, elements]);
 
   const loadProject = async (projectIdParam?: string, videoIdParam?: string) => {
-    console.log('🚀 PremiumEditorLayout.loadProject called', { projectIdParam, videoIdParam });
     setIsLoading(true);
     
     try {
       let projectData;
       let video;
 
-      // Case 1: Load by projectId
       if (projectIdParam) {
         const { data, error } = await supabase
           .from('premium_projects')
@@ -105,9 +89,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         projectData = data;
         video = data.videos;
       } 
-      // Case 2: Load by videoId (or create if doesn't exist)
       else if (videoIdParam) {
-        // First, get video details
         const { data: videoData, error: videoError } = await supabase
           .from('videos')
           .select('*')
@@ -117,7 +99,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         if (videoError) throw videoError;
         video = videoData;
 
-        // Try to find existing premium project
         const { data: existingProject } = await supabase
           .from('premium_projects')
           .select('*')
@@ -127,7 +108,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         if (existingProject) {
           projectData = { ...existingProject, videos: video };
         } else {
-          // Create new premium project
           const { data: newProject, error: createError } = await supabase
             .from('premium_projects')
             .insert({
@@ -146,11 +126,8 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         throw new Error('No projectId or videoId provided');
       }
 
-      if (!video) {
-        throw new Error('No video found');
-      }
+      if (!video) throw new Error('No video found');
 
-      // Construct video URL from storage path
       const videoUrl = video.storage_path
         ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`
         : video.video_url || '';
@@ -166,7 +143,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         updatedAt: projectData.updated_at
       });
 
-      // Load characters
       const { data: charactersData } = await supabase
         .from('characters')
         .select('*')
@@ -176,7 +152,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         setCharacters(charactersData);
       }
 
-      // Load scenes/transcript from transcript_segments
       const { data: scenesData } = await supabase
         .from('transcript_segments')
         .select('*')
@@ -184,7 +159,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         .order('start_time');
 
       if (scenesData) {
-        // Create a map of character_id to color for quick lookup
         const characterColorMap = new Map<string, string>();
         if (charactersData) {
           charactersData.forEach(char => {
@@ -217,19 +191,12 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     if (!project) return;
 
     try {
-      // Save project metadata
       await supabase
         .from('premium_projects')
-        .update({
-          updated_at: new Date().toISOString()
-        })
+        .update({ updated_at: new Date().toISOString() })
         .eq('id', project.id);
 
-      // Save scenes if modified
-      // (Implementation depends on your data model)
-
       setLastSaved(new Date());
-      console.log('Project auto-saved');
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
@@ -237,15 +204,11 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
   const handleSave = async () => {
     await saveProject();
-    toast.success('Project saved', { duration: 2000 });
+    toast.success('Project saved');
   };
 
   const handleExport = () => {
-    toast.info('Export modal (implement separately)');
-  };
-
-  const handleInsertClip = (clipUrl: string) => {
-    toast.success('Clip inserted (implement clip insertion logic)');
+    toast.info('Export');
   };
 
   if (isLoading) {
@@ -296,82 +259,149 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ResizablePanelGroup direction="vertical" className="flex-1">
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="vertical" className="h-full">
           
-          {/* Top Section - Video Player + Right Sidebar */}
+          {/* Top: Video Player + Right Sidebar */}
           <ResizablePanel defaultSize={60} minSize={40}>
             <ResizablePanelGroup direction="horizontal">
+              
               {/* Video Player */}
               <ResizablePanel defaultSize={70} minSize={55}>
                 <div className="h-full relative bg-black">
-                <EnhancedVideoPlayer
-                  videoSrc={project.videoUrl}
-                  posterSrc={project.thumbnailUrl || undefined}
-                  title={project.name}
-                  videoId={project.videoId}
-                  language={currentLanguage}
-                  contentType="education"
-                  className="w-full h-full"
-                  onLanguageChange={setCurrentLanguage}
-                />
-                
-                {/* Element overlay layer for shapes/text */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="relative w-full h-full pointer-events-auto">
-                    {elements
-                      .sort((a, b) => a.zIndex - b.zIndex)
-                      .map(element => (
-                        <div
-                          key={element.id}
-                          style={{
-                            position: 'absolute',
-                            left: `${element.x}px`,
-                            top: `${element.y}px`,
-                            width: `${element.width}px`,
-                            height: `${element.height}px`,
-                            transform: `rotate(${element.rotation}deg)`,
-                            opacity: element.opacity,
-                            backgroundColor: element.data?.fill || 'transparent',
-                            zIndex: element.zIndex,
-                          }}
-                          onClick={() => selectElement(element.id)}
-                        />
-                      ))}
+                  <EnhancedVideoPlayer
+                    videoSrc={project.videoUrl}
+                    posterSrc={project.thumbnailUrl || undefined}
+                    title={project.name}
+                    videoId={project.videoId}
+                    language={currentLanguage}
+                    contentType="education"
+                    className="w-full h-full"
+                    onLanguageChange={setCurrentLanguage}
+                  />
+                  
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="relative w-full h-full pointer-events-auto">
+                      {elements
+                        .sort((a, b) => a.zIndex - b.zIndex)
+                        .map(element => (
+                          <div
+                            key={element.id}
+                            style={{
+                              position: 'absolute',
+                              left: `${element.x}px`,
+                              top: `${element.y}px`,
+                              width: `${element.width}px`,
+                              height: `${element.height}px`,
+                              transform: `rotate(${element.rotation}deg)`,
+                              opacity: element.opacity,
+                              backgroundColor: element.data?.fill || 'transparent',
+                              zIndex: element.zIndex,
+                            }}
+                            onClick={() => selectElement(element.id)}
+                          />
+                        ))}
+                    </div>
                   </div>
                 </div>
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
-              {/* Right Sidebar - Navigation + Content + Properties */}
+              {/* Right Sidebar */}
               <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
                 <div className="h-full flex flex-col border-l bg-background">
                   <PremiumEditorSidebar
                     activeView={activeView}
                     onViewChange={setActiveView}
                   />
+
                   <div className="flex-1 overflow-y-auto border-t p-4">
-                {scenes.length > 0 ? (
-                  <MultiTrackTimeline
-                    scenes={scenes.map(scene => ({
-                      ...scene,
-                      layout: 'default',
-                      elements: []
-                    }))}
-                    duration={project.duration || 0}
-                    currentTime={playback.currentTime}
-                    zoom={ui.timelineZoom}
-                    onTimeUpdate={setCurrentTime}
-                    onSceneSelect={(id) => selectScene(id || null)}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <p>Loading timeline...</p>
+                    {activeView === 'transcript' && (
+                      <TextBasedEditor
+                        videoId={project.videoId}
+                        videoUrl={project.videoUrl}
+                        currentTime={playback.currentTime}
+                        onTimeUpdate={setCurrentTime}
+                      />
+                    )}
+                    
+                    {activeView === 'characters' && (
+                      <CharacterManager
+                        videoId={project.videoId}
+                        onCharactersUpdate={setCharacters}
+                      />
+                    )}
+                    
+                    {activeView === 'captions' && (
+                      <div>
+                        <h3 className="font-semibold mb-4">Captions with Intention</h3>
+                        <p className="text-sm text-muted-foreground">Caption styling and sync</p>
+                      </div>
+                    )}
+                    
+                    {activeView === 'audio-descriptions' && (
+                      <AudioDescriptionEditor 
+                        videoId={project.videoId}
+                        videoUrl={project.videoUrl}
+                        currentTime={playback.currentTime}
+                        onTimeUpdate={setCurrentTime}
+                        scenes={scenes}
+                      />
+                    )}
+                    
+                    {activeView === 'sign-language' && (
+                      <SignLanguageManager 
+                        videoId={project.videoId}
+                        videoUrl={project.videoUrl}
+                        currentTime={playback.currentTime}
+                        characters={characters}
+                      />
+                    )}
+                    
+                    {activeView === 'analysis' && (
+                      <VideoAnalysisPanel 
+                        videoId={project.videoId}
+                        assetId={project.videoId}
+                        playbackUrl={project.videoUrl}
+                      />
+                    )}
+                    
+                    {activeView === 'ai-tools' && (
+                      <AIToolsPanel
+                        videoId={project.videoId}
+                        selectedSceneId={null}
+                        onToolExecute={() => {}}
+                      />
+                    )}
+                    
+                    {activeView === 'runway' && (
+                      <div>
+                        <h3 className="font-semibold mb-4">AI Video Generation</h3>
+                        <p className="text-sm text-muted-foreground">Generate video from text</p>
+                      </div>
+                    )}
+                    
+                    {activeView === 'media' && (
+                      <MediaLibrary 
+                        videoId={project.videoId}
+                        onMediaSelect={() => toast.success('Media added')}
+                      />
+                    )}
+                    
+                    {activeView === 'elements' && (
+                      <ElementsPanel videoId={project.videoId} />
+                    )}
+                    
+                    {activeView === 'export' && (
+                      <ExportManager
+                        videoId={project.videoId}
+                        projectId={project.id}
+                        duration={project.duration}
+                      />
                     )}
                   </div>
 
-                  {/* Properties at bottom */}
                   <div className="border-t p-4 bg-muted/30">
                     <h3 className="text-sm font-semibold mb-3">Properties</h3>
                     {selectedElementId ? (
@@ -382,7 +412,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Select an element to edit properties</p>
+                      <p className="text-xs text-muted-foreground">Select an element</p>
                     )}
                   </div>
                 </div>
@@ -392,149 +422,32 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           <ResizableHandle withHandle />
 
-          {/* Bottom - Timeline Editor */}
+          {/* Bottom: Timeline */}
           <ResizablePanel defaultSize={40} minSize={30} maxSize={50}>
             <div className="h-full bg-background border-t">
-
-          {/* Right Panel - Sidebar + Dynamic Content + Properties */}
-          <ResizablePanel defaultSize={30} minSize={25} maxSize={50}>
-            <div className="h-full flex flex-col border-l bg-background">
-              {/* Sidebar Navigation at top */}
-              <PremiumEditorSidebar
-                activeView={activeView}
-                onViewChange={setActiveView}
-              />
-
-              {/* Dynamic Content Area */}
-              <div className="flex-1 overflow-y-auto border-t">
-                {activeView === 'transcript' && (
-                  <TextBasedEditor
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    onTimeUpdate={setCurrentTime}
-                  />
-                )}
-                
-                {activeView === 'characters' && (
-                  <CharacterManager
-                    videoId={project.videoId}
-                    onCharactersUpdate={(updatedCharacters) => {
-                      console.log('🔁 PremiumEditorLayout: characters updated', updatedCharacters?.length);
-                      setCharacters(updatedCharacters);
-                    }}
-                  />
-                )}
-                
-                {activeView === 'captions' && (
-                  <div className="p-4">
-                    <h3 className="font-semibold mb-4">Captions with Intention</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Advanced caption styling and synchronization
-                    </p>
-                  </div>
-                )}
-                
-                {activeView === 'audio-descriptions' && (
-                  <AudioDescriptionEditor 
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    onTimeUpdate={setCurrentTime}
-                    scenes={scenes}
-                  />
-                )}
-                
-                {activeView === 'sign-language' && (
-                  <SignLanguageManager 
-                    videoId={project.videoId}
-                    videoUrl={project.videoUrl}
-                    currentTime={playback.currentTime}
-                    characters={characters}
-                  />
-                )}
-                
-                {activeView === 'timeline' && (
-                  <div className="p-4">
-                    <h3 className="font-semibold mb-4">Timeline View</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Timeline controls and scene management (see below player)
-                    </p>
-                  </div>
-                )}
-                
-                {activeView === 'analysis' && (
-                  <VideoAnalysisPanel 
-                    videoId={project.videoId}
-                    assetId={project.videoId}
-                    playbackUrl={project.videoUrl}
-                  />
-                )}
-                
-                {activeView === 'ai-tools' && (
-                  <AIToolsPanel
-                    videoId={project.videoId}
-                    selectedSceneId={null}
-                    onToolExecute={() => {}}
-                  />
-                )}
-                
-                {activeView === 'runway' && (
-                  <div className="p-4">
-                    <h3 className="font-semibold mb-4">Runway ML Video Generation</h3>
-                    <p className="text-sm text-muted-foreground">
-                      AI-powered video generation from text prompts
-                    </p>
-                  </div>
-                )}
-                
-                {activeView === 'media' && (
-                  <MediaLibrary 
-                    videoId={project.videoId}
-                    onMediaSelect={(media) => toast.success('Media added to project')}
-                  />
-                )}
-                
-                {activeView === 'elements' && (
-                  <ElementsPanel videoId={project.videoId} />
-                )}
-                
-                {activeView === 'export' && (
-                  <ExportManager
-                    videoId={project.videoId}
-                    projectId={project.id}
-                    duration={project.duration}
-                  />
-                )}
-              </div>
-
-              {/* Properties Panel at bottom */}
-              <div className="border-t p-4 bg-muted/30">
-                <h3 className="font-semibold mb-4">Properties</h3>
-                {selectedElementId ? (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Element properties for selected item
-                    </p>
-                    <div className="space-y-2">
-                      <div className="p-3 border rounded bg-background">
-                        <p className="text-xs font-medium">Selected Element</p>
-                        <p className="text-xs text-muted-foreground mt-1">ID: {selectedElementId}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Select an element to edit properties
-                  </p>
-                )}
-              </div>
+              {scenes.length > 0 ? (
+                <MultiTrackTimeline
+                  scenes={scenes.map(scene => ({
+                    ...scene,
+                    layout: 'default',
+                    elements: []
+                  }))}
+                  duration={project.duration || 0}
+                  currentTime={playback.currentTime}
+                  zoom={ui.timelineZoom}
+                  onTimeUpdate={setCurrentTime}
+                  onSceneSelect={(id) => selectScene(id || null)}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>Loading timeline...</p>
+                </div>
+              )}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
 
-      {/* Keyboard Shortcuts */}
       <KeyboardShortcuts
         isPlaying={playback.isPlaying}
         currentTime={playback.currentTime}
