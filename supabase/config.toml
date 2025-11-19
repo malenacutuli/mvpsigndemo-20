@@ -174,3 +174,6 @@ verify_jwt = true
 [functions.ai-generate-chapters]
 verify_jwt = true
 
+[functions.premium-transcribe]
+verify_jwt = true
+
