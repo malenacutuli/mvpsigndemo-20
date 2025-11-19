@@ -28,6 +28,7 @@ import Contact from "./pages/Contact";
 import AdminSubscribers from "./pages/AdminSubscribers";
 import PremiumVideoEditor from "./pages/PremiumVideoEditor";
 import TestPremiumEditor from "./pages/TestPremiumEditor";
+import TestPremiumPlayer from "./pages/TestPremiumPlayer";
 import { PremiumEditorLayout } from "./components/premium-editor/PremiumEditorLayout";
 
 
@@ -94,6 +95,11 @@ const App = () => (
             <Route path="/test-premium-editor" element={
               <ProtectedRoute>
                 <TestPremiumEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/test-premium-player" element={
+              <ProtectedRoute>
+                <TestPremiumPlayer />
               </ProtectedRoute>
             } />
             
