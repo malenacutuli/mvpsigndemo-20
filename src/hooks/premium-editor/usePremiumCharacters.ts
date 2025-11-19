@@ -197,7 +197,7 @@ export function usePremiumCharacters({ videoId, onCharactersChange }: UsePremium
     } finally {
       setSaving(false);
     }
-  }, [videoId, characters, createCharacter]);
+  }, [videoId, characters, createCharacter, loadCharacters]);
 
   return {
     characters,
