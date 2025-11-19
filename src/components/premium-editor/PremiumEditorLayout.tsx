@@ -24,7 +24,6 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('ai-tools');
 
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
@@ -118,10 +117,34 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         }
       }
 
+      // Resolve proper video URL from storage_path
+      let resolvedVideoUrl = '';
+      if (video?.storage_path) {
+        const { data: publicUrl } = supabase.storage
+          .from('videos')
+          .getPublicUrl(video.storage_path);
+
+        if (publicUrl?.publicUrl) {
+          resolvedVideoUrl = publicUrl.publicUrl;
+        } else {
+          // Fallback to manual URL construction
+          resolvedVideoUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
+        }
+      } else if (video?.url) {
+        resolvedVideoUrl = video.url;
+      }
+
       setProject(projectData);
-      setVideoUrl(video?.url || video?.storage_path || '');
+      setVideoUrl(resolvedVideoUrl);
       
-      toast.success('Project loaded');
+      console.log('PremiumEditor: Resolved video URL:', resolvedVideoUrl);
+      
+      if (!resolvedVideoUrl) {
+        console.warn('PremiumEditor: No video URL resolved for project', projectData?.id);
+        toast.error('Could not resolve video URL');
+      } else {
+        toast.success('Project loaded');
+      }
     } catch (error) {
       console.error('Failed to load project:', error);
       toast.error('Failed to load project');
@@ -292,13 +315,12 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
           <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
             <div className="h-full bg-card border-l border-border">
               {project && (
-                <RightPanelTabs
-                  projectId={project.id}
-                  videoId={videoId || ''}
-                  videoUrl={videoUrl}
-                  currentTime={player.currentTime}
-                  selectedTab={selectedTab}
-                />
+            <RightPanelTabs
+              projectId={project.id}
+              videoId={videoId || ''}
+              videoUrl={videoUrl}
+              currentTime={player.currentTime}
+            />
               )}
             </div>
           </ResizablePanel>
