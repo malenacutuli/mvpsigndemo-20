@@ -177,3 +177,15 @@ verify_jwt = true
 [functions.premium-transcribe]
 verify_jwt = true
 
+[functions.premium-ai-generate]
+verify_jwt = true
+
+[functions.premium-ai-repurpose]
+verify_jwt = true
+
+[functions.premium-ai-publish]
+verify_jwt = true
+
+[functions.premium-ai-write]
+verify_jwt = true
+

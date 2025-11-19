@@ -37,7 +37,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
   // Initialize timeline
   const timeline = usePremiumTimeline({
-    projectId: projectId || '',
+    projectId: project?.id || '',
     onSceneSelect: (sceneId) => {
       setSelectedSceneId(sceneId);
       // Sync player time to scene start
@@ -291,13 +291,15 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
           {/* Sidebar - Right Panel Tabs */}
           <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
             <div className="h-full bg-card border-l border-border">
-              <RightPanelTabs
-                projectId={projectId || ''}
-                videoId={videoId || ''}
-                videoUrl={videoUrl}
-                currentTime={player.currentTime}
-                selectedTab={selectedTab}
-              />
+              {project && (
+                <RightPanelTabs
+                  projectId={project.id}
+                  videoId={videoId || ''}
+                  videoUrl={videoUrl}
+                  currentTime={player.currentTime}
+                  selectedTab={selectedTab}
+                />
+              )}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
