@@ -35,34 +35,33 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // Edit Section
-  { id: 'transcript', label: 'Transcript Editor', icon: FileText, section: 'edit' },
-  { id: 'characters', label: 'Characters & Speakers', icon: Users, section: 'edit' },
-  { id: 'timeline', label: 'Timeline View', icon: Film, section: 'edit' },
-  { id: 'captions', label: 'Captions with Intention', icon: Captions, section: 'edit' },
-  
-  // AI Tools Section
-  { id: 'ai-tools', label: 'Axessible AI', icon: Sparkles, section: 'ai', badge: '12' },
-  { id: 'runway', label: 'Runway ML Video Gen', icon: Wand2, section: 'ai' },
-  { id: 'analysis', label: 'Video Analysis', icon: Eye, section: 'ai' },
-  
-  // Media Section
-  { id: 'media', label: 'Media Library', icon: ImageIcon, section: 'media' },
-  { id: 'elements', label: 'Shapes & Text', icon: Type, section: 'media' },
+  // Content Section
+  { id: 'transcript', label: 'Transcript', icon: FileText, section: 'content' },
+  { id: 'characters', label: 'Characters', icon: Users, section: 'content' },
+  { id: 'captions', label: 'Captions', icon: Captions, section: 'content' },
   
   // Accessibility Section
   { id: 'audio-descriptions', label: 'Audio Descriptions', icon: Volume2, section: 'accessibility' },
   { id: 'sign-language', label: 'Sign Language', icon: Languages, section: 'accessibility' },
   
+  // Analysis Section
+  { id: 'analysis', label: 'Video Analysis', icon: Eye, section: 'analysis' },
+  { id: 'ai-tools', label: 'AI Tools', icon: Sparkles, section: 'analysis', badge: '12' },
+  
+  // Media Section
+  { id: 'media', label: 'Media Library', icon: ImageIcon, section: 'media' },
+  { id: 'elements', label: 'Elements', icon: Type, section: 'media' },
+  { id: 'runway', label: 'AI Video Gen', icon: Wand2, section: 'media' },
+  
   // Export Section
-  { id: 'export', label: 'Export & Share', icon: Download, section: 'export' },
+  { id: 'export', label: 'Export', icon: Download, section: 'export' },
 ];
 
 const SECTIONS = [
-  { id: 'edit', label: 'Edit', color: 'text-blue-500' },
-  { id: 'ai', label: 'AI Tools', color: 'text-purple-500' },
-  { id: 'media', label: 'Media', color: 'text-green-500' },
+  { id: 'content', label: 'Content', color: 'text-blue-500' },
   { id: 'accessibility', label: 'Accessibility', color: 'text-orange-500' },
+  { id: 'analysis', label: 'Analysis', color: 'text-purple-500' },
+  { id: 'media', label: 'Media', color: 'text-green-500' },
   { id: 'export', label: 'Export', color: 'text-pink-500' },
 ];
 
@@ -75,117 +74,70 @@ export function PremiumEditorSidebar({ activeView, onViewChange }: PremiumEditor
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div
-      className={cn(
-        'h-full border-r bg-muted/30 transition-all duration-300 flex flex-col',
-        isExpanded ? 'w-60' : 'w-16'
-      )}
-    >
-      {/* Header */}
-      <div className="h-14 border-b flex items-center justify-between px-3">
-        {isExpanded && (
-          <span className="font-semibold text-sm">Premium Editor</span>
-        )}
+    <div className="border-b bg-muted/30">
+      {/* Compact Header */}
+      <div className="h-12 flex items-center justify-between px-3 border-b">
+        <span className="font-semibold text-sm">Editor Tools</span>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="h-8 w-8 p-0"
+          className="h-7 w-7 p-0"
         >
-          {isExpanded ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          {isExpanded ? <X className="w-3 h-3" /> : <Menu className="w-3 h-3" />}
         </Button>
       </div>
 
-      {/* Navigation */}
-      <TooltipProvider delayDuration={0}>
-        <div className="flex-1 overflow-y-auto py-4">
+      {/* Navigation - Compact Grid */}
+      {isExpanded ? (
+        <div className="p-3 max-h-[300px] overflow-y-auto">
           {SECTIONS.map((section) => {
             const sectionItems = NAV_ITEMS.filter(item => item.section === section.id);
             
             return (
-              <div key={section.id} className="mb-6">
-                {/* Section Header */}
-                {isExpanded && (
-                  <div className="px-4 mb-2">
-                    <span className={cn('text-xs font-semibold uppercase tracking-wide', section.color)}>
-                      {section.label}
-                    </span>
-                  </div>
-                )}
+              <div key={section.id} className="mb-4">
+                <div className="px-2 mb-2">
+                  <span className={cn('text-xs font-semibold uppercase tracking-wide', section.color)}>
+                    {section.label}
+                  </span>
+                </div>
                 
-                {/* Section Items */}
-                <div className="space-y-1 px-2">
+                <div className="space-y-1">
                   {sectionItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = activeView === item.id;
-                    
-                    const buttonContent = (
+                    const isItemActive = activeView === item.id;
+
+                    return (
                       <Button
-                        variant={isActive ? 'secondary' : 'ghost'}
-                        className={cn(
-                          'w-full justify-start',
-                          !isExpanded && 'justify-center px-0',
-                          isActive && 'bg-primary/10 text-primary font-medium'
-                        )}
+                        key={item.id}
+                        variant={isItemActive ? 'secondary' : 'ghost'}
+                        size="sm"
                         onClick={() => onViewChange(item.id)}
+                        className={cn(
+                          'w-full justify-start h-8 px-2',
+                          isItemActive && 'bg-primary/10 text-primary font-medium'
+                        )}
                       >
-                        <Icon className={cn('w-4 h-4', isExpanded && 'mr-3')} />
-                        {isExpanded && (
-                          <>
-                            <span className="flex-1 text-left">{item.label}</span>
-                            {item.badge && (
-                              <span className="ml-auto text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                                {item.badge}
-                              </span>
-                            )}
-                          </>
+                        <Icon className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                        <span className="truncate text-xs">{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                            {item.badge}
+                          </span>
                         )}
                       </Button>
                     );
-
-                    if (!isExpanded) {
-                      return (
-                        <Tooltip key={item.id}>
-                          <TooltipTrigger asChild>
-                            {buttonContent}
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            <p>{item.label}</p>
-                            {item.badge && <p className="text-xs text-muted-foreground">{item.badge} tools</p>}
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    }
-
-                    return <div key={item.id}>{buttonContent}</div>;
                   })}
                 </div>
               </div>
             );
           })}
         </div>
-      </TooltipProvider>
-
-      {/* Footer */}
-      <div className="border-t p-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn('w-full', !isExpanded && 'justify-center px-0')}
-            >
-              <Settings className={cn('w-4 h-4', isExpanded && 'mr-3')} />
-              {isExpanded && <span>Settings</span>}
-            </Button>
-          </TooltipTrigger>
-          {!isExpanded && (
-            <TooltipContent side="right">
-              <p>Settings</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </div>
+      ) : (
+        <div className="p-2">
+          <p className="text-xs text-muted-foreground text-center">Click menu to expand</p>
+        </div>
+      )}
     </div>
   );
 }

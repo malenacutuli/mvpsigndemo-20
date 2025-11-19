@@ -296,15 +296,15 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main Content Area - Left Side */}
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <ResizablePanelGroup direction="vertical" className="flex-1">
           
-          {/* Left Panel - Video Player + Timeline */}
-          <ResizablePanel defaultSize={70} minSize={50}>
-            <div className="h-full flex flex-col">
+          {/* Top Section - Video Player + Right Sidebar */}
+          <ResizablePanel defaultSize={60} minSize={40}>
+            <ResizablePanelGroup direction="horizontal">
               {/* Video Player */}
-              <div className="flex-1 relative bg-black">
+              <ResizablePanel defaultSize={70} minSize={55}>
+                <div className="h-full relative bg-black">
                 <EnhancedVideoPlayer
                   videoSrc={project.videoUrl}
                   posterSrc={project.thumbnailUrl || undefined}
@@ -340,10 +340,18 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                       ))}
                   </div>
                 </div>
-              </div>
+              </ResizablePanel>
 
-              {/* Timeline directly under player */}
-              <div className="border-t bg-background" style={{ height: '240px', minHeight: '200px' }}>
+              <ResizableHandle withHandle />
+
+              {/* Right Sidebar - Navigation + Content + Properties */}
+              <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
+                <div className="h-full flex flex-col border-l bg-background">
+                  <PremiumEditorSidebar
+                    activeView={activeView}
+                    onViewChange={setActiveView}
+                  />
+                  <div className="flex-1 overflow-y-auto border-t p-4">
                 {scenes.length > 0 ? (
                   <MultiTrackTimeline
                     scenes={scenes.map(scene => ({
@@ -360,13 +368,33 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     <p>Loading timeline...</p>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+
+                  {/* Properties at bottom */}
+                  <div className="border-t p-4 bg-muted/30">
+                    <h3 className="text-sm font-semibold mb-3">Properties</h3>
+                    {selectedElementId ? (
+                      <div className="space-y-2">
+                        <div className="p-3 border rounded bg-background">
+                          <p className="text-xs font-medium">Selected Element</p>
+                          <p className="text-xs text-muted-foreground mt-1">ID: {selectedElementId}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Select an element to edit properties</p>
+                    )}
+                  </div>
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
+
+          {/* Bottom - Timeline Editor */}
+          <ResizablePanel defaultSize={40} minSize={30} maxSize={50}>
+            <div className="h-full bg-background border-t">
 
           {/* Right Panel - Sidebar + Dynamic Content + Properties */}
           <ResizablePanel defaultSize={30} minSize={25} maxSize={50}>
