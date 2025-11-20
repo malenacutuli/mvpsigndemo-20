@@ -34,6 +34,7 @@ import { ExportQualitySettings, type ExportSettings } from './ExportQualitySetti
 import { SubtitleEditor } from './SubtitleEditor';
 import { VideoExporter } from './VideoExporter';
 import { AISceneDetector } from './AISceneDetector';
+import { PremiumAIToolsPanel } from './PremiumAIToolsPanel';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -274,7 +275,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
               {/* Metadata Display */}
               <div className="space-y-4">
                 <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 text-xs">
+                  <TabsList className="grid w-full grid-cols-6 text-xs">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="tracks">Tracks</TabsTrigger>
                     <TabsTrigger value="ai">
@@ -288,6 +289,10 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                     <TabsTrigger value="export">
                       <SettingsIcon className="w-3 h-3 mr-1" />
                       Export
+                    </TabsTrigger>
+                    <TabsTrigger value="tools">
+                      <Wand2 className="w-3 h-3 mr-1" />
+                      Tools
                     </TabsTrigger>
                   </TabsList>
 
@@ -419,6 +424,10 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                         videoDuration={metadata.duration}
                       />
                     </div>
+                  </TabsContent>
+
+                  <TabsContent value="tools" className="mt-3">
+                    <PremiumAIToolsPanel versionId={videoFile?.name || 'demo-version'} />
                   </TabsContent>
                 </Tabs>
               </div>
