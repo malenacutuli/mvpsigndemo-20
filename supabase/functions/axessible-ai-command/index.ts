@@ -168,34 +168,20 @@ COMMANDS:
 5. modify_timing - Adjust scene timing
 6. generate_clip - Create social media clip
 
-Based on the information above, help with the following request:`;
+Based on the information above, help with the following request.
 
-    // JSON schema for structured output - relaxed for Gemini compatibility
-    const responseSchema = {
-      type: "object",
-      properties: {
-        response: {
-          type: "string",
-          description: "Natural language response to the user"
-        },
-        action: {
-          type: "object",
-          properties: {
-            action: {
-              type: "string",
-              enum: ["apply_template", "delete_segments", "create_scene", "modify_timing", "change_layout", "update_scene", "generate_clip"]
-            },
-            confidence: {
-              type: "number",
-              minimum: 0,
-              maximum: 1
-            }
-          },
-          additionalProperties: true
-        }
-      },
-      required: ["response"]
-    };
+IMPORTANT: Always respond with a single JSON object, never plain text. The JSON must match this shape:
+
+{
+  "response": "Natural-language answer to the user",
+  "action": {
+    "action": "apply_template | delete_segments | create_scene | modify_timing | change_layout | update_scene | generate_clip",
+    "confidence": 0.0-1.0,
+    "parameters": { /* action-specific parameters */ }
+  }
+}
+
+If no action is needed, set "action" to null. Do NOT include any fields outside this JSON object.`;
 
     let aiMessage: string;
     let aiData: any;
@@ -217,28 +203,36 @@ Based on the information above, help with the following request:`;
             ]
           }],
           generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: responseSchema
+            responseMimeType: "application/json"
           }
         }),
       });
 
       if (!geminiResponse.ok) {
-        const errorData = await geminiResponse.text();
-        console.error('Gemini API error:', geminiResponse.status, errorData);
-        
+        const errorBody = await geminiResponse.text();
+        console.error('Gemini API error:', geminiResponse.status, errorBody);
+
+        // Handle known rate limit case explicitly
         if (geminiResponse.status === 429) {
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: 'Rate limit exceeded',
-              response: 'Gemini API rate limit reached. Please try again in a moment.',
+              response: 'Gemini API rate limit reached. Please wait a bit and try again.',
               action: null
             }),
             { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        
-        throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
+
+        // For other errors, return a safe JSON response instead of throwing
+        return new Response(
+          JSON.stringify({
+            error: `Gemini API error ${geminiResponse.status}`,
+            response: 'The AI service had trouble answering your request. Please try again or rephrase.',
+            action: null
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       aiData = await geminiResponse.json();
