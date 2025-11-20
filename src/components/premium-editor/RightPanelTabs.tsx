@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wand2, Layers, Type, Image, Settings, Accessibility, Sparkles, Video } from 'lucide-react';
+import { Wand2, Layers, Type, Image as ImageIcon, Settings, Accessibility, Sparkles, Video } from 'lucide-react';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
 import { AIToolsPanel } from './ai-tools/AIToolsPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
@@ -7,7 +7,9 @@ import { MediaLibrary } from './MediaLibrary';
 import { CaptionTemplateGallery } from './CaptionTemplateGallery';
 import { ExportManager } from './ExportManager';
 import { VideoAnalysisPanel } from '@/components/VideoAnalysisPanel';
+import { AdvancedFrameExtractor } from './AdvancedFrameExtractor';
 import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 
 interface RightPanelTabsProps {
   projectId: string;
@@ -24,6 +26,20 @@ export function RightPanelTabs({
 }: RightPanelTabsProps) {
   const { ui, setSelectedTab, selectedSceneId, scenes, updateScene } = usePremiumEditor();
   const selectedTab = ui.selectedTab;
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  
+  // Load video file for frame extraction
+  useEffect(() => {
+    if (videoUrl) {
+      fetch(videoUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'video.mp4', { type: blob.type });
+          setVideoFile(file);
+        })
+        .catch(err => console.error('Failed to load video file:', err));
+    }
+  }, [videoUrl]);
   
   const handleToolExecute = (toolId: string) => {
     toast.info(`Executing tool: ${toolId}`);
@@ -49,7 +65,7 @@ export function RightPanelTabs({
           <span className="hidden xl:inline">AI</span>
         </TabsTrigger>
         <TabsTrigger value="media" className="gap-1 font-light text-xs">
-          <Image className="h-4 w-4" />
+          <ImageIcon className="h-4 w-4" />
           <span className="hidden xl:inline">Media</span>
         </TabsTrigger>
         <TabsTrigger value="captions" className="gap-1 font-light text-xs">
@@ -118,7 +134,14 @@ export function RightPanelTabs({
         </TabsContent>
 
         <TabsContent value="elements" className="h-full m-0 p-4">
-          <div className="text-sm text-muted-foreground font-light">Advanced elements coming soon...</div>
+          <AdvancedFrameExtractor 
+            videoFile={videoFile}
+            onFrameExtracted={(frame) => {
+              toast.success('Frame extracted', {
+                description: `${frame.width}x${frame.height} at ${frame.timestamp.toFixed(2)}s`
+              });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="properties" className="h-full m-0">
