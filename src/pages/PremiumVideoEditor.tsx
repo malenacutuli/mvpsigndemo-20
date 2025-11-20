@@ -5,8 +5,11 @@ import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSubscription } from '@/hooks/useSubscription';
 import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTemplateGallery';
+import { Timeline } from '@/components/premium-editor/Timeline';
+import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
