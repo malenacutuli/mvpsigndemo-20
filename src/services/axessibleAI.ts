@@ -1,13 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface AIAction {
-  action: string;
-  [key: string]: any;
+  action: 'apply_template' | 'delete_segments' | 'create_scene' | 'modify_timing' | 'change_layout' | 'update_scene' | 'generate_clip';
+  parameters: Record<string, any>;
+  confidence: number;
 }
 
 export interface AIResponse {
   response: string;
-  action: AIAction | null;
+  action?: AIAction;
 }
 
 export async function sendAICommand(
@@ -17,18 +19,44 @@ export async function sendAICommand(
   videoId: string,
   currentContext: string
 ): Promise<AIResponse> {
-  const { data, error } = await supabase.functions.invoke('axessible-ai-command', {
-    body: {
-      sessionId,
-      message,
-      projectId,
-      videoId,
-      currentContext
-    }
-  });
+  try {
+    const { data, error } = await supabase.functions.invoke('axessible-ai-command', {
+      body: {
+        sessionId,
+        message,
+        projectId,
+        videoId,
+        currentContext
+      }
+    });
 
-  if (error) throw error;
-  return data as AIResponse;
+    if (error) {
+      console.error('AI command error:', error);
+      
+      // Handle rate limiting
+      if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
+        toast.error('Rate limit exceeded. Please wait a moment and try again.');
+        throw new Error('Rate limit exceeded');
+      }
+      
+      // Handle API errors
+      if (error.message?.includes('API')) {
+        toast.error('AI service temporarily unavailable. Please try again.');
+        throw new Error('AI service error');
+      }
+      
+      toast.error('Failed to process AI command');
+      throw error;
+    }
+
+    return data as AIResponse;
+  } catch (error) {
+    console.error('sendAICommand error:', error);
+    if (error instanceof Error && !error.message.includes('Rate limit')) {
+      toast.error('Failed to send command to AI assistant');
+    }
+    throw error;
+  }
 }
 
 export async function executeAIAction(
@@ -39,21 +67,27 @@ export async function executeAIAction(
   try {
     switch (action.action) {
       case 'apply_template': {
+        const templateName = action.parameters?.template_name;
+        if (!templateName) {
+          return { success: false, error: 'Template name required' };
+        }
+
         const { data: template } = await supabase
           .from('caption_templates')
           .select('id')
-          .ilike('name', `%${action.template_name}%`)
+          .ilike('name', `%${templateName}%`)
           .single();
 
         if (!template) {
           return { success: false, error: 'Template not found' };
         }
 
-        if (action.scene_id) {
+        const sceneId = action.parameters?.scene_id;
+        if (sceneId) {
           await supabase
             .from('project_scenes')
             .update({ caption_template_id: template.id })
-            .eq('id', action.scene_id);
+            .eq('id', sceneId);
         } else {
           await supabase
             .from('project_scenes')
@@ -61,22 +95,27 @@ export async function executeAIAction(
             .eq('project_id', projectId);
         }
 
+        toast.success('Caption template applied');
         return { success: true, result: { template_id: template.id } };
       }
 
       case 'delete_segments': {
+        const segmentIndices = action.parameters?.segment_indices;
+        if (!segmentIndices || !Array.isArray(segmentIndices)) {
+          return { success: false, error: 'Segment indices required' };
+        }
+
         const { data: segments } = await supabase
           .from('transcript_segments_clean')
           .select('id')
           .eq('video_id', videoId)
-          .in('idx', action.segment_indices);
+          .in('idx', segmentIndices);
 
         if (!segments || segments.length === 0) {
           return { success: false, error: 'Segments not found' };
         }
 
-        // Mark segments as deleted using local state approach
-        // (actual deletion will be handled by TextBasedEditor component)
+        toast.success('Segments marked for deletion');
         return { success: true, result: { segment_ids: segments.map(s => s.id) } };
       }
 
@@ -90,7 +129,8 @@ export async function executeAIAction(
           .maybeSingle();
 
         const nextOrder = (lastScene?.scene_order ?? -1) + 1;
-        const duration = action.duration || 10;
+        const duration = action.parameters?.duration || 10;
+        const layoutType = action.parameters?.layout || 'fullscreen';
 
         const { data: scene } = await supabase
           .from('project_scenes')
@@ -102,7 +142,7 @@ export async function executeAIAction(
             timeline_end: duration,
             duration_seconds: duration,
             name: `Scene ${nextOrder + 1}`,
-            layout_type: action.layout,
+            layout_type: layoutType,
             background_type: 'solid',
             background_config: { color: '#000000' },
             transition_type: 'fade',
@@ -114,65 +154,151 @@ export async function executeAIAction(
           .select()
           .single();
 
+        toast.success('New scene created');
         return { success: true, result: { scene_id: scene?.id } };
       }
 
-      case 'update_scene': {
-        const { data: scenes } = await supabase
-          .from('project_scenes')
-          .select('id')
-          .eq('project_id', projectId)
-          .order('scene_order')
-          .limit(1)
-          .range(action.scene_order, action.scene_order);
-
-        if (!scenes || scenes.length === 0) {
-          return { success: false, error: 'Scene not found' };
+      case 'update_scene':
+      case 'change_layout': {
+        const sceneId = action.parameters?.scene_id;
+        
+        if (!sceneId) {
+          return { success: false, error: 'Scene ID required' };
         }
 
-        await supabase
-          .from('project_scenes')
-          .update({ layout_type: action.layout })
-          .eq('id', scenes[0].id);
+        const updates: any = {};
+        const layout = action.parameters?.layout;
+        const background = action.parameters?.background;
+        const transition = action.parameters?.transition;
+        
+        if (layout) updates.layout_type = layout;
+        if (background) updates.background_type = background;
+        if (transition) updates.transition_type = transition;
 
-        return { success: true, result: { scene_id: scenes[0].id } };
+        const { error } = await supabase
+          .from('project_scenes')
+          .update(updates)
+          .eq('id', sceneId)
+          .eq('project_id', projectId);
+
+        if (error) {
+          console.error('Scene update error:', error);
+          return { success: false, error: 'Failed to update scene' };
+        }
+
+        toast.success('Scene layout updated');
+        return { success: true, result: { scene_id: sceneId, updates } };
+      }
+
+      case 'modify_timing': {
+        const sceneId = action.parameters?.scene_id;
+        const startTime = action.parameters?.start_time;
+        const endTime = action.parameters?.end_time;
+        
+        if (!sceneId) {
+          return { success: false, error: 'Scene ID required' };
+        }
+
+        const updates: any = {};
+        if (startTime !== undefined) {
+          updates.timeline_start = startTime;
+          updates.media_start_time = startTime;
+        }
+        if (endTime !== undefined) {
+          updates.timeline_end = endTime;
+          updates.media_end_time = endTime;
+        }
+        if (startTime !== undefined && endTime !== undefined) {
+          updates.duration_seconds = endTime - startTime;
+        }
+
+        const { error } = await supabase
+          .from('project_scenes')
+          .update(updates)
+          .eq('id', sceneId)
+          .eq('project_id', projectId);
+
+        if (error) {
+          console.error('Timing update error:', error);
+          return { success: false, error: 'Failed to update scene timing' };
+        }
+
+        toast.success('Scene timing updated');
+        return { success: true, result: { scene_id: sceneId, updates } };
       }
 
       case 'generate_clip': {
+        const segmentIndices = action.parameters?.segments;
+        const platform = action.parameters?.platform;
+        
+        if (!segmentIndices || !Array.isArray(segmentIndices) || !platform) {
+          return { success: false, error: 'Segments and platform required' };
+        }
+
         const { data: segments } = await supabase
           .from('transcript_segments_clean')
           .select('*')
           .eq('video_id', videoId)
-          .in('idx', action.segments);
+          .in('idx', segmentIndices);
+
+        if (!segments || segments.length === 0) {
+          return { success: false, error: 'Segments not found' };
+        }
 
         const { data: clip } = await supabase
           .from('social_clips')
           .insert({
             video_id: videoId,
-            platform: action.platform,
+            platform: platform,
             title: 'AI Generated Clip',
-            start_time: segments?.[0]?.start_time || 0,
-            end_time: segments?.[segments.length - 1]?.end_time || 0,
-            source_segments: segments?.map(s => ({
+            start_time: segments[0].start_time,
+            end_time: segments[segments.length - 1].end_time,
+            source_segments: segments.map(s => ({
               segment_id: s.id,
               start_time: s.start_time,
               end_time: s.end_time
             })),
-            aspect_ratio: action.platform === 'tiktok' || action.platform === 'instagram_reel' ? '9:16' : '16:9',
+            aspect_ratio: platform === 'tiktok' || platform === 'instagram_reel' ? '9:16' : '16:9',
             resolution: '1920x1080',
             status: 'pending'
           })
           .select()
           .single();
 
+        toast.success('Social clip created');
         return { success: true, result: { clip_id: clip?.id } };
       }
 
       default:
-        return { success: false, error: 'Unknown action type' };
+        toast.error(`Unknown action type: ${action.action}`);
+        return { success: false, error: `Unknown action type: ${action.action}` };
     }
   } catch (error) {
     console.error('AI action execution error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    toast.error(`Action failed: ${errorMessage}`);
+    
+    // Log to premium_video_edits for tracking
+    try {
+      await supabase
+        .from('premium_video_edits')
+        .insert({
+          project_id: projectId,
+          video_id: videoId,
+          created_by: (await supabase.auth.getUser()).data.user?.id || '',
+          edit_type: 'ai_action_failed',
+          edit_data: {
+            action: action.action,
+            error: errorMessage,
+            timestamp: new Date().toISOString()
+          },
+          status: 'failed',
+          error_message: errorMessage
+        });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }

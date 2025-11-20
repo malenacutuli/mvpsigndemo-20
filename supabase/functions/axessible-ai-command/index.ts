@@ -14,6 +14,26 @@ interface CommandRequest {
   currentContext: string;
 }
 
+// Rate limiting: 10 commands per minute per user
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + 60000 });
+    return true;
+  }
+  
+  if (userLimit.count >= 10) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -22,10 +42,70 @@ serve(async (req) => {
   try {
     const { sessionId, message, projectId, videoId, currentContext }: CommandRequest = await req.json();
 
+    // Sanitize user input
+    const sanitizedMessage = message.trim().slice(0, 1000);
+    if (!sanitizedMessage) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Empty message',
+          response: 'Please provide a message.',
+          action: null
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          response: 'Too many requests. Please wait a moment and try again.',
+          action: null
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify user has access to project
+    const { data: projectAccess } = await supabase
+      .from('video_projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('created_by', user.id)
+      .single();
+
+    if (!projectAccess) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized access to project' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get project state for context
     const { data: project } = await supabase
@@ -60,34 +140,42 @@ You can execute these commands by responding with a JSON action object:
    {"action": "apply_template", "template_name": "Viral TikTok", "scene_id": "optional"}
 
 2. delete_segments: Delete transcript segments
-   {"action": "delete_segments", "segment_indices": [2, 5, 7]}
+   {"action": "delete_segments", "parameters": {"segment_indices": [2, 5, 7]}, "confidence": 0.9}
 
 3. create_scene: Add a new scene
-   {"action": "create_scene", "layout": "fullscreen|split|pip", "duration": 10}
+   {"action": "create_scene", "parameters": {"layout": "fullscreen|split|pip", "duration": 10}, "confidence": 0.95}
 
-4. update_scene: Modify a scene
-   {"action": "update_scene", "scene_index": 0, "layout": "split"}
+4. change_layout: Change scene layout
+   {"action": "change_layout", "parameters": {"scene_id": "uuid", "layout": "split"}, "confidence": 0.85}
 
-5. generate_clip: Create social media clip
-   {"action": "generate_clip", "platform": "tiktok|instagram_reel|youtube_short|linkedin", "segments": [0, 1, 2]}
+5. modify_timing: Adjust scene timing
+   {"action": "modify_timing", "parameters": {"scene_id": "uuid", "start_time": 5.5, "end_time": 15.0}, "confidence": 0.9}
+
+6. generate_clip: Create social media clip
+   {"action": "generate_clip", "parameters": {"platform": "tiktok|instagram_reel|youtube_short|linkedin", "segments": [0, 1, 2]}, "confidence": 0.8}
 
 AVAILABLE TEMPLATES:
 ${templates?.map(t => `- ${t.name} (id: ${t.id})`).join('\n') || 'No templates available'}
 
 RESPONSE FORMAT:
+CRITICAL: Always respond with valid JSON only. No markdown, no code blocks, just raw JSON.
+
 If you understand a command, respond with:
 {
   "response": "Human-readable confirmation",
-  "action": {...command object...}
+  "action": {
+    "action": "action_name",
+    "parameters": {...},
+    "confidence": 0.0-1.0
+  }
 }
 
 If you need clarification or just answering a question:
 {
-  "response": "Your answer here",
-  "action": null
+  "response": "Your answer here"
 }
 
-Be helpful, concise, and proactive in suggesting improvements.`;
+Be helpful, concise, and proactive in suggesting improvements. Always provide confidence scores for actions (0.0-1.0).`;
 
     // Call OpenAI GPT-4
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -100,8 +188,9 @@ Be helpful, concise, and proactive in suggesting improvements.`;
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: sanitizedMessage }
         ],
+        response_format: { type: "json_object" },
         temperature: 0.7,
         max_tokens: 500,
       }),
@@ -110,6 +199,18 @@ Be helpful, concise, and proactive in suggesting improvements.`;
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text();
       console.error('OpenAI API error:', openaiResponse.status, errorData);
+      
+      if (openaiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'OpenAI rate limit exceeded',
+            response: 'AI service is experiencing high demand. Please try again in a moment.',
+            action: null
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
     }
 
@@ -147,7 +248,7 @@ Be helpful, concise, and proactive in suggesting improvements.`;
         }
       ];
 
-      // Update session
+      // Update session and increment AI credits
       await supabase
         .from('ai_chat_sessions')
         .update({
@@ -155,7 +256,8 @@ Be helpful, concise, and proactive in suggesting improvements.`;
           message_count: newMessages.length,
           last_message_at: new Date().toISOString(),
           last_action: parsedResponse.action ? parsedResponse.action.action : null,
-          current_context: currentContext
+          current_context: currentContext,
+          ai_credits_used: (session.ai_credits_used || 0) + 1
         })
         .eq('id', sessionId);
     }
