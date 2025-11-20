@@ -12,7 +12,8 @@ import {
   Download, 
   Wand2,
   Save,
-  Eye
+  Eye,
+  Keyboard as KeyboardIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RenderPreview } from "./RenderPreview";
@@ -23,6 +24,7 @@ import { AudioEditor } from "./AudioEditor";
 import { TransitionsEffectsPanel } from "./TransitionsEffectsPanel";
 import { AIAssistantPanel } from "./AIAssistantPanel";
 import { ExportPanel } from "./ExportPanel";
+import { KeyboardShortcuts } from "./KeyboardShortcuts";
 
 interface EditorWorkspaceProps {
   videoFile: File;
@@ -118,6 +120,7 @@ export function EditorWorkspace({
   const { toast } = useToast();
   const [activePanel, setActivePanel] = useState<EditorPanel>("preview");
   const [isSaving, setIsSaving] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -131,6 +134,19 @@ export function EditorWorkspace({
     });
     
     setIsSaving(false);
+  };
+
+  const handleTogglePlayback = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleDeleteScene = () => {
+    if (selectedSceneId) {
+      onScenesChange(scenes.filter(s => s.id !== selectedSceneId));
+      toast({
+        title: "Scene deleted",
+      });
+    }
   };
 
   const renderPanel = () => {
@@ -285,6 +301,20 @@ export function EditorWorkspace({
             </div>
           </footer>
         </div>
+
+        {/* Keyboard Shortcuts */}
+        <KeyboardShortcuts
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={metadata.duration}
+          onTogglePlayback={handleTogglePlayback}
+          onSeek={onTimeUpdate}
+          selectedElementId={selectedSceneId}
+          onUndo={() => toast({ title: "Undo not implemented yet" })}
+          onRedo={() => toast({ title: "Redo not implemented yet" })}
+          onDeleteElement={handleDeleteScene}
+          onSave={handleSave}
+        />
       </div>
     </SidebarProvider>
   );
