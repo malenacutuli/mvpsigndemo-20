@@ -101,10 +101,10 @@ export function RightPanelTabs({
 
         <TabsContent value="captions" className="h-full m-0">
           <CaptionTemplateGallery 
-            open={true}
             projectId={projectId}
-            onTemplateApply={(templateId) => {
-              toast.success(`Applied template: ${templateId}`);
+            videoId={videoId}
+            onTemplateSelect={(template) => {
+              toast.success(`Applied template: ${template.name}`);
             }}
           />
         </TabsContent>
