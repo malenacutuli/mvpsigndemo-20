@@ -61,9 +61,12 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
   // Load project data
   useEffect(() => {
-    if (!projectId && !videoId) return;
+    const effectiveVideoId = propsVideoId || routeVideoId;
+    const effectiveProjectId = propsProjectId || routeProjectId;
+    
+    if (!effectiveProjectId && !effectiveVideoId) return;
     loadProject();
-  }, [projectId, videoId]);
+  }, [propsVideoId, routeVideoId, propsProjectId, routeProjectId]);
 
   // Sync timeline with player
   useEffect(() => {
