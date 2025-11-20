@@ -8,6 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { SubscriptionGate } from '@/components/premium-editor/SubscriptionGate';
+import { LoadingScreen } from '@/components/premium-editor/LoadingScreen';
 import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTemplateGallery';
 import { Timeline } from '@/components/premium-editor/Timeline';
 import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
@@ -17,21 +19,23 @@ import { FillerWordDetector } from '@/components/premium-editor/FillerWordDetect
 import { AdvancedExportModal } from '@/components/premium-editor/AdvancedExportModal';
 import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
+import { useVideoProject } from '@/hooks/useVideoProject';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { canAccess, tier, isAdmin, isLoading: accessLoading } = usePremiumAccess();
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [video, setVideo] = useState<any>(null);
-  const [project, setProject] = useState<any>(null);
-  // Note: local isLoading removed; rely on accessLoading from usePremiumAccess
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [scenes, setScenes] = useState<any[]>([]);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('ai');
+
+  // Use the new hooks for video and project data
+  const { project, isLoading: projectLoading, error: projectError } = useVideoProject(undefined, videoId);
+  const [video, setVideo] = useState<any>(null);
 
   const {
     scenes: storeScenes,
@@ -44,6 +48,35 @@ export default function PremiumVideoEditor() {
     selectScene
   } = usePremiumEditor();
 
+  // Load video data
+  useEffect(() => {
+    if (!videoId) return;
+
+    const loadVideo = async () => {
+      const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading video:', error);
+        toast.error('Failed to load video');
+        return;
+      }
+
+      if (!data) {
+        toast.error('Video not found');
+        navigate('/videos');
+        return;
+      }
+
+      setVideo(data);
+    };
+
+    loadVideo();
+  }, [videoId, navigate]);
+
   // Sync video playback when currentTime changes from external source
   React.useEffect(() => {
     if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.5) {
@@ -51,67 +84,84 @@ export default function PremiumVideoEditor() {
     }
   }, [currentTime]);
 
-  // Loading state (subscription/access only)
-  if (accessLoading) {
+  // Handle missing videoId
+  if (!videoId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p>Loading Premium Editor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // No access state
-  if (!canAccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center">
-          <Lock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-bold mb-4">Premium Feature</h2>
+        <Card className="max-w-md p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Video Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            The Premium Video Editor is available for Standard, Advanced, and Enterprise plans.
+            The requested video could not be found.
           </p>
-          <Button 
-            onClick={() => navigate('/pricing')}
-            className="w-full"
-          >
-            Upgrade to Standard
-          </Button>
-          <Button 
-            variant="ghost"
-            onClick={() => navigate(`/videos/${videoId}`)}
-            className="w-full mt-2"
-          >
-            Back to Video
+          <Button onClick={() => navigate('/videos')}>
+            Back to Videos
           </Button>
         </Card>
       </div>
     );
   }
 
-  // Save project function
+  // Loading state (subscription/access + video/project)
+  if (accessLoading || projectLoading || !video) {
+    return <LoadingScreen message="Preparing your premium editor workspace..." />;
+  }
+
+  // Show subscription gate for insufficient tier
+  if (!canAccess) {
+    toast.error('Premium Editor requires Standard plan or higher', {
+      description: 'Upgrade your plan to access advanced editing features',
+      duration: 5000
+    });
+    return <SubscriptionGate currentTier={tier || 'Free'} videoId={videoId} />;
+  }
+
+  // Save project function with debounce
   const saveProject = async () => {
-    if (!project) return;
+    if (!project) {
+      toast.error('No project to save');
+      return;
+    }
     
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from('video_projects')
-        .update({ updated_at: new Date().toISOString() })
+        .update({ 
+          updated_at: new Date().toISOString(),
+          name: project.name 
+        })
         .eq('id', project.id);
 
       if (error) throw error;
       
-      toast.success('Project saved');
+      toast.success('Project saved successfully');
     } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Failed to save project');
+      toast.error(`Failed to save project: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveProject();
+      }
+      
+      // Space to play/pause
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        togglePlayback();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [project, togglePlayback]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
