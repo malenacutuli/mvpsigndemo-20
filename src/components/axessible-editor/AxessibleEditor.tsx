@@ -496,42 +496,130 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     }
 
     toast.info('Export functionality coming soon', {
-      description: 'Will use MediaBunny Output API with EncodedPacketSource for transmuxing or VideoSampleSource for re-encoding',
+      description: 'Will use MediaBunny Output API with multiple format options',
     });
 
     // TODO: Implement export using MediaBunny Output API
     // 
-    // Strategy:
-    // 1. For simple cuts/trims without effects:
+    // Available Output Formats:
+    // 
+    // 1. MP4 (Mp4OutputFormat) - Most common format
+    //    - Options: fastStart ('in-memory', 'reserve', 'fragmented', false)
+    //    - 'fragmented': Good for streaming, append-only, requires packet buffering
+    //    - 'in-memory': Best quality, higher memory usage
+    //    - Supports video rotation metadata
+    //    - Callbacks: onFtyp, onMoov, onMdat, onMoof
+    //
+    // 2. QuickTime (MovOutputFormat) - Apple ecosystem
+    //    - Same options as MP4
+    //    - Better for ProRes, higher quality workflows
+    //
+    // 3. WebM (WebMOutputFormat) - Web-optimized, open format
+    //    - Options: appendOnly, minimumClusterDuration
+    //    - Supports transparency (VP8/VP9 with alpha)
+    //    - Good for web streaming
+    //    - Callbacks: onEbmlHeader, onSegmentHeader, onCluster
+    //
+    // 4. Matroska (MkvOutputFormat) - Universal container
+    //    - Same options as WebM
+    //    - Supports more codecs than WebM
+    //
+    // 5. Audio-only formats:
+    //    - MP3 (Mp3OutputFormat): xingHeader option
+    //    - WAVE (WavOutputFormat): large (RF64), metadataFormat
+    //    - Ogg (OggOutputFormat): Append-only by default
+    //    - ADTS (AdtsOutputFormat): Raw AAC
+    //    - FLAC (FlacOutputFormat): Lossless
+    //
+    // Export Strategy:
+    //
+    // A. For simple cuts/trims without effects (FAST, NO QUALITY LOSS):
     //    - Use EncodedVideoPacketSource + EncodedAudioPacketSource
     //    - Loop through videoPacketSink.packets() and audioPacketSink.packets()
-    //    - Fast transmuxing without quality loss
+    //    - Transmux (copy) packets without re-encoding
     //
-    // 2. For edits with effects/overlays/captions:
+    // B. For edits with effects/overlays/captions (SLOWER, RE-ENCODED):
     //    - Use VideoSampleSource + AudioSampleSource
     //    - Loop through videoSink.samples() and audioSink.samples()
-    //    - Apply effects during re-encoding
+    //    - Apply canvas effects during re-encoding
+    //    - Can burn in captions with CWI colors
     //
-    // Example structure:
+    // Example: Transmuxing to MP4 with Fast Start
+    // 
+    // import { 
+    //   Output, 
+    //   Mp4OutputFormat, 
+    //   BufferTarget,
+    //   EncodedVideoPacketSource,
+    //   EncodedAudioPacketSource,
+    // } from 'mediabunny';
+    //
     // const output = new Output({
-    //   format: new Mp4OutputFormat(),
-    //   target: new BufferTarget(),
+    //   format: new Mp4OutputFormat({ 
+    //     fastStart: 'in-memory', // or 'fragmented' for streaming
+    //     onMoov: (data, position) => {
+    //       console.log(`Metadata written at byte ${position}`);
+    //     },
+    //   }),
+    //   target: new BufferTarget(), // or StreamTarget for uploads
     // });
     //
-    // // For transmuxing:
-    // const videoSource = new EncodedVideoPacketSource(mediaInput.videoTrack.codec);
-    // const audioSource = new EncodedAudioPacketSource(mediaInput.audioTrack?.codec);
+    // // Add video track (transmux)
+    // const videoSource = new EncodedVideoPacketSource(
+    //   mediaInput.videoTrack.codec?.name || 'avc'
+    // );
     // output.addVideoTrack(videoSource);
-    // output.addAudioTrack(audioSource);
+    //
+    // // Add audio track if present
+    // if (mediaInput.audioTrack && mediaInput.audioPacketSink) {
+    //   const audioSource = new EncodedAudioPacketSource(
+    //     mediaInput.audioTrack.codec?.name || 'aac'
+    //   );
+    //   output.addAudioTrack(audioSource);
+    // }
+    //
+    // // Set metadata tags
+    // output.setMetadataTags({
+    //   title: project?.name || 'Exported Video',
+    //   encoder: 'Axessible Editor',
+    // });
     //
     // await output.start();
     //
-    // // Copy packets
-    // for await (const packet of mediaInput.videoPacketSink.packets(trimStart, trimEnd)) {
-    //   await videoSource.add(packet, packet.timestamp === 0 ? { decoderConfig: mediaInput.decoderConfig } : undefined);
+    // // Copy video packets
+    // let firstVideoPacket = true;
+    // for await (const packet of mediaInput.videoPacketSink!.packets(trimStart, trimEnd)) {
+    //   const meta = firstVideoPacket ? { decoderConfig: mediaInput.decoderConfig } : undefined;
+    //   await videoSource.add(packet, meta);
+    //   firstVideoPacket = false;
+    // }
+    // videoSource.close();
+    //
+    // // Copy audio packets
+    // if (mediaInput.audioPacketSink) {
+    //   let firstAudioPacket = true;
+    //   for await (const packet of mediaInput.audioPacketSink.packets(trimStart, trimEnd)) {
+    //     const meta = firstAudioPacket ? { decoderConfig: mediaInput.audioDecoderConfig } : undefined;
+    //     await audioSource.add(packet, meta);
+    //     firstAudioPacket = false;
+    //   }
+    //   audioSource.close();
     // }
     //
     // await output.finalize();
+    //
+    // // Get the file
+    // const exportedFile = new Blob([output.target.buffer!], { 
+    //   type: output.format.mimeType 
+    // });
+    //
+    // // Download
+    // const url = URL.createObjectURL(exportedFile);
+    // const a = document.createElement('a');
+    // a.href = url;
+    // a.download = `${project?.name || 'video'}${output.format.fileExtension}`;
+    // a.click();
+    // URL.revokeObjectURL(url);
   }
 
   return (
