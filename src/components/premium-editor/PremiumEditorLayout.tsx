@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Download, ArrowLeft } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Loader2, Save, Download, ArrowLeft, Play, Pause, SkipBack, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePremiumPlayer } from '@/hooks/premium-editor/usePremiumPlayer';
 import { usePremiumTimeline } from '@/hooks/premium-editor/usePremiumTimeline';
+import { useProjectScenes } from '@/hooks/useSceneComposition';
 import { PremiumVideoPlayer } from './player/PremiumVideoPlayer';
 import { MultiTrackTimeline } from './timeline/MultiTrackTimeline';
+import { Timeline } from '@/components/Timeline/Timeline';
 import { RightPanelTabs } from './RightPanelTabs';
+import type { Track } from '@/components/Timeline/types';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -24,6 +28,9 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [timelineTracks, setTimelineTracks] = useState<Track[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
@@ -49,6 +56,9 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     }
   });
 
+  // Load project scenes
+  const { data: projectScenes } = useProjectScenes(project?.id || '');
+
   // Load project data
   useEffect(() => {
     if (!projectId && !videoId) return;
@@ -59,6 +69,57 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   useEffect(() => {
     timeline.setCurrentTime(player.currentTime);
   }, [player.currentTime]);
+
+  // Convert project scenes to timeline tracks
+  useEffect(() => {
+    if (!projectScenes || projectScenes.length === 0) return;
+
+    const videoTrack: Track = {
+      id: 'video-track',
+      name: 'Video Scenes',
+      type: 'video',
+      clips: projectScenes.map(scene => ({
+        id: scene.id,
+        trackId: 'video-track',
+        startTime: scene.timeline_start || 0,
+        endTime: scene.timeline_end || (scene.timeline_start || 0) + (scene.duration_seconds || 10),
+        label: scene.name || `Scene ${scene.scene_order + 1}`,
+        color: getSceneColor(scene.layout_type),
+        source: scene
+      })),
+      locked: false,
+      muted: false,
+      visible: true,
+      height: 80
+    };
+
+    setTimelineTracks([videoTrack]);
+  }, [projectScenes]);
+
+  // Generate waveform data
+  useEffect(() => {
+    if (videoUrl && !waveformData.length) {
+      generateWaveform(videoUrl).then(setWaveformData).catch(console.error);
+    }
+  }, [videoUrl]);
+
+  // Sync video player with timeline
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = player.currentTime;
+    }
+  }, [player.currentTime]);
+
+  // Sync play/pause state
+  useEffect(() => {
+    if (videoRef.current) {
+      if (player.isPlaying) {
+        videoRef.current.play().catch(console.error);
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [player.isPlaying]);
 
   const loadProject = async () => {
     setIsLoading(true);
@@ -180,6 +241,80 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     toast.info('Export functionality coming soon');
   };
 
+  const handleSceneReorder = async (sceneId: string, newStartTime: number) => {
+    const scene = projectScenes?.find(s => s.id === sceneId);
+    if (!scene) return;
+
+    try {
+      const duration = (scene.timeline_end || 0) - (scene.timeline_start || 0);
+      const { error } = await supabase
+        .from('project_scenes')
+        .update({
+          timeline_start: newStartTime,
+          timeline_end: newStartTime + duration,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sceneId);
+
+      if (error) throw error;
+      toast.success('Scene position updated');
+    } catch (error) {
+      console.error('Failed to reorder scene:', error);
+      toast.error('Failed to update scene position');
+    }
+  };
+
+  const handleAddScene = () => {
+    toast.info('Add scene functionality coming soon');
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
+
+  const getSceneColor = (layoutType: string | null) => {
+    const colors: Record<string, string> = {
+      fullscreen: '#3B82F6',
+      'split-horizontal': '#10B981',
+      'split-vertical': '#F59E0B',
+      'pip-corner': '#EF4444',
+      'pip-side': '#8B5CF6',
+      'grid-2x2': '#EC4899'
+    };
+    return colors[layoutType || 'fullscreen'] || '#3B82F6';
+  };
+
+  async function generateWaveform(videoUrl: string): Promise<number[]> {
+    try {
+      const audioContext = new AudioContext();
+      const response = await fetch(videoUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      const channelData = audioBuffer.getChannelData(0);
+      const samples = 200;
+      const blockSize = Math.floor(channelData.length / samples);
+      
+      const waveform: number[] = [];
+      for (let i = 0; i < samples; i++) {
+        const start = blockSize * i;
+        let sum = 0;
+        for (let j = 0; j < blockSize; j++) {
+          sum += Math.abs(channelData[start + j]);
+        }
+        waveform.push(sum / blockSize);
+      }
+      
+      return waveform;
+    } catch (error) {
+      console.error('Failed to generate waveform:', error);
+      return [];
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -285,26 +420,52 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
               <ResizableHandle withHandle />
 
-              {/* Timeline */}
+              {/* Timeline with Controls */}
               <ResizablePanel defaultSize={40} minSize={20}>
-                <MultiTrackTimeline
-                  tracks={timeline.state.tracks}
-                  clips={timeline.state.clips}
-                  currentTime={timeline.state.currentTime}
-                  duration={timeline.state.duration}
-                  zoom={timeline.state.zoom}
-                  scrollLeft={timeline.state.scrollLeft}
-                  selectedClipIds={timeline.state.selectedClipIds}
-                  onTimeChange={player.onSeek}
-                  onClipSelect={timeline.selectClip}
-                  onClipMove={timeline.moveClip}
-                  onClipTrim={timeline.trimClip}
-                  onClipDelete={timeline.deleteClip}
-                  onClipSplit={timeline.splitClip}
-                  onZoomIn={timeline.zoomIn}
-                  onZoomOut={timeline.zoomOut}
-                  onScrollChange={timeline.setScrollLeft}
-                />
+                <div className="h-full flex flex-col bg-background">
+                  {/* Timeline Controls */}
+                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={player.onPlayPauseToggle}
+                    >
+                      {player.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </Button>
+                    
+                    <span className="text-sm font-mono">
+                      {formatTime(player.currentTime)} / {formatTime(player.duration)}
+                    </span>
+                    
+                    <Separator orientation="vertical" className="h-6" />
+                    
+                    <Button size="sm" variant="ghost" onClick={() => player.onSeek(0)}>
+                      <SkipBack className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button size="sm" variant="ghost" onClick={handleAddScene}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Scene
+                    </Button>
+                    
+                    <Separator orientation="vertical" className="h-6" />
+                    
+                    <span className="text-xs text-muted-foreground">
+                      {projectScenes?.length || 0} scenes
+                    </span>
+                  </div>
+
+                  {/* Timeline Component */}
+                  <div className="flex-1 overflow-hidden">
+                    <Timeline
+                      tracks={timelineTracks}
+                      duration={player.duration || project?.total_duration || 100}
+                      currentTime={player.currentTime}
+                      onSeek={player.onSeek}
+                      onTracksChange={setTimelineTracks}
+                    />
+                  </div>
+                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
