@@ -33,6 +33,7 @@ import { FrameCropTool } from './FrameCropTool';
 import { ExportQualitySettings, type ExportSettings } from './ExportQualitySettings';
 import { SubtitleEditor } from './SubtitleEditor';
 import { VideoExporter } from './VideoExporter';
+import { AISceneDetector } from './AISceneDetector';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -273,12 +274,16 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
               {/* Metadata Display */}
               <div className="space-y-4">
                 <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5 text-xs">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="tracks">Tracks</TabsTrigger>
+                    <TabsTrigger value="ai">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI
+                    </TabsTrigger>
                     <TabsTrigger value="subtitles">
                       <FileText className="w-3 h-3 mr-1" />
-                      Subtitles
+                      Subs
                     </TabsTrigger>
                     <TabsTrigger value="export">
                       <SettingsIcon className="w-3 h-3 mr-1" />
@@ -382,6 +387,13 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                         ))}
                       </div>
                     )}
+                  </TabsContent>
+
+                  <TabsContent value="ai" className="mt-3">
+                    <AISceneDetector
+                      frames={extractedFrames}
+                      videoDuration={metadata.duration}
+                    />
                   </TabsContent>
 
                   <TabsContent value="subtitles" className="mt-3">
