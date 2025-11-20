@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Download, ArrowLeft, Play, Pause } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { FrameNavigator } from './FrameNavigator';
+import { FrameCanvas } from './FrameCanvas';
 import { 
   Input, 
   ALL_FORMATS, 
@@ -51,6 +53,7 @@ interface MediaBunnyInput {
 
 export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameCanvasRef = useRef<any>(null);
   const [mediaInput, setMediaInput] = useState<MediaBunnyInput>({
     input: null,
     videoTrack: null,
@@ -564,6 +567,19 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     setIsPlaying(!isPlaying);
   }
 
+  function handleSeekToTime(time: number) {
+    setCurrentTime(time);
+    setIsPlaying(false);
+    stopAudioPlayback();
+  }
+
+  function handleFrameExtracted(canvas: HTMLCanvasElement) {
+    if (frameCanvasRef.current && frameCanvasRef.current.updateFrame) {
+      frameCanvasRef.current.updateFrame(canvas);
+      toast.success('Frame extracted successfully');
+    }
+  }
+
   async function handleSave() {
     if (!project?.id) return;
 
@@ -824,15 +840,38 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
           </div>
         ) : (
           <>
-            {/* Video Canvas */}
-            <div className="flex-1 flex items-center justify-center bg-black">
-              <canvas
-                ref={canvasRef}
-                width={mediaInput.width}
-                height={mediaInput.height}
-                className="max-w-full max-h-full"
-                style={{ objectFit: 'contain' }}
-              />
+            {/* Video Canvas and Frame Preview */}
+            <div className="flex-1 flex gap-4 p-4 bg-slate-950">
+              {/* Main Video Canvas */}
+              <div className="flex-1 flex items-center justify-center bg-black rounded-lg overflow-hidden">
+                <canvas
+                  ref={canvasRef}
+                  width={mediaInput.width}
+                  height={mediaInput.height}
+                  className="max-w-full max-h-full"
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+
+              {/* Frame Preview Panel */}
+              <div className="w-96 flex flex-col gap-4 bg-slate-800 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-medium">Frame Extractor</h3>
+                  <FrameNavigator
+                    videoSink={mediaInput.videoSink}
+                    duration={mediaInput.duration}
+                    currentTime={currentTime}
+                    onSeek={handleSeekToTime}
+                    onFrameExtracted={handleFrameExtracted}
+                  />
+                </div>
+                <FrameCanvas
+                  ref={frameCanvasRef}
+                  width={mediaInput.width}
+                  height={mediaInput.height}
+                  className="flex-1"
+                />
+              </div>
             </div>
 
             {/* Playback Controls */}
