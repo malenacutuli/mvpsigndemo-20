@@ -191,7 +191,7 @@ Be helpful, concise, and proactive in suggesting improvements. Always provide co
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash', // Fast, efficient, and cost-effective
+          model: 'google/gemini-2.5-pro', // Most powerful Gemini model for superior reasoning
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: sanitizedMessage }
