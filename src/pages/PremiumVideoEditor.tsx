@@ -6,7 +6,7 @@ import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSubscription } from '@/hooks/useSubscription';
+import { usePremiumAccess } from '@/hooks/usePremiumAccess';
 import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTemplateGallery';
 import { Timeline } from '@/components/premium-editor/Timeline';
 import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
@@ -16,28 +16,14 @@ import { AIAssistant } from '@/components/premium-editor/AIAssistant';
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { subscription_tier, loading: subLoading } = useSubscription();
+  const { canAccess, tier, isAdmin, isLoading: accessLoading } = usePremiumAccess();
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [video, setVideo] = useState<any>(null);
   const [project, setProject] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [scenes, setScenes] = useState<any[]>([]);
-
-  // Check subscription tier
-  useEffect(() => {
-    if (!subLoading) {
-      const tier = subscription_tier || 'free';
-      const hasAccess = ['standard', 'advanced', 'enterprise'].includes(tier.toLowerCase());
-      setHasAccess(hasAccess);
-      
-      if (!hasAccess) {
-        toast.error('Premium Editor requires Standard plan or above');
-      }
-    }
-  }, [subscription_tier, subLoading]);
 
   // Sync video playback when currentTime changes from external source
   React.useEffect(() => {
@@ -48,9 +34,9 @@ export default function PremiumVideoEditor() {
 
   // Load or create project
   useEffect(() => {
-    if (!videoId || !hasAccess) return;
+    if (!videoId || !canAccess) return;
     loadOrCreateProject();
-  }, [videoId, hasAccess]);
+  }, [videoId, canAccess]);
 
   const loadOrCreateProject = async () => {
     try {
@@ -106,7 +92,7 @@ export default function PremiumVideoEditor() {
   };
 
   // Loading state
-  if (isLoading || subLoading) {
+  if (isLoading || accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -118,7 +104,7 @@ export default function PremiumVideoEditor() {
   }
 
   // No access state
-  if (!hasAccess) {
+  if (!canAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center">
@@ -153,9 +139,16 @@ export default function PremiumVideoEditor() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Premium Editor</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {project?.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {project?.name}
+              </span>
+              {isAdmin && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                  Admin Access
+                </span>
+              )}
+            </div>
             <Button variant="outline" onClick={() => navigate(`/videos/${videoId}`)}>
               Exit Editor
             </Button>
@@ -197,7 +190,7 @@ export default function PremiumVideoEditor() {
                 open={true}
                 premiumVideoId={videoId}
                 projectId={project?.id}
-                userTier={subscription_tier || 'free'}
+                userTier={tier}
                 onTemplateApply={(templateId) => {
                   console.log('Applied template:', templateId);
                   toast.success('Template applied');
