@@ -43,6 +43,7 @@ import { ExportPanel } from './ExportPanel';
 import { TransitionsEffectsPanel } from './TransitionsEffectsPanel';
 import { AIAssistantPanel } from './AIAssistantPanel';
 import { RenderPreview } from './RenderPreview';
+import { EditorWorkspace } from './EditorWorkspace';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -256,7 +257,37 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
 
   return (
     <div className="space-y-4">
-      {/* Analysis Card */}
+      {/* Check if we should show the full editor layout */}
+      {metadata && timelineScenes.length > 0 ? (
+        <EditorWorkspace
+          videoFile={videoFile!}
+          videoUrl={URL.createObjectURL(videoFile!)}
+          metadata={{
+            duration: metadata.duration,
+            width: metadata.width,
+            height: metadata.height,
+            fps: metadata.fps,
+          }}
+          scenes={timelineScenes}
+          onScenesChange={setTimelineScenes}
+          captions={captions}
+          onCaptionsChange={setCaptions}
+          audioTracks={audioTracks}
+          onAudioTracksChange={setAudioTracks}
+          currentTime={currentPlaybackTime}
+          onTimeUpdate={setCurrentPlaybackTime}
+          selectedSceneId={selectedSceneId}
+          onSceneSelect={(id) => {
+            setSelectedSceneId(id);
+            const scene = timelineScenes.find(s => s.id === id);
+            if (scene) {
+              setCurrentPlaybackTime(scene.startTime);
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* Analysis Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -783,6 +814,8 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
             </ScrollArea>
           </CardContent>
         </Card>
+      )}
+        </>
       )}
     </div>
   );
