@@ -11,6 +11,7 @@ import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTempl
 import { Timeline } from '@/components/premium-editor/Timeline';
 import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
 import { TextBasedEditor } from '@/components/premium-editor/TextBasedEditor';
+import { AIAssistant } from '@/components/premium-editor/AIAssistant';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
@@ -166,12 +167,20 @@ export default function PremiumVideoEditor() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-80 border-r overflow-y-auto">
-          <Tabs defaultValue="text" className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
+          <Tabs defaultValue="ai" className="w-full">
+            <TabsList className="w-full grid grid-cols-4">
+              <TabsTrigger value="ai">AI</TabsTrigger>
               <TabsTrigger value="text">Text</TabsTrigger>
               <TabsTrigger value="layout">Layout</TabsTrigger>
               <TabsTrigger value="templates">Templates</TabsTrigger>
             </TabsList>
+            <TabsContent value="ai" className="mt-0 h-[calc(100vh-200px)]">
+              <AIAssistant
+                projectId={project?.id || ''}
+                videoId={videoId!}
+                currentContext="premium-editor"
+              />
+            </TabsContent>
             <TabsContent value="text" className="mt-0 h-[calc(100vh-200px)]">
               <TextBasedEditor
                 videoId={videoId!}
