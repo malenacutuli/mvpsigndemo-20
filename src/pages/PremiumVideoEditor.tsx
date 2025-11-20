@@ -84,6 +84,26 @@ export default function PremiumVideoEditor() {
     }
   }, [currentTime]);
 
+  // Keyboard shortcuts - MUST be before conditional returns
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (project) saveProject();
+      }
+      
+      // Space to play/pause
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        togglePlayback();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [project, togglePlayback]);
+
   // Handle missing videoId
   if (!videoId) {
     return (
@@ -142,26 +162,6 @@ export default function PremiumVideoEditor() {
       setIsSaving(false);
     }
   };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+S / Cmd+S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        saveProject();
-      }
-      
-      // Space to play/pause
-      if (e.code === 'Space' && e.target === document.body) {
-        e.preventDefault();
-        togglePlayback();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [project, togglePlayback]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
