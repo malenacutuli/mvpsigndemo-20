@@ -192,3 +192,6 @@ verify_jwt = true
 [functions.premium-ai-health]
 verify_jwt = false
 
+[functions.video-ai-assistant]
+verify_jwt = true
+
