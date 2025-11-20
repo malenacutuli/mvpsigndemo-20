@@ -38,6 +38,7 @@ import { PremiumAIToolsPanel } from './PremiumAIToolsPanel';
 import { VideoTimeline } from './VideoTimeline';
 import { SceneManager } from './SceneManager';
 import { CaptionEditor } from './CaptionEditor';
+import { AudioEditor } from './AudioEditor';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -59,6 +60,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [timelineScenes, setTimelineScenes] = useState<any[]>([]);
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
   const [captions, setCaptions] = useState<any[]>([]);
+  const [audioTracks, setAudioTracks] = useState<any[]>([]);
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -505,6 +507,17 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
         <CaptionEditor
           captions={captions}
           onCaptionsChange={setCaptions}
+          currentTime={currentPlaybackTime}
+          videoDuration={metadata.duration}
+        />
+      )}
+
+      {/* Audio Editor */}
+      {metadata && (
+        <AudioEditor
+          videoFile={videoFile}
+          audioTracks={audioTracks}
+          onAudioTracksChange={setAudioTracks}
           currentTime={currentPlaybackTime}
           videoDuration={metadata.duration}
         />
