@@ -228,7 +228,7 @@ export function useDeleteTemplate() {
         .from('caption_templates')
         .select('template_type')
         .eq('id', templateId)
-        .single();
+        .maybeSingle();
 
       if (template?.template_type === 'preset') {
         throw new Error('Cannot delete system templates');
