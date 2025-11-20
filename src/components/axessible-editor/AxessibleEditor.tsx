@@ -5,7 +5,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Download, ArrowLeft, Play, Pause } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Input, ALL_FORMATS, BlobSource, VideoSampleSink } from 'mediabunny';
+import { 
+  Input, 
+  ALL_FORMATS, 
+  BlobSource, 
+  VideoSampleSink,
+  AudioSampleSink,
+  EncodedPacketSink,
+  type InputVideoTrack,
+  type InputAudioTrack,
+} from 'mediabunny';
 
 interface AxessibleEditorProps {
   videoId: string;
@@ -13,13 +22,22 @@ interface AxessibleEditorProps {
 
 interface MediaBunnyInput {
   input: Input | null;
-  videoTrack: any | null;
-  audioTrack: any | null;
+  videoTrack: InputVideoTrack | null;
+  audioTrack: InputAudioTrack | null;
   videoSink: VideoSampleSink | null;
+  audioSink: AudioSampleSink | null;
+  // For transmuxing (copying packets without re-encoding)
+  videoPacketSink: EncodedPacketSink | null;
+  audioPacketSink: EncodedPacketSink | null;
+  // Metadata needed for output sources
+  decoderConfig: any | null;
+  audioDecoderConfig: any | null;
   duration: number;
   width: number;
   height: number;
   fps: number;
+  rotation: number;
+  startTime: number;
 }
 
 export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
@@ -29,10 +47,17 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     videoTrack: null,
     audioTrack: null,
     videoSink: null,
+    audioSink: null,
+    videoPacketSink: null,
+    audioPacketSink: null,
+    decoderConfig: null,
+    audioDecoderConfig: null,
     duration: 0,
     width: 1920,
     height: 1080,
     fps: 30,
+    rotation: 0,
+    startTime: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -261,31 +286,57 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
 
       // 16. Get primary audio track info
       const audioTrack = await input.getPrimaryAudioTrack();
+      let audioSink: AudioSampleSink | null = null;
+      let audioPacketSink: EncodedPacketSink | null = null;
+      let audioDecoderConfig: any = null;
+
       if (audioTrack) {
+        const audioDecodable = await audioTrack.canDecode();
+        audioDecoderConfig = await audioTrack.getDecoderConfig();
+        
         console.log('Audio track info:', {
           codec: audioTrack.codec || 'unknown',
+          codecString: await audioTrack.getCodecParameterString(),
           channels: audioTrack.numberOfChannels,
           sampleRate: `${audioTrack.sampleRate} Hz`,
-          decodable: await audioTrack.canDecode(),
+          decodable: audioDecodable,
         });
+
+        if (audioDecodable) {
+          // Create sinks for both decoded samples and encoded packets
+          audioSink = new AudioSampleSink(audioTrack);
+          audioPacketSink = new EncodedPacketSink(audioTrack);
+          console.log('Created audio sinks (sample + packet)');
+        }
       } else {
         console.log('No audio track found');
       }
 
-      // 17. Create video sink for frame extraction
+      // 17. Create video sinks for both decoded frames and encoded packets
       const videoSink = new VideoSampleSink(videoTrack);
-      console.log('Created VideoSampleSink for frame extraction');
+      const videoPacketSink = new EncodedPacketSink(videoTrack);
+      console.log('Created video sinks (sample + packet)');
 
-      // 18. Update MediaBunny state
+      // 18. Update MediaBunny state with all sinks and metadata
+      // This structure is compatible with mediabunny output sources:
+      // - Use EncodedPacketSink -> EncodedVideoPacketSource for transmuxing (fast, no quality loss)
+      // - Use VideoSampleSink -> VideoSampleSource for re-encoding (when effects applied)
       setMediaInput({
         input,
         videoTrack,
         audioTrack,
         videoSink,
+        audioSink,
+        videoPacketSink,
+        audioPacketSink,
+        decoderConfig,
+        audioDecoderConfig,
         duration,
         width,
         height,
         fps,
+        rotation,
+        startTime: trackStartTime,
       });
 
       // 19. Get current user
@@ -439,7 +490,48 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   }
 
   async function handleExport() {
-    toast.info('Export functionality coming soon - will use MediaBunny Output API');
+    if (!mediaInput.input || !mediaInput.videoTrack) {
+      toast.error('No video loaded');
+      return;
+    }
+
+    toast.info('Export functionality coming soon', {
+      description: 'Will use MediaBunny Output API with EncodedPacketSource for transmuxing or VideoSampleSource for re-encoding',
+    });
+
+    // TODO: Implement export using MediaBunny Output API
+    // 
+    // Strategy:
+    // 1. For simple cuts/trims without effects:
+    //    - Use EncodedVideoPacketSource + EncodedAudioPacketSource
+    //    - Loop through videoPacketSink.packets() and audioPacketSink.packets()
+    //    - Fast transmuxing without quality loss
+    //
+    // 2. For edits with effects/overlays/captions:
+    //    - Use VideoSampleSource + AudioSampleSource
+    //    - Loop through videoSink.samples() and audioSink.samples()
+    //    - Apply effects during re-encoding
+    //
+    // Example structure:
+    // const output = new Output({
+    //   format: new Mp4OutputFormat(),
+    //   target: new BufferTarget(),
+    // });
+    //
+    // // For transmuxing:
+    // const videoSource = new EncodedVideoPacketSource(mediaInput.videoTrack.codec);
+    // const audioSource = new EncodedAudioPacketSource(mediaInput.audioTrack?.codec);
+    // output.addVideoTrack(videoSource);
+    // output.addAudioTrack(audioSource);
+    //
+    // await output.start();
+    //
+    // // Copy packets
+    // for await (const packet of mediaInput.videoPacketSink.packets(trimStart, trimEnd)) {
+    //   await videoSource.add(packet, packet.timestamp === 0 ? { decoderConfig: mediaInput.decoderConfig } : undefined);
+    // }
+    //
+    // await output.finalize();
   }
 
   return (
