@@ -41,6 +41,7 @@ import { CaptionEditor } from './CaptionEditor';
 import { AudioEditor } from './AudioEditor';
 import { ExportPanel } from './ExportPanel';
 import { TransitionsEffectsPanel } from './TransitionsEffectsPanel';
+import { AIAssistantPanel } from './AIAssistantPanel';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -533,6 +534,18 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
           onAudioTracksChange={setAudioTracks}
           currentTime={currentPlaybackTime}
           videoDuration={metadata.duration}
+        />
+      )}
+
+      {/* AI Assistant */}
+      {metadata && (
+        <AIAssistantPanel
+          videoContext={{
+            duration: metadata.duration,
+            sceneCount: timelineScenes.length,
+            captionCount: captions.length,
+            audioTrackCount: audioTracks.length,
+          }}
         />
       )}
 
