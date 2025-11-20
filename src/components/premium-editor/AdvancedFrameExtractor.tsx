@@ -40,6 +40,7 @@ import { SceneManager } from './SceneManager';
 import { CaptionEditor } from './CaptionEditor';
 import { AudioEditor } from './AudioEditor';
 import { ExportPanel } from './ExportPanel';
+import { TransitionsEffectsPanel } from './TransitionsEffectsPanel';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -62,6 +63,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
   const [captions, setCaptions] = useState<any[]>([]);
   const [audioTracks, setAudioTracks] = useState<any[]>([]);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | undefined>();
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -494,12 +496,22 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
           scenes={timelineScenes}
           onScenesChange={setTimelineScenes}
           onSceneSelect={(sceneId) => {
+            setSelectedSceneId(sceneId);
             const scene = timelineScenes.find(s => s.id === sceneId);
             if (scene) {
               setCurrentPlaybackTime(scene.startTime);
             }
           }}
           videoDuration={metadata.duration}
+        />
+      )}
+
+      {/* Transitions & Effects */}
+      {metadata && (
+        <TransitionsEffectsPanel
+          scenes={timelineScenes}
+          onScenesChange={setTimelineScenes}
+          selectedSceneId={selectedSceneId}
         />
       )}
 
