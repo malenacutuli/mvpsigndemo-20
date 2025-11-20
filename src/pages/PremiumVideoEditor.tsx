@@ -12,6 +12,7 @@ import { Timeline } from '@/components/premium-editor/Timeline';
 import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
 import { TextBasedEditor } from '@/components/premium-editor/TextBasedEditor';
 import { AIAssistant } from '@/components/premium-editor/AIAssistant';
+import { FillerWordDetector } from '@/components/premium-editor/FillerWordDetector';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
@@ -161,9 +162,10 @@ export default function PremiumVideoEditor() {
         {/* Left Sidebar */}
         <div className="w-80 border-r overflow-y-auto">
           <Tabs defaultValue="ai" className="w-full">
-            <TabsList className="w-full grid grid-cols-4">
+            <TabsList className="w-full grid grid-cols-5">
               <TabsTrigger value="ai">AI</TabsTrigger>
               <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="fillers">Fillers</TabsTrigger>
               <TabsTrigger value="layout">Layout</TabsTrigger>
               <TabsTrigger value="templates">Templates</TabsTrigger>
             </TabsList>
@@ -180,6 +182,18 @@ export default function PremiumVideoEditor() {
                 videoUrl={video?.url || ''}
                 currentTime={currentTime}
                 onTimeUpdate={(time) => setCurrentTime(time)}
+              />
+            </TabsContent>
+            <TabsContent value="fillers" className="mt-0 h-[calc(100vh-200px)] overflow-y-auto">
+              <FillerWordDetector 
+                videoId={videoId!}
+                onSeek={(time) => {
+                  setCurrentTime(time);
+                  if (videoRef.current) {
+                    videoRef.current.currentTime = time;
+                    videoRef.current.play();
+                  }
+                }}
               />
             </TabsContent>
             <TabsContent value="layout" className="mt-0">
