@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight, Sparkles, Wand2, Info, Volume2, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight, Sparkles, Wand2, Info, Volume2, FileText, Crop } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -27,6 +28,7 @@ import {
   type ExtractedFrame
 } from '@/lib/advancedFrameExtractor';
 import { editImageWithAI, AI_EDIT_PRESETS, type AIEditPreset } from '@/lib/aiImageEditor';
+import { FrameCropTool } from './FrameCropTool';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -42,6 +44,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [aiEditing, setAiEditing] = useState(false);
   const [aiPreset, setAiPreset] = useState<AIEditPreset>('enhance');
   const [customPrompt, setCustomPrompt] = useState('');
+  const [showCropTool, setShowCropTool] = useState(false);
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -194,6 +197,28 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
       });
     } finally {
       setAiEditing(false);
+    }
+  };
+
+  const handleCropApply = async (croppedImageUrl: string, rotation: number) => {
+    const frame = extractedFrames[selectedFrameIndex];
+    if (!frame) return;
+
+    try {
+      // Update frame with cropped/rotated version
+      const updatedFrames = [...extractedFrames];
+      updatedFrames[selectedFrameIndex] = {
+        ...frame,
+        dataUrl: croppedImageUrl,
+        blob: await (await fetch(croppedImageUrl)).blob()
+      };
+      setExtractedFrames(updatedFrames);
+      setShowCropTool(false);
+
+      toast.success('Transformations applied');
+    } catch (error: any) {
+      console.error('Failed to apply crop:', error);
+      toast.error('Failed to apply crop');
     }
   };
 
@@ -403,16 +428,117 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
             {/* Main Frame Display */}
             {selectedFrame && (
               <div className="space-y-2">
-                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  <img 
-                    src={selectedFrame.dataUrl} 
-                    alt={`Frame at ${selectedFrame.timestamp.toFixed(2)}s`}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                <Tabs defaultValue="preview" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <TabsTrigger value="crop">
+                      <Crop className="w-3 h-3 mr-1" />
+                      Crop/Rotate
+                    </TabsTrigger>
+                    <TabsTrigger value="ai">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI Edit
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="preview" className="mt-3">
+                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                      <img 
+                        src={selectedFrame.dataUrl} 
+                        alt={`Frame at ${selectedFrame.timestamp.toFixed(2)}s`}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="crop" className="mt-3">
+                    <FrameCropTool
+                      imageUrl={selectedFrame.dataUrl}
+                      imageWidth={selectedFrame.width}
+                      imageHeight={selectedFrame.height}
+                      onApply={handleCropApply}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="ai" className="mt-3">
+                    <Card className="bg-muted/50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          AI Frame Editor
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          Enhance or transform frames with AI
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/* Preset Selection */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Quick Presets</label>
+                          <div className="flex gap-2">
+                            <Select value={aiPreset} onValueChange={(value) => setAiPreset(value as AIEditPreset)}>
+                              <SelectTrigger className="flex-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="enhance">✨ Enhance</SelectItem>
+                                <SelectItem value="artistic">🎨 Artistic</SelectItem>
+                                <SelectItem value="cinematic">🎬 Cinematic</SelectItem>
+                                <SelectItem value="vintage">📷 Vintage</SelectItem>
+                                <SelectItem value="bw">⚫ Black & White</SelectItem>
+                                <SelectItem value="blur_background">🌫️ Blur BG</SelectItem>
+                                <SelectItem value="remove_noise">✨ Denoise</SelectItem>
+                                <SelectItem value="dramatic">⚡ Dramatic</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={() => handleAIEdit(false)}
+                              disabled={aiEditing}
+                              size="sm"
+                            >
+                              {aiEditing ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Wand2 className="w-4 h-4 mr-2" />
+                                  Apply
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Custom Prompt */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Custom Prompt</label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="e.g., Make it look like a watercolor painting"
+                              value={customPrompt}
+                              onChange={(e) => setCustomPrompt(e.target.value)}
+                              disabled={aiEditing}
+                              className="flex-1 text-sm"
+                            />
+                            <Button
+                              onClick={() => handleAIEdit(true)}
+                              disabled={aiEditing || !customPrompt.trim()}
+                              size="sm"
+                              variant="secondary"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
                 
                 {/* Frame Info */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm pt-2">
                   <div className="flex gap-3">
                     <span className="text-muted-foreground">
                       Time: <span className="font-medium text-foreground">{selectedFrame.timestamp.toFixed(2)}s</span>
@@ -441,81 +567,6 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                     Download
                   </Button>
                 </div>
-
-                {/* AI Editing Controls */}
-                <Card className="bg-muted/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      AI Frame Editor
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Enhance or transform frames with AI
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Preset Selection */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium">Quick Presets</label>
-                      <div className="flex gap-2">
-                        <Select value={aiPreset} onValueChange={(value) => setAiPreset(value as AIEditPreset)}>
-                          <SelectTrigger className="flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="enhance">✨ Enhance</SelectItem>
-                            <SelectItem value="artistic">🎨 Artistic</SelectItem>
-                            <SelectItem value="cinematic">🎬 Cinematic</SelectItem>
-                            <SelectItem value="vintage">📷 Vintage</SelectItem>
-                            <SelectItem value="bw">⚫ Black & White</SelectItem>
-                            <SelectItem value="blur_background">🌫️ Blur BG</SelectItem>
-                            <SelectItem value="remove_noise">✨ Denoise</SelectItem>
-                            <SelectItem value="dramatic">⚡ Dramatic</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          onClick={() => handleAIEdit(false)}
-                          disabled={aiEditing}
-                          size="sm"
-                        >
-                          {aiEditing ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <Wand2 className="w-4 h-4 mr-2" />
-                              Apply
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Custom Prompt */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium">Custom Prompt</label>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="e.g., Make it look like a watercolor painting"
-                          value={customPrompt}
-                          onChange={(e) => setCustomPrompt(e.target.value)}
-                          disabled={aiEditing}
-                          className="flex-1 text-sm"
-                        />
-                        <Button
-                          onClick={() => handleAIEdit(true)}
-                          disabled={aiEditing || !customPrompt.trim()}
-                          size="sm"
-                          variant="secondary"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             )}
 
