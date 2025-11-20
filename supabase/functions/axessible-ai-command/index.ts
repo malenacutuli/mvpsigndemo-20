@@ -12,6 +12,7 @@ interface CommandRequest {
   projectId: string;
   videoId: string;
   currentContext: string;
+  model?: 'openai' | 'gemini'; // Allow choosing AI provider
 }
 
 // Rate limiting: 10 commands per minute per user
@@ -40,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, message, projectId, videoId, currentContext }: CommandRequest = await req.json();
+    const { sessionId, message, projectId, videoId, currentContext, model = 'gemini' }: CommandRequest = await req.json();
 
     // Sanitize user input
     const sanitizedMessage = message.trim().slice(0, 1000);
@@ -177,45 +178,101 @@ If you need clarification or just answering a question:
 
 Be helpful, concise, and proactive in suggesting improvements. Always provide confidence scores for actions (0.0-1.0).`;
 
-    // Call OpenAI GPT-4
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: sanitizedMessage }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
-    });
+    let aiMessage: string;
+    let aiData: any;
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', openaiResponse.status, errorData);
-      
-      if (openaiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'OpenAI rate limit exceeded',
-            response: 'AI service is experiencing high demand. Please try again in a moment.',
-            action: null
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    // Choose AI provider based on model parameter
+    if (model === 'gemini') {
+      // Use Lovable AI with Gemini
+      const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash', // Fast, efficient, and cost-effective
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: sanitizedMessage }
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!lovableResponse.ok) {
+        const errorData = await lovableResponse.text();
+        console.error('Lovable AI error:', lovableResponse.status, errorData);
+        
+        if (lovableResponse.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Rate limit exceeded',
+              response: 'AI service is experiencing high demand. Please try again in a moment.',
+              action: null
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        if (lovableResponse.status === 402) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Payment required',
+              response: 'AI credits depleted. Please add credits to continue using the AI assistant.',
+              action: null
+            }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
       }
-      
-      throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
-    }
 
-    const aiData = await openaiResponse.json();
-    const aiMessage = aiData.choices[0].message.content;
+      aiData = await lovableResponse.json();
+      aiMessage = aiData.choices[0].message.content;
+
+    } else {
+      // Use OpenAI GPT-4
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: sanitizedMessage }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!openaiResponse.ok) {
+        const errorData = await openaiResponse.text();
+        console.error('OpenAI API error:', openaiResponse.status, errorData);
+        
+        if (openaiResponse.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'OpenAI rate limit exceeded',
+              response: 'AI service is experiencing high demand. Please try again in a moment.',
+              action: null
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+      }
+
+      aiData = await openaiResponse.json();
+      aiMessage = aiData.choices[0].message.content;
+    }
 
     // Try to parse as JSON (for commands)
     let parsedResponse;
