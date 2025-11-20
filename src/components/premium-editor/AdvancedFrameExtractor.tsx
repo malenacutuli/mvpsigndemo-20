@@ -32,6 +32,7 @@ import { editImageWithAI, AI_EDIT_PRESETS, type AIEditPreset } from '@/lib/aiIma
 import { FrameCropTool } from './FrameCropTool';
 import { ExportQualitySettings, type ExportSettings } from './ExportQualitySettings';
 import { SubtitleEditor } from './SubtitleEditor';
+import { VideoExporter } from './VideoExporter';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -392,12 +393,20 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                   </TabsContent>
 
                   <TabsContent value="export" className="mt-3">
-                    <ExportQualitySettings
-                      videoDuration={metadata.duration}
-                      hasAlpha={metadata.hasAlpha}
-                      hasHDR={metadata.hdr}
-                      onSettingsChange={setExportSettings}
-                    />
+                    <div className="space-y-4">
+                      <ExportQualitySettings
+                        videoDuration={metadata.duration}
+                        hasAlpha={metadata.hasAlpha}
+                        hasHDR={metadata.hdr}
+                        onSettingsChange={setExportSettings}
+                      />
+                      
+                      <VideoExporter
+                        videoFile={videoFile}
+                        exportSettings={exportSettings}
+                        videoDuration={metadata.duration}
+                      />
+                    </div>
                   </TabsContent>
                 </Tabs>
               </div>
