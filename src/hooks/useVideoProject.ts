@@ -40,9 +40,12 @@ export function useVideoProject(projectId?: string, videoId?: string) {
             )
           `)
           .eq('id', projectId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
+        if (!data) {
+          throw new Error('Project not found');
+        }
         return data;
       }
 
@@ -61,7 +64,7 @@ export function useVideoProject(projectId?: string, videoId?: string) {
             )
           `)
           .eq('id', videoId)
-          .single();
+          .maybeSingle();
 
         if (existingProject) return existingProject;
 
@@ -70,7 +73,7 @@ export function useVideoProject(projectId?: string, videoId?: string) {
           .from('videos')
           .select('title, duration_seconds')
           .eq('id', videoId)
-          .single();
+          .maybeSingle();
 
         // Create new project using video ID as project ID
         const { data: newProject, error: createError } = await supabase
