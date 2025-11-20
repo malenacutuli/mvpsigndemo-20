@@ -25,7 +25,7 @@ export default function PremiumVideoEditor() {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [video, setVideo] = useState<any>(null);
   const [project, setProject] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Note: local isLoading removed; rely on accessLoading from usePremiumAccess
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [scenes, setScenes] = useState<any[]>([]);
@@ -51,8 +51,8 @@ export default function PremiumVideoEditor() {
     }
   }, [currentTime]);
 
-  // Loading state
-  if (isLoading || accessLoading) {
+  // Loading state (subscription/access only)
+  if (accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
