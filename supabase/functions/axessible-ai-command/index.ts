@@ -186,60 +186,9 @@ If no action is needed, set "action" to null. Do NOT include any fields outside 
     let aiMessage: string;
     let aiData: any;
 
-    // Choose AI provider
-    if (model === 'gemini-direct') {
-      // Use Google Gemini 3 Pro directly
-      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent', {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': Deno.env.get('GOOGLE_GEMINI_API_KEY')!,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: systemPrompt },
-              { text: sanitizedMessage }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
-        }),
-      });
-
-      if (!geminiResponse.ok) {
-        const errorBody = await geminiResponse.text();
-        console.error('Gemini API error:', geminiResponse.status, errorBody);
-
-        // Handle known rate limit case explicitly
-        if (geminiResponse.status === 429) {
-          return new Response(
-            JSON.stringify({
-              error: 'Rate limit exceeded',
-              response: 'Gemini API rate limit reached. Please wait a bit and try again.',
-              action: null
-            }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // For other errors, return a safe JSON response instead of throwing
-        return new Response(
-          JSON.stringify({
-            error: `Gemini API error ${geminiResponse.status}`,
-            response: 'The AI service had trouble answering your request. Please try again or rephrase.',
-            action: null
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      aiData = await geminiResponse.json();
-      aiMessage = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '{"response": "Error processing request"}';
-
-    } else if (model === 'gemini-lovable') {
-      // Use Lovable AI with Gemini 2.5 Pro
+    // Route to AI providers - both Gemini variants use stable Lovable AI Gateway
+    if (model === 'gemini-direct' || model === 'gemini-lovable') {
+      // Use Lovable AI with Gemini 2.5 for all Gemini requests
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -247,7 +196,7 @@ If no action is needed, set "action" to null. Do NOT include any fields outside 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-pro',
+          model: 'google/gemini-2.5-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: sanitizedMessage }
@@ -257,8 +206,8 @@ If no action is needed, set "action" to null. Do NOT include any fields outside 
       });
 
       if (!lovableResponse.ok) {
-        const errorData = await lovableResponse.text();
-        console.error('Lovable AI error:', lovableResponse.status, errorData);
+        const errorText = await lovableResponse.text();
+        console.error('Lovable AI error:', lovableResponse.status, errorText);
         
         if (lovableResponse.status === 429) {
           return new Response(
@@ -282,7 +231,15 @@ If no action is needed, set "action" to null. Do NOT include any fields outside 
           );
         }
         
-        throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
+        // All other errors: return safe 200 with friendly message
+        return new Response(
+          JSON.stringify({
+            error: `Lovable AI error ${lovableResponse.status}`,
+            response: 'The AI service had trouble answering your request. Please try again or rephrase.',
+            action: null
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       aiData = await lovableResponse.json();
@@ -323,7 +280,15 @@ If no action is needed, set "action" to null. Do NOT include any fields outside 
           );
         }
         
-        throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+        // All other errors: return safe 200 with friendly message
+        return new Response(
+          JSON.stringify({
+            error: `OpenAI error ${openaiResponse.status}`,
+            response: 'The AI service had trouble answering your request. Please try again or rephrase.',
+            action: null
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       aiData = await openaiResponse.json();
