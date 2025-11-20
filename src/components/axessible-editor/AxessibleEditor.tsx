@@ -12,8 +12,17 @@ import {
   VideoSampleSink,
   AudioSampleSink,
   EncodedPacketSink,
+  Output,
+  Conversion,
+  Mp4OutputFormat,
+  WebMOutputFormat,
+  MovOutputFormat,
+  BufferTarget,
+  QUALITY_HIGH,
+  QUALITY_MEDIUM,
   type InputVideoTrack,
   type InputAudioTrack,
+  type VideoSample,
 } from 'mediabunny';
 
 interface AxessibleEditorProps {
@@ -61,6 +70,8 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
@@ -495,131 +506,160 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       return;
     }
 
-    toast.info('Export functionality coming soon', {
-      description: 'Will use MediaBunny Output API with multiple format options',
-    });
+    setExporting(true);
+    setExportProgress(0);
 
-    // TODO: Implement export using MediaBunny Output API
-    // 
-    // Available Output Formats:
-    // 
-    // 1. MP4 (Mp4OutputFormat) - Most common format
-    //    - Options: fastStart ('in-memory', 'reserve', 'fragmented', false)
-    //    - 'fragmented': Good for streaming, append-only, requires packet buffering
-    //    - 'in-memory': Best quality, higher memory usage
-    //    - Supports video rotation metadata
-    //    - Callbacks: onFtyp, onMoov, onMdat, onMoof
-    //
-    // 2. QuickTime (MovOutputFormat) - Apple ecosystem
-    //    - Same options as MP4
-    //    - Better for ProRes, higher quality workflows
-    //
-    // 3. WebM (WebMOutputFormat) - Web-optimized, open format
-    //    - Options: appendOnly, minimumClusterDuration
-    //    - Supports transparency (VP8/VP9 with alpha)
-    //    - Good for web streaming
-    //    - Callbacks: onEbmlHeader, onSegmentHeader, onCluster
-    //
-    // 4. Matroska (MkvOutputFormat) - Universal container
-    //    - Same options as WebM
-    //    - Supports more codecs than WebM
-    //
-    // 5. Audio-only formats:
-    //    - MP3 (Mp3OutputFormat): xingHeader option
-    //    - WAVE (WavOutputFormat): large (RF64), metadataFormat
-    //    - Ogg (OggOutputFormat): Append-only by default
-    //    - ADTS (AdtsOutputFormat): Raw AAC
-    //    - FLAC (FlacOutputFormat): Lossless
-    //
-    // Export Strategy:
-    //
-    // A. For simple cuts/trims without effects (FAST, NO QUALITY LOSS):
-    //    - Use EncodedVideoPacketSource + EncodedAudioPacketSource
-    //    - Loop through videoPacketSink.packets() and audioPacketSink.packets()
-    //    - Transmux (copy) packets without re-encoding
-    //
-    // B. For edits with effects/overlays/captions (SLOWER, RE-ENCODED):
-    //    - Use VideoSampleSource + AudioSampleSource
-    //    - Loop through videoSink.samples() and audioSink.samples()
-    //    - Apply canvas effects during re-encoding
-    //    - Can burn in captions with CWI colors
-    //
-    // Example: Transmuxing to MP4 with Fast Start
-    // 
-    // import { 
-    //   Output, 
-    //   Mp4OutputFormat, 
-    //   BufferTarget,
-    //   EncodedVideoPacketSource,
-    //   EncodedAudioPacketSource,
-    // } from 'mediabunny';
-    //
-    // const output = new Output({
-    //   format: new Mp4OutputFormat({ 
-    //     fastStart: 'in-memory', // or 'fragmented' for streaming
-    //     onMoov: (data, position) => {
-    //       console.log(`Metadata written at byte ${position}`);
-    //     },
-    //   }),
-    //   target: new BufferTarget(), // or StreamTarget for uploads
-    // });
-    //
-    // // Add video track (transmux)
-    // const videoSource = new EncodedVideoPacketSource(
-    //   mediaInput.videoTrack.codec?.name || 'avc'
-    // );
-    // output.addVideoTrack(videoSource);
-    //
-    // // Add audio track if present
-    // if (mediaInput.audioTrack && mediaInput.audioPacketSink) {
-    //   const audioSource = new EncodedAudioPacketSource(
-    //     mediaInput.audioTrack.codec?.name || 'aac'
-    //   );
-    //   output.addAudioTrack(audioSource);
-    // }
-    //
-    // // Set metadata tags
-    // output.setMetadataTags({
-    //   title: project?.name || 'Exported Video',
-    //   encoder: 'Axessible Editor',
-    // });
-    //
-    // await output.start();
-    //
-    // // Copy video packets
-    // let firstVideoPacket = true;
-    // for await (const packet of mediaInput.videoPacketSink!.packets(trimStart, trimEnd)) {
-    //   const meta = firstVideoPacket ? { decoderConfig: mediaInput.decoderConfig } : undefined;
-    //   await videoSource.add(packet, meta);
-    //   firstVideoPacket = false;
-    // }
-    // videoSource.close();
-    //
-    // // Copy audio packets
-    // if (mediaInput.audioPacketSink) {
-    //   let firstAudioPacket = true;
-    //   for await (const packet of mediaInput.audioPacketSink.packets(trimStart, trimEnd)) {
-    //     const meta = firstAudioPacket ? { decoderConfig: mediaInput.audioDecoderConfig } : undefined;
-    //     await audioSource.add(packet, meta);
-    //     firstAudioPacket = false;
-    //   }
-    //   audioSource.close();
-    // }
-    //
-    // await output.finalize();
-    //
-    // // Get the file
-    // const exportedFile = new Blob([output.target.buffer!], { 
-    //   type: output.format.mimeType 
-    // });
-    //
-    // // Download
-    // const url = URL.createObjectURL(exportedFile);
-    // const a = document.createElement('a');
-    // a.href = url;
-    // a.download = `${project?.name || 'video'}${output.format.fileExtension}`;
-    // a.click();
-    // URL.revokeObjectURL(url);
+    try {
+      console.log('Starting export using Conversion API...');
+
+      // Create output with MP4 format
+      const output = new Output({
+        format: new Mp4OutputFormat({
+          fastStart: 'in-memory', // Best quality, places metadata at start
+        }),
+        target: new BufferTarget(),
+      });
+
+      // Should we burn in captions?
+      const burnCaptions = transcriptSegments.length > 0;
+
+      // Initialize conversion with options
+      const conversion = await Conversion.init({
+        input: mediaInput.input,
+        output,
+        
+        // Video processing to burn in captions with CWI colors
+        video: burnCaptions ? {
+          bitrate: QUALITY_HIGH,
+          process: (sample: VideoSample) => {
+            // Create canvas for compositing
+            const canvas = new OffscreenCanvas(
+              sample.displayWidth,
+              sample.displayHeight
+            );
+            const ctx = canvas.getContext('2d')!;
+
+            // Draw video frame
+            sample.draw(ctx, 0, 0);
+
+            // Find active caption at this timestamp
+            const activeSegment = transcriptSegments.find(
+              seg => seg.start_time <= sample.timestamp && seg.end_time >= sample.timestamp
+            );
+
+            if (activeSegment) {
+              // Draw caption with CWI color
+              const text = activeSegment.text;
+              const color = activeSegment.speaker_color || '#FFFFFF';
+
+              ctx.font = 'bold 48px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+
+              const x = canvas.width / 2;
+              const y = canvas.height - 80;
+
+              // Background
+              const metrics = ctx.measureText(text);
+              const padding = 30;
+              const bgX = x - metrics.width / 2 - padding;
+              const bgY = y - 48 - padding;
+              const bgWidth = metrics.width + padding * 2;
+              const bgHeight = 48 + padding * 2;
+
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+              ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 12);
+              ctx.fill();
+
+              // Text with character color
+              ctx.fillStyle = color;
+              ctx.fillText(text, x, y);
+            }
+
+            return canvas;
+          },
+        } : {
+          // No caption burning - just use high quality
+          bitrate: QUALITY_HIGH,
+        },
+        
+        audio: {
+          bitrate: QUALITY_HIGH,
+        },
+
+        // Set metadata
+        tags: {
+          title: project?.name || 'Exported Video',
+          comment: burnCaptions 
+            ? 'Exported with burned-in CWI color-coded captions from Axessible Editor' 
+            : 'Exported from Axessible Editor',
+        },
+      });
+
+      // Check if conversion is valid
+      if (!conversion.isValid) {
+        console.error('Conversion is invalid:', conversion.discardedTracks);
+        throw new Error(
+          `Cannot export: ${conversion.discardedTracks.map(t => t.reason).join(', ')}`
+        );
+      }
+
+      console.log('Conversion initialized:', {
+        utilizedTracks: conversion.utilizedTracks.length,
+        discardedTracks: conversion.discardedTracks.length,
+      });
+
+      // Track progress
+      conversion.onProgress = (progress: number) => {
+        setExportProgress(Math.round(progress * 100));
+        console.log(`Export progress: ${Math.round(progress * 100)}%`);
+      };
+
+      // Execute conversion
+      toast.info('Exporting video...', {
+        description: burnCaptions 
+          ? 'Burning in captions with CWI colors' 
+          : 'Processing video',
+      });
+
+      await conversion.execute();
+
+      console.log('Conversion complete');
+
+      // Get the exported file
+      const exportedBuffer = output.target.buffer!;
+      const exportedFile = new Blob([exportedBuffer], { 
+        type: output.format.mimeType 
+      });
+
+      const sizeMB = (exportedFile.size / 1024 / 1024).toFixed(2);
+      console.log(`Export size: ${sizeMB} MB`);
+
+      // Download the file
+      const url = URL.createObjectURL(exportedFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project?.name || 'video'}${output.format.fileExtension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      toast.success('Video exported successfully', {
+        description: `${sizeMB} MB ${burnCaptions ? 'with captions' : ''}`,
+      });
+
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      toast.error('Export failed', {
+        description: error.message || 'Check console for details',
+      });
+    } finally {
+      setExporting(false);
+      setExportProgress(0);
+    }
   }
 
   return (
@@ -667,11 +707,20 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         
         <Button
           onClick={handleExport}
-          disabled={!project?.id}
+          disabled={!project?.id || exporting}
           className="bg-green-600 hover:bg-green-700 text-white"
         >
-          <Download className="w-4 h-4 mr-2" />
-          Export
+          {exporting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              {exportProgress > 0 ? `${exportProgress}%` : 'Exporting...'}
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </>
+          )}
         </Button>
       </div>
 
