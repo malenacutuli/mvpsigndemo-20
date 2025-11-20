@@ -69,7 +69,7 @@ export function useCaptionTemplates() {
         .from('caption_templates')
         .select('*')
         .eq('template_type', 'preset')
-        .order('usage_count', { ascending: false });
+        .order('use_count', { ascending: false });
 
       if (error) throw error;
       return (data || []) as unknown as CaptionTemplate[];
