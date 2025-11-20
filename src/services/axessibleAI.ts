@@ -18,7 +18,7 @@ export async function sendAICommand(
   projectId: string,
   videoId: string,
   currentContext: string,
-  model: 'openai' | 'gemini' = 'gemini' // Default to Gemini (faster & more cost-effective)
+  model: 'openai' | 'gemini-lovable' | 'gemini-direct' = 'gemini-direct' // Default to Gemini 3 Pro
 ): Promise<AIResponse> {
   try {
     const { data, error } = await supabase.functions.invoke('axessible-ai-command', {

@@ -12,7 +12,7 @@ interface CommandRequest {
   projectId: string;
   videoId: string;
   currentContext: string;
-  model?: 'openai' | 'gemini'; // Allow choosing AI provider
+  model?: 'openai' | 'gemini-lovable' | 'gemini-direct'; // AI provider selection
 }
 
 // Rate limiting: 10 commands per minute per user
@@ -41,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, message, projectId, videoId, currentContext, model = 'gemini' }: CommandRequest = await req.json();
+    const { sessionId, message, projectId, videoId, currentContext, model = 'gemini-direct' }: CommandRequest = await req.json();
 
     // Sanitize user input
     const sanitizedMessage = message.trim().slice(0, 1000);
@@ -125,65 +125,103 @@ serve(async (req) => {
       .select('id, name')
       .eq('template_type', 'preset');
 
-    // Build AI system prompt with available commands
-    const systemPrompt = `You are Axessible AI, a specialized video editing assistant for the Axessible Premium Video Editor.
+    // Optimized system prompt for Gemini 3
+    const systemPrompt = `You are Axessible AI for the Axessible Premium Video Editor. Be concise and direct.
 
-CURRENT PROJECT STATE:
-- Project: "${project?.name || 'Untitled'}"
-- Scenes: ${scenes?.length || 0}
-- Duration: ${project?.duration_seconds || 0}s
-- Current tab: ${currentContext}
+PROJECT: "${project?.name || 'Untitled'}" | ${scenes?.length || 0} scenes | ${project?.duration_seconds || 0}s | Tab: ${currentContext}
 
-AVAILABLE COMMANDS:
-You can execute these commands by responding with a JSON action object:
+TEMPLATES:
+${templates?.map(t => `- ${t.name} (id: ${t.id})`).join('\n') || 'None'}
 
-1. apply_template: Apply a caption template
-   {"action": "apply_template", "template_name": "Viral TikTok", "scene_id": "optional"}
+COMMANDS:
+1. apply_template - Apply caption template
+2. delete_segments - Remove transcript segments  
+3. create_scene - Add new scene
+4. change_layout - Change scene layout
+5. modify_timing - Adjust scene timing
+6. generate_clip - Create social media clip
 
-2. delete_segments: Delete transcript segments
-   {"action": "delete_segments", "parameters": {"segment_indices": [2, 5, 7]}, "confidence": 0.9}
+Based on the information above, help with the following request:`;
 
-3. create_scene: Add a new scene
-   {"action": "create_scene", "parameters": {"layout": "fullscreen|split|pip", "duration": 10}, "confidence": 0.95}
-
-4. change_layout: Change scene layout
-   {"action": "change_layout", "parameters": {"scene_id": "uuid", "layout": "split"}, "confidence": 0.85}
-
-5. modify_timing: Adjust scene timing
-   {"action": "modify_timing", "parameters": {"scene_id": "uuid", "start_time": 5.5, "end_time": 15.0}, "confidence": 0.9}
-
-6. generate_clip: Create social media clip
-   {"action": "generate_clip", "parameters": {"platform": "tiktok|instagram_reel|youtube_short|linkedin", "segments": [0, 1, 2]}, "confidence": 0.8}
-
-AVAILABLE TEMPLATES:
-${templates?.map(t => `- ${t.name} (id: ${t.id})`).join('\n') || 'No templates available'}
-
-RESPONSE FORMAT:
-CRITICAL: Always respond with valid JSON only. No markdown, no code blocks, just raw JSON.
-
-If you understand a command, respond with:
-{
-  "response": "Human-readable confirmation",
-  "action": {
-    "action": "action_name",
-    "parameters": {...},
-    "confidence": 0.0-1.0
-  }
-}
-
-If you need clarification or just answering a question:
-{
-  "response": "Your answer here"
-}
-
-Be helpful, concise, and proactive in suggesting improvements. Always provide confidence scores for actions (0.0-1.0).`;
+    // JSON schema for structured output
+    const responseSchema = {
+      type: "object",
+      properties: {
+        response: {
+          type: "string",
+          description: "Natural language response to the user"
+        },
+        action: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["apply_template", "delete_segments", "create_scene", "modify_timing", "change_layout", "update_scene", "generate_clip"]
+            },
+            parameters: {
+              type: "object",
+              description: "Action-specific parameters"
+            },
+            confidence: {
+              type: "number",
+              minimum: 0,
+              maximum: 1
+            }
+          }
+        }
+      },
+      required: ["response"]
+    };
 
     let aiMessage: string;
     let aiData: any;
 
-    // Choose AI provider based on model parameter
-    if (model === 'gemini') {
-      // Use Lovable AI with Gemini
+    // Choose AI provider
+    if (model === 'gemini-direct') {
+      // Use Google Gemini 3 Pro directly
+      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent', {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': Deno.env.get('GOOGLE_GEMINI_API_KEY')!,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              { text: sanitizedMessage }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema
+          }
+        }),
+      });
+
+      if (!geminiResponse.ok) {
+        const errorData = await geminiResponse.text();
+        console.error('Gemini API error:', geminiResponse.status, errorData);
+        
+        if (geminiResponse.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Rate limit exceeded',
+              response: 'Gemini API rate limit reached. Please try again in a moment.',
+              action: null
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
+      }
+
+      aiData = await geminiResponse.json();
+      aiMessage = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '{"response": "Error processing request"}';
+
+    } else if (model === 'gemini-lovable') {
+      // Use Lovable AI with Gemini 2.5 Pro
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -191,7 +229,7 @@ Be helpful, concise, and proactive in suggesting improvements. Always provide co
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-pro', // Most powerful Gemini model for superior reasoning
+          model: 'google/gemini-2.5-pro',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: sanitizedMessage }
@@ -233,7 +271,7 @@ Be helpful, concise, and proactive in suggesting improvements. Always provide co
       aiMessage = aiData.choices[0].message.content;
 
     } else {
-      // Use OpenAI GPT-4
+      // Use OpenAI GPT-4o-mini
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
