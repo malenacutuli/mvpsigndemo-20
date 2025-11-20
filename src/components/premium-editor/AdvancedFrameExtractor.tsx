@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight, Sparkles, Wand2, Info, Volume2, FileText, Crop } from 'lucide-react';
+import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight, Sparkles, Wand2, Info, Volume2, FileText, Crop, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -29,6 +29,7 @@ import {
 } from '@/lib/advancedFrameExtractor';
 import { editImageWithAI, AI_EDIT_PRESETS, type AIEditPreset } from '@/lib/aiImageEditor';
 import { FrameCropTool } from './FrameCropTool';
+import { ExportQualitySettings, type ExportSettings } from './ExportQualitySettings';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -45,6 +46,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [aiPreset, setAiPreset] = useState<AIEditPreset>('enhance');
   const [customPrompt, setCustomPrompt] = useState('');
   const [showCropTool, setShowCropTool] = useState(false);
+  const [exportSettings, setExportSettings] = useState<ExportSettings | null>(null);
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -257,106 +259,123 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
             <>
               {/* Metadata Display */}
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Codec</div>
-                    <Badge variant="secondary">{metadata.codec}</Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Resolution</div>
-                    <div className="font-medium">{metadata.width}x{metadata.height}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Frame Rate</div>
-                    <div className="font-medium">{metadata.fps.toFixed(2)} fps</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Duration</div>
-                    <div className="font-medium">{metadata.duration.toFixed(2)}s</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Total Frames</div>
-                    <div className="font-medium">{metadata.totalFrames}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Key Frames</div>
-                    <div className="font-medium flex items-center gap-1">
-                      <Key className="w-3 h-3" />
-                      {metadata.totalKeyFrames}
-                    </div>
-                  </div>
-                  {metadata.bitrate && (
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground">Bitrate</div>
-                      <div className="font-medium">{(metadata.bitrate / 1_000_000).toFixed(2)} Mbps</div>
-                    </div>
-                  )}
-                  {metadata.hasAlpha && (
-                    <div className="col-span-2">
-                      <Badge variant="outline" className="bg-primary/10">
-                        ✓ Alpha Channel
-                      </Badge>
-                    </div>
-                  )}
-                </div>
+                <Tabs defaultValue="overview" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="tracks">Tracks</TabsTrigger>
+                    <TabsTrigger value="export">
+                      <SettingsIcon className="w-3 h-3 mr-1" />
+                      Export
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* Track Information */}
-                {metadata.tracks && metadata.tracks.length > 0 && (
-                  <Collapsible>
-                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:underline">
-                      <Info className="w-4 h-4" />
-                      Track Details ({metadata.tracks.length} tracks)
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-3 space-y-2">
-                      {metadata.tracks.map((track, idx) => (
-                        <Card key={idx} className="p-3 bg-muted/30">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5">
-                              {track.type === 'video' && <Image className="w-4 h-4 text-primary" />}
-                              {track.type === 'audio' && <Volume2 className="w-4 h-4 text-accent" />}
-                              {track.type === 'subtitle' && <FileText className="w-4 h-4 text-muted-foreground" />}
-                            </div>
-                            <div className="flex-1 space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {track.type}
-                                </Badge>
-                                <span className="text-xs font-medium">{track.codec}</span>
+                  <TabsContent value="overview" className="space-y-3 mt-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Codec</div>
+                        <Badge variant="secondary">{metadata.codec}</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Resolution</div>
+                        <div className="font-medium">{metadata.width}x{metadata.height}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Frame Rate</div>
+                        <div className="font-medium">{metadata.fps.toFixed(2)} fps</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Duration</div>
+                        <div className="font-medium">{metadata.duration.toFixed(2)}s</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Total Frames</div>
+                        <div className="font-medium">{metadata.totalFrames}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">Key Frames</div>
+                        <div className="font-medium flex items-center gap-1">
+                          <Key className="w-3 h-3" />
+                          {metadata.totalKeyFrames}
+                        </div>
+                      </div>
+                      {metadata.bitrate && (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground">Bitrate</div>
+                          <div className="font-medium">{(metadata.bitrate / 1_000_000).toFixed(2)} Mbps</div>
+                        </div>
+                      )}
+                      {metadata.hasAlpha && (
+                        <div className="col-span-2">
+                          <Badge variant="outline" className="bg-primary/10">
+                            ✓ Alpha Channel
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="tracks" className="mt-3">
+                    {metadata.tracks && metadata.tracks.length > 0 && (
+                      <div className="space-y-2">
+                        {metadata.tracks.map((track, idx) => (
+                          <Card key={idx} className="p-3 bg-muted/30">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5">
+                                {track.type === 'video' && <Image className="w-4 h-4 text-primary" />}
+                                {track.type === 'audio' && <Volume2 className="w-4 h-4 text-accent" />}
+                                {track.type === 'subtitle' && <FileText className="w-4 h-4 text-muted-foreground" />}
                               </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                {track.bitrate && (
-                                  <div>Bitrate: {(track.bitrate / 1000).toFixed(0)} kbps</div>
-                                )}
-                                {track.sampleRate && (
-                                  <div>Sample Rate: {(track.sampleRate / 1000).toFixed(1)} kHz</div>
-                                )}
-                              </div>
-                              {track.disposition && (
-                                <div className="flex gap-1 flex-wrap mt-1">
-                                  {track.disposition.default && (
-                                    <Badge variant="outline" className="text-xs">Default</Badge>
+                              <div className="flex-1 space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {track.type}
+                                  </Badge>
+                                  <span className="text-xs font-medium">{track.codec}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  {track.bitrate && (
+                                    <div>Bitrate: {(track.bitrate / 1000).toFixed(0)} kbps</div>
                                   )}
-                                  {track.disposition.forced && (
-                                    <Badge variant="outline" className="text-xs">Forced</Badge>
-                                  )}
-                                  {track.disposition.hearingImpaired && (
-                                    <Badge variant="outline" className="text-xs">SDH</Badge>
-                                  )}
-                                  {track.disposition.visuallyImpaired && (
-                                    <Badge variant="outline" className="text-xs">Audio Description</Badge>
-                                  )}
-                                  {track.disposition.commentary && (
-                                    <Badge variant="outline" className="text-xs">Commentary</Badge>
+                                  {track.sampleRate && (
+                                    <div>Sample Rate: {(track.sampleRate / 1000).toFixed(1)} kHz</div>
                                   )}
                                 </div>
-                              )}
+                                {track.disposition && (
+                                  <div className="flex gap-1 flex-wrap mt-1">
+                                    {track.disposition.default && (
+                                      <Badge variant="outline" className="text-xs">Default</Badge>
+                                    )}
+                                    {track.disposition.forced && (
+                                      <Badge variant="outline" className="text-xs">Forced</Badge>
+                                    )}
+                                    {track.disposition.hearingImpaired && (
+                                      <Badge variant="outline" className="text-xs">SDH</Badge>
+                                    )}
+                                    {track.disposition.visuallyImpaired && (
+                                      <Badge variant="outline" className="text-xs">Audio Description</Badge>
+                                    )}
+                                    {track.disposition.commentary && (
+                                      <Badge variant="outline" className="text-xs">Commentary</Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="export" className="mt-3">
+                    <ExportQualitySettings
+                      videoDuration={metadata.duration}
+                      hasAlpha={metadata.hasAlpha}
+                      hasHDR={metadata.hdr}
+                      onSettingsChange={setExportSettings}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
 
               {/* Extraction Actions */}
