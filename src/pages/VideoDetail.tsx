@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { VoiceOption, findVoiceById } from "@/types/voice";
 import { MessageSquare } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePremiumAccess } from '@/hooks/usePremiumAccess';
 
 interface Video {
   id: string;
@@ -52,6 +53,7 @@ const VideoDetail = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { subscription_tier } = useSubscription();
+  const { canAccess: hasPremiumAccess, isAdmin } = usePremiumAccess();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -500,7 +502,7 @@ const VideoDetail = () => {
                 onDelete={deleteVideo}
                 isDeleting={deletingVideo}
               />
-              {subscription_tier && ['standard', 'advanced', 'enterprise'].includes(subscription_tier.toLowerCase()) && (
+              {hasPremiumAccess && (
                 <Button 
                   variant="default"
                   onClick={() => navigate(`/video/${video.id}/edit`)}
@@ -508,6 +510,7 @@ const VideoDetail = () => {
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Premium Editor
+                  {isAdmin && <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>}
                 </Button>
               )}
               <Button 
