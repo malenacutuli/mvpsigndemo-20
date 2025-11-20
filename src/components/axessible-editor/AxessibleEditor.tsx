@@ -78,6 +78,9 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   const { project, setProject } = usePremiumEditor();
   const navigate = useNavigate();
   const animationFrameRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<AudioBuffer[]>([]);
+  const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Load video and initialize MediaBunny
   useEffect(() => {
@@ -92,7 +95,19 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     };
   }, [videoId]);
 
-  // Playback loop
+  // Initialize Web Audio API
+  useEffect(() => {
+    audioContextRef.current = new AudioContext({ sampleRate: 48000 });
+    
+    return () => {
+      if (currentAudioSourceRef.current) {
+        currentAudioSourceRef.current.stop();
+      }
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  // Playback loop with audio sync
   useEffect(() => {
     if (!isPlaying || !mediaInput.videoSink || !canvasRef.current) return;
 
@@ -100,13 +115,16 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     if (!ctx) return;
 
     let lastTime = performance.now();
+    let playbackStartTime = currentTime;
+    let playbackStartPerfTime = performance.now();
+    
+    // Start audio playback
+    startAudioPlayback(currentTime);
     
     const loop = async () => {
       const now = performance.now();
-      const deltaTime = (now - lastTime) / 1000;
-      lastTime = now;
-
-      const newTime = Math.min(currentTime + deltaTime, mediaInput.duration);
+      const elapsed = (now - playbackStartPerfTime) / 1000;
+      const newTime = Math.min(playbackStartTime + elapsed, mediaInput.duration);
       setCurrentTime(newTime);
 
       // Draw current frame
@@ -121,6 +139,8 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
 
           // Draw captions overlay
           drawCaptionsAtTime(ctx, newTime);
+          
+          sample.close();
         }
       } catch (error) {
         console.error('Error rendering frame:', error);
@@ -129,6 +149,7 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       // Stop at end
       if (newTime >= mediaInput.duration) {
         setIsPlaying(false);
+        stopAudioPlayback();
         return;
       }
 
@@ -141,8 +162,70 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      stopAudioPlayback();
     };
   }, [isPlaying, currentTime, mediaInput, transcriptSegments]);
+
+  async function startAudioPlayback(startTime: number) {
+    if (!mediaInput.audioSink || !audioContextRef.current) return;
+
+    try {
+      console.log(`Starting audio playback from ${startTime.toFixed(2)}s`);
+      
+      // Resume audio context if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
+      // Play audio in chunks for continuous playback
+      const playAudioChunk = async (time: number) => {
+        if (!isPlaying || !audioContextRef.current) return;
+
+        try {
+          const sample = await mediaInput.audioSink!.getSample(time);
+          if (!sample) return;
+
+          const audioBuffer = sample.toAudioBuffer();
+          sample.close();
+
+          const audioSource = audioContextRef.current.createBufferSource();
+          audioSource.buffer = audioBuffer;
+          audioSource.connect(audioContextRef.current.destination);
+          
+          currentAudioSourceRef.current = audioSource;
+
+          // Schedule next chunk when this one ends
+          audioSource.onended = () => {
+            const nextTime = time + audioBuffer.duration;
+            if (nextTime < mediaInput.duration && isPlaying) {
+              playAudioChunk(nextTime);
+            }
+          };
+
+          audioSource.start(0);
+          console.log(`Playing audio chunk at ${time.toFixed(2)}s, duration: ${audioBuffer.duration.toFixed(2)}s`);
+        } catch (error) {
+          console.error('Error playing audio chunk:', error);
+        }
+      };
+
+      await playAudioChunk(startTime);
+
+    } catch (error) {
+      console.error('Error starting audio playback:', error);
+    }
+  }
+
+  function stopAudioPlayback() {
+    if (currentAudioSourceRef.current) {
+      try {
+        currentAudioSourceRef.current.stop();
+      } catch (e) {
+        // Already stopped
+      }
+      currentAudioSourceRef.current = null;
+    }
+  }
 
   async function loadVideoIntoEditor(videoId: string) {
     setIsLoading(true);
@@ -473,7 +556,12 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     const newTime = percent * mediaInput.duration;
 
     setCurrentTime(Math.max(0, Math.min(newTime, mediaInput.duration)));
-    setIsPlaying(false); // Pause on seek
+    setIsPlaying(false);
+    stopAudioPlayback();
+  }
+
+  function togglePlayback() {
+    setIsPlaying(!isPlaying);
   }
 
   async function handleSave() {
@@ -788,7 +876,7 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={togglePlayback}
                   disabled={!mediaInput.videoSink}
                   className="text-white hover:bg-slate-700"
                 >
