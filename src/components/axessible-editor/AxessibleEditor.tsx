@@ -122,7 +122,13 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       if (videoError) throw videoError;
       if (!video) throw new Error('Video not found');
 
-      // 2. Fetch transcript segments
+      console.log('Video metadata:', {
+        title: video.title,
+        storage_path: video.storage_path,
+        duration: video.duration_seconds,
+      });
+
+      // 2. Fetch transcript segments for captions
       const { data: segments } = await supabase
         .from('transcript_segments')
         .select('*')
@@ -130,58 +136,147 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         .eq('language', 'en')
         .order('start_time');
 
-      if (segments) {
+      if (segments && segments.length > 0) {
         setTranscriptSegments(segments);
+        console.log(`Loaded ${segments.length} transcript segments`);
       }
 
       // 3. Construct video URL and fetch as blob
       const videoUrl = constructStorageUrl(video.storage_path);
-      console.log('Loading video from:', videoUrl);
+      console.log('Fetching video from:', videoUrl);
 
       const response = await fetch(videoUrl);
-      if (!response.ok) throw new Error('Failed to fetch video');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+      }
       
       const blob = await response.blob();
-      console.log('Video blob loaded:', blob.size, 'bytes');
-
-      // 4. Initialize MediaBunny Input
-      const input = new Input({
-        formats: ALL_FORMATS,
-        source: new BlobSource(blob),
+      console.log('Video blob loaded:', {
+        size: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
+        type: blob.type,
       });
 
-      // 5. Extract video metadata
+      // 4. Initialize MediaBunny Input with format detection
+      const input = new Input({
+        formats: ALL_FORMATS,
+        source: new BlobSource(blob, {
+          maxCacheSize: 16 * 1024 * 1024, // 16 MB cache for smooth scrubbing
+        }),
+      });
+
+      // 5. Get format information
+      const format = await input.getFormat();
+      const mimeType = await input.getMimeType();
+      console.log('Detected format:', {
+        format: format.constructor.name,
+        mimeType,
+      });
+
+      // 6. Extract file-level metadata
       const duration = await input.computeDuration();
+      console.log('Video duration:', formatDuration(duration));
+
+      // 7. Get metadata tags (title, artist, etc.)
+      try {
+        const tags = await input.getMetadataTags();
+        console.log('Metadata tags:', tags);
+      } catch (e) {
+        console.log('No metadata tags available');
+      }
+
+      // 8. Get all tracks
+      const allTracks = await input.getTracks();
+      console.log(`Found ${allTracks.length} tracks:`, allTracks.map(t => ({
+        type: t.type,
+        codec: t.codec || 'unknown',
+        language: t.languageCode,
+      })));
+
+      // 9. Get primary video track
       const videoTrack = await input.getPrimaryVideoTrack();
+      if (!videoTrack) {
+        throw new Error('No video track found in file');
+      }
+
+      // 10. Extract video track metadata
+      const width = videoTrack.displayWidth;
+      const height = videoTrack.displayHeight;
+      const rotation = videoTrack.rotation;
+      const codecString = await videoTrack.getCodecParameterString();
+
+      console.log('Video track info:', {
+        codec: videoTrack.codec || 'unknown',
+        codecString,
+        displaySize: `${width}x${height}`,
+        codedSize: `${videoTrack.codedWidth}x${videoTrack.codedHeight}`,
+        rotation: `${rotation}°`,
+        timeResolution: videoTrack.timeResolution,
+      });
+
+      // 11. Compute accurate frame rate from packets
+      console.log('Computing packet statistics...');
+      const packetStats = await videoTrack.computePacketStats(100); // Sample first 100 frames
+      const fps = Math.round(packetStats.averagePacketRate * 100) / 100; // Round to 2 decimals
+
+      console.log('Packet statistics:', {
+        frameCount: packetStats.packetCount,
+        fps: `${fps} fps`,
+        bitrate: `${(packetStats.averageBitrate / 1_000_000).toFixed(2)} Mbps`,
+      });
+
+      // 12. Get track timing info (important for proper playback)
+      const trackStartTime = await videoTrack.getFirstTimestamp();
+      const trackDuration = await videoTrack.computeDuration();
+
+      console.log('Track timing:', {
+        startTime: trackStartTime,
+        duration: trackDuration,
+        endTime: trackStartTime + trackDuration,
+      });
+
+      if (trackStartTime !== 0) {
+        console.warn('Video track has non-zero start time:', trackStartTime);
+      }
+
+      // 13. Check if video can be decoded
+      const decodable = await videoTrack.canDecode();
+      if (!decodable) {
+        throw new Error(`Video codec not supported: ${videoTrack.codec || 'unknown'}`);
+      }
+
+      console.log('Video is decodable ✓');
+
+      // 14. Get decoder config for WebCodecs
+      const decoderConfig = await videoTrack.getDecoderConfig();
+      console.log('Decoder config:', decoderConfig);
+
+      // 15. Check color space and HDR
+      try {
+        const colorSpace = await videoTrack.getColorSpace();
+        const isHDR = await videoTrack.hasHighDynamicRange();
+        console.log('Color space:', { colorSpace, isHDR });
+      } catch (e) {
+        console.log('Color space info not available');
+      }
+
+      // 16. Get primary audio track info
       const audioTrack = await input.getPrimaryAudioTrack();
-
-      let width = 1920;
-      let height = 1080;
-      let fps = 30;
-
-      if (videoTrack) {
-        width = videoTrack.displayWidth;
-        height = videoTrack.displayHeight;
-
-        // Estimate FPS
-        const packetStats = await videoTrack.computePacketStats(100);
-        fps = Math.round(packetStats.averagePacketRate);
-
-        console.log('Video track:', { width, height, fps, duration });
+      if (audioTrack) {
+        console.log('Audio track info:', {
+          codec: audioTrack.codec || 'unknown',
+          channels: audioTrack.numberOfChannels,
+          sampleRate: `${audioTrack.sampleRate} Hz`,
+          decodable: await audioTrack.canDecode(),
+        });
+      } else {
+        console.log('No audio track found');
       }
 
-      // 6. Create video sink for frame extraction
-      let videoSink: VideoSampleSink | null = null;
-      if (videoTrack) {
-        const decodable = await videoTrack.canDecode();
-        if (decodable) {
-          videoSink = new VideoSampleSink(videoTrack);
-        } else {
-          toast.warning('Video codec not supported for decoding');
-        }
-      }
+      // 17. Create video sink for frame extraction
+      const videoSink = new VideoSampleSink(videoTrack);
+      console.log('Created VideoSampleSink for frame extraction');
 
-      // 7. Update MediaBunny state
+      // 18. Update MediaBunny state
       setMediaInput({
         input,
         videoTrack,
@@ -193,11 +288,11 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         fps,
       });
 
-      // 8. Get current user
+      // 19. Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
 
-      // 9. Create or load premium project
+      // 20. Create or load premium project
       const { data: premiumProject, error: projectError } = await supabase
         .from('premium_projects')
         .upsert({
@@ -217,7 +312,9 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
 
       if (projectError) throw projectError;
 
-      // 10. Set project in store
+      console.log('Premium project:', premiumProject.id);
+
+      // 21. Set project in store
       setProject({
         id: premiumProject.id,
         videoId: video.id,
@@ -229,10 +326,22 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         updatedAt: video.updated_at,
       });
 
-      toast.success(`Video loaded: ${formatDuration(duration)}`);
-    } catch (error) {
+      toast.success(`Video loaded successfully`, {
+        description: `${width}x${height} @ ${fps}fps • ${formatDuration(duration)}`,
+      });
+
+    } catch (error: any) {
       console.error('Failed to load video:', error);
-      toast.error('Failed to load video into editor');
+      
+      let errorMessage = 'Failed to load video into editor';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, {
+        description: 'Check console for details',
+        duration: 10000,
+      });
     } finally {
       setIsLoading(false);
     }
