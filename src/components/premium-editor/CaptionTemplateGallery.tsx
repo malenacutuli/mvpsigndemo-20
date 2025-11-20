@@ -186,7 +186,7 @@ export function CaptionTemplateGallery({
 
                 {/* Template stats */}
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{template.usage_count || 0} uses</span>
+                  <span>{template.use_count || 0} uses</span>
                   <span>•</span>
                   <span>{template.template_type}</span>
                 </div>
