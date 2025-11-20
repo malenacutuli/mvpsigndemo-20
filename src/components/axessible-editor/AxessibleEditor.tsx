@@ -3,127 +3,211 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Download, ArrowLeft } from 'lucide-react';
+import { Loader2, Save, Download, ArrowLeft, Play, Pause } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Input, ALL_FORMATS, BlobSource, VideoSampleSink } from 'mediabunny';
 
 interface AxessibleEditorProps {
   videoId: string;
 }
 
+interface MediaBunnyInput {
+  input: Input | null;
+  videoTrack: any | null;
+  audioTrack: any | null;
+  videoSink: VideoSampleSink | null;
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+}
+
 export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [mediaBunny, setMediaBunny] = useState<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mediaInput, setMediaInput] = useState<MediaBunnyInput>({
+    input: null,
+    videoTrack: null,
+    audioTrack: null,
+    videoSink: null,
+    duration: 0,
+    width: 1920,
+    height: 1080,
+    fps: 30,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
   const { project, setProject } = usePremiumEditor();
   const navigate = useNavigate();
+  const animationFrameRef = useRef<number | null>(null);
 
-  // Initialize MediaBunny
+  // Load video and initialize MediaBunny
   useEffect(() => {
-    if (!editorRef.current) return;
-
-    const initMediaBunny = async () => {
-      try {
-        // Dynamically import mediabunny
-        const MB = await import('mediabunny');
-        
-        // Initialize MediaBunny instance
-        // Note: Adjust API based on actual MediaBunny documentation
-        const mb = new (MB as any).MediaBunny({
-          container: editorRef.current,
-          width: 1920,
-          height: 1080,
-          fps: 30,
-          // Custom theme for premium look
-          theme: {
-            primary: '#3B82F6',
-            background: '#0F172A',
-            surface: '#1E293B',
-            text: '#F1F5F9',
-          }
-        });
-
-        setMediaBunny(mb);
-        console.log('MediaBunny initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize MediaBunny:', error);
-        toast.error('Failed to initialize video editor');
-      }
-    };
-
-    initMediaBunny();
-
-    return () => {
-      if (mediaBunny?.dispose) {
-        mediaBunny.dispose();
-      }
-    };
-  }, []);
-
-  // Load video project
-  useEffect(() => {
-    if (!mediaBunny || !videoId) return;
+    if (!videoId) return;
 
     loadVideoIntoEditor(videoId);
-  }, [mediaBunny, videoId]);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [videoId]);
+
+  // Playback loop
+  useEffect(() => {
+    if (!isPlaying || !mediaInput.videoSink || !canvasRef.current) return;
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    let lastTime = performance.now();
+    
+    const loop = async () => {
+      const now = performance.now();
+      const deltaTime = (now - lastTime) / 1000;
+      lastTime = now;
+
+      const newTime = Math.min(currentTime + deltaTime, mediaInput.duration);
+      setCurrentTime(newTime);
+
+      // Draw current frame
+      try {
+        const sample = await mediaInput.videoSink!.getSample(newTime);
+        if (sample && ctx && canvasRef.current) {
+          // Clear canvas
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          
+          // Draw video frame
+          sample.draw(ctx, 0, 0);
+
+          // Draw captions overlay
+          drawCaptionsAtTime(ctx, newTime);
+        }
+      } catch (error) {
+        console.error('Error rendering frame:', error);
+      }
+
+      // Stop at end
+      if (newTime >= mediaInput.duration) {
+        setIsPlaying(false);
+        return;
+      }
+
+      animationFrameRef.current = requestAnimationFrame(loop);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(loop);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying, currentTime, mediaInput, transcriptSegments]);
 
   async function loadVideoIntoEditor(videoId: string) {
-    if (!mediaBunny) return;
-
     setIsLoading(true);
 
     try {
-      // 1. Fetch video from Supabase with related data
+      // 1. Fetch video metadata from Supabase
       const { data: video, error: videoError } = await supabase
         .from('videos')
-        .select(`
-          *,
-          transcript_segments(*),
-          characters(*)
-        `)
+        .select('*')
         .eq('id', videoId)
         .single();
 
       if (videoError) throw videoError;
       if (!video) throw new Error('Video not found');
 
-      console.log('Video loaded:', video);
+      // 2. Fetch transcript segments
+      const { data: segments } = await supabase
+        .from('transcript_segments')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', 'en')
+        .order('start_time');
 
-      // 2. Construct video URL from storage_path
+      if (segments) {
+        setTranscriptSegments(segments);
+      }
+
+      // 3. Construct video URL and fetch as blob
       const videoUrl = constructStorageUrl(video.storage_path);
-      
-      console.log('Video URL:', videoUrl);
+      console.log('Loading video from:', videoUrl);
 
-      // 3. Add video to MediaBunny timeline
-      try {
-        await mediaBunny.addVideoTrack?.({
-          url: videoUrl,
-          name: video.title,
-          duration: video.duration_seconds,
-        });
-      } catch (mbError) {
-        console.error('MediaBunny track error:', mbError);
+      const response = await fetch(videoUrl);
+      if (!response.ok) throw new Error('Failed to fetch video');
+      
+      const blob = await response.blob();
+      console.log('Video blob loaded:', blob.size, 'bytes');
+
+      // 4. Initialize MediaBunny Input
+      const input = new Input({
+        formats: ALL_FORMATS,
+        source: new BlobSource(blob),
+      });
+
+      // 5. Extract video metadata
+      const duration = await input.computeDuration();
+      const videoTrack = await input.getPrimaryVideoTrack();
+      const audioTrack = await input.getPrimaryAudioTrack();
+
+      let width = 1920;
+      let height = 1080;
+      let fps = 30;
+
+      if (videoTrack) {
+        width = videoTrack.displayWidth;
+        height = videoTrack.displayHeight;
+
+        // Estimate FPS
+        const packetStats = await videoTrack.computePacketStats(100);
+        fps = Math.round(packetStats.averagePacketRate);
+
+        console.log('Video track:', { width, height, fps, duration });
       }
 
-      // 4. Get current user
+      // 6. Create video sink for frame extraction
+      let videoSink: VideoSampleSink | null = null;
+      if (videoTrack) {
+        const decodable = await videoTrack.canDecode();
+        if (decodable) {
+          videoSink = new VideoSampleSink(videoTrack);
+        } else {
+          toast.warning('Video codec not supported for decoding');
+        }
+      }
+
+      // 7. Update MediaBunny state
+      setMediaInput({
+        input,
+        videoTrack,
+        audioTrack,
+        videoSink,
+        duration,
+        width,
+        height,
+        fps,
+      });
+
+      // 8. Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error('Authentication required');
-        return;
-      }
+      if (!user) throw new Error('Authentication required');
 
-      // 5. Create or load premium project
+      // 9. Create or load premium project
       const { data: premiumProject, error: projectError } = await supabase
         .from('premium_projects')
         .upsert({
           video_id: videoId,
           name: video.title,
           user_id: user.id,
-          canvas_width: 1920,
-          canvas_height: 1080,
-          canvas_fps: 30,
-          total_duration: video.duration_seconds,
+          canvas_width: width,
+          canvas_height: height,
+          canvas_fps: fps,
+          total_duration: duration,
         }, { 
           onConflict: 'video_id',
           ignoreDuplicates: false 
@@ -131,36 +215,21 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         .select()
         .single();
 
-      if (projectError) {
-        console.error('Project error:', projectError);
-        throw projectError;
-      }
+      if (projectError) throw projectError;
 
-      console.log('Premium project:', premiumProject);
-
-      // 6. Set project in store
+      // 10. Set project in store
       setProject({
         id: premiumProject.id,
         videoId: video.id,
         videoUrl,
-        duration: video.duration_seconds || 0,
+        duration,
         name: video.title,
         thumbnailUrl: video.thumbnail_url,
         createdAt: video.created_at,
         updatedAt: video.updated_at,
       });
 
-      // 7. Load transcript as captions
-      if (video.transcript_segments && video.transcript_segments.length > 0) {
-        await loadTranscriptAsCaptions(video.transcript_segments);
-      }
-
-      // 8. Load characters
-      if (video.characters && video.characters.length > 0) {
-        await loadCharacters(video.characters);
-      }
-
-      toast.success('Video loaded into editor');
+      toast.success(`Video loaded: ${formatDuration(duration)}`);
     } catch (error) {
       console.error('Failed to load video:', error);
       toast.error('Failed to load video into editor');
@@ -169,57 +238,71 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     }
   }
 
-  async function loadTranscriptAsCaptions(segments: any[]) {
-    if (!mediaBunny?.addTextTrack) return;
+  function drawCaptionsAtTime(ctx: CanvasRenderingContext2D, time: number) {
+    if (!canvasRef.current) return;
 
-    try {
-      // Create caption track in MediaBunny
-      const captionTrack = mediaBunny.addTextTrack({
-        name: 'Captions (CWI)',
-        type: 'captions',
-      });
+    // Find active caption at current time
+    const activeSegment = transcriptSegments.find(
+      seg => seg.start_time <= time && seg.end_time >= time
+    );
 
-      // Add each segment as a caption with character color
-      segments.forEach(segment => {
-        if (captionTrack?.addText) {
-          captionTrack.addText({
-            text: segment.text,
-            startTime: segment.start_time,
-            endTime: segment.end_time,
-            style: {
-              color: segment.speaker_color || '#FFFFFF',
-              fontSize: 48,
-              fontWeight: 'bold',
-              backgroundColor: 'rgba(0,0,0,0.8)',
-              padding: '10px 20px',
-              borderRadius: '8px',
-            },
-            position: {
-              x: 'center',
-              y: 'bottom',
-              offsetY: 100,
-            },
-          });
-        }
-      });
+    if (!activeSegment) return;
 
-      console.log(`Loaded ${segments.length} caption segments`);
-    } catch (error) {
-      console.error('Failed to load captions:', error);
-    }
-  }
+    // Draw caption with CWI color
+    const text = activeSegment.text;
+    const color = activeSegment.speaker_color || '#FFFFFF';
 
-  async function loadCharacters(characters: any[]) {
-    // Store characters in premium editor state for CWI color management
-    console.log(`Loaded ${characters.length} characters:`, characters);
-    // TODO: Add to premium editor store when character management is implemented
+    ctx.save();
+    
+    // Caption styling
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    const x = canvasRef.current.width / 2;
+    const y = canvasRef.current.height - 60;
+
+    // Background
+    const metrics = ctx.measureText(text);
+    const padding = 20;
+    const bgX = x - metrics.width / 2 - padding;
+    const bgY = y - 32 - padding;
+    const bgWidth = metrics.width + padding * 2;
+    const bgHeight = 32 + padding * 2;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 8);
+    ctx.fill();
+
+    // Text with character color
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+
+    ctx.restore();
   }
 
   function constructStorageUrl(path: string): string {
     if (!path) return '';
-    // Remove leading slash if present
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     return `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${cleanPath}`;
+  }
+
+  function formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
+    if (!mediaInput.duration) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    const newTime = percent * mediaInput.duration;
+
+    setCurrentTime(Math.max(0, Math.min(newTime, mediaInput.duration)));
+    setIsPlaying(false); // Pause on seek
   }
 
   async function handleSave() {
@@ -227,7 +310,6 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
 
     setSaving(true);
     try {
-      // Save project state to Supabase
       const { error } = await supabase
         .from('premium_projects')
         .update({
@@ -248,7 +330,7 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   }
 
   async function handleExport() {
-    toast.info('Export functionality coming soon');
+    toast.info('Export functionality coming soon - will use MediaBunny Output API');
   }
 
   return (
@@ -265,8 +347,14 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         </Button>
         
         <h1 className="text-xl font-semibold text-white">
-          {project?.name || 'Axessible Premium Editor'}
+          {project?.name || 'Axessible Editor'}
         </h1>
+
+        {mediaInput.duration > 0 && (
+          <div className="text-sm text-slate-400">
+            {mediaInput.width}x{mediaInput.height} @ {mediaInput.fps}fps
+          </div>
+        )}
         
         <div className="flex-1" />
         
@@ -299,20 +387,92 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       </div>
 
       {/* Main Editor Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center bg-slate-900">
+          <div className="flex-1 flex items-center justify-center bg-slate-950">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-              <p className="text-slate-300 text-lg">Loading video into editor...</p>
+              <p className="text-slate-300 text-lg">Loading video with MediaBunny...</p>
+              <p className="text-slate-500 text-sm mt-2">Analyzing media format and extracting metadata</p>
             </div>
           </div>
         ) : (
-          <div 
-            ref={editorRef} 
-            className="flex-1 bg-slate-950"
-            style={{ minHeight: 0 }}
-          />
+          <>
+            {/* Video Canvas */}
+            <div className="flex-1 flex items-center justify-center bg-black">
+              <canvas
+                ref={canvasRef}
+                width={mediaInput.width}
+                height={mediaInput.height}
+                className="max-w-full max-h-full"
+                style={{ objectFit: 'contain' }}
+              />
+            </div>
+
+            {/* Playback Controls */}
+            <div className="h-24 bg-slate-800 border-t border-slate-700 flex flex-col p-4">
+              {/* Timeline */}
+              <div
+                className="flex-1 bg-slate-700 rounded cursor-pointer relative mb-3"
+                onClick={handleSeek}
+              >
+                {/* Progress bar */}
+                <div
+                  className="absolute top-0 left-0 h-full bg-blue-600 rounded"
+                  style={{
+                    width: `${mediaInput.duration > 0 ? (currentTime / mediaInput.duration) * 100 : 0}%`
+                  }}
+                />
+                
+                {/* Caption markers */}
+                {transcriptSegments.map((seg, idx) => (
+                  <div
+                    key={idx}
+                    className="absolute top-0 h-full w-1 bg-yellow-500 opacity-50"
+                    style={{
+                      left: `${(seg.start_time / mediaInput.duration) * 100}%`
+                    }}
+                    title={`${seg.speaker}: ${seg.text}`}
+                  />
+                ))}
+
+                {/* Playhead */}
+                <div
+                  className="absolute top-0 w-0.5 h-full bg-white shadow-lg"
+                  style={{
+                    left: `${mediaInput.duration > 0 ? (currentTime / mediaInput.duration) * 100 : 0}%`
+                  }}
+                />
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  disabled={!mediaInput.videoSink}
+                  className="text-white hover:bg-slate-700"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6" />
+                  ) : (
+                    <Play className="w-6 h-6" />
+                  )}
+                </Button>
+
+                <div className="text-white text-sm font-mono">
+                  {formatDuration(currentTime)} / {formatDuration(mediaInput.duration)}
+                </div>
+
+                <div className="flex-1" />
+
+                <div className="text-slate-400 text-xs">
+                  {transcriptSegments.length} captions loaded
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
