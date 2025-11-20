@@ -88,6 +88,8 @@ export function PremiumVideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const animationFrameRef = useRef<number>();
 
   // Sync video element with props
@@ -338,7 +340,56 @@ export function PremiumVideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTime, onPlayPauseToggle, onSeek, onSetInPoint, onSetOutPoint, onMuteToggle]);
 
+  // Error handling
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = e.currentTarget;
+    console.error('❌ Video load error:', {
+      error: video.error,
+      networkState: video.networkState,
+      readyState: video.readyState,
+      src: videoSrc
+    });
+    
+    setHasError(true);
+    
+    if (video.error) {
+      switch (video.error.code) {
+        case 1:
+          setErrorMessage('Video loading aborted');
+          break;
+        case 2:
+          setErrorMessage('Network error - check your connection');
+          break;
+        case 3:
+          setErrorMessage('Video format not supported');
+          break;
+        case 4:
+          setErrorMessage('Video source not found or not accessible');
+          break;
+        default:
+          setErrorMessage('Unknown video error');
+      }
+    }
+  };
+
+  const handleCanPlay = () => {
+    console.log('✅ Video can play:', videoSrc);
+    setHasError(false);
+  };
+
   const duration = videoRef.current?.duration || 0;
+
+  if (hasError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-center text-white p-6 max-w-md">
+          <p className="text-lg font-semibold mb-2">Failed to load video</p>
+          <p className="text-sm text-red-400 mb-4">{errorMessage}</p>
+          <p className="text-xs text-muted-foreground break-all">Source: {videoSrc}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -355,7 +406,10 @@ export function PremiumVideoPlayer({
         className="w-full h-full object-contain"
         onTimeUpdate={(e) => onTimeUpdate(e.currentTarget.currentTime)}
         onClick={onPlayPauseToggle}
+        onError={handleVideoError}
+        onCanPlay={handleCanPlay}
         playsInline
+        crossOrigin="anonymous"
       />
 
       {/* Canvas overlay for elements */}
