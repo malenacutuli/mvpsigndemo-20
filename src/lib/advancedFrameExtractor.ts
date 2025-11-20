@@ -39,6 +39,25 @@ export interface ExtractedFrame {
   hasAlpha: boolean;
 }
 
+export interface TrackInfo {
+  type: 'video' | 'audio' | 'subtitle';
+  codec: string;
+  bitrate?: number;
+  language?: string;
+  disposition?: {
+    default: boolean;
+    forced: boolean;
+    hearingImpaired: boolean;
+    visuallyImpaired: boolean;
+    commentary: boolean;
+  };
+  channels?: number; // for audio
+  sampleRate?: number; // for audio
+  colorSpace?: string; // for video
+  colorRange?: string; // for video
+  hdr?: boolean; // for video
+}
+
 export interface VideoFrameMetadata {
   duration: number;
   width: number;
@@ -49,6 +68,11 @@ export interface VideoFrameMetadata {
   keyFrameTimestamps: number[]; // timestamps of all key frames
   totalFrames: number;
   totalKeyFrames: number;
+  tracks: TrackInfo[];
+  colorSpace?: string;
+  colorRange?: string;
+  hdr?: boolean;
+  bitrate?: number;
 }
 
 /**
@@ -71,7 +95,47 @@ export async function analyzeVideoFrames(videoFile: File): Promise<VideoFrameMet
   }
 
   const duration = await videoTrack.computeDuration();
-  const packetStats = await videoTrack.computePacketStats(200); // Sample 200 frames for accurate stats
+  const packetStats = await videoTrack.computePacketStats(200);
+  
+  // Analyze all tracks
+  const tracks: TrackInfo[] = [];
+  
+  // Video tracks
+  const videoTracks = await input.getVideoTracks();
+  for (const vTrack of videoTracks) {
+    const vStats = await vTrack.computePacketStats(100);
+    tracks.push({
+      type: 'video',
+      codec: vTrack.codec || 'unknown',
+      bitrate: vStats.averageBitrate,
+      disposition: vTrack.disposition ? {
+        default: vTrack.disposition.default,
+        forced: vTrack.disposition.forced,
+        hearingImpaired: vTrack.disposition.hearingImpaired,
+        visuallyImpaired: vTrack.disposition.visuallyImpaired,
+        commentary: vTrack.disposition.commentary
+      } : undefined
+    });
+  }
+  
+  // Audio tracks
+  const audioTracks = await input.getAudioTracks();
+  for (const aTrack of audioTracks) {
+    const aStats = await aTrack.computePacketStats(100);
+    tracks.push({
+      type: 'audio',
+      codec: aTrack.codec || 'unknown',
+      bitrate: aStats.averageBitrate,
+      sampleRate: aTrack.sampleRate,
+      disposition: aTrack.disposition ? {
+        default: aTrack.disposition.default,
+        forced: aTrack.disposition.forced,
+        hearingImpaired: aTrack.disposition.hearingImpaired,
+        visuallyImpaired: aTrack.disposition.visuallyImpaired,
+        commentary: aTrack.disposition.commentary
+      } : undefined
+    });
+  }
   
   // Use EncodedPacketSink to analyze all packets
   const packetSink = new EncodedPacketSink(videoTrack);
@@ -86,7 +150,7 @@ export async function analyzeVideoFrames(videoFile: File): Promise<VideoFrameMet
     
     // Check if this is a key frame
     if (packet.type === 'key') {
-      const timestampSeconds = packet.timestamp / 1_000_000; // Convert microseconds to seconds
+      const timestampSeconds = packet.timestamp / 1_000_000;
       keyFrameTimestamps.push(timestampSeconds);
     }
   }
@@ -97,10 +161,12 @@ export async function analyzeVideoFrames(videoFile: File): Promise<VideoFrameMet
     height: videoTrack.displayHeight,
     fps: packetStats.averagePacketRate,
     codec: videoTrack.codec || 'unknown',
-    hasAlpha: videoTrack.codec === 'vp8' || videoTrack.codec === 'vp9', // VP8/VP9 support alpha
+    hasAlpha: videoTrack.codec === 'vp8' || videoTrack.codec === 'vp9',
     keyFrameTimestamps,
     totalFrames,
-    totalKeyFrames: keyFrameTimestamps.length
+    totalKeyFrames: keyFrameTimestamps.length,
+    tracks,
+    bitrate: packetStats.averageBitrate
   };
 
   console.log('📊 Video analysis:', {
