@@ -1,19 +1,17 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, Save, Download, ArrowLeft, Play, Pause, SkipBack, Plus } from 'lucide-react';
+import { Loader2, Save, Download, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePremiumPlayer } from '@/hooks/premium-editor/usePremiumPlayer';
-import { usePremiumTimeline } from '@/hooks/premium-editor/usePremiumTimeline';
+import { usePremiumEditor } from '@/store/premiumEditorStore';
 import { useProjectScenes } from '@/hooks/useSceneComposition';
-import { PremiumVideoPlayer } from './player/PremiumVideoPlayer';
-import { MultiTrackTimeline } from './timeline/MultiTrackTimeline';
-import { Timeline } from '@/components/Timeline/Timeline';
-import { RightPanelTabs } from './RightPanelTabs';
-import type { Track } from '@/components/Timeline/types';
+import { TextBasedEditor } from './TextBasedEditor';
+import { Timeline } from './Timeline';
+import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
+import { generateScenesFromTranscript } from '@/hooks/useVideoProject';
 
 interface PremiumEditorLayoutProps {
   videoId?: string;
@@ -24,225 +22,150 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
   const { projectId: routeProjectId, id: routeVideoId } = useParams<{ projectId?: string; id?: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [project, setProject] = useState<any>(null);
-  const [videoUrl, setVideoUrl] = useState<string>('');
-  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [videoData, setVideoData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  const [waveformData, setWaveformData] = useState<number[]>([]);
-  const [timelineTracks, setTimelineTracks] = useState<Track[]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const videoId = propsVideoId || routeVideoId;
   const projectId = propsProjectId || routeProjectId;
 
-  // Initialize player
-  const player = usePremiumPlayer({
-    initialVolume: 1,
-    initialPlaybackRate: 1
-  });
-
-  // Initialize timeline
-  const timeline = usePremiumTimeline({
-    projectId: project?.id || '',
-    onSceneSelect: (sceneId) => {
-      setSelectedSceneId(sceneId);
-      // Sync player time to scene start
-      if (sceneId) {
-        const clip = timeline.state.clips.find(c => c.sceneId === sceneId);
-        if (clip) {
-          player.onSeek(clip.startTime);
-        }
-      }
-    }
-  });
+  // Premium editor store
+  const { 
+    project, 
+    setProject, 
+    playback, 
+    setCurrentTime, 
+    togglePlayback,
+    selectedSceneId,
+    selectScene
+  } = usePremiumEditor();
 
   // Load project scenes
-  const { data: projectScenes } = useProjectScenes(project?.id || '');
+  const { data: projectScenes = [] } = useProjectScenes(project?.id || '');
 
-  // Load project data
+  // Load project and video on mount
   useEffect(() => {
-    const effectiveVideoId = propsVideoId || routeVideoId;
-    const effectiveProjectId = propsProjectId || routeProjectId;
-    
-    if (!effectiveProjectId && !effectiveVideoId) return;
-    loadProject();
-  }, [propsVideoId, routeVideoId, propsProjectId, routeProjectId]);
-
-  // Sync timeline with player
-  useEffect(() => {
-    timeline.setCurrentTime(player.currentTime);
-  }, [player.currentTime]);
-
-  // Convert project scenes to timeline tracks
-  useEffect(() => {
-    if (!projectScenes || projectScenes.length === 0) return;
-
-    const videoTrack: Track = {
-      id: 'video-track',
-      name: 'Video Scenes',
-      type: 'video',
-      clips: projectScenes.map(scene => ({
-        id: scene.id,
-        trackId: 'video-track',
-        startTime: scene.timeline_start || 0,
-        endTime: scene.timeline_end || (scene.timeline_start || 0) + (scene.duration_seconds || 10),
-        label: scene.name || `Scene ${scene.scene_order + 1}`,
-        color: getSceneColor(scene.layout_type),
-        source: scene
-      })),
-      locked: false,
-      muted: false,
-      visible: true,
-      height: 80
-    };
-
-    setTimelineTracks([videoTrack]);
-  }, [projectScenes]);
-
-  // Generate waveform data
-  useEffect(() => {
-    if (videoUrl && !waveformData.length) {
-      generateWaveform(videoUrl).then(setWaveformData).catch(console.error);
+    if (videoId) {
+      loadVideoProject(videoId);
     }
-  }, [videoUrl]);
+  }, [videoId]);
 
-  // Sync video player with timeline
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = player.currentTime;
-    }
-  }, [player.currentTime]);
-
-  // Sync play/pause state
-  useEffect(() => {
-    if (videoRef.current) {
-      if (player.isPlaying) {
-        videoRef.current.play().catch(console.error);
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [player.isPlaying]);
-
-  const loadProject = async () => {
+  async function loadVideoProject(videoId: string) {
     setIsLoading(true);
     
     try {
-      let projectData;
-      let video;
-      let isNewProject = false;
+      console.log('🎬 Loading video project for video:', videoId);
 
-      if (projectId) {
-        // Load existing project
-        const { data, error } = await supabase
-          .from('premium_projects')
-          .select('*, videos(*)')
-          .eq('id', projectId)
-          .single();
+      // 1. Fetch video data
+      const { data: video, error: videoError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .single();
 
-        if (error) throw error;
-        projectData = data;
-        video = data.videos;
-      } else if (videoId) {
-        // Load video and find/create project
-        const { data: videoData, error: videoError } = await supabase
-          .from('videos')
-          .select('*')
-          .eq('id', videoId)
-          .single();
+      if (videoError) throw videoError;
+      if (!video) throw new Error('Video not found');
 
-        if (videoError) throw videoError;
-        video = videoData;
-        
-        console.log('📹 Video loaded:', {
-          id: video.id,
-          title: video.title,
-          storage_path: video.storage_path,
-          url: video.url,
-          duration: video.duration_seconds
-        });
+      console.log('📹 Video loaded:', video);
+      setVideoData(video);
 
-        // Check for existing project
-        const { data: existingProject } = await supabase
-          .from('premium_projects')
-          .select('*')
-          .eq('video_id', videoId)
-          .maybeSingle();
-
-        if (existingProject) {
-          projectData = { ...existingProject, videos: video };
-        } else {
-          // Create new project
-          const { data: newProject, error: createError } = await supabase
-            .from('premium_projects')
-            .insert({
-              video_id: videoId,
-              name: video.title || 'Untitled Project',
-              canvas_width: 1920,
-              canvas_height: 1080,
-              canvas_fps: 30
-            })
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          projectData = { ...newProject, videos: video };
-          isNewProject = true;
-          console.log('🎬 New project created:', newProject.id);
-        }
-      }
-
-      // Resolve proper video URL from storage_path
-      let resolvedVideoUrl = '';
-      if (video?.storage_path) {
+      // 2. Construct video URL from storage_path (videos table uses storage_path, not video_url)
+      let videoUrl = '';
+      if (video.storage_path) {
         const { data: publicUrl } = supabase.storage
           .from('videos')
           .getPublicUrl(video.storage_path);
 
-        if (publicUrl?.publicUrl) {
-          resolvedVideoUrl = publicUrl.publicUrl;
-          console.log('✅ Video URL from getPublicUrl:', resolvedVideoUrl);
-        } else {
-          // Fallback to manual URL construction
-          resolvedVideoUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
-          console.log('⚠️ Video URL from manual construction:', resolvedVideoUrl);
-        }
-      } else if (video?.url) {
-        resolvedVideoUrl = video.url;
-        console.log('✅ Video URL from video.url:', resolvedVideoUrl);
+        videoUrl = publicUrl?.publicUrl || 
+          `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
       }
 
-      setProject(projectData);
-      setVideoUrl(resolvedVideoUrl);
-      
-      if (!resolvedVideoUrl) {
-        console.error('❌ No video URL resolved for project', projectData?.id);
-        toast.error('Could not resolve video URL. Please check video storage.');
+      if (!videoUrl) {
+        throw new Error('No video URL found');
+      }
+
+      console.log('🎥 Video URL resolved:', videoUrl);
+
+      // 3. Create or load premium_project
+      let { data: premiumProject } = await supabase
+        .from('premium_projects')
+        .select('*')
+        .eq('video_id', videoId)
+        .maybeSingle();
+
+      if (!premiumProject) {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData.user?.id;
+
+        if (!userId) {
+          throw new Error('User not authenticated');
+        }
+
+        const { data: newProject, error: createError } = await supabase
+          .from('premium_projects')
+          .insert({
+            video_id: videoId,
+            name: video.title || 'Untitled Project',
+            user_id: userId,
+            canvas_width: 1920,
+            canvas_height: 1080,
+            canvas_fps: 30,
+            total_duration: video.duration_seconds
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        premiumProject = newProject;
+        console.log('✨ Created new premium project:', premiumProject.id);
+        toast.success('Project created');
       } else {
-        console.log('🎥 Final video URL set:', resolvedVideoUrl);
-        toast.success('Project loaded');
+        console.log('✅ Loaded existing premium project:', premiumProject.id);
+      }
+
+      // 4. Set project in store
+      setProject({
+        id: premiumProject.id,
+        name: premiumProject.name,
+        videoId: video.id,
+        videoUrl: videoUrl,
+        thumbnailUrl: video.thumbnail_url,
+        duration: video.duration_seconds || 0,
+        createdAt: premiumProject.created_at,
+        updatedAt: premiumProject.updated_at
+      });
+
+      // 5. Check if we have scenes
+      const { data: existingScenes } = await supabase
+        .from('project_scenes')
+        .select('id')
+        .eq('project_id', premiumProject.id)
+        .limit(1);
+
+      // 6. Auto-generate scenes if none exist
+      if (!existingScenes || existingScenes.length === 0) {
+        console.log('🎬 No scenes found, generating from transcript...');
+        toast.info('Generating scenes from transcript...');
         
-        // Auto-generate scenes if this is a new project
-        if (isNewProject && videoId) {
-          console.log('🎬 Auto-generating scenes from transcript...');
-          toast.info('Generating scenes from transcript...');
-          
-          const { generateScenesFromTranscript } = await import('@/hooks/useVideoProject');
-          await generateScenesFromTranscript(projectData.id, videoId);
-          
-          // Refresh to load the new scenes
-          window.location.reload();
+        try {
+          await generateScenesFromTranscript(premiumProject.id, videoId);
+          toast.success('Scenes generated successfully');
+          // Scenes will be loaded automatically via useProjectScenes
+        } catch (error) {
+          console.error('Failed to generate scenes:', error);
+          toast.error('Could not generate scenes. Please ensure video has a transcript.');
         }
       }
+
+      toast.success('Project loaded');
     } catch (error) {
       console.error('❌ Failed to load project:', error);
       toast.error('Failed to load project: ' + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!project) return;
 
     setSaving(true);
@@ -263,99 +186,26 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  const handleExport = () => {
+  function handleExport() {
     toast.info('Export functionality coming soon');
-  };
+  }
 
-  const handleSceneReorder = async (sceneId: string, newStartTime: number) => {
-    const scene = projectScenes?.find(s => s.id === sceneId);
-    if (!scene) return;
-
-    try {
-      const duration = (scene.timeline_end || 0) - (scene.timeline_start || 0);
-      const { error } = await supabase
-        .from('project_scenes')
-        .update({
-          timeline_start: newStartTime,
-          timeline_end: newStartTime + duration,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sceneId);
-
-      if (error) throw error;
-      toast.success('Scene position updated');
-    } catch (error) {
-      console.error('Failed to reorder scene:', error);
-      toast.error('Failed to update scene position');
-    }
-  };
-
-  const handleAddScene = () => {
-    toast.info('Add scene functionality coming soon');
-  };
-
-  const handleGenerateScenes = async () => {
-    if (!project || !videoId) return;
-    
-    try {
-      toast.info('Generating scenes from transcript...');
-      const { generateScenesFromTranscript } = await import('@/hooks/useVideoProject');
-      await generateScenesFromTranscript(project.id, videoId);
-      toast.success('Scenes generated! Refreshing...');
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to generate scenes:', error);
-      toast.error('Failed to generate scenes');
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
-  };
-
-  const getSceneColor = (layoutType: string | null) => {
-    const colors: Record<string, string> = {
-      fullscreen: '#3B82F6',
-      'split-horizontal': '#10B981',
-      'split-vertical': '#F59E0B',
-      'pip-corner': '#EF4444',
-      'pip-side': '#8B5CF6',
-      'grid-2x2': '#EC4899'
-    };
-    return colors[layoutType || 'fullscreen'] || '#3B82F6';
-  };
-
-  async function generateWaveform(videoUrl: string): Promise<number[]> {
-    try {
-      const audioContext = new AudioContext();
-      const response = await fetch(videoUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const channelData = audioBuffer.getChannelData(0);
-      const samples = 200;
-      const blockSize = Math.floor(channelData.length / samples);
-      
-      const waveform: number[] = [];
-      for (let i = 0; i < samples; i++) {
-        const start = blockSize * i;
-        let sum = 0;
-        for (let j = 0; j < blockSize; j++) {
-          sum += Math.abs(channelData[start + j]);
+  function handleSceneUpdate(sceneId: string, updates: any) {
+    // Update scene in database
+    supabase
+      .from('project_scenes')
+      .update(updates)
+      .eq('id', sceneId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to update scene:', error);
+          toast.error('Failed to update scene');
+        } else {
+          toast.success('Scene updated');
         }
-        waveform.push(sum / blockSize);
-      }
-      
-      return waveform;
-    } catch (error) {
-      console.error('Failed to generate waveform:', error);
-      return [];
-    }
+      });
   }
 
   if (isLoading) {
@@ -369,35 +219,36 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     );
   }
 
-  if (!project) {
+  if (!project || !videoData) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <p className="text-destructive mb-4">Failed to load project</p>
-          <Button onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
+          <Button onClick={() => navigate('/videos')}>
+            Back to Videos
           </Button>
         </div>
       </div>
     );
   }
 
+  const selectedScene = projectScenes.find(s => s.id === selectedSceneId);
+
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
+      {/* Top Bar */}
       <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/videos')}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="text-lg font-bold text-foreground">Premium Editor</h1>
-          <span className="text-sm text-muted-foreground">
-            {project.name || 'Untitled Project'}
-          </span>
+          <h1 className="text-lg font-bold text-foreground">
+            {project.name || 'Premium Editor'}
+          </h1>
         </div>
         
         <div className="flex items-center gap-2">
@@ -425,115 +276,90 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main Content: 3-Panel Layout */}
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
-          {/* Player + Timeline */}
-          <ResizablePanel defaultSize={70} minSize={50}>
+          
+          {/* LEFT PANEL: Text-Based Editor */}
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <div className="h-full bg-card border-r border-border">
+              <TextBasedEditor
+                videoId={project.videoId}
+                videoUrl={project.videoUrl}
+                currentTime={playback.currentTime}
+                onTimeUpdate={setCurrentTime}
+              />
+            </div>
+          </ResizablePanel>
+          
+          <ResizableHandle withHandle />
+          
+          {/* CENTER PANEL: Video Player + Timeline */}
+          <ResizablePanel defaultSize={50} minSize={40}>
             <ResizablePanelGroup direction="vertical">
-              {/* Player */}
-              <ResizablePanel defaultSize={60} minSize={30}>
+              
+              {/* Video Canvas */}
+              <ResizablePanel defaultSize={70} minSize={50}>
                 <div className="h-full bg-black flex items-center justify-center">
-                  {videoUrl ? (
-                    <PremiumVideoPlayer
-                      videoSrc={videoUrl}
-                      currentTime={player.currentTime}
-                      isPlaying={player.isPlaying}
-                      volume={player.volume}
-                      isMuted={player.isMuted}
-                      playbackRate={player.playbackRate}
-                      onTimeUpdate={player.onTimeUpdate}
-                      onPlayPauseToggle={player.onPlayPauseToggle}
-                      onVolumeChange={player.onVolumeChange}
-                      onMuteToggle={player.onMuteToggle}
-                      onSeek={player.onSeek}
-                      onPlaybackRateChange={player.onPlaybackRateChange}
-                      onDurationChange={player.onDurationChange}
-                      markers={player.markers}
-                      onSetInPoint={player.onSetInPoint}
-                      onSetOutPoint={player.onSetOutPoint}
+                  {project.videoUrl ? (
+                    <EnhancedVideoPlayer
+                      videoId={project.videoId}
+                      videoSrc={project.videoUrl}
+                      posterSrc={project.thumbnailUrl || undefined}
+                      title={project.name}
+                      language="en"
+                      contentType="education"
+                      className="w-full h-full"
                     />
                   ) : (
                     <div className="text-center">
-                      <p className="text-muted-foreground">No video source</p>
+                      <Loader2 className="w-8 h-8 animate-spin text-white mb-2" />
+                      <p className="text-white">Loading video...</p>
                     </div>
                   )}
                 </div>
               </ResizablePanel>
-
+              
               <ResizableHandle withHandle />
-
-              {/* Timeline with Controls */}
-              <ResizablePanel defaultSize={40} minSize={20}>
-                <div className="h-full flex flex-col bg-background">
-                  {/* Timeline Controls */}
-                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={player.onPlayPauseToggle}
-                    >
-                      {player.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </Button>
-                    
-                    <span className="text-sm font-mono">
-                      {formatTime(player.currentTime)} / {formatTime(player.duration)}
-                    </span>
-                    
-                    <Separator orientation="vertical" className="h-6" />
-                    
-                    <Button size="sm" variant="ghost" onClick={() => player.onSeek(0)}>
-                      <SkipBack className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button size="sm" variant="ghost" onClick={handleAddScene}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Scene
-                    </Button>
-                    
-                    {(!projectScenes || projectScenes.length === 0) && (
-                      <Button size="sm" variant="default" onClick={handleGenerateScenes}>
-                        Generate Scenes from Transcript
-                      </Button>
+              
+              {/* Timeline */}
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                <div className="h-full bg-muted p-4">
+                  <div className="text-sm text-muted-foreground">
+                    <p>Timeline: {projectScenes.length} scenes</p>
+                    {projectScenes.length === 0 && (
+                      <p className="mt-2">No scenes yet. They will be generated automatically.</p>
                     )}
-                    
-                    <Separator orientation="vertical" className="h-6" />
-                    
-                    <span className="text-xs text-muted-foreground">
-                      {projectScenes?.length || 0} scenes
-                    </span>
-                  </div>
-
-                  {/* Timeline Component */}
-                  <div className="flex-1 overflow-hidden">
-                    <Timeline
-                      tracks={timelineTracks}
-                      duration={player.duration || project?.total_duration || 100}
-                      currentTime={player.currentTime}
-                      onSeek={player.onSeek}
-                      onTracksChange={setTimelineTracks}
-                    />
                   </div>
                 </div>
               </ResizablePanel>
+              
             </ResizablePanelGroup>
           </ResizablePanel>
-
+          
           <ResizableHandle withHandle />
-
-          {/* Sidebar - Right Panel Tabs */}
-          <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
-            <div className="h-full bg-card border-l border-border">
-              {project && (
-            <RightPanelTabs
-              projectId={project.id}
-              videoId={videoId || ''}
-              videoUrl={videoUrl}
-              currentTime={player.currentTime}
-            />
-              )}
+          
+          {/* RIGHT PANEL: Project Info */}
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <div className="h-full bg-card border-l border-border overflow-y-auto p-6">
+              <h3 className="font-semibold mb-4">Project Info</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Scenes:</span>
+                  <span className="ml-2 font-medium">{projectScenes.length}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="ml-2 font-medium">{Math.round(project.duration)}s</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Video ID:</span>
+                  <span className="ml-2 font-mono text-xs">{project.videoId.slice(0, 8)}...</span>
+                </div>
+              </div>
             </div>
           </ResizablePanel>
+          
         </ResizablePanelGroup>
       </div>
     </div>
