@@ -3,8 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Image, Key, Download, ChevronLeft, ChevronRight, Sparkles, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   analyzeVideoFrames,
   extractFrameAt,
@@ -13,6 +21,7 @@ import {
   type VideoFrameMetadata,
   type ExtractedFrame
 } from '@/lib/advancedFrameExtractor';
+import { editImageWithAI, AI_EDIT_PRESETS, type AIEditPreset } from '@/lib/aiImageEditor';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -25,6 +34,9 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [metadata, setMetadata] = useState<VideoFrameMetadata | null>(null);
   const [extractedFrames, setExtractedFrames] = useState<ExtractedFrame[]>([]);
   const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
+  const [aiEditing, setAiEditing] = useState(false);
+  const [aiPreset, setAiPreset] = useState<AIEditPreset>('enhance');
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -134,6 +146,49 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const handleNextFrame = () => {
     if (selectedFrameIndex < extractedFrames.length - 1) {
       setSelectedFrameIndex(selectedFrameIndex + 1);
+    }
+  };
+
+  const handleAIEdit = async (useCustomPrompt: boolean = false) => {
+    const frame = extractedFrames[selectedFrameIndex];
+    if (!frame) {
+      toast.error('No frame selected');
+      return;
+    }
+
+    setAiEditing(true);
+    try {
+      const prompt = useCustomPrompt ? customPrompt : AI_EDIT_PRESETS[aiPreset];
+      
+      if (!prompt.trim()) {
+        toast.error('Please enter a prompt');
+        return;
+      }
+
+      const result = await editImageWithAI({
+        prompt,
+        imageUrl: frame.dataUrl
+      });
+
+      // Replace the frame with AI-edited version
+      const updatedFrames = [...extractedFrames];
+      updatedFrames[selectedFrameIndex] = {
+        ...frame,
+        dataUrl: result.imageUrl,
+        blob: await (await fetch(result.imageUrl)).blob()
+      };
+      setExtractedFrames(updatedFrames);
+
+      toast.success('AI editing complete', {
+        description: `Applied: ${prompt.slice(0, 50)}...`
+      });
+    } catch (error: any) {
+      console.error('AI editing failed:', error);
+      toast.error('AI editing failed', {
+        description: error.message
+      });
+    } finally {
+      setAiEditing(false);
     }
   };
 
@@ -315,6 +370,81 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                     Download
                   </Button>
                 </div>
+
+                {/* AI Editing Controls */}
+                <Card className="bg-muted/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      AI Frame Editor
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Enhance or transform frames with AI
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Preset Selection */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium">Quick Presets</label>
+                      <div className="flex gap-2">
+                        <Select value={aiPreset} onValueChange={(value) => setAiPreset(value as AIEditPreset)}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="enhance">✨ Enhance</SelectItem>
+                            <SelectItem value="artistic">🎨 Artistic</SelectItem>
+                            <SelectItem value="cinematic">🎬 Cinematic</SelectItem>
+                            <SelectItem value="vintage">📷 Vintage</SelectItem>
+                            <SelectItem value="bw">⚫ Black & White</SelectItem>
+                            <SelectItem value="blur_background">🌫️ Blur BG</SelectItem>
+                            <SelectItem value="remove_noise">✨ Denoise</SelectItem>
+                            <SelectItem value="dramatic">⚡ Dramatic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={() => handleAIEdit(false)}
+                          disabled={aiEditing}
+                          size="sm"
+                        >
+                          {aiEditing ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Wand2 className="w-4 h-4 mr-2" />
+                              Apply
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Custom Prompt */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium">Custom Prompt</label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="e.g., Make it look like a watercolor painting"
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          disabled={aiEditing}
+                          className="flex-1 text-sm"
+                        />
+                        <Button
+                          onClick={() => handleAIEdit(true)}
+                          disabled={aiEditing || !customPrompt.trim()}
+                          size="sm"
+                          variant="secondary"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
