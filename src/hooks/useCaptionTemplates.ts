@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface CaptionTemplate {
   id: string;
@@ -58,27 +60,47 @@ export interface CaptionTemplate {
   };
   preview_url?: string;
   is_premium: boolean;
-  usage_count: number;
+  use_count: number;
 }
 
-export function useCaptionTemplates() {
+export function useCaptionTemplates(filterType?: 'system' | 'custom' | 'all') {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   return useQuery({
-    queryKey: ['captionTemplates'],
+    queryKey: ['captionTemplates', filterType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('caption_templates')
         .select('*')
-        .eq('template_type', 'preset')
         .order('use_count', { ascending: false });
 
-      if (error) throw error;
+      if (filterType === 'system') {
+        query = query.eq('template_type', 'preset');
+      } else if (filterType === 'custom') {
+        query = query.eq('template_type', 'custom').eq('created_by', user?.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        toast({
+          title: "Error loading templates",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      }
       return (data || []) as unknown as CaptionTemplate[];
-    }
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000 // 30 minutes
   });
 }
 
 export function useApplyTemplate() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -90,6 +112,9 @@ export function useApplyTemplate() {
       templateId: string;
       sceneId?: string;
     }) => {
+      // Increment template usage count
+      await supabase.rpc('increment_template_usage', { template_id: templateId });
+
       if (sceneId) {
         // Apply to specific scene
         const { error } = await supabase
@@ -108,10 +133,140 @@ export function useApplyTemplate() {
         if (error) throw error;
       }
 
-      return { success: true };
+      return { success: true, projectId, sceneId };
+    },
+    onMutate: async ({ projectId, templateId, sceneId }) => {
+      await queryClient.cancelQueries({ queryKey: ['projectScenes', projectId] });
+      const previousScenes = queryClient.getQueryData(['projectScenes', projectId]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['projectScenes', projectId], (old: any[] = []) =>
+        old.map(scene => 
+          (!sceneId || scene.id === sceneId) 
+            ? { ...scene, caption_template_id: templateId }
+            : scene
+        )
+      );
+
+      return { previousScenes };
+    },
+    onError: (error, { projectId }, context) => {
+      queryClient.setQueryData(['projectScenes', projectId], context?.previousScenes);
+      toast({
+        title: "Error applying template",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+    onSuccess: ({ projectId, sceneId }) => {
+      queryClient.invalidateQueries({ queryKey: ['projectScenes', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['captionTemplates'] });
+      toast({
+        title: "Template applied",
+        description: sceneId ? "Template applied to scene" : "Template applied to all scenes"
+      });
+    }
+  });
+}
+
+export function useCreateCustomTemplate() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      name,
+      description,
+      styleConfig
+    }: {
+      name: string;
+      description?: string;
+      styleConfig: CaptionTemplate['style_config'];
+    }) => {
+      const { data, error } = await supabase
+        .from('caption_templates')
+        .insert({
+          name,
+          description,
+          template_type: 'custom',
+          style_config: styleConfig as any,
+          created_by: user?.id,
+          is_premium: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as unknown as CaptionTemplate;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['captionTemplates'] });
+      toast({
+        title: "Custom template created",
+        description: `"${data.name}" has been saved to your templates`
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+}
+
+export function useDeleteTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      // Check if it's a system template (cannot delete)
+      const { data: template } = await supabase
+        .from('caption_templates')
+        .select('template_type')
+        .eq('id', templateId)
+        .single();
+
+      if (template?.template_type === 'preset') {
+        throw new Error('Cannot delete system templates');
+      }
+
+      const { error } = await supabase
+        .from('caption_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+      return templateId;
+    },
+    onMutate: async (templateId) => {
+      await queryClient.cancelQueries({ queryKey: ['captionTemplates'] });
+      const previousTemplates = queryClient.getQueryData(['captionTemplates']);
+      
+      // Optimistically remove template
+      queryClient.setQueryData(['captionTemplates'], (old: CaptionTemplate[] = []) =>
+        old.filter(t => t.id !== templateId)
+      );
+
+      return { previousTemplates };
+    },
+    onError: (error, _, context) => {
+      queryClient.setQueryData(['captionTemplates'], context?.previousTemplates);
+      toast({
+        title: "Error deleting template",
+        description: error.message,
+        variant: "destructive"
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projectScenes'] });
+      queryClient.invalidateQueries({ queryKey: ['captionTemplates'] });
+      toast({
+        title: "Template deleted",
+        description: "Custom template has been removed"
+      });
     }
   });
 }
