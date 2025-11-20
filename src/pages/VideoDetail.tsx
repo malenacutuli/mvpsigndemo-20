@@ -23,6 +23,7 @@ import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { VoiceOption, findVoiceById } from "@/types/voice";
 import { MessageSquare } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface Video {
   id: string;
@@ -50,6 +51,7 @@ const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { subscription_tier } = useSubscription();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -498,14 +500,16 @@ const VideoDetail = () => {
                 onDelete={deleteVideo}
                 isDeleting={deletingVideo}
               />
-              <Button 
-                variant="default"
-                onClick={() => navigate(`/video/${video.id}/edit`)}
-                className="font-light"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Premium Editor
-              </Button>
+              {subscription_tier && ['standard', 'advanced', 'enterprise'].includes(subscription_tier.toLowerCase()) && (
+                <Button 
+                  variant="default"
+                  onClick={() => navigate(`/video/${video.id}/edit`)}
+                  className="font-light"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Premium Editor
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 onClick={() => setShowEmbedSettings(!showEmbedSettings)}
