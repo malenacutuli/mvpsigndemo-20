@@ -170,7 +170,7 @@ COMMANDS:
 
 Based on the information above, help with the following request:`;
 
-    // JSON schema for structured output
+    // JSON schema for structured output - relaxed for Gemini compatibility
     const responseSchema = {
       type: "object",
       properties: {
@@ -185,16 +185,13 @@ Based on the information above, help with the following request:`;
               type: "string",
               enum: ["apply_template", "delete_segments", "create_scene", "modify_timing", "change_layout", "update_scene", "generate_clip"]
             },
-            parameters: {
-              type: "object",
-              description: "Action-specific parameters"
-            },
             confidence: {
               type: "number",
               minimum: 0,
               maximum: 1
             }
-          }
+          },
+          additionalProperties: true
         }
       },
       required: ["response"]
