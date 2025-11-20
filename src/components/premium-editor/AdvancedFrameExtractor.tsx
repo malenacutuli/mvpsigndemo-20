@@ -42,6 +42,7 @@ import { AudioEditor } from './AudioEditor';
 import { ExportPanel } from './ExportPanel';
 import { TransitionsEffectsPanel } from './TransitionsEffectsPanel';
 import { AIAssistantPanel } from './AIAssistantPanel';
+import { RenderPreview } from './RenderPreview';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -477,6 +478,18 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
           )}
         </CardContent>
       </Card>
+
+      {/* Render Preview */}
+      {metadata && videoFile && (
+        <RenderPreview
+          videoUrl={URL.createObjectURL(videoFile)}
+          scenes={timelineScenes}
+          captions={captions}
+          currentTime={currentPlaybackTime}
+          duration={metadata.duration}
+          onTimeUpdate={setCurrentPlaybackTime}
+        />
+      )}
 
       {/* Video Timeline & Playback */}
       {metadata && videoFile && (
