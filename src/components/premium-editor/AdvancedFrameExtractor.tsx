@@ -27,9 +27,11 @@ import {
   type VideoFrameMetadata,
   type ExtractedFrame
 } from '@/lib/advancedFrameExtractor';
+import { extractSubtitles } from '@/lib/subtitleExtractor';
 import { editImageWithAI, AI_EDIT_PRESETS, type AIEditPreset } from '@/lib/aiImageEditor';
 import { FrameCropTool } from './FrameCropTool';
 import { ExportQualitySettings, type ExportSettings } from './ExportQualitySettings';
+import { SubtitleEditor } from './SubtitleEditor';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -47,6 +49,7 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [customPrompt, setCustomPrompt] = useState('');
   const [showCropTool, setShowCropTool] = useState(false);
   const [exportSettings, setExportSettings] = useState<ExportSettings | null>(null);
+  const [subtitles, setSubtitles] = useState<any[]>([]);
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -58,6 +61,15 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
     try {
       const meta = await analyzeVideoFrames(videoFile);
       setMetadata(meta);
+      
+      // Extract subtitles
+      try {
+        const subs = await extractSubtitles(videoFile);
+        setSubtitles(subs);
+      } catch (error) {
+        console.log('No subtitles found or extraction failed');
+      }
+      
       toast.success('Video analyzed', {
         description: `Found ${meta.totalKeyFrames} key frames in ${meta.duration.toFixed(1)}s video`
       });
@@ -260,9 +272,13 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
               {/* Metadata Display */}
               <div className="space-y-4">
                 <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="tracks">Tracks</TabsTrigger>
+                    <TabsTrigger value="subtitles">
+                      <FileText className="w-3 h-3 mr-1" />
+                      Subtitles
+                    </TabsTrigger>
                     <TabsTrigger value="export">
                       <SettingsIcon className="w-3 h-3 mr-1" />
                       Export
@@ -365,6 +381,14 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
                         ))}
                       </div>
                     )}
+                  </TabsContent>
+
+                  <TabsContent value="subtitles" className="mt-3">
+                    <SubtitleEditor 
+                      tracks={subtitles}
+                      videoDuration={metadata.duration}
+                      onTracksChange={setSubtitles}
+                    />
                   </TabsContent>
 
                   <TabsContent value="export" className="mt-3">
