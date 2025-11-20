@@ -93,32 +93,59 @@ serve(async (req) => {
       );
     }
 
-    // Verify user has access to project
-    const { data: projectAccess } = await supabase
-      .from('video_projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('created_by', user.id)
-      .single();
+    // Verify user has access to project or video
+    if (projectId && projectId.trim()) {
+      // Project-based video: verify project access
+      const { data: projectAccess } = await supabase
+        .from('video_projects')
+        .select('id')
+        .eq('id', projectId)
+        .eq('created_by', user.id)
+        .single();
 
-    if (!projectAccess) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized access to project' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (!projectAccess) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to project' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Standalone video: verify video access
+      const { data: videoAccess } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('id', videoId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!videoAccess) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to video' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    // Get project state for context
-    const { data: project } = await supabase
-      .from('video_projects')
-      .select('*')
-      .eq('id', projectId)
-      .single();
+    // Get project state for context (if project exists)
+    let project = null;
+    let scenes = null;
+    
+    if (projectId && projectId.trim()) {
+      const { data: projectData } = await supabase
+        .from('video_projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+      
+      project = projectData;
 
-    const { data: scenes } = await supabase
-      .from('project_scenes')
-      .select('*')
-      .eq('project_id', projectId);
+      const { data: scenesData } = await supabase
+        .from('project_scenes')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      scenes = scenesData;
+    }
 
     const { data: templates } = await supabase
       .from('caption_templates')
