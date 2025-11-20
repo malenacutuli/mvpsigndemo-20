@@ -130,6 +130,7 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
     try {
       let projectData;
       let video;
+      let isNewProject = false;
 
       if (projectId) {
         // Load existing project
@@ -152,6 +153,14 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
         if (videoError) throw videoError;
         video = videoData;
+        
+        console.log('📹 Video loaded:', {
+          id: video.id,
+          title: video.title,
+          storage_path: video.storage_path,
+          url: video.url,
+          duration: video.duration_seconds
+        });
 
         // Check for existing project
         const { data: existingProject } = await supabase
@@ -178,6 +187,8 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
           if (createError) throw createError;
           projectData = { ...newProject, videos: video };
+          isNewProject = true;
+          console.log('🎬 New project created:', newProject.id);
         }
       }
 
@@ -190,28 +201,42 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
         if (publicUrl?.publicUrl) {
           resolvedVideoUrl = publicUrl.publicUrl;
+          console.log('✅ Video URL from getPublicUrl:', resolvedVideoUrl);
         } else {
           // Fallback to manual URL construction
           resolvedVideoUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
+          console.log('⚠️ Video URL from manual construction:', resolvedVideoUrl);
         }
       } else if (video?.url) {
         resolvedVideoUrl = video.url;
+        console.log('✅ Video URL from video.url:', resolvedVideoUrl);
       }
 
       setProject(projectData);
       setVideoUrl(resolvedVideoUrl);
       
-      console.log('PremiumEditor: Resolved video URL:', resolvedVideoUrl);
-      
       if (!resolvedVideoUrl) {
-        console.warn('PremiumEditor: No video URL resolved for project', projectData?.id);
-        toast.error('Could not resolve video URL');
+        console.error('❌ No video URL resolved for project', projectData?.id);
+        toast.error('Could not resolve video URL. Please check video storage.');
       } else {
+        console.log('🎥 Final video URL set:', resolvedVideoUrl);
         toast.success('Project loaded');
+        
+        // Auto-generate scenes if this is a new project
+        if (isNewProject && videoId) {
+          console.log('🎬 Auto-generating scenes from transcript...');
+          toast.info('Generating scenes from transcript...');
+          
+          const { generateScenesFromTranscript } = await import('@/hooks/useVideoProject');
+          await generateScenesFromTranscript(projectData.id, videoId);
+          
+          // Refresh to load the new scenes
+          window.location.reload();
+        }
       }
     } catch (error) {
-      console.error('Failed to load project:', error);
-      toast.error('Failed to load project');
+      console.error('❌ Failed to load project:', error);
+      toast.error('Failed to load project: ' + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -269,6 +294,21 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
 
   const handleAddScene = () => {
     toast.info('Add scene functionality coming soon');
+  };
+
+  const handleGenerateScenes = async () => {
+    if (!project || !videoId) return;
+    
+    try {
+      toast.info('Generating scenes from transcript...');
+      const { generateScenesFromTranscript } = await import('@/hooks/useVideoProject');
+      await generateScenesFromTranscript(project.id, videoId);
+      toast.success('Scenes generated! Refreshing...');
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to generate scenes:', error);
+      toast.error('Failed to generate scenes');
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -450,6 +490,12 @@ export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsPro
                       <Plus className="w-4 h-4 mr-2" />
                       Add Scene
                     </Button>
+                    
+                    {(!projectScenes || projectScenes.length === 0) && (
+                      <Button size="sm" variant="default" onClick={handleGenerateScenes}>
+                        Generate Scenes from Transcript
+                      </Button>
+                    )}
                     
                     <Separator orientation="vertical" className="h-6" />
                     
