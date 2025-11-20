@@ -39,6 +39,7 @@ import { VideoTimeline } from './VideoTimeline';
 import { SceneManager } from './SceneManager';
 import { CaptionEditor } from './CaptionEditor';
 import { AudioEditor } from './AudioEditor';
+import { ExportPanel } from './ExportPanel';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -520,6 +521,16 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
           onAudioTracksChange={setAudioTracks}
           currentTime={currentPlaybackTime}
           videoDuration={metadata.duration}
+        />
+      )}
+
+      {/* Export Panel */}
+      {metadata && (
+        <ExportPanel
+          videoFile={videoFile}
+          scenes={timelineScenes}
+          captions={captions}
+          audioTracks={audioTracks}
         />
       )}
 
