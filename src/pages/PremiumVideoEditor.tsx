@@ -10,15 +10,20 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTemplateGallery';
 import { Timeline } from '@/components/premium-editor/Timeline';
 import { SceneLayoutPanel } from '@/components/premium-editor/SceneLayoutPanel';
+import { TextBasedEditor } from '@/components/premium-editor/TextBasedEditor';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { subscription_tier, loading: subLoading } = useSubscription();
+  const videoRef = React.useRef<HTMLVideoElement>(null);
   const [video, setVideo] = useState<any>(null);
   const [project, setProject] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [scenes, setScenes] = useState<any[]>([]);
 
   // Check subscription tier
   useEffect(() => {
@@ -32,6 +37,13 @@ export default function PremiumVideoEditor() {
       }
     }
   }, [subscription_tier, subLoading]);
+
+  // Sync video playback when currentTime changes from external source
+  React.useEffect(() => {
+    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.5) {
+      videoRef.current.currentTime = currentTime;
+    }
+  }, [currentTime]);
 
   // Load or create project
   useEffect(() => {
@@ -132,36 +144,87 @@ export default function PremiumVideoEditor() {
     );
   }
 
-  // Premium Editor UI (placeholder for now)
+  // Premium Editor UI
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
       <div className="border-b p-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Premium Editor</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              Project: {project?.name}
+              {project?.name}
             </span>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/videos/${videoId}`)}
-            >
+            <Button variant="outline" onClick={() => navigate(`/videos/${videoId}`)}>
               Exit Editor
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Main Editor Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-80 border-r overflow-y-auto">
+          <Tabs defaultValue="text" className="w-full">
+            <TabsList className="w-full grid grid-cols-3">
+              <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="layout">Layout</TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+            </TabsList>
+            <TabsContent value="text" className="mt-0 h-[calc(100vh-200px)]">
+              <TextBasedEditor
+                videoId={videoId!}
+                videoUrl={video?.url || ''}
+                currentTime={currentTime}
+                onTimeUpdate={(time) => setCurrentTime(time)}
+              />
+            </TabsContent>
+            <TabsContent value="layout" className="mt-0">
+              <SceneLayoutPanel />
+            </TabsContent>
+            <TabsContent value="templates" className="mt-0">
+              <CaptionTemplateGallery 
+                open={true}
+                premiumVideoId={videoId}
+                projectId={project?.id}
+                userTier={subscription_tier || 'free'}
+                onTemplateApply={(templateId) => {
+                  console.log('Applied template:', templateId);
+                  toast.success('Template applied');
+                }}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Video Preview */}
+        <div className="flex-1 bg-black relative flex items-center justify-center">
+          {video?.url && (
+            <video
+              ref={videoRef}
+              src={video.url}
+              className="max-w-full max-h-full"
+              controls
+              onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+            />
+          )}
+        </div>
+      </div>
       
-      <div className="max-w-7xl mx-auto p-4">
-        <CaptionTemplateGallery 
-          open={true}
-          projectId={project?.id}
-          premiumVideoId={videoId}
-          userTier={subscription_tier || 'free'}
-          onTemplateApply={(templateId) => {
-            console.log('Applied template:', templateId);
-            toast.success('Template applied successfully');
-          }}
+      {/* Timeline */}
+      <div className="h-72 border-t">
+        <Timeline
+          scenes={scenes}
+          currentTime={currentTime}
+          duration={video?.duration_seconds || 0}
+          isPlaying={isPlaying}
+          onSceneSelect={(sceneId) => console.log('Scene selected:', sceneId)}
+          onSceneReorder={(sceneId, newTime) => console.log('Scene reordered:', sceneId, newTime)}
+          onSeek={(time) => setCurrentTime(time)}
+          onTimeChange={(time) => setCurrentTime(time)}
         />
       </div>
     </div>
