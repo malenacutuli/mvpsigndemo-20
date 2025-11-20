@@ -91,6 +91,28 @@ export default function PremiumVideoEditor() {
     );
   }
 
+  // Save project function
+  const saveProject = async () => {
+    if (!project) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('video_projects')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', project.id);
+
+      if (error) throw error;
+      
+      toast.success('Project saved');
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast.error('Failed to save project');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -223,13 +245,12 @@ export default function PremiumVideoEditor() {
                   
                   <TabsContent value="templates" className="mt-0 h-full overflow-y-auto">
                     <CaptionTemplateGallery 
-                      open={true}
-                      premiumVideoId={videoId}
+                      videoId={videoId}
                       projectId={project?.id}
                       userTier={tier}
-                      onTemplateApply={(templateId) => {
-                        console.log('Applied template:', templateId);
-                        toast.success('Template applied');
+                      onTemplateSelect={(template) => {
+                        console.log('Applied template:', template.name);
+                        toast.success(`Template "${template.name}" applied`);
                       }}
                     />
                   </TabsContent>
