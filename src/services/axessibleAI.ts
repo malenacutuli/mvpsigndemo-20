@@ -17,7 +17,8 @@ export async function sendAICommand(
   message: string,
   projectId: string,
   videoId: string,
-  currentContext: string
+  currentContext: string,
+  model: 'openai' | 'gemini' = 'gemini' // Default to Gemini (faster & more cost-effective)
 ): Promise<AIResponse> {
   try {
     const { data, error } = await supabase.functions.invoke('axessible-ai-command', {
@@ -26,7 +27,8 @@ export async function sendAICommand(
         message,
         projectId,
         videoId,
-        currentContext
+        currentContext,
+        model // Pass model selection to edge function
       }
     });
 
