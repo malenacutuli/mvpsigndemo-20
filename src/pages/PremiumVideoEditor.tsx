@@ -6,6 +6,7 @@ import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
+import { CaptionTemplateGallery } from '@/components/premium-editor/CaptionTemplateGallery';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
@@ -148,14 +149,17 @@ export default function PremiumVideoEditor() {
         </div>
       </div>
       
-      <div className="p-8 text-center">
-        <h2 className="text-xl mb-4">Premium Editor Loading...</h2>
-        <p className="text-muted-foreground">
-          Video: {video?.title}
-        </p>
-        <p className="text-muted-foreground">
-          Project ID: {project?.id}
-        </p>
+      <div className="max-w-7xl mx-auto p-4">
+        <CaptionTemplateGallery 
+          open={true}
+          projectId={project?.id}
+          premiumVideoId={videoId}
+          userTier={subscription_tier || 'free'}
+          onTemplateApply={(templateId) => {
+            console.log('Applied template:', templateId);
+            toast.success('Template applied successfully');
+          }}
+        />
       </div>
     </div>
   );
