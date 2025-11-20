@@ -35,6 +35,8 @@ import { SubtitleEditor } from './SubtitleEditor';
 import { VideoExporter } from './VideoExporter';
 import { AISceneDetector } from './AISceneDetector';
 import { PremiumAIToolsPanel } from './PremiumAIToolsPanel';
+import { VideoTimeline } from './VideoTimeline';
+import { SceneManager } from './SceneManager';
 
 interface AdvancedFrameExtractorProps {
   videoFile: File | null;
@@ -53,6 +55,8 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
   const [showCropTool, setShowCropTool] = useState(false);
   const [exportSettings, setExportSettings] = useState<ExportSettings | null>(null);
   const [subtitles, setSubtitles] = useState<any[]>([]);
+  const [timelineScenes, setTimelineScenes] = useState<any[]>([]);
+  const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
 
   const handleAnalyze = async () => {
     if (!videoFile) {
@@ -465,6 +469,34 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
           )}
         </CardContent>
       </Card>
+
+      {/* Video Timeline & Playback */}
+      {metadata && videoFile && (
+        <VideoTimeline
+          videoUrl={URL.createObjectURL(videoFile)}
+          duration={metadata.duration}
+          scenes={timelineScenes}
+          onTimeUpdate={setCurrentPlaybackTime}
+          onSceneSelect={(sceneId) => {
+            console.log('Scene selected:', sceneId);
+          }}
+        />
+      )}
+
+      {/* Scene Manager */}
+      {metadata && (
+        <SceneManager
+          scenes={timelineScenes}
+          onScenesChange={setTimelineScenes}
+          onSceneSelect={(sceneId) => {
+            const scene = timelineScenes.find(s => s.id === sceneId);
+            if (scene) {
+              setCurrentPlaybackTime(scene.startTime);
+            }
+          }}
+          videoDuration={metadata.duration}
+        />
+      )}
 
       {/* Extracted Frames Display */}
       {extractedFrames.length > 0 && (
