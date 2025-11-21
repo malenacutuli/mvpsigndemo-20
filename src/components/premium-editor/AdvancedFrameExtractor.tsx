@@ -87,6 +87,17 @@ export function AdvancedFrameExtractor({ videoFile, onFrameExtracted }: Advanced
         console.log('No subtitles found or extraction failed');
       }
       
+      // Initialize a default scene spanning the full video duration
+      const defaultScene = {
+        id: 'scene-1',
+        name: 'Full Video',
+        startTime: 0,
+        endTime: meta.duration,
+        duration: meta.duration,
+        effects: [],
+      };
+      setTimelineScenes([defaultScene]);
+      
       toast.success('Video analyzed', {
         description: `Found ${meta.totalKeyFrames} key frames in ${meta.duration.toFixed(1)}s video`
       });
