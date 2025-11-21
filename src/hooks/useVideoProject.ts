@@ -1,112 +1,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { useCallback, useRef } from 'react';
 
-export function useVideoProject(projectId?: string, videoId?: string) {
+export function useVideoProject(videoId: string) {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const queryClient = useQueryClient();
 
-  // Auto-create or fetch project
-  const { data: project, isLoading, error, refetch } = useQuery({
-    queryKey: ['videoProject', projectId, videoId],
+  // Auto-create project if it doesn't exist
+  const { data: project, isLoading } = useQuery({
+    queryKey: ['videoProject', videoId],
     queryFn: async () => {
-      if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to continue",
-          variant: "destructive"
-        });
-        navigate('/auth');
-        throw new Error('Not authenticated');
-      }
+      // First, try to find existing project by video ID (project id = video id)
+      const { data: existingProject } = await supabase
+        .from('video_projects')
+        .select('*')
+        .eq('id', videoId)
+        .single();
 
-      // If projectId provided, fetch it with video data
-      if (projectId) {
-        const { data, error } = await supabase
-          .from('video_projects')
-          .select(`
-            *,
-            videos:video_id (
-              id,
-              title,
-              duration_seconds,
-              thumbnail_url,
-              url
-            )
-          `)
-          .eq('id', projectId)
-          .maybeSingle();
+      if (existingProject) return existingProject;
 
-        if (error) throw error;
-        if (!data) {
-          throw new Error('Project not found');
-        }
-        return data;
-      }
+      // Get video details for default name
+      const { data: video } = await supabase
+        .from('videos')
+        .select('title, duration_seconds')
+        .eq('id', videoId)
+        .single();
 
-      // If videoId provided, try to find existing project or create new
-      if (videoId) {
-        const { data: existingProject } = await supabase
-          .from('video_projects')
-          .select(`
-            *,
-            videos:video_id (
-              id,
-              title,
-              duration_seconds,
-              thumbnail_url,
-              url
-            )
-          `)
-          .eq('id', videoId)
-          .maybeSingle();
+      // Create new project using video ID as project ID
+      const { data: newProject } = await supabase
+        .from('video_projects')
+        .insert({
+          id: videoId,
+          created_by: user!.id,
+          name: video?.title || 'Untitled Project',
+          description: 'Auto-created from video'
+        })
+        .select()
+        .single();
 
-        if (existingProject) return existingProject;
-
-        // Get video details for default name
-        const { data: video } = await supabase
-          .from('videos')
-          .select('title, duration_seconds')
-          .eq('id', videoId)
-          .maybeSingle();
-
-        // Create new project using video ID as project ID
-        const { data: newProject, error: createError } = await supabase
-          .from('video_projects')
-          .insert({
-            id: videoId,
-            created_by: user.id,
-            name: video?.title || 'Untitled Project',
-            description: 'Auto-created from video'
-          })
-          .select(`
-            *,
-            videos:video_id (
-              id,
-              title,
-              duration_seconds,
-              thumbnail_url,
-              url
-            )
-          `)
-          .single();
-
-        if (createError) throw createError;
-        return newProject;
-      }
-
-      throw new Error('Either projectId or videoId must be provided');
+      return newProject;
     },
-    enabled: !!user && (!!projectId || !!videoId),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2
+    enabled: !!user && !!videoId,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    retry: 2 // Retry failed requests twice
   });
 
   // Query scenes with caching
@@ -122,8 +60,8 @@ export function useVideoProject(projectId?: string, videoId?: string) {
       return data || [];
     },
     enabled: !!project?.id,
-    staleTime: 3 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 3 * 60 * 1000, // Cache for 3 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
     retry: 2
   });
@@ -131,155 +69,8 @@ export function useVideoProject(projectId?: string, videoId?: string) {
   return {
     project,
     scenes,
-    isLoading,
-    error,
-    refetch
+    isLoading
   };
-}
-
-export function useCreateProject() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: async ({ 
-      name, 
-      description, 
-      videoId 
-    }: { 
-      name: string; 
-      description?: string; 
-      videoId?: string;
-    }) => {
-      if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to create a project",
-          variant: "destructive"
-        });
-        navigate('/auth');
-        throw new Error('Not authenticated');
-      }
-
-      const { data, error } = await supabase
-        .from('video_projects')
-        .insert({
-          created_by: user.id,
-          name,
-          description,
-          video_id: videoId
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['videoProjects'] });
-      toast({
-        title: "Project created",
-        description: `"${data.name}" has been created successfully`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error creating project",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-}
-
-export function useUpdateProject() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
-
-  return useMutation({
-    mutationFn: async ({ 
-      projectId, 
-      updates 
-    }: { 
-      projectId: string; 
-      updates: Record<string, any>;
-    }) => {
-      const { data, error } = await supabase
-        .from('video_projects')
-        .update(updates)
-        .eq('id', projectId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onMutate: async ({ projectId, updates }) => {
-      // Debounce auto-save
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      await queryClient.cancelQueries({ queryKey: ['videoProject', projectId] });
-      const previousProject = queryClient.getQueryData(['videoProject', projectId]);
-      
-      // Optimistically update
-      queryClient.setQueryData(['videoProject', projectId], (old: any) => ({
-        ...old,
-        ...updates,
-        updated_at: new Date().toISOString()
-      }));
-
-      return { previousProject };
-    },
-    onError: (error, { projectId }, context) => {
-      queryClient.setQueryData(['videoProject', projectId], context?.previousProject);
-      toast({
-        title: "Error updating project",
-        description: error.message,
-        variant: "destructive"
-      });
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['videoProject', data.id] });
-    }
-  });
-}
-
-export function useDeleteProject() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: async (projectId: string) => {
-      const { error } = await supabase
-        .from('video_projects')
-        .delete()
-        .eq('id', projectId);
-
-      if (error) throw error;
-      return projectId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['videoProjects'] });
-      toast({
-        title: "Project deleted",
-        description: "Project has been deleted successfully"
-      });
-      navigate('/videos');
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error deleting project",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
 }
 
 // Auto-generate scenes from transcript segments

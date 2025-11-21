@@ -11,7 +11,7 @@ import { sendAICommand, executeAIAction, AIAction } from '@/services/axessibleAI
 import { toast } from 'sonner';
 
 interface AIAssistantProps {
-  projectId?: string | null;
+  projectId: string;
   videoId: string;
   currentContext: string;
 }
@@ -24,36 +24,29 @@ export function AIAssistant({ projectId, videoId, currentContext }: AIAssistantP
 
   // Get or create AI session
   const { data: session } = useQuery({
-    queryKey: ['aiSession', projectId || 'no-project', videoId],
+    queryKey: ['aiSession', projectId],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Build query - handle null/empty projectId
-      let query = supabase
+      // Try to find existing session
+      const { data: existing } = await supabase
         .from('ai_chat_sessions')
         .select('*')
+        .eq('project_id', projectId)
         .eq('user_id', user.id)
         .order('started_at', { ascending: false })
-        .limit(1);
-
-      // Only filter by project_id if it exists and is not empty
-      if (projectId && projectId.trim()) {
-        query = query.eq('project_id', projectId);
-      } else {
-        query = query.is('project_id', null);
-      }
-
-      const { data: existing } = await query.maybeSingle();
+        .limit(1)
+        .single();
 
       if (existing) return existing;
 
-      // Create new session - use null if projectId is empty
+      // Create new session
       const { data: newSession, error } = await supabase
         .from('ai_chat_sessions')
         .insert({
           user_id: user.id,
-          project_id: projectId && projectId.trim() ? projectId : null,
+          project_id: projectId,
           video_id: videoId,
           current_context: currentContext,
           messages: [],
@@ -75,7 +68,7 @@ export function AIAssistant({ projectId, videoId, currentContext }: AIAssistantP
       const response = await sendAICommand(
         session.id,
         userMessage,
-        projectId || '',
+        projectId,
         videoId,
         currentContext
       );

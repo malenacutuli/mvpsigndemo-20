@@ -1,365 +1,226 @@
-import { supabase } from '@/integrations/supabase/client';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { toast } from 'sonner';
+import { toBlobURL, fetchFile } from '@ffmpeg/util';
+import { supabase } from '@/integrations/supabase/client';
 
-let ffmpeg: FFmpeg | null = null;
-let ffmpegLoaded = false;
+interface ProcessClipParams {
+  clipId: string;
+  videoUrl: string;
+  startTime: number;
+  endTime: number;
+  platform: 'tiktok' | 'instagram_reel' | 'youtube_short' | 'linkedin';
+  onProgress?: (progress: number, stage: string) => void;
+}
 
-export type ProgressCallback = (progress: number) => void;
+interface ProcessClipResult {
+  success: boolean;
+  clipUrl?: string;
+  error?: string;
+}
 
-// Initialize FFmpeg once
-async function initFFmpeg(onProgress?: ProgressCallback) {
-  if (ffmpegLoaded && ffmpeg) return ffmpeg;
+/**
+ * Process a social clip in the browser using FFmpeg
+ */
+export async function processClipInBrowser(
+  params: ProcessClipParams
+): Promise<ProcessClipResult> {
+  const { clipId, videoUrl, startTime, endTime, platform, onProgress } = params;
   
-  try {
-    if (!ffmpeg) {
-      ffmpeg = new FFmpeg();
-      
-      ffmpeg.on('progress', ({ progress }) => {
-        const percent = Math.round(progress * 100);
-        console.log(`FFmpeg Progress: ${percent}%`);
-        onProgress?.(percent);
-      });
-      
-      ffmpeg.on('log', ({ message }) => {
-        console.log('FFmpeg:', message);
-      });
-    }
+  console.log('🎬 Starting browser clip processing:', {
+    clipId,
+    startTime,
+    endTime,
+    duration: endTime - startTime,
+    platform
+  });
 
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+  let ffmpeg: FFmpeg | null = null;
+
+  try {
+    // Stage 1: Initialize FFmpeg
+    onProgress?.(5, 'Initializing video processor...');
+    
+    ffmpeg = new FFmpeg();
+    
+    ffmpeg.on('log', ({ message }) => {
+      console.log('FFmpeg:', message);
+    });
+
+    ffmpeg.on('progress', ({ progress, time }) => {
+      const percent = Math.round(progress * 100);
+      onProgress?.(30 + percent * 0.4, `Processing video... ${percent}%`);
+    });
+
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
     
     await ffmpeg.load({
       coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
-    
-    ffmpegLoaded = true;
-    console.log('✅ FFmpeg loaded successfully');
-    return ffmpeg;
-  } catch (error) {
-    console.error('Failed to load FFmpeg:', error);
-    ffmpegLoaded = false;
-    ffmpeg = null;
-    throw new Error('Failed to initialize video processor');
-  }
-}
 
-function getPlatformDimensions(platform: string) {
-  const dimensions: Record<string, { width: number; height: number }> = {
-    tiktok: { width: 1080, height: 1920 },
-    instagram_reel: { width: 1080, height: 1920 },
-    youtube_short: { width: 1080, height: 1920 },
-    linkedin: { width: 1080, height: 1080 },
-    twitter: { width: 1280, height: 720 },
-  };
-  return dimensions[platform] || dimensions.tiktok;
-}
+    console.log('✅ FFmpeg loaded');
 
-export async function processSocialClip(
-  videoUrl: string,
-  startTime: number,
-  endTime: number,
-  platform: string,
-  options: {
-    includeCaptions?: boolean;
-    captionTemplateId?: string | null;
-    cropToVertical?: boolean;
-  },
-  onProgress?: ProgressCallback
-): Promise<Blob> {
-  console.log('🎬 Processing social clip:', { platform, startTime, endTime, options });
-  
-  const ffmpegInstance = await initFFmpeg(onProgress);
-  if (!ffmpegInstance) throw new Error('FFmpeg not initialized');
-  
-  try {
-    // 1. Fetch and load video
-    onProgress?.(10);
-    console.log('📥 Fetching video from:', videoUrl);
+    // Stage 2: Fetch source video
+    onProgress?.(15, 'Downloading source video...');
     
     const videoData = await fetchFile(videoUrl);
-    await ffmpegInstance.writeFile('input.mp4', videoData);
+    await ffmpeg.writeFile('input.mp4', videoData);
     
-    onProgress?.(20);
-    
-    // 2. Get platform dimensions
-    const dimensions = getPlatformDimensions(platform);
-    
-    // 3. Build FFmpeg command
-    const ffmpegArgs: string[] = [
+    console.log('✅ Source video loaded');
+
+    // Stage 3: Determine platform dimensions
+    const platformConfigs = {
+      tiktok: { 
+        width: 1080, 
+        height: 1920, 
+        aspectRatio: '9:16',
+        filter: 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
+      },
+      instagram_reel: { 
+        width: 1080, 
+        height: 1920, 
+        aspectRatio: '9:16',
+        filter: 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
+      },
+      youtube_short: { 
+        width: 1080, 
+        height: 1920, 
+        aspectRatio: '9:16',
+        filter: 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
+      },
+      linkedin: { 
+        width: 1080, 
+        height: 1080, 
+        aspectRatio: '1:1',
+        filter: 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
+      }
+    };
+
+    const config = platformConfigs[platform];
+    const duration = endTime - startTime;
+
+    console.log('🎨 Processing with config:', config);
+
+    // Stage 4: Process video with FFmpeg
+    onProgress?.(30, 'Processing video...');
+
+    await ffmpeg.exec([
       '-i', 'input.mp4',
       '-ss', startTime.toString(),
-      '-to', endTime.toString(),
-    ];
-    
-    // 4. Add video filters
-    const filters: string[] = [];
-    
-    // Crop/scale based on options
-    if (options.cropToVertical && platform !== 'linkedin' && platform !== 'twitter') {
-      // For vertical platforms, crop to center vertical
-      filters.push(
-        `crop=ih*9/16:ih,scale=${dimensions.width}:${dimensions.height}`
-      );
-    } else {
-      // Scale and pad to fit dimensions
-      filters.push(
-        `scale=${dimensions.width}:${dimensions.height}:force_original_aspect_ratio=decrease,` +
-        `pad=${dimensions.width}:${dimensions.height}:(ow-iw)/2:(oh-ih)/2:black`
-      );
-    }
-    
-    if (filters.length > 0) {
-      ffmpegArgs.push('-vf', filters.join(','));
-    }
-    
-    // 5. Output encoding settings optimized for social media
-    ffmpegArgs.push(
-      '-c:v', 'libx264',
-      '-preset', 'medium',
-      '-crf', '23',
-      '-profile:v', 'high',
-      '-level', '4.2',
-      '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac',
-      '-b:a', '128k',
-      '-ar', '44100',
-      '-movflags', '+faststart',
-      '-y',
-      'output.mp4'
-    );
-    
-    onProgress?.(30);
-    
-    // 6. Execute FFmpeg
-    console.log('🎨 Executing FFmpeg with args:', ffmpegArgs.join(' '));
-    await ffmpegInstance.exec(ffmpegArgs);
-    
-    onProgress?.(80);
-    
-    // 7. Read output
-    console.log('📤 Reading output file');
-    const outputData = await ffmpegInstance.readFile('output.mp4');
-    
-    onProgress?.(90);
-    
-    // 8. Clean up
-    console.log('🧹 Cleaning up temporary files');
-    try {
-      await ffmpegInstance.deleteFile('input.mp4');
-      await ffmpegInstance.deleteFile('output.mp4');
-    } catch (cleanupError) {
-      console.warn('Cleanup warning:', cleanupError);
-    }
-    
-    onProgress?.(100);
-    
-    // 9. Create and return Blob (handle FileData type properly)
-    const blob = new Blob([outputData as BlobPart], { type: 'video/mp4' });
-    console.log('✅ Social clip processed successfully, size:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
-    
-    return blob;
-  } catch (error) {
-    console.error('❌ Social clip processing failed:', error);
-    
-    // Clean up on error
-    try {
-      await ffmpegInstance.deleteFile('input.mp4').catch(() => {});
-      await ffmpegInstance.deleteFile('output.mp4').catch(() => {});
-    } catch {}
-    
-    throw error;
-  }
-}
-
-export async function processMultiSegmentClip(
-  clipId: string,
-  videoId: string,
-  segments: Array<{ startTime: number; endTime: number; text: string; segmentId?: string }>,
-  captionTemplateId: string | null,
-  platform?: string,
-  onProgress?: ProgressCallback
-) {
-  try {
-    console.log('🎬 Starting multi-segment clip processing:', clipId);
-    onProgress?.(5);
-    
-    // Update status to processing
-    await supabase
-      .from('social_clips')
-      .update({ status: 'processing' })
-      .eq('id', clipId);
-
-    // Get video
-    const { data: video, error: videoError } = await supabase
-      .from('videos')
-      .select('storage_path')
-      .eq('id', videoId)
-      .single();
-
-    if (videoError || !video) {
-      throw new Error('Video not found');
-    }
-
-    onProgress?.(10);
-
-    // Get video URL from storage
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(video.storage_path);
-
-    if (!urlData?.publicUrl) {
-      throw new Error('Failed to get video URL');
-    }
-
-    const videoUrl = urlData.publicUrl;
-
-    onProgress?.(15);
-
-    // Fetch video
-    const videoData = await fetchFile(videoUrl);
-    
-    // Initialize FFmpeg
-    const ffmpegInstance = await initFFmpeg((progress) => {
-      // Map FFmpeg progress to 15-80% range
-      const mappedProgress = 15 + Math.round(progress * 0.65);
-      onProgress?.(mappedProgress);
-    });
-    
-    if (!ffmpegInstance) throw new Error('FFmpeg not initialized');
-
-    // Write input video
-    await ffmpegInstance.writeFile('input.mp4', videoData);
-
-    // Build filter for concatenating segments
-    const filterParts: string[] = [];
-    let totalDuration = 0;
-
-    segments.forEach((seg, idx) => {
-      const duration = seg.endTime - seg.startTime;
-      totalDuration += duration;
-      
-      filterParts.push(
-        `[0:v]trim=start=${seg.startTime}:end=${seg.endTime},setpts=PTS-STARTPTS[v${idx}];`,
-        `[0:a]atrim=start=${seg.startTime}:end=${seg.endTime},asetpts=PTS-STARTPTS[a${idx}];`
-      );
-    });
-
-    // Concatenate all segments
-    const videoStreams = segments.map((_, idx) => `[v${idx}]`).join('');
-    const audioStreams = segments.map((_, idx) => `[a${idx}]`).join('');
-    filterParts.push(
-      `${videoStreams}concat=n=${segments.length}:v=1:a=0[outv];`,
-      `${audioStreams}concat=n=${segments.length}:v=0:a=1[outa]`
-    );
-
-    const filterComplex = filterParts.join('');
-
-    console.log('🎨 Executing FFmpeg with segments:', segments.length);
-
-    // Apply platform-specific dimensions if specified
-    const outputArgs: string[] = [
-      '-i', 'input.mp4',
-      '-filter_complex', filterComplex,
-      '-map', '[outv]',
-      '-map', '[outa]',
-    ];
-
-    // Add platform-specific scaling
-    if (platform) {
-      const dimensions = getPlatformDimensions(platform);
-      outputArgs.push(
-        '-vf', `scale=${dimensions.width}:${dimensions.height}:force_original_aspect_ratio=decrease,pad=${dimensions.width}:${dimensions.height}:(ow-iw)/2:(oh-ih)/2:black`
-      );
-    }
-
-    // Encoding settings
-    outputArgs.push(
+      '-t', duration.toString(),
+      '-vf', config.filter,
       '-c:v', 'libx264',
       '-preset', 'medium',
       '-crf', '23',
       '-c:a', 'aac',
       '-b:a', '128k',
       '-movflags', '+faststart',
-      '-y',
       'output.mp4'
-    );
+    ]);
 
-    // Execute FFmpeg
-    await ffmpegInstance.exec(outputArgs);
+    console.log('✅ Video processed');
 
-    console.log('✅ Video segments concatenated');
+    // Stage 5: Read output file
+    onProgress?.(75, 'Preparing upload...');
+    
+    const data = await ffmpeg.readFile('output.mp4');
+    // Handle Uint8Array from FFmpeg
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: 'video/mp4' });
+    
+    console.log('✅ Output ready:', {
+      size: blob.size,
+      sizeMB: (blob.size / 1024 / 1024).toFixed(2)
+    });
 
-    onProgress?.(80);
+    // Stage 6: Upload to Supabase Storage
+    onProgress?.(80, 'Uploading clip...');
 
-    // Read output
-    const outputData = await ffmpegInstance.readFile('output.mp4');
-    const blob = new Blob([outputData as BlobPart], { type: 'video/mp4' });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
-    onProgress?.(85);
-
-    // Upload to storage
     const fileName = `${clipId}.mp4`;
-    const { error: uploadError } = await supabase.storage
-      .from('social-clips')
-      .upload(fileName, blob, { upsert: true });
+    const storagePath = `clips/${user.id}/${fileName}`;
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(storagePath, blob, {
+        contentType: 'video/mp4',
+        upsert: true
+      });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Failed to upload clip: ${uploadError.message}`);
+      console.error('❌ Upload error:', uploadError);
+      throw uploadError;
     }
 
-    onProgress?.(95);
+    console.log('✅ Uploaded to storage:', storagePath);
 
-    // Get public URL for the clip
-    const { data: clipUrlData } = supabase.storage
-      .from('social-clips')
-      .getPublicUrl(fileName);
+    // Stage 7: Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('videos')
+      .getPublicUrl(storagePath);
 
-    const clipPublicUrl = clipUrlData.publicUrl;
+    const clipUrl = publicUrlData.publicUrl;
 
-    // Update clip record
-    await supabase
+    console.log('✅ Public URL:', clipUrl);
+
+    // Stage 8: Update database
+    onProgress?.(90, 'Finalizing...');
+
+    const { error: updateError } = await supabase
       .from('social_clips')
       .update({
         status: 'completed',
-        clip_url: clipPublicUrl,
-        duration_seconds: totalDuration,
-        processed_at: new Date().toISOString(),
+        clip_url: clipUrl,
+        storage_path: storagePath,
+        file_size_bytes: blob.size,
+        processing_completed_at: new Date().toISOString()
       })
       .eq('id', clipId);
 
-    onProgress?.(100);
-
-    // Clean up
-    try {
-      await ffmpegInstance.deleteFile('input.mp4');
-      await ffmpegInstance.deleteFile('output.mp4');
-    } catch (cleanupError) {
-      console.warn('Cleanup warning:', cleanupError);
+    if (updateError) {
+      console.error('❌ DB update error:', updateError);
+      throw updateError;
     }
 
-    console.log('✅ Multi-segment clip completed:', clipId);
-    
+    console.log('✅ Database updated');
+
+    onProgress?.(100, 'Complete!');
+
     return {
       success: true,
-      url: clipPublicUrl,
-      duration: totalDuration,
+      clipUrl
     };
 
-  } catch (error) {
-    console.error('❌ Multi-segment clip processing failed:', error);
-    
-    // Update status to failed
-    await supabase
-      .from('social_clips')
-      .update({ 
-        status: 'failed',
-        error_message: error instanceof Error ? error.message : 'Processing failed'
-      })
-      .eq('id', clipId);
-    
-    throw error;
+  } catch (error: any) {
+    console.error('❌ Clip processing failed:', error);
+
+    // Mark as failed in database
+    try {
+      await supabase
+        .from('social_clips')
+        .update({
+          status: 'failed',
+          error_message: error.message || 'Browser processing failed',
+          processing_completed_at: new Date().toISOString()
+        })
+        .eq('id', clipId);
+    } catch (dbError) {
+      console.error('❌ Failed to update error status:', dbError);
+    }
+
+    return {
+      success: false,
+      error: error.message || 'Processing failed'
+    };
+  } finally {
+    // Cleanup
+    if (ffmpeg) {
+      try {
+        await ffmpeg.deleteFile('input.mp4');
+        await ffmpeg.deleteFile('output.mp4');
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
   }
 }

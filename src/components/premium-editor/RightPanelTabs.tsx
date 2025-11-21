@@ -1,21 +1,16 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wand2, Layers, Type, Image as ImageIcon, Settings, Accessibility, Sparkles, Video } from 'lucide-react';
+import { Wand2, Layers, Type, Image, Settings, Accessibility, Sparkles } from 'lucide-react';
 import { usePremiumEditor } from '@/store/premiumEditorStore';
-import { AIToolsPanel } from './ai-tools/AIToolsPanel';
+import { AIToolsPanel } from './AIToolsPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
-import { MediaLibrary } from './MediaLibrary';
-import { CaptionTemplateGallery } from './CaptionTemplateGallery';
-import { ExportManager } from './ExportManager';
-import { VideoAnalysisPanel } from '@/components/VideoAnalysisPanel';
-import { AdvancedFrameExtractor } from './AdvancedFrameExtractor';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
 
 interface RightPanelTabsProps {
   projectId: string;
   videoId: string;
   videoUrl: string;
   currentTime: number;
+  selectedTab: string;
 }
 
 export function RightPanelTabs({
@@ -23,23 +18,9 @@ export function RightPanelTabs({
   videoId,
   videoUrl,
   currentTime,
+  selectedTab,
 }: RightPanelTabsProps) {
-  const { ui, setSelectedTab, selectedSceneId, scenes, updateScene } = usePremiumEditor();
-  const selectedTab = ui.selectedTab;
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  
-  // Load video file for frame extraction
-  useEffect(() => {
-    if (videoUrl) {
-      fetch(videoUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'video.mp4', { type: blob.type });
-          setVideoFile(file);
-        })
-        .catch(err => console.error('Failed to load video file:', err));
-    }
-  }, [videoUrl]);
+  const { setSelectedTab, selectedSceneId, scenes, updateScene } = usePremiumEditor();
   
   const handleToolExecute = (toolId: string) => {
     toast.info(`Executing tool: ${toolId}`);
@@ -59,89 +40,56 @@ export function RightPanelTabs({
       onValueChange={(value) => setSelectedTab(value as any)}
       className="h-full flex flex-col"
     >
-      <TabsList className="grid grid-cols-8 w-full rounded-none border-b">
-        <TabsTrigger value="ai-tools" className="gap-1 font-light text-xs">
+      <TabsList className="grid grid-cols-7 w-full rounded-none border-b">
+        <TabsTrigger value="ai-tools" className="gap-2 font-light">
           <Wand2 className="h-4 w-4" />
           <span className="hidden xl:inline">AI</span>
         </TabsTrigger>
-        <TabsTrigger value="media" className="gap-1 font-light text-xs">
-          <ImageIcon className="h-4 w-4" />
-          <span className="hidden xl:inline">Media</span>
+        <TabsTrigger value="elements" className="gap-2 font-light">
+          <Layers className="h-4 w-4" />
+          <span className="hidden xl:inline">Elements</span>
         </TabsTrigger>
-        <TabsTrigger value="captions" className="gap-1 font-light text-xs">
+        <TabsTrigger value="captions" className="gap-2 font-light">
           <Type className="h-4 w-4" />
           <span className="hidden xl:inline">Captions</span>
         </TabsTrigger>
-        <TabsTrigger value="analysis" className="gap-1 font-light text-xs">
-          <Video className="h-4 w-4" />
-          <span className="hidden xl:inline">Analysis</span>
+        <TabsTrigger value="media" className="gap-2 font-light">
+          <Image className="h-4 w-4" />
+          <span className="hidden xl:inline">Media</span>
         </TabsTrigger>
-        <TabsTrigger value="properties" className="gap-1 font-light text-xs">
+        <TabsTrigger value="properties" className="gap-2 font-light">
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Props</span>
         </TabsTrigger>
-        <TabsTrigger value="accessibility" className="gap-1 font-light text-xs">
+        <TabsTrigger value="accessibility" className="gap-2 font-light">
           <Accessibility className="h-4 w-4" />
           <span className="hidden xl:inline">A11y</span>
         </TabsTrigger>
-        <TabsTrigger value="export" className="gap-1 font-light text-xs">
+        <TabsTrigger value="underlord" className="gap-2 font-light">
           <Sparkles className="h-4 w-4" />
-          <span className="hidden xl:inline">Export</span>
-        </TabsTrigger>
-        <TabsTrigger value="elements" className="gap-1 font-light text-xs">
-          <Layers className="h-4 w-4" />
-          <span className="hidden xl:inline">Elements</span>
+          <span className="hidden xl:inline">Underlord</span>
         </TabsTrigger>
       </TabsList>
 
       <div className="flex-1 overflow-hidden">
         <TabsContent value="ai-tools" className="h-full m-0">
           <AIToolsPanel 
-            projectId={projectId}
-            videoUrl={videoUrl}
-            transcript=""
-            onJobComplete={() => {
-              toast.success('AI job completed!');
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="media" className="h-full m-0">
-          <MediaLibrary 
             videoId={videoId}
-            onMediaSelect={(media) => {
-              toast.success(`Selected ${media.type}: ${media.title}`);
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="captions" className="h-full m-0">
-          <CaptionTemplateGallery 
-            projectId={projectId}
-            videoId={videoId}
-            onTemplateSelect={(template) => {
-              toast.success(`Applied template: ${template.name}`);
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="analysis" className="h-full m-0">
-          <VideoAnalysisPanel 
-            assetId={videoId}
-            playbackUrl={videoUrl}
-            videoId={videoId}
+            selectedSceneId={selectedSceneId}
+            onToolExecute={handleToolExecute}
           />
         </TabsContent>
 
         <TabsContent value="elements" className="h-full m-0 p-4">
-          <AdvancedFrameExtractor 
-            videoFile={videoFile}
-            onFrameExtracted={(frame) => {
-              toast.success('Frame extracted', {
-                description: `${frame.width}x${frame.height} at ${frame.timestamp.toFixed(2)}s`
-              });
-            }}
-          />
+          <div className="text-sm text-muted-foreground font-light">Elements panel coming soon...</div>
+        </TabsContent>
+
+        <TabsContent value="captions" className="h-full m-0 p-4">
+          <div className="text-sm text-muted-foreground font-light">Captions panel coming soon...</div>
+        </TabsContent>
+
+        <TabsContent value="media" className="h-full m-0 p-4">
+          <div className="text-sm text-muted-foreground font-light">Media library coming soon...</div>
         </TabsContent>
 
         <TabsContent value="properties" className="h-full m-0">

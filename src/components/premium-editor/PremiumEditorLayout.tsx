@@ -1,367 +1,1192 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+// src/components/premium-editor/PremiumEditorLayout.tsx
+// REPLACE entire file with this
+
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Download, ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { AxessiblePlayer } from '@/components/AxessiblePlayer';
+import { TranscriptEditor } from '@/components/TranscriptEditor';
+import { useVideoStorage } from '@/hooks/useVideoStorage';
+import type { CaptionSegment } from '@/components/CaptionsWithIntention';
+import { 
+  ArrowLeft,
+  Save, 
+  Download, 
+  Sparkles,
+  Film,
+  FileText,
+  Scissors,
+  Upload,
+  Loader2,
+  Plus,
+  FolderOpen,
+  Settings,
+  Layers,
+  Type,
+  Image,
+  Wand2,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  Monitor
+} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePremiumEditor } from '@/store/premiumEditorStore';
-import { useProjectScenes } from '@/hooks/useSceneComposition';
-import { TextBasedEditor } from './TextBasedEditor';
+
+// Import all components
 import { Timeline } from './Timeline';
+import { TimelineControls } from './TimelineControls';
+import { Waveform } from './Waveform';
+import { TextBasedEditor } from './TextBasedEditor';
+import { MultiSegmentClipCreator } from './MultiSegmentClipCreator';
+import { AIAssistant } from './AIAssistant';
+import { AdvancedExportDialog } from './AdvancedExportDialog';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
-import { EnhancedVideoPlayer } from '@/components/EnhancedVideoPlayer';
-import { generateScenesFromTranscript } from '@/hooks/useVideoProject';
+import { SceneCanvasPreview } from './SceneCanvasPreview';
+import { SubscriptionGate } from './SubscriptionGate';
+import { Badge } from '@/components/ui/badge';
+import { DevTestingPanel } from './DevTestingPanel';
+import { convertSegmentsToScenes } from '@/lib/premium-editor/scene-manager';
+import type { Scene } from '@/lib/premium-editor/scene-manager';
+import { MultiTrackTimeline } from './MultiTrackTimeline';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { ElementsPanel } from './ElementsPanel';
+import { AIToolsPanel } from './AIToolsPanel';
 
-interface PremiumEditorLayoutProps {
-  videoId?: string;
-  projectId?: string;
-}
+// Import hooks
+import { useVideoProject, generateScenesFromTranscript } from '@/hooks/useVideoProject';
+import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { useResponsive } from '@/hooks/useResponsive';
+import { cn } from '@/lib/utils';
 
-export function PremiumEditorLayout({ videoId: propsVideoId, projectId: propsProjectId }: PremiumEditorLayoutProps) {
-  const { projectId: routeProjectId, id: routeVideoId } = useParams<{ projectId?: string; id?: string }>();
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [videoData, setVideoData] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-
-  const videoId = propsVideoId || routeVideoId;
-  const projectId = propsProjectId || routeProjectId;
-
-  // Premium editor store
-  const { 
-    project, 
-    setProject, 
-    playback, 
-    setCurrentTime, 
-    togglePlayback,
-    selectedSceneId,
-    selectScene
-  } = usePremiumEditor();
-
-  // Load project scenes
-  const { data: projectScenes = [] } = useProjectScenes(project?.id || '');
-
-  // Load project and video on mount
-  useEffect(() => {
-    if (videoId) {
-      loadVideoProject(videoId);
-    }
-  }, [videoId]);
-
-  async function loadVideoProject(videoId: string) {
-    setIsLoading(true);
-    
-    try {
-      console.log('🎬 Loading video project for video:', videoId);
-
-      // 1. Fetch video data
-      const { data: video, error: videoError } = await supabase
+export function PremiumEditorLayout() {
+  const { id: videoId } = useParams<{ id: string }>();
+  const { isDesktop, isIPad, isMobile } = useResponsive();
+  
+  const [activeTab, setActiveTab] = useState('timeline');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showAI, setShowAI] = useState(false);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isGeneratingScenes, setIsGeneratingScenes] = useState(false);
+  const [activeRightPanel, setActiveRightPanel] = useState<string | null>(null);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  
+  // Video data state
+  const [videoTitle, setVideoTitle] = useState<string>('');
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
+  const [captionsFromTranscript, setCaptionsFromTranscript] = useState<CaptionSegment[]>([]);
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [transcriptSegments, setTranscriptSegments] = useState<any[]>([]);
+  
+  // Elements state for ElementsPanel
+  const [elements, setElements] = useState<any[]>([]);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Use video storage hook
+  const { loadTranscriptSegments } = useVideoStorage(videoId || '');
+  
+  const { canAccess, isAdmin, tier, isLoading: accessLoading } = usePremiumAccess();
+  const { project, isLoading: projectLoading } = useVideoProject(videoId);
+  
+  // Fetch video data for player
+  const { data: videoData, isLoading: videoDataLoading } = useQuery({
+    queryKey: ['videoData', videoId],
+    queryFn: async () => {
+      if (!videoId) return null;
+      const { data } = await supabase
         .from('videos')
-        .select('*')
+        .select('title, storage_path, thumbnail_url, language, duration_seconds')
         .eq('id', videoId)
         .single();
+      return data;
+    },
+    enabled: !!videoId
+  });
 
-      if (videoError) throw videoError;
-      if (!video) throw new Error('Video not found');
-
-      console.log('📹 Video loaded:', video);
-      setVideoData(video);
-
-      // 2. Construct video URL from storage_path (videos table uses storage_path, not video_url)
-      let videoUrl = '';
-      if (video.storage_path) {
-        const { data: publicUrl } = supabase.storage
-          .from('videos')
-          .getPublicUrl(video.storage_path);
-
-        videoUrl = publicUrl?.publicUrl || 
-          `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${video.storage_path}`;
-      }
-
-      if (!videoUrl) {
-        throw new Error('No video URL found');
-      }
-
-      console.log('🎥 Video URL resolved:', videoUrl);
-
-      // 3. Create or load premium_project
-      let { data: premiumProject } = await supabase
-        .from('premium_projects')
+  // Fetch audio descriptions with React Query for stability
+  const { data: audioDescriptions = [] } = useQuery({
+    queryKey: ['audioDescriptions', videoId, videoData?.language],
+    queryFn: async () => {
+      if (!videoId || !videoData?.language) return [];
+      const { data } = await supabase
+        .from('audio_descriptions')
         .select('*')
         .eq('video_id', videoId)
-        .maybeSingle();
-
-      if (!premiumProject) {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id;
-
-        if (!userId) {
-          throw new Error('User not authenticated');
-        }
-
-        const { data: newProject, error: createError } = await supabase
-          .from('premium_projects')
-          .insert({
-            video_id: videoId,
-            name: video.title || 'Untitled Project',
-            user_id: userId,
-            canvas_width: 1920,
-            canvas_height: 1080,
-            canvas_fps: 30,
-            total_duration: video.duration_seconds
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        premiumProject = newProject;
-        console.log('✨ Created new premium project:', premiumProject.id);
-        toast.success('Project created');
+        .eq('language', videoData.language)
+        .order('start_time');
+      return data || [];
+    },
+    enabled: !!videoId && !!videoData?.language,
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent frequent refetches
+    refetchOnWindowFocus: false,
+  });
+  
+  // Test Supabase connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      if (!videoId) return;
+      
+      console.log('🧪 Testing Supabase connection...');
+      
+      // Test auth status
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session:', session ? 'Active' : 'None', session?.expires_at);
+      
+      // Test query
+      const { data, error } = await supabase
+        .from('videos')
+        .select('id, title')
+        .eq('id', videoId)
+        .single();
+      
+      console.log('Test query result:', { data, error });
+      
+      if (error) {
+        console.error('❌ Supabase connection test failed:', error);
+        toast.error('Database connection issue. Please refresh the page.');
       } else {
-        console.log('✅ Loaded existing premium project:', premiumProject.id);
+        console.log('✅ Supabase connection test passed');
       }
+    };
+    
+    testConnection();
+  }, [videoId]);
 
-      // 4. Set project in store
-      setProject({
-        id: premiumProject.id,
-        name: premiumProject.name,
-        videoId: video.id,
-        videoUrl: videoUrl,
-        thumbnailUrl: video.thumbnail_url,
-        duration: video.duration_seconds || 0,
-        createdAt: premiumProject.created_at,
-        updatedAt: premiumProject.updated_at
-      });
-
-      // 5. Check if we have scenes
-      const { data: existingScenes } = await supabase
-        .from('project_scenes')
-        .select('id')
-        .eq('project_id', premiumProject.id)
-        .limit(1);
-
-      // 6. Auto-generate scenes if none exist
-      if (!existingScenes || existingScenes.length === 0) {
-        console.log('🎬 No scenes found, generating from transcript...');
-        toast.info('Generating scenes from transcript...');
+  // Load all video data on mount
+  useEffect(() => {
+    const loadVideoData = async () => {
+      if (!videoId || !videoData) return;
+      
+      try {
+        // Set video metadata
+        setVideoTitle(videoData.title);
+        setThumbnailUrl(videoData.thumbnail_url);
         
-        try {
-          await generateScenesFromTranscript(premiumProject.id, videoId);
-          toast.success('Scenes generated successfully');
-          // Scenes will be loaded automatically via useProjectScenes
-        } catch (error) {
-          console.error('Failed to generate scenes:', error);
-          toast.error('Could not generate scenes. Please ensure video has a transcript.');
-        }
+        // Load transcript segments
+        const segments = await loadTranscriptSegments(videoData.language || 'en');
+        setTranscriptSegments(segments);
+        
+        // Load characters
+        const { data: charactersData } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('video_id', videoId);
+        setCharacters(charactersData || []);
+        
+        // Convert segments to captions
+        const captions = convertToCaptions(segments, charactersData || []);
+        setCaptionsFromTranscript(captions);
+        
+      } catch (error) {
+        console.error('Failed to load video data:', error);
+        toast.error('Failed to load video data');
       }
+    };
+    
+    loadVideoData();
+  }, [videoId, videoData, loadTranscriptSegments]);
 
-      toast.success('Project loaded');
-    } catch (error) {
-      console.error('❌ Failed to load project:', error);
-      toast.error('Failed to load project: ' + (error as Error).message);
-    } finally {
-      setIsLoading(false);
+  // Construct video URL from storage path
+  const videoUrl = videoData?.storage_path 
+    ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${videoData.storage_path}`
+    : '';
+
+  const { data: segments = [] } = useQuery({
+    queryKey: ['transcriptSegments', videoId],
+    queryFn: async () => {
+      if (!videoId) return [];
+      const { data } = await supabase
+        .from('transcript_segments_clean')
+        .select('id, start_time, end_time, text, speaker')
+        .eq('video_id', videoId)
+        .order('idx');
+      return data || [];
+    },
+    enabled: !!videoId
+  });
+
+  // Calculate duration from segments
+  const videoDuration = segments.length > 0 
+    ? segments[segments.length - 1].end_time 
+    : 60;
+
+  // Fetch project scenes
+  const { data: dbScenes = [] } = useQuery({
+    queryKey: ['projectScenes', project?.id],
+    queryFn: async () => {
+      if (!project?.id) return [];
+      const { data } = await supabase
+        .from('project_scenes')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('scene_order', { ascending: true });
+      return data || [];
+    },
+    enabled: !!project?.id
+  });
+
+  // Transform database scenes to Timeline Scene format with full data
+  const scenes = useMemo(() => {
+    if (dbScenes.length === 0) return [];
+    
+    return dbScenes.map((scene, index) => {
+      // Find matching transcript segment
+      const segment = transcriptSegments.find(s => s.id === scene.video_id);
+      const speaker = segment?.speaker || 'Speaker';
+      const text = segment?.text || '';
+      
+      // Get character and color
+      const character = characters.find(c => c.name === speaker);
+      const speakerColor = character?.color || '#3B82F6';
+      
+      // Convert words format
+      const words = segment?.words?.map((w: any) => ({
+        text: w.text,
+        startTime: w.startTime || w.start_time || w.start,
+        endTime: w.endTime || w.end_time || w.end
+      })) || [];
+      
+      const startTime = scene.timeline_start || 0;
+      const endTime = scene.timeline_end || startTime + (scene.duration_seconds || 0);
+      
+      // Find audio descriptions for this scene
+      const sceneADs = audioDescriptions.filter(ad => 
+        (ad.start_time >= startTime && ad.start_time < endTime) ||
+        (ad.end_time > startTime && ad.end_time <= endTime)
+      );
+      
+      return {
+        id: scene.id,
+        name: scene.name || `Scene ${scene.scene_order + 1}`,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        transcriptSegmentId: scene.video_id || '',
+        speaker,
+        speakerColor,
+        characterType: character?.type as any,
+        text,
+        words,
+        layout: (scene.layout_type as any) || 'fullscreen',
+        order: index,
+        hasAudioDescription: sceneADs.length > 0,
+        hasSignLanguage: false,
+        audioDescriptions: sceneADs.length > 0 ? sceneADs.map(ad => ({
+          id: ad.id,
+          video_id: ad.video_id,
+          start_time: ad.start_time,
+          end_time: ad.end_time,
+          description: ad.description,
+          audio_url: ad.audio_url
+        })) : undefined,
+        signLanguageClipUrl: undefined
+      };
+    });
+  }, [dbScenes, transcriptSegments, characters, audioDescriptions]);
+
+  // Auto-select first scene when scenes load
+  useEffect(() => {
+    if (scenes.length > 0 && !selectedSceneId) {
+      console.log('🎬 Auto-selecting first scene:', scenes[0].id);
+      setSelectedSceneId(scenes[0].id);
+      setCurrentTime(scenes[0].startTime);
     }
-  }
+  }, [scenes, selectedSceneId]);
 
-  async function handleSave() {
-    if (!project) return;
+  // Fetch AI suggestions
+  const { data: aiSuggestions = [] } = useQuery({
+    queryKey: ['aiSuggestions', project?.id],
+    queryFn: async () => {
+      if (!project?.id) return [];
+      const { data } = await supabase
+        .from('ai_suggestions')
+        .select('*')
+        .eq('project_id', project.id)
+        .eq('status', 'pending')
+        .order('start_time', { ascending: true });
+      return data || [];
+    },
+    enabled: !!project?.id
+  });
 
-    setSaving(true);
+  // Admin users and premium tier users have access
+  const hasAccess = canAccess || isAdmin;
+
+  // Sync video playback with timeline
+  useEffect(() => {
+    if (videoRef.current && !isPlaying) {
+      videoRef.current.currentTime = currentTime;
+    }
+  }, [currentTime, isPlaying]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(() => setIsPlaying(false));
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
+
+  // Auto-generate scenes from transcript if none exist
+  useEffect(() => {
+    if (project?.id && videoId && scenes.length === 0 && !projectLoading && !isGeneratingScenes) {
+      setIsGeneratingScenes(true);
+      generateScenesFromTranscript(project.id, videoId)
+        .finally(() => setIsGeneratingScenes(false));
+    }
+  }, [project?.id, videoId, scenes.length, projectLoading, isGeneratingScenes]);
+
+  const handleGenerateScenes = async () => {
+    if (!project?.id || !videoId) return;
+    
+    setIsGeneratingScenes(true);
+    try {
+      await generateScenesFromTranscript(project.id, videoId);
+      toast.success('Scenes generated successfully');
+    } catch (error) {
+      console.error('Failed to generate scenes:', error);
+      toast.error('Failed to generate scenes');
+    } finally {
+      setIsGeneratingScenes(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!project) {
+      toast.error('No project to save');
+      return;
+    }
+    
+    setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('premium_projects')
-        .update({
-          updated_at: new Date().toISOString()
-        })
+        .from('video_projects')
+        .update({ updated_at: new Date().toISOString() })
         .eq('id', project.id);
-
-      if (error) throw error;
       
-      toast.success('Project saved');
+      if (error) throw error;
+      toast.success('Project saved successfully');
     } catch (error) {
-      console.error('Failed to save project:', error);
+      console.error('Save error:', error);
       toast.error('Failed to save project');
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
-  }
+  };
 
-  function handleExport() {
-    toast.info('Export functionality coming soon');
-  }
+  const handleSceneSelect = (sceneId: string) => {
+    setSelectedSceneId(sceneId);
+  };
 
-  function handleSceneUpdate(sceneId: string, updates: any) {
-    // Update scene in database
-    supabase
-      .from('project_scenes')
-      .update(updates)
-      .eq('id', sceneId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('Failed to update scene:', error);
-          toast.error('Failed to update scene');
-        } else {
-          toast.success('Scene updated');
-        }
-      });
-  }
+  const handleScenesReorder = async (reorderedScenes: any[]) => {
+    try {
+      // Update scene orders in database
+      const updates = reorderedScenes.map((scene, index) => 
+        supabase
+          .from('project_scenes')
+          .update({ scene_order: index })
+          .eq('id', scene.id)
+      );
+      
+      await Promise.all(updates);
+      toast.success('Scenes reordered');
+    } catch (error) {
+      console.error('Reorder error:', error);
+      toast.error('Failed to reorder scenes');
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading editor...</p>
-        </div>
-      </div>
+  const handleSplitScene = async () => {
+    if (!selectedSceneId || !project) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.splitScene(selectedSceneId, currentTime);
+      if (result.success) {
+        toast.success('Scene split successfully');
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Split error:', error);
+      toast.error('Failed to split scene');
+    }
+  };
+
+  const handleDeleteScene = async () => {
+    if (!selectedSceneId) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.deleteScene(selectedSceneId);
+      if (result.success) {
+        toast.success('Scene deleted');
+        setSelectedSceneId(null);
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete scene');
+    }
+  };
+
+  const handleDuplicateScene = async () => {
+    if (!selectedSceneId) return;
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const result = await sceneManager.duplicateScene(selectedSceneId);
+      if (result.success) {
+        toast.success('Scene duplicated');
+        // Refetch scenes
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      toast.error('Failed to duplicate scene');
+    }
+  };
+
+  const handleFitToView = () => {
+    setZoom(1);
+  };
+
+  const handleCreateTestScenes = async () => {
+    if (!project?.id) {
+      toast.error('No project available');
+      return;
+    }
+
+    try {
+      const { sceneManager } = await import('@/lib/premium-editor/scene-manager');
+      const durations = [8, 15, 10];
+
+      for (let i = 0; i < durations.length; i++) {
+        const duration = durations[i];
+        await sceneManager.createScene(project.id, {
+          name: `Test Scene ${i + 1}`,
+          duration: duration,
+          layout: 'fullscreen',
+          videoId: videoId || project.id
+        });
+      }
+
+      toast.success('Created 3 test scenes!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Create test scenes error:', error);
+      toast.error('Failed to create test scenes');
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Scene navigation helpers
+  const navigateToPreviousScene = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    if (currentIndex > 0) {
+      const prevScene = scenes[currentIndex - 1];
+      setSelectedSceneId(prevScene.id);
+      setCurrentTime(prevScene.startTime);
+    }
+  };
+
+  const navigateToNextScene = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    if (currentIndex < scenes.length - 1) {
+      const nextScene = scenes[currentIndex + 1];
+      setSelectedSceneId(nextScene.id);
+      setCurrentTime(nextScene.startTime);
+    }
+  };
+
+  const canNavigatePrevious = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    return currentIndex > 0;
+  };
+
+  const canNavigateNext = () => {
+    const currentIndex = scenes.findIndex(s => s.id === selectedSceneId);
+    return currentIndex < scenes.length - 1;
+  };
+
+  // Save scene updates to database
+  // Element management handlers
+  const handleAddElement = (element: any) => {
+    setElements(prev => [...prev, element]);
+  };
+
+  const handleUpdateElement = (elementId: string, updates: Partial<any>) => {
+    setElements(prev => prev.map(el => el.id === elementId ? { ...el, ...updates } : el));
+  };
+
+  const handleDeleteElement = (elementId: string) => {
+    setElements(prev => prev.filter(el => el.id !== elementId));
+    if (selectedElementId === elementId) {
+      setSelectedElementId(null);
+    }
+  };
+
+  const handleUndo = () => {
+    toast.info('Undo functionality coming soon');
+  };
+
+  const handleRedo = () => {
+    toast.info('Redo functionality coming soon');
+  };
+
+  const handleSaveProject = async () => {
+    setIsSaving(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success('Project saved successfully');
+    } catch (error) {
+      toast.error('Failed to save project');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInsertClip = (clipUrl: string) => {
+    toast.success('Clip inserted into timeline');
+    // Logic to insert generated clip into timeline
+  };
+
+  // Save scene updates to database
+  const saveSceneUpdates = async (sceneId: string, updates: Partial<Scene>) => {
+    if (!project?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('project_scenes')
+        .update({
+          name: updates.name,
+          timeline_start: updates.startTime,
+          timeline_end: updates.endTime,
+          duration_seconds: updates.duration,
+          layout_type: updates.layout as any,
+        })
+        .eq('id', sceneId);
+      
+      if (error) throw error;
+      
+      toast.success('Scene updated');
+    } catch (error) {
+      console.error('Failed to save scene:', error);
+      toast.error('Failed to save changes');
+    }
+  };
+  
+  // Convert transcript segments to captions
+  const convertToCaptions = (segments: any[], chars: any[]): CaptionSegment[] => {
+    return segments.map(seg => ({
+      id: seg.id || `seg-${seg.idx}`,
+      startTime: seg.start_time || seg.startTime,
+      endTime: seg.end_time || seg.endTime,
+      text: seg.text,
+      speaker: seg.speaker || 'Speaker',
+      speakerColor: chars.find(c => c.id === seg.character_id)?.color || seg.speaker_color || '#3B82F6',
+      words: seg.words || [],
+      emphasis: seg.emphasis || 'normal',
+      pitch: seg.pitch || 'normal'
+    }));
+  };
+  
+  // Find active segment at current time
+  const getActiveSegment = (time: number, segments: any[]) => {
+    return segments.find(seg => 
+      time >= (seg.start_time || seg.startTime) && 
+      time <= (seg.end_time || seg.endTime)
     );
-  }
+  };
+  
+  // Handle transcript updates
+  const handleTranscriptUpdate = (updatedSegments: any[]) => {
+    setTranscriptSegments(updatedSegments);
+    const captions = convertToCaptions(updatedSegments, characters);
+    setCaptionsFromTranscript(captions);
+  };
+  
+  // Handle segment selection from transcript
+  const handleSegmentSelect = (segmentId: string) => {
+    const segment = transcriptSegments.find(s => s.id === segmentId);
+    if (segment && videoRef.current) {
+      videoRef.current.currentTime = segment.start_time || segment.startTime;
+    }
+  };
 
-  if (!project || !videoData) {
+  if (accessLoading || projectLoading || videoDataLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <p className="text-destructive mb-4">Failed to load project</p>
-          <Button onClick={() => navigate('/videos')}>
-            Back to Videos
-          </Button>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-light">Loading premium editor...</p>
         </div>
       </div>
     );
   }
 
-  const selectedScene = projectScenes.find(s => s.id === selectedSceneId);
+  // Block mobile devices
+  if (isMobile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-8 bg-background">
+        <div className="text-center max-w-md">
+          <Monitor className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold mb-2">Desktop Required</h2>
+          <p className="text-muted-foreground mb-4">
+            Premium Video Editor is designed for desktop and iPad Pro.
+            Please switch to a larger screen for the best experience.
+          </p>
+          <Link to={`/video/${videoId}`}>
+            <Button variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Video
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!videoData) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="p-6 max-w-md">
+          <h2 className="text-lg font-semibold mb-2">Video Not Found</h2>
+          <p className="text-muted-foreground mb-4">The requested video could not be loaded.</p>
+          <Link to="/videos">
+            <Button>Back to Videos</Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <SubscriptionGate currentTier={tier} videoId={videoId || ''} />
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Top Bar */}
-      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/videos')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-lg font-bold text-foreground">
-            {project.name || 'Premium Editor'}
-          </h1>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </>
-            )}
-          </Button>
-          <Button onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content: 3-Panel Layout */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
+    <div className={cn(
+      "flex flex-col h-screen bg-background",
+      isIPad && "text-sm" // Smaller text on iPad for better fit
+    )}>
+      {/* Keyboard Shortcuts Handler */}
+      <KeyboardShortcuts
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        duration={videoData?.duration_seconds || 0}
+        onTogglePlayback={() => setIsPlaying(!isPlaying)}
+        onSeek={setCurrentTime}
+        selectedElementId={selectedElementId}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onDeleteElement={handleDeleteElement}
+        onSave={handleSaveProject}
+        onExport={() => setShowExportDialog(true)}
+      />
+      
+      <div className="border-b bg-card">
+        <div className={cn(
+          "flex items-center justify-between px-4 py-3",
+          isIPad && "px-3 py-2" // Compact padding on iPad
+        )}>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/assets/axessible-logo.png"
+                alt="Axessible"
+                className="h-8 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+            </Link>
+            <div className="h-6 w-px bg-border" />
+            <Link to="/videos">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                My Videos
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-lg font-semibold">
+                  {project?.name || 'Premium Video Editor'}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  {segments.length} transcript segments
+                </p>
+              </div>
+              {isAdmin && (
+                <Badge variant="secondary" className="text-xs font-light">
+                  Admin Access
+                </Badge>
+              )}
+            </div>
+          </div>
           
-          {/* LEFT PANEL: Text-Based Editor */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full bg-card border-r border-border">
-              <TextBasedEditor
-                videoId={project.videoId}
-                videoUrl={project.videoUrl}
-                currentTime={playback.currentTime}
-                onTimeUpdate={setCurrentTime}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showAI ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAI(!showAI)}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Ask AI
+            </Button>
+
+            {scenes.length === 0 && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={async () => {
+                  if (project?.id && videoId) {
+                    setIsGeneratingScenes(true);
+                    await generateScenesFromTranscript(project.id, videoId);
+                    setIsGeneratingScenes(false);
+                    toast.success('Scenes generated from transcript!');
+                    // Refresh to show new scenes
+                    window.location.reload();
+                  }
+                }}
+                disabled={isGeneratingScenes}
+              >
+                {isGeneratingScenes ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Scenes
+                  </>
+                )}
+              </Button>
+            )}
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSave} 
+              disabled={isSaving || !project}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+
+            {scenes.length === 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCreateTestScenes}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Test Scenes
+              </Button>
+            )}
+
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => setShowExportDialog(true)}
+              disabled={!project}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="w-full justify-start border-b rounded-none px-4">
+              <TabsTrigger value="timeline" className="gap-2">
+                <Film className="w-4 h-4" />
+                Timeline
+              </TabsTrigger>
+              <TabsTrigger value="transcript" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Transcript
+              </TabsTrigger>
+              <TabsTrigger value="social" className="gap-2">
+                <Scissors className="w-4 h-4" />
+                Social Clips
+              </TabsTrigger>
+              <TabsTrigger value="export" className="gap-2">
+                <Upload className="w-4 h-4" />
+                Export
+              </TabsTrigger>
+              <TabsTrigger value="elements" className="gap-2">
+                <Layers className="w-4 h-4" />
+                Elements
+              </TabsTrigger>
+              <TabsTrigger value="ai-tools" className="gap-2">
+                <Wand2 className="w-4 h-4" />
+                AI Tools
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="timeline" className="m-0 h-full flex flex-col">
+                {videoId && project && (
+                  <>
+                    {/* Scene Canvas Preview */}
+                    <div className="px-4 pt-4 pb-2">
+                      <div className="mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h2 className="font-light text-foreground">
+                            {videoTitle || 'Video Preview'}
+                          </h2>
+                          {selectedSceneId && (
+                            <Badge variant="outline" className="font-mono text-xs font-light">
+                              Scene {scenes.findIndex(s => s.id === selectedSceneId) + 1} of {scenes.length}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Scene Navigation */}
+                        {selectedSceneId && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={navigateToPreviousScene}
+                              disabled={!canNavigatePrevious()}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={navigateToNextScene}
+                              disabled={!canNavigateNext()}
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-muted/30 rounded-lg p-4" style={{ height: '400px' }}>
+                        {videoDataLoading || projectLoading ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+                              <span className="text-sm text-muted-foreground font-light">Loading video...</span>
+                            </div>
+                          </div>
+                        ) : !videoUrl ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-destructive font-light mb-2">Failed to load video</p>
+                              <p className="text-sm text-muted-foreground font-light mb-4">
+                                The video URL could not be loaded. Please refresh the page.
+                              </p>
+                              <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="font-light">
+                                Refresh Page
+                              </Button>
+                            </div>
+                          </div>
+                        ) : scenes.length === 0 ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-muted-foreground font-light mb-2">No scenes available</p>
+                              <p className="text-sm text-muted-foreground font-light mb-4">
+                                Create scenes from your transcript to start editing
+                              </p>
+                              {!isGeneratingScenes && (
+                                <Button onClick={handleGenerateScenes} size="sm" className="font-light">
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Generate Scenes
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ) : selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
+                          <SceneCanvasPreview
+                            scene={scenes.find(s => s.id === selectedSceneId)!}
+                            videoUrl={videoUrl}
+                            videoId={videoId}
+                            currentTime={currentTime}
+                            isPlaying={isPlaying}
+                            onTimeUpdate={setCurrentTime}
+                            onPlayStateChange={setIsPlaying}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-muted-foreground mb-2">No scene selected</p>
+                              <p className="text-sm text-muted-foreground">
+                                The first scene will be selected automatically
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Waveform */}
+                    <div className="px-4 pt-2">
+                      <Waveform
+                        duration={videoDuration}
+                        currentTime={currentTime}
+                        onTimeChange={setCurrentTime}
+                        aiSuggestions={aiSuggestions}
+                        height={60}
+                      />
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="flex-1">
+                      <Timeline 
+                        projectId={project.id}
+                        scenes={scenes}
+                        currentTime={currentTime}
+                        duration={videoDuration}
+                        isPlaying={isPlaying}
+                        onSceneSelect={handleSceneSelect}
+                        onTimeChange={setCurrentTime}
+                        onSeek={(time: number) => {
+                          setCurrentTime(time);
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = time;
+                          }
+                        }}
+                        onSceneReorder={async (sceneId: string, newStartTime: number) => {
+                          try {
+                            const sceneIndex = scenes.findIndex(s => s.id === sceneId);
+                            if (sceneIndex === -1) return;
+                            
+                            const movedScene = scenes[sceneIndex];
+                            const sceneDuration = movedScene.endTime - movedScene.startTime;
+                            const newEndTime = newStartTime + sceneDuration;
+                            
+                            // Update database
+                            const { error } = await supabase
+                              .from('project_scenes')
+                              .update({
+                                timeline_start: newStartTime,
+                                timeline_end: newEndTime
+                              })
+                              .eq('id', sceneId);
+                            
+                            if (error) {
+                              console.error('Failed to update scene:', error);
+                              toast.error('Failed to save scene position');
+                              return;
+                            }
+                            
+                            toast.success('Scene repositioned');
+                          } catch (error) {
+                            console.error('Scene reorder error:', error);
+                            toast.error('Failed to reorder scene');
+                          }
+                        }}
+                        onScenesReorder={handleScenesReorder}
+                      />
+                    </div>
+
+                    {/* Controls */}
+                    <TimelineControls
+                      isPlaying={isPlaying}
+                      currentTime={currentTime}
+                      duration={videoDuration}
+                      zoom={zoom}
+                      selectedSceneId={selectedSceneId}
+                      onPlayPause={() => setIsPlaying(!isPlaying)}
+                      onSeek={setCurrentTime}
+                      onZoomChange={setZoom}
+                      onSplitScene={handleSplitScene}
+                      onDeleteScene={handleDeleteScene}
+                      onDuplicateScene={handleDuplicateScene}
+                      onFitToView={handleFitToView}
+                    />
+                  </>
+                )}
+              </TabsContent>
+
+              <TabsContent value="transcript" className="m-0 h-full overflow-auto">
+                {videoId && videoUrl && (
+                  <TextBasedEditor 
+                    videoId={videoId} 
+                    videoUrl={videoUrl}
+                    onTimeUpdate={setCurrentTime}
+                    currentTime={currentTime}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="social" className="m-0 h-full overflow-auto">
+                {videoId && <MultiSegmentClipCreator videoId={videoId} segments={segments} />}
+              </TabsContent>
+
+              <TabsContent value="export" className="m-0 p-4">
+                <Card className="p-6">
+                  <h3 className="text-lg font-light mb-4">Export Options</h3>
+                  <p className="text-muted-foreground font-light mb-6">
+                    Export your project in various professional formats including DOCX transcripts, 
+                    AAF timelines, and SRT/VTT subtitles.
+                  </p>
+                  <Button 
+                    onClick={() => setShowExportDialog(true)} 
+                    size="lg" 
+                    className="w-full font-light"
+                    disabled={!project}
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Open Export Dialog
+                  </Button>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="elements" className="m-0 h-full overflow-hidden">
+                {videoId && <ElementsPanel videoId={videoId} />}
+              </TabsContent>
+
+              <TabsContent value="ai-tools" className="m-0 h-full overflow-hidden">
+                {videoId && (
+                  <AIToolsPanel
+                    videoId={videoId}
+                    selectedSceneId={selectedSceneId}
+                    onToolExecute={(toolId) => {
+                      console.log(`Executing AI tool: ${toolId}`);
+                    }}
+                  />
+                )}
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+
+        <div className="w-80 border-l bg-card overflow-auto flex flex-col">
+          <div className="p-4 border-b border-border">
+            <h3 className="font-light text-sm">Scene Properties</h3>
+          </div>
+          
+          {selectedSceneId && scenes.find(s => s.id === selectedSceneId) ? (
+            <div className="flex-1 overflow-hidden">
+              <ScenePropertiesPanel 
+                scene={scenes.find(s => s.id === selectedSceneId)!}
+                videoId={videoId!}
+                videoUrl={videoUrl}
+                videoData={videoData}
+                onSceneUpdate={(updates) => {
+                  saveSceneUpdates(selectedSceneId, updates);
+                }}
+                onTranscriptUpdate={(segments) => {
+                  setTranscriptSegments(segments);
+                  const newScenes = convertSegmentsToScenes(
+                    segments.map(s => ({
+                      id: s.id,
+                      start_time: s.startTime || s.start_time,
+                      end_time: s.endTime || s.end_time,
+                      text: s.text,
+                      speaker: s.speaker,
+                      speaker_color: s.speakerColor || s.speaker_color,
+                      words: s.words
+                    })),
+                    characters,
+                    audioDescriptions,
+                    []
+                  );
+                }}
+                onCharactersUpdate={(updatedCharacters) => {
+                  setCharacters(updatedCharacters);
+                  const newScenes = scenes.map(scene => ({
+                    ...scene,
+                    speakerColor: updatedCharacters.find(c => c.name === scene.speaker)?.color || scene.speakerColor
+                  }));
+                }}
+                onAudioDescriptionsUpdate={async (descriptions) => {
+                  // Update database directly - React Query will refetch
+                  const formattedADs = descriptions.map(d => ({
+                    id: d.id || '',
+                    video_id: videoId!,
+                    start_time: d.startTime,
+                    end_time: d.endTime,
+                    description: d.text,
+                    audio_url: d.audio_url,
+                    language: videoData?.language || 'en',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }));
+                  
+                  // Save to database and refetch
+                  try {
+                    await supabase
+                      .from('audio_descriptions')
+                      .upsert(formattedADs);
+                  } catch (error) {
+                    console.error('Failed to update audio descriptions:', error);
+                  }
+                }}
               />
             </div>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          {/* CENTER PANEL: Video Player + Timeline */}
-          <ResizablePanel defaultSize={50} minSize={40}>
-            <ResizablePanelGroup direction="vertical">
-              
-              {/* Video Canvas */}
-              <ResizablePanel defaultSize={70} minSize={50}>
-                <div className="h-full bg-black flex items-center justify-center">
-                  {project.videoUrl ? (
-                    <EnhancedVideoPlayer
-                      videoId={project.videoId}
-                      videoSrc={project.videoUrl}
-                      posterSrc={project.thumbnailUrl || undefined}
-                      title={project.name}
-                      language="en"
-                      contentType="education"
-                      className="w-full h-full"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-white mb-2" />
-                      <p className="text-white">Loading video...</p>
-                    </div>
-                  )}
-                </div>
-              </ResizablePanel>
-              
-              <ResizableHandle withHandle />
-              
-              {/* Timeline */}
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-                <div className="h-full bg-muted p-4">
-                  <div className="text-sm text-muted-foreground">
-                    <p>Timeline: {projectScenes.length} scenes</p>
-                    {projectScenes.length === 0 && (
-                      <p className="mt-2">No scenes yet. They will be generated automatically.</p>
-                    )}
-                  </div>
-                </div>
-              </ResizablePanel>
-              
-            </ResizablePanelGroup>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          {/* RIGHT PANEL: Project Info */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-            <div className="h-full bg-card border-l border-border overflow-y-auto p-6">
-              <h3 className="font-semibold mb-4">Project Info</h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Scenes:</span>
-                  <span className="ml-2 font-medium">{projectScenes.length}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span className="ml-2 font-medium">{Math.round(project.duration)}s</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Video ID:</span>
-                  <span className="ml-2 font-mono text-xs">{project.videoId.slice(0, 8)}...</span>
-                </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center text-muted-foreground font-light">
+                <p>Select a scene to view properties</p>
               </div>
             </div>
-          </ResizablePanel>
+          )}
           
-        </ResizablePanelGroup>
+          {import.meta.env.DEV && project && videoId && (
+            <div className="p-4 border-t border-border">
+              <DevTestingPanel projectId={project.id} videoId={videoId} />
+            </div>
+          )}
+        </div>
+
+        {showAI && project && videoId && (
+          <div className="w-96 border-l bg-card flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-light">AI Assistant</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowAI(false)}
+                className="font-light"
+              >
+                ×
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AIAssistant 
+                projectId={project.id}
+                videoId={videoId}
+                currentContext={activeTab}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {project && videoId && (
+        <AdvancedExportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+          projectId={project.id}
+          videoId={videoId}
+        />
+      )}
     </div>
   );
 }

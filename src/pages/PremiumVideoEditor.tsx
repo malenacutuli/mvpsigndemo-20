@@ -1,62 +1,33 @@
-import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { useParams, Navigate } from 'react-router-dom';
 import { usePremiumAccess } from '@/hooks/usePremiumAccess';
+import { PremiumEditorLayout } from '@/components/premium-editor/PremiumEditorLayout';
 import { SubscriptionGate } from '@/components/premium-editor/SubscriptionGate';
-import { LoadingScreen } from '@/components/premium-editor/LoadingScreen';
-import { AxessibleEditor } from '@/components/axessible-editor/AxessibleEditor';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function PremiumVideoEditor() {
   const { id: videoId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { canAccess, tier, isLoading: accessLoading } = usePremiumAccess();
+  const { canAccess, isLoading, tier } = usePremiumAccess();
 
-  // Keyboard shortcuts for navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape to exit editor
-      if (e.key === 'Escape') {
-        navigate(`/video/${videoId}`);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [videoId, navigate]);
-
-  // Handle missing videoId
-  if (!videoId) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Video Not Found</h2>
-          <p className="text-muted-foreground mb-6">
-            The requested video could not be found.
-          </p>
-          <Button onClick={() => navigate('/videos')}>
-            Back to Videos
-          </Button>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Card className="w-full max-w-md p-6 space-y-4">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
         </Card>
       </div>
     );
   }
 
-  // Loading state (subscription/access check)
-  if (accessLoading) {
-    return <LoadingScreen message="Checking your subscription access..." />;
+  if (!videoId) {
+    return <Navigate to="/dashboard" />;
   }
 
-  // Show subscription gate for insufficient tier
   if (!canAccess) {
-    toast.error('Premium Editor requires Standard plan or higher', {
-      description: 'Upgrade your plan to access MediaBunny-powered editing',
-      duration: 5000
-    });
-    return <SubscriptionGate currentTier={tier || 'Free'} videoId={videoId} />;
+    return <SubscriptionGate currentTier={tier} videoId={videoId} />;
   }
 
-  // Render the Axessible Editor with MediaBunny integration
-  return <AxessibleEditor videoId={videoId} />;
+  return <PremiumEditorLayout />;
 }

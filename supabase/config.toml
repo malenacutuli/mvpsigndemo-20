@@ -174,24 +174,3 @@ verify_jwt = true
 [functions.ai-generate-chapters]
 verify_jwt = true
 
-[functions.premium-transcribe]
-verify_jwt = true
-
-[functions.premium-ai-generate]
-verify_jwt = true
-
-[functions.premium-ai-repurpose]
-verify_jwt = true
-
-[functions.premium-ai-publish]
-verify_jwt = true
-
-[functions.premium-ai-write]
-verify_jwt = true
-
-[functions.premium-ai-health]
-verify_jwt = false
-
-[functions.video-ai-assistant]
-verify_jwt = true
-
