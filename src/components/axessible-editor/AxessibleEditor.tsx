@@ -82,8 +82,8 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   const navigate = useNavigate();
   const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<AudioBuffer[]>([]);
-  const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const playbackIdRef = useRef<number>(0);
 
   // Load video and initialize MediaBunny
   useEffect(() => {
@@ -103,9 +103,7 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     audioContextRef.current = new AudioContext({ sampleRate: 48000 });
     
     return () => {
-      if (currentAudioSourceRef.current) {
-        currentAudioSourceRef.current.stop();
-      }
+      stopAudioPlayback();
       audioContextRef.current?.close();
     };
   }, []);
@@ -173,6 +171,13 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
     if (!mediaInput.audioSink || !audioContextRef.current) return;
 
     try {
+      // Stop any existing audio first
+      stopAudioPlayback();
+      
+      // Increment playback ID to invalidate old callbacks
+      playbackIdRef.current++;
+      const currentPlaybackId = playbackIdRef.current;
+      
       console.log(`Starting audio playback from ${startTime.toFixed(2)}s`);
       
       // Resume audio context if suspended
@@ -180,12 +185,14 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
         await audioContextRef.current.resume();
       }
 
-      // Play audio in chunks for continuous playback
-      const playAudioChunk = async (time: number) => {
-        if (!isPlaying || !audioContextRef.current) return;
+      // Schedule audio chunks based on AudioContext time
+      let nextScheduleTime = startTime;
+      const scheduleNextChunk = async () => {
+        // Check if this playback session is still active
+        if (currentPlaybackId !== playbackIdRef.current || !audioContextRef.current) return;
 
         try {
-          const sample = await mediaInput.audioSink!.getSample(time);
+          const sample = await mediaInput.audioSink!.getSample(nextScheduleTime);
           if (!sample) return;
 
           const audioBuffer = sample.toAudioBuffer();
@@ -195,24 +202,33 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
           audioSource.buffer = audioBuffer;
           audioSource.connect(audioContextRef.current.destination);
           
-          currentAudioSourceRef.current = audioSource;
+          // Store source for cleanup
+          audioSourcesRef.current.push(audioSource);
+
+          // Calculate when to start this chunk
+          const contextTime = audioContextRef.current.currentTime;
+          audioSource.start(contextTime);
+
+          const chunkDuration = audioBuffer.duration;
+          nextScheduleTime += chunkDuration;
 
           // Schedule next chunk when this one ends
           audioSource.onended = () => {
-            const nextTime = time + audioBuffer.duration;
-            if (nextTime < mediaInput.duration && isPlaying) {
-              playAudioChunk(nextTime);
+            // Remove from active sources
+            audioSourcesRef.current = audioSourcesRef.current.filter(s => s !== audioSource);
+            
+            // Continue if still in same playback session and not at end
+            if (currentPlaybackId === playbackIdRef.current && nextScheduleTime < mediaInput.duration) {
+              scheduleNextChunk();
             }
           };
 
-          audioSource.start(0);
-          console.log(`Playing audio chunk at ${time.toFixed(2)}s, duration: ${audioBuffer.duration.toFixed(2)}s`);
         } catch (error) {
           console.error('Error playing audio chunk:', error);
         }
       };
 
-      await playAudioChunk(startTime);
+      await scheduleNextChunk();
 
     } catch (error) {
       console.error('Error starting audio playback:', error);
@@ -220,14 +236,19 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
   }
 
   function stopAudioPlayback() {
-    if (currentAudioSourceRef.current) {
+    // Increment playback ID to invalidate all pending callbacks
+    playbackIdRef.current++;
+    
+    // Stop and clear all active audio sources
+    audioSourcesRef.current.forEach(source => {
       try {
-        currentAudioSourceRef.current.stop();
+        source.stop();
+        source.disconnect();
       } catch (e) {
         // Already stopped
       }
-      currentAudioSourceRef.current = null;
-    }
+    });
+    audioSourcesRef.current = [];
   }
 
   async function loadVideoIntoEditor(videoId: string) {
@@ -441,24 +462,52 @@ export function AxessibleEditor({ videoId }: AxessibleEditorProps) {
       if (!user) throw new Error('Authentication required');
 
       // 20. Create or load premium project
-      const { data: premiumProject, error: projectError } = await supabase
+      // First try to find existing project
+      const { data: existingProject } = await supabase
         .from('premium_projects')
-        .upsert({
-          video_id: videoId,
-          name: video.title,
-          user_id: user.id,
-          canvas_width: width,
-          canvas_height: height,
-          canvas_fps: fps,
-          total_duration: duration,
-        }, { 
-          onConflict: 'video_id',
-          ignoreDuplicates: false 
-        })
         .select()
+        .eq('video_id', videoId)
         .single();
 
-      if (projectError) throw projectError;
+      let premiumProject;
+      
+      if (existingProject) {
+        // Update existing project
+        const { data: updated, error: updateError } = await supabase
+          .from('premium_projects')
+          .update({
+            name: video.title,
+            canvas_width: width,
+            canvas_height: height,
+            canvas_fps: fps,
+            total_duration: duration,
+            last_opened_at: new Date().toISOString(),
+          })
+          .eq('id', existingProject.id)
+          .select()
+          .single();
+          
+        if (updateError) throw updateError;
+        premiumProject = updated;
+      } else {
+        // Create new project
+        const { data: created, error: createError } = await supabase
+          .from('premium_projects')
+          .insert({
+            video_id: videoId,
+            name: video.title,
+            user_id: user.id,
+            canvas_width: width,
+            canvas_height: height,
+            canvas_fps: fps,
+            total_duration: duration,
+          })
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        premiumProject = created;
+      }
 
       console.log('Premium project:', premiumProject.id);
 
