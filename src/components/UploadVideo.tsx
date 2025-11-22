@@ -1,17 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Video, FileText, Languages, X } from 'lucide-react';
+import { Upload, Video, X, Target, Volume2, HandMetal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { VoiceCloningUploader } from '@/components/VoiceCloningUploader';
 import { useAuth } from '@/hooks/useAuth';
 import { extractVideoFrame } from '@/lib/videoFrameExtractor';
 import { Upload as TusUpload } from 'tus-js-client';
@@ -37,7 +35,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en');
-  const [contentType, setContentType] = useState<string>('branded-content');
+  const [contentType, setContentType] = useState<string>('education');
   const [knownSpeakers, setKnownSpeakers] = useState<string[]>([]);
   const [newSpeaker, setNewSpeaker] = useState('');
   const { toast } = useToast();
@@ -131,7 +129,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             authorization: `Bearer ${accessToken}`,
             'x-upsert': 'true',
           },
-          chunkSize: 10 * 1024 * 1024, // 10MB chunks for optimal performance
+          chunkSize: 10 * 1024 * 1024,
           onError: (err) => {
             console.error('[SUPABASE] Upload error:', err);
             reject(err);
@@ -187,7 +185,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       setUploading(true);
       setUploadProgress(0);
 
-      // Create video record first
       const insertData = {
         title: title.trim(),
         description: description.trim() || null,
@@ -214,7 +211,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       video = videoData;
       console.log('Video record created:', video);
 
-      // Upload to Supabase Storage
       toast({
         title: "Uploading video",
         description: "Please wait while we upload your video...",
@@ -229,7 +225,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       const storagePath = result.path!;
       console.log('Upload complete:', storagePath);
       
-      // Extract thumbnail in background
       setUploadProgress(90);
       let thumbnailUrl: string | null = null;
       
@@ -260,7 +255,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         console.warn('⚠️ Frame extraction failed:', frameError);
       }
       
-      // Update video record with storage path
       setUploadProgress(95);
       const { error: updateError } = await supabase
         .from('videos')
@@ -287,7 +281,6 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
     } catch (error: any) {
       console.error('Upload error:', error);
       
-      // Clean up video record if created
       if (video?.id) {
         await supabase.from('videos').delete().eq('id', video.id).eq('status', 'uploading');
       }
@@ -323,23 +316,20 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-light">
-          <Video className="w-5 h-5" />
-          {t('upload.cardTitle')}
-        </CardTitle>
-        <CardDescription className="font-light">
-          {t('upload.pageSubtitle')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* File Upload Section */}
-        <div className="space-y-4">
+    <div className="w-full space-y-6">
+      <Card className="w-full border shadow-sm">
+        <CardHeader className="border-b pb-4">
+          <CardTitle className="text-xl font-normal flex items-center gap-2">
+            <Video className="w-5 h-5" />
+            Upload Video for Accessibility Processing
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          {/* File Upload Section */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
+            className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
             onClick={() => document.getElementById('file-input')?.click()}
           >
             <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -360,11 +350,11 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground font-light">
-                  {t('upload.dropZone')}
+                <p className="text-base text-foreground">
+                  Drop your video file here or click to browse
                 </p>
-                <p className="text-xs text-muted-foreground font-light">
-                  {t('upload.supportedFormats')}
+                <p className="text-sm text-muted-foreground">
+                  Supports MP4, MOV, AVI (max 5GB)
                 </p>
               </div>
             )}
@@ -377,177 +367,258 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             />
           </div>
 
-          {uploading && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Uploading...</span>
-                <span className="text-foreground font-medium">{uploadProgress}%</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Video Information */}
-        <div className="space-y-4">
+          {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">{t('upload.title')}</Label>
+            <Label htmlFor="title" className="text-sm font-normal">
+              Title <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('upload.titlePlaceholder')}
+              placeholder="Enter video title"
               disabled={uploading}
+              className="h-10"
             />
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">{t('upload.description')}</Label>
+            <Label htmlFor="description" className="text-sm font-normal">
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('upload.descriptionPlaceholder')}
+              placeholder="Enter video description (optional)"
               disabled={uploading}
               rows={3}
+              className="resize-none"
             />
           </div>
 
+          {/* Transcript Options Info Box */}
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">📝</span>
+              <div className="space-y-2 flex-1">
+                <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Transcript Options
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  After uploading, you can either extract the transcript automatically or upload your own transcript file for editing with Captions with Intention.
+                </p>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <li>• Auto-extract: AI will transcribe your video with timestamps</li>
+                  <li>• Upload transcript: Use your existing SRT, VTT, or TXT files with timestamps</li>
+                  <li>• Edit intonation: Adjust emphasis and pitch for better accessibility</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Language and Content Type */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="language">{t('upload.language')}</Label>
+              <Label htmlFor="language" className="text-sm font-normal">
+                Language
+              </Label>
               <Select value={language} onValueChange={setLanguage} disabled={uploading}>
-                <SelectTrigger id="language">
+                <SelectTrigger id="language" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border z-50">
                   <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="de">Deutsch</SelectItem>
-                  <SelectItem value="it">Italiano</SelectItem>
-                  <SelectItem value="pt">Português</SelectItem>
-                  <SelectItem value="ja">日本語</SelectItem>
-                  <SelectItem value="ca">Català</SelectItem>
+                  <SelectItem value="es">Spanish</SelectItem>
+                  <SelectItem value="fr">French</SelectItem>
+                  <SelectItem value="de">German</SelectItem>
+                  <SelectItem value="it">Italian</SelectItem>
+                  <SelectItem value="pt">Portuguese</SelectItem>
+                  <SelectItem value="nl">Dutch</SelectItem>
+                  <SelectItem value="ru">Russian</SelectItem>
+                  <SelectItem value="ja">Japanese</SelectItem>
+                  <SelectItem value="ko">Korean</SelectItem>
+                  <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
+                  <SelectItem value="ca">Catalan</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                💡 Choose the primary language spoken in your video for accurate transcription
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contentType">{t('upload.contentType')}</Label>
+              <Label htmlFor="contentType" className="text-sm font-normal">
+                Content Type
+              </Label>
               <Select value={contentType} onValueChange={setContentType} disabled={uploading}>
-                <SelectTrigger id="contentType">
+                <SelectTrigger id="contentType" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-background border-border z-50 max-h-[300px] overflow-y-auto">
-                  <SelectItem value="branded-content">{t('upload.contentTypes.brandedContent')}</SelectItem>
-                  <SelectItem value="webinar">{t('upload.contentTypes.webinar')}</SelectItem>
-                  <SelectItem value="podcast">{t('upload.contentTypes.podcast')}</SelectItem>
-                  <SelectItem value="social-media">{t('upload.contentTypes.socialMedia')}</SelectItem>
-                  <SelectItem value="tutorial">{t('upload.contentTypes.tutorial')}</SelectItem>
-                  <SelectItem value="stand-up">{t('upload.contentTypes.standUp')}</SelectItem>
-                  <SelectItem value="product-demo">{t('upload.contentTypes.productDemo')}</SelectItem>
-                  <SelectItem value="children">{t('upload.contentTypes.children')}</SelectItem>
-                  <SelectItem value="music-video">{t('upload.contentTypes.musicVideo')}</SelectItem>
-                  <SelectItem value="tv-show">{t('upload.contentTypes.tvShow')}</SelectItem>
-                  <SelectItem value="education">{t('upload.contentTypes.education')}</SelectItem>
-                  <SelectItem value="film">{t('upload.contentTypes.film')}</SelectItem>
-                  <SelectItem value="advertisement">{t('upload.contentTypes.advertisement')}</SelectItem>
-                  <SelectItem value="recipe">{t('upload.contentTypes.recipe')}</SelectItem>
-                  <SelectItem value="other">{t('upload.contentTypes.other')}</SelectItem>
+                <SelectContent className="bg-background border z-50 max-h-[300px]">
+                  <SelectItem value="education">Educational</SelectItem>
+                  <SelectItem value="advertisement">Advertising</SelectItem>
+                  <SelectItem value="film">Film</SelectItem>
+                  <SelectItem value="branded-content">Branded Content</SelectItem>
+                  <SelectItem value="webinar">Webinar</SelectItem>
+                  <SelectItem value="podcast">Podcast</SelectItem>
+                  <SelectItem value="social-media">Social Media</SelectItem>
+                  <SelectItem value="tutorial">Tutorial</SelectItem>
+                  <SelectItem value="stand-up">Stand Up</SelectItem>
+                  <SelectItem value="product-demo">Product Demo</SelectItem>
+                  <SelectItem value="children">Children</SelectItem>
+                  <SelectItem value="music-video">Music Video</SelectItem>
+                  <SelectItem value="tv-show">TV Show</SelectItem>
+                  <SelectItem value="recipe">Recipe</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-        </div>
 
-        <Separator />
+          {/* Speaker & Emotion Detection */}
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-normal">
+                Speaker & Emotion Detection
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Automatic emotion detection with optional speaker identification
+              </p>
+            </div>
 
-        {/* Known Speakers */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="speakers" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              {t('speakerEmotionDetection.knownSpeakers')}
-            </Label>
-            <p className="text-sm text-muted-foreground font-light">
-              {t('speakerEmotionDetection.knownSpeakersHelp')}
-            </p>
-            <div className="flex gap-2">
-              <Input
-                id="speakers"
-                value={newSpeaker}
-                onChange={(e) => setNewSpeaker(e.target.value)}
-                placeholder={t('speakerEmotionDetection.speakerPlaceholder')}
-                disabled={uploading}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addSpeaker();
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addSpeaker}
-                disabled={uploading || !newSpeaker.trim()}
-              >
-                {t('speakerEmotionDetection.add')}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="speakers" className="text-sm font-normal">
+                Known Speakers (Optional)
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Provide names for automatic identification, or leave blank to auto-detect
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="speakers"
+                  value={newSpeaker}
+                  onChange={(e) => setNewSpeaker(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSpeaker();
+                    }
+                  }}
+                  placeholder="e.g, Sarah Chen"
+                  disabled={uploading}
+                  className="h-10"
+                />
+                <Button 
+                  onClick={addSpeaker} 
+                  disabled={!newSpeaker.trim() || uploading}
+                  className="bg-blue-500 hover:bg-blue-600 text-white h-10 px-6"
+                >
+                  Add
+                </Button>
+              </div>
+
+              {knownSpeakers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {knownSpeakers.map((speaker) => (
+                    <Badge key={speaker} variant="secondary" className="gap-1">
+                      {speaker}
+                      <button
+                        onClick={() => removeSpeaker(speaker)}
+                        disabled={uploading}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* FREE Automatic Features */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <h4 className="text-sm font-medium">FREE Automatic Features</h4>
+              </div>
+              <ul className="space-y-1.5 text-sm text-muted-foreground pl-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>7-level intensity detection (whisper → screaming)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Sentiment analysis (POSITIVE/NEGATIVE/NEUTRAL)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Dynamic font sizing (smaller whispers, larger yelling)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Speaker name identification</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span>Character color attribution</span>
+                </li>
+              </ul>
             </div>
           </div>
 
-          {knownSpeakers.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {knownSpeakers.map((speaker) => (
-                <Badge key={speaker} variant="secondary" className="gap-1">
-                  {speaker}
-                  <button
-                    onClick={() => removeSpeaker(speaker)}
-                    disabled={uploading}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Upload Button */}
+          <Button
+            onClick={uploadVideo}
+            disabled={!videoFile || !title.trim() || uploading}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 text-base"
+            size="lg"
+          >
+            {uploading ? `Uploading... ${uploadProgress}%` : 'Upload and Process Video'}
+          </Button>
+
+          {/* Processing Info */}
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p>• • Your video will be automatically processed for accessibility features</p>
+            <p>• • Professional captions, audio descriptions, and SL support</p>
+            <p>• • Processing typically takes 2-5 minutes depending on video length</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Feature Cards */}
+      <div className="grid md:grid-cols-3 gap-6 mt-8">
+        <div className="bg-card border rounded-lg p-6 text-center space-y-3">
+          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto">
+            <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="font-normal text-base">Smart Captions</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            AI-powered captions with emotion and intent detection for enhanced communication
+          </p>
         </div>
 
-        <Separator />
+        <div className="bg-card border rounded-lg p-6 text-center space-y-3">
+          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto">
+            <Volume2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="font-normal text-base">Audio Descriptions</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Professional audio descriptions timed perfectly with your content
+          </p>
+        </div>
 
-        {/* Voice Cloning */}
-        {!uploading && (
-          <VoiceCloningUploader 
-            contentType={contentType}
-            onVoiceCloned={(voiceId, voiceName) => {
-              console.log('Voice cloned:', voiceId, voiceName);
-              toast({
-                title: "Voice cloned successfully",
-                description: `Voice "${voiceName}" is ready to use`
-              });
-            }}
-          />
-        )}
-
-        <Button
-          onClick={uploadVideo}
-          disabled={!videoFile || !title.trim() || uploading}
-          className="w-full"
-          size="lg"
-        >
-          {uploading ? t('upload.uploading') : t('upload.uploadButton')}
-        </Button>
-      </CardContent>
-    </Card>
+        <div className="bg-card border rounded-lg p-6 text-center space-y-3">
+          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto">
+            <HandMetal className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="font-normal text-base">SL Support</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Sign language avatars and visual accessibility features for comprehensive inclusion
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
