@@ -63,7 +63,7 @@ const Index = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
                 <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                  <Link to={getPath('/explore')}>
+                  <Link to={isDemo ? getPath('/auth') : getPath('/explore')}>
                     <Play className="w-5 h-5 mr-3" />
                     {isDemo ? theme.ctaText : t('hero.startWatching')}
                   </Link>
