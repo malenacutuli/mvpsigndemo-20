@@ -77,13 +77,6 @@ const Index = () => {
                   </Button>
                 )}
               </div>
-              
-              {/* Powered by badge for demos */}
-              {isDemo && (
-                <p className="mt-8 text-sm text-muted-foreground">
-                  Powered by <span className="text-primary font-medium">Axessible</span>
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -92,36 +85,33 @@ const Index = () => {
       {/* Interbrand Features Section */}
       <InterbrandFeatures />
 
-      {/* Recognition & Partners Section */}
-      <section className="py-16 bg-white border-y">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <h3 className="text-xl md:text-2xl font-light text-center text-muted-foreground mb-12">
-              {t('recognition.title')}
-            </h3>
-            <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
-              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
-              </div>
-              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
-              </div>
-              <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
+      {/* Recognition & Partners Section - Only for non-demo pages at top */}
+      {!isDemo && (
+        <section className="py-16 bg-white border-y">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto">
+              <h3 className="text-xl md:text-2xl font-light text-center text-muted-foreground mb-12">
+                {t('recognition.title')}
+              </h3>
+              <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
+                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                  <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                  <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
+                </div>
+                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                  <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
+                </div>
               </div>
             </div>
-            {/* Powered by badge for demos */}
-            {isDemo && (
-              <p className="mt-12 text-sm text-center text-muted-foreground">
-                Powered by <span className="text-primary font-medium">Axessible Technologies</span>
-              </p>
-            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Section 1: Why We Exist */}
-      <section className="py-32 bg-muted/20">
+      {!isDemo && (
+        <section className="py-32 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
@@ -147,9 +137,11 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Enterprise CTA Section */}
-      <section className="py-32 bg-white">
+      {!isDemo && (
+        <section className="py-32 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center space-y-12">
             <div className="space-y-6">
@@ -183,9 +175,11 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Section 2: The Axessible Experience */}
-      <section className="py-32 bg-white">
+      {!isDemo && (
+        <section className="py-32 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
@@ -226,9 +220,11 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Section 3: For Viewers */}
-      <section className="py-20 bg-muted/30">
+      {!isDemo && (
+        <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
@@ -255,9 +251,11 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Section 4: For Creators */}
-      <section className="py-20 bg-white">
+      {!isDemo && (
+        <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
@@ -287,9 +285,11 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Section 5: Community & Impact */}
-      <section className="py-20 bg-muted/30">
+      {!isDemo && (
+        <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
@@ -309,6 +309,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Section 6: Impact Statistics */}
       {!isDemo && (
@@ -378,27 +379,65 @@ const Index = () => {
       )}
 
       {/* Section 7: Closing CTA */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-6xl font-light text-foreground mb-6">
-              {t('sections.cta.title')}
-            </h2>
-            <p className="text-xl text-muted-foreground font-light mb-12">
-              {t('sections.cta.subtitle')}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-                <Link to="/explore">{t('sections.cta.watchNow')}</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-                <Link to="/upload">{t('sections.cta.shareContent')}</Link>
-              </Button>
+      {!isDemo && (
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-4xl md:text-6xl font-light text-foreground mb-6">
+                {t('sections.cta.title')}
+              </h2>
+              <p className="text-xl text-muted-foreground font-light mb-12">
+                {t('sections.cta.subtitle')}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
+                  <Link to="/explore">{t('sections.cta.watchNow')}</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-light rounded-full">
+                  <Link to="/upload">{t('sections.cta.shareContent')}</Link>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Recognition Section - Bottom of Demo Pages Only */}
+      {isDemo && (
+        <section className="py-20 bg-muted/20">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center space-y-12">
+                <div>
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Powered by Axessible Technologies
+                  </h3>
+                  <p className="text-base text-muted-foreground font-light">
+                    Recognized for Innovation in AI for Good
+                  </p>
+                </div>
+                
+                <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
+                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                    <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
+                  </div>
+                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                    <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
+                  </div>
+                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
+                    <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
+                  </div>
+                </div>
+                
+                <p className="text-base text-muted-foreground font-light max-w-3xl mx-auto leading-relaxed">
+                  The AI platform that delivers regulatory-grade accessibility with emotional intelligence — at 1/10th the cost of manual services.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-muted py-12">
