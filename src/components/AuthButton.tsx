@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { LogIn, LogOut, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ export const AuthButton: React.FC = () => {
   const { user, signInWithGoogle, signOut, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const { t } = useTranslation();
+  const { isDemo, getPath } = useTheme();
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
@@ -37,7 +39,7 @@ export const AuthButton: React.FC = () => {
   if (!user) {
     return (
       <Button asChild size="sm">
-        <Link to="/auth">
+        <Link to={isDemo ? getPath('/auth') : '/auth'}>
           <LogIn className="w-4 h-4 mr-2" />
           {t('auth.signIn')}
         </Link>

@@ -18,6 +18,7 @@ import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import Channel from "./pages/Channel";
 import { Auth } from "./pages/Auth";
+import { DemoAuth } from "./pages/DemoAuth";
 import Explore from "./pages/Explore";
 import PublicVideo from "./pages/PublicVideo";
 import PublicBoard from "./pages/PublicBoard";
@@ -44,11 +45,20 @@ const App = () => (
               <Routes>
                 {/* Demo routes - must come before regular routes */}
                 <Route path="/interbrand" element={<Index />} />
-                <Route path="/interbrand/*" element={<Index />} />
+                <Route path="/interbrand/auth" element={<DemoAuth />} />
+                <Route path="/interbrand/explore" element={<Explore />} />
+                <Route path="/interbrand/enterprise" element={<Enterprise />} />
+                <Route path="/interbrand/pricing" element={<Pricing />} />
                 <Route path="/nike" element={<Index />} />
-                <Route path="/nike/*" element={<Index />} />
+                <Route path="/nike/auth" element={<DemoAuth />} />
+                <Route path="/nike/explore" element={<Explore />} />
+                <Route path="/nike/enterprise" element={<Enterprise />} />
+                <Route path="/nike/pricing" element={<Pricing />} />
                 <Route path="/cocacola" element={<Index />} />
-                <Route path="/cocacola/*" element={<Index />} />
+                <Route path="/cocacola/auth" element={<DemoAuth />} />
+                <Route path="/cocacola/explore" element={<Explore />} />
+                <Route path="/cocacola/enterprise" element={<Enterprise />} />
+                <Route path="/cocacola/pricing" element={<Pricing />} />
                 
                 {/* Regular routes */}
                 <Route path="/" element={<Index />} />
