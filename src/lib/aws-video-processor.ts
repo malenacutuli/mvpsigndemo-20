@@ -155,19 +155,26 @@ export async function uploadLargeVideoToS3(options: VideoUploadOptions): Promise
     }
 
     // Step 3: Complete multipart upload
-    console.log('🔧 Completing R2 multipart upload...');
+    console.log('🔧 Completing R2 multipart upload...', {
+      uploadId,
+      key,
+      partsCount: uploadedParts.length,
+    });
 
     const { data: completeData, error: completeError } = await supabase.functions.invoke('complete-r2-upload', {
       body: {
         uploadId,
         key,
-        parts: uploadedParts.sort((a, b) => a.partNumber - b.partNumber),
-        fileName: file.name,
-        fileSize: file.size
+        parts: uploadedParts.sort((a, b) => a.partNumber - b.partNumber)
       }
     });
 
-    if (completeError) throw completeError;
+    if (completeError) {
+      console.error('❌ complete-r2-upload error:', completeError);
+      throw completeError;
+    }
+
+    console.log('✅ R2 multipart upload completed:', completeData);
 
     console.log('✅ R2 multipart upload complete!');
 
