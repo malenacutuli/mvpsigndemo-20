@@ -128,11 +128,10 @@ export async function uploadLargeVideoToS3(options: VideoUploadOptions): Promise
       if (partError) throw partError;
 
       // Upload chunk with authentication headers
-      const response = await fetch(partData.presignedUrl, {
-        method: 'PUT',
-        body: chunk,
-        headers: partData.headers
-      });
+        const response = await fetch(partData.presignedUrl, {
+          method: 'PUT',
+          body: chunk
+        });
 
       if (!response.ok) {
         throw new Error(`Part ${partNumber} upload failed: ${response.status}`);

@@ -63,7 +63,11 @@ serve(async (req) => {
     console.log('Generated URL:', url);
     
     const auth = await createAwsSignature('PUT', url, accessKeyId, secretAccessKey);
-    return new Response(JSON.stringify({ presignedUrl: url, headers: auth }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    
+    // Embed auth in URL as query parameters for presigned URL
+    const presignedUrl = `${url}&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(auth.authorization.split('Credential=')[1].split(',')[0])}&X-Amz-Date=${auth['x-amz-date']}&X-Amz-SignedHeaders=host&X-Amz-Signature=${auth.authorization.split('Signature=')[1]}`;
+    
+    return new Response(JSON.stringify({ presignedUrl }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
