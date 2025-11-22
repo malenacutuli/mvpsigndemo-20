@@ -88,19 +88,16 @@ export async function uploadLargeVideoToS3(options: VideoUploadOptions): Promise
   s3Url: string;
 }> {
   const { file, videoId, userId, onProgress } = options;
-  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+  const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB chunks for better performance
 
   try {
-    console.log('🚀 Starting multipart upload...');
+    console.log('🚀 Starting R2 multipart upload...');
 
-    // Step 1: Initialize multipart upload
-    const { data: initData, error: initError } = await supabase.functions.invoke('s3-multipart-upload', {
+    // Step 1: Initialize multipart upload with R2
+    const { data: initData, error: initError } = await supabase.functions.invoke('generate-r2-upload-url', {
       body: {
-        action: 'initiate',
         fileName: file.name,
-        fileType: file.type,
-        videoId,
-        userId
+        fileType: file.type
       }
     });
 
@@ -110,17 +107,17 @@ export async function uploadLargeVideoToS3(options: VideoUploadOptions): Promise
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const uploadedParts: any[] = [];
 
-    // Step 2: Upload chunks
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
+    // Step 2: Upload chunks with 2 concurrent uploads
+    const uploadChunk = async (chunkIndex: number) => {
+      const start = chunkIndex * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
-      const partNumber = i + 1;
+      const partNumber = chunkIndex + 1;
 
       console.log(`📦 Uploading part ${partNumber}/${totalChunks}...`);
 
       // Get pre-signed URL for this part
-      const { data: partData, error: partError } = await supabase.functions.invoke('get-s3-multipart-urls', {
+      const { data: partData, error: partError } = await supabase.functions.invoke('get-r2-part-url', {
         body: {
           uploadId,
           key,
@@ -130,46 +127,58 @@ export async function uploadLargeVideoToS3(options: VideoUploadOptions): Promise
 
       if (partError) throw partError;
 
-      // Upload chunk
-      const response = await fetch(partData.url, {
+      // Upload chunk with authentication headers
+      const response = await fetch(partData.presignedUrl, {
         method: 'PUT',
-        body: chunk
+        body: chunk,
+        headers: partData.headers
       });
 
       if (!response.ok) {
-        throw new Error(`Part ${partNumber} upload failed`);
+        throw new Error(`Part ${partNumber} upload failed: ${response.status}`);
       }
 
       const etag = response.headers.get('ETag');
-      uploadedParts.push({ PartNumber: partNumber, ETag: etag });
+      uploadedParts.push({ partNumber, etag });
 
       // Update progress
       const progress = ((partNumber) / totalChunks) * 100;
       onProgress?.(progress);
+    };
+
+    // Upload chunks with 2 concurrent uploads
+    for (let i = 0; i < totalChunks; i += 2) {
+      const batch = [uploadChunk(i)];
+      if (i + 1 < totalChunks) {
+        batch.push(uploadChunk(i + 1));
+      }
+      await Promise.all(batch);
     }
 
     // Step 3: Complete multipart upload
-    console.log('🔧 Completing multipart upload...');
+    console.log('🔧 Completing R2 multipart upload...');
 
-    const { data: completeData, error: completeError } = await supabase.functions.invoke('complete-multipart', {
+    const { data: completeData, error: completeError } = await supabase.functions.invoke('complete-r2-upload', {
       body: {
         uploadId,
         key,
-        parts: uploadedParts
+        parts: uploadedParts.sort((a, b) => a.partNumber - b.partNumber),
+        fileName: file.name,
+        fileSize: file.size
       }
     });
 
     if (completeError) throw completeError;
 
-    console.log('✅ Multipart upload complete!');
+    console.log('✅ R2 multipart upload complete!');
 
     return {
-      s3Key: key,
+      s3Key: completeData.key,
       s3Url: completeData.url
     };
 
   } catch (error) {
-    console.error('❌ Multipart upload failed:', error);
+    console.error('❌ R2 multipart upload failed:', error);
     throw error;
   }
 }
