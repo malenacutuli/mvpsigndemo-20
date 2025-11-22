@@ -45,18 +45,22 @@ export const demoThemes: Record<string, DemoTheme> = {
   // Interbrand demo theme
   'interbrand': {
     id: 'interbrand',
-    name: 'Interbrand Video',
+    name: 'Interbrand',
     logo: '/assets/demo-logos/interbrand-logo.png',
     colors: {
-      primary: '348 90% 45%',      // Interbrand red
-      primaryGlow: '348 90% 55%',
-      accent: '348 80% 95%',
-      secondary: '220 15% 92%',
+      primary: '0 100% 50%',        // Interbrand red #ff0000
+      primaryGlow: '0 100% 60%',
+      accent: '194 87% 57%',        // Light blue #33c3f0
+      secondary: '196 75% 49%',     // Blue #1eaedb
+    },
+    fonts: {
+      heading: 'Inter, sans-serif',  // Using Inter as fallback until custom fonts are added
+      body: 'Inter, sans-serif',
     },
     companyName: 'Interbrand',
-    tagline: 'Brand-First Video Experience',
-    heroTitle: 'Elevate Your Brand Through Video',
-    heroSubtitle: 'Enterprise-grade accessibility powered by Axessible',
+    tagline: 'Making Iconic Moves that help brands thrive in what\'s next.',
+    heroTitle: 'Interbrand wants to help brands move from \'passive\' to \'purposeful\' in their inclusivity efforts.',
+    heroSubtitle: 'The world\'s first video platform to instantly enhance your videos with Captions with Intention, Emotive Audio Descriptions, and inclusive viewing tools - so your stories don\'t just reach more people, they move them.',
     ctaText: 'Request Demo',
     hideNavLinks: ['dashboard', 'videos'],
   },

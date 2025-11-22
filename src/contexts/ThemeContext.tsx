@@ -31,6 +31,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--accent', currentTheme.colors.accent);
     root.style.setProperty('--secondary', currentTheme.colors.secondary);
     
+    // Apply custom fonts if specified
+    if (currentTheme.fonts) {
+      document.body.style.fontFamily = currentTheme.fonts.body;
+    }
+    
     // Update page title
     document.title = `${currentTheme.companyName} | Video Platform`;
 
