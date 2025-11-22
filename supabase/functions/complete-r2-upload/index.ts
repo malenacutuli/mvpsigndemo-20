@@ -37,7 +37,14 @@ serve(async (req) => {
     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: req.headers.get('Authorization')! } } });
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
-    const { key, uploadId, parts, fileName, fileSize } = await req.json();
+    const body = await req.json();
+    const { key, uploadId, parts } = body;
+    
+    console.log('[COMPLETE-R2-UPLOAD] Request body:', { 
+      key, 
+      uploadId, 
+      partsCount: parts.length 
+    });
     const endpoint = Deno.env.get('CLOUDFLARE_R2_ENDPOINT')!;
     const accessKeyId = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID')!;
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
@@ -50,7 +57,14 @@ serve(async (req) => {
     const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?uploadId=${encodeURIComponent(uploadId)}`;
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, completeBody);
     const response = await fetch(url, { method: 'POST', headers: { 'Authorization': auth.authorization, 'x-amz-date': auth['x-amz-date'], 'Content-Type': 'application/xml' }, body: completeBody });
-    if (!response.ok) throw new Error(`Failed to complete: ${response.status} ${await response.text()}`);
+    
+    console.log('[COMPLETE-R2-UPLOAD] R2 response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[COMPLETE-R2-UPLOAD] R2 error:', errorText);
+      throw new Error(`Failed to complete: ${response.status} ${errorText}`);
+    }
     const publicUrl = `${endpoint}/${bucketName}/${key}`;
     return new Response(JSON.stringify({ success: true, url: publicUrl, key }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
