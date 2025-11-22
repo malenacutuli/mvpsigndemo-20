@@ -37,12 +37,6 @@ export const Hero: React.FC = () => {
             </Link>
           </Button>
           
-          {/* Powered by badge for demos */}
-          {isDemo && (
-            <p className="mt-8 text-sm text-muted-foreground">
-              Powered by <span className="text-primary font-medium">Axessible</span>
-            </p>
-          )}
           
           {/* Inclusivity Message */}
           <div className="mt-20 max-w-3xl mx-auto px-4">

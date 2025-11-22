@@ -61,7 +61,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     tagline: 'Making Iconic Moves that help brands thrive in what\'s next.',
     heroTitle: 'Interbrand wants to help brands move from \'passive\' to \'purposeful\' in their inclusivity efforts.',
     heroSubtitle: 'The world\'s first video platform to instantly enhance your videos with Captions with Intention, Emotive Audio Descriptions, and inclusive viewing tools - so your stories don\'t just reach more people, they move them.',
-    ctaText: 'Request Demo',
+    ctaText: 'Sign In',
     hideNavLinks: ['dashboard', 'videos'],
   },
   
