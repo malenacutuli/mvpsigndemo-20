@@ -129,45 +129,66 @@ const VideoDetail = () => {
       setVideo(data);
       setCurrentLanguage(data?.language || 'en');
       
-      // Get public URL for video since the videos bucket is now public
+      // Resolve video URL with verification
       if (data.storage_path) {
-        console.log('🔗 Getting public URL for video:', data.storage_path);
+        console.log('🔗 Resolving video URL from storage_path:', data.storage_path);
         
-        // Since the videos bucket is now public, use direct public URL
-        const { data: publicUrl } = supabase.storage
-          .from('videos')
-          .getPublicUrl(data.storage_path);
-        
-        if (publicUrl?.publicUrl) {
-          console.log('✅ Public video URL set:', publicUrl.publicUrl);
-          
-          // Test if the video URL is accessible
-          try {
-            const response = await fetch(publicUrl.publicUrl, { method: 'HEAD' });
-            if (response.ok) {
-              console.log('✅ Video URL is accessible');
-              setVideoUrl(publicUrl.publicUrl);
+        try {
+          // Check if storage_path is a full URL (R2) or a path (Supabase)
+          if (data.storage_path.startsWith('http://') || data.storage_path.startsWith('https://')) {
+            // R2 URL - verify directly
+            console.log('🌐 Detected R2 URL, verifying...');
+            const headResponse = await fetch(data.storage_path, { method: 'HEAD' });
+            if (headResponse.ok) {
+              console.log('✅ R2 video URL verified and accessible');
+              setVideoUrl(data.storage_path);
             } else {
-              console.error('❌ Video URL not accessible, status:', response.status);
-              // Try manual fallback URL
-              const manualPublicUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${data.storage_path}`;
-              console.log('🔧 Trying manual fallback URL:', manualPublicUrl);
-              setVideoUrl(manualPublicUrl);
+              console.error('❌ R2 video URL not accessible, status:', headResponse.status);
+              setVideoUrl(null);
+              toast({
+                title: "Video unavailable",
+                description: "The video file could not be found. Please re-upload.",
+                variant: "destructive"
+              });
             }
-          } catch (fetchError) {
-            console.error('❌ Error testing video URL:', fetchError);
-            // Use the URL anyway as fallback
-            setVideoUrl(publicUrl.publicUrl);
+          } else {
+            // Supabase Storage path - get public URL and verify
+            console.log('🗄️ Detected Supabase path, generating public URL...');
+            const { data: publicUrl } = supabase.storage
+              .from('videos')
+              .getPublicUrl(data.storage_path);
+            
+            if (publicUrl?.publicUrl) {
+              const headResponse = await fetch(publicUrl.publicUrl, { method: 'HEAD' });
+              if (headResponse.ok) {
+                console.log('✅ Supabase video URL verified and accessible');
+                setVideoUrl(publicUrl.publicUrl);
+              } else {
+                console.error('❌ Supabase video URL not accessible, status:', headResponse.status);
+                setVideoUrl(null);
+                toast({
+                  title: "Video unavailable",
+                  description: "The video file could not be found. Please re-upload.",
+                  variant: "destructive"
+                });
+              }
+            } else {
+              console.error('❌ Failed to generate public URL for video');
+              setVideoUrl(null);
+            }
           }
-        } else {
-          console.error('❌ Failed to generate public URL for video');
-          // Construct public URL manually as fallback
-          const manualPublicUrl = `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${data.storage_path}`;
-          console.log('🔧 Using manual public URL:', manualPublicUrl);
-          setVideoUrl(manualPublicUrl);
+        } catch (error) {
+          console.error('❌ Error resolving video URL:', error);
+          setVideoUrl(null);
+          toast({
+            title: "Video unavailable",
+            description: "Could not load video. Please check the file and try again.",
+            variant: "destructive"
+          });
         }
       } else {
         console.warn('⚠️ No storage path found for video');
+        setVideoUrl(null);
       }
       
       // Load existing captions/transcripts for this video
@@ -563,15 +584,23 @@ const VideoDetail = () => {
                   )}
                 </div>
               ) : (
-                <div className="aspect-video w-full bg-muted rounded-xl flex items-center justify-center">
-                  <div className="text-center">
-                    <Play className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-base font-light text-muted-foreground">{t('videoDetail.unavailableTitle')}</p>
-                    <p className="text-sm font-light text-muted-foreground mt-2 leading-relaxed">
-                      {video.storage_path ? t('videoDetail.unavailableGenerating') : t('videoDetail.unavailableNoFile')}
+                <Card className="border-destructive/50">
+                  <CardContent className="p-8 text-center">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+                    <h3 className="text-lg font-medium mb-2">Video File Unavailable</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {video.status === 'uploaded' 
+                        ? "The video file could not be found or is corrupted. The upload may not have completed successfully."
+                        : "The video is still processing or hasn't been uploaded yet."
+                      }
                     </p>
-                  </div>
-                </div>
+                    {video.status === 'uploaded' && (
+                      <Button onClick={() => navigate('/upload')} variant="default">
+                        Upload New Video
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
               )}
               
             </CardContent>

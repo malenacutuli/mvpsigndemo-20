@@ -222,7 +222,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       
       try {
         console.log('🚀 Attempting AWS R2 upload...');
-        const { s3Key } = await uploadLargeVideoToS3({
+        const { s3Key, s3Url } = await uploadLargeVideoToS3({
           file: videoFile,
           videoId: video.id,
           userId,
@@ -231,7 +231,8 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             setUploadProgress(Math.round(progress));
           }
         });
-        storagePath = s3Key;
+        // Store full R2 URL for direct access
+        storagePath = s3Url;
         isAwsUpload = true;
         console.log('✅ AWS R2 upload successful:', storagePath);
       } catch (awsError) {
@@ -254,6 +255,37 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       }
 
       console.log('Upload complete:', storagePath, 'AWS:', isAwsUpload);
+      
+      // Verify upload before marking as uploaded
+      console.log('🔍 Verifying uploaded file...');
+      try {
+        if (isAwsUpload) {
+          // R2 URL - direct HEAD check
+          const headResponse = await fetch(storagePath, { method: 'HEAD' });
+          if (!headResponse.ok) {
+            throw new Error(`R2 object not reachable: ${headResponse.status}`);
+          }
+          console.log('✅ R2 file verified');
+        } else {
+          // Supabase Storage - get public URL and verify
+          const { data: publicUrl } = supabase.storage
+            .from('videos')
+            .getPublicUrl(storagePath);
+          
+          if (!publicUrl?.publicUrl) {
+            throw new Error('Could not create public URL for uploaded video');
+          }
+          
+          const headResponse = await fetch(publicUrl.publicUrl, { method: 'HEAD' });
+          if (!headResponse.ok) {
+            throw new Error(`Supabase object not reachable: ${headResponse.status}`);
+          }
+          console.log('✅ Supabase file verified');
+        }
+      } catch (verifyError) {
+        console.error('❌ Upload verification failed:', verifyError);
+        throw new Error('Upload verification failed - file may not be accessible');
+      }
       
       setUploadProgress(90);
       let thumbnailUrl: string | null = null;
