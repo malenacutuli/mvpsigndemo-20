@@ -117,7 +117,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         const upload = new TusUpload(file, {
           endpoint,
           retryDelays: [0, 3000, 5000, 10000, 20000],
-          parallelUploads: 1,
+          parallelUploads: 3,
           removeFingerprintOnSuccess: true,
           metadata: {
             bucketName: 'videos',
@@ -129,7 +129,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             authorization: `Bearer ${accessToken}`,
             'x-upsert': 'true',
           },
-          chunkSize: 10 * 1024 * 1024,
+          chunkSize: 25 * 1024 * 1024,
           onError: (err) => {
             console.error('[SUPABASE] Upload error:', err);
             reject(err);
