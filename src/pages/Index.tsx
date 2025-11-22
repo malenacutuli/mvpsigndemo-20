@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Play, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 import accessibilityCircle from '@/assets/accessibility-circle.jpg';
 import captionsWithIntention from '@/assets/captions-with-intention.jpg';
 import audioDescriptions from '@/assets/audio-descriptions.jpg';
@@ -11,9 +12,11 @@ import euLogo from '@/assets/eu-logo.png';
 import bscLogo from '@/assets/bsc-ai-factory-logo.jpg';
 import nvidiaLogo from '@/assets/nvidia-inception-logo-clean.png';
 import { MovingLogoStripe } from '@/components/MovingLogoStripe';
+import { InterbrandFeatures } from '@/components/InterbrandFeatures';
 
 const Index = () => {
   const { t } = useTranslation();
+  const { theme, isDemo, getPath } = useTheme();
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -23,42 +26,71 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="space-y-8">
+              {/* Tagline */}
+              {isDemo && (
+                <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-light">
+                  {theme.tagline}
+                </p>
+              )}
+              
+              {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight tracking-tight break-words px-2">
-                {t('hero.title')}{" "}
-                <span className="text-primary block">{t('hero.titleAccent')}</span>{" "}
-                <span className="block">{t('hero.titleEnd')}</span>
+                {isDemo ? (
+                  theme.heroTitle
+                ) : (
+                  <>
+                    {t('hero.title')}{" "}
+                    <span className="text-primary block">{t('hero.titleAccent')}</span>{" "}
+                    <span className="block">{t('hero.titleEnd')}</span>
+                  </>
+                )}
               </h1>
               
+              {/* Subtitle */}
               <p className="text-base sm:text-lg md:text-xl text-foreground font-light leading-relaxed max-w-3xl mx-auto px-4">
-                {t('hero.subtitle')}
+                {isDemo ? theme.heroSubtitle : t('hero.subtitle')}
               </p>
               
-              <div className="w-full max-w-2xl mx-auto py-8">
-                <img 
-                  src={accessibilityCircle} 
-                  alt="Accessibility features connecting people through video" 
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
+              {!isDemo && (
+                <div className="w-full max-w-2xl mx-auto py-8">
+                  <img 
+                    src={accessibilityCircle} 
+                    alt="Accessibility features connecting people through video" 
+                    className="w-full h-auto rounded-lg"
+                  />
+                </div>
+              )}
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
                 <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                  <Link to="/explore">
+                  <Link to={getPath('/explore')}>
                     <Play className="w-5 h-5 mr-3" />
-                    {t('hero.startWatching')}
+                    {isDemo ? theme.ctaText : t('hero.startWatching')}
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                  <Link to="/upload">
-                    <Upload className="w-5 h-5 mr-3" />
-                    {t('hero.shareContent')}
-                  </Link>
-                </Button>
+                {!isDemo && (
+                  <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
+                    <Link to={getPath('/upload')}>
+                      <Upload className="w-5 h-5 mr-3" />
+                      {t('hero.shareContent')}
+                    </Link>
+                  </Button>
+                )}
               </div>
+              
+              {/* Powered by badge for demos */}
+              {isDemo && (
+                <p className="mt-8 text-sm text-muted-foreground">
+                  Powered by <span className="text-primary font-medium">Axessible</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
       </section>
+
+      {/* Interbrand Features Section */}
+      <InterbrandFeatures />
 
       {/* Recognition & Partners Section */}
       <section className="py-16 bg-white border-y">

@@ -19,7 +19,7 @@ export const Hero: React.FC = () => {
           </p>
           
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight mb-8 px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight mb-8 px-2 max-w-4xl mx-auto">
             {isDemo ? theme.heroTitle : t('hero.headline')}
             {!isDemo && <span className="block">{t('hero.headlineSecond')}</span>}
           </h1>
