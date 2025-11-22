@@ -1063,7 +1063,7 @@
     "pageSubtitle": "Transform your video content with automatic accessibility features",
     "cardTitle": "Upload Video for Accessibility Processing",
     "dropZone": "Drop your video file here or click to browse",
-    "supportedFormats": "Supports MP4, MOV, AVI (max 5GB)",
+    "supportedFormats": "Supports MP4, MOV, AVI (max 100GB)",
     "title": "Title",
     "titleRequired": "Title is required",
     "titlePlaceholder": "Enter video title",

@@ -327,10 +327,10 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-light">
           <Video className="w-5 h-5" />
-          {t('upload.title')}
+          {t('upload.cardTitle')}
         </CardTitle>
         <CardDescription className="font-light">
-          {t('upload.description')}
+          {t('upload.pageSubtitle')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -355,16 +355,16 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                     setVideoFile(null);
                   }}
                 >
-                  {t('upload.changeFile')}
+                  Change file
                 </Button>
               </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground font-light">
-                  {t('upload.dragDrop')}
+                  {t('upload.dropZone')}
                 </p>
                 <p className="text-xs text-muted-foreground font-light">
-                  Supports files up to 100GB
+                  {t('upload.supportedFormats')}
                 </p>
               </div>
             )}
@@ -398,7 +398,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         {/* Video Information */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">{t('upload.titleLabel')}</Label>
+            <Label htmlFor="title">{t('upload.title')}</Label>
             <Input
               id="title"
               value={title}
@@ -409,7 +409,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">{t('upload.descriptionLabel')}</Label>
+            <Label htmlFor="description">{t('upload.description')}</Label>
             <Textarea
               id="description"
               value={description}
@@ -422,7 +422,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="language">{t('upload.languageLabel')}</Label>
+              <Label htmlFor="language">{t('upload.language')}</Label>
               <Select value={language} onValueChange={setLanguage} disabled={uploading}>
                 <SelectTrigger id="language">
                   <SelectValue />
@@ -441,7 +441,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contentType">{t('upload.contentTypeLabel')}</Label>
+              <Label htmlFor="contentType">{t('upload.contentType')}</Label>
               <Select value={contentType} onValueChange={setContentType} disabled={uploading}>
                 <SelectTrigger id="contentType">
                   <SelectValue />
@@ -466,17 +466,17 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           <div className="space-y-2">
             <Label htmlFor="speakers" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t('upload.speakersLabel')}
+              {t('speakerEmotionDetection.knownSpeakers')}
             </Label>
             <p className="text-sm text-muted-foreground font-light">
-              {t('upload.speakersDescription')}
+              {t('speakerEmotionDetection.knownSpeakersHelp')}
             </p>
             <div className="flex gap-2">
               <Input
                 id="speakers"
                 value={newSpeaker}
                 onChange={(e) => setNewSpeaker(e.target.value)}
-                placeholder={t('upload.speakersPlaceholder')}
+                placeholder={t('speakerEmotionDetection.speakerPlaceholder')}
                 disabled={uploading}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -491,7 +491,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 onClick={addSpeaker}
                 disabled={uploading || !newSpeaker.trim()}
               >
-                {t('upload.addSpeaker')}
+                {t('speakerEmotionDetection.add')}
               </Button>
             </div>
           </div>
@@ -536,7 +536,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
           className="w-full"
           size="lg"
         >
-          {uploading ? t('upload.uploading') : t('upload.submit')}
+          {uploading ? t('upload.uploading') : t('upload.uploadButton')}
         </Button>
       </CardContent>
     </Card>
