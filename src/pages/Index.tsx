@@ -429,10 +429,6 @@ const Index = () => {
                     <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
                   </div>
                 </div>
-                
-                <p className="text-base text-muted-foreground font-light max-w-3xl mx-auto leading-relaxed">
-                  The AI platform that delivers regulatory-grade accessibility with emotional intelligence — at 1/10th the cost of manual services.
-                </p>
               </div>
             </div>
           </div>
