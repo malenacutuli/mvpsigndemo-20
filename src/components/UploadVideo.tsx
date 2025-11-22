@@ -37,7 +37,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en');
-  const [contentType, setContentType] = useState<string>('education');
+  const [contentType, setContentType] = useState<string>('branded-content');
   const [knownSpeakers, setKnownSpeakers] = useState<string[]>([]);
   const [newSpeaker, setNewSpeaker] = useState('');
   const { toast } = useToast();
@@ -446,12 +446,21 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
                 <SelectTrigger id="contentType">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border z-50 max-h-[300px] overflow-y-auto">
+                  <SelectItem value="branded-content">{t('upload.contentTypes.brandedContent')}</SelectItem>
+                  <SelectItem value="webinar">{t('upload.contentTypes.webinar')}</SelectItem>
+                  <SelectItem value="podcast">{t('upload.contentTypes.podcast')}</SelectItem>
+                  <SelectItem value="social-media">{t('upload.contentTypes.socialMedia')}</SelectItem>
+                  <SelectItem value="tutorial">{t('upload.contentTypes.tutorial')}</SelectItem>
+                  <SelectItem value="stand-up">{t('upload.contentTypes.standUp')}</SelectItem>
+                  <SelectItem value="product-demo">{t('upload.contentTypes.productDemo')}</SelectItem>
+                  <SelectItem value="children">{t('upload.contentTypes.children')}</SelectItem>
+                  <SelectItem value="music-video">{t('upload.contentTypes.musicVideo')}</SelectItem>
+                  <SelectItem value="tv-show">{t('upload.contentTypes.tvShow')}</SelectItem>
                   <SelectItem value="education">{t('upload.contentTypes.education')}</SelectItem>
-                  <SelectItem value="entertainment">{t('upload.contentTypes.entertainment')}</SelectItem>
-                  <SelectItem value="news">{t('upload.contentTypes.news')}</SelectItem>
-                  <SelectItem value="training">{t('upload.contentTypes.training')}</SelectItem>
-                  <SelectItem value="marketing">{t('upload.contentTypes.marketing')}</SelectItem>
+                  <SelectItem value="film">{t('upload.contentTypes.film')}</SelectItem>
+                  <SelectItem value="advertisement">{t('upload.contentTypes.advertisement')}</SelectItem>
+                  <SelectItem value="recipe">{t('upload.contentTypes.recipe')}</SelectItem>
                   <SelectItem value="other">{t('upload.contentTypes.other')}</SelectItem>
                 </SelectContent>
               </Select>
