@@ -64,16 +64,18 @@ export const Navigation: React.FC = () => {
               {t('nav.enterprise')}
             </Link>
             
-            <Link 
-              to={getPath('/pricing')}
-              className={`text-base font-light transition-colors hover:text-primary ${
-                isActivePath('/pricing') 
-                  ? 'text-primary font-medium' 
-                  : 'text-slate-600'
-              }`}
-            >
-              {t('nav.pricing')}
-            </Link>
+            {!isDemo && (
+              <Link 
+                to={getPath('/pricing')}
+                className={`text-base font-light transition-colors hover:text-primary ${
+                  isActivePath('/pricing') 
+                    ? 'text-primary font-medium' 
+                    : 'text-slate-600'
+                }`}
+              >
+                {t('nav.pricing')}
+              </Link>
+            )}
             
             {user && shouldShowLink('dashboard') && (
               <Link 
