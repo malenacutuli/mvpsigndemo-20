@@ -18,7 +18,7 @@ const Index = () => {
   const { t } = useTranslation();
   const { theme, isDemo, getPath } = useTheme();
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen ${isDemo ? 'bg-white' : 'bg-background'}`}>
       <Navigation />
       
       {/* Hero Section */}

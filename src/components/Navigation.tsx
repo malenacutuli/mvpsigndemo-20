@@ -24,7 +24,7 @@ export const Navigation: React.FC = () => {
   };
   
   return (
-    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/20">
+    <nav className={`sticky top-0 z-50 border-b border-border/20 ${isDemo ? 'bg-white' : 'bg-background/95 backdrop-blur-xl'}`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -33,7 +33,7 @@ export const Navigation: React.FC = () => {
               <img
                 src={theme.logo}
                 alt={theme.companyName}
-                className="h-10 sm:h-12 w-auto object-contain flex-shrink-0 drop-shadow-sm"
+                className={`w-auto object-contain flex-shrink-0 drop-shadow-sm ${isDemo ? 'h-14 sm:h-16' : 'h-10 sm:h-12'}`}
                 loading="lazy"
                 decoding="async"
               />
