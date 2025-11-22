@@ -1079,6 +1079,14 @@
     "language": "Language",
     "languageHelp": "💡 Choose the primary language spoken in your video for accurate transcription",
     "contentType": "Content Type",
+    "contentTypes": {
+      "education": "Education",
+      "entertainment": "Entertainment",
+      "news": "News",
+      "training": "Training",
+      "marketing": "Marketing",
+      "other": "Other"
+    },
     "voiceSelection": "Voice Selection",
     "slCharacter": "SL Avatar Character",
     "uploadButton": "Upload and Process Video",
