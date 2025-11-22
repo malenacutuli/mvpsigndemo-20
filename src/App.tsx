@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -39,8 +40,18 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-            <Route path="/" element={<Index />} />
+            <ThemeProvider>
+              <Routes>
+                {/* Demo routes - must come before regular routes */}
+                <Route path="/interbrand" element={<Index />} />
+                <Route path="/interbrand/*" element={<Index />} />
+                <Route path="/nike" element={<Index />} />
+                <Route path="/nike/*" element={<Index />} />
+                <Route path="/cocacola" element={<Index />} />
+                <Route path="/cocacola/*" element={<Index />} />
+                
+                {/* Regular routes */}
+                <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/enterprise" element={<Enterprise />} />
@@ -89,9 +100,10 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/contact" element={<Contact />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ThemeProvider>
           </BrowserRouter>
         </SubscriptionProvider>
       </AuthProvider>
