@@ -110,6 +110,12 @@ const Index = () => {
                 <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
               </div>
             </div>
+            {/* Powered by badge for demos */}
+            {isDemo && (
+              <p className="mt-12 text-sm text-center text-muted-foreground">
+                Powered by <span className="text-primary font-medium">Axessible Technologies</span>
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -305,70 +311,71 @@ const Index = () => {
       </section>
 
       {/* Section 6: Impact Statistics */}
-      <section className="py-32 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
-              {t('sections.testimonials.title')}
-            </h2>
-            
-            {/* Large Impact Statistics - Eko Style */}
-            <div className="grid md:grid-cols-3 gap-12 mb-20">
-              <div className="text-center space-y-3">
-                <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                  95<span className="text-primary">%</span>
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.engagementIncrease')}</h3>
-                  <p className="text-lg text-foreground font-light">{t('sections.testimonials.viewerEngagement')}</p>
-                </div>
-              </div>
+      {!isDemo && (
+        <section className="py-32 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
+                {t('sections.testimonials.title')}
+              </h2>
               
-              <div className="text-center space-y-3">
-                <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                  78<span className="text-primary">%</span>
+              {/* Large Impact Statistics - Eko Style */}
+              <div className="grid md:grid-cols-3 gap-12 mb-20">
+                <div className="text-center space-y-3">
+                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
+                    95<span className="text-primary">%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.engagementIncrease')}</h3>
+                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.viewerEngagement')}</p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.betterComprehension')}</h3>
-                  <p className="text-lg text-foreground font-light">{t('sections.testimonials.contentComprehension')}</p>
-                </div>
-              </div>
-              
-              <div className="text-center space-y-3">
-                <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                  24<span className="text-primary">x</span>
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.moreVideos')}</h3>
-                  <p className="text-lg text-foreground font-light">{t('sections.testimonials.accessibleVideos')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial Cards */}
-            <div className="grid md:grid-cols-3 gap-8 mt-16">
-              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                  "{t('sections.testimonials.testimonial1')}"
-                </p>
-              </div>
-              
-              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                  "{t('sections.testimonials.testimonial2')}"
-                </p>
-              </div>
-              
-              <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                  "{t('sections.testimonials.testimonial3')}"
-                </p>
                 
+                <div className="text-center space-y-3">
+                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
+                    78<span className="text-primary">%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.betterComprehension')}</h3>
+                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.contentComprehension')}</p>
+                  </div>
+                </div>
+                
+                <div className="text-center space-y-3">
+                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
+                    24<span className="text-primary">x</span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.moreVideos')}</h3>
+                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.accessibleVideos')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Testimonial Cards */}
+              <div className="grid md:grid-cols-3 gap-8 mt-16">
+                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
+                    "{t('sections.testimonials.testimonial1')}"
+                  </p>
+                </div>
+                
+                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
+                    "{t('sections.testimonials.testimonial2')}"
+                  </p>
+                </div>
+                
+                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
+                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
+                    "{t('sections.testimonials.testimonial3')}"
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Section 7: Closing CTA */}
       <section className="py-20 bg-white">
