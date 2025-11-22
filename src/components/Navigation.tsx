@@ -6,13 +6,22 @@ import { AuthButton } from '@/components/AuthButton';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { theme, isDemo, getPath } = useTheme();
   
-  const isActivePath = (path: string) => location.pathname === path;
+  const isActivePath = (path: string) => {
+    const fullPath = getPath(path);
+    return location.pathname === fullPath || location.pathname === path;
+  };
+
+  const shouldShowLink = (linkName: string) => {
+    return !theme.hideNavLinks?.includes(linkName);
+  };
   
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/20">
@@ -20,10 +29,10 @@ export const Navigation: React.FC = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center mr-4">
-            <Link to="/" className="flex items-center space-x-3">
+            <Link to={getPath('/')} className="flex items-center space-x-3">
               <img
-                src="/assets/axessible-logo.png"
-                alt="Axessible"
+                src={theme.logo}
+                alt={theme.companyName}
                 className="h-10 sm:h-12 w-auto object-contain flex-shrink-0 drop-shadow-sm"
                 loading="lazy"
                 decoding="async"
@@ -34,7 +43,7 @@ export const Navigation: React.FC = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-10">
             <Link 
-              to="/explore" 
+              to={getPath('/explore')}
               className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/explore') 
                   ? 'text-primary font-medium' 
@@ -45,7 +54,7 @@ export const Navigation: React.FC = () => {
             </Link>
             
             <Link 
-              to="/enterprise" 
+              to={getPath('/enterprise')}
               className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/enterprise') 
                   ? 'text-primary font-medium' 
@@ -56,7 +65,7 @@ export const Navigation: React.FC = () => {
             </Link>
             
             <Link 
-              to="/pricing" 
+              to={getPath('/pricing')}
               className={`text-base font-light transition-colors hover:text-primary ${
                 isActivePath('/pricing') 
                   ? 'text-primary font-medium' 
@@ -66,30 +75,30 @@ export const Navigation: React.FC = () => {
               {t('nav.pricing')}
             </Link>
             
-            {user && (
-              <>
-                <Link 
-                  to="/dashboard" 
-                  className={`text-base font-light transition-colors hover:text-primary ${
-                    isActivePath('/dashboard') 
-                      ? 'text-primary font-medium' 
-                      : 'text-slate-600'
-                  }`}
-                >
-                  {t('nav.dashboard')}
-                </Link>
-                
-                <Link 
-                  to="/videos" 
-                  className={`text-base font-light transition-colors hover:text-primary ${
-                    isActivePath('/videos') 
-                      ? 'text-primary font-medium' 
-                      : 'text-slate-600'
-                  }`}
-                >
-                  {t('nav.myVideos')}
-                </Link>
-              </>
+            {user && shouldShowLink('dashboard') && (
+              <Link 
+                to={getPath('/dashboard')}
+                className={`text-base font-light transition-colors hover:text-primary ${
+                  isActivePath('/dashboard') 
+                    ? 'text-primary font-medium' 
+                    : 'text-slate-600'
+                }`}
+              >
+                {t('nav.dashboard')}
+              </Link>
+            )}
+            
+            {user && shouldShowLink('videos') && (
+              <Link 
+                to={getPath('/videos')}
+                className={`text-base font-light transition-colors hover:text-primary ${
+                  isActivePath('/videos') 
+                    ? 'text-primary font-medium' 
+                    : 'text-slate-600'
+                }`}
+              >
+                {t('nav.myVideos')}
+              </Link>
             )}
           </div>
           
