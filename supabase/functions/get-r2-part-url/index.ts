@@ -55,17 +55,28 @@ serve(async (req) => {
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
+    console.log('[GET-R2-PART-URL] Request:', {
+      key,
+      uploadId,
+      partNumber,
+      endpoint,
+      bucketName
+    });
+    
     // Encode only the filename (last part), keep path structure intact
     const pathParts = key.split('/');
     const fileName = pathParts.pop();
     const path = pathParts.join('/');
     const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
-    console.log('Generated URL:', url);
+    
+    console.log('[GET-R2-PART-URL] Generated URL:', url);
     
     const auth = await createAwsSignature('PUT', url, accessKeyId, secretAccessKey);
     
     // Embed auth in URL as query parameters for presigned URL
     const presignedUrl = `${url}&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(auth.authorization.split('Credential=')[1].split(',')[0])}&X-Amz-Date=${auth['x-amz-date']}&X-Amz-SignedHeaders=host&X-Amz-Signature=${auth.authorization.split('Signature=')[1]}`;
+    
+    console.log('[GET-R2-PART-URL] Generated presigned URL for part', partNumber);
     
     return new Response(JSON.stringify({ presignedUrl }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {

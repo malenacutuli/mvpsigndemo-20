@@ -79,6 +79,13 @@ serve(async (req) => {
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
     
+    console.log('[GENERATE-R2-UPLOAD-URL] R2 Configuration:', {
+      endpoint,
+      bucketName,
+      hasAccessKeyId: !!accessKeyId,
+      hasSecretKey: !!secretAccessKey
+    });
+    
     const key = `videos/${user.id}/${crypto.randomUUID()}-${fileName}`;
     // Encode only the filename (last part), keep path structure intact
     const pathParts = key.split('/');
@@ -88,7 +95,7 @@ serve(async (req) => {
     
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, '');
     
-    console.log('Initiating upload to:', url);
+    console.log('[GENERATE-R2-UPLOAD-URL] Initiating multipart upload:', { url, key });
     
     const response = await fetch(url, {
       method: 'POST',
