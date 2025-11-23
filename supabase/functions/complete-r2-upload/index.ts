@@ -49,6 +49,15 @@ serve(async (req) => {
     const accessKeyId = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID')!;
     const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY')!;
     const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME')!;
+    
+    console.log('[COMPLETE-R2-UPLOAD] Completing upload:', {
+      endpoint,
+      bucketName,
+      key,
+      uploadId,
+      partsCount: parts.length
+    });
+    
     const partsXml = parts.map((p: { partNumber: number; etag: string }) => `<Part><PartNumber>${p.partNumber}</PartNumber><ETag>${p.etag}</ETag></Part>`).join('');
     const completeBody = `<CompleteMultipartUpload>${partsXml}</CompleteMultipartUpload>`;
     const pathParts = key.split('/');
@@ -56,6 +65,9 @@ serve(async (req) => {
     const path = pathParts.join('/');
     const url = `${endpoint}/${bucketName}/${path}/${encodeURIComponent(fileName)}?uploadId=${encodeURIComponent(uploadId)}`;
     const auth = await createAwsSignature('POST', url, accessKeyId, secretAccessKey, completeBody);
+    
+    console.log('[COMPLETE-R2-UPLOAD] Sending completion request to R2');
+    
     const response = await fetch(url, { method: 'POST', headers: { 'Authorization': auth.authorization, 'x-amz-date': auth['x-amz-date'], 'Content-Type': 'application/xml' }, body: completeBody });
     
     console.log('[COMPLETE-R2-UPLOAD] R2 response status:', response.status);
