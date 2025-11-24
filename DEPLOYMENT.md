@@ -25,6 +25,25 @@ The fastest way to deploy Axessible is through the Lovable platform:
    - Connect your custom domain
    - Automatic SSL certificate provisioning
 
+## 📋 SPA Routing Configuration
+
+Axessible is a Single Page Application (SPA) that uses client-side routing. For demo routes like `/interbrand`, `/nike`, and `/cocacola` to work correctly when accessed directly (not through navigation), the server must serve `index.html` for all routes.
+
+### _redirects File (Required)
+
+A `public/_redirects` file is included in the project:
+```
+/*    /index.html   200
+```
+
+This configuration:
+- Serves `index.html` for all routes (including demo pages like `/interbrand`)
+- Allows React Router to handle client-side routing
+- Works automatically on Lovable, Netlify, and similar platforms
+- For other platforms, see platform-specific configuration below
+
+**Note:** Without this configuration, direct access to routes like `axessvideo.com/interbrand` will return 404 errors, even though the routes work when navigated to within the app.
+
 ## 🏗️ Manual Deployment Options
 
 ### Prerequisites
