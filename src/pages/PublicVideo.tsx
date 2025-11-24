@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ const PublicVideo = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { getPath } = useTheme();
   const [video, setVideo] = useState<PublicVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -289,7 +291,7 @@ const PublicVideo = () => {
               This video may not be public or may have been removed.
             </p>
             <Button 
-              onClick={() => navigate('/public')}
+              onClick={() => navigate(getPath('/public'))}
               size="lg"
               className="px-8 py-4 text-lg font-light rounded-full"
             >
@@ -308,7 +310,7 @@ const PublicVideo = () => {
         {/* Back Button */}
         <Button 
           variant="outline" 
-          onClick={() => navigate('/public')}
+          onClick={() => navigate(getPath('/public'))}
           className="mb-8 font-light rounded-full"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

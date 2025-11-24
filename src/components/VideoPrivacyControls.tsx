@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,7 @@ export const VideoPrivacyControls: React.FC<VideoPrivacyControlsProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { getPath } = useTheme();
 
   const handleTogglePublic = async () => {
     if (!isPublic && (!hasTranscript && !hasAudioDescription)) {
@@ -220,7 +222,7 @@ export const VideoPrivacyControls: React.FC<VideoPrivacyControlsProps> = ({
           <div className="pt-2 border-t">
             <Button variant="ghost" size="sm" asChild className="w-full">
               <a 
-                href={`/watch/${videoId}`} 
+                href={getPath(`/watch/${videoId}`)}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"

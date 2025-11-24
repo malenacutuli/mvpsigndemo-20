@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,7 @@ interface Channel {
 const Channel = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
+  const { getPath } = useTheme();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -285,7 +287,7 @@ const Channel = () => {
           {videos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {videos.map((video) => (
-                <Link key={video.id} to={`/watch/${video.id}`}>
+                <Link key={video.id} to={getPath(`/watch/${video.id}`)}>
                   <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300">
                     <div className="relative aspect-video overflow-hidden rounded-t-lg">
                       {video.thumbnail_url ? (
