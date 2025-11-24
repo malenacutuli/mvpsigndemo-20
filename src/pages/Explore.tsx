@@ -26,6 +26,7 @@ import {
   Menu
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PublicVideo {
   id: string;
@@ -63,6 +64,7 @@ interface ChannelWithVideos extends Channel {
 
 const Explore = () => {
   const { t } = useTranslation();
+  const { getPath } = useTheme();
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [channelsWithVideos, setChannelsWithVideos] = useState<ChannelWithVideos[]>([]);
@@ -376,7 +378,7 @@ const Explore = () => {
                 {featuredVideo && (
                   <div className="relative">
                     <h2 className="text-xl sm:text-2xl font-light text-foreground mb-6">{t('explore.featured')}</h2>
-                    <Link to={`/watch/${featuredVideo.id}`}>
+                    <Link to={getPath(`/watch/${featuredVideo.id}`)}>
                       <Card className="group cursor-pointer overflow-hidden hover:shadow-xl transition-all duration-300">
                         <div className="relative aspect-video md:aspect-[21/9] overflow-hidden">
                           {featuredVideo.thumbnail_url ? (
@@ -465,7 +467,7 @@ const Explore = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {channel.videos.slice(0, 4).map((video) => (
-                        <Link key={video.id} to={`/watch/${video.id}`} className="block">
+                        <Link key={video.id} to={getPath(`/watch/${video.id}`)} className="block">
                           <Card className="group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-border hover:border-primary/20">
                             <div className="relative aspect-video overflow-hidden rounded-t-lg">
                               {video.thumbnail_url ? (

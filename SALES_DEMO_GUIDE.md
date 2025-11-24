@@ -28,6 +28,45 @@ Your demos are accessible at:
 All routes preserve context:
 - `axessvideo.com/interbrand/explore` → Explore page with Interbrand branding
 - `axessvideo.com/nike/pricing` → Pricing page with Nike branding
+- `axessvideo.com/interbrand/watch/{video-id}` → Video page with Interbrand branding
+
+## 🎨 Demo Context Preservation
+
+The demo system automatically preserves branding context when navigating between pages. This means:
+
+✅ **Clicking videos** from `/interbrand` takes users to `/interbrand/watch/{id}` with Interbrand branding
+✅ **Back buttons** return users to the correct demo page (e.g., `/interbrand/public`)
+✅ **All internal links** maintain demo context using the `getPath()` helper
+
+### How It Works
+
+The `ThemeContext` provides a `getPath()` helper that automatically prefixes routes with the current demo ID:
+
+```typescript
+// In a demo context (e.g., /interbrand)
+getPath('/watch/123')  // Returns: /interbrand/watch/123
+
+// In default context
+getPath('/watch/123')  // Returns: /watch/123
+```
+
+### For New Features
+
+When adding new components or pages that link to other routes, always use `getPath()`:
+
+```typescript
+import { useTheme } from '@/contexts/ThemeContext';
+
+const MyComponent = () => {
+  const { getPath } = useTheme();
+  
+  return (
+    <Link to={getPath('/some-page')}>
+      Click me
+    </Link>
+  );
+};
+```
 
 ## 🎯 Adding a New Demo (10 minutes)
 
@@ -62,11 +101,14 @@ Edit `src/config/demoThemes.ts` and add:
 
 ### Step 3: Add Routes
 
-Edit `src/App.tsx` and add (around line 44):
+Edit `src/App.tsx` and add demo routes including the watch route (around line 44):
 
 ```typescript
 <Route path="/client-name" element={<Index />} />
-<Route path="/client-name/*" element={<Index />} />
+<Route path="/client-name/auth" element={<DemoAuth />} />
+<Route path="/client-name/explore" element={<Explore />} />
+<Route path="/client-name/watch/:id" element={<PublicVideo />} />
+<Route path="/client-name/enterprise" element={<Enterprise />} />
 ```
 
 ### Step 4: Deploy

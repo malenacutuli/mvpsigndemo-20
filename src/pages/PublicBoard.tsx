@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Play, Calendar, Clock, Languages, Eye, Globe } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ interface PublicVideo {
 
 export default function PublicBoard() {
   const { t } = useTranslation();
+  const { getPath } = useTheme();
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -241,8 +243,8 @@ export default function PublicBoard() {
                       {t('publicBoard.published')} {new Date(video.published_at).toLocaleDateString()}
                     </div>
                   
-                    <Button asChild className="w-full font-light rounded-full group-hover:shadow-md transition-all">
-                      <Link to={`/watch/${video.id}`}>
+                  <Button asChild className="w-full font-light rounded-full group-hover:shadow-md transition-all">
+                      <Link to={getPath(`/watch/${video.id}`)}>
                         <Play className="w-4 h-4 mr-2" />
                         {t('publicBoard.watchVideo')}
                       </Link>

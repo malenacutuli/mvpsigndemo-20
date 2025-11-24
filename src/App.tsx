@@ -47,14 +47,17 @@ const App = () => (
                 <Route path="/interbrand" element={<Index />} />
                 <Route path="/interbrand/auth" element={<DemoAuth />} />
                 <Route path="/interbrand/explore" element={<Explore />} />
+                <Route path="/interbrand/watch/:id" element={<PublicVideo />} />
                 <Route path="/interbrand/enterprise" element={<Enterprise />} />
                 <Route path="/nike" element={<Index />} />
                 <Route path="/nike/auth" element={<DemoAuth />} />
                 <Route path="/nike/explore" element={<Explore />} />
+                <Route path="/nike/watch/:id" element={<PublicVideo />} />
                 <Route path="/nike/enterprise" element={<Enterprise />} />
                 <Route path="/cocacola" element={<Index />} />
                 <Route path="/cocacola/auth" element={<DemoAuth />} />
                 <Route path="/cocacola/explore" element={<Explore />} />
+                <Route path="/cocacola/watch/:id" element={<PublicVideo />} />
                 <Route path="/cocacola/enterprise" element={<Enterprise />} />
                 
                 {/* Regular routes */}
