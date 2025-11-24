@@ -121,6 +121,25 @@ export const demoThemes: Record<string, DemoTheme> = {
     ctaText: 'See Our Enhanced Video Features',
     hideNavLinks: ['dashboard', 'videos'],
   },
+
+  // FCB Global demo theme
+  'fcb': {
+    id: 'fcb',
+    name: 'FCB Global',
+    logo: '/assets/demo-logos/fcb-logo.png',
+    colors: {
+      primary: '15 100% 55%',      // FCB vibrant orange
+      primaryGlow: '15 100% 65%',
+      accent: '285 75% 60%',       // FCB purple
+      secondary: '210 20% 95%',
+    },
+    companyName: 'FCB',
+    tagline: 'Never Finished',
+    heroTitle: 'Creating Accessible Stories That Move People',
+    heroSubtitle: 'At FCB, we believe great advertising is accessible advertising. Our commitment to inclusivity ensures every campaign reaches and resonates with all audiences through innovative accessibility features.',
+    ctaText: 'Explore Our Solutions',
+    hideNavLinks: ['dashboard', 'videos'],
+  },
 };
 
 export const getThemeFromPath = (pathname: string): DemoTheme => {
