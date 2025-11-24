@@ -176,10 +176,10 @@ export const useVideoStorage = (videoId: string) => {
         console.log(`💾 Created new transcript_id: ${transcriptId}`);
       }
 
-      // Prepare segments with exact millisecond timing (NO quantization)
+      // PHASE 3: Use Math.round for accurate millisecond conversion (prevents precision loss)
       const rows = segments.map((seg: TranscriptSegment, i: number) => {
-        const startMs = seg.start_ms || Math.floor(seg.startTime * 1000);
-        const endMs = seg.end_ms || Math.floor(seg.endTime * 1000);
+        const startMs = seg.start_ms || Math.round(seg.startTime * 1000);
+        const endMs = seg.end_ms || Math.round(seg.endTime * 1000);
         
         return {
           video_id: videoId,
@@ -210,13 +210,13 @@ export const useVideoStorage = (videoId: string) => {
           sentiment_confidence: seg.sentiment_confidence || seg.sentimentConfidence,
           emotion_metadata: seg.emotion_metadata || seg.emotionMetadata,
           
-          // ✅ Words with duration
+          // PHASE 3: Use Math.round for word timings (prevents cumulative drift)
           words: seg.words && seg.words.length > 0 ? seg.words.map(w => ({
             text: w.text,
-            start_ms: w.start_ms || Math.floor((w.startTime || 0) * 1000),
-            end_ms: w.end_ms || Math.floor((w.endTime || 0) * 1000),
+            start_ms: w.start_ms || Math.round((w.startTime || 0) * 1000),
+            end_ms: w.end_ms || Math.round((w.endTime || 0) * 1000),
             confidence: w.confidence,
-            duration_ms: (w.end_ms || Math.floor((w.endTime || 0) * 1000)) - (w.start_ms || Math.floor((w.startTime || 0) * 1000)),
+            duration_ms: (w.end_ms || Math.round((w.endTime || 0) * 1000)) - (w.start_ms || Math.round((w.startTime || 0) * 1000)),
             intensity: w.intensity,
             sentiment: w.sentiment,
             sentimentConfidence: w.sentimentConfidence

@@ -598,18 +598,32 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       applied = segments;
     }
 
-    // ✅ Synthesize missing words for segments that have none
-    const synthesizeWords = (text: string, start: number, end: number) => {
-      const tokens = text.match(/\S+/g) || [];
+    // ✅ PHASE 2: Character-length-based word synthesis for realistic timing
+    const synthesizeWords = (text: string, start: number, end: number): Array<{text: string, startTime: number, endTime: number, emphasis: 'normal', pitch: 'normal'}> => {
+      const tokens: string[] = text.match(/\S+/g) || [];
       if (!tokens.length) return [];
-      const duration = (end - start) / tokens.length;
-      return tokens.map((t, i) => ({
-        text: t,
-        startTime: start + (i * duration),
-        endTime: start + ((i + 1) * duration),
-        emphasis: 'normal',
-        pitch: 'normal',
-      }));
+      
+      // Calculate character-based weights (longer words take more time)
+      const totalChars: number = tokens.reduce((sum: number, t: string) => sum + t.length, 0);
+      const duration: number = end - start;
+      
+      let currentTime: number = start;
+      return tokens.map((token: string) => {
+        const charWeight: number = token.length / totalChars;
+        const wordDuration: number = duration * charWeight;
+        const wordEnd: number = Math.min(end, currentTime + wordDuration);
+        
+        const result = {
+          text: token,
+          startTime: currentTime,
+          endTime: wordEnd,
+          emphasis: 'normal' as const,
+          pitch: 'normal' as const,
+        };
+        
+        currentTime = wordEnd;
+        return result;
+      });
     };
     
     applied = applied.map((seg: any) => {
@@ -640,18 +654,21 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                                word.startTime >= segment.startTime &&
                                word.endTime <= segment.endTime;
 
-        // CRITICAL: First word MUST start at segment.startTime (±100ms tolerance)
+        // PHASE 1: Trust AssemblyAI timings - only force alignment if truly invalid
         if (index === 0) {
           const firstWordStart = hasValidTiming ? word.startTime : segment.startTime;
           const firstWordEnd = hasValidTiming ? word.endTime : segment.startTime + avgWordDuration;
           
-          // Force alignment if first word is off by more than 100ms
-          const needsAlignment = Math.abs(firstWordStart - segment.startTime) > 0.1;
+          // Only align if timing is completely broken (>500ms outside segment bounds)
+          const isCompletelyInvalid = 
+            !hasValidTiming ||
+            firstWordStart < segment.startTime - 0.5 ||  // More than 500ms before segment
+            firstWordEnd > segment.endTime + 0.5;         // More than 500ms after segment
           
           return {
             text: wordText,
-            startTime: needsAlignment ? segment.startTime : firstWordStart,
-            endTime: needsAlignment ? segment.startTime + avgWordDuration : firstWordEnd,
+            startTime: isCompletelyInvalid ? segment.startTime : firstWordStart,
+            endTime: isCompletelyInvalid ? (segment.startTime + avgWordDuration) : firstWordEnd,
             emphasis: word.emphasis || 'normal',
             pitch: word.pitch || 'normal',
             syllables: word.syllables || undefined
