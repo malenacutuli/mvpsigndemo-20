@@ -426,7 +426,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
         return {
           id: segment.id,
           transcriptId: txId, // ✅ Preserve transcript_id
-          idx: segment.idx ?? index,
+          idx: index, // ✅ Always use array index to prevent duplicates after inserts
           text: segment.text,
           startTime: segment.startTime,
           endTime: segment.endTime,
@@ -1225,18 +1225,25 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     
     const newSegment: TranscriptSegment = {
       id: `segment-${Date.now()}`,
+      idx: 0, // Will be reassigned after insertion
       text: 'New segment text...',
       startTime: newStartTime,
       endTime: newStartTime + 3,
       speaker: 'Speaker', // Use 'Speaker' as default instead of 'narrator'
       speakerColor: getNextCISpeakerColor(editingTranscript.length),
       emphasis: 'normal',
-      pitch: 'normal'
+      pitch: 'normal',
+      is_manually_edited: true,
+      last_edited_by: 'human' as const,
+      last_edited_at: new Date().toISOString()
     };
     
     const insertPosition = findInsertPosition(editingTranscript, newStartTime);
     const updated = [...editingTranscript];
     updated.splice(insertPosition, 0, newSegment);
+    
+    // Reassign idx values for all segments after insertion
+    updated.forEach((seg, i) => seg.idx = i);
     
     setEditingTranscript(updated);
     
@@ -1250,6 +1257,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
 
   const deleteSegment = async (index: number) => {
     const updated = editingTranscript.filter((_, i) => i !== index);
+    
+    // Reassign idx values for all segments after deletion
+    updated.forEach((seg, i) => seg.idx = i);
+    
     setEditingTranscript(updated);
     
     // Save to database with proper transcript record
