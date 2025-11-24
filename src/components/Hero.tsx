@@ -31,7 +31,7 @@ export const Hero: React.FC = () => {
           
           {/* CTA Button */}
           <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto inline-flex items-center gap-2">
-            <Link to={getPath('/upload')}>
+            <Link to={getPath(isDemo ? '/auth' : '/upload')}>
               {isDemo ? theme.ctaText : t('hero.cta')}
               <ArrowRight className="w-5 h-5" />
             </Link>
