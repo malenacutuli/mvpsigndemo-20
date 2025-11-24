@@ -51,6 +51,19 @@ export interface TranscriptSegment {
   sentimentConfidence?: number;
   emotion_metadata?: any;
   emotionMetadata?: any;
+  
+  // ✅ PHASE 2: Manual editing metadata
+  is_manually_edited?: boolean;
+  last_edited_by?: 'human' | 'ai';
+  last_edited_at?: string | null;
+  locked_by_user?: boolean;
+  edit_history?: Array<{
+    edited_at: string;
+    edited_by: string;
+    fields: string[];
+    previous_text?: string;
+    new_text?: string;
+  }> | null;
 }
 
 export interface AudioDescription {
@@ -210,6 +223,13 @@ export const useVideoStorage = (videoId: string) => {
           sentiment_confidence: seg.sentiment_confidence || seg.sentimentConfidence,
           emotion_metadata: seg.emotion_metadata || seg.emotionMetadata,
           
+          // ✅ PHASE 1: Manual editing metadata
+          is_manually_edited: seg.is_manually_edited ?? false,
+          last_edited_by: seg.last_edited_by ?? 'ai',
+          last_edited_at: seg.last_edited_at ?? null,
+          locked_by_user: seg.locked_by_user ?? false,
+          edit_history: seg.edit_history ?? null,
+          
           // PHASE 3: Use Math.round for word timings (prevents cumulative drift)
           words: seg.words && seg.words.length > 0 ? seg.words.map(w => ({
             text: w.text,
@@ -355,7 +375,7 @@ export const useVideoStorage = (videoId: string) => {
           .limit(1)
           .maybeSingle();
         
-        // ✅ STEP 2: Load segments from ONE canonical source only (include transcript_id)
+        // ✅ STEP 2: Load segments from ONE canonical source only (include transcript_id + manual edit fields)
         const segQuery = supabase
           .from('transcript_segments_clean')
           .select(`
@@ -364,6 +384,7 @@ export const useVideoStorage = (videoId: string) => {
             speaker, speaker_asr_label, speaker_color, character_id, is_off_camera,
             overall_intensity, overall_pitch,
             sentiment, sentiment_confidence, emotion_metadata,
+            is_manually_edited, last_edited_by, last_edited_at, locked_by_user, edit_history,
             characters(id, name, color, is_off_camera, type)
           `)
           .eq('video_id', videoId)
@@ -443,6 +464,13 @@ export const useVideoStorage = (videoId: string) => {
             // Speaker/Character
             speaker: r.characters?.name ?? r.speaker ?? 'Unassigned',
             speakerColor: r.characters?.color ?? CHARACTER_COLORS[r.characters?.type] ?? '#3B82F6',
+            
+            // ✅ PHASE 3: Manual editing metadata
+            is_manually_edited: r.is_manually_edited ?? false,
+            last_edited_by: r.last_edited_by ?? 'ai',
+            last_edited_at: r.last_edited_at ?? null,
+            locked_by_user: r.locked_by_user ?? false,
+            edit_history: r.edit_history ?? [],
             speakerAsrLabel: r.speaker_asr_label ?? null,
             characterId: r.character_id ?? null,
             character_id: r.character_id ?? null,

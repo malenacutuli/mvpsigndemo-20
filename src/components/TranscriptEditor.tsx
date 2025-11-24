@@ -171,6 +171,19 @@ interface TranscriptSegment {
   auto_styling?: any;
   characterId?: string | null; // Link to characters table (camelCase for frontend)
   character_id?: string | null; // Link to characters table (snake_case for database)
+  
+  // ✅ Manual editing metadata
+  is_manually_edited?: boolean;
+  last_edited_by?: 'human' | 'ai';
+  last_edited_at?: string | null;
+  locked_by_user?: boolean;
+  edit_history?: Array<{
+    edited_at: string;
+    edited_by: string;
+    fields: string[];
+    previous_text?: string;
+    new_text?: string;
+  }> | null;
 }
 
 interface TranscriptEditorProps {
@@ -402,33 +415,48 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
   const saveTranscriptData = async (segments: TranscriptSegment[], language: string) => {
     console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
-    const storageSegments: StorageTranscriptSegment[] = segments.map((segment, index) => {
-      // ✅ Extract all identity fields from segment
-      const charId = segment.character_id || segment.characterId || null;
-      const txId = segment.transcriptId ?? null;
-      
-      console.log(`💾 Segment ${index}: speaker="${segment.speaker}", character_id="${charId}", transcript_id="${txId}"`);
-      
-      return {
-        id: segment.id,
-        transcriptId: txId, // ✅ Preserve transcript_id
-        idx: segment.idx ?? index,
-        text: segment.text,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        speaker: segment.speaker,
-        speakerColor: segment.speakerColor,
-        speakerAsrLabel: segment.speakerAsrLabel,
-        emphasis: segment.emphasis,
-        pitch: segment.pitch,
-        words: segment.words,
-        isOffCamera: false,
-        segmentType: 'dialogue' as const,
-        confidence: 0.9,
-        characterId: charId,
-        character_id: charId
-      };
-    });
+    const storageSegments: StorageTranscriptSegment[] = segments
+      .filter(segment => {
+        // ✅ PHASE 6: Protect locked segments from AI overwrites
+        if (segment.locked_by_user && segment.last_edited_by === 'human') {
+          console.log(`🔒 Skipping locked segment ${segment.idx}: "${segment.text.substring(0, 30)}..."`);
+          return false;
+        }
+        return true;
+      })
+      .map((segment, index) => {
+        // ✅ Extract all identity fields from segment
+        const charId = segment.character_id || segment.characterId || null;
+        const txId = segment.transcriptId ?? null;
+        
+        console.log(`💾 Segment ${index}: speaker="${segment.speaker}", character_id="${charId}", transcript_id="${txId}"`);
+        
+        return {
+          id: segment.id,
+          transcriptId: txId, // ✅ Preserve transcript_id
+          idx: segment.idx ?? index,
+          text: segment.text,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          speaker: segment.speaker,
+          speakerColor: segment.speakerColor,
+          speakerAsrLabel: segment.speakerAsrLabel,
+          emphasis: segment.emphasis,
+          pitch: segment.pitch,
+          words: segment.words,
+          isOffCamera: false,
+          segmentType: 'dialogue' as const,
+          confidence: 0.9,
+          characterId: charId,
+          character_id: charId,
+          // ✅ PHASE 6: Preserve manual editing metadata
+          is_manually_edited: segment.is_manually_edited,
+          last_edited_by: segment.last_edited_by,
+          last_edited_at: segment.last_edited_at,
+          locked_by_user: segment.locked_by_user,
+          edit_history: segment.edit_history
+        };
+      });
     
     console.log(`💾 Saving ${storageSegments.length} segments with ${storageSegments.filter(s => s.characterId).length} character links`);
     
@@ -1486,9 +1514,10 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                       end_ms: segment.endTime * 1000,
                       overall_intensity: segment.emphasis || 'normal',
                       overall_pitch: segment.pitch || 'normal',
-                      is_manually_edited: false,
-                      locked_by_user: false,
-                      edit_history: []
+                      // ✅ PHASE 4: Use actual values from segment
+                      is_manually_edited: segment.is_manually_edited ?? false,
+                      locked_by_user: segment.locked_by_user ?? false,
+                      edit_history: segment.edit_history ?? []
                     }}
                     onSave={(updatedSegment) => {
                       // Update the segment in editingTranscript
@@ -1499,7 +1528,13 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
                         startTime: updatedSegment.start_ms / 1000,
                         endTime: updatedSegment.end_ms / 1000,
                         emphasis: updatedSegment.overall_intensity,
-                        pitch: updatedSegment.overall_pitch
+                        pitch: updatedSegment.overall_pitch,
+                        // ✅ PHASE 5: Manual editing metadata
+                        is_manually_edited: updatedSegment.is_manually_edited,
+                        last_edited_by: updatedSegment.last_edited_by,
+                        last_edited_at: updatedSegment.last_edited_at,
+                        locked_by_user: updatedSegment.locked_by_user,
+                        edit_history: updatedSegment.edit_history
                       };
                       setEditingTranscript(updated);
                       setEditingSegmentId(null);
