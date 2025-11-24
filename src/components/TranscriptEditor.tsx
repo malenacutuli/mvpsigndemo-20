@@ -416,14 +416,6 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     console.log('💾 TRANSCRIPT EDITOR: Saving', segments.length, 'segments to DATABASE for video:', videoId, 'language:', language);
     
     const storageSegments: StorageTranscriptSegment[] = segments
-      .filter(segment => {
-        // ✅ PHASE 6: Protect locked segments from AI overwrites
-        if (segment.locked_by_user && segment.last_edited_by === 'human') {
-          console.log(`🔒 Skipping locked segment ${segment.idx}: "${segment.text.substring(0, 30)}..."`);
-          return false;
-        }
-        return true;
-      })
       .map((segment, index) => {
         // ✅ Extract all identity fields from segment
         const charId = segment.character_id || segment.characterId || null;

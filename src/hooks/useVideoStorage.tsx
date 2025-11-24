@@ -308,15 +308,17 @@ export const useVideoStorage = (videoId: string) => {
         throw new Error(`Failed to save transcript: ${upsertError.message}`);
       }
 
-      // ✅ Clean up stale rows (segments with idx >= current segment count)
+      // ✅ Clean up stale rows (segments beyond the maximum index)
       // CRITICAL: Restrict to current transcript_id to prevent cross-transcript deletes
+      const maxIdx = Math.max(...toSave.map(s => s.idx ?? 0));
+      console.log(`🧹 Cleaning up segments with idx > ${maxIdx} for transcript_id: ${transcriptId}`);
       const { error: deleteError } = await supabase
         .from('transcript_segments_clean')
         .delete()
         .eq('video_id', videoId)
         .eq('language', language)
         .eq('transcript_id', transcriptId)  // ✅ Restrict to current transcript
-        .gte('idx', toSave.length);
+        .gt('idx', maxIdx);
 
       if (deleteError) {
         console.warn('⚠️ Failed to delete stale segments:', deleteError.message);
