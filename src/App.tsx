@@ -65,6 +65,12 @@ const App = () => (
         <Route path="/shell/explore" element={<Explore />} />
         <Route path="/shell/watch/:id" element={<PublicVideo />} />
         <Route path="/shell/enterprise" element={<Enterprise />} />
+
+        <Route path="/fcb" element={<Index />} />
+        <Route path="/fcb/auth" element={<DemoAuth />} />
+        <Route path="/fcb/explore" element={<Explore />} />
+        <Route path="/fcb/watch/:id" element={<PublicVideo />} />
+        <Route path="/fcb/enterprise" element={<Enterprise />} />
                 
                 {/* Regular routes */}
                 <Route path="/" element={<Index />} />
