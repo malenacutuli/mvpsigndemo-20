@@ -102,6 +102,25 @@ export const demoThemes: Record<string, DemoTheme> = {
     ctaText: 'Explore',
     hideNavLinks: ['dashboard', 'videos'],
   },
+
+  // Shell demo theme
+  'shell': {
+    id: 'shell',
+    name: 'Shell Media',
+    logo: '/assets/demo-logos/shell-logo.png',
+    colors: {
+      primary: '4 75% 48%',        // Shell red #D52B1E
+      primaryGlow: '4 75% 58%',
+      accent: '45 98% 50%',        // Shell yellow #FCBC04
+      secondary: '45 98% 95%',
+    },
+    companyName: 'Shell',
+    tagline: 'Powering Progress Through Accessibility',
+    heroTitle: 'Our Commitment to Inclusive Content',
+    heroSubtitle: 'At Shell, we\'re committed to integrating accessibility and inclusivity into all our content and design. By prioritizing accessibility from the beginning, we aim to ensure our website is usable and enjoyable for everyone.',
+    ctaText: 'See Our Enhanced Video Features',
+    hideNavLinks: ['dashboard', 'videos'],
+  },
 };
 
 export const getThemeFromPath = (pathname: string): DemoTheme => {
