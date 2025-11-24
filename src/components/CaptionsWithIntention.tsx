@@ -552,10 +552,10 @@ function normalizeWords(
   }));
 }
 
-// CWI Protocol timing
-const SEGMENT_TOLERANCE = 0.05;   // 50ms
-const WORD_TOLERANCE    = 0.08;   // 80ms - smoother sync for word highlighting
-const SYLLABLE_TOLERANCE = 0.02;  // 20ms - for pop animation timing
+// PHASE 5: Tighter tolerances for improved synchronization accuracy
+const SEGMENT_TOLERANCE = 0.03;   // 30ms (was 50ms) - tighter segment activation
+const WORD_TOLERANCE    = 0.05;   // 50ms (was 80ms) - more precise word highlighting
+const SYLLABLE_TOLERANCE = 0.015; // 15ms (was 20ms) - smoother syllable pop animations
 const READAHEAD_WINDOW  = 3.0;    // 3 seconds
 const MIN_DISPLAY_MS    = 800;    // min display for short blips
 
@@ -779,6 +779,36 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
     return active || null;
   }, [processed, timeBucket]);
 
+  // PHASE 4: Timing diagnostics for debugging synchronization accuracy
+  const logTimingDiagnostics = React.useCallback((segment: any, currentTime: number) => {
+    if (!segment.words || !Array.isArray(segment.words)) return;
+    
+    const activeWord = segment.words.find((w: any) => 
+      currentTime >= w.startTime - WORD_TOLERANCE && 
+      currentTime <= w.endTime + WORD_TOLERANCE
+    );
+    
+    if (activeWord) {
+      const offset = currentTime - activeWord.startTime;
+      const duration = activeWord.endTime - activeWord.startTime;
+      const progress = (offset / duration) * 100;
+      
+      console.log('🎯 Word timing:', {
+        text: activeWord.text,
+        currentTime: currentTime.toFixed(3),
+        startTime: activeWord.startTime.toFixed(3),
+        endTime: activeWord.endTime.toFixed(3),
+        offset: `${offset.toFixed(3)}s`,
+        progress: `${progress.toFixed(1)}%`,
+        isEarly: offset < 0,
+        isLate: currentTime > activeWord.endTime
+      });
+    } else {
+      // No active word found - might indicate gap or tolerance issue
+      console.log('⚠️ No active word at', currentTime.toFixed(3), 'in segment:', segment.text.substring(0, 30));
+    }
+  }, []);
+
   // Optional: upcoming segment for preview (only if SHOW_READAHEAD_PREVIEW is true)
   const upcomingCandidate = React.useMemo(() => {
     if (!processed?.length || !SHOW_READAHEAD_PREVIEW) return null;
@@ -797,6 +827,11 @@ export const CaptionsWithIntention: React.FC<CaptionsWithIntentionProps> = ({
 
     if (activeCandidate) {
       const segmentKey = `${activeCandidate.startTime.toFixed(2)}-${activeCandidate.endTime.toFixed(2)}`;
+      
+      // PHASE 4: Add diagnostic logging when expressiveSettings is enabled
+      if (expressiveSettings?.enabled) {
+        logTimingDiagnostics(activeCandidate, currentTime);
+      }
       
       // Only update if segment timing changed (not just speaker name/color)
       if (activeSegmentKeyRef.current !== segmentKey) {
