@@ -1299,13 +1299,11 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               console.log('✅ Syllables persisted to database successfully');
               // Clear persistence flag to allow re-save
               sessionStorage.removeItem(`words_persisted_${videoId}_${currentLanguage}`);
-              // Force refresh to load updated data
-              forceRefresh();
             } catch (error) {
               console.error('❌ Failed to persist syllables:', error);
             }
           }
-          
+
           // Persist synthesized/normalized word timings to DB once so all devices get word-by-word
           try {
             const persistKey = `words_persisted_${videoId}_${currentLanguage}`;

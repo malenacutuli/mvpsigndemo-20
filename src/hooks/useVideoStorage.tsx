@@ -173,14 +173,21 @@ export const useVideoStorage = (videoId: string) => {
         // Create new transcript if none exists OR if user doesn't own the existing one
         const { data: newTranscript, error: createError } = await supabase
           .from('transcripts')
-          .insert({
-            video_id: videoId,
-            language,
-            created_by: user.id
-          })
+          .upsert(
+            {
+              video_id: videoId,
+              language,
+              created_by: user.id,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: 'video_id,language',
+              ignoreDuplicates: false,
+            }
+          )
           .select('id')
           .single();
-        
+
         if (createError || !newTranscript) {
           throw new Error(`Failed to create transcript: ${createError?.message}`);
         }
@@ -283,12 +290,27 @@ export const useVideoStorage = (videoId: string) => {
       
       console.log(`💾 Upserting ${toSave.length} segments with transcript_id: ${transcriptId}, conflict key: ${conflictKey}`);
       
-      const { error: upsertError } = await supabase
-        .from('transcript_segments_clean')
-        .upsert(toSave, {
+      const BATCH_SIZE = 50;
+      let upsertError: any = null;
+
+      for (let i = 0; i < toSave.length; i += BATCH_SIZE) {
+        const batch = toSave.slice(i, i + BATCH_SIZE);
+        console.log(
+          `💾 Saving batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(
+            toSave.length / BATCH_SIZE
+          )} (${batch.length} segments)`
+        );
+
+        const { error } = await supabase.from('transcript_segments_clean').upsert(batch, {
           onConflict: conflictKey,
-          ignoreDuplicates: false
+          ignoreDuplicates: false,
         });
+
+        if (error) {
+          upsertError = error;
+          break;
+        }
+      }
 
       if (upsertError) {
         console.error('❌ [saveTranscriptSegments] upsert failed:', {
