@@ -16,6 +16,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { VideoPublishingControls } from '@/components/VideoPublishingControls';
 import { ChannelManager } from '@/components/ChannelManager';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Video {
   id: string;
@@ -42,6 +43,7 @@ export default function Videos() {
   const [deletingVideo, setDeletingVideo] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { getPath } = useTheme();
 
   useEffect(() => {
     fetchVideos();
@@ -205,7 +207,7 @@ export default function Videos() {
                   <TabsTrigger value="channels" className="font-light">{t('videos.tabs.channels')}</TabsTrigger>
                 </TabsList>
                 <Button asChild className="font-light">
-                  <Link to="/upload">{t('videos.actions.uploadNew')}</Link>
+                  <Link to={getPath('/upload')}>{t('videos.actions.uploadNew')}</Link>
                 </Button>
               </div>
             </div>
@@ -269,7 +271,7 @@ export default function Videos() {
                   </p>
                   {videos.length === 0 && (
                     <Button asChild className="font-light">
-                      <Link to="/upload">{t('videos.actions.uploadFirst')}</Link>
+                      <Link to={getPath('/upload')}>{t('videos.actions.uploadFirst')}</Link>
                     </Button>
                   )}
                 </div>
@@ -342,7 +344,7 @@ export default function Videos() {
                         
                         <div className="flex items-center gap-2 w-full">
                           <Button asChild size="sm" className="flex-1 font-light">
-                            <Link to={`/videos/${video.id}`}>
+                            <Link to={getPath(`/videos/${video.id}`)}>
                               <Eye className="w-4 h-4 mr-1" />
                               {t('videos.actions.view')}
                             </Link>

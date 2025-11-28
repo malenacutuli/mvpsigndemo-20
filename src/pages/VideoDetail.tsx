@@ -23,6 +23,7 @@ import type { CaptionSegment } from "@/components/CaptionsWithIntention";
 import { useTranslation } from 'react-i18next';
 import { VoiceOption, findVoiceById } from "@/types/voice";
 import { MessageSquare } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Video {
   id: string;
@@ -50,6 +51,7 @@ const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { getPath } = useTheme();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -248,7 +250,7 @@ const VideoDetail = () => {
       });
 
       // Navigate back to videos page
-      navigate('/videos');
+      navigate(getPath('/videos'));
     } catch (error) {
       console.error('Error deleting video:', error);
       toast({

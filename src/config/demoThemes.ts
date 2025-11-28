@@ -62,7 +62,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     heroTitle: 'Interbrand wants to help brands move from \'passive\' to \'purposeful\' in their inclusivity efforts.',
     heroSubtitle: 'The world\'s first video platform to instantly enhance your videos with Captions with Intention, Emotive Audio Descriptions, and inclusive viewing tools - so your stories don\'t just reach more people, they move them.',
     ctaText: 'Sign In',
-    hideNavLinks: ['dashboard', 'videos'],
+    hideNavLinks: ['dashboard'],
   },
   
   // Nike demo theme
@@ -81,7 +81,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     heroTitle: 'Inspire Athletes Everywhere',
     heroSubtitle: 'Accessible video content for every athlete',
     ctaText: 'Learn More',
-    hideNavLinks: ['dashboard', 'videos'],
+    hideNavLinks: ['dashboard'],
   },
 
   // Coca-Cola demo theme
@@ -100,7 +100,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     heroTitle: 'Share Happiness Through Video',
     heroSubtitle: 'Accessible content that connects with everyone',
     ctaText: 'Explore',
-    hideNavLinks: ['dashboard', 'videos'],
+    hideNavLinks: ['dashboard'],
   },
 
   // Shell demo theme
@@ -119,7 +119,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     heroTitle: 'Our Commitment to Inclusive Content',
     heroSubtitle: 'At Shell, we\'re committed to integrating accessibility and inclusivity into all our content and design. By prioritizing accessibility from the beginning, we aim to ensure our website is usable and enjoyable for everyone.',
     ctaText: 'See Our Enhanced Video Features',
-    hideNavLinks: ['dashboard', 'videos'],
+    hideNavLinks: ['dashboard'],
   },
 
   // FCB Global demo theme
@@ -138,7 +138,7 @@ export const demoThemes: Record<string, DemoTheme> = {
     heroTitle: 'Creating Accessible Stories That Move People',
     heroSubtitle: 'At FCB, we believe great advertising is accessible advertising. Our commitment to inclusivity ensures every campaign reaches and resonates with all audiences through innovative accessibility features.',
     ctaText: 'Explore Our Solutions',
-    hideNavLinks: ['dashboard', 'videos'],
+    hideNavLinks: ['dashboard'],
   },
 };
 
