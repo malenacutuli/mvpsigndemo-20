@@ -903,9 +903,50 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
 
         console.log('🌍 Loading captions/audio-description for language:', targetLanguage);
         
+        // Load characters from database first
+        const charactersFromDB = await loadCharacters();
+        console.log('🎭 Loaded characters from database:', charactersFromDB?.length || 0);
+        
         // Load transcript segments with the correct target language
-        const segments = await loadTranscriptSegments(targetLanguage);
+        let segments = await loadTranscriptSegments(targetLanguage);
         console.log('📖 ENHANCED PLAYER: Loaded transcript segments:', segments.length, 'segments for language:', targetLanguage);
+        
+        // Apply character assignments to segments missing character_id
+        if (charactersFromDB && charactersFromDB.length > 0 && segments.length > 0) {
+          const speakerCharMap: Record<string, any> = {};
+          charactersFromDB.forEach(char => {
+            speakerCharMap[char.name.toLowerCase()] = char;
+          });
+          
+          let appliedCount = 0;
+          segments = segments.map(seg => {
+            if (!seg.character_id && seg.speaker) {
+              const matchedChar = speakerCharMap[seg.speaker.toLowerCase()];
+              if (matchedChar) {
+                appliedCount++;
+                return {
+                  ...seg,
+                  character_id: matchedChar.id,
+                  speakerColor: matchedChar.color
+                };
+              }
+            }
+            return seg;
+          });
+          
+          if (appliedCount > 0) {
+            console.log(`✅ Applied ${appliedCount} character assignments to segments`);
+          }
+        }
+        
+        // Database load summary
+        console.log('📊 Database load summary:', {
+          totalSegments: segments.length,
+          segmentsWithWords: segments.filter(s => s.words && Array.isArray(s.words) && s.words.length > 0).length,
+          segmentsWithCharacters: segments.filter(s => s.character_id).length,
+          charactersLoaded: charactersFromDB?.length || 0
+        });
+        
         setTranscriptSegments(segments);
         
         if (segments.length > 0) {
@@ -976,7 +1017,14 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
               }
 
               // Check if we're using provider timings or need to distribute
-              const hasProviderTimings = words.length > 0 && words.every((w: any) => typeof w.startTime === 'number' && typeof w.endTime === 'number');
+              // ✅ Enhanced validation: ensure non-zero duration and valid times
+              const hasProviderTimings = words.length > 0 && words.every((w: any) => 
+                typeof w.startTime === 'number' && 
+                typeof w.endTime === 'number' &&
+                w.endTime > w.startTime &&  // ✅ Ensure non-zero duration
+                w.startTime >= 0 &&         // ✅ Ensure valid start time
+                w.endTime > 0               // ✅ Ensure valid end time
+              );
               
               if (hasProviderTimings && segIdx < 3) {
                 console.log(`✅ SYNC: using provider word timings for segment ${segIdx} (${words.length} words)`);
@@ -1078,6 +1126,71 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             });
             
             console.log('🎨 ENHANCED PLAYER: Converted to captions format:', captionSegments.length, 'segments');
+            
+            // Normalization summary
+            console.log('📊 Normalization summary:', {
+              segmentsProcessed: captionSegments.length,
+              wordsGenerated: captionSegments.filter(s => s.words?.length > 0).length,
+              charactersApplied: captionSegments.filter(s => s.speakerColor && s.speakerColor !== '#22E3D0').length
+            });
+            
+            // Check if we need to persist normalized data
+            const needsWordsPersistence = segments.some(seg => 
+              !seg.words || 
+              !Array.isArray(seg.words) ||
+              seg.words.length === 0 ||
+              seg.words.some((w: any) => !w.startTime || !w.endTime || w.startTime === w.endTime)
+            );
+            
+            const needsCharacterPersistence = segments.some(seg => 
+              !seg.character_id && seg.speaker && charactersFromDB?.some(c => c.name.toLowerCase() === seg.speaker.toLowerCase())
+            );
+            
+            if ((needsWordsPersistence || needsCharacterPersistence) && saveTranscriptSegments) {
+              console.log('💾 Persisting normalized data to database...', {
+                needsWords: needsWordsPersistence,
+                needsCharacters: needsCharacterPersistence
+              });
+              
+              try {
+                // Prepare segments for persistence with proper word timings
+                const segmentsToSave = captionSegments.map((cap, idx) => {
+                  const originalSeg = segments[idx];
+                  const speakerCharMap: Record<string, any> = {};
+                  if (charactersFromDB) {
+                    charactersFromDB.forEach(char => {
+                      speakerCharMap[char.name.toLowerCase()] = char;
+                    });
+                  }
+                  
+                  const matchedChar = cap.speaker ? speakerCharMap[cap.speaker.toLowerCase()] : null;
+                  
+                  return {
+                    ...originalSeg,
+                    startTime: cap.startTime,
+                    endTime: cap.endTime,
+                    start_ms: Math.round(cap.startTime * 1000),
+                    end_ms: Math.round(cap.endTime * 1000),
+                    character_id: matchedChar?.id || originalSeg.character_id,
+                    words: cap.words?.map(w => ({
+                      text: w.text,
+                      start_ms: Math.round(w.startTime * 1000),
+                      end_ms: Math.round(w.endTime * 1000),
+                      startTime: w.startTime,
+                      endTime: w.endTime,
+                      emphasis: w.emphasis === 'whisper' ? 'quiet' : w.emphasis,
+                      pitch: w.pitch,
+                      syllables: w.syllables
+                    }))
+                  };
+                });
+                
+                await saveTranscriptSegments(segmentsToSave, targetLanguage);
+                console.log('✅ Normalized data persisted successfully');
+              } catch (err) {
+                console.error('❌ Failed to persist normalized data:', err);
+              }
+            }
             
             // 1. Advanced speaker identification - only if we don't already have trusted speakers from DB
             const isGenericSpeaker = (name?: string) => {
