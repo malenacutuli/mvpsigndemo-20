@@ -1044,8 +1044,10 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                 let currentTime = start; // Use exact DB start time
                 words = words.map((w: any, i: number) => {
                   const duration = getWordDuration(w);
-                  const wordStart = typeof w.startTime === 'number' ? w.startTime : currentTime;
-                  const wordEnd = typeof w.endTime === 'number' ? w.endTime : currentTime + duration;
+                  // Always use calculated timings when needsDistribution is true
+                  // Don't preserve invalid zero-duration values from database
+                  const wordStart = currentTime;
+                  const wordEnd = currentTime + duration;
                   currentTime = wordEnd;
                   return {
                     text: typeof w === 'string' ? w : w.text,
