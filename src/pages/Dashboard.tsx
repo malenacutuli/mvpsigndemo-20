@@ -10,10 +10,12 @@ import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { ShieldCheck } from 'lucide-react';
 import uploadVideoIcon from '@/assets/upload-video-icon.jpg';
 import myVideosIcon from '@/assets/my-videos-icon.jpg';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Dashboard = () => {
   const { t } = useTranslation();
   const { isAdmin } = useAdminCheck();
+  const { getPath } = useTheme();
 
   return (
     <ProtectedRoute>
@@ -37,7 +39,7 @@ const Dashboard = () => {
 
                 {/* Quick Actions */}
                 <div className={`grid gap-6 max-w-4xl mx-auto ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-                  <Link to="/upload" className="group">
+                  <Link to={getPath('/upload')} className="group">
                     <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft">
                       <CardHeader className="text-center pb-4">
                         <div className="w-20 h-20 flex items-center justify-center mb-6 mx-auto">
@@ -53,7 +55,7 @@ const Dashboard = () => {
                     </Card>
                   </Link>
                   
-                  <Link to="/videos" className="group">
+                  <Link to={getPath('/videos')} className="group">
                     <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft">
                       <CardHeader className="text-center pb-4">
                         <div className="w-20 h-20 flex items-center justify-center mb-6 mx-auto">
@@ -70,7 +72,7 @@ const Dashboard = () => {
                   </Link>
 
                   {isAdmin && (
-                    <Link to="/admin/subscribers" className="group">
+                    <Link to={getPath('/admin/subscribers')} className="group">
                       <Card className="hover:shadow-elegant transition-all duration-300 group-hover:scale-105 shadow-soft border-primary/20">
                         <CardHeader className="text-center pb-4">
                           <div className="w-20 h-20 flex items-center justify-center mb-6 mx-auto">

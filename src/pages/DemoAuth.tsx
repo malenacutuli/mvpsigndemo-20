@@ -48,7 +48,7 @@ export const DemoAuth = () => {
         description: 'You have successfully signed in.',
       });
 
-      navigate(getPath('/'));
+      navigate(getPath('/videos'));
     } catch (error: any) {
       console.error('Sign in error:', error);
       setError(error.message || 'Failed to sign in');

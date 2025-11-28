@@ -49,28 +49,58 @@ const App = () => (
                 <Route path="/interbrand/explore" element={<Explore />} />
                 <Route path="/interbrand/watch/:id" element={<PublicVideo />} />
                 <Route path="/interbrand/enterprise" element={<Enterprise />} />
+                <Route path="/interbrand/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+                <Route path="/interbrand/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+                <Route path="/interbrand/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+                <Route path="/interbrand/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/interbrand/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+                <Route path="/interbrand/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
                 <Route path="/nike" element={<Index />} />
                 <Route path="/nike/auth" element={<DemoAuth />} />
                 <Route path="/nike/explore" element={<Explore />} />
                 <Route path="/nike/watch/:id" element={<PublicVideo />} />
                 <Route path="/nike/enterprise" element={<Enterprise />} />
+                <Route path="/nike/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+                <Route path="/nike/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+                <Route path="/nike/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+                <Route path="/nike/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/nike/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+                <Route path="/nike/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
         <Route path="/cocacola" element={<Index />} />
         <Route path="/cocacola/auth" element={<DemoAuth />} />
         <Route path="/cocacola/explore" element={<Explore />} />
         <Route path="/cocacola/watch/:id" element={<PublicVideo />} />
         <Route path="/cocacola/enterprise" element={<Enterprise />} />
+        <Route path="/cocacola/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/cocacola/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+        <Route path="/cocacola/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/cocacola/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/cocacola/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+        <Route path="/cocacola/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
 
         <Route path="/shell" element={<Index />} />
         <Route path="/shell/auth" element={<DemoAuth />} />
         <Route path="/shell/explore" element={<Explore />} />
         <Route path="/shell/watch/:id" element={<PublicVideo />} />
         <Route path="/shell/enterprise" element={<Enterprise />} />
+        <Route path="/shell/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/shell/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+        <Route path="/shell/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/shell/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/shell/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+        <Route path="/shell/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
 
         <Route path="/fcb" element={<Index />} />
         <Route path="/fcb/auth" element={<DemoAuth />} />
         <Route path="/fcb/explore" element={<Explore />} />
         <Route path="/fcb/watch/:id" element={<PublicVideo />} />
         <Route path="/fcb/enterprise" element={<Enterprise />} />
+        <Route path="/fcb/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/fcb/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+        <Route path="/fcb/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/fcb/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/fcb/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+        <Route path="/fcb/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
                 
                 {/* Regular routes */}
                 <Route path="/" element={<Index />} />
