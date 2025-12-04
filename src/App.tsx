@@ -101,6 +101,18 @@ const App = () => (
         <Route path="/fcb/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/fcb/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
         <Route path="/fcb/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
+
+        <Route path="/adfidence" element={<Index />} />
+        <Route path="/adfidence/auth" element={<DemoAuth />} />
+        <Route path="/adfidence/explore" element={<Explore />} />
+        <Route path="/adfidence/watch/:id" element={<PublicVideo />} />
+        <Route path="/adfidence/enterprise" element={<Enterprise />} />
+        <Route path="/adfidence/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/adfidence/videos/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+        <Route path="/adfidence/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/adfidence/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/adfidence/video/:id/workflow" element={<ProtectedRoute><VideoDetailWorkflow /></ProtectedRoute>} />
+        <Route path="/adfidence/video/:id/edit" element={<ProtectedRoute><PremiumVideoEditor /></ProtectedRoute>} />
                 
                 {/* Regular routes */}
                 <Route path="/" element={<Index />} />

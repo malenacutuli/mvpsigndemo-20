@@ -140,6 +140,25 @@ export const demoThemes: Record<string, DemoTheme> = {
     ctaText: 'Explore Our Solutions',
     hideNavLinks: ['dashboard'],
   },
+
+  // Adfidence demo theme
+  'adfidence': {
+    id: 'adfidence',
+    name: 'Adfidence',
+    logo: '/assets/demo-logos/adfidence-logo.jpg',
+    colors: {
+      primary: '217 91% 60%',      // Adfidence blue
+      primaryGlow: '217 91% 70%',
+      accent: '217 80% 95%',
+      secondary: '210 20% 95%',
+    },
+    companyName: 'Adfidence',
+    tagline: 'Confidence in Every Ad',
+    heroTitle: 'Making Advertising Accessible to All',
+    heroSubtitle: 'At Adfidence, we believe that every advertisement should reach every audience. Our commitment to accessibility ensures your brand message connects with all viewers through inclusive video features.',
+    ctaText: 'Get Started',
+    hideNavLinks: ['dashboard'],
+  },
 };
 
 export const getThemeFromPath = (pathname: string): DemoTheme => {
