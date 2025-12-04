@@ -145,7 +145,7 @@ export const demoThemes: Record<string, DemoTheme> = {
   'adfidence': {
     id: 'adfidence',
     name: 'Adfidence',
-    logo: '/assets/demo-logos/adfidence-logo.jpg',
+    logo: '/assets/demo-logos/adfidence-logo.png',
     colors: {
       primary: '217 91% 60%',      // Adfidence blue
       primaryGlow: '217 91% 70%',
