@@ -33,7 +33,9 @@ export const Navigation: React.FC = () => {
               <img
                 src={theme.logo}
                 alt={theme.companyName}
-                className={`w-auto object-contain flex-shrink-0 drop-shadow-sm ${isDemo ? 'h-14 sm:h-16' : 'h-10 sm:h-12'}`}
+                className={`w-auto object-contain flex-shrink-0 drop-shadow-sm ${
+                  theme.id === 'adfidence' ? 'h-20 sm:h-24' : isDemo ? 'h-14 sm:h-16' : 'h-10 sm:h-12'
+                }`}
                 loading="lazy"
                 decoding="async"
               />
