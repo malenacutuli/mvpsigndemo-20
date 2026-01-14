@@ -23,7 +23,7 @@ jobs:
         env:
           # URL del repositorio de Bjäland, con su token de acceso privado.
           # Este token debería estar como un secret en las settings de GitHub, pero no tengo acceso
-          DESTINATION_GIT_REPOSITORY: https://github-user:glpat-HsCfQNFLKJnf8T2us5N5@gitlab.bjaland.co/malena-cutuli/axessible.git
+          DESTINATION_GIT_REPOSITORY: https://github-user:glpat-erqhoPxcagejJB_eAsB9gitlab.bjaland.co/malena-cutuli/axessible.git
           
         run: |
           git remote add -t main gitlab ${{env.DESTINATION_GIT_REPOSITORY}} 
