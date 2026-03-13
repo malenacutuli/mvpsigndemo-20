@@ -150,6 +150,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
+  const [accessibilityPanelTab, setAccessibilityPanelTab] = useState('info');
   const [currentLanguage, setCurrentLanguage] = useState(externalCurrentLanguage || originalLanguage);
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   
