@@ -150,6 +150,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   const [generateADError, setGenerateADError] = useState<string | null>(null);
   const [showAccessibilityPanel, setShowAccessibilityPanel] = useState(false);
   const [keyboardNavEnabled, setKeyboardNavEnabled] = useState(true);
+  const [accessibilityPanelTab, setAccessibilityPanelTab] = useState('info');
   const [currentLanguage, setCurrentLanguage] = useState(externalCurrentLanguage || originalLanguage);
   const [translatedContent, setTranslatedContent] = useState<any>(null);
   
@@ -957,37 +958,52 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   };
 
   const handleFixAccessibilityIssue = async (issue: string) => {
+    // Open the accessibility panel if not already open
+    setShowAccessibilityPanel(true);
+    
     switch (issue) {
       case 'generateCaptions':
-        console.log('Use transcript workflow to generate captions');
+        // Navigate to Transcripts tab where the user can extract transcription
+        setAccessibilityPanelTab('transcripts');
+        toast.info('Navigate to the transcript workflow on this page to extract captions from your video.');
         break;
       case 'generateAudioDescription':
-        await handleToggleDynamicAD();
+        // Navigate to the Transcripts tab (AD generation requires captions first)
+        // If captions exist, try to auto-generate AD
+        if (generatedCaptions && generatedCaptions.length > 0) {
+          await handleToggleDynamicAD();
+        } else {
+          setAccessibilityPanelTab('transcripts');
+          toast.info('Generate captions first, then audio descriptions can be created automatically.');
+        }
         break;
       case 'enableSignLanguage':
-        setShowSignLanguage(true);
+        // Navigate to info tab with guidance about sign language
+        setAccessibilityPanelTab('transcripts');
+        toast.info('Upload sign language clips for your video segments in the transcript workflow.');
         break;
       case 'enableKeyboard':
+        setAccessibilityPanelTab('keyboard');
         setKeyboardNavEnabled(true);
         break;
       case 'enableScreenReader':
-        // Add ARIA labels and semantic structure
-        console.log('Screen reader compatibility enabled');
+        // Platform-level feature — already enabled
+        const videoEl = videoRef.current;
+        if (videoEl) {
+          videoEl.setAttribute('aria-label', `${title} - Video with captions and audio description available`);
+        }
+        toast.success('Screen reader support is enabled by default.');
         break;
       case 'enableHighContrast':
-        // Toggle high contrast mode
         document.body.classList.toggle('high-contrast');
+        toast.success('High contrast mode toggled.');
         break;
       case 'updateThumbnailAlt':
-        // Update video poster alt text
-        const video = videoRef.current;
-        if (video) {
-          video.setAttribute('aria-label', `${title} - Video with captions and audio description available`);
-        }
+        toast.info('Upload a thumbnail image for this video to improve accessibility.');
         break;
       case 'showPlayButton':
-        // Ensure play button is visible
         setShowControls(true);
+        toast.success('Play button is now visible.');
         break;
       default:
         console.log('Fix issue:', issue);
@@ -1825,7 +1841,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </Button>
             </div>
             
-            <Tabs defaultValue="info" className="w-full">
+            <Tabs value={accessibilityPanelTab} onValueChange={setAccessibilityPanelTab} className="w-full">
               <TabsList className="grid w-full grid-cols-8 bg-muted/50 rounded-full font-light border border-border shadow-sm">
                 <TabsTrigger value="info" className="font-light">Info</TabsTrigger>
                 <TabsTrigger value="grader" className="font-light">Grader</TabsTrigger>

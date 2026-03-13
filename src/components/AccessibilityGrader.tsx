@@ -36,14 +36,14 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
   onFixIssue
 }) => {
   const checks = [
-    { name: 'Screen Reader Compatible', status: hasScreenReaderSupport, issue: 'enableScreenReader' },
-    { name: 'Keyboard Compatible', status: hasKeyboardNav, issue: 'enableKeyboard' },
-    { name: 'High Contrast Player', status: hasHighContrast, issue: 'enableHighContrast' },
-    { name: 'Thumbnail Alt Text', status: hasThumbnailAltText, issue: 'updateThumbnailAlt' },
-    { name: 'Play Button Visible', status: hasVisiblePlayButton, issue: 'showPlayButton' },
-    { name: 'Captions Available', status: hasCaptions, issue: 'generateCaptions' },
-    { name: 'Audio Description', status: hasAudioDescription, issue: 'generateAudioDescription' },
-    { name: 'Sign Language Support', status: hasSignLanguage, issue: 'enableSignLanguage' }
+    { name: 'Screen Reader Compatible', status: hasScreenReaderSupport, issue: 'enableScreenReader', fixLabel: 'Enable' },
+    { name: 'Keyboard Compatible', status: hasKeyboardNav, issue: 'enableKeyboard', fixLabel: 'Enable' },
+    { name: 'High Contrast Player', status: hasHighContrast, issue: 'enableHighContrast', fixLabel: 'Toggle' },
+    { name: 'Thumbnail Alt Text', status: hasThumbnailAltText, issue: 'updateThumbnailAlt', fixLabel: 'Add' },
+    { name: 'Play Button Visible', status: hasVisiblePlayButton, issue: 'showPlayButton', fixLabel: 'Show' },
+    { name: 'Captions Available', status: hasCaptions, issue: 'generateCaptions', fixLabel: 'Generate' },
+    { name: 'Audio Description', status: hasAudioDescription, issue: 'generateAudioDescription', fixLabel: 'Generate' },
+    { name: 'Sign Language Support', status: hasSignLanguage, issue: 'enableSignLanguage', fixLabel: 'Upload' }
   ];
 
   const passedChecks = checks.filter(check => check.status).length;
@@ -76,9 +76,9 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
               {!check.status && (
                 <button
                   onClick={() => onFixIssue(check.issue)}
-                  className="text-xs text-primary hover:text-primary/80 underline font-light"
+                  className="text-xs text-primary hover:text-primary/80 underline font-light whitespace-nowrap"
                 >
-                  Fix
+                  {check.fixLabel || 'Fix'}
                 </button>
               )}
             </div>
