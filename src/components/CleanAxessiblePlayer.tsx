@@ -32,6 +32,7 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   audioDescriptions = [],
   characters = [],
 }) => {
+  const a11yScore = useAccessibilityScore(videoId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
