@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AxessiblePlayer } from "./AxessiblePlayer";
 import { AccessibilityGrader } from "./AccessibilityGrader";
-import { useAccessibilityScore } from '@/hooks/useAccessibilityScore';
 import { TranscriptionManager } from "./TranscriptionManager";
 import { KeyboardAccessibilityManager } from "./KeyboardAccessibilityManager";
 import { VideoDubbingManager } from "./VideoDubbingManager";
