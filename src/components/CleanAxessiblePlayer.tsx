@@ -497,10 +497,10 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
               <div className="border-t border-border pt-4">
                 <AccessibilityGrader
                   videoId={videoId}
-                  hasTranscript={captions.length > 0}
-                  hasAudioDescription={audioDescriptions.length > 0}
-                  hasCaptions={captions.length > 0}
-                  hasSignLanguage={true}
+                  hasTranscript={a11yScore.hasTranscript}
+                  hasAudioDescription={a11yScore.hasAudioDescription}
+                  hasCaptions={a11yScore.hasCaptions}
+                  hasSignLanguage={a11yScore.hasSignLanguage}
                   hasKeyboardNav={true}
                   language="en"
                   onFixIssue={(issue) => {
