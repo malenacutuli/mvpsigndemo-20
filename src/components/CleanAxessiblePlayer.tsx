@@ -6,6 +6,7 @@ import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AudioDescription } from './AudioDescription';
 import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { AccessibilityGrader } from './AccessibilityGrader';
+import { useAccessibilityScore } from '@/hooks/useAccessibilityScore';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface CleanAxessiblePlayerProps {
@@ -31,6 +32,7 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
   audioDescriptions = [],
   characters = [],
 }) => {
+  const a11yScore = useAccessibilityScore(videoId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -495,10 +497,10 @@ export const CleanAxessiblePlayer: React.FC<CleanAxessiblePlayerProps> = ({
               <div className="border-t border-border pt-4">
                 <AccessibilityGrader
                   videoId={videoId}
-                  hasTranscript={captions.length > 0}
-                  hasAudioDescription={audioDescriptions.length > 0}
-                  hasCaptions={captions.length > 0}
-                  hasSignLanguage={true}
+                  hasTranscript={a11yScore.hasTranscript}
+                  hasAudioDescription={a11yScore.hasAudioDescription}
+                  hasCaptions={a11yScore.hasCaptions}
+                  hasSignLanguage={a11yScore.hasSignLanguage}
                   hasKeyboardNav={true}
                   language="en"
                   onFixIssue={(issue) => {

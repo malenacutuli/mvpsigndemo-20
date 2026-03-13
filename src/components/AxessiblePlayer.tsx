@@ -10,6 +10,7 @@ import { AudioDescription } from './AudioDescription';
 import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { SynchronizedSignLanguagePlayer } from './SynchronizedSignLanguagePlayer';
 import { AccessibilityGrader } from './AccessibilityGrader';
+import { useAccessibilityScore } from '@/hooks/useAccessibilityScore';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';
@@ -92,6 +93,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   }, [initialCaptions]);
 
+  const a11yScore = useAccessibilityScore(videoId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const eadPlayedIdsRef = useRef<Set<string>>(new Set()); // Single ref for EAD tracking
   const maybeTriggerEADRef = useRef<((now: number) => void) | null>(null); // Ref for latest EAD callback
@@ -1842,11 +1844,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <TabsContent value="grader" className="mt-4">
                 <AccessibilityGrader
                   videoId={videoId}
-                  hasTranscript={!!generatedCaptions?.length}
-                  hasAudioDescription={showAudioDescription}
-                  hasCaptions={showCaptions}
-                  hasSignLanguage={effectiveShowSignLanguage}
-                  hasKeyboardNav={keyboardNavEnabled}
+                  hasTranscript={a11yScore.hasTranscript}
+                  hasAudioDescription={a11yScore.hasAudioDescription}
+                  hasCaptions={a11yScore.hasCaptions}
+                  hasSignLanguage={a11yScore.hasSignLanguage}
+                  hasKeyboardNav={true}
                   language={contentType === 'education' ? 'es' : 'en'}
                   hasScreenReaderSupport={true}
                   hasHighContrast={true}

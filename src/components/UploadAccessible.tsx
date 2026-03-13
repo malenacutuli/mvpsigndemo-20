@@ -275,16 +275,15 @@ export const UploadAccessible: React.FC = () => {
                 <TabsContent value="accessibility" className="mt-6">
                   <AccessibilityGrader
                     videoUrl={videoUrl || undefined}
-                    hasCaptions={!!initialCaptions}
-                    hasAudioDescription={showAudioDescription}
-                    hasSignLanguage={showSignLanguage}
-                    hasTranscript={!!initialCaptions}
+                    hasCaptions={!!initialCaptions && initialCaptions.length > 0}
+                    hasAudioDescription={false}
+                    hasSignLanguage={false}
+                    hasTranscript={!!initialCaptions && initialCaptions.length > 0}
                     hasKeyboardNav={true}
                     contrastRatio={4.8}
                     language="en"
                     onFixIssue={(issue) => {
                       console.log('Fix accessibility issue:', issue);
-                      // Handle fix actions here
                     }}
                   />
                 </TabsContent>
