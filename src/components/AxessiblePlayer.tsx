@@ -1844,11 +1844,11 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               <TabsContent value="grader" className="mt-4">
                 <AccessibilityGrader
                   videoId={videoId}
-                  hasTranscript={!!generatedCaptions?.length}
-                  hasAudioDescription={showAudioDescription}
-                  hasCaptions={showCaptions}
-                  hasSignLanguage={effectiveShowSignLanguage}
-                  hasKeyboardNav={keyboardNavEnabled}
+                  hasTranscript={a11yScore.hasTranscript}
+                  hasAudioDescription={a11yScore.hasAudioDescription}
+                  hasCaptions={a11yScore.hasCaptions}
+                  hasSignLanguage={a11yScore.hasSignLanguage}
+                  hasKeyboardNav={true}
                   language={contentType === 'education' ? 'es' : 'en'}
                   hasScreenReaderSupport={true}
                   hasHighContrast={true}
