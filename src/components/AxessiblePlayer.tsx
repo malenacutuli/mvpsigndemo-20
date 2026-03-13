@@ -1841,7 +1841,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
               </Button>
             </div>
             
-            <Tabs defaultValue="info" className="w-full">
+            <Tabs value={accessibilityPanelTab} onValueChange={setAccessibilityPanelTab} className="w-full">
               <TabsList className="grid w-full grid-cols-8 bg-muted/50 rounded-full font-light border border-border shadow-sm">
                 <TabsTrigger value="info" className="font-light">Info</TabsTrigger>
                 <TabsTrigger value="grader" className="font-light">Grader</TabsTrigger>
