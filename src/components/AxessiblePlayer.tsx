@@ -10,6 +10,7 @@ import { AudioDescription } from './AudioDescription';
 import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { SynchronizedSignLanguagePlayer } from './SynchronizedSignLanguagePlayer';
 import { AccessibilityGrader } from './AccessibilityGrader';
+import { useAccessibilityScore } from '@/hooks/useAccessibilityScore';
 import { TranscriptionManager } from './TranscriptionManager';
 import { VideoDubbingManager } from './VideoDubbingManager';
 import { KeyboardAccessibilityManager } from './KeyboardAccessibilityManager';

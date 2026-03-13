@@ -6,6 +6,7 @@ import { CaptionsWithIntention } from './CaptionsWithIntention';
 import { AudioDescription } from './AudioDescription';
 import { SignLanguageAvatar } from './SignLanguageAvatar';
 import { AccessibilityGrader } from './AccessibilityGrader';
+import { useAccessibilityScore } from '@/hooks/useAccessibilityScore';
 import type { CaptionSegment } from './CaptionsWithIntention';
 
 interface CleanAxessiblePlayerProps {
