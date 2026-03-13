@@ -76,9 +76,9 @@ export const AccessibilityGrader: React.FC<AccessibilityGraderProps> = ({
               {!check.status && (
                 <button
                   onClick={() => onFixIssue(check.issue)}
-                  className="text-xs text-primary hover:text-primary/80 underline font-light"
+                  className="text-xs text-primary hover:text-primary/80 underline font-light whitespace-nowrap"
                 >
-                  Fix
+                  {check.fixLabel || 'Fix'}
                 </button>
               )}
             </div>
