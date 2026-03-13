@@ -93,6 +93,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     }
   }, [initialCaptions]);
 
+  const a11yScore = useAccessibilityScore(videoId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const eadPlayedIdsRef = useRef<Set<string>>(new Set()); // Single ref for EAD tracking
   const maybeTriggerEADRef = useRef<((now: number) => void) | null>(null); // Ref for latest EAD callback
