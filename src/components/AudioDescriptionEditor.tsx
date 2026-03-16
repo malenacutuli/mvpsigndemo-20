@@ -960,6 +960,29 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   toast.success(`🎬 Generated ${formattedDescriptions.length} comprehensive audio descriptions`);
                   setIsGenerating(false);
                   setIsUsingTwelveLabs(false);
+                  
+                  // Auto-generate TTS audio for the newly created descriptions
+                  toast.info('🎙️ Now generating TTS audio for descriptions...');
+                  try {
+                    // Query DB directly for saved descriptions with pending audio
+                    const { data: savedDescs } = await supabase
+                      .from('audio_descriptions')
+                      .select('id, description')
+                      .eq('video_id', videoId)
+                      .eq('language', detectedLanguage)
+                      .or('audio_generation_status.is.null,audio_generation_status.eq.pending');
+                    
+                    if (savedDescs && savedDescs.length > 0) {
+                      for (const desc of savedDescs) {
+                        await generateAudioForDescription(desc.id, desc.description);
+                      }
+                    }
+                    // Reload to reflect updated audio URLs
+                    await loadExistingDescriptions();
+                  } catch (audioErr) {
+                    console.error('Auto TTS generation failed:', audioErr);
+                    toast.error('Text descriptions saved. Click "Generate Audio" to create audio manually.');
+                  }
                 }
               } catch (finalizeError: any) {
                 console.error('🎬 Analysis: Finalize exception:', finalizeError);
