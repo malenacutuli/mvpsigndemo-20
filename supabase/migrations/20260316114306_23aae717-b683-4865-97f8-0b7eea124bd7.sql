@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS uq_tx_segments_identity;
