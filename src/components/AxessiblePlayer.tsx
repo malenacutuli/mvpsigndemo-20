@@ -525,6 +525,17 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
   
   // ❌ REMOVED: Old EAD triggers and effects - now using unified maybeTriggerEAD
   
+  // Auto-enable EAD when segments with requiresExtension and audio are detected
+  useEffect(() => {
+    if (!generatedAD?.length) return;
+    const hasEADReady = generatedAD.some(ad => ad.requiresExtension && !!ad.audioUrl);
+    if (hasEADReady && !eadEnabled && adEnabled) {
+      console.log('🎬 Auto-enabling EAD: found segments requiring extension with audio ready');
+      setEadEnabled(true);
+      setEadPreferences(prev => ({ ...prev, eadEnabled: true }));
+    }
+  }, [generatedAD, adEnabled]);
+
   // Reset EAD tracking when seeking or changing language
   useEffect(() => {
     eadPlayedIdsRef.current.clear();
