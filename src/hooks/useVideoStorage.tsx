@@ -205,7 +205,7 @@ export const useVideoStorage = (videoId: string) => {
           video_id: videoId,
           language,
           transcript_id: transcriptId,
-          idx: seg.idx ?? i,
+          idx: i, // ✅ ALWAYS re-index to prevent duplicate key constraint violations
           // ✅ NEW: Milliseconds (NO quantization)
           start_ms: startMs,
           end_ms: endMs,
