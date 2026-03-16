@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_segments_clean_unique;
