@@ -266,6 +266,62 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
     
     loadAudioDescriptions();
   }, [videoId, adLanguage]);
+
+  // Re-fetch AD from DB when dynamicDescriptions prop changes (e.g., after editor generates audio)
+  useEffect(() => {
+    if (!videoId || !adLanguage || !dynamicDescriptions || dynamicDescriptions.length === 0) return;
+    
+    // Reload from DB to get fresh audio_url and status
+    const refreshAD = async () => {
+      const { data, error } = await supabase
+        .from('audio_descriptions')
+        .select(`
+          id, video_id, language, start_time, end_time, description,
+          audio_url, audio_generation_status,
+          voice_id, voice_name,
+          requires_extension, extension_duration, extension_type,
+          estimated_duration, gap_duration, priority_level
+        `)
+        .eq('video_id', videoId)
+        .eq('language', adLanguage)
+        .order('start_time', { ascending: true });
+
+      if (!error && data) {
+        const transformed = (data ?? []).map((ad: any) => ({
+          id: ad.id,
+          text: ad.description,
+          startTime: Number(ad.start_time),
+          endTime: Number(ad.end_time),
+          voiceStyle: (ad.voice_name?.toLowerCase().includes('warm') ? 'warm' :
+                      ad.voice_name?.toLowerCase().includes('passion') ? 'passionate' :
+                      ad.voice_name?.toLowerCase().includes('author') ? 'authoritative' :
+                      'encouraging') as 'passionate' | 'warm' | 'authoritative' | 'encouraging',
+          audioUrl: ad.audio_url,
+          audioGenerationStatus: ad.audio_generation_status,
+          requiresExtension: !!ad.requires_extension,
+          extensionDuration: Number(ad.extension_duration ?? 0),
+          extensionType: ad.extension_type ?? 'none',
+          estimatedDuration: Number(ad.estimated_duration ?? 0),
+          gapDuration: Number(ad.gap_duration ?? 0),
+          voiceId: ad.voice_id ?? null,
+          voiceName: ad.voice_name ?? null,
+          language: ad.language,
+          priorityLevel: ad.priority_level ?? 'important',
+        }));
+
+        const key = (x: any) => `${x.startTime}-${x.endTime}-${x.language}`;
+        const deduped = Array.from(new Map(transformed.map(d => [key(d), d])).values());
+        
+        console.log('🔄 AD refreshed from prop change:', {
+          total: deduped.length,
+          withAudio: deduped.filter(d => !!d.audioUrl).length,
+        });
+        setGeneratedAD(deduped);
+      }
+    };
+    
+    refreshAD();
+  }, [dynamicDescriptions]);
   const [clonedVoiceId, setClonedVoiceId] = useState<string | null>(null);
   const [isDubbing, setIsDubbing] = useState(false);
   const [originalAudioMuted, setOriginalAudioMuted] = useState(false);
