@@ -758,8 +758,21 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   };
 
-  const handleAudioDescriptionsUpdate = (descriptions: any[]) => {
+  const handleAudioDescriptionsUpdate = async (descriptions: any[]) => {
     console.log('📢 Audio descriptions updated in EnhancedVideoPlayer:', descriptions.length);
+    // Reload fresh from DB to get audio_url and generation status
+    if (videoId) {
+      const { data } = await supabase
+        .from('audio_descriptions')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('language', currentLanguage)
+        .order('start_time');
+      if (data) {
+        setAudioDescriptions(data);
+        return;
+      }
+    }
     setAudioDescriptions([...descriptions]);
   };
 
