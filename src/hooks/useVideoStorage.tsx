@@ -254,14 +254,14 @@ export const useVideoStorage = (videoId: string) => {
       console.log('[saveTranscriptSegments]',
         { transcriptId, rows: rows.length, sample: rows[0] && { start_ms: rows[0].start_ms, sp: rows[0].speaker } });
 
-      // ✅ STRONGER DEDUPE: By idx (stable identity), with priority selection
+      // ✅ STRONGER DEDUPE: Key must match DB unique constraint (video_id, language, idx)
       const dedupMap = new Map<string, typeof rows[number]>();
       
       for (const r of rows) {
-        // Key by (transcriptId, idx) if idx exists, else by (millisecond timing + text)
+        // Key MUST match the unique constraint: (video_id, language, idx)
         const key = r.idx !== undefined && r.idx !== null
-          ? `${r.transcript_id}|${r.idx}`
-          : `${r.start_ms}|${r.end_ms}|${r.text.trim()}`;
+          ? `${r.video_id}|${r.language}|${r.idx}`
+          : `${r.video_id}|${r.language}|${r.start_ms}|${r.end_ms}|${r.text.trim()}`;
         
         const existing = dedupMap.get(key);
         
