@@ -960,6 +960,20 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
                   toast.success(`🎬 Generated ${formattedDescriptions.length} comprehensive audio descriptions`);
                   setIsGenerating(false);
                   setIsUsingTwelveLabs(false);
+                  
+                  // Auto-generate TTS audio for the newly created descriptions
+                  toast.info('🎙️ Now generating TTS audio for descriptions...');
+                  // Reload to get database IDs
+                  await loadExistingDescriptions();
+                  // Small delay to ensure state is updated
+                  setTimeout(async () => {
+                    try {
+                      await handleGenerateAllAudio();
+                    } catch (audioErr) {
+                      console.error('Auto TTS generation failed:', audioErr);
+                      toast.error('Text descriptions saved. Click "Generate Audio" to create audio manually.');
+                    }
+                  }, 500);
                 }
               } catch (finalizeError: any) {
                 console.error('🎬 Analysis: Finalize exception:', finalizeError);
