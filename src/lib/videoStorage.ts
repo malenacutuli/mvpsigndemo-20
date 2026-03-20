@@ -137,6 +137,10 @@ export function getNativeVoices(language: string) {
       { id: 'ana', name: 'Ana', description: 'Native Brazilian Portuguese voice', elevenLabsId: 'FGY2WhTYpPnrIDTdsKH5', isNative: true },
       { id: 'joão', name: 'João', description: 'Native European Portuguese voice', elevenLabsId: 'N2lVS1w4EtoT3dr4eOWO', isNative: true },
       { id: 'maria', name: 'Maria', description: 'Native Portuguese voice from Lisbon', elevenLabsId: 'cjVigY5qzO86Huf0OWal', isNative: true }
+    ],
+    'tr': [
+      { id: 'elif', name: 'Elif', description: 'Native Turkish voice', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL', isNative: true },
+      { id: 'ahmet', name: 'Ahmet', description: 'Native Turkish male voice', elevenLabsId: 'nPczCjzI2devNBz1zQrb', isNative: true }
     ]
   };
 

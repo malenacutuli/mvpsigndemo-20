@@ -38,6 +38,7 @@ const LANGUAGES: LanguageOption[] = [
   { code: 'ja', name: 'Japanese' },
   { code: 'ko', name: 'Korean' },
   { code: 'zh', name: 'Chinese' },
+  { code: 'tr', name: 'Turkish' },
   { code: 'ar', name: 'Arabic' },
 ];
 

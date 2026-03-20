@@ -86,7 +86,8 @@ serve(async (req) => {
       'ko': 'Korean',
       'zh': 'Chinese',
       'ar': 'Arabic',
-      'ru': 'Russian'
+      'ru': 'Russian',
+      'tr': 'Turkish'
     };
 
     const targetLanguageName = languageNames[target_language] || target_language;

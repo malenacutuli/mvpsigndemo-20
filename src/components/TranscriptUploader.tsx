@@ -48,6 +48,7 @@ export const TranscriptUploader: React.FC<TranscriptUploaderProps> = ({
     { code: 'zh', name: 'Chinese' },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
+    { code: 'tr', name: 'Turkish' },
   ];
 
   // Use unified color palette from cwiPalette

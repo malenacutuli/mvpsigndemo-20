@@ -61,12 +61,16 @@ serve(async (req) => {
       if (language === 'es' || language === 'spanish') {
         return spanishVoices.female; // Default to clear Spanish voice
       }
+
+      if (language === 'tr' || language === 'turkish') {
+        return englishVoices.default; // Turkish uses multilingual model
+      }
       
       return englishVoices.default;
     };
 
     const resolvedVoiceId = getOptimalVoice(language, voiceId);
-    const resolvedModelId = modelId || (language === 'es' ? "eleven_multilingual_v2" : "eleven_turbo_v2_5");
+    const resolvedModelId = modelId || (['es', 'tr'].includes(language) ? "eleven_multilingual_v2" : "eleven_turbo_v2_5");
 
     const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`;
 
