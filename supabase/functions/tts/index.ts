@@ -70,7 +70,8 @@ serve(async (req) => {
     };
 
     const resolvedVoiceId = getOptimalVoice(language, voiceId);
-    const resolvedModelId = modelId || (['es', 'tr'].includes(language) ? "eleven_multilingual_v2" : "eleven_turbo_v2_5");
+    const nonEnglishLanguages = ['es', 'tr', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru'];
+    const resolvedModelId = modelId || (nonEnglishLanguages.includes(language) ? "eleven_multilingual_v2" : "eleven_turbo_v2_5");
 
     const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`;
 
