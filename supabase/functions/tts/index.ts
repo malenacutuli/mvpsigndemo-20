@@ -61,6 +61,10 @@ serve(async (req) => {
       if (language === 'es' || language === 'spanish') {
         return spanishVoices.female; // Default to clear Spanish voice
       }
+
+      if (language === 'tr' || language === 'turkish') {
+        return englishVoices.default; // Turkish uses multilingual model
+      }
       
       return englishVoices.default;
     };
