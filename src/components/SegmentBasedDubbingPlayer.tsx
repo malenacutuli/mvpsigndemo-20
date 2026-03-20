@@ -37,7 +37,8 @@ const LANGUAGES = [
   { code: 'zh', name: 'Chinese' },
   { code: 'ja', name: 'Japanese' },
   { code: 'ko', name: 'Korean' },
-  { code: 'ar', name: 'Arabic' }
+  { code: 'ar', name: 'Arabic' },
+  { code: 'tr', name: 'Turkish' }
 ];
 
 const VOICE_MAP: { [key: string]: string } = {

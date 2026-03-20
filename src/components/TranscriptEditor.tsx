@@ -605,6 +605,7 @@ export const TranscriptEditor: React.FC<TranscriptEditorProps> = ({
     { code: 'zh', name: 'Chinese' },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
+    { code: 'tr', name: 'Turkish' },
   ];
 
   // Normalize translated chunks that accidentally repeat sentences (e.g., triplicated output)

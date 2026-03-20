@@ -154,7 +154,8 @@ function getLanguageNativeVoice(language: string): string {
     'pl': 'EXAVITQu4vr4xnSDxMaL', // Polish (fallback to English)
     'zh': 'onwK4e9ZLuTAKqWW03F9', // Chinese
     'ja': 'pNInz6obpgDQGcFmaJgB', // Japanese
-    'ko': 'pFZP5JQG7iQjIQuC4Bku'  // Korean
+    'ko': 'pFZP5JQG7iQjIQuC4Bku', // Korean
+    'tr': 'EXAVITQu4vr4xnSDxMaL'  // Turkish (multilingual voice)
   }
 
   return (languageVoices as Record<string, string>)[language] || languageVoices['en'] // Default to English

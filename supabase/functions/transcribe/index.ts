@@ -665,7 +665,8 @@ function getLanguageCode(language?: string): string | undefined {
     'swedish': 'sv',
     'norwegian': 'no',
     'danish': 'da',
-    'finnish': 'fi'
+    'finnish': 'fi',
+    'turkish': 'tr'
   };
   
   return languageMap[language.toLowerCase()] || language;

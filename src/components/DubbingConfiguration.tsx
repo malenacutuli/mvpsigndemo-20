@@ -35,7 +35,8 @@ const SUPPORTED_LANGUAGES: DubbingLanguage[] = [
   { code: 'ru', name: 'Russian' },
   { code: 'ja', name: 'Japanese' },
   { code: 'ko', name: 'Korean' },
-  { code: 'zh', name: 'Chinese' }
+  { code: 'zh', name: 'Chinese' },
+  { code: 'tr', name: 'Turkish' }
 ];
 
 const ELEVENLABS_VOICES: ElevenLabsVoice[] = [

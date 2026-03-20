@@ -148,6 +148,7 @@ export const SynchronizedDubbingControls: React.FC<SynchronizedDubbingControlsPr
       'de': 'CwhRBWXzGAHq8TQ4Fs17', // Roger
       'it': 'bIHbv24MWmeRgasZH58o', // Will
       'pt': 'pFZP5JQG7iQjIQuC4Bku', // Lily
+      'tr': 'EXAVITQu4vr4xnSDxMaL', // Turkish (multilingual)
     };
     return voices[lang] || 'EXAVITQu4vr4xnSDxMaL';
   };

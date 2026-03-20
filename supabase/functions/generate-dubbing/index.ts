@@ -231,7 +231,8 @@ function getLanguageName(code: string): string {
     'ja': 'Japanese',
     'ko': 'Korean',
     'zh': 'Chinese',
-    'ar': 'Arabic'
+    'ar': 'Arabic',
+    'tr': 'Turkish'
   };
   return languages[code] || 'English';
 }
