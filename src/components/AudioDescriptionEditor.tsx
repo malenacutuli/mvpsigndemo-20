@@ -375,7 +375,7 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
   };
 
   // Language helper functions
-  const supportedLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru'];
+  const supportedLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru', 'tr'];
   
   const getLanguageDisplay = (code: string): string => {
     const languageNames: Record<string, string> = {
@@ -389,7 +389,8 @@ export const AudioDescriptionEditor: React.FC<AudioDescriptionEditorProps> = ({
       'ko': '🇰🇷 한국어',
       'zh': '🇨🇳 中文',
       'ar': '🇸🇦 العربية',
-      'ru': '🇷🇺 Русский'
+      'ru': '🇷🇺 Русский',
+      'tr': '🇹🇷 Türkçe'
     };
     return languageNames[code] || code;
   };
