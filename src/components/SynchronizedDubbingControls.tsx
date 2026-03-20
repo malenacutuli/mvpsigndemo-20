@@ -39,6 +39,7 @@ export const SynchronizedDubbingControls: React.FC<SynchronizedDubbingControlsPr
     { code: 'it', name: 'Italian', flag: '🇮🇹' },
     { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
     { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+    { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
   ];
 
   const generateDubbing = async (targetLanguage: string) => {
