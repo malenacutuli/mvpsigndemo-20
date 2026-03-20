@@ -153,7 +153,7 @@ serve(async (req) => {
       'eng': 'en', 'spa': 'es', 'fra': 'fr', 
       'deu': 'de', 'ita': 'it', 'por': 'pt', 
       'ara': 'ar', 'jpn': 'ja', 'kor': 'ko', 
-      'cmn': 'zh', 'rus': 'ru'
+      'cmn': 'zh', 'rus': 'ru', 'tur': 'tr'
     };
     const expectedLangCode = langMap[detectedLang];
 

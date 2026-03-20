@@ -115,7 +115,12 @@ serve(async (req) => {
       'fr': 'XB0fDUnXU5powFXDhCwa',
       'de': 'IKne3meq5aSn9XLyUdCD',
       'it': 'pFZP5JQG7iQjIQuC4Bku',
-      'pt': 'TX3LPaxmHKxFdv7VOQHJ'
+      'pt': 'TX3LPaxmHKxFdv7VOQHJ',
+      'tr': 'EXAVITQu4vr4xnSDxMaL', // Turkish (multilingual)
+      'ja': 'pFZP5JQG7iQjIQuC4Bku',
+      'ko': 'pFZP5JQG7iQjIQuC4Bku',
+      'ar': 'onwK4e9ZLuTAKqWW03F9',
+      'ru': 'IKne3meq5aSn9XLyUdCD'
     };
 
     const selectedVoiceId = mappedVoiceId || defaultVoices[language] || defaultVoices['en'];
