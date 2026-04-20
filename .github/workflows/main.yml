@@ -23,10 +23,12 @@ jobs:
         env:
           # URL del repositorio de Bjäland, con su token de acceso privado.
           # Este token debería estar como un secret en las settings de GitHub, pero no tengo acceso
-          DESTINATION_GIT_REPOSITORY: https://github-user:glpat-erqhoPxcagejJB_eAsB9@gitlab.bjaland.co/malena-cutuli/axessible.git
+          GIT_USER: github-user
+          GITLAB_TOKEN: glpat-XhuISDSL5_EMy4m-Cw92eW86MQp1OjM0CA.01.0y1n6p863
+          DESTINATION_GIT_REPOSITORY: gitlab.bjaland.co/malena-cutuli/axessible.git
           
         run: |
-          git remote add -t main gitlab ${{env.DESTINATION_GIT_REPOSITORY}} 
+          git remote add -t main gitlab https://${{env.GIT_USER}}:${{env.GITLAB_TOKEN}}@${{env.DESTINATION_GIT_REPOSITORY}} 
           git config set advice.skippedCherryPicks false
           git config user.email "github@axessible.com"
           git config user.name "Lovable from GitHub"
