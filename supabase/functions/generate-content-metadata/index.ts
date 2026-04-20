@@ -253,7 +253,7 @@ Format as numbered list. Choose quotes that are:
         content: generatedContent,
         created_by: user.id,
         metadata: {
-          model: 'google/gemini-2.5-flash',
+          model: 'gemini-2.0-flash-exp',
           prompt_length: prompt.length,
           response_length: generatedContent.length,
           has_transcript: !!segments?.length,
