@@ -64,23 +64,14 @@ export default function AdminSubscribers() {
         return;
       }
 
-      const response = await fetch(
-        'https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/admin-subscribers',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ action: 'stats' }),
-        }
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke('admin-subscribers', {
+        body: { action: 'stats' },
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscriber statistics');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to fetch subscriber statistics');
       }
 
-      const data = await response.json();
       setStats(data.stats);
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -101,24 +92,15 @@ export default function AdminSubscribers() {
         return;
       }
 
-      const response = await fetch(
-        'https://faeyekynudyzeotbjfsj.supabase.co/functions/v1/admin-subscribers',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ action: 'list' }),
-        }
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke('admin-subscribers', {
+        body: { action: 'list' },
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscriber list');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to fetch subscriber list');
       }
 
-      const data = await response.json();
-      setSubscribers(data.subscribers || []);
+      setSubscribers(data?.subscribers || []);
       setShowList(true);
     } catch (err) {
       console.error('Error fetching subscriber list:', err);

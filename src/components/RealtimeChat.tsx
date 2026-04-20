@@ -176,8 +176,9 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
     try {
       console.log('Connecting to WebSocket...');
       
-      // Use the correct Supabase project URL
-      const wsUrl = 'wss://faeyekynudyzeotbjfsj.functions.supabase.co/openai-realtime';
+      // Derive WebSocket URL from the Supabase URL so it works for cloud and self-hosted
+      const base = new URL(import.meta.env.VITE_SUPABASE_URL as string);
+      const wsUrl = `wss://${base.host}/functions/v1/openai-realtime`;
       console.log('WebSocket URL:', wsUrl);
       
       wsRef.current = new WebSocket(wsUrl);
