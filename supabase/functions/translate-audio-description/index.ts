@@ -207,7 +207,7 @@ serve(async (req) => {
         source_language: sourceAD.language,
         target_language: target_language,
         text_length: sourceAD.description?.length || 0,
-        model: 'gemini-2.0-flash-exp'
+        model: 'gemini-2.5-flash'
       }
     });
 

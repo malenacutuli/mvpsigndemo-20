@@ -207,7 +207,7 @@ Format as numbered list. Choose quotes that are:
     const systemInstruction = 'You are an expert content marketing specialist. Create engaging, platform-optimized content that drives engagement and views.'
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -253,7 +253,7 @@ Format as numbered list. Choose quotes that are:
         content: generatedContent,
         created_by: user.id,
         metadata: {
-          model: 'gemini-2.0-flash-exp',
+          model: 'gemini-2.5-flash',
           prompt_length: prompt.length,
           response_length: generatedContent.length,
           has_transcript: !!segments?.length,
