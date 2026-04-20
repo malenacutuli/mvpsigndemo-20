@@ -81,10 +81,10 @@ Find gaps where there is no character dialogue or narration (silence or just bac
     
     prompt = finalPrompt;
 
-    const apiKey = Deno.env.get('TWELVELABS_API_KEY');
+    const apiKey = Deno.env.get('TWELVE_LABS_API_KEY');
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'Missing TWELVELABS_API_KEY' }),
+        JSON.stringify({ error: 'Missing TWELVE_LABS_API_KEY' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

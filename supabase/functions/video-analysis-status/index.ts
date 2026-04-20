@@ -25,9 +25,9 @@ serve(async (req) => {
       );
     }
 
-    const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY');
+    const twelveLabsApiKey = Deno.env.get('TWELVE_LABS_API_KEY');
     if (!twelveLabsApiKey) {
-      throw new Error('TWELVELABS_API_KEY not configured');
+      throw new Error('TWELVE_LABS_API_KEY not configured');
     }
 
     const supabase = createClient(
