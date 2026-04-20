@@ -69,10 +69,10 @@ serve(async (req) => {
       );
     }
 
-    // Translate using Google Gemini via Lovable AI Gateway
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Translate using Google Gemini API directly
+    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
     }
 
     const languageNames: Record<string, string> = {
@@ -92,53 +92,55 @@ serve(async (req) => {
 
     const targetLanguageName = languageNames[target_language] || target_language;
 
-    const translationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
+    const systemInstruction = `You are a professional translator specializing in audio descriptions for accessibility. Translate the following audio description to ${targetLanguageName}. Maintain the descriptive, objective tone suitable for visually impaired audiences. Preserve all visual details, emotions, and actions described. Return ONLY the translated text without any additional commentary or explanations.`;
+
+    const translationResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a professional translator specializing in audio descriptions for accessibility. Translate the following audio description to ${targetLanguageName}. Maintain the descriptive, objective tone suitable for visually impaired audiences. Preserve all visual details, emotions, and actions described. Return ONLY the translated text without any additional commentary or explanations.`
+          system_instruction: {
+            parts: [{ text: systemInstruction }]
           },
-          {
-            role: 'user',
-            content: sourceAD.description
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: sourceAD.description }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 500
           }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
-      }),
-    });
+        }),
+      }
+    );
 
     if (!translationResponse.ok) {
       const errorText = await translationResponse.text();
-      
+
       // Handle rate limit errors specifically
       if (translationResponse.status === 429) {
-        console.error('⚠️ Lovable AI rate limit exceeded');
+        console.error('⚠️ Google Gemini rate limit exceeded');
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Rate limit exceeded. Please wait a moment before translating more descriptions.',
             rateLimitExceeded: true,
             retryAfter: 20
           }),
-          { 
+          {
             status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
-      
-      throw new Error(`Lovable AI API error: ${translationResponse.status} - ${errorText}`);
+
+      throw new Error(`Google Gemini API error: ${translationResponse.status} - ${errorText}`);
     }
 
     const translationData = await translationResponse.json();
-    const content = translationData?.choices?.[0]?.message?.content;
+    const content = translationData?.candidates?.[0]?.content?.parts?.[0]?.text;
     const translatedText = typeof content === 'string' ? content.trim() : '';
 
     if (!translatedText) {
@@ -198,14 +200,14 @@ serve(async (req) => {
     // Track API cost (~$0.0005 per translation with Gemini)
     await supabase.from('api_cost_tracking').insert({
       video_id: video_id,
-      service_name: 'lovable-ai-gemini-translation',
+      service_name: 'google-gemini-translation',
       operation_type: 'translate-audio-description',
       cost_amount: 0.0005,
       metadata: {
         source_language: sourceAD.language,
         target_language: target_language,
         text_length: sourceAD.description?.length || 0,
-        model: 'google/gemini-2.5-flash'
+        model: 'gemini-2.0-flash-exp'
       }
     });
 
