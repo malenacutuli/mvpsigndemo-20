@@ -200,14 +200,14 @@ serve(async (req) => {
     // Track API cost (~$0.0005 per translation with Gemini)
     await supabase.from('api_cost_tracking').insert({
       video_id: video_id,
-      service_name: 'lovable-ai-gemini-translation',
+      service_name: 'google-gemini-translation',
       operation_type: 'translate-audio-description',
       cost_amount: 0.0005,
       metadata: {
         source_language: sourceAD.language,
         target_language: target_language,
         text_length: sourceAD.description?.length || 0,
-        model: 'google/gemini-2.5-flash'
+        model: 'gemini-2.0-flash-exp'
       }
     });
 
