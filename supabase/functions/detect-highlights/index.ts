@@ -72,11 +72,11 @@ serve(async (req) => {
     const durations = durationPreferences[platform]
 
     // Use Twelve Labs to find highlights directly
-    const twelveLabsApiKey = Deno.env.get('TWELVELABS_API_KEY')
+    const twelveLabsApiKey = Deno.env.get('TWELVE_LABS_API_KEY')
     let useFallback = false;
 
     if (!twelveLabsApiKey) {
-      console.warn('⚠️ TWELVELABS_API_KEY not configured, using fallback highlights')
+      console.warn('⚠️ TWELVE_LABS_API_KEY not configured, using fallback highlights')
       useFallback = true;
     }
 
