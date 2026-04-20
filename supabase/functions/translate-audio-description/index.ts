@@ -95,7 +95,7 @@ serve(async (req) => {
     const systemInstruction = `You are a professional translator specializing in audio descriptions for accessibility. Translate the following audio description to ${targetLanguageName}. Maintain the descriptive, objective tone suitable for visually impaired audiences. Preserve all visual details, emotions, and actions described. Return ONLY the translated text without any additional commentary or explanations.`;
 
     const translationResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
