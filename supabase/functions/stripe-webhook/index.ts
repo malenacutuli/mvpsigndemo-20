@@ -129,8 +129,14 @@ async function handleSubscriptionEvent(event: any, supabaseClient: any, stripe: 
     subscriptionTier = 'standard';
   } // else stays 'starter' (€26)
 
-  // Calculate subscription end date
-  const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+  // Calculate subscription end date (Stripe moved period fields to SubscriptionItem)
+  const periodEndTs =
+    subscription.items?.data?.[0]?.current_period_end ??
+    subscription.current_period_end;
+  if (!periodEndTs) {
+    throw new Error("Subscription has no current_period_end on item or root");
+  }
+  const subscriptionEnd = new Date(periodEndTs * 1000).toISOString();
 
   // First, get the user_id by email
   const { data: userData, error: userError } = await supabaseClient
