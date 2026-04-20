@@ -196,51 +196,51 @@ Format as numbered list. Choose quotes that are:
 
     const prompt = prompts[type] || prompts.custom
 
-    // Call Lovable AI (Gemini) via gateway
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured')
+    // Call Google Gemini API directly
+    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY')
+    if (!geminiApiKey) {
+      throw new Error('GOOGLE_GEMINI_API_KEY not configured')
     }
 
-    console.log('Calling Lovable AI...')
-    
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert content marketing specialist. Create engaging, platform-optimized content that drives engagement and views.'
+    console.log('Calling Google Gemini API...')
+
+    const systemInstruction = 'You are an expert content marketing specialist. Create engaging, platform-optimized content that drives engagement and views.'
+
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: systemInstruction }]
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    })
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }]
+            }
+          ]
+        })
+      }
+    )
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text()
-      console.error('AI API error:', errorText)
-      
+      console.error('Gemini API error:', errorText)
+
       if (aiResponse.status === 429) {
         throw new Error('Rate limit exceeded. Please try again in a moment.')
       }
-      if (aiResponse.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable workspace.')
-      }
-      
+
       throw new Error(`AI generation failed: ${aiResponse.status}`)
     }
 
     const aiResult = await aiResponse.json()
-    const generatedContent = aiResult.choices[0].message.content
+    const generatedContent = aiResult?.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!generatedContent) {
+      throw new Error('Gemini returned empty response')
+    }
 
     console.log('Content generated successfully')
 
