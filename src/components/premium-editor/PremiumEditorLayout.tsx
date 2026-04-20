@@ -199,8 +199,8 @@ export function PremiumEditorLayout() {
   }, [videoId, videoData, loadTranscriptSegments]);
 
   // Construct video URL from storage path
-  const videoUrl = videoData?.storage_path 
-    ? `https://faeyekynudyzeotbjfsj.supabase.co/storage/v1/object/public/videos/${videoData.storage_path}`
+  const videoUrl = videoData?.storage_path
+    ? supabase.storage.from('videos').getPublicUrl(videoData.storage_path).data.publicUrl
     : '';
 
   const { data: segments = [] } = useQuery({

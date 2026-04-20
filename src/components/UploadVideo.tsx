@@ -109,7 +109,7 @@ export const UploadVideo: React.FC<UploadVideoProps> = ({ onUploadComplete }) =>
         throw new Error('You must be signed in to upload.');
       }
 
-      const supabaseUrl = 'https://faeyekynudyzeotbjfsj.supabase.co';
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const storageUrl = supabaseUrl.replace('.supabase.co', '.storage.supabase.co');
       const endpoint = `${storageUrl}/storage/v1/upload/resumable`;
 
