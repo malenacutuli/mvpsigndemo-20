@@ -127,9 +127,9 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
         });
       }, 100);
 
-      // Upload to Supabase Storage (sign_language_clips bucket)
+      // Upload to Supabase Storage (sign-language-clips bucket)
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('sign_language_clips')
+        .from('sign-language-clips')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
@@ -143,7 +143,7 @@ export const SignLanguageUploader: React.FC<SignLanguageUploaderProps> = ({
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('sign_language_clips')
+        .from('sign-language-clips')
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
