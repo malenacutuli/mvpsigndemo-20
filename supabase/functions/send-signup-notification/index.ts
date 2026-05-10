@@ -44,12 +44,21 @@ const handler = async (req: Request): Promise<Response> => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const authHeader = req.headers.get("authorization");
 
+    // Hard-fail guard: at least one auth mechanism must be configured
+    if (!INTERNAL_SIGNUP_KEY && !serviceRoleKey) {
+      console.error("[SIGNUP-NOTIFICATION] Server misconfigured: no auth secret set");
+      return new Response(
+        JSON.stringify({ error: "Server misconfigured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Allow if:
     // 1. Request includes valid internal auth key, OR
-    // 2. Request uses service role key (from Supabase Auth triggers)
+    // 2. Request uses the exact service role bearer token (server-to-server)
     const isAuthorized = (
-      (authKey && INTERNAL_SIGNUP_KEY && authKey === INTERNAL_SIGNUP_KEY) ||
-      (authHeader && authHeader.includes(serviceRoleKey || ''))
+      (!!authKey && !!INTERNAL_SIGNUP_KEY && authKey === INTERNAL_SIGNUP_KEY) ||
+      (!!serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`)
     );
 
     if (!isAuthorized) {
