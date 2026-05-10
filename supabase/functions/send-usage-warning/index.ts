@@ -33,9 +33,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Restrict to service-role internal callers only (e.g. check-usage-alerts)
+    const authHeader = req.headers.get('authorization') || '';
+    if (!supabaseServiceKey || authHeader !== `Bearer ${supabaseServiceKey}`) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     const { userId, email, notificationType, usageData }: UsageWarningRequest = await req.json();
 
-    console.log(`Sending ${notificationType} notification to ${email}`);
+    console.log(`Sending ${notificationType} notification`);
 
     // Generate email content based on notification type
     const emailContent = generateEmailContent(notificationType, usageData);

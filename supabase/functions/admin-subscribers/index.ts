@@ -36,9 +36,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // TODO: Add admin role check here when admin system is implemented
-    // For now, all authenticated users can view stats
-    console.log(`Admin access request from user: ${user.id}`);
+    // Enforce admin role
+    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin',
+    });
+    if (roleError || !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { action } = await req.json().catch(() => ({ action: 'stats' }));
 
