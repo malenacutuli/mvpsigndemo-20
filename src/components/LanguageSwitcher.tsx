@@ -19,6 +19,8 @@ const languages: Language[] = [
   { code: 'pt', name: 'Portuguese', nativeName: 'Português', shortCode: 'POR' },
   { code: 'ca', name: 'Catalan', nativeName: 'Català', shortCode: 'CAT' },
   { code: 'ja', name: 'Japanese', nativeName: '日本語', shortCode: 'JP' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', shortCode: 'TR' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', shortCode: 'AR' },
 ];
 
 export const LanguageSwitcher: React.FC = () => {
