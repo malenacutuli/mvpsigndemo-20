@@ -557,6 +557,33 @@ export type Database = {
         }
         Relationships: []
       }
+      early_access_signups: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          referrer: string | null
+          source: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          referrer?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          referrer?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       embed_analytics: {
         Row: {
           created_at: string
