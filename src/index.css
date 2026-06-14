@@ -9,6 +9,17 @@ Focused on high contrast, readable typography, and inclusive design.
 
 @layer base {
   :root {
+    /* Axessplayer brand tokens (June 2026 reposition) */
+    --axp-ink: 240 13% 7%;          /* #111114 */
+    --axp-ink-soft: 240 8% 14%;
+    --axp-warm-white: 60 18% 97%;   /* #FAFAF8 */
+    --axp-rose: 343 100% 59%;       /* #FF2E6E electric rose */
+    --axp-rose-soft: 343 100% 96%;
+    --axp-gold: 39 75% 60%;         /* #E8B54B */
+    --axp-line: 240 10% 88%;
+  }
+
+  :root {
     /* Core accessibility palette */
     --background: 210 20% 98%;
     --foreground: 210 15% 8%;
