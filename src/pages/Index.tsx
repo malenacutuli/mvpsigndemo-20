@@ -44,22 +44,38 @@ const PhoneFrame: React.FC<{ accent?: boolean; label: string; sublabel: string; 
   </div>
 );
 
+const DemoHome: React.FC = () => {
+  const { theme, getPath } = useTheme();
+  return (
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      <section className="container mx-auto px-6 py-24 text-center">
+        <p className="text-sm text-muted-foreground uppercase tracking-wider mb-6 font-light">
+          {theme.tagline}
+        </p>
+        <h1 className="text-4xl md:text-6xl font-light leading-tight mb-8 max-w-4xl mx-auto">
+          {theme.heroTitle}
+        </h1>
+        <p className="text-lg md:text-xl text-muted-foreground font-light max-w-2xl mx-auto mb-10">
+          {theme.heroSubtitle}
+        </p>
+        <Button asChild size="lg" className="px-10 py-6 rounded-full">
+          <Link to={getPath('/auth')}>{theme.ctaText}</Link>
+        </Button>
+      </section>
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   const { isDemo } = useTheme();
-  if (isDemo) return <DemoIndex />;
+  if (isDemo) return <DemoHome />;
 
   return (
     <div className="min-h-screen bg-axp-warm-white text-axp-ink font-body antialiased">
-      <Helmet>
-        <title>Axessplayer · Adaptive cinema. One story, every language, every person.</title>
-        <meta name="description" content="Axessplayer is adaptive cinema: one story that re-cuts itself for every viewer, in every language, accessible by default. Get early access." />
-        <link rel="canonical" href="https://axessplayer.com/" />
-        <meta property="og:title" content="Axessplayer · Adaptive cinema" />
-        <meta property="og:description" content="One story, every language, every person. Get early access." />
-        <meta property="og:url" content="https://axessplayer.com/" />
-      </Helmet>
-
       <Navigation />
+
+
 
       {/* HERO */}
       <section className="relative overflow-hidden bg-axp-warm-white">
