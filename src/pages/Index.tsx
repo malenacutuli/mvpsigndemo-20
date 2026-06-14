@@ -1,15 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
+import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Layers, Film, Languages, Accessibility } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 
 // Phase 1: New axessplayer.com Home (June 2026 reposition).
-// Demo branding paths still use the old Index layout via DemoIndex below.
-import DemoIndex from './Index.demo';
+
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <p className={`font-mono text-[11px] sm:text-xs uppercase tracking-[0.22em] text-axp-rose ${className}`}>
