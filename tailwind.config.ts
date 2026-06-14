@@ -95,7 +95,16 @@ export default {
 					'900': 'hsl(var(--ead-purple-900))',
 					'950': 'hsl(var(--ead-purple-950))'
 				},
-				charcoal: 'hsl(var(--charcoal))'
+				charcoal: 'hsl(var(--charcoal))',
+				axp: {
+					ink: 'hsl(var(--axp-ink))',
+					'ink-soft': 'hsl(var(--axp-ink-soft))',
+					'warm-white': 'hsl(var(--axp-warm-white))',
+					rose: 'hsl(var(--axp-rose))',
+					'rose-soft': 'hsl(var(--axp-rose-soft))',
+					gold: 'hsl(var(--axp-gold))',
+					line: 'hsl(var(--axp-line))',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
