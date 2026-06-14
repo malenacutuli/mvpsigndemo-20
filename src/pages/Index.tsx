@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
@@ -42,6 +43,7 @@ const DemoHome: React.FC = () => {
 
 const Home: React.FC = () => {
   const { isDemo } = useTheme();
+  const { t } = useTranslation();
   if (isDemo) return <DemoHome />;
 
   return (
@@ -51,13 +53,12 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:pt-32 lg:pb-36">
           <div className="max-w-5xl mx-auto text-center">
-            <Eyebrow>Adaptive Cinema</Eyebrow>
+            <Eyebrow>{t('home.eyebrow.adaptiveCinema')}</Eyebrow>
             <h1 className="mt-6 font-display font-light tracking-tight text-axp-ink text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.98]">
-              The story re-cuts itself <span className="text-axp-rose">for every viewer.</span>
+              {t('home.hero.title1')} <span className="text-axp-rose">{t('home.hero.title2')}</span>
             </h1>
             <p className="mt-8 text-lg sm:text-xl md:text-2xl text-axp-ink/70 font-light max-w-3xl mx-auto leading-relaxed">
-              One production. A different version for each person: your cut, your language, your world.
-              Streaming shows everyone the same thing. Axessplayer does not.
+              {t('home.hero.description')}
             </p>
 
             <div className="mt-10 max-w-xl mx-auto">
@@ -66,7 +67,7 @@ const Home: React.FC = () => {
 
             <div className="mt-6">
               <Link to="/explore" className="inline-flex items-center gap-2 font-body text-axp-ink/70 hover:text-axp-ink transition-colors">
-                <Play className="w-4 h-4" /> Watch the demo
+                <Play className="w-4 h-4" /> {t('home.hero.watchDemo')}
               </Link>
             </div>
           </div>
@@ -90,14 +91,12 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-5xl mx-auto">
-            <Eyebrow>The shift</Eyebrow>
+            <Eyebrow>{t('home.eyebrow.theShift')}</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white max-w-4xl">
-              Everyone is optimizing distribution. <span className="text-axp-rose">Nobody owns adaptation.</span>
+              {t('home.shift.title1')} <span className="text-axp-rose">{t('home.shift.title2')}</span>
             </h2>
             <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
-              The microdrama boom competes on one axis: more content, cheaper, better recommended.
-              Every platform still ships one fixed cut to everyone. The story itself never changes.
-              That is the opening.
+              {t('home.shift.body')}
             </p>
           </div>
         </div>
@@ -106,40 +105,27 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-3xl">
-            <Eyebrow>What is adaptive cinema</Eyebrow>
-            <SectionHeading className="mt-6">One story. Re-cut for you.</SectionHeading>
+            <Eyebrow>{t('home.eyebrow.whatIs')}</Eyebrow>
+            <SectionHeading className="mt-6">{t('home.what.title')}</SectionHeading>
           </div>
 
           <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
             {[
-              {
-                icon: Film,
-                title: 'Your cut.',
-                body: 'POV, pacing, intensity, and ending, chosen automatically from how you watch. No menus.',
-                accent: true,
-              },
-              {
-                icon: Languages,
-                title: 'Your language.',
-                body: 'One master, every language, accessible by default, at near-zero marginal cost.',
-              },
-              {
-                icon: Globe2,
-                title: 'Your world.',
-                body: 'The same scene, the right brand for your market. Canon-safe, never an interruption.',
-              },
-            ].map(({ icon: Icon, title, body, accent }) => (
-              <div key={title} className={`rounded-3xl p-8 lg:p-10 border ${accent ? 'bg-axp-ink text-white border-axp-ink' : 'bg-white text-axp-ink border-axp-line'}`}>
+              { icon: Film, key: 'yourCut', accent: true },
+              { icon: Languages, key: 'yourLanguage', accent: false },
+              { icon: Globe2, key: 'yourWorld', accent: false },
+            ].map(({ icon: Icon, key, accent }) => (
+              <div key={key} className={`rounded-3xl p-8 lg:p-10 border ${accent ? 'bg-axp-ink text-white border-axp-ink' : 'bg-white text-axp-ink border-axp-line'}`}>
                 <Icon className={`w-7 h-7 ${accent ? 'text-axp-rose' : 'text-axp-ink/70'}`} />
-                <h3 className={`mt-8 font-display text-3xl font-light ${accent ? 'text-white' : 'text-axp-ink'}`}>{title}</h3>
-                <p className={`mt-4 font-body leading-relaxed ${accent ? 'text-white/75' : 'text-axp-ink/65'}`}>{body}</p>
+                <h3 className={`mt-8 font-display text-3xl font-light ${accent ? 'text-white' : 'text-axp-ink'}`}>{t(`home.what.${key}.title`)}</h3>
+                <p className={`mt-4 font-body leading-relaxed ${accent ? 'text-white/75' : 'text-axp-ink/65'}`}>{t(`home.what.${key}.body`)}</p>
               </div>
             ))}
           </div>
 
           <div className="mt-12">
             <Link to="/enterprise" className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink hover:text-axp-rose transition-colors">
-              See how it works <ArrowRight className="w-4 h-4" />
+              {t('home.what.seeHow')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -149,12 +135,10 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-5">
-              <Eyebrow>How it works</Eyebrow>
-              <SectionHeading className="mt-6">Human soul, AI scale, one engine.</SectionHeading>
+              <Eyebrow>{t('home.eyebrow.howItWorks')}</Eyebrow>
+              <SectionHeading className="mt-6">{t('home.how.title')}</SectionHeading>
               <p className="mt-8 text-lg text-axp-ink/70 font-light leading-relaxed">
-                Filmed scenes carry the soul and the clips. AI generates the variants, the languages,
-                and the localizations. One decision engine reads how each person watches and serves
-                the right cut automatically.
+                {t('home.how.body')}
               </p>
             </div>
 
@@ -168,14 +152,12 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>Accessible by default</Eyebrow>
+            <Eyebrow>{t('home.eyebrow.accessible')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Built so everyone can watch. <span className="text-axp-ink/55">From the first frame.</span>
+              {t('home.accessible.title1')} <span className="text-axp-ink/55">{t('home.accessible.title2')}</span>
             </SectionHeading>
             <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              Captions with intention, creative audio description, sign language, and dubbing are
-              generated for every story in every language, not bolted on later. Accessibility is the
-              foundation the whole platform is built on.
+              {t('home.accessible.body')}
             </p>
           </div>
         </div>
@@ -185,18 +167,16 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <Eyebrow>For brands</Eyebrow>
+              <Eyebrow>{t('home.eyebrow.forBrands')}</Eyebrow>
               <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-                The same scene. <span className="text-axp-gold">A different product</span> for every market.
+                {t('home.brands.title1')} <span className="text-axp-gold">{t('home.brands.title2')}</span> {t('home.brands.title3')}
               </h2>
               <p className="mt-8 text-lg text-white/70 font-light leading-relaxed max-w-xl">
-                Dynamic in-scene placement fills a mug, a billboard, or a phone screen with the right
-                brand for each viewer, at serve time. First-party attention and data, without
-                interrupting the story.
+                {t('home.brands.body')}
               </p>
               <div className="mt-10">
                 <Link to="/enterprise" className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-gold hover:text-white transition-colors">
-                  Partner with us <ArrowRight className="w-4 h-4" />
+                  {t('home.brands.partner')} <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
@@ -211,17 +191,14 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>Why now</Eyebrow>
-            <SectionHeading className="mt-6">Interactive cinema was tried once. The reasons it failed are gone.</SectionHeading>
+            <Eyebrow>{t('home.eyebrow.whyNow')}</Eyebrow>
+            <SectionHeading className="mt-6">{t('home.whyNow.title')}</SectionHeading>
             <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              Production, promotion, and format friction killed it a decade ago. AI generates the variants now.
-              Vertical, swipeable feeds are the native format. We are rebuilding it with the people who invented interactive video.
+              {t('home.whyNow.body')}
             </p>
             <div className="mt-10 inline-flex items-center gap-3 px-5 py-3 rounded-full border border-axp-ink/15 bg-white">
               <Sparkles className="w-4 h-4 text-axp-rose" />
-              <p className="font-body text-sm text-axp-ink">
-                Built by the team behind <span className="font-medium">Eko</span>, the inventors of seamless branching video.
-              </p>
+              <p className="font-body text-sm text-axp-ink">{t('home.whyNow.builtBy', { name: 'Eko' })}</p>
             </div>
           </div>
         </div>
@@ -230,20 +207,20 @@ const Home: React.FC = () => {
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-3xl">
-            <Eyebrow>How to watch</Eyebrow>
-            <SectionHeading className="mt-6">Three ways in. Three ways to pay.</SectionHeading>
+            <Eyebrow>{t('home.eyebrow.howToWatch')}</Eyebrow>
+            <SectionHeading className="mt-6">{t('home.howToWatch.title')}</SectionHeading>
           </div>
 
           <div className="mt-16 grid md:grid-cols-3 gap-6">
             {[
-              { tag: 'Earn', title: 'Watch a rewarded ad, get credits.', icon: Layers },
-              { tag: 'Buy', title: 'Credit packs, whenever you want more.', icon: Sparkles },
-              { tag: 'Subscribe', title: 'Ad-free, with a credit allowance and premium variants.', icon: Accessibility },
-            ].map(({ tag, title, icon: Icon }) => (
-              <div key={tag} className="rounded-3xl border border-axp-line p-8 bg-axp-warm-white">
+              { key: 'earn', icon: Layers },
+              { key: 'buy', icon: Sparkles },
+              { key: 'subscribe', icon: Accessibility },
+            ].map(({ key, icon: Icon }) => (
+              <div key={key} className="rounded-3xl border border-axp-line p-8 bg-axp-warm-white">
                 <Icon className="w-6 h-6 text-axp-rose" />
-                <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink/55">{tag}</p>
-                <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{title}</p>
+                <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink/55">{t(`home.howToWatch.${key}.tag`)}</p>
+                <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{t(`home.howToWatch.${key}.title`)}</p>
               </div>
             ))}
           </div>
@@ -253,13 +230,13 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36 text-center">
           <SectionHeading className="!text-white max-w-4xl mx-auto">
-            Be first to watch <span className="text-axp-rose">yourself</span> into the story.
+            {t('home.final.title1')} <span className="text-axp-rose">{t('home.final.titleAccent')}</span> {t('home.final.title2')}
           </SectionHeading>
           <p className="mt-6 text-lg text-white/70 font-light max-w-2xl mx-auto">
-            Get early access to Axessplayer. We will email you the moment your spot opens.
+            {t('home.final.body')}
           </p>
           <div className="mt-12">
-            <EarlyAccessForm variant="dark" source="home-final" microcopy="No spam. Unsubscribe anytime." />
+            <EarlyAccessForm variant="dark" source="home-final" microcopy={t('home.final.microcopy')} />
           </div>
         </div>
       </section>
@@ -269,14 +246,14 @@ const Home: React.FC = () => {
           <div className="grid md:grid-cols-5 gap-10">
             <div className="md:col-span-2">
               <img src={logoWhite.url} alt="Axessplayer" className="h-8 w-auto" />
-              <p className="mt-5 text-white/55 font-body text-sm max-w-xs">Axessplayer, by Axessible Technologies.</p>
+              <p className="mt-5 text-white/55 font-body text-sm max-w-xs">{t('home.footer.by')}</p>
             </div>
             {[
-              { h: 'Platform', items: [['How it works', '/'], ['Accessibility', '/enterprise'], ['For brands', '/enterprise'], ['Demo', '/explore']] },
-              { h: 'Enterprise', items: [['Overview', '/enterprise'], ['Compliance', '/enterprise'], ['Book a demo', '/contact']] },
-              { h: 'Company', items: [['About', '/about'], ['Contact', '/contact']] },
-            ].map((col) => (
-              <div key={col.h}>
+              { h: t('home.footer.platform'), items: [[t('home.footer.howItWorks'), '/'], [t('home.footer.accessibility'), '/enterprise'], [t('home.footer.forBrands'), '/enterprise'], [t('home.footer.demo'), '/explore']] },
+              { h: t('home.footer.enterprise'), items: [[t('home.footer.overview'), '/enterprise'], [t('home.footer.compliance'), '/enterprise'], [t('home.footer.bookDemo'), '/contact']] },
+              { h: t('home.footer.company'), items: [[t('home.footer.about'), '/about'], [t('home.footer.contact'), '/contact']] },
+            ].map((col, i) => (
+              <div key={i}>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">{col.h}</p>
                 <ul className="mt-4 space-y-2">
                   {col.items.map(([label, href]) => (
@@ -289,8 +266,8 @@ const Home: React.FC = () => {
             ))}
           </div>
           <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-4 text-white/50 text-sm font-body">
-            <p>One story. Every language. Every person.</p>
-            <p>© {new Date().getFullYear()} Axessible Technologies.</p>
+            <p>{t('home.footer.tagline')}</p>
+            <p>{t('home.footer.copyright', { year: new Date().getFullYear() })}</p>
           </div>
         </div>
       </footer>
