@@ -1,7 +1,7 @@
 {
   "nav": {
     "explore": "Showcase",
-    "enterprise": "Unternehmen", 
+    "enterprise": "Unternehmen",
     "pricing": "Preise",
     "dashboard": "Dashboard",
     "myVideos": "Meine Videos",
@@ -49,7 +49,7 @@
       "title": "Video ohne Barrieren.",
       "captionsTitle": "Untertitel mit Absicht",
       "captionsDesc": "Mehr als Worte. Dynamische, ausdrucksstarke Untertitel, die sich bewegen, pausieren und mit Emotionen fließen.",
-      "audioDescTitle": "Kreative Audiobeschreibungen", 
+      "audioDescTitle": "Kreative Audiobeschreibungen",
       "audioDescDesc": "Nicht roboterhaft - sondern kinematografische Erzählung, die die Szene malt, damit Zuhörer alles fühlen.",
       "signLanguageTitle": "Arbeiten Sie mit uns zusammen, um Gebärdensprach-Beschreibungen für Ihre Videos zu erstellen",
       "signLanguageDesc": "Von Experten geleitet, macht Inklusion natürlich."
@@ -67,7 +67,7 @@
       "title": "Verwandeln Sie Ihre Videos in Erfahrungen, die alle teilen können.",
       "description": "Laden Sie Ihre Inhalte hoch - und unsere Plattform verwandelt sie mit:",
       "aiTools": "KI-getriebene Barrierefreiheitstools",
-      "humanGuidance": "Menschlich geführte Verfeinerung", 
+      "humanGuidance": "Menschlich geführte Verfeinerung",
       "compliance": "Automatische Einhaltung globaler Barrierefreiheitsstandards",
       "storiesReach": "Damit Ihre Geschichten nicht nur mehr Menschen erreichen…",
       "storiesMove": "Sie bewegen mehr Menschen.",
@@ -85,7 +85,7 @@
       "title": "Sehen Sie, was unsere Zuschauer sagen",
       "engagementIncrease": "Steigerung des",
       "viewerEngagement": "Zuschauer-Engagements",
-      "betterComprehension": "Besseres", 
+      "betterComprehension": "Besseres",
       "contentComprehension": "Inhaltsverständnis",
       "moreVideos": "Mehr",
       "accessibleVideos": "barrierefreie Videos erstellt",
@@ -127,102 +127,6 @@
       "support": "Allgemeiner Support und Feedback",
       "responseTitle": "Schnelle Antwortzeiten",
       "responseText": "Wir antworten in der Regel innerhalb von 24 Stunden an Werktagen auf alle Anfragen. Für dringende Fragen zur Barrierefreiheit geben Sie bitte \"DRINGEND\" in Ihrer Betreffzeile an."
-    }
-  },
-  "about": {
-    "title": "Über uns",
-    "mission": "Wir sind ein Technologieunternehmen und Forschungslabor, das ein Emotionales Audiovisuelles Sprachmodell (AVLM) entwickelt, trainiert auf ethisch bezogenen kreativen Inhalten. Indem wir KI beibringen, Emotion, Erzählung und Absicht in audiovisuellen Medien zu verstehen, erschließen wir beispiellose Werkzeuge für Kreative, Marken und Plattformen.",
-    "values": {
-      "ethicalAI": "Ethische KI",
-      "creativeIntelligence": "Kreative Intelligenz",
-      "humanCentric": "Menschenzentriert"
-    },
-    "dataQuality": {
-      "title": "Warum Hochwertige Daten der Schlüssel zum Erschließen von Emotionen sind",
-      "description": "Die Qualität eines KI-Modells ist eine direkte Funktion der Daten, auf denen es trainiert wird. Heutige großmaßstäbliche Modelle basieren auf Milliarden von Stunden extrahierter, minderwertiger und oft ethisch fragwürdiger Internetdaten. Dies führt zu Modellen, die grundlegende Muster erkennen können, aber beim Erfassen des reichen, subtilen Geflechts menschlicher Emotionen versagen.",
-      "ethicalData": {
-        "title": "Ethische Daten",
-        "description": "Wir bauen unser Fundament auf einem freiwillig beigetragenen, rechte-zuerst Datensatz auf. Durch unser Flaggschiff-Produkt Axessible haben wir einen Tugendkreislauf geschaffen. Kreative, die unsere Plattform nutzen, um ihre Inhalte mit neuen Vorschriften konform zu machen, geben uns auch die Erlaubnis, von ihrer Arbeit zu lernen."
-      },
-      "powerOfIntentionality": {
-        "title": "Die Macht der Absichtlichkeit",
-        "description": "Extrahierte Internetinhalte erfassen, was Menschen ansehen, aber nicht warum sie es geschaffen haben. Unsere Daten, beigetragen von Filmemachern, Werbetreibenden und Künstlern, sind reich an kreativer Absicht. Unser AVLM geht über einen grundlegenden emotionalen Fingerabdruck hinaus und versteht die erzählerischen Rhythmen, kreativen Tropen und emotionalen Bögen, die Inhalte wirklich großartig machen."
-      },
-      "builtOnTrust": {
-        "title": "Auf Vertrauen aufgebaut",
-        "description": "Unsere Daten sind nicht nur eine Sammlung von Pixeln und Audiowellen; es ist ein Repository menschlicher Kreativität und Emotion, annotiert von den Schöpfern selbst. Dieser proprietäre Datensatz wird es uns ermöglichen, ein Modell mit einem Niveau an Tiefe und Nuance zu trainieren, das kein anderes Unternehmen erreichen kann."
-      }
-    },
-    "aiLab": {
-      "title": "Unser KI-Forschungslabor",
-      "subtitle": "Aufbau der nächsten Generation von KI, die menschliche Kreativität durch unser Emotionales Audiovisuelles Sprachmodell versteht und verbessert."
-    },
-    "useCases": {
-      "title": "Unser KI-Forschungslabor",
-      "subtitle": "Aufbau der nächsten Generation von KI, die menschliche Kreativität durch unser Emotionales Audiovisuelles Sprachmodell versteht und verbessert.",
-      "broaderTitle": "Breitere Anwendungsfälle & IP-Strategie",
-      "broaderDescription": "Die Anwendungen eines AVLM, trainiert auf einem hochwertigen, kreativ-geführten Datensatz, erstrecken sich weit über unser anfängliches Produkt, die Axess Video Platform, hinaus. Unsere Technologie treibt eine neue Klasse von Werkzeugen in verschiedenen Branchen an.",
-      "creativeAnalytics": {
-        "title": "Kreative Analytics für Werbung & Marketing:",
-        "emotionalResonance": {
-          "title": "Emotionale Resonanz-Tests",
-          "description": "Analysiert, wie ein Publikum emotional mit einer Anzeige auf granularer Ebene in Verbindung steht und Momente der Ehrfurcht, Frustration oder Freude identifiziert."
-        },
-        "narrativeOptimization": {
-          "title": "Narrative Optimierung",
-          "description": "Identifiziert, welche Szenen oder erzählerischen Rhythmen in einer Kampagne am effektivsten sind, um emotionales Engagement und Markenerinnerung zu fördern."
-        },
-        "crossCulturalInsights": {
-          "title": "Interkulturelle Einblicke",
-          "description": "Erkennt automatisch kulturell spezifische emotionale Nuancen und kreative Tropen, um Inhalte für globale Märkte zu optimieren."
-        }
-      },
-      "filmTV": {
-        "title": "Narrative Rückmeldung für Film- & TV-Studios:",
-        "editingPostProduction": {
-          "title": "Schnitt & Postproduktion",
-          "description": "Bietet Editoren Echtzeit-emotionales Feedback und hilft ihnen, Szenen zu schaffen, die mit der beabsichtigten emotionalen Wirkung landen."
-        },
-        "scriptAnalysis": {
-          "title": "Drehbuch-Analyse",
-          "description": "Analysiert den erzählerischen Bogen und emotionalen Fluss eines Drehbuchs vor Produktionsbeginn und identifiziert potenzielle Schwächen oder Möglichkeiten."
-        },
-        "characterDevelopment": {
-          "title": "Charakterentwicklung",
-          "description": "Studiert, wie Publikum auf die emotionale Reise eines Charakters über einen Film oder eine Serie reagiert."
-        }
-      },
-      "generativeAI": {
-        "title": "Generative KI für Kreative Werkzeuge:",
-        "emotionallyAware": {
-          "title": "Emotional Bewusstes Generatives Video",
-          "description": "Nutzt unser AVLM, um Text-zu-Video-Modelle zu leiten, um Inhalte mit spezifischen emotionalen Tönen und erzählerischen Strukturen zu erstellen."
-        },
-        "dynamicMusic": {
-          "title": "Dynamische Musik & Sound Design",
-          "description": "Generiert Musik oder Klanglandschaften, die sich in Echtzeit an den emotionalen Bogen eines Videos anpassen."
-        }
-      },
-      "personalizedMedia": {
-        "title": "Personalisierte Medienplattformen:",
-        "emotionBased": {
-          "title": "Emotionsbasierte Kuration",
-          "description": "Empfiehlt Inhalte nicht nur nach Genre, sondern nach der emotionalen Reise, die sie bietet. Zum Beispiel eine 'tröstende' Playlist von Kurzfilmen oder einen 'inspirierenden' Feed von Dokumentationen."
-        }
-      }
-    },
-    "intellectualProperty": {
-      "title": "Geistiges Eigentum & Patentbereiche",
-      "description": "Wir bauen ein robustes Portfolio geistigen Eigentums rund um unsere einzigartige Technologie auf. Unsere Patentstrategie konzentriert sich auf drei Schlüsselbereiche:",
-      "emotionNarrative": "Emotion-Narrativ-Fusion",
-      "explainableAVLM": "Erklärbares AVLM",
-      "interactiveCreative": "Interaktive Kreative Kritik"
-    },
-    "cta": {
-      "title": "Bereit, die Zukunft der Kreativen KI zu gestalten?",
-      "description": "Schließen Sie sich uns an, um zu revolutionieren, wie Künstliche Intelligenz menschliche Kreativität versteht und verbessert.",
-      "exploreTechnology": "Erkunden Sie Unsere Technologie",
-      "contactTeam": "Kontaktieren Sie Unser Team"
     }
   },
   "about": {
@@ -765,5 +669,104 @@
     },
     "goBack": "Zurück",
     "upgradeButton": "Auf Standard upgraden"
+  },
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Adaptives Kino",
+      "theShift": "Der Wandel",
+      "whatIs": "Was ist adaptives Kino",
+      "howItWorks": "So funktioniert es",
+      "accessible": "Standardmäßig barrierefrei",
+      "forBrands": "Für Marken",
+      "whyNow": "Warum jetzt",
+      "howToWatch": "So schauen Sie zu"
+    },
+    "hero": {
+      "title1": "Die Geschichte schneidet sich neu",
+      "title2": "für jeden Zuschauer.",
+      "description": "Eine Produktion. Eine andere Version für jede Person: dein Schnitt, deine Sprache, deine Welt. Streaming zeigt allen dasselbe. Axessplayer nicht.",
+      "watchDemo": "Demo ansehen"
+    },
+    "shift": {
+      "title1": "Alle optimieren die Distribution.",
+      "title2": "Niemand besitzt die Adaption.",
+      "body": "Der Microdrama-Boom kämpft auf einer einzigen Achse: mehr Inhalte, günstiger, besser empfohlen. Jede Plattform liefert weiterhin einen festen Schnitt für alle. Die Geschichte selbst ändert sich nie. Genau hier liegt die Chance."
+    },
+    "what": {
+      "title": "Eine Geschichte. Für dich neu geschnitten.",
+      "yourCut": {
+        "title": "Dein Schnitt.",
+        "body": "Perspektive, Tempo, Intensität und Ende, automatisch gewählt aus deinem Sehverhalten. Ohne Menüs."
+      },
+      "yourLanguage": {
+        "title": "Deine Sprache.",
+        "body": "Ein Master, jede Sprache, standardmäßig barrierefrei, zu nahezu null Grenzkosten."
+      },
+      "yourWorld": {
+        "title": "Deine Welt.",
+        "body": "Dieselbe Szene, die richtige Marke für deinen Markt. Kanon-treu, niemals eine Unterbrechung."
+      },
+      "seeHow": "Sehen Sie, wie es funktioniert"
+    },
+    "how": {
+      "title": "Menschliche Seele, KI-Skala, ein Engine.",
+      "body": "Gedrehte Szenen tragen die Seele und die Clips. KI erzeugt die Varianten, die Sprachen und die Lokalisierungen. Ein Entscheidungs-Engine liest, wie jede Person zusieht, und liefert automatisch den richtigen Schnitt."
+    },
+    "accessible": {
+      "title1": "Gebaut, damit jeder zusehen kann.",
+      "title2": "Vom ersten Frame an.",
+      "body": "Untertitel mit Intention, kreative Audiodeskription, Gebärdensprache und Synchronisation werden für jede Geschichte in jeder Sprache erzeugt, nicht nachträglich aufgesetzt. Barrierefreiheit ist das Fundament der ganzen Plattform."
+    },
+    "brands": {
+      "title1": "Dieselbe Szene.",
+      "title2": "Ein anderes Produkt",
+      "title3": "für jeden Markt.",
+      "body": "Dynamisches In-Scene-Placement füllt eine Tasse, ein Plakat oder ein Handy-Display mit der richtigen Marke für jede Person, zum Auslieferungszeitpunkt. First-Party-Aufmerksamkeit und Daten, ohne die Geschichte zu unterbrechen.",
+      "partner": "Werden Sie Partner"
+    },
+    "whyNow": {
+      "title": "Interaktives Kino wurde einmal versucht. Die Gründe für das Scheitern sind weg.",
+      "body": "Produktions-, Promotion- und Format-Reibung haben es vor einem Jahrzehnt erstickt. Heute generiert KI die Varianten. Vertikale, wischbare Feeds sind das native Format. Wir bauen es neu auf, mit den Erfindern des interaktiven Videos.",
+      "builtBy": "Vom Team hinter {{name}} entwickelt, den Erfindern nahtloser Branching-Videos."
+    },
+    "howToWatch": {
+      "title": "Drei Wege rein. Drei Wege zu zahlen.",
+      "earn": {
+        "tag": "Verdienen",
+        "title": "Sieh eine belohnte Anzeige, erhalte Credits."
+      },
+      "buy": {
+        "tag": "Kaufen",
+        "title": "Credit-Pakete, wann immer du mehr willst."
+      },
+      "subscribe": {
+        "tag": "Abonnieren",
+        "title": "Werbefrei, mit Credit-Kontingent und Premium-Varianten."
+      }
+    },
+    "final": {
+      "title1": "Sei die Erste oder der Erste,",
+      "titleAccent": "dich selbst",
+      "title2": "in der Geschichte zu sehen.",
+      "body": "Hol dir frühen Zugang zu Axessplayer. Wir schreiben dir per E-Mail, sobald dein Platz frei ist.",
+      "microcopy": "Kein Spam. Jederzeit abmeldbar."
+    },
+    "footer": {
+      "by": "Axessplayer, von Axessible Technologies.",
+      "platform": "Plattform",
+      "enterprise": "Enterprise",
+      "company": "Unternehmen",
+      "howItWorks": "So funktioniert es",
+      "accessibility": "Barrierefreiheit",
+      "forBrands": "Für Marken",
+      "demo": "Demo",
+      "overview": "Überblick",
+      "compliance": "Compliance",
+      "bookDemo": "Demo buchen",
+      "about": "Über uns",
+      "contact": "Kontakt",
+      "tagline": "Eine Geschichte. Jede Sprache. Jeder Mensch.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
   }
 }

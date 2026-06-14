@@ -1,7 +1,7 @@
 {
   "nav": {
     "explore": "Showcase",
-    "enterprise": "Enterprise", 
+    "enterprise": "Enterprise",
     "pricing": "Pricing",
     "dashboard": "Dashboard",
     "myVideos": "My Videos",
@@ -49,7 +49,7 @@
       "title": "Video without barriers.",
       "captionsTitle": "Captions with Intention",
       "captionsDesc": "More than words. Dynamic, expressive captions that move, pause, and flow with emotion.",
-      "audioDescTitle": "Emotive Audio Descriptions", 
+      "audioDescTitle": "Emotive Audio Descriptions",
       "audioDescDesc": "Not robotic - but cinematic narration that paints the scene, so those who listen feel everything.",
       "signLanguageTitle": "Work with us to create Sign Language Descriptions for your videos",
       "signLanguageDesc": "Driven by experts, making inclusion natural."
@@ -67,7 +67,7 @@
       "title": "Turn your videos into experiences everyone can share.",
       "description": "Upload your content — and our platform transforms it with:",
       "aiTools": "AI-driven accessibility tools",
-      "humanGuidance": "Human-guided refinement", 
+      "humanGuidance": "Human-guided refinement",
       "compliance": "Automatic compliance with global accessibility standards",
       "storiesReach": "So your stories don't just reach more people…",
       "storiesMove": "They move more people.",
@@ -85,7 +85,7 @@
       "title": "See What Our Viewers Are Saying",
       "engagementIncrease": "Increase in",
       "viewerEngagement": "viewer engagement",
-      "betterComprehension": "Better", 
+      "betterComprehension": "Better",
       "contentComprehension": "content comprehension",
       "moreVideos": "More",
       "accessibleVideos": "accessible videos created",
@@ -133,7 +133,7 @@
     "tagline": "Hear the Unheard. See the Unseen.",
     "about": "About",
     "features": "Features",
-    "community": "Community", 
+    "community": "Community",
     "pricing": "Pricing",
     "blog": "Blog",
     "upload": "Upload",
@@ -214,20 +214,20 @@
         "compliance": "Built-in compliance auditing & reporting",
         "whiteLabel": "White-label embeddable player",
         "sso": "Enterprise SSO & user management"
-    },
-    "intellectualProperty": {
-      "title": "Intellectual Property & Patent Areas",
-      "description": "We are building a robust intellectual property portfolio around our unique technology. Our patent strategy focuses on three key areas:",
-      "emotionNarrative": "Emotion-Narrative Fusion",
-      "explainableAVLM": "Explainable AV-LM", 
-      "interactiveCreative": "Interactive Creative Critique"
-    },
-    "cta": {
-      "title": "Ready to Shape the Future of Creative AI?",
-      "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
-      "exploreTechnology": "Explore Our Technology",
-      "contactTeam": "Contact Our Team"
-    }
+      },
+      "intellectualProperty": {
+        "title": "Intellectual Property & Patent Areas",
+        "description": "We are building a robust intellectual property portfolio around our unique technology. Our patent strategy focuses on three key areas:",
+        "emotionNarrative": "Emotion-Narrative Fusion",
+        "explainableAVLM": "Explainable AV-LM",
+        "interactiveCreative": "Interactive Creative Critique"
+      },
+      "cta": {
+        "title": "Ready to Shape the Future of Creative AI?",
+        "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
+        "exploreTechnology": "Explore Our Technology",
+        "contactTeam": "Contact Our Team"
+      }
     },
     "quote": "\"We don't just enhance video—we future-proof it.\""
   },
@@ -244,12 +244,19 @@
       "featureSelection": {
         "title": "Feature Selection",
         "description": "Configure accessibility features for your use case",
-        "features": ["Emotional captions", "Audio descriptions"]
+        "features": [
+          "Emotional captions",
+          "Audio descriptions"
+        ]
       },
       "deployMonitor": {
         "title": "Deploy & Monitor",
         "description": "Enterprise-ready player with compliance reporting",
-        "features": ["Embeddable player", "Real-time analytics", "Compliance audits"]
+        "features": [
+          "Embeddable player",
+          "Real-time analytics",
+          "Compliance audits"
+        ]
       }
     },
     "highlights": {
@@ -271,12 +278,18 @@
       "aiMachineLearning": {
         "title": "AI & Machine Learning",
         "description": "Advanced AI models for accessibility",
-        "technologies": ["Vision-Language Models", "AI Integration"]
+        "technologies": [
+          "Vision-Language Models",
+          "AI Integration"
+        ]
       },
       "voiceAudio": {
         "title": "Voice & Audio",
         "description": "Adaptive voice synthesis",
-        "technologies": ["Custom Voice Models", "Audio Analysis"]
+        "technologies": [
+          "Custom Voice Models",
+          "Audio Analysis"
+        ]
       },
       "computerVision": {
         "title": "Computer Vision",
@@ -286,7 +299,12 @@
       "complianceSecurity": {
         "title": "Compliance & Security",
         "description": "Accessibility standards adherence",
-        "technologies": ["WCAG 2.1 AA", "EAA Compliance", "ADA Standards", "Security Protocols"]
+        "technologies": [
+          "WCAG 2.1 AA",
+          "EAA Compliance",
+          "ADA Standards",
+          "Security Protocols"
+        ]
       }
     }
   },
@@ -399,7 +417,7 @@
         "description": "Discover accessible videos from our community, subscribe to channels, and find content that interests you"
       },
       "uploadVideo": {
-        "title": "Upload Video", 
+        "title": "Upload Video",
         "description": "Upload your video and automate with Captions with Intention, audio descriptions and analyze video content"
       },
       "manageVideos": {
@@ -409,106 +427,98 @@
     }
   },
   "about": {
-    "pageTitle": "About",
     "mission": {
-      "title": "About",
-      "description": "We are a technology company and a research lab developing an Emotional Audiovisual Language Model (AVLM), trained on ethically-sourced creative content. By teaching AI to understand emotion, narrative, and intention in audiovisual media, we unlock unprecedented tools for creators, brands, and platforms.",
+      "title": "Our Mission",
+      "description": "We believe that creative expression should be accessible to everyone. Our AI-powered platform transforms video content into immersive experiences that break down barriers and create inclusive storytelling.",
       "ethicalAI": "Ethical AI",
       "creativeIntelligence": "Creative Intelligence",
       "humanCentric": "Human-Centric"
     },
     "dataQuality": {
-      "title": "Why High-Quality Data is the Key to Unlocking Emotion",
-      "description": "The quality of an AI model is a direct function of the data it's trained on. Today's large-scale models are built on billions of hours of scraped, low-quality, and often ethically questionable internet data. This leads to models that can recognize basic patterns but fail to grasp the rich, subtle tapestry of human emotion.",
+      "title": "Data Quality & Ethics",
+      "description": "Our approach to artificial intelligence is built on principles of transparency, consent, and creative enhancement rather than replacement.",
       "ethicalData": {
-        "title": "Ethical Data",
-        "description": "We are building our foundation on a rights-first, voluntarily contributed dataset. Through our flagship product, Axessible, we've created a virtuous cycle. Creators who use our platform to make their content compliant with new regulations are also giving us permission to learn from their work."
+        "title": "Ethical Data Collection",
+        "description": "We prioritize consent-driven data collection and transparent AI training processes that respect creator rights and user privacy."
       },
       "powerOfIntentionality": {
         "title": "The Power of Intentionality",
-        "description": "Scraped internet content captures what people watch, but not why they created it. Our data, contributed by filmmakers, advertisers, and artists, is rich with creative purpose. Our AVLM goes beyond a basic emotional fingerprint and understands the narrative beats, creative tropes, and emotional arcs that make content truly great."
+        "description": "Every algorithm decision is designed to amplify human creativity, not replace it. Our AI serves as a creative collaborator."
       },
       "builtOnTrust": {
         "title": "Built on Trust",
-        "description": "Our data is not just a collection of pixels and audio waves; it is a repository of human creativity and emotion, annotated by the creators themselves. This proprietary dataset will allow us to train a model with a level of depth and nuance no other company can achieve."
+        "description": "Transparency in our AI processes ensures creators maintain control while benefiting from enhanced accessibility features."
       }
     },
     "aiLab": {
-      "title": "Our AI research lab",
-      "description": "Building the next generation of AI that understands and enhances human creativity through our Emotional Audiovisual Language Model.",
+      "title": "AI Research Lab",
+      "subtitle": "Pushing the boundaries of creative intelligence through ethical AI development and human-centered design.",
       "useCases": {
-        "title": "Broader Use Cases & IP Strategy",
-        "description": "The applications of an AVLM trained on a high-quality, creative-led dataset extend far beyond our initial product, Axessvideo Platform. Our technology powers a new class of tools across diverse industries."
+        "title": "Real-World Applications",
+        "description": "Our technology enables breakthrough applications across industries, transforming how content is created, analyzed, and experienced."
       }
     },
-    "creativeAnalytics": {
-      "title": "Creative Analytics for Advertising & Marketing:",
-      "emotionalResonance": {
-        "title": "Emotional Resonance Testing",
-        "description": "Analyze how an audience emotionally connects with an ad at a granular level, pinpointing moments of awe, frustration, or delight."
+    "useCases": {
+      "creativeAnalytics": {
+        "title": "Creative Analytics",
+        "emotionalResonance": {
+          "title": "Emotional Resonance Analysis",
+          "description": "Understand how your content emotionally connects with audiences through advanced sentiment analysis and engagement prediction."
+        },
+        "narrativeOptimization": {
+          "title": "Narrative Optimization",
+          "description": "AI-powered insights help optimize storytelling structure, pacing, and emotional arc for maximum audience impact."
+        },
+        "crossCulturalInsights": {
+          "title": "Cross-Cultural Insights",
+          "description": "Analyze how content performs across different cultural contexts and adapt messaging for global audiences."
+        }
       },
-      "narrativeOptimization": {
-        "title": "Narrative Optimization",
-        "description": "Identify which scenes or narrative beats in a campaign are most effective at driving emotional engagement and brand recall."
+      "filmTV": {
+        "title": "Film & TV Production",
+        "editingPostProduction": {
+          "title": "Editing & Post-Production",
+          "description": "Streamline editing workflows with AI-generated scene summaries, emotional beat detection, and automated accessibility features."
+        },
+        "scriptAnalysis": {
+          "title": "Script Analysis",
+          "description": "Analyze scripts for emotional depth, character development, and narrative structure to guide production decisions."
+        },
+        "characterDevelopment": {
+          "title": "Character Development",
+          "description": "Track character arcs and emotional journeys throughout productions with AI-powered analysis tools."
+        }
       },
-      "crossCulturalInsights": {
-        "title": "Cross-Cultural Insights",
-        "description": "Automatically detect culturally specific emotional nuances and creative tropes to optimize content for global markets."
-      }
-    },
-    "filmTv": {
-      "title": "Narrative Feedback for Film & TV Studios:",
-      "editingPostProduction": {
-        "title": "Editing & Post-Production",
-        "description": "Provide real-time, emotional feedback to editors, helping them craft scenes that land with the intended emotional impact."
+      "generativeAI": {
+        "title": "Generative AI & Media",
+        "emotionallyAware": {
+          "title": "Emotionally-Aware Content",
+          "description": "Generate content that adapts to viewer emotional state and preferences for personalized experiences."
+        },
+        "dynamicMusic": {
+          "title": "Dynamic Music Scoring",
+          "description": "AI-composed soundtracks that respond to content emotional beats and viewer engagement patterns."
+        }
       },
-      "scriptAnalysis": {
-        "title": "Script Analysis",
-        "description": "Analyze a script's narrative arc and emotional flow before production begins, identifying potential weaknesses or opportunities."
-      },
-      "characterDevelopment": {
-        "title": "Character Development",
-        "description": "Study how audiences respond to a character's emotional journey over a film or series."
-      }
-    },
-    "generativeAI": {
-      "title": "Generative AI for Creative Tools:",
-      "emotionallyAwareVideo": {
-        "title": "Emotionally-Aware Generative Video",
-        "description": "Use our AVLM to guide text-to-video models to create content with specific emotional tones and narrative structures."
-      },
-      "dynamicMusic": {
-        "title": "Dynamic Music & Sound Design",
-        "description": "Generate music or soundscapes that adapt to the emotional arc of a video in real-time."
-      }
-    },
-    "personalizedMedia": {
-      "title": "Personalized Media Platforms:",
-      "emotionBasedCuration": {
-        "title": "Emotion-Based Curation",
-        "description": "Recommend content not just by genre, but by the emotional journey it provides. For example, a \"comforting\" playlist of short films or an \"awe-inspiring\" feed of documentaries."
+      "personalizedMedia": {
+        "title": "Personalized Media Platforms",
+        "emotionBased": {
+          "title": "Emotion-Based Recommendations",
+          "description": "Deliver content recommendations based on emotional preferences and viewing context for enhanced engagement."
+        }
       }
     },
     "intellectualProperty": {
-      "title": "Intellectual Property & Patent Areas:",
-      "description": "Our research into emotional AI has led to breakthrough innovations across multiple patent-eligible areas:",
-      "emotionNarrative": {
-        "title": "Emotion-Narrative Fusion",
-        "description": "Methods for synchronizing AI-generated emotional analysis with narrative structure recognition to create contextually aware content recommendations and generation tools."
-      },
-      "explainableAvlm": {
-        "title": "Explainable AV-LM",
-        "description": "Techniques for creating interpretable audiovisual language models that can articulate why specific content evokes particular emotional responses, enabling creators to understand and replicate successful creative patterns."
-      },
-      "interactiveCreativeCritique": {
-        "title": "Interactive Creative Critique",
-        "description": "Real-time feedback systems that analyze creative content during production and provide actionable insights for enhancing emotional impact and narrative coherence."
-      }
+      "title": "Intellectual Property Strategy",
+      "description": "Our innovative approaches to AI-driven accessibility and creative analysis are protected by strategic patent applications.",
+      "emotionNarrative": "Emotion-Narrative Fusion Technology",
+      "explainableAVLM": "Explainable Audio-Visual Language Models",
+      "interactiveCreative": "Interactive Creative Analytics Platform"
     },
     "cta": {
-      "title": "Ready to explore the future of emotional AI?",
-      "description": "Join us in building technology that doesn't just process content—it understands the human experience behind it.",
-      "exploreTech": "Explore Our Technology",
+      "title": "Ready to Shape the Future of Creative AI?",
+      "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
+      "exploreTechnology": "Explore Our Technology",
       "contactTeam": "Contact Our Team"
     }
   },
@@ -558,7 +568,6 @@
     "signInError": "An error occurred during sign in",
     "googleNotConfigured": "Google authentication is not configured. Please use email and password to sign in.",
     "googleSignInFailed": "Google sign in failed",
-    "createAccount": "Create Account",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
     "signInWithGoogle": "Sign in with Google",
@@ -592,7 +601,7 @@
     "recent": "Recent",
     "popular": "Popular",
     "trending": "Trending Content",
-    "subscribed": "Subscribed Channels",
+    "subscribed": "Subscribed",
     "saved": "Watch Later",
     "channels": "Channels",
     "exploreVideos": "Explore Videos",
@@ -602,7 +611,6 @@
     "subscribers": "subscribers",
     "videos": "videos",
     "subscribe": "Subscribe",
-    "subscribed": "Subscribed",
     "loginRequired": "Login required",
     "loginToSubscribe": "Please log in to subscribe to channels",
     "unsubscribed": "Unsubscribed",
@@ -621,7 +629,7 @@
     "disclaimer": "Prices exclude taxes. Cancel anytime.",
     "free": "Free",
     "starter": "Starter",
-    "standard": "Standard", 
+    "standard": "Standard",
     "advanced": "Advanced",
     "enterprise": "Enterprise",
     "monthly": "per month",
@@ -1125,102 +1133,6 @@
     "makePublic": "Make this video public",
     "enableAccessibility": "Enable accessibility features"
   },
-  "about": {
-    "mission": {
-      "title": "Our Mission",
-      "description": "We believe that creative expression should be accessible to everyone. Our AI-powered platform transforms video content into immersive experiences that break down barriers and create inclusive storytelling.",
-      "ethicalAI": "Ethical AI",
-      "creativeIntelligence": "Creative Intelligence",
-      "humanCentric": "Human-Centric"
-    },
-    "dataQuality": {
-      "title": "Data Quality & Ethics",
-      "description": "Our approach to artificial intelligence is built on principles of transparency, consent, and creative enhancement rather than replacement.",
-      "ethicalData": {
-        "title": "Ethical Data Collection",
-        "description": "We prioritize consent-driven data collection and transparent AI training processes that respect creator rights and user privacy."
-      },
-      "powerOfIntentionality": {
-        "title": "The Power of Intentionality",
-        "description": "Every algorithm decision is designed to amplify human creativity, not replace it. Our AI serves as a creative collaborator."
-      },
-      "builtOnTrust": {
-        "title": "Built on Trust",
-        "description": "Transparency in our AI processes ensures creators maintain control while benefiting from enhanced accessibility features."
-      }
-    },
-    "aiLab": {
-      "title": "AI Research Lab",
-      "subtitle": "Pushing the boundaries of creative intelligence through ethical AI development and human-centered design.",
-      "useCases": {
-        "title": "Real-World Applications",
-        "description": "Our technology enables breakthrough applications across industries, transforming how content is created, analyzed, and experienced."
-      }
-    },
-    "useCases": {
-      "creativeAnalytics": {
-        "title": "Creative Analytics",
-        "emotionalResonance": {
-          "title": "Emotional Resonance Analysis",
-          "description": "Understand how your content emotionally connects with audiences through advanced sentiment analysis and engagement prediction."
-        },
-        "narrativeOptimization": {
-          "title": "Narrative Optimization",
-          "description": "AI-powered insights help optimize storytelling structure, pacing, and emotional arc for maximum audience impact."
-        },
-        "crossCulturalInsights": {
-          "title": "Cross-Cultural Insights",
-          "description": "Analyze how content performs across different cultural contexts and adapt messaging for global audiences."
-        }
-      },
-      "filmTV": {
-        "title": "Film & TV Production",
-        "editingPostProduction": {
-          "title": "Editing & Post-Production",
-          "description": "Streamline editing workflows with AI-generated scene summaries, emotional beat detection, and automated accessibility features."
-        },
-        "scriptAnalysis": {
-          "title": "Script Analysis",
-          "description": "Analyze scripts for emotional depth, character development, and narrative structure to guide production decisions."
-        },
-        "characterDevelopment": {
-          "title": "Character Development",
-          "description": "Track character arcs and emotional journeys throughout productions with AI-powered analysis tools."
-        }
-      },
-      "generativeAI": {
-        "title": "Generative AI & Media",
-        "emotionallyAware": {
-          "title": "Emotionally-Aware Content",
-          "description": "Generate content that adapts to viewer emotional state and preferences for personalized experiences."
-        },
-        "dynamicMusic": {
-          "title": "Dynamic Music Scoring",
-          "description": "AI-composed soundtracks that respond to content emotional beats and viewer engagement patterns."
-        }
-      },
-      "personalizedMedia": {
-        "title": "Personalized Media Platforms",
-        "emotionBased": {
-          "title": "Emotion-Based Recommendations",
-          "description": "Deliver content recommendations based on emotional preferences and viewing context for enhanced engagement."
-        }
-      }
-    },
-    "intellectualProperty": {
-      "title": "Intellectual Property Strategy",
-      "description": "Our innovative approaches to AI-driven accessibility and creative analysis are protected by strategic patent applications.",
-      "emotionNarrative": "Emotion-Narrative Fusion Technology",
-      "explainableAVLM": "Explainable Audio-Visual Language Models",
-      "interactiveCreative": "Interactive Creative Analytics Platform"
-    },
-    "cta": {
-      "title": "Ready to Shape the Future of Creative AI?",
-      "description": "Join us in revolutionizing how artificial intelligence understands and enhances human creativity.",
-      "exploreTechnology": "Explore Our Technology",
-      "contactTeam": "Contact Our Team"
-    }
-  },
   "premiumEditor": {
     "title": "Premium Video Editor",
     "currentPlan": "You're currently on the {{tier}} plan",
@@ -1249,5 +1161,104 @@
     },
     "goBack": "Go Back",
     "upgradeButton": "Upgrade to Standard"
+  },
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Adaptive Cinema",
+      "theShift": "The shift",
+      "whatIs": "What is adaptive cinema",
+      "howItWorks": "How it works",
+      "accessible": "Accessible by default",
+      "forBrands": "For brands",
+      "whyNow": "Why now",
+      "howToWatch": "How to watch"
+    },
+    "hero": {
+      "title1": "The story re-cuts itself",
+      "title2": "for every viewer.",
+      "description": "One production. A different version for each person: your cut, your language, your world. Streaming shows everyone the same thing. Axessplayer does not.",
+      "watchDemo": "Watch the demo"
+    },
+    "shift": {
+      "title1": "Everyone is optimizing distribution.",
+      "title2": "Nobody owns adaptation.",
+      "body": "The microdrama boom competes on one axis: more content, cheaper, better recommended. Every platform still ships one fixed cut to everyone. The story itself never changes. That is the opening."
+    },
+    "what": {
+      "title": "One story. Re-cut for you.",
+      "yourCut": {
+        "title": "Your cut.",
+        "body": "POV, pacing, intensity, and ending, chosen automatically from how you watch. No menus."
+      },
+      "yourLanguage": {
+        "title": "Your language.",
+        "body": "One master, every language, accessible by default, at near-zero marginal cost."
+      },
+      "yourWorld": {
+        "title": "Your world.",
+        "body": "The same scene, the right brand for your market. Canon-safe, never an interruption."
+      },
+      "seeHow": "See how it works"
+    },
+    "how": {
+      "title": "Human soul, AI scale, one engine.",
+      "body": "Filmed scenes carry the soul and the clips. AI generates the variants, the languages, and the localizations. One decision engine reads how each person watches and serves the right cut automatically."
+    },
+    "accessible": {
+      "title1": "Built so everyone can watch.",
+      "title2": "From the first frame.",
+      "body": "Captions with intention, creative audio description, sign language, and dubbing are generated for every story in every language, not bolted on later. Accessibility is the foundation the whole platform is built on."
+    },
+    "brands": {
+      "title1": "The same scene.",
+      "title2": "A different product",
+      "title3": "for every market.",
+      "body": "Dynamic in-scene placement fills a mug, a billboard, or a phone screen with the right brand for each viewer, at serve time. First-party attention and data, without interrupting the story.",
+      "partner": "Partner with us"
+    },
+    "whyNow": {
+      "title": "Interactive cinema was tried once. The reasons it failed are gone.",
+      "body": "Production, promotion, and format friction killed it a decade ago. AI generates the variants now. Vertical, swipeable feeds are the native format. We are rebuilding it with the people who invented interactive video.",
+      "builtBy": "Built by the team behind {{name}}, the inventors of seamless branching video."
+    },
+    "howToWatch": {
+      "title": "Three ways in. Three ways to pay.",
+      "earn": {
+        "tag": "Earn",
+        "title": "Watch a rewarded ad, get credits."
+      },
+      "buy": {
+        "tag": "Buy",
+        "title": "Credit packs, whenever you want more."
+      },
+      "subscribe": {
+        "tag": "Subscribe",
+        "title": "Ad-free, with a credit allowance and premium variants."
+      }
+    },
+    "final": {
+      "title1": "Be first to watch",
+      "titleAccent": "yourself",
+      "title2": "into the story.",
+      "body": "Get early access to Axessplayer. We will email you the moment your spot opens.",
+      "microcopy": "No spam. Unsubscribe anytime."
+    },
+    "footer": {
+      "by": "Axessplayer, by Axessible Technologies.",
+      "platform": "Platform",
+      "enterprise": "Enterprise",
+      "company": "Company",
+      "howItWorks": "How it works",
+      "accessibility": "Accessibility",
+      "forBrands": "For brands",
+      "demo": "Demo",
+      "overview": "Overview",
+      "compliance": "Compliance",
+      "bookDemo": "Book a demo",
+      "about": "About",
+      "contact": "Contact",
+      "tagline": "One story. Every language. Every person.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
   }
 }

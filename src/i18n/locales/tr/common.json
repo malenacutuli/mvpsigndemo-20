@@ -1,0 +1,101 @@
+{
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Uyarlanabilir Sinema",
+      "theShift": "Değişim",
+      "whatIs": "Uyarlanabilir sinema nedir",
+      "howItWorks": "Nasıl çalışır",
+      "accessible": "Varsayılan olarak erişilebilir",
+      "forBrands": "Markalar için",
+      "whyNow": "Neden şimdi",
+      "howToWatch": "Nasıl izlenir"
+    },
+    "hero": {
+      "title1": "Hikaye yeniden kurgulanır",
+      "title2": "her izleyici için.",
+      "description": "Tek bir prodüksiyon. Her kişi için farklı bir versiyon: senin kurgun, senin dilin, senin dünyan. Yayın platformları herkese aynı şeyi gösterir. Axessplayer göstermez.",
+      "watchDemo": "Demoyu izle"
+    },
+    "shift": {
+      "title1": "Herkes dağıtımı optimize ediyor.",
+      "title2": "Uyarlamanın sahibi yok.",
+      "body": "Mikrodrama patlaması tek bir eksende rekabet ediyor: daha çok içerik, daha ucuz, daha iyi önerilen. Her platform hala herkese aynı sabit kurguyu sunuyor. Hikayenin kendisi asla değişmiyor. Fırsat tam burada."
+    },
+    "what": {
+      "title": "Tek bir hikaye. Sana göre yeniden kurgulanmış.",
+      "yourCut": {
+        "title": "Senin kurgun.",
+        "body": "Bakış açısı, ritim, yoğunluk ve son, izleme biçiminden otomatik olarak seçilir. Menü yok."
+      },
+      "yourLanguage": {
+        "title": "Senin dilin.",
+        "body": "Tek bir master, her dil, varsayılan olarak erişilebilir, neredeyse sıfır marjinal maliyetle."
+      },
+      "yourWorld": {
+        "title": "Senin dünyan.",
+        "body": "Aynı sahne, pazarına uygun marka. Kanona sadık, asla bir kesinti değil."
+      },
+      "seeHow": "Nasıl çalıştığını gör"
+    },
+    "how": {
+      "title": "İnsan ruhu, yapay zeka ölçeği, tek bir motor.",
+      "body": "Çekilen sahneler ruhu ve klipleri taşır. Yapay zeka varyantları, dilleri ve yerelleştirmeleri üretir. Tek bir karar motoru her kişinin nasıl izlediğini okur ve doğru kurguyu otomatik olarak sunar."
+    },
+    "accessible": {
+      "title1": "Herkesin izleyebilmesi için inşa edildi.",
+      "title2": "İlk kareden itibaren.",
+      "body": "Anlam yüklü altyazılar, yaratıcı sesli betimleme, işaret dili ve dublaj her hikaye için her dilde üretilir, sonradan eklenmez. Erişilebilirlik, tüm platformun üzerine kurulduğu temeldir."
+    },
+    "brands": {
+      "title1": "Aynı sahne.",
+      "title2": "Farklı bir ürün",
+      "title3": "her pazar için.",
+      "body": "Sahne içi dinamik yerleştirme; bir kupa, bir bilboard veya bir telefon ekranını, her izleyici için doğru markayla yayın anında doldurur. Hikayeyi bölmeden, birinci taraf dikkat ve veri.",
+      "partner": "Bizimle iş birliği yap"
+    },
+    "whyNow": {
+      "title": "Etkileşimli sinema bir kez denendi. Başarısızlığın nedenleri artık yok.",
+      "body": "Yapım, tanıtım ve format sürtünmesi onu on yıl önce öldürdü. Artık varyantları yapay zeka üretiyor. Dikey, kaydırmalı akışlar yerli format. Etkileşimli videoyu icat edenlerle birlikte yeniden inşa ediyoruz.",
+      "builtBy": "Sorunsuz dallanan videonun mucitleri {{name}}'nun arkasındaki ekip tarafından geliştirildi."
+    },
+    "howToWatch": {
+      "title": "Üç giriş yolu. Üç ödeme yolu.",
+      "earn": {
+        "tag": "Kazan",
+        "title": "Ödüllü bir reklam izle, kredi kazan."
+      },
+      "buy": {
+        "tag": "Satın al",
+        "title": "Daha fazla istediğinde kredi paketleri."
+      },
+      "subscribe": {
+        "tag": "Abone ol",
+        "title": "Reklamsız, kredi hakkı ve premium varyantlarla."
+      }
+    },
+    "final": {
+      "title1": "Hikayenin içinde",
+      "titleAccent": "kendini",
+      "title2": "ilk izleyen sen ol.",
+      "body": "Axessplayer'a erken erişim kazanın. Yeriniz açıldığı an size e-posta atacağız.",
+      "microcopy": "Spam yok. İstediğiniz zaman ayrılın."
+    },
+    "footer": {
+      "by": "Axessplayer, Axessible Technologies tarafından.",
+      "platform": "Platform",
+      "enterprise": "Kurumsal",
+      "company": "Şirket",
+      "howItWorks": "Nasıl çalışır",
+      "accessibility": "Erişilebilirlik",
+      "forBrands": "Markalar için",
+      "demo": "Demo",
+      "overview": "Genel bakış",
+      "compliance": "Uyumluluk",
+      "bookDemo": "Demo ayırt",
+      "about": "Hakkımızda",
+      "contact": "İletişim",
+      "tagline": "Tek bir hikaye. Her dil. Her insan.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
+  }
+}
