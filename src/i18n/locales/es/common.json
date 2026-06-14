@@ -1,7 +1,7 @@
 {
   "nav": {
     "explore": "Showcase",
-    "enterprise": "Empresas", 
+    "enterprise": "Empresas",
     "pricing": "Precios",
     "dashboard": "Panel",
     "myVideos": "Mis Videos",
@@ -49,7 +49,7 @@
       "title": "Video sin barreras.",
       "captionsTitle": "Subtítulos con Intención",
       "captionsDesc": "Más que palabras. Subtítulos dinámicos y expresivos que se mueven, pausan y fluyen con emoción.",
-      "audioDescTitle": "Descripciones de Audio Creativas", 
+      "audioDescTitle": "Descripciones de Audio Creativas",
       "audioDescDesc": "No robóticas, sino narración cinematográfica que pinta la escena, para que quienes escuchan sientan todo.",
       "signLanguageTitle": "Trabaja con nosotros para crear Descripciones en Lenguaje de Señas para tus videos",
       "signLanguageDesc": "Impulsado por expertos, haciendo la inclusión natural."
@@ -67,7 +67,7 @@
       "title": "Convierte tus videos en experiencias que todos puedan compartir.",
       "description": "Sube tu contenido - y nuestra plataforma lo transforma con:",
       "aiTools": "Herramientas de accesibilidad impulsadas por IA",
-      "humanGuidance": "Refinamiento guiado por humanos", 
+      "humanGuidance": "Refinamiento guiado por humanos",
       "compliance": "Cumplimiento automático con estándares globales de accesibilidad",
       "storiesReach": "Para que tus historias no solo lleguen a más personas…",
       "storiesMove": "Sino que conmuevan a más personas.",
@@ -85,7 +85,7 @@
       "title": "Mira lo que Dicen Nuestros Espectadores",
       "engagementIncrease": "Aumento en",
       "viewerEngagement": "engagement del espectador",
-      "betterComprehension": "Mejor", 
+      "betterComprehension": "Mejor",
       "contentComprehension": "comprensión del contenido",
       "moreVideos": "Más",
       "accessibleVideos": "videos accesibles creados",
@@ -101,237 +101,106 @@
     }
   },
   "about": {
-    "title": "Sobre nosotros",
-    "mission": "Somos una empresa de tecnología y un laboratorio de investigación que desarrolla un Modelo de Lenguaje Audiovisual Emocional (AVLM), entrenado con contenido creativo obtenido éticamente. Al enseñar a la IA a entender la emoción, la narrativa y la intención en medios audiovisuales, desbloqueamos herramientas sin precedentes para creadores, marcas y plataformas.",
-    "values": {
+    "pageTitle": "Acerca de",
+    "mission": {
+      "title": "Acerca de",
+      "description": "Somos una empresa de tecnología y un laboratorio de investigación que desarrolla un Modelo de Lenguaje Audiovisual Emocional (AVLM), entrenado con contenido creativo de origen ético. Al enseñar a la IA a entender la emoción, la narrativa y la intención en los medios audiovisuales, desbloqueamos herramientas sin precedentes para creadores, marcas y plataformas.",
       "ethicalAI": "IA Ética",
       "creativeIntelligence": "Inteligencia Creativa",
       "humanCentric": "Centrado en el Humano"
     },
     "dataQuality": {
-      "title": "Por Qué los Datos de Alta Calidad son la Clave para Desbloquear la Emoción",
-      "description": "La calidad de un modelo de IA es una función directa de los datos con los que se entrena. Los modelos actuales a gran escala se construyen sobre miles de millones de horas de datos de internet extraídos, de baja calidad y a menudo éticamente cuestionables. Esto lleva a modelos que pueden reconocer patrones básicos pero fallan en captar el rico y sutil tapiz de la emoción humana.",
+      "title": "Por qué los Datos de Alta Calidad son la Clave para Desbloquear la Emoción",
+      "description": "La calidad de un modelo de IA es una función directa de los datos con los que se entrena. Los modelos a gran escala de hoy se construyen sobre miles de millones de horas de datos de internet raspados, de baja calidad y a menudo éticamente cuestionables. Esto lleva a modelos que pueden reconocer patrones básicos pero fallan en captar el rico y sutil tapiz de la emoción humana.",
       "ethicalData": {
         "title": "Datos Éticos",
-        "description": "Estamos construyendo nuestra base sobre un conjunto de datos voluntariamente contribuido, con los derechos como prioridad. A través de nuestro producto estrella, Axessible, hemos creado un ciclo virtuoso. Los creadores que usan nuestra plataforma para hacer su contenido conforme con las nuevas regulaciones también nos están dando permiso para aprender de su trabajo."
+        "description": "Estamos construyendo nuestra base sobre un conjunto de datos voluntariamente contribuido, con derechos primero. A través de nuestro producto insignia, Axessible, hemos creado un ciclo virtuoso. Los creadores que usan nuestra plataforma para hacer su contenido compatible con las nuevas regulaciones también nos dan permiso para aprender de su trabajo."
       },
       "powerOfIntentionality": {
         "title": "El Poder de la Intencionalidad",
-        "description": "El contenido extraído de internet captura lo que la gente ve, pero no por qué lo crearon. Nuestros datos, contribuidos por cineastas, anunciantes y artistas, están ricos en propósito creativo. Nuestro AVLM va más allá de una huella emocional básica y entiende los ritmos narrativos, tropos creativos y arcos emocionales que hacen que el contenido sea verdaderamente grandioso."
+        "description": "El contenido raspado de internet captura lo que la gente ve, pero no por qué lo crearon. Nuestros datos, contribuidos por cineastas, publicistas y artistas, son ricos en propósito creativo. Nuestro AVLM va más allá de una huella emocional básica y entiende los ritmos narrativos, tropos creativos y arcos emocionales que hacen que el contenido sea verdaderamente grandioso."
       },
       "builtOnTrust": {
         "title": "Construido sobre la Confianza",
-        "description": "Nuestros datos no son solo una colección de píxeles y ondas de audio; es un repositorio de creatividad y emoción humana, anotado por los propios creadores. Este conjunto de datos propietario nos permitirá entrenar un modelo con un nivel de profundidad y matices que ninguna otra empresa puede lograr."
+        "description": "Nuestros datos no son solo una colección de píxeles y ondas de audio; es un repositorio de creatividad y emoción humana, anotado por los propios creadores. Este conjunto de datos propietario nos permitirá entrenar un modelo con un nivel de profundidad y matiz que ninguna otra empresa puede lograr."
       }
     },
     "aiLab": {
       "title": "Nuestro laboratorio de investigación de IA",
-      "subtitle": "Construyendo la próxima generación de IA que comprende y mejora la creatividad humana a través de nuestro Modelo de Lenguaje Audiovisual Emocional."
-    },
-    "useCases": {
-      "title": "Nuestro laboratorio de investigación de IA",
-      "subtitle": "Construyendo la próxima generación de IA que comprende y mejora la creatividad humana a través de nuestro Modelo de Lenguaje Audiovisual Emocional.",
-      "broaderTitle": "Casos de Uso Más Amplios y Estrategia de PI",
-      "broaderDescription": "Las aplicaciones de un AVLM entrenado en un conjunto de datos de alta calidad, dirigido por creativos, se extienden mucho más allá de nuestro producto inicial, la Plataforma de Video Axess. Nuestra tecnología impulsa una nueva clase de herramientas en diversas industrias.",
-      "creativeAnalytics": {
-        "title": "Análisis Creativo para Publicidad y Marketing:",
-        "emotionalResonance": {
-          "title": "Pruebas de Resonancia Emocional",
-          "description": "Analiza cómo una audiencia se conecta emocionalmente con un anuncio a nivel granular, identificando momentos de admiración, frustración o deleite."
-        },
-        "narrativeOptimization": {
-          "title": "Optimización Narrativa",
-          "description": "Identifica qué escenas o ritmos narrativos en una campaña son más efectivos para impulsar el compromiso emocional y el recuerdo de marca."
-        },
-        "crossCulturalInsights": {
-          "title": "Perspectivas Interculturales",
-          "description": "Detecta automáticamente matices emocionales culturalmente específicos y tropos creativos para optimizar contenido para mercados globales."
-        }
-      },
-      "filmTV": {
-        "title": "Retroalimentación Narrativa para Estudios de Cine y TV:",
-        "editingPostProduction": {
-          "title": "Edición y Postproducción",
-          "description": "Proporciona retroalimentación emocional en tiempo real a los editores, ayudándoles a crear escenas que lleguen con el impacto emocional deseado."
-        },
-        "scriptAnalysis": {
-          "title": "Análisis de Guión",
-          "description": "Analiza el arco narrativo y flujo emocional de un guión antes de que comience la producción, identificando debilidades potenciales u oportunidades."
-        },
-        "characterDevelopment": {
-          "title": "Desarrollo de Personajes",
-          "description": "Estudia cómo las audiencias responden al viaje emocional de un personaje a lo largo de una película o serie."
-        }
-      },
-      "generativeAI": {
-        "title": "IA Generativa para Herramientas Creativas:",
-        "emotionallyAware": {
-          "title": "Video Generativo Emocionalmente Consciente",
-          "description": "Usa nuestro AVLM para guiar modelos de texto a video para crear contenido con tonos emocionales específicos y estructuras narrativas."
-        },
-        "dynamicMusic": {
-          "title": "Música Dinámica y Diseño de Sonido",
-          "description": "Genera música o paisajes sonoros que se adapten al arco emocional de un video en tiempo real."
-        }
-      },
-      "personalizedMedia": {
-        "title": "Plataformas de Medios Personalizados:",
-        "emotionBased": {
-          "title": "Curación Basada en Emociones",
-          "description": "Recomienda contenido no solo por género, sino por el viaje emocional que proporciona. Por ejemplo, una lista de reproducción 'reconfortante' de cortometrajes o un feed 'inspirador' de documentales."
-        }
-      }
-    },
-    "intellectualProperty": {
-      "title": "Propiedad Intelectual y Áreas de Patentes",
-      "description": "Estamos construyendo un portafolio robusto de propiedad intelectual alrededor de nuestra tecnología única. Nuestra estrategia de patentes se enfoca en tres áreas clave:",
-      "emotionNarrative": "Fusión Emoción-Narrativa",
-      "explainableAVLM": "AVLM Explicable",
-      "interactiveCreative": "Crítica Creativa Interactiva"
-    },
-    "cta": {
-      "title": "¿Listo para Dar Forma al Futuro de la IA Creativa?",
-      "description": "Únete a nosotros para revolucionar cómo la inteligencia artificial comprende y mejora la creatividad humana.",
-      "exploreTechnology": "Explora Nuestra Tecnología",
-      "contactTeam": "Contacta a Nuestro Equipo"
-    }
-  },
-  "about": {
-    "mission": {
-      "title": "Nuestra Misión",
-      "description": "Creemos que la expresión creativa debe ser accesible para todos. Nuestra plataforma impulsada por IA transforma el contenido de video en experiencias inmersivas que rompen barreras y crean narrativas inclusivas.",
-      "ethicalAI": "IA Ética",
-      "creativeIntelligence": "Inteligencia Creativa",
-      "humanCentric": "Centrado en Humanos"
-    },
-    "dataQuality": {
-      "title": "Calidad de Datos y Ética",
-      "description": "Nuestro enfoque hacia la inteligencia artificial se basa en principios de transparencia, consentimiento y mejora creativa en lugar de reemplazo.",
-      "ethicalData": {
-        "title": "Recopilación Ética de Datos",
-        "description": "Priorizamos la recopilación de datos basada en consentimiento y procesos transparentes de entrenamiento de IA que respetan los derechos del creador y la privacidad del usuario."
-      },
-      "powerOfIntentionality": {
-        "title": "El Poder de la Intencionalidad",
-        "description": "Cada decisión algorítmica está diseñada para amplificar la creatividad humana, no reemplazarla. Nuestra IA sirve como colaborador creativo."
-      },
-      "builtOnTrust": {
-        "title": "Construido en Confianza",
-        "description": "La transparencia en nuestros procesos de IA asegura que los creadores mantengan el control mientras se benefician de características de accesibilidad mejoradas."
-      }
-    },
-    "aiLab": {
-      "title": "Laboratorio de Investigación IA",
-      "subtitle": "Empujando los límites de la inteligencia creativa a través del desarrollo ético de IA y diseño centrado en humanos.",
+      "description": "Construyendo la próxima generación de IA que entiende y mejora la creatividad humana a través de nuestro Modelo de Lenguaje Audiovisual Emocional.",
       "useCases": {
-        "title": "Aplicaciones del Mundo Real",
-        "description": "Nuestra tecnología permite aplicaciones revolucionarias en todas las industrias, transformando cómo se crea, analiza y experimenta el contenido."
+        "title": "Casos de Uso Más Amplios y Estrategia de PI",
+        "description": "Las aplicaciones de un AVLM entrenado en un conjunto de datos de alta calidad liderado por creativos se extienden mucho más allá de nuestro producto inicial, Plataforma Axessvideo. Nuestra tecnología impulsa una nueva clase de herramientas en diversas industrias."
       }
     },
-    "useCases": {
-      "creativeAnalytics": {
-        "title": "Análisis Creativo",
-        "emotionalResonance": {
-          "title": "Análisis de Resonancia Emocional",
-          "description": "Comprende cómo tu contenido se conecta emocionalmente con las audiencias a través de análisis avanzado de sentimientos y predicción de engagement."
-        },
-        "narrativeOptimization": {
-          "title": "Optimización Narrativa",
-          "description": "Insights impulsados por IA ayudan a optimizar la estructura narrativa, ritmo y arco emocional para el máximo impacto en la audiencia."
-        },
-        "crossCulturalInsights": {
-          "title": "Insights Interculturales",
-          "description": "Analiza cómo el contenido funciona en diferentes contextos culturales y adapta mensajes para audiencias globales."
-        }
+    "creativeAnalytics": {
+      "title": "Analytics Creativos para Publicidad y Marketing:",
+      "emotionalResonance": {
+        "title": "Pruebas de Resonancia Emocional",
+        "description": "Analizar cómo una audiencia se conecta emocionalmente con un anuncio a nivel granular, identificando momentos de asombro, frustración o deleite."
       },
-      "filmTV": {
-        "title": "Producción de Cine y TV",
-        "editingPostProduction": {
-          "title": "Edición y Post-Producción",
-          "description": "Optimiza flujos de trabajo de edición con resúmenes de escenas generados por IA, detección de beats emocionales y características de accesibilidad automatizadas."
-        },
-        "scriptAnalysis": {
-          "title": "Análisis de Guión",
-          "description": "Analiza guiones para profundidad emocional, desarrollo de personajes y estructura narrativa para guiar decisiones de producción."
-        },
-        "characterDevelopment": {
-          "title": "Desarrollo de Personajes",
-          "description": "Rastrea arcos de personajes y viajes emocionales a lo largo de producciones con herramientas de análisis impulsadas por IA."
-        }
+      "narrativeOptimization": {
+        "title": "Optimización Narrativa",
+        "description": "Identificar qué escenas o ritmos narrativos en una campaña son más efectivos para impulsar el compromiso emocional y el recuerdo de marca."
       },
-      "generativeAI": {
-        "title": "IA Generativa y Medios",
-        "emotionallyAware": {
-          "title": "Contenido Emocionalmente Consciente",
-          "description": "Genera contenido que se adapta al estado emocional del espectador y preferencias para experiencias personalizadas."
-        },
-        "dynamicMusic": {
-          "title": "Puntuación Musical Dinámica",
-          "description": "Bandas sonoras compuestas por IA que responden a beats emocionales del contenido y patrones de engagement del espectador."
-        }
+      "crossCulturalInsights": {
+        "title": "Perspectivas Interculturales",
+        "description": "Detectar automáticamente matices emocionales específicos de la cultura y tropos creativos para optimizar contenido para mercados globales."
+      }
+    },
+    "filmTv": {
+      "title": "Retroalimentación Narrativa para Estudios de Cine y TV:",
+      "editingPostProduction": {
+        "title": "Edición y Postproducción",
+        "description": "Proporcionar retroalimentación emocional en tiempo real a los editores, ayudándoles a crear escenas que tengan el impacto emocional previsto."
       },
-      "personalizedMedia": {
-        "title": "Plataformas de Medios Personalizados",
-        "emotionBased": {
-          "title": "Recomendaciones Basadas en Emociones",
-          "description": "Entrega recomendaciones de contenido basadas en preferencias emocionales y contexto de visualización para engagement mejorado."
-        }
+      "scriptAnalysis": {
+        "title": "Análisis de Guión",
+        "description": "Analizar el arco narrativo y flujo emocional de un guión antes de que comience la producción, identificando debilidades u oportunidades potenciales."
+      },
+      "characterDevelopment": {
+        "title": "Desarrollo de Personajes",
+        "description": "Estudiar cómo las audiencias responden al viaje emocional de un personaje a lo largo de una película o serie."
+      }
+    },
+    "generativeAI": {
+      "title": "IA Generativa para Herramientas Creativas:",
+      "emotionallyAwareVideo": {
+        "title": "Video Generativo Emocionalmente Consciente",
+        "description": "Usar nuestro AVLM para guiar modelos de texto a video para crear contenido con tonos emocionales específicos y estructuras narrativas."
+      },
+      "dynamicMusic": {
+        "title": "Música Dinámica y Diseño de Sonido",
+        "description": "Generar música o paisajes sonoros que se adapten al arco emocional de un video en tiempo real."
+      }
+    },
+    "personalizedMedia": {
+      "title": "Plataformas de Medios Personalizados:",
+      "emotionBasedCuration": {
+        "title": "Curación Basada en Emociones",
+        "description": "Recomendar contenido no solo por género, sino por el viaje emocional que proporciona. Por ejemplo, una lista de reproducción \"reconfortante\" de cortometrajes o un feed \"inspirador\" de documentales."
       }
     },
     "intellectualProperty": {
-      "title": "Estrategia de Propiedad Intelectual",
-      "description": "Nuestros enfoques innovadores hacia la accesibilidad impulsada por IA y análisis creativo están protegidos por aplicaciones estratégicas de patentes.",
-      "emotionNarrative": "Tecnología de Fusión Emoción-Narrativa",
-      "explainableAVLM": "Modelos de Lenguaje Audio-Visual Explicables",
-      "interactiveCreative": "Plataforma Interactiva de Análisis Creativo"
-    },
-    "useCases": {
-      "creativeAnalytics": {
-        "title": "Análisis Creativo",
-        "emotionalResonance": {
-          "title": "Análisis de Resonancia Emocional",
-          "description": "Comprende cómo tu contenido conecta emocionalmente con las audiencias a través de análisis de sentimiento avanzado y predicción de compromiso."
-        },
-        "narrativeOptimization": {
-          "title": "Optimización de Narrativa",
-          "description": "Insights impulsados por IA ayudan a optimizar la estructura narrativa, el ritmo y el arco emocional para el máximo impacto en la audiencia."
-        },
-        "crossCulturalInsights": {
-          "title": "Insights Interculturales",
-          "description": "Analiza cómo el contenido se desempeña en diferentes contextos culturales y adapta el mensaje para audiencias globales."
-        }
+      "title": "Propiedad Intelectual y Áreas de Patentes:",
+      "description": "Nuestra investigación en IA emocional ha llevado a innovaciones revolucionarias en múltiples áreas elegibles para patentes:",
+      "emotionNarrative": {
+        "title": "Fusión Emoción-Narrativa",
+        "description": "Métodos para sincronizar el análisis emocional generado por IA con el reconocimiento de estructura narrativa para crear herramientas de recomendación y generación de contenido contextualmente conscientes."
       },
-      "filmTV": {
-        "title": "Producción de Cine y TV",
-        "editingPostProduction": {
-          "title": "Edición y Postproducción",
-          "description": "Optimiza los flujos de trabajo de edición con resúmenes de escenas generados por IA, detección de beats emocionales y funciones de accesibilidad automatizadas."
-        },
-        "scriptAnalysis": {
-          "title": "Análisis de Guión",
-          "description": "Analiza guiones para profundidad emocional, desarrollo de personajes y estructura narrativa para guiar decisiones de producción."
-        },
-        "characterDevelopment": {
-          "title": "Desarrollo de Personajes",
-          "description": "Rastrea arcos de personajes y viajes emocionales a lo largo de las producciones con herramientas de análisis impulsadas por IA."
-        }
+      "explainableAvlm": {
+        "title": "AV-LM Explicable",
+        "description": "Técnicas para crear modelos de lenguaje audiovisual interpretables que pueden articular por qué contenido específico evoca respuestas emocionales particulares, permitiendo a los creadores entender y replicar patrones creativos exitosos."
       },
-      "generativeAI": {
-        "title": "IA Generativa y Medios",
-        "emotionallyAwareContent": {
-          "title": "Contenido Emocionalmente Consciente",
-          "description": "Genera contenido que se adapta al estado emocional y preferencias del espectador para experiencias personalizadas."
-        },
-        "dynamicMusicScoring": {
-          "title": "Puntuación Musical Dinámica",
-          "description": "Bandas sonoras compuestas por IA que responden a los beats emocionales del contenido y patrones de compromiso del espectador."
-        }
+      "interactiveCreativeCritique": {
+        "title": "Crítica Creativa Interactiva",
+        "description": "Sistemas de retroalimentación en tiempo real que analizan contenido creativo durante la producción y proporcionan perspectivas accionables para mejorar el impacto emocional y la coherencia narrativa."
       }
     },
     "cta": {
-      "title": "¿Listo para Moldear el Futuro de la IA Creativa?",
-      "description": "Únete a nosotros para revolucionar cómo la inteligencia artificial comprende y mejora la creatividad humana.",
-      "exploreTechnology": "Explora Nuestra Tecnología",
+      "title": "¿Listo para explorar el futuro de la IA emocional?",
+      "description": "Únete a nosotros en la construcción de tecnología que no solo procesa contenido, sino que entiende la experiencia humana detrás de él.",
+      "exploreTech": "Explora Nuestra Tecnología",
       "contactTeam": "Contacta Nuestro Equipo"
     }
   },
@@ -367,7 +236,7 @@
   "footer": {
     "tagline": "Escucha lo No Escuchado. Ve lo No Visto.",
     "about": "Sobre Nosotros",
-    "community": "Comunidad", 
+    "community": "Comunidad",
     "pricing": "Precios",
     "blog": "Blog",
     "contact": "Contacto",
@@ -449,17 +318,29 @@
       "contentInput": {
         "title": "Entrada de Contenido",
         "description": "Sube videos existentes o genera desde prompts de texto",
-        "features": ["Procesamiento masivo de videos", "Generación de video con IA", "Integración de transmisión en vivo"]
+        "features": [
+          "Procesamiento masivo de videos",
+          "Generación de video con IA",
+          "Integración de transmisión en vivo"
+        ]
       },
       "featureSelection": {
         "title": "Selección de Características",
         "description": "Configura características de accesibilidad para tu caso de uso",
-        "features": ["Subtítulos emocionales", "Descripciones de audio", "Lenguaje de señas multiidioma"]
+        "features": [
+          "Subtítulos emocionales",
+          "Descripciones de audio",
+          "Lenguaje de señas multiidioma"
+        ]
       },
       "deployMonitor": {
         "title": "Despliega y Monitorea",
         "description": "Reproductor listo para empresas con informes de cumplimiento",
-        "features": ["Reproductor integrable", "Análisis en tiempo real", "Auditorías de cumplimiento"]
+        "features": [
+          "Reproductor integrable",
+          "Análisis en tiempo real",
+          "Auditorías de cumplimiento"
+        ]
       }
     },
     "highlights": {
@@ -481,22 +362,38 @@
       "aiMachineLearning": {
         "title": "IA y Aprendizaje Automático",
         "description": "Modelos de IA avanzados para accesibilidad",
-        "technologies": ["Modelos Visión-Lenguaje", "Modelos de Lenguaje de Señas Personalizados", "Integración LLM"]
+        "technologies": [
+          "Modelos Visión-Lenguaje",
+          "Modelos de Lenguaje de Señas Personalizados",
+          "Integración LLM"
+        ]
       },
       "voiceAudio": {
         "title": "Voz y Audio",
         "description": "Síntesis de voz adaptativa",
-        "technologies": ["Modelos de Voz Personalizados", "Análisis de Audio"]
+        "technologies": [
+          "Modelos de Voz Personalizados",
+          "Análisis de Audio"
+        ]
       },
       "computerVision": {
         "title": "Visión por Computadora",
         "description": "Análisis de escena y comprensión visual",
-        "technologies": ["Integración Blender", "Animación 3D", "Estimación de Postura"]
+        "technologies": [
+          "Integración Blender",
+          "Animación 3D",
+          "Estimación de Postura"
+        ]
       },
       "complianceSecurity": {
         "title": "Cumplimiento y Seguridad",
         "description": "Adherencia a estándares de accesibilidad",
-        "technologies": ["WCAG 2.1 AA", "Cumplimiento EAA", "Estándares ADA", "Protocolos de Seguridad"]
+        "technologies": [
+          "WCAG 2.1 AA",
+          "Cumplimiento EAA",
+          "Estándares ADA",
+          "Protocolos de Seguridad"
+        ]
       }
     },
     "architectureHighlights": {
@@ -661,110 +558,6 @@
       }
     }
   },
-  "about": {
-    "pageTitle": "Acerca de",
-    "mission": {
-      "title": "Acerca de",
-      "description": "Somos una empresa de tecnología y un laboratorio de investigación que desarrolla un Modelo de Lenguaje Audiovisual Emocional (AVLM), entrenado con contenido creativo de origen ético. Al enseñar a la IA a entender la emoción, la narrativa y la intención en los medios audiovisuales, desbloqueamos herramientas sin precedentes para creadores, marcas y plataformas.",
-      "ethicalAI": "IA Ética",
-      "creativeIntelligence": "Inteligencia Creativa",
-      "humanCentric": "Centrado en el Humano"
-    },
-    "dataQuality": {
-      "title": "Por qué los Datos de Alta Calidad son la Clave para Desbloquear la Emoción",
-      "description": "La calidad de un modelo de IA es una función directa de los datos con los que se entrena. Los modelos a gran escala de hoy se construyen sobre miles de millones de horas de datos de internet raspados, de baja calidad y a menudo éticamente cuestionables. Esto lleva a modelos que pueden reconocer patrones básicos pero fallan en captar el rico y sutil tapiz de la emoción humana.",
-      "ethicalData": {
-        "title": "Datos Éticos",
-        "description": "Estamos construyendo nuestra base sobre un conjunto de datos voluntariamente contribuido, con derechos primero. A través de nuestro producto insignia, Axessible, hemos creado un ciclo virtuoso. Los creadores que usan nuestra plataforma para hacer su contenido compatible con las nuevas regulaciones también nos dan permiso para aprender de su trabajo."
-      },
-      "powerOfIntentionality": {
-        "title": "El Poder de la Intencionalidad",
-        "description": "El contenido raspado de internet captura lo que la gente ve, pero no por qué lo crearon. Nuestros datos, contribuidos por cineastas, publicistas y artistas, son ricos en propósito creativo. Nuestro AVLM va más allá de una huella emocional básica y entiende los ritmos narrativos, tropos creativos y arcos emocionales que hacen que el contenido sea verdaderamente grandioso."
-      },
-      "builtOnTrust": {
-        "title": "Construido sobre la Confianza",
-        "description": "Nuestros datos no son solo una colección de píxeles y ondas de audio; es un repositorio de creatividad y emoción humana, anotado por los propios creadores. Este conjunto de datos propietario nos permitirá entrenar un modelo con un nivel de profundidad y matiz que ninguna otra empresa puede lograr."
-      }
-    },
-    "aiLab": {
-      "title": "Nuestro laboratorio de investigación de IA",
-      "description": "Construyendo la próxima generación de IA que entiende y mejora la creatividad humana a través de nuestro Modelo de Lenguaje Audiovisual Emocional.",
-      "useCases": {
-        "title": "Casos de Uso Más Amplios y Estrategia de PI",
-        "description": "Las aplicaciones de un AVLM entrenado en un conjunto de datos de alta calidad liderado por creativos se extienden mucho más allá de nuestro producto inicial, Plataforma Axessvideo. Nuestra tecnología impulsa una nueva clase de herramientas en diversas industrias."
-      }
-    },
-    "creativeAnalytics": {
-      "title": "Analytics Creativos para Publicidad y Marketing:",
-      "emotionalResonance": {
-        "title": "Pruebas de Resonancia Emocional",
-        "description": "Analizar cómo una audiencia se conecta emocionalmente con un anuncio a nivel granular, identificando momentos de asombro, frustración o deleite."
-      },
-      "narrativeOptimization": {
-        "title": "Optimización Narrativa",
-        "description": "Identificar qué escenas o ritmos narrativos en una campaña son más efectivos para impulsar el compromiso emocional y el recuerdo de marca."
-      },
-      "crossCulturalInsights": {
-        "title": "Perspectivas Interculturales",
-        "description": "Detectar automáticamente matices emocionales específicos de la cultura y tropos creativos para optimizar contenido para mercados globales."
-      }
-    },
-    "filmTv": {
-      "title": "Retroalimentación Narrativa para Estudios de Cine y TV:",
-      "editingPostProduction": {
-        "title": "Edición y Postproducción",
-        "description": "Proporcionar retroalimentación emocional en tiempo real a los editores, ayudándoles a crear escenas que tengan el impacto emocional previsto."
-      },
-      "scriptAnalysis": {
-        "title": "Análisis de Guión",
-        "description": "Analizar el arco narrativo y flujo emocional de un guión antes de que comience la producción, identificando debilidades u oportunidades potenciales."
-      },
-      "characterDevelopment": {
-        "title": "Desarrollo de Personajes",
-        "description": "Estudiar cómo las audiencias responden al viaje emocional de un personaje a lo largo de una película o serie."
-      }
-    },
-    "generativeAI": {
-      "title": "IA Generativa para Herramientas Creativas:",
-      "emotionallyAwareVideo": {
-        "title": "Video Generativo Emocionalmente Consciente",
-        "description": "Usar nuestro AVLM para guiar modelos de texto a video para crear contenido con tonos emocionales específicos y estructuras narrativas."
-      },
-      "dynamicMusic": {
-        "title": "Música Dinámica y Diseño de Sonido",
-        "description": "Generar música o paisajes sonoros que se adapten al arco emocional de un video en tiempo real."
-      }
-    },
-    "personalizedMedia": {
-      "title": "Plataformas de Medios Personalizados:",
-      "emotionBasedCuration": {
-        "title": "Curación Basada en Emociones",
-        "description": "Recomendar contenido no solo por género, sino por el viaje emocional que proporciona. Por ejemplo, una lista de reproducción \"reconfortante\" de cortometrajes o un feed \"inspirador\" de documentales."
-      }
-    },
-    "intellectualProperty": {
-      "title": "Propiedad Intelectual y Áreas de Patentes:",
-      "description": "Nuestra investigación en IA emocional ha llevado a innovaciones revolucionarias en múltiples áreas elegibles para patentes:",
-      "emotionNarrative": {
-        "title": "Fusión Emoción-Narrativa",
-        "description": "Métodos para sincronizar el análisis emocional generado por IA con el reconocimiento de estructura narrativa para crear herramientas de recomendación y generación de contenido contextualmente conscientes."
-      },
-      "explainableAvlm": {
-        "title": "AV-LM Explicable",
-        "description": "Técnicas para crear modelos de lenguaje audiovisual interpretables que pueden articular por qué contenido específico evoca respuestas emocionales particulares, permitiendo a los creadores entender y replicar patrones creativos exitosos."
-      },
-      "interactiveCreativeCritique": {
-        "title": "Crítica Creativa Interactiva",
-        "description": "Sistemas de retroalimentación en tiempo real que analizan contenido creativo durante la producción y proporcionan perspectivas accionables para mejorar el impacto emocional y la coherencia narrativa."
-      }
-    },
-    "cta": {
-      "title": "¿Listo para explorar el futuro de la IA emocional?",
-      "description": "Únete a nosotros en la construcción de tecnología que no solo procesa contenido, sino que entiende la experiencia humana detrás de él.",
-      "exploreTech": "Explora Nuestra Tecnología",
-      "contactTeam": "Contacta Nuestro Equipo"
-    }
-  },
   "auth": {
     "signIn": "Iniciar Sesión",
     "signUp": "Registrarse",
@@ -801,7 +594,6 @@
     "signInError": "Ocurrió un error durante el inicio de sesión",
     "googleNotConfigured": "La autenticación de Google no está configurada. Por favor usa correo electrónico y contraseña para iniciar sesión.",
     "googleSignInFailed": "El inicio de sesión con Google falló",
-    "createAccount": "Crear Cuenta",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "dontHaveAccount": "¿No tienes una cuenta?",
     "signInWithGoogle": "Iniciar sesión con Google",
@@ -835,7 +627,7 @@
     "recent": "Recientes",
     "popular": "Populares",
     "trending": "Contenido Tendencia",
-    "subscribed": "Canales Suscritos",
+    "subscribed": "Suscrito",
     "saved": "Ver Más Tarde",
     "channels": "Canales",
     "exploreVideos": "Explorar Videos",
@@ -845,7 +637,6 @@
     "subscribers": "suscriptores",
     "videos": "videos",
     "subscribe": "Suscribirse",
-    "subscribed": "Suscrito",
     "loginRequired": "Inicio de sesión requerido",
     "loginToSubscribe": "Por favor inicia sesión para suscribirte a canales",
     "unsubscribed": "Desuscrito",
@@ -916,7 +707,7 @@
         ]
       },
       "advanced": {
-        "name": "Avanzado", 
+        "name": "Avanzado",
         "price": "$250",
         "cadence": "por mes",
         "users": "10 usuarios",
@@ -961,7 +752,7 @@
         "emotionTaggedCaptions": "Subtítulos con Etiquetas Emocionales",
         "aiAudioDescriptions": "Descripciones de Audio con IA",
         "signLanguageAvatarSupport": "Soporte de Avatar de Lenguaje de Señas",
-        "storage": "Almacenamiento", 
+        "storage": "Almacenamiento",
         "videoProcessing": "Procesamiento de Video"
       },
       "values": {
@@ -1261,7 +1052,7 @@
       "fileTooLarge": "La imagen debe ser menor a 5MB",
       "nameRequired": "El nombre del canal es obligatorio",
       "saveFailed": "Error al guardar el canal",
-     "deleteFailed": "Error al eliminar el canal"
+      "deleteFailed": "Error al eliminar el canal"
     }
   },
   "languages": {
@@ -1374,5 +1165,104 @@
     },
     "goBack": "Volver",
     "upgradeButton": "Actualizar a Standard"
+  },
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Cine Adaptativo",
+      "theShift": "El cambio",
+      "whatIs": "Qué es el cine adaptativo",
+      "howItWorks": "Cómo funciona",
+      "accessible": "Accesible por defecto",
+      "forBrands": "Para marcas",
+      "whyNow": "Por qué ahora",
+      "howToWatch": "Cómo verlo"
+    },
+    "hero": {
+      "title1": "La historia se remonta",
+      "title2": "para cada espectador.",
+      "description": "Una producción. Una versión distinta para cada persona: tu corte, tu idioma, tu mundo. El streaming muestra lo mismo a todo el mundo. Axessplayer no.",
+      "watchDemo": "Ver la demo"
+    },
+    "shift": {
+      "title1": "Todos optimizan la distribución.",
+      "title2": "Nadie es dueño de la adaptación.",
+      "body": "El boom del microdrama compite en un solo eje: más contenido, más barato, mejor recomendado. Cada plataforma sigue entregando un único corte fijo a todos. La historia en sí nunca cambia. Esa es la oportunidad."
+    },
+    "what": {
+      "title": "Una historia. Remontada para ti.",
+      "yourCut": {
+        "title": "Tu corte.",
+        "body": "POV, ritmo, intensidad y final, elegidos automáticamente a partir de cómo ves. Sin menús."
+      },
+      "yourLanguage": {
+        "title": "Tu idioma.",
+        "body": "Un master, todos los idiomas, accesible por defecto, con coste marginal casi nulo."
+      },
+      "yourWorld": {
+        "title": "Tu mundo.",
+        "body": "La misma escena, la marca adecuada para tu mercado. Respetando el canon, nunca una interrupción."
+      },
+      "seeHow": "Descubre cómo funciona"
+    },
+    "how": {
+      "title": "Alma humana, escala de IA, un solo motor.",
+      "body": "Las escenas rodadas aportan el alma y los clips. La IA genera las variantes, los idiomas y las localizaciones. Un motor de decisión lee cómo ve cada persona y sirve el corte adecuado automáticamente."
+    },
+    "accessible": {
+      "title1": "Diseñado para que todos puedan ver.",
+      "title2": "Desde el primer fotograma.",
+      "body": "Subtítulos con intención, audiodescripción creativa, lengua de signos y doblaje se generan para cada historia en cada idioma, no se añaden después. La accesibilidad es la base sobre la que se construye toda la plataforma."
+    },
+    "brands": {
+      "title1": "La misma escena.",
+      "title2": "Un producto distinto",
+      "title3": "para cada mercado.",
+      "body": "La inserción dinámica dentro de la escena llena una taza, una valla o la pantalla de un móvil con la marca adecuada para cada espectador, en el momento de la entrega. Atención y datos de primera mano, sin interrumpir la historia.",
+      "partner": "Asóciate con nosotros"
+    },
+    "whyNow": {
+      "title": "El cine interactivo se intentó una vez. Los motivos del fracaso ya no existen.",
+      "body": "La fricción de producción, promoción y formato lo mató hace una década. Ahora la IA genera las variantes. Los feeds verticales y deslizables son el formato nativo. Lo reconstruimos con quienes inventaron el vídeo interactivo.",
+      "builtBy": "Creado por el equipo detrás de {{name}}, los inventores del vídeo ramificado sin cortes."
+    },
+    "howToWatch": {
+      "title": "Tres formas de entrar. Tres formas de pagar.",
+      "earn": {
+        "tag": "Gana",
+        "title": "Ve un anuncio recompensado y consigue créditos."
+      },
+      "buy": {
+        "tag": "Compra",
+        "title": "Packs de créditos, siempre que quieras más."
+      },
+      "subscribe": {
+        "tag": "Suscríbete",
+        "title": "Sin anuncios, con créditos incluidos y variantes premium."
+      }
+    },
+    "final": {
+      "title1": "Sé el primero en verte",
+      "titleAccent": "a ti mismo",
+      "title2": "dentro de la historia.",
+      "body": "Consigue acceso anticipado a Axessplayer. Te avisaremos por email cuando tu plaza esté lista.",
+      "microcopy": "Sin spam. Cancela cuando quieras."
+    },
+    "footer": {
+      "by": "Axessplayer, de Axessible Technologies.",
+      "platform": "Plataforma",
+      "enterprise": "Empresas",
+      "company": "Compañía",
+      "howItWorks": "Cómo funciona",
+      "accessibility": "Accesibilidad",
+      "forBrands": "Para marcas",
+      "demo": "Demo",
+      "overview": "Visión general",
+      "compliance": "Cumplimiento",
+      "bookDemo": "Reservar demo",
+      "about": "Quiénes somos",
+      "contact": "Contacto",
+      "tagline": "Una historia. Todos los idiomas. Cada persona.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
   }
 }

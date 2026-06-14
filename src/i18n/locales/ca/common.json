@@ -1,7 +1,7 @@
 {
   "nav": {
     "explore": "Showcase",
-    "enterprise": "Empresa", 
+    "enterprise": "Empresa",
     "pricing": "Preus",
     "dashboard": "Tauler",
     "myVideos": "Els Meus Vídeos",
@@ -49,7 +49,7 @@
       "title": "Vídeo sense barreres.",
       "captionsTitle": "Subtítols amb Intenció",
       "captionsDesc": "Més que paraules. Subtítols dinàmics i expressius que es mouen, pausen i flueixen amb emoció.",
-      "audioDescTitle": "Descripcions d'Àudio Creatives", 
+      "audioDescTitle": "Descripcions d'Àudio Creatives",
       "audioDescDesc": "No robòtiques - sinó narració cinematogràfica que pinta l'escena, perquè qui escolta senti tot.",
       "signLanguageTitle": "Treballa amb nosaltres per crear Descripcions en Llengua de Signes per als teus vídeos",
       "signLanguageDesc": "Dirigit per experts, fent la inclusió natural."
@@ -67,7 +67,7 @@
       "title": "Transforma els teus vídeos en experiències que tothom pot compartir.",
       "description": "Puja el teu contingut — i la nostra plataforma el transforma amb:",
       "aiTools": "Eines d'accessibilitat impulsades per IA",
-      "humanGuidance": "Refinament guiat per humans", 
+      "humanGuidance": "Refinament guiat per humans",
       "compliance": "Compliment automàtic amb estàndards globals d'accessibilitat",
       "storiesReach": "Perquè les teves històries no només arribin a més persones…",
       "storiesMove": "Sinó que commoguin més persones.",
@@ -85,7 +85,7 @@
       "title": "Mira el que Diuen els Nostres Espectadors",
       "engagementIncrease": "Augment en",
       "viewerEngagement": "compromís de l'espectador",
-      "betterComprehension": "Millor", 
+      "betterComprehension": "Millor",
       "contentComprehension": "comprensió del contingut",
       "moreVideos": "Més",
       "accessibleVideos": "vídeos accessibles creats",
@@ -127,102 +127,6 @@
       "support": "Suport general i comentaris",
       "responseTitle": "Temps de Resposta Ràpids",
       "responseText": "Normalment responem a totes les consultes en 24 hores durant els dies laborables. Per a preguntes urgents d'accessibilitat, si us plau menciona \"URGENT\" a la línia d'assumpte."
-    }
-  },
-  "about": {
-    "title": "Sobre",
-    "mission": "Som una empresa tecnològica i un laboratori de recerca que desenvolupa un Model de Llenguatge Audiovisual Emocional (AVLM), entrenat amb contingut creatiu obtingut èticament. Ensenyant a l'IA a entendre l'emoció, la narrativa i la intenció en mitjans audiovisuals, desbloquejem eines sense precedents per a creadors, marques i plataformes.",
-    "values": {
-      "ethicalAI": "IA Ètica",
-      "creativeIntelligence": "Intel·ligència Creativa",
-      "humanCentric": "Centrat en l'Humà"
-    },
-    "dataQuality": {
-      "title": "Per Què les Dades d'Alta Qualitat són la Clau per Desbloquejar l'Emoció",
-      "description": "La qualitat d'un model d'IA és una funció directa de les dades amb les quals s'entrena. Els models actuals a gran escala es construeixen sobre miliards d'hores de dades d'internet extretes, de baixa qualitat i sovint èticament qüestionables. Això porta a models que poden reconèixer patrons bàsics però fallen a captar el ric i subtil tapís de l'emoció humana.",
-      "ethicalData": {
-        "title": "Dades Ètiques",
-        "description": "Estem construint els nostres fonaments sobre un conjunt de dades voluntàriament contribuït, amb els drets com a prioritat. A través del nostre producte estrella, Axessible, hem creat un cicle virtuós. Els creadors que utilitzen la nostra plataforma per fer el seu contingut conforme amb les noves regulacions també ens estan donant permís per aprendre del seu treball."
-      },
-      "powerOfIntentionality": {
-        "title": "El Poder de la Intencionalitat",
-        "description": "El contingut extret d'internet captura el que la gent mira, però no per què ho van crear. Les nostres dades, contribuïdes per cineastes, publicistes i artistes, són riques en propòsit creatiu. El nostre AVLM va més enllà d'una empremta emocional bàsica i entén els ritmes narratius, tòpics creatius i arcs emocionals que fan que el contingut sigui veritablement grandiós."
-      },
-      "builtOnTrust": {
-        "title": "Construït sobre la Confiança",
-        "description": "Les nostres dades no són només una col·lecció de píxels i ones d'àudio; és un repositori de creativitat i emoció humana, anotat pels mateixos creadors. Aquest conjunt de dades propietari ens permetrà entrenar un model amb un nivell de profunditat i matís que cap altra empresa pot assolir."
-      }
-    },
-    "aiLab": {
-      "title": "El nostre laboratori de recerca d'IA",
-      "subtitle": "Construint la propera generació d'IA que comprèn i millora la creativitat humana a través del nostre Model de Llenguatge Audiovisual Emocional."
-    },
-    "useCases": {
-      "title": "El nostre laboratori de recerca d'IA",
-      "subtitle": "Construint la propera generació d'IA que comprèn i millora la creativitat humana a través del nostre Model de Llenguatge Audiovisual Emocional.",
-      "broaderTitle": "Casos d'Ús Més Amplis i Estratègia de PI",
-      "broaderDescription": "Les aplicacions d'un AVLM entrenat en un conjunt de dades d'alta qualitat, dirigit per creatius, s'estenen molt més enllà del nostre producte inicial, la Plataforma de Vídeo Axess. La nostra tecnologia alimenta una nova classe d'eines en diverses indústries.",
-      "creativeAnalytics": {
-        "title": "Analítica Creativa per a Publicitat i Màrqueting:",
-        "emotionalResonance": {
-          "title": "Proves de Ressonància Emocional",
-          "description": "Analitza com una audiència es connecta emocionalment amb un anunci a nivell granular, identificant moments d'admiració, frustració o plaer."
-        },
-        "narrativeOptimization": {
-          "title": "Optimització Narrativa",
-          "description": "Identifica quines escenes o ritmes narratius en una campanya són més eficaços per impulsar el compromís emocional i el record de marca."
-        },
-        "crossCulturalInsights": {
-          "title": "Perspectives Interculturals",
-          "description": "Detecta automàticament matisos emocionals culturalment específics i tòpics creatius per optimitzar contingut per a mercats globals."
-        }
-      },
-      "filmTV": {
-        "title": "Retroalimentació Narrativa per a Estudis de Cinema i TV:",
-        "editingPostProduction": {
-          "title": "Edició i Post-Producció",
-          "description": "Proporciona retroalimentació emocional en temps real als montadors, ajudant-los a crear escenes que arriben amb l'impacte emocional desitjat."
-        },
-        "scriptAnalysis": {
-          "title": "Anàlisi de Guió",
-          "description": "Analitza l'arc narratiu i flux emocional d'un guió abans que comenci la producció, identificant febleses potencials o oportunitats."
-        },
-        "characterDevelopment": {
-          "title": "Desenvolupament de Personatges",
-          "description": "Estudia com les audiències responen al viatge emocional d'un personatge al llarg d'una pel·lícula o sèrie."
-        }
-      },
-      "generativeAI": {
-        "title": "IA Generativa per a Eines Creatives:",
-        "emotionallyAware": {
-          "title": "Vídeo Generatiu Emocionalment Conscient",
-          "description": "Utilitza el nostre AVLM per guiar models text-a-vídeo per crear contingut amb tons emocionals específics i estructures narratives."
-        },
-        "dynamicMusic": {
-          "title": "Música Dinàmica i Disseny de So",
-          "description": "Genera música o paisatges sonors que s'adapten a l'arc emocional d'un vídeo en temps real."
-        }
-      },
-      "personalizedMedia": {
-        "title": "Plataformes de Mitjans Personalitzats:",
-        "emotionBased": {
-          "title": "Curació Basada en l'Emoció",
-          "description": "Recomana contingut no només per gènere, sinó pel viatge emocional que proporciona. Per exemple, una playlist 'reconfortant' de curtmetratges o un feed 'inspirador' de documentals."
-        }
-      }
-    },
-    "intellectualProperty": {
-      "title": "Propietat Intel·lectual i Àrees de Patents",
-      "description": "Estem construint un portafoli robust de propietat intel·lectual al voltant de la nostra tecnologia única. La nostra estratègia de patents se centra en tres àrees clau:",
-      "emotionNarrative": "Fusió Emoció-Narrativa",
-      "explainableAVLM": "AVLM Explicable",
-      "interactiveCreative": "Crítica Creativa Interactiva"
-    },
-    "cta": {
-      "title": "Llest per Donar Forma al Futur de l'IA Creativa?",
-      "description": "Uniu-vos a nosaltres per revolucionar com la intel·ligència artificial comprèn i millora la creativitat humana.",
-      "exploreTechnology": "Explora la Nostra Tecnologia",
-      "contactTeam": "Contacta el Nostre Equip"
     }
   },
   "about": {
@@ -765,5 +669,104 @@
     },
     "goBack": "Tornar",
     "upgradeButton": "Actualitzar a Standard"
+  },
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Cinema Adaptatiu",
+      "theShift": "El canvi",
+      "whatIs": "Què és el cinema adaptatiu",
+      "howItWorks": "Com funciona",
+      "accessible": "Accessible per defecte",
+      "forBrands": "Per a marques",
+      "whyNow": "Per què ara",
+      "howToWatch": "Com mirar-ho"
+    },
+    "hero": {
+      "title1": "La història es remunta",
+      "title2": "per a cada espectador.",
+      "description": "Una producció. Una versió diferent per a cada persona: el teu muntatge, la teva llengua, el teu món. L'streaming mostra el mateix a tothom. Axessplayer no.",
+      "watchDemo": "Mira la demo"
+    },
+    "shift": {
+      "title1": "Tothom optimitza la distribució.",
+      "title2": "Ningú no és amo de l'adaptació.",
+      "body": "El boom del microdrama competeix en un únic eix: més contingut, més barat, més ben recomanat. Cada plataforma encara entrega un únic muntatge fix a tothom. La història mateixa no canvia mai. Aquí hi ha l'oportunitat."
+    },
+    "what": {
+      "title": "Una història. Remuntada per a tu.",
+      "yourCut": {
+        "title": "El teu muntatge.",
+        "body": "POV, ritme, intensitat i final, triats automàticament segons com mires. Sense menús."
+      },
+      "yourLanguage": {
+        "title": "La teva llengua.",
+        "body": "Un màster, totes les llengües, accessible per defecte, amb cost marginal gairebé zero."
+      },
+      "yourWorld": {
+        "title": "El teu món.",
+        "body": "La mateixa escena, la marca adequada per al teu mercat. Respectant el cànon, mai una interrupció."
+      },
+      "seeHow": "Descobreix com funciona"
+    },
+    "how": {
+      "title": "Ànima humana, escala de la IA, un sol motor.",
+      "body": "Les escenes rodades aporten l'ànima i els clips. La IA genera les variants, les llengües i les localitzacions. Un motor de decisió llegeix com mira cada persona i serveix automàticament el muntatge adequat."
+    },
+    "accessible": {
+      "title1": "Construït perquè tothom pugui mirar.",
+      "title2": "Des del primer fotograma.",
+      "body": "Subtítols amb intenció, audiodescripció creativa, llengua de signes i doblatge es generen per a cada història en cada llengua, no s'afegeixen després. L'accessibilitat és la base sobre la qual es construeix tota la plataforma."
+    },
+    "brands": {
+      "title1": "La mateixa escena.",
+      "title2": "Un producte diferent",
+      "title3": "per a cada mercat.",
+      "body": "La inserció dinàmica dins l'escena omple una tassa, una tanca o la pantalla d'un mòbil amb la marca adequada per a cada espectador, en el moment del lliurament. Atenció i dades de primera mà, sense interrompre la història.",
+      "partner": "Fes-te'n soci"
+    },
+    "whyNow": {
+      "title": "El cinema interactiu es va provar una vegada. Els motius del fracàs ja no hi són.",
+      "body": "La fricció de producció, promoció i format el va matar fa una dècada. Ara la IA genera les variants. Els feeds verticals i lliscants són el format natiu. El reconstruïm amb qui va inventar el vídeo interactiu.",
+      "builtBy": "Creat per l'equip darrere d'{{name}}, els inventors del vídeo ramificat sense talls."
+    },
+    "howToWatch": {
+      "title": "Tres maneres d'entrar. Tres maneres de pagar.",
+      "earn": {
+        "tag": "Guanya",
+        "title": "Mira un anunci recompensat i aconsegueix crèdits."
+      },
+      "buy": {
+        "tag": "Compra",
+        "title": "Packs de crèdits, sempre que en vulguis més."
+      },
+      "subscribe": {
+        "tag": "Subscriu-te",
+        "title": "Sense anuncis, amb crèdits inclosos i variants premium."
+      }
+    },
+    "final": {
+      "title1": "Sigues el primer a veure't",
+      "titleAccent": "a tu mateix",
+      "title2": "dins de la història.",
+      "body": "Aconsegueix accés anticipat a Axessplayer. T'avisarem per correu quan la teva plaça estigui llesta.",
+      "microcopy": "Sense spam. Dona't de baixa quan vulguis."
+    },
+    "footer": {
+      "by": "Axessplayer, d'Axessible Technologies.",
+      "platform": "Plataforma",
+      "enterprise": "Empreses",
+      "company": "Companyia",
+      "howItWorks": "Com funciona",
+      "accessibility": "Accessibilitat",
+      "forBrands": "Per a marques",
+      "demo": "Demo",
+      "overview": "Visió general",
+      "compliance": "Compliment",
+      "bookDemo": "Reserva una demo",
+      "about": "Sobre nosaltres",
+      "contact": "Contacte",
+      "tagline": "Una història. Cada llengua. Cada persona.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
   }
 }

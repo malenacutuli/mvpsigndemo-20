@@ -1,7 +1,7 @@
 {
   "nav": {
     "explore": "Showcase",
-    "enterprise": "Entreprise", 
+    "enterprise": "Entreprise",
     "pricing": "Tarifs",
     "dashboard": "Tableau de bord",
     "myVideos": "Mes Vidéos",
@@ -49,7 +49,7 @@
       "title": "Vidéo sans barrières.",
       "captionsTitle": "Sous-titres avec Intention",
       "captionsDesc": "Plus que des mots. Des sous-titres dynamiques et expressifs qui bougent, s'arrêtent et coulent avec émotion.",
-      "audioDescTitle": "Descriptions Audio Créatives", 
+      "audioDescTitle": "Descriptions Audio Créatives",
       "audioDescDesc": "Pas robotiques - mais une narration cinématographique qui peint la scène, pour que ceux qui écoutent ressentent tout.",
       "signLanguageTitle": "Travaillez avec nous pour créer des Descriptions en Langue des Signes pour vos vidéos",
       "signLanguageDesc": "Dirigé par des experts, rendant l'inclusion naturelle."
@@ -67,7 +67,7 @@
       "title": "Transformez vos vidéos en expériences que tout le monde peut partager.",
       "description": "Téléchargez votre contenu — et notre plateforme le transforme avec :",
       "aiTools": "Outils d'accessibilité pilotés par l'IA",
-      "humanGuidance": "Raffinement guidé par l'humain", 
+      "humanGuidance": "Raffinement guidé par l'humain",
       "compliance": "Conformité automatique avec les normes d'accessibilité mondiales",
       "storiesReach": "Pour que vos histoires n'atteignent pas seulement plus de personnes…",
       "storiesMove": "Elles émeuvent plus de personnes.",
@@ -85,7 +85,7 @@
       "title": "Voyez ce que Disent nos Spectateurs",
       "engagementIncrease": "Augmentation de",
       "viewerEngagement": "l'engagement des spectateurs",
-      "betterComprehension": "Meilleure", 
+      "betterComprehension": "Meilleure",
       "contentComprehension": "compréhension du contenu",
       "moreVideos": "Plus de",
       "accessibleVideos": "vidéos accessibles créées",
@@ -127,102 +127,6 @@
       "support": "Support général et commentaires",
       "responseTitle": "Temps de Réponse Rapides",
       "responseText": "Nous répondons généralement à toutes les demandes dans les 24 heures pendant les jours ouvrables. Pour les questions urgentes d'accessibilité, veuillez mentionner \"URGENT\" dans votre ligne d'objet."
-    }
-  },
-  "about": {
-    "title": "À propos",
-    "mission": "Nous sommes une entreprise technologique et un laboratoire de recherche développant un Modèle de Langage Audiovisuel Émotionnel (AVLM), entraîné sur du contenu créatif obtenu de manière éthique. En enseignant à l'IA à comprendre l'émotion, la narration et l'intention dans les médias audiovisuels, nous débloquons des outils sans précédent pour les créateurs, les marques et les plateformes.",
-    "values": {
-      "ethicalAI": "IA Éthique",
-      "creativeIntelligence": "Intelligence Créative",
-      "humanCentric": "Centré sur l'Humain"
-    },
-    "dataQuality": {
-      "title": "Pourquoi les Données de Haute Qualité sont la Clé pour Débloquer l'Émotion",
-      "description": "La qualité d'un modèle d'IA est une fonction directe des données sur lesquelles il est entraîné. Les modèles actuels à grande échelle sont construits sur des milliards d'heures de données internet extraites, de faible qualité et souvent éthiquement discutables. Cela conduit à des modèles qui peuvent reconnaître des motifs de base mais échouent à saisir la riche et subtile tapisserie de l'émotion humaine.",
-      "ethicalData": {
-        "title": "Données Éthiques",
-        "description": "Nous construisons notre fondation sur un ensemble de données volontairement contribué, axé sur les droits. Grâce à notre produit phare, Axessible, nous avons créé un cercle vertueux. Les créateurs qui utilisent notre plateforme pour rendre leur contenu conforme aux nouvelles réglementations nous donnent aussi la permission d'apprendre de leur travail."
-      },
-      "powerOfIntentionality": {
-        "title": "Le Pouvoir de l'Intentionnalité",
-        "description": "Le contenu extrait d'internet capture ce que les gens regardent, mais pas pourquoi ils l'ont créé. Nos données, contribuées par des cinéastes, publicitaires et artistes, sont riches en intention créative. Notre AVLM va au-delà d'une empreinte émotionnelle de base et comprend les rythmes narratifs, tropes créatifs et arcs émotionnels qui rendent le contenu vraiment extraordinaire."
-      },
-      "builtOnTrust": {
-        "title": "Construit sur la Confiance",
-        "description": "Nos données ne sont pas juste une collection de pixels et d'ondes audio ; c'est un dépôt de créativité et d'émotion humaine, annoté par les créateurs eux-mêmes. Cet ensemble de données propriétaire nous permettra d'entraîner un modèle avec un niveau de profondeur et de nuance qu'aucune autre entreprise ne peut atteindre."
-      }
-    },
-    "aiLab": {
-      "title": "Notre laboratoire de recherche en IA",
-      "subtitle": "Construire la prochaine génération d'IA qui comprend et améliore la créativité humaine grâce à notre Modèle de Langage Audiovisuel Émotionnel."
-    },
-    "useCases": {
-      "title": "Notre laboratoire de recherche IA",
-      "subtitle": "Construire la prochaine génération d'IA qui comprend et améliore la créativité humaine grâce à notre Modèle de Langage Audiovisuel Émotionnel.",
-      "broaderTitle": "Cas d'Usage Plus Larges et Stratégie PI",
-      "broaderDescription": "Les applications d'un AVLM entraîné sur un ensemble de données de haute qualité, dirigé par des créatifs, s'étendent bien au-delà de notre produit initial, la Plateforme Vidéo Axess. Notre technologie alimente une nouvelle classe d'outils dans diverses industries.",
-      "creativeAnalytics": {
-        "title": "Analytique Créative pour la Publicité et le Marketing :",
-        "emotionalResonance": {
-          "title": "Tests de Résonance Émotionnelle",
-          "description": "Analyser comment une audience se connecte émotionnellement avec une publicité à un niveau granulaire, identifiant les moments d'admiration, de frustration ou de plaisir."
-        },
-        "narrativeOptimization": {
-          "title": "Optimisation Narrative",
-          "description": "Identifier quelles scènes ou rythmes narratifs dans une campagne sont les plus efficaces pour stimuler l'engagement émotionnel et le rappel de marque."
-        },
-        "crossCulturalInsights": {
-          "title": "Perspectives Interculturelles",
-          "description": "Détecter automatiquement les nuances émotionnelles culturellement spécifiques et les tropes créatifs pour optimiser le contenu pour les marchés mondiaux."
-        }
-      },
-      "filmTV": {
-        "title": "Retour Narratif pour les Studios de Cinéma et TV :",
-        "editingPostProduction": {
-          "title": "Montage et Post-Production",
-          "description": "Fournir un retour émotionnel en temps réel aux monteurs, les aidant à créer des scènes qui atteignent l'impact émotionnel voulu."
-        },
-        "scriptAnalysis": {
-          "title": "Analyse de Scénario",
-          "description": "Analyser l'arc narratif et le flux émotionnel d'un scénario avant le début de la production, identifiant les faiblesses potentielles ou les opportunités."
-        },
-        "characterDevelopment": {
-          "title": "Développement de Personnages",
-          "description": "Étudier comment les audiences répondent au voyage émotionnel d'un personnage tout au long d'un film ou d'une série."
-        }
-      },
-      "generativeAI": {
-        "title": "IA Générative pour les Outils Créatifs :",
-        "emotionallyAware": {
-          "title": "Vidéo Générative Émotionnellement Consciente",
-          "description": "Utiliser notre AVLM pour guider les modèles texte-vers-vidéo pour créer du contenu avec des tons émotionnels spécifiques et des structures narratives."
-        },
-        "dynamicMusic": {
-          "title": "Musique Dynamique et Conception Sonore",
-          "description": "Générer de la musique ou des paysages sonors qui s'adaptent à l'arc émotionnel d'une vidéo en temps réel."
-        }
-      },
-      "personalizedMedia": {
-        "title": "Plateformes Médias Personnalisées :",
-        "emotionBased": {
-          "title": "Curation Basée sur l'Émotion",
-          "description": "Recommander du contenu non seulement par genre, mais par le voyage émotionnel qu'il procure. Par exemple, une playlist 'réconfortante' de courts métrages ou un feed 'inspirant' de documentaires."
-        }
-      }
-    },
-    "intellectualProperty": {
-      "title": "Propriété Intellectuelle et Domaines de Brevets",
-      "description": "Nous construisons un portefeuille robuste de propriété intellectuelle autour de notre technologie unique. Notre stratégie de brevets se concentre sur trois domaines clés :",
-      "emotionNarrative": "Fusion Émotion-Narrative",
-      "explainableAVLM": "AVLM Explicable",
-      "interactiveCreative": "Critique Créative Interactive"
-    },
-    "cta": {
-      "title": "Prêt à Façonner l'Avenir de l'IA Créative ?",
-      "description": "Rejoignez-nous pour révolutionner la façon dont l'intelligence artificielle comprend et améliore la créativité humaine.",
-      "exploreTechnology": "Explorez Notre Technologie",
-      "contactTeam": "Contactez Notre Équipe"
     }
   },
   "about": {
@@ -765,5 +669,104 @@
     },
     "goBack": "Retour",
     "upgradeButton": "Passer au Standard"
+  },
+  "home": {
+    "eyebrow": {
+      "adaptiveCinema": "Cinéma Adaptatif",
+      "theShift": "Le tournant",
+      "whatIs": "Qu'est-ce que le cinéma adaptatif",
+      "howItWorks": "Comment ça marche",
+      "accessible": "Accessible par défaut",
+      "forBrands": "Pour les marques",
+      "whyNow": "Pourquoi maintenant",
+      "howToWatch": "Comment regarder"
+    },
+    "hero": {
+      "title1": "L'histoire se remonte",
+      "title2": "pour chaque spectateur.",
+      "description": "Une production. Une version différente pour chaque personne : votre montage, votre langue, votre monde. Le streaming montre la même chose à tout le monde. Axessplayer non.",
+      "watchDemo": "Voir la démo"
+    },
+    "shift": {
+      "title1": "Tout le monde optimise la distribution.",
+      "title2": "Personne ne possède l'adaptation.",
+      "body": "Le boom du microdrame se joue sur un seul axe : plus de contenu, moins cher, mieux recommandé. Chaque plateforme livre encore un montage figé à tous. L'histoire elle-même ne change jamais. C'est là l'opportunité."
+    },
+    "what": {
+      "title": "Une histoire. Remontée pour vous.",
+      "yourCut": {
+        "title": "Votre montage.",
+        "body": "Point de vue, rythme, intensité et fin, choisis automatiquement selon votre façon de regarder. Sans menus."
+      },
+      "yourLanguage": {
+        "title": "Votre langue.",
+        "body": "Un master, toutes les langues, accessible par défaut, à un coût marginal quasi nul."
+      },
+      "yourWorld": {
+        "title": "Votre monde.",
+        "body": "La même scène, la bonne marque pour votre marché. Fidèle au canon, jamais une interruption."
+      },
+      "seeHow": "Découvrez comment ça marche"
+    },
+    "how": {
+      "title": "Âme humaine, échelle de l'IA, un seul moteur.",
+      "body": "Les scènes tournées portent l'âme et les clips. L'IA génère les variantes, les langues et les localisations. Un moteur de décision lit la façon de regarder de chacun et sert automatiquement le bon montage."
+    },
+    "accessible": {
+      "title1": "Conçu pour que tout le monde puisse regarder.",
+      "title2": "Dès la première image.",
+      "body": "Sous-titres avec intention, audiodescription créative, langue des signes et doublage sont générés pour chaque histoire dans chaque langue, jamais ajoutés après coup. L'accessibilité est le socle de toute la plateforme."
+    },
+    "brands": {
+      "title1": "La même scène.",
+      "title2": "Un produit différent",
+      "title3": "pour chaque marché.",
+      "body": "Le placement dynamique en scène remplit un mug, un panneau ou un écran de téléphone avec la bonne marque pour chaque spectateur, au moment de la diffusion. De l'attention et des données de première main, sans interrompre l'histoire.",
+      "partner": "Devenir partenaire"
+    },
+    "whyNow": {
+      "title": "Le cinéma interactif a été tenté une fois. Les raisons de son échec ont disparu.",
+      "body": "Les frictions de production, de promotion et de format l'ont tué il y a dix ans. Aujourd'hui l'IA génère les variantes. Les fils verticaux à faire défiler sont le format natif. Nous le reconstruisons avec celles et ceux qui ont inventé la vidéo interactive.",
+      "builtBy": "Conçu par l'équipe à l'origine d'{{name}}, les inventeurs de la vidéo à branches sans coupure."
+    },
+    "howToWatch": {
+      "title": "Trois portes d'entrée. Trois façons de payer.",
+      "earn": {
+        "tag": "Gagner",
+        "title": "Regardez une pub récompensée, obtenez des crédits."
+      },
+      "buy": {
+        "tag": "Acheter",
+        "title": "Des packs de crédits, dès que vous en voulez plus."
+      },
+      "subscribe": {
+        "tag": "S'abonner",
+        "title": "Sans pub, avec des crédits inclus et des variantes premium."
+      }
+    },
+    "final": {
+      "title1": "Soyez le premier à vous voir",
+      "titleAccent": "vous-même",
+      "title2": "dans l'histoire.",
+      "body": "Obtenez un accès anticipé à Axessplayer. Nous vous écrirons dès que votre place sera ouverte.",
+      "microcopy": "Pas de spam. Désinscription à tout moment."
+    },
+    "footer": {
+      "by": "Axessplayer, par Axessible Technologies.",
+      "platform": "Plateforme",
+      "enterprise": "Entreprise",
+      "company": "Société",
+      "howItWorks": "Comment ça marche",
+      "accessibility": "Accessibilité",
+      "forBrands": "Pour les marques",
+      "demo": "Démo",
+      "overview": "Aperçu",
+      "compliance": "Conformité",
+      "bookDemo": "Réserver une démo",
+      "about": "À propos",
+      "contact": "Contact",
+      "tagline": "Une histoire. Toutes les langues. Chaque personne.",
+      "copyright": "© {{year}} Axessible Technologies."
+    }
   }
 }
