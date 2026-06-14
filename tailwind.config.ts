@@ -21,6 +21,9 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
         'roboto-flex': ['Roboto Flex', 'sans-serif'],
+        display: ['Outfit', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       fontWeight: {
         'extralight': '200',
