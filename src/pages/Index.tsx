@@ -1,495 +1,441 @@
-import { Navigation } from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Upload } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
-import accessibilityCircle from '@/assets/accessibility-circle.jpg';
-import captionsWithIntention from '@/assets/captions-with-intention.jpg';
-import audioDescriptions from '@/assets/audio-descriptions.jpg';
-import signLanguage from '@/assets/sign-language.jpg';
-import euLogo from '@/assets/eu-logo.png';
-import bscLogo from '@/assets/bsc-ai-factory-logo.jpg';
-import nvidiaLogo from '@/assets/nvidia-inception-logo-clean.png';
-import { MovingLogoStripe } from '@/components/MovingLogoStripe';
-import { InterbrandFeatures } from '@/components/InterbrandFeatures';
+import { EarlyAccessForm } from '@/components/EarlyAccessForm';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Play, Globe2, Sparkles, Layers, Film, Languages, Accessibility } from 'lucide-react';
+import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 
-const Index = () => {
-  const { t } = useTranslation();
-  const { theme, isDemo, getPath } = useTheme();
+// Phase 1: New axessplayer.com Home (June 2026 reposition).
+
+
+const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <p className={`font-mono text-[11px] sm:text-xs uppercase tracking-[0.22em] text-axp-rose ${className}`}>
+    {children}
+  </p>
+);
+
+const SectionHeading: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <h2 className={`font-display text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-axp-ink leading-[1.05] ${className}`}>
+    {children}
+  </h2>
+);
+
+const PhoneFrame: React.FC<{ accent?: boolean; label: string; sublabel: string; tone: string }> = ({
+  accent, label, sublabel, tone,
+}) => (
+  <div
+    className={`relative rounded-[2.2rem] border ${
+      accent ? 'border-axp-rose shadow-[0_30px_80px_-20px_rgba(255,46,110,0.45)]' : 'border-axp-ink/10 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)]'
+    } bg-axp-ink overflow-hidden aspect-[9/19] w-full`}
+  >
+    <div className={`absolute inset-0 ${tone}`} />
+    <div className="absolute inset-x-0 top-3 flex justify-center">
+      <div className="h-5 w-24 rounded-full bg-black/40" />
+    </div>
+    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-white">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/70">{sublabel}</p>
+      <p className="font-display text-lg sm:text-xl leading-tight mt-1">{label}</p>
+    </div>
+    {accent && (
+      <span className="absolute top-5 right-5 inline-flex h-2.5 w-2.5 rounded-full bg-axp-rose animate-pulse" />
+    )}
+  </div>
+);
+
+const DemoHome: React.FC = () => {
+  const { theme, getPath } = useTheme();
   return (
-    <div className={`min-h-screen ${isDemo ? 'bg-white' : 'bg-background'}`}>
+    <div className="min-h-screen bg-white">
       <Navigation />
-      
-      {/* Hero Section */}
-      <section className="relative bg-white py-20 sm:py-28 lg:py-40 overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="space-y-8">
-              {/* Tagline */}
-              {isDemo && (
-                <p className="text-sm md:text-base text-muted-foreground uppercase tracking-wider mb-6 font-light">
-                  {theme.tagline}
-                </p>
-              )}
-              
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight tracking-tight break-words px-2">
-                {isDemo ? (
-                  theme.heroTitle
-                ) : (
-                  <>
-                    {t('hero.title')}{" "}
-                    <span className="text-primary block">{t('hero.titleAccent')}</span>{" "}
-                    <span className="block">{t('hero.titleEnd')}</span>
-                  </>
-                )}
-              </h1>
-              
-              {/* Subtitle */}
-              <p className="text-base sm:text-lg md:text-xl text-foreground font-light leading-relaxed max-w-3xl mx-auto px-4">
-                {isDemo ? theme.heroSubtitle : t('hero.subtitle')}
-              </p>
-              
-              {!isDemo && (
-                <div className="w-full max-w-2xl mx-auto py-8">
-                  <img 
-                    src={accessibilityCircle} 
-                    alt="Accessibility features connecting people through video" 
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
-              )}
-              
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
-                <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                  <Link to={isDemo ? getPath('/auth') : getPath('/explore')}>
-                    <Play className="w-5 h-5 mr-3" />
-                    {isDemo ? theme.ctaText : t('hero.startWatching')}
-                  </Link>
-                </Button>
-                {!isDemo && (
-                  <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                    <Link to={getPath('/upload')}>
-                      <Upload className="w-5 h-5 mr-3" />
-                      {t('hero.shareContent')}
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      <section className="container mx-auto px-6 py-24 text-center">
+        <p className="text-sm text-muted-foreground uppercase tracking-wider mb-6 font-light">
+          {theme.tagline}
+        </p>
+        <h1 className="text-4xl md:text-6xl font-light leading-tight mb-8 max-w-4xl mx-auto">
+          {theme.heroTitle}
+        </h1>
+        <p className="text-lg md:text-xl text-muted-foreground font-light max-w-2xl mx-auto mb-10">
+          {theme.heroSubtitle}
+        </p>
+        <Button asChild size="lg" className="px-10 py-6 rounded-full">
+          <Link to={getPath('/auth')}>{theme.ctaText}</Link>
+        </Button>
       </section>
+    </div>
+  );
+};
 
-      {/* Interbrand Features Section */}
-      <InterbrandFeatures />
+const Home: React.FC = () => {
+  const { isDemo } = useTheme();
+  if (isDemo) return <DemoHome />;
 
-      {/* Recognition & Partners Section - Only for non-demo pages at top */}
-      {!isDemo && (
-        <section className="py-16 bg-white border-y">
-          <div className="container mx-auto px-6">
-            <div className="max-w-6xl mx-auto">
-              <h3 className="text-xl md:text-2xl font-light text-center text-muted-foreground mb-12">
-                {t('recognition.title')}
-              </h3>
-              <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
-                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                  <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
-                </div>
-                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                  <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
-                </div>
-                <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                  <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+  return (
+    <div className="min-h-screen bg-axp-warm-white text-axp-ink font-body antialiased">
+      <Navigation />
 
-      {/* Section 1: Why We Exist */}
-      {!isDemo && (
-        <section className="py-32 bg-muted/20">
-        <div className="container mx-auto px-6">
+
+
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-axp-warm-white">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.04]" aria-hidden>
+          <div className="absolute -top-32 -left-32 w-[36rem] h-[36rem] rounded-full bg-axp-rose blur-3xl" />
+          <div className="absolute -bottom-40 -right-20 w-[36rem] h-[36rem] rounded-full bg-axp-gold blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-6 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:pt-32 lg:pb-40 relative">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
-              {t('sections.whyWeExist.title')}
+            <Eyebrow>Adaptive Cinema</Eyebrow>
+            <h1 className="mt-6 font-display font-light tracking-tight text-axp-ink text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.98]">
+              The story re-cuts itself <span className="text-axp-rose">for every viewer.</span>
+            </h1>
+            <p className="mt-8 text-lg sm:text-xl md:text-2xl text-axp-ink/70 font-light max-w-3xl mx-auto leading-relaxed">
+              One production. A different version for each person: your cut, your language, your world.
+              Streaming shows everyone the same thing. Axessplayer doesn't.
+            </p>
+
+            <div className="mt-10 max-w-xl mx-auto">
+              <EarlyAccessForm variant="light" source="home-hero" />
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/explore"
+                className="inline-flex items-center gap-2 font-body text-axp-ink/70 hover:text-axp-ink transition-colors"
+              >
+                <Play className="w-4 h-4" /> Watch the demo
+              </Link>
+            </div>
+          </div>
+
+          {/* Three phone frames */}
+          <div className="mt-20 grid grid-cols-3 gap-3 sm:gap-6 max-w-4xl mx-auto">
+            <div className="pt-10">
+              <PhoneFrame
+                label="Slow burn, Spanish dub."
+                sublabel="Cut · ES"
+                tone="bg-gradient-to-b from-axp-ink-soft via-axp-ink to-black"
+              />
+            </div>
+            <PhoneFrame
+              accent
+              label="High intensity. Mug placement: local roaster."
+              sublabel="Cut · EN · placement"
+              tone="bg-gradient-to-b from-[#2a0a18] via-axp-ink to-black"
+            />
+            <div className="pt-10">
+              <PhoneFrame
+                label="POV switch. Captions with intention."
+                sublabel="Cut · JP"
+                tone="bg-gradient-to-b from-[#1a1a2a] via-axp-ink to-black"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* THE SHIFT */}
+      <section className="bg-axp-ink text-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-5xl mx-auto">
+            <Eyebrow>The shift</Eyebrow>
+            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white max-w-4xl">
+              Everyone is optimizing distribution. <span className="text-axp-rose">Nobody owns adaptation.</span>
             </h2>
-            <div className="space-y-8 text-lg text-foreground max-w-4xl mx-auto">
-              <p className="text-lg font-light leading-relaxed">{t('sections.whyWeExist.description')}</p>
-              <div className="grid md:grid-cols-3 gap-8 my-16">
-                <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-light text-foreground text-lg">{t('sections.whyWeExist.captionsMiss')}</p>
-                </div>
-                <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-light text-foreground text-lg">{t('sections.whyWeExist.audioDescriptionsRare')}</p>
-                </div>
-                <div className="bg-card p-8 rounded-2xl border shadow-soft">
-                  <p className="font-light text-foreground text-lg">{t('sections.whyWeExist.signLanguageNever')}</p>
-                </div>
-              </div>
-              <p className="text-2xl font-light text-primary leading-relaxed">
-                {t('sections.whyWeExist.belief')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      )}
+            <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
+              The microdrama boom competes on one axis: more content, cheaper, better recommended.
+              Every platform still ships one fixed cut to everyone. The story itself never changes.
+              That is the opening.
+            </p>
 
-      {/* Enterprise CTA Section */}
-      {!isDemo && (
-        <section className="py-32 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto text-center space-y-12">
-            <div className="space-y-6">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight">
-                {t('sections.enterpriseCTA.title')}{" "}
-                <span className="block">{t('sections.enterpriseCTA.titleTime')}</span>
-              </h2>
-              <p className="text-lg md:text-xl text-muted-foreground font-light max-w-3xl mx-auto">
-                {t('sections.enterpriseCTA.subtitle')}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button asChild size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/upload">{t('sections.enterpriseCTA.processFirstVideo')}</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/pricing">{t('sections.enterpriseCTA.viewPricing')}</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="px-10 py-6 text-lg font-light rounded-full h-auto">
-                <Link to="/contact">{t('sections.enterpriseCTA.bookDemo')}</Link>
-              </Button>
-            </div>
-
-            <div className="pt-12">
-              <p className="text-sm text-muted-foreground font-light mb-6">
-                {t('sections.enterpriseCTA.trustedBy')}
-              </p>
-              <MovingLogoStripe />
-            </div>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Section 2: The Axessible Experience */}
-      {!isDemo && (
-        <section className="py-32 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
-              {t('sections.axessibleExperience.title')}
-            </h2>
-            
-            <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-              <div className="text-center space-y-6 group">
-                <div className="flex items-center justify-center mx-auto h-80">
-                  <img src={captionsWithIntention} alt="Captions with Intention" className="w-80 h-80 object-contain" />
-                </div>
-                <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.captionsTitle')}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">
-                  {t('sections.axessibleExperience.captionsDesc')}
-                </p>
-              </div>
-              
-              <div className="text-center space-y-6 group">
-                <div className="flex items-center justify-center mx-auto h-80">
-                  <img src={audioDescriptions} alt="Emotive Audio Descriptions" className="w-80 h-80 object-contain" />
-                </div>
-                <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.audioDescTitle')}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">
-                  {t('sections.axessibleExperience.audioDescDesc')}
-                </p>
-              </div>
-              
-              <div className="text-center space-y-6 group">
-                <div className="flex items-center justify-center mx-auto h-80">
-                  <img src={signLanguage} alt="Sign Language Descriptions" className="w-80 h-80 object-contain" />
-                </div>
-                <h3 className="text-2xl font-light text-foreground">{t('sections.axessibleExperience.signLanguageTitle')}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">
-                  {t('sections.axessibleExperience.signLanguageDesc')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Section 3: For Viewers */}
-      {!isDemo && (
-        <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
-              {t('sections.forViewers.title')}
-            </h2>
-            <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p className="font-light">{t('sections.forViewers.description')}</p>
-              <div className="grid md:grid-cols-3 gap-6 my-8">
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forViewers.captionsDesign')}</p>
-                </div>
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forViewers.narrationDimension')}</p>
-                </div>
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forViewers.signLanguageArt')}</p>
-                </div>
-              </div>
-              <p className="text-xl font-light text-primary">{t('sections.forViewers.watchingFeels')}</p>
-            </div>
-            <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-              <Link to="/explore">{t('sections.forViewers.startWatching')}</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Section 4: For Creators */}
-      {!isDemo && (
-        <section className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
-              {t('sections.forCreators.title')}
-            </h2>
-            <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p className="font-light">{t('sections.forCreators.description')}</p>
-              <div className="grid md:grid-cols-3 gap-6 my-8">
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forCreators.aiTools')}</p>
-                </div>
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forCreators.humanGuidance')}</p>
-                </div>
-                <div className="bg-card p-6 rounded-lg border">
-                  <p className="font-light text-foreground">{t('sections.forCreators.compliance')}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <p className="font-light">{t('sections.forCreators.storiesReach')}</p>
-                <p className="text-xl font-light text-primary">{t('sections.forCreators.storiesMove')}</p>
-              </div>
-            </div>
-            <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-              <Link to="/upload">{t('sections.forCreators.shareContent')}</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Section 5: Community & Impact */}
-      {!isDemo && (
-        <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-light text-foreground mb-8">
-              {t('sections.community.title')}
-            </h2>
-            <div className="space-y-6 text-lg text-muted-foreground mb-12">
-              <p className="font-light">{t('sections.community.collaborate')}</p>
-              <p className="font-light">{t('sections.community.everyVideo')}</p>
-              <p className="text-xl font-light text-primary">
-                {t('sections.community.buildingLibrary')}
-              </p>
-              <p className="font-light">{t('sections.community.visionaries')}</p>
-            </div>
-            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto px-3 py-3 text-xs sm:text-sm font-light rounded-full text-center leading-tight whitespace-normal break-words max-w-full">
-              <Link to="/explore">{t('sections.community.meetPioneers')}</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Section 6: Impact Statistics */}
-      {!isDemo && (
-        <section className="py-32 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-light text-center text-foreground mb-20 leading-tight">
-                {t('sections.testimonials.title')}
-              </h2>
-              
-              {/* Large Impact Statistics - Eko Style */}
-              <div className="grid md:grid-cols-3 gap-12 mb-20">
-                <div className="text-center space-y-3">
-                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                    95<span className="text-primary">%</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.engagementIncrease')}</h3>
-                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.viewerEngagement')}</p>
-                  </div>
-                </div>
-                
-                <div className="text-center space-y-3">
-                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                    78<span className="text-primary">%</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.betterComprehension')}</h3>
-                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.contentComprehension')}</p>
-                  </div>
-                </div>
-                
-                <div className="text-center space-y-3">
-                  <div className="text-6xl md:text-8xl font-light text-foreground leading-none tracking-tight">
-                    24<span className="text-primary">x</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-light text-foreground">{t('sections.testimonials.moreVideos')}</h3>
-                    <p className="text-lg text-foreground font-light">{t('sections.testimonials.accessibleVideos')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial Cards */}
-              <div className="grid md:grid-cols-3 gap-8 mt-16">
-                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                    "{t('sections.testimonials.testimonial1')}"
-                  </p>
-                </div>
-                
-                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                    "{t('sections.testimonials.testimonial2')}"
-                  </p>
-                </div>
-                
-                <div className="bg-card p-8 rounded-2xl border shadow-soft text-center group hover:shadow-elegant transition-shadow">
-                  <p className="text-lg text-muted-foreground mb-6 italic font-light leading-relaxed">
-                    "{t('sections.testimonials.testimonial3')}"
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Section 7: Closing CTA */}
-      {!isDemo && (
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-6xl font-light text-foreground mb-6">
-                {t('sections.cta.title')}
-              </h2>
-              <p className="text-xl text-muted-foreground font-light mb-12">
-                {t('sections.cta.subtitle')}
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-                  <Link to="/explore">{t('sections.cta.watchNow')}</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg font-light rounded-full">
-                  <Link to="/upload">{t('sections.cta.shareContent')}</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Recognition Section - Bottom of Demo Pages Only */}
-      {isDemo && (
-        <section className="py-20 bg-muted/20">
-          <div className="container mx-auto px-6">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center space-y-12">
-                <div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    Powered by Axessible Technologies
-                  </h3>
-                  <p className="text-base text-muted-foreground font-light">
-                    Recognized for Innovation in AI for Good
-                  </p>
-                </div>
-                
-                <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
-                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                    <img src={euLogo} alt="European Union" className="h-16 md:h-20 w-auto object-contain" />
-                  </div>
-                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                    <img src={bscLogo} alt="BSC AI Factory" className="h-24 md:h-28 w-auto object-contain" />
-                  </div>
-                  <div className="flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300">
-                    <img src={nvidiaLogo} alt="NVIDIA Inception Program" className="h-16 md:h-20 w-auto object-contain" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <footer className="bg-muted py-12">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-              <div className="flex items-center space-x-3 mb-4 md:mb-0">
-                <img
-                  src="/assets/axessible-logo.png"
-                  alt="Axessible"
-                  className="h-8 w-auto"
+            <div className="mt-16 flex flex-wrap items-end gap-3">
+              {Array.from({ length: 11 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`rounded-xl ${i === 5 ? 'bg-axp-rose w-14 h-24' : 'bg-white/10 w-10 h-16'}`}
                 />
-                <span className="text-base font-light text-muted-foreground leading-relaxed">{t('footer.tagline')}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* THREE AXES */}
+      <section className="bg-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-3xl">
+            <Eyebrow>What is adaptive cinema</Eyebrow>
+            <SectionHeading className="mt-6">One story. Re-cut for you.</SectionHeading>
+          </div>
+
+          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              {
+                icon: Film,
+                title: 'Your cut.',
+                body: 'POV, pacing, intensity, and ending, chosen automatically from how you watch. No menus.',
+                accent: true,
+              },
+              {
+                icon: Languages,
+                title: 'Your language.',
+                body: 'One master, every language, accessible by default, at near-zero marginal cost.',
+              },
+              {
+                icon: Globe2,
+                title: 'Your world.',
+                body: 'The same scene, the right brand for your market. Canon-safe, never an interruption.',
+              },
+            ].map(({ icon: Icon, title, body, accent }) => (
+              <div
+                key={title}
+                className={`rounded-3xl p-8 lg:p-10 border ${
+                  accent
+                    ? 'bg-axp-ink text-white border-axp-ink'
+                    : 'bg-white text-axp-ink border-axp-line'
+                }`}
+              >
+                <Icon className={`w-7 h-7 ${accent ? 'text-axp-rose' : 'text-axp-ink/70'}`} />
+                <h3 className={`mt-8 font-display text-3xl font-light ${accent ? 'text-white' : 'text-axp-ink'}`}>
+                  {title}
+                </h3>
+                <p className={`mt-4 font-body leading-relaxed ${accent ? 'text-white/75' : 'text-axp-ink/65'}`}>
+                  {body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12">
+            <Link
+              to="/enterprise"
+              className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink hover:text-axp-rose transition-colors"
+            >
+              See how it works <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="bg-white border-y border-axp-line">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="grid lg:grid-cols-12 gap-12 items-start">
+            <div className="lg:col-span-5">
+              <Eyebrow>How it works</Eyebrow>
+              <SectionHeading className="mt-6">Human soul, AI scale, one engine.</SectionHeading>
+              <p className="mt-8 text-lg text-axp-ink/70 font-light leading-relaxed">
+                Filmed scenes carry the soul and the clips. AI generates the variants, the languages,
+                and the localizations. One decision engine reads how each person watches and serves
+                the right cut automatically.
+              </p>
+            </div>
+
+            <div className="lg:col-span-7">
+              <div className="space-y-4">
+                {[
+                  { step: '01', title: 'Filmed by humans.', body: 'A spine of scenes, alternates, and beats, shot once.' },
+                  { step: '02', title: 'Adapted by AI.', body: 'Variants, languages, accessibility tracks, and placement assets, generated.' },
+                  { step: '03', title: 'Served by the engine.', body: 'A decision layer picks the right cut per viewer at playback.' },
+                ].map(({ step, title, body }, i) => (
+                  <div
+                    key={step}
+                    className={`flex items-start gap-6 p-6 lg:p-8 rounded-2xl border ${
+                      i === 1 ? 'bg-axp-rose-soft border-axp-rose/30' : 'bg-axp-warm-white border-axp-line'
+                    }`}
+                  >
+                    <span className="font-mono text-sm text-axp-ink/50 pt-1">{step}</span>
+                    <div>
+                      <h4 className="font-display text-2xl font-light text-axp-ink">{title}</h4>
+                      <p className="mt-2 text-axp-ink/65 font-body leading-relaxed">{body}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-              <div>
-                <h3 className="font-light text-foreground mb-4">{t('footer.about')}</h3>
-                <div className="space-y-2 text-base font-light">
-                  <Link to="/enterprise" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.enterprise')}</Link>
-                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.community')}</Link>
-                  <Link to="/pricing" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.pricing')}</Link>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-light text-foreground mb-4">{t('footer.features')}</h3>
-                <div className="space-y-2 text-base font-light">
-                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('nav.explore')}</Link>
-                  <Link to="/upload" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.upload')}</Link>
-                  <Link to="/explore" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.blog')}</Link>
-                  <a href="https://axesshuman.com" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground hover:text-primary transition-colors">AVLM</a>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-light text-foreground mb-4">{t('footer.contact')}</h3>
-                <div className="space-y-2 text-base font-light">
-                  <Link to="/contact" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.contact')}</Link>
-                  <Link to="/accessibility-statement" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.accessibilityStatement')}</Link>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-light text-foreground mb-4">{t('footer.terms')}</h3>
-                <div className="space-y-2 text-base font-light">
-                  <Link to="/terms" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.terms')}</Link>
-                  <Link to="/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">{t('footer.privacy')}</Link>
-                </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ACCESSIBLE BY DEFAULT */}
+      <section className="bg-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>Accessible by default</Eyebrow>
+            <SectionHeading className="mt-6">
+              Built so everyone can watch. <span className="text-axp-ink/55">From the first frame.</span>
+            </SectionHeading>
+            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
+              Captions with intention, creative audio description, sign language, and dubbing are
+              generated for every story in every language, not bolted on later. Accessibility is the
+              foundation the whole platform is built on.
+            </p>
+
+            <div className="mt-12 flex flex-wrap gap-3">
+              {['Captions with intention', 'Creative audio description', 'Sign language', 'Dubbing', 'WCAG 2.2', 'EAA', 'ADA'].map((tag) => (
+                <span
+                  key={tag}
+                  className="font-mono text-xs uppercase tracking-[0.18em] px-4 py-2 rounded-full border border-axp-ink/15 text-axp-ink/70"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-10">
+              <Link
+                to="/enterprise"
+                className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-rose hover:text-axp-ink transition-colors"
+              >
+                Accessibility for your platform <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOR BRANDS */}
+      <section className="bg-axp-ink text-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <Eyebrow>For brands</Eyebrow>
+              <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
+                The same scene. <span className="text-axp-gold">A different product</span> for every market.
+              </h2>
+              <p className="mt-8 text-lg text-white/70 font-light leading-relaxed max-w-xl">
+                Dynamic in-scene placement fills a mug, a billboard, or a phone screen with the right
+                brand for each viewer, at serve time. First-party attention and data, without
+                interrupting the story.
+              </p>
+              <div className="mt-10">
+                <Link
+                  to="/enterprise"
+                  className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-gold hover:text-white transition-colors"
+                >
+                  Partner with us <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
-            
-            <div className="text-center text-base font-light text-muted-foreground">
-              <p>{t('footer.copyright')}</p>
+
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-axp-ink-soft to-black">
+              <div className="absolute inset-0 grid grid-cols-2 gap-2 p-6">
+                {[
+                  { brand: 'Roaster · ES', tone: 'bg-axp-rose/80' },
+                  { brand: 'Coffee · US', tone: 'bg-axp-gold/80' },
+                  { brand: 'Café · BR', tone: 'bg-emerald-400/70' },
+                  { brand: 'Kissaten · JP', tone: 'bg-indigo-400/70' },
+                ].map((b) => (
+                  <div key={b.brand} className="relative rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                    <div className={`absolute top-4 left-4 right-4 h-1/2 rounded-xl ${b.tone}`} />
+                    <p className="absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/70">
+                      {b.brand}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHY NOW */}
+      <section className="bg-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>Why now</Eyebrow>
+            <SectionHeading className="mt-6">
+              Interactive cinema was tried once. The reasons it failed are gone.
+            </SectionHeading>
+            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
+              Production, promotion, and format friction killed it a decade ago. AI generates the
+              variants now. Vertical, swipeable feeds are the native format. We are rebuilding it
+              with the people who invented interactive video.
+            </p>
+            <div className="mt-10 inline-flex items-center gap-3 px-5 py-3 rounded-full border border-axp-ink/15 bg-white">
+              <Sparkles className="w-4 h-4 text-axp-rose" />
+              <p className="font-body text-sm text-axp-ink">
+                Built by the team behind <span className="font-medium">Eko</span>, the inventors of seamless branching video.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW TO WATCH */}
+      <section className="bg-white border-y border-axp-line">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-3xl">
+            <Eyebrow>How to watch</Eyebrow>
+            <SectionHeading className="mt-6">Three ways in. Three ways to pay.</SectionHeading>
+          </div>
+
+          <div className="mt-16 grid md:grid-cols-3 gap-6">
+            {[
+              { tag: 'Earn', title: 'Watch a rewarded ad, get credits.', icon: Layers },
+              { tag: 'Buy', title: 'Credit packs, whenever you want more.', icon: Sparkles },
+              { tag: 'Subscribe', title: 'Ad-free, with a credit allowance and premium variants.', icon: Accessibility },
+            ].map(({ tag, title, icon: Icon }) => (
+              <div key={tag} className="rounded-3xl border border-axp-line p-8 bg-axp-warm-white">
+                <Icon className="w-6 h-6 text-axp-rose" />
+                <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink/55">{tag}</p>
+                <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{title}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-10 text-axp-ink/60 font-body max-w-3xl">
+            Spend credits on episode unlocks and premium variants: alt endings, POVs, intensity dials, early access.
+          </p>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="bg-axp-ink text-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36 text-center">
+          <SectionHeading className="!text-white max-w-4xl mx-auto">
+            Be first to watch <span className="text-axp-rose">yourself</span> into the story.
+          </SectionHeading>
+          <p className="mt-6 text-lg text-white/70 font-light max-w-2xl mx-auto">
+            Get early access to Axessplayer. We will email you the moment your spot opens.
+          </p>
+          <div className="mt-12">
+            <EarlyAccessForm variant="dark" source="home-final" microcopy="No spam. Unsubscribe anytime." />
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-axp-ink text-white border-t border-white/10">
+        <div className="container mx-auto px-6 py-16">
+          <div className="grid md:grid-cols-5 gap-10">
+            <div className="md:col-span-2">
+              <img src={logoWhite.url} alt="Axessplayer" className="h-8 w-auto" />
+              <p className="mt-5 text-white/55 font-body text-sm max-w-xs">
+                Axessplayer, by Axessible Technologies.
+              </p>
+            </div>
+            {[
+              { h: 'Platform', items: [['How it works', '/'], ['Accessibility', '/enterprise'], ['For brands', '/enterprise'], ['Demo', '/explore']] },
+              { h: 'Enterprise', items: [['Overview', '/enterprise'], ['Compliance', '/enterprise'], ['Book a demo', '/contact']] },
+              { h: 'Company', items: [['About', '/about'], ['Contact', '/contact']] },
+            ].map((col) => (
+              <div key={col.h}>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">{col.h}</p>
+                <ul className="mt-4 space-y-2">
+                  {col.items.map(([label, href]) => (
+                    <li key={label}>
+                      <Link to={href} className="text-white/80 hover:text-white font-body text-sm">{label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-4 text-white/50 text-sm font-body">
+            <p>One story. Every language. Every person.</p>
+            <p>© {new Date().getFullYear()} Axessible Technologies.</p>
           </div>
         </div>
       </footer>
@@ -497,4 +443,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Home;
