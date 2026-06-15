@@ -5,7 +5,7 @@ import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Globe2, Sparkles, Layers, Film, Languages, Accessibility } from 'lucide-react';
+import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 import heroPhone from '@/assets/axessplayer-hero-phone.png.asset.json';
 import rewardsScreen from '@/assets/axessplayer-rewards-screen.png.asset.json';
