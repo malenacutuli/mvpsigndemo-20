@@ -31,9 +31,9 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover-foreground: 210 15% 8%;
 
     /* Primary: Calmer blue inspired by Eko */
-    --primary: 214 100% 47%;
+    --primary: 343 100% 59%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 214 100% 57%;
+    --primary-glow: 343 100% 67%;
 
     /* Secondary: Warm neutral for supporting elements */
     --secondary: 210 30% 92%;
@@ -79,13 +79,13 @@ Focused on high contrast, readable typography, and inclusive design.
 
     --border: 210 30% 88%;
     --input: 210 30% 95%;
-    --ring: 214 100% 47%;
+    --ring: 343 100% 59%;
 
     --radius: 0.75rem;
 
     /* Calmer design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 47%), hsl(214 100% 57%));
-    --shadow-elegant: 0 10px 30px -10px hsl(214 100% 47% / 0.15);
+    --gradient-primary: linear-gradient(135deg, hsl(343 100% 59%), hsl(343 100% 67%));
+    --shadow-elegant: 0 10px 30px -10px hsl(343 100% 59% / 0.25);
     --shadow-soft: 0 4px 20px -4px hsl(220 13% 91% / 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --spacing-hero: 4rem;
@@ -118,7 +118,7 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 214 100% 57%;
+    --primary: 343 100% 67%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -135,7 +135,7 @@ Focused on high contrast, readable typography, and inclusive design.
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 214 100% 57%;
+    --ring: 343 100% 67%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
