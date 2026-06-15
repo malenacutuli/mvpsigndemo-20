@@ -31,9 +31,9 @@ Focused on high contrast, readable typography, and inclusive design.
     --popover-foreground: 210 15% 8%;
 
     /* Primary: Calmer blue inspired by Eko */
-    --primary: 214 100% 47%;
+    --primary: 343 100% 59%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 214 100% 57%;
+    --primary-glow: 343 100% 67%;
 
     /* Secondary: Warm neutral for supporting elements */
     --secondary: 210 30% 92%;
