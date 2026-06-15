@@ -5,7 +5,7 @@ import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Globe2, Sparkles, Layers, Film, Languages, Accessibility } from 'lucide-react';
+import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 import heroPhone from '@/assets/axessplayer-hero-phone.png.asset.json';
 import rewardsScreen from '@/assets/axessplayer-rewards-screen.png.asset.json';
@@ -213,9 +213,9 @@ const Home: React.FC = () => {
 
           <div className="mt-16 grid md:grid-cols-3 gap-6">
             {[
-              { key: 'earn', icon: Layers },
-              { key: 'buy', icon: Sparkles },
-              { key: 'subscribe', icon: Accessibility },
+              { key: 'earn', icon: Gift },
+              { key: 'buy', icon: ShoppingBag },
+              { key: 'subscribe', icon: Repeat },
             ].map(({ key, icon: Icon }) => (
               <div key={key} className="rounded-3xl border border-axp-line p-8 bg-axp-warm-white">
                 <Icon className="w-6 h-6 text-axp-rose" />
