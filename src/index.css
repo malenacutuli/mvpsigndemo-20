@@ -84,8 +84,8 @@ Focused on high contrast, readable typography, and inclusive design.
     --radius: 0.75rem;
 
     /* Calmer design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(214 100% 47%), hsl(214 100% 57%));
-    --shadow-elegant: 0 10px 30px -10px hsl(214 100% 47% / 0.15);
+    --gradient-primary: linear-gradient(135deg, hsl(343 100% 59%), hsl(343 100% 67%));
+    --shadow-elegant: 0 10px 30px -10px hsl(343 100% 59% / 0.25);
     --shadow-soft: 0 4px 20px -4px hsl(220 13% 91% / 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --spacing-hero: 4rem;
