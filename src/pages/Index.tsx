@@ -196,8 +196,7 @@ const Home: React.FC = () => {
             <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
               {t('home.whyNow.body')}
             </p>
-            <div className="mt-10 inline-flex items-center gap-3 px-5 py-3 rounded-full border border-axp-ink/15 bg-white">
-              <Sparkles className="w-4 h-4 text-axp-rose" />
+            <div className="mt-10 inline-flex items-center px-5 py-3 rounded-full border border-axp-ink/15 bg-white">
               <p className="font-body text-sm text-axp-ink">{t('home.whyNow.builtBy', { name: 'Eko' })}</p>
             </div>
           </div>
