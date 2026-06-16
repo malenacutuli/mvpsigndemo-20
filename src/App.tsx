@@ -29,6 +29,7 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import AdminSubscribers from "./pages/AdminSubscribers";
 import PremiumVideoEditor from "./pages/PremiumVideoEditor";
+import Talent from "./pages/Talent";
 
 
 const queryClient = new QueryClient();
