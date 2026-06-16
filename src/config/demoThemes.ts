@@ -30,9 +30,9 @@ export const demoThemes: Record<string, DemoTheme> = {
     logo: '/assets/axessible-logo.png',
     logoAlt: '/assets/axessible-logo-alt.png',
     colors: {
-      primary: '214 100% 47%',
-      primaryGlow: '214 100% 57%',
-      accent: '204 94% 94%',
+      primary: '343 100% 59%',
+      primaryGlow: '343 100% 67%',
+      accent: '343 100% 96%',
       secondary: '210 30% 92%',
     },
     companyName: 'Axessible',
