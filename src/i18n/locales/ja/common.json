@@ -893,6 +893,30 @@
       "contact": "お問い合わせ",
       "tagline": "ひとつの物語。あらゆる言語。ひとりひとりに。",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "クリエイター向け",
+      "title1": "あなたのオリジナルコンテンツを",
+      "title2": "収益化しませんか？",
+      "body": "プロジェクトについて教えてください。ノベラ、リアリティ、料理、教育、アニメシリーズなど、さまざまなクリエイターと協力しています。",
+      "form": {
+        "name": "お名前",
+        "namePlaceholder": "お名前",
+        "contact": "連絡先",
+        "contactPlaceholder": "メールまたは電話",
+        "contentType": "コンテンツの種類",
+        "project": "プロジェクトについて教えてください",
+        "projectPlaceholder": "ジャンル、長さ、状況、視聴者層…",
+        "submit": "お問い合わせ",
+        "types": {
+          "novela": "ノベラ",
+          "reality": "リアリティ",
+          "cooking": "料理",
+          "education": "教育",
+          "animated": "アニメシリーズ",
+          "others": "その他"
+        }
+      }
     }
   }
 }

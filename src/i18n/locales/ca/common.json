@@ -767,6 +767,30 @@
       "contact": "Contacte",
       "tagline": "Una història. Cada llengua. Cada persona.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "Per a creadors",
+      "title1": "Vols monetitzar",
+      "title2": "el teu contingut original?",
+      "body": "Explica'ns el teu projecte. Treballem amb creadors de novel·la, reality, cuina, educació, sèries animades i molt més.",
+      "form": {
+        "name": "Nom",
+        "namePlaceholder": "El teu nom",
+        "contact": "Contacte",
+        "contactPlaceholder": "Correu o telèfon",
+        "contentType": "Tipus de contingut",
+        "project": "Explica'ns el teu projecte",
+        "projectPlaceholder": "Gènere, durada, estat, audiència…",
+        "submit": "Contacta'ns",
+        "types": {
+          "novela": "Novel·la",
+          "reality": "Reality",
+          "cooking": "Cuina",
+          "education": "Educació",
+          "animated": "Sèrie animada",
+          "others": "Altres"
+        }
+      }
     }
   }
 }

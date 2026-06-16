@@ -1263,6 +1263,30 @@
       "contact": "Contacto",
       "tagline": "Una historia. Todos los idiomas. Cada persona.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "Para creadores",
+      "title1": "¿Quieres monetizar",
+      "title2": "tu contenido original?",
+      "body": "Cuéntanos sobre tu proyecto. Trabajamos con creadores de novela, reality, cocina, educación, series animadas y más.",
+      "form": {
+        "name": "Nombre",
+        "namePlaceholder": "Tu nombre",
+        "contact": "Contacto",
+        "contactPlaceholder": "Email o teléfono",
+        "contentType": "Tipo de contenido",
+        "project": "Cuéntanos sobre tu proyecto",
+        "projectPlaceholder": "Género, duración, estado, audiencia…",
+        "submit": "Contáctanos",
+        "types": {
+          "novela": "Novela",
+          "reality": "Reality",
+          "cooking": "Cocina",
+          "education": "Educación",
+          "animated": "Serie animada",
+          "others": "Otros"
+        }
+      }
     }
   }
 }

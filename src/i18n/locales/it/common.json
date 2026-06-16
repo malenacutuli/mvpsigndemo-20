@@ -767,6 +767,30 @@
       "contact": "Contatti",
       "tagline": "Una storia. Ogni lingua. Ogni persona.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "Per i creator",
+      "title1": "Vuoi monetizzare",
+      "title2": "i tuoi contenuti originali?",
+      "body": "Raccontaci del tuo progetto. Lavoriamo con creator di telenovela, reality, cucina, educazione, serie animate e altro.",
+      "form": {
+        "name": "Nome",
+        "namePlaceholder": "Il tuo nome",
+        "contact": "Contatto",
+        "contactPlaceholder": "Email o telefono",
+        "contentType": "Tipo di contenuto",
+        "project": "Raccontaci del tuo progetto",
+        "projectPlaceholder": "Genere, durata, stato, pubblico…",
+        "submit": "Contattaci",
+        "types": {
+          "novela": "Telenovela",
+          "reality": "Reality",
+          "cooking": "Cucina",
+          "education": "Educazione",
+          "animated": "Serie animata",
+          "others": "Altro"
+        }
+      }
     }
   }
 }

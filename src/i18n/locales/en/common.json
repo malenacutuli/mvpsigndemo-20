@@ -1259,6 +1259,30 @@
       "contact": "Contact",
       "tagline": "One story. Every language. Every person.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "For creators",
+      "title1": "Do you want to monetize",
+      "title2": "your original content?",
+      "body": "Tell us about your project. We work with creators across novela, reality, cooking, education, animated series and more.",
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "Your name",
+        "contact": "Contact",
+        "contactPlaceholder": "Email or phone",
+        "contentType": "Type of content",
+        "project": "Tell us about your project",
+        "projectPlaceholder": "Genre, length, status, audience…",
+        "submit": "Contact us",
+        "types": {
+          "novela": "Novela",
+          "reality": "Reality",
+          "cooking": "Cooking",
+          "education": "Education",
+          "animated": "Animated Series",
+          "others": "Others"
+        }
+      }
     }
   }
 }
