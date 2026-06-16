@@ -228,6 +228,23 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <section className="bg-axp-ink text-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-3xl mx-auto text-center">
+            <Eyebrow>{t('home.talent.eyebrow')}</Eyebrow>
+            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
+              {t('home.talent.title1')} <span className="text-axp-rose">{t('home.talent.title2')}</span>
+            </h2>
+            <p className="mt-8 text-lg text-white/70 font-light leading-relaxed">
+              {t('home.talent.body')}
+            </p>
+          </div>
+          <div className="mt-12 rounded-3xl bg-white p-6 sm:p-10 max-w-3xl mx-auto">
+            <TalentForm />
+          </div>
+        </div>
+      </section>
+
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-3xl mx-auto text-center">
