@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
+import { CreatorsForm } from '@/components/CreatorsForm';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
@@ -222,6 +223,23 @@ const Home: React.FC = () => {
                 <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{t(`home.howToWatch.${key}.title`)}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white border-y border-axp-line">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-3xl mx-auto text-center">
+            <Eyebrow>{t('home.creators.eyebrow')}</Eyebrow>
+            <SectionHeading className="mt-6">
+              {t('home.creators.title1')} <span className="text-axp-rose">{t('home.creators.title2')}</span>
+            </SectionHeading>
+            <p className="mt-8 text-lg text-axp-ink/70 font-light leading-relaxed">
+              {t('home.creators.body')}
+            </p>
+          </div>
+          <div className="mt-12">
+            <CreatorsForm />
           </div>
         </div>
       </section>
