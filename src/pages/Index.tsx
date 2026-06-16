@@ -5,6 +5,7 @@ import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
 import { CreatorsForm } from '@/components/CreatorsForm';
+import { TalentForm } from '@/components/TalentForm';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
@@ -223,6 +224,23 @@ const Home: React.FC = () => {
                 <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{t(`home.howToWatch.${key}.title`)}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-axp-ink text-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-3xl mx-auto text-center">
+            <Eyebrow>{t('home.talent.eyebrow')}</Eyebrow>
+            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
+              {t('home.talent.title1')} <span className="text-axp-rose">{t('home.talent.title2')}</span>
+            </h2>
+            <p className="mt-8 text-lg text-white/70 font-light leading-relaxed">
+              {t('home.talent.body')}
+            </p>
+          </div>
+          <div className="mt-12 rounded-3xl bg-white p-6 sm:p-10 max-w-3xl mx-auto">
+            <TalentForm />
           </div>
         </div>
       </section>

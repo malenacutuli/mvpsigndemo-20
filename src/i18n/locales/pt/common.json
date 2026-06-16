@@ -791,6 +791,30 @@
           "others": "Outros"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Para talentos",
+      "title1": "A IA precisa do seu rosto.",
+      "title2": "Agora tem de pagar por ele.",
+      "body": "O Axessplayer é o registo onde as pessoas licenciam o seu rosto, voz e língua gestual para uso de IA — a marcas, emissoras e laboratórios. Verifique uma vez. Defina as condições. Ganhe a cada utilização.",
+      "bullets": {
+        "free": "Inscrição gratuita",
+        "signup": "Registo em 10 minutos",
+        "approve": "Você aprova cada trabalho"
+      },
+      "form": {
+        "name": "Nome",
+        "namePlaceholder": "O seu nome",
+        "contact": "Contacto",
+        "contactPlaceholder": "Email ou telefone",
+        "location": "Localização",
+        "locationPlaceholder": "Cidade, país",
+        "languages": "Idiomas",
+        "languagesPlaceholder": "Idiomas que fala / gestualiza",
+        "about": "Fale-nos sobre si",
+        "aboutPlaceholder": "Atuação, voz, língua gestual, modelo, apresentação…",
+        "submit": "Licenciar o meu rosto"
+      }
     }
   }
 }

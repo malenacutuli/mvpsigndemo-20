@@ -791,6 +791,30 @@
           "others": "Altro"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Per i talenti",
+      "title1": "L'IA ha bisogno del tuo volto.",
+      "title2": "Ora deve pagarlo.",
+      "body": "Axessplayer è il registro dove le persone concedono in licenza il proprio volto, voce e segni per l'uso dell'IA — a brand, emittenti e laboratori. Verifica una volta. Imposta le tue condizioni. Guadagna a ogni utilizzo.",
+      "bullets": {
+        "free": "Iscrizione gratuita",
+        "signup": "Registrazione in 10 minuti",
+        "approve": "Tu approvi ogni lavoro"
+      },
+      "form": {
+        "name": "Nome",
+        "namePlaceholder": "Il tuo nome",
+        "contact": "Contatto",
+        "contactPlaceholder": "Email o telefono",
+        "location": "Località",
+        "locationPlaceholder": "Città, paese",
+        "languages": "Lingue",
+        "languagesPlaceholder": "Lingue parlate / segnate",
+        "about": "Raccontaci di te",
+        "aboutPlaceholder": "Recitazione, voce, lingua dei segni, modeling, conduzione…",
+        "submit": "Licenzia il mio volto"
+      }
     }
   }
 }

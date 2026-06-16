@@ -791,6 +791,30 @@
           "others": "Autres"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Pour les talents",
+      "title1": "L'IA a besoin de votre visage.",
+      "title2": "Maintenant elle doit payer.",
+      "body": "Axessplayer est le registre où les humains licencient leur visage, voix et signes pour l'IA — aux marques, diffuseurs et laboratoires. Vérifiez une fois. Fixez vos conditions. Gagnez à chaque utilisation.",
+      "bullets": {
+        "free": "Inscription gratuite",
+        "signup": "Inscription en 10 min",
+        "approve": "Vous validez chaque mission"
+      },
+      "form": {
+        "name": "Nom",
+        "namePlaceholder": "Votre nom",
+        "contact": "Contact",
+        "contactPlaceholder": "Email ou téléphone",
+        "location": "Lieu",
+        "locationPlaceholder": "Ville, pays",
+        "languages": "Langues",
+        "languagesPlaceholder": "Langues parlées / signées",
+        "about": "Parlez-nous de vous",
+        "aboutPlaceholder": "Jeu, voix, langue des signes, mannequinat, animation…",
+        "submit": "Licencier mon visage"
+      }
     }
   }
 }
