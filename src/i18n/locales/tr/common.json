@@ -120,6 +120,30 @@
           "others": "Diğer"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Yetenekler için",
+      "title1": "Yapay zekânın yüzüne ihtiyacı var.",
+      "title2": "Artık bunun bedelini ödemeli.",
+      "body": "Axessplayer; insanların yüzünü, sesini ve işaret dilini markalara, yayıncılara ve YZ laboratuvarlarına lisansladığı kayıt sistemidir. Bir kez doğrula. Şartlarını belirle. Her kullanımda kazan.",
+      "bullets": {
+        "free": "Üyelik ücretsiz",
+        "signup": "10 dakikalık kayıt",
+        "approve": "Her işi sen onaylarsın"
+      },
+      "form": {
+        "name": "Ad",
+        "namePlaceholder": "Adınız",
+        "contact": "İletişim",
+        "contactPlaceholder": "E-posta veya telefon",
+        "location": "Konum",
+        "locationPlaceholder": "Şehir, ülke",
+        "languages": "Diller",
+        "languagesPlaceholder": "Konuştuğunuz / işaret dilleriniz",
+        "about": "Kendinizden bahsedin",
+        "aboutPlaceholder": "Oyunculuk, ses, işaret dili, modellik, sunuculuk…",
+        "submit": "Yüzümü lisansla"
+      }
     }
   }
 }

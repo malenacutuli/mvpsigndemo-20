@@ -791,6 +791,30 @@
           "others": "Altres"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Per a talent",
+      "title1": "La IA necessita la teva cara.",
+      "title2": "Ara l'ha de pagar.",
+      "body": "Axessplayer és el registre on les persones llicencien la seva cara, veu i signes per a l'ús d'IA — a marques, emissores i laboratoris. Verifica una vegada. Posa les teves condicions. Cobra cada cop que s'utilitzi.",
+      "bullets": {
+        "free": "Inscripció gratuïta",
+        "signup": "Registre en 10 minuts",
+        "approve": "Tu aproves cada feina"
+      },
+      "form": {
+        "name": "Nom",
+        "namePlaceholder": "El teu nom",
+        "contact": "Contacte",
+        "contactPlaceholder": "Correu o telèfon",
+        "location": "Ubicació",
+        "locationPlaceholder": "Ciutat, país",
+        "languages": "Idiomes",
+        "languagesPlaceholder": "Idiomes que parles / signes",
+        "about": "Explica'ns sobre tu",
+        "aboutPlaceholder": "Actuació, veu, llengua de signes, modelatge, presentació…",
+        "submit": "Llicencia la meva cara"
+      }
     }
   }
 }

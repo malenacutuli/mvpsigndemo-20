@@ -791,6 +791,30 @@
           "others": "Andere"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "Für Talente",
+      "title1": "KI braucht dein Gesicht.",
+      "title2": "Jetzt muss sie dafür zahlen.",
+      "body": "Axessplayer ist das Register, in dem Menschen ihr Gesicht, ihre Stimme und Gebärden für KI-Nutzung lizenzieren — an Marken, Sender und KI-Labore. Einmal verifizieren. Bedingungen festlegen. Bei jeder Nutzung verdienen.",
+      "bullets": {
+        "free": "Kostenlos beitreten",
+        "signup": "10-Minuten-Anmeldung",
+        "approve": "Du genehmigst jeden Auftrag"
+      },
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "Dein Name",
+        "contact": "Kontakt",
+        "contactPlaceholder": "E-Mail oder Telefon",
+        "location": "Ort",
+        "locationPlaceholder": "Stadt, Land",
+        "languages": "Sprachen",
+        "languagesPlaceholder": "Sprachen, die du sprichst / gebärdest",
+        "about": "Erzähl uns von dir",
+        "aboutPlaceholder": "Schauspiel, Stimme, Gebärden, Modeling, Moderation…",
+        "submit": "Mein Gesicht lizenzieren"
+      }
     }
   }
 }

@@ -1283,6 +1283,30 @@
           "others": "Others"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "For Talent",
+      "title1": "AI needs your face.",
+      "title2": "Now it has to pay for it.",
+      "body": "Axessplayer is the registry where humans license their face, voice, and signing for AI use — to brands, broadcasters, and AI labs. Verify once. Set your terms. Earn every time it's used.",
+      "bullets": {
+        "free": "Free to join",
+        "signup": "10-minute signup",
+        "approve": "You approve every job"
+      },
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "Your name",
+        "contact": "Contact",
+        "contactPlaceholder": "Email or phone",
+        "location": "Location",
+        "locationPlaceholder": "City, country",
+        "languages": "Languages",
+        "languagesPlaceholder": "Languages you speak / sign",
+        "about": "Tell us about yourself",
+        "aboutPlaceholder": "Acting, voice, signing, modeling, hosting…",
+        "submit": "License my face"
+      }
     }
   }
 }

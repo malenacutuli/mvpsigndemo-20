@@ -917,6 +917,30 @@
           "others": "その他"
         }
       }
+    },
+    "talent": {
+      "eyebrow": "タレント向け",
+      "title1": "AIはあなたの顔を必要としている。",
+      "title2": "そして、その対価を払うべきだ。",
+      "body": "Axessplayerは、ブランド・放送局・AIラボに対し、人々が自分の顔・声・手話をAI利用にライセンス提供できるレジストリです。一度認証。条件を設定。使われるたびに報酬を獲得。",
+      "bullets": {
+        "free": "参加無料",
+        "signup": "10分で登録",
+        "approve": "案件ごとに承認"
+      },
+      "form": {
+        "name": "氏名",
+        "namePlaceholder": "お名前",
+        "contact": "連絡先",
+        "contactPlaceholder": "メールまたは電話",
+        "location": "所在地",
+        "locationPlaceholder": "都市、国",
+        "languages": "言語",
+        "languagesPlaceholder": "話す/手話する言語",
+        "about": "自己紹介",
+        "aboutPlaceholder": "演技、声、手話、モデル、司会など…",
+        "submit": "顔をライセンスする"
+      }
     }
   }
 }
