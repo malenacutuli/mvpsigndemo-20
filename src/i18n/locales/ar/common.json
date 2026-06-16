@@ -96,6 +96,30 @@
       "contact": "تواصل",
       "tagline": "قصة واحدة. كل لغة. كل شخص.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "للمبدعين",
+      "title1": "هل تريد تحقيق الدخل",
+      "title2": "من محتواك الأصلي؟",
+      "body": "أخبرنا عن مشروعك. نعمل مع مبدعين في المسلسلات، تلفزيون الواقع، الطبخ، التعليم، المسلسلات المتحركة وأكثر.",
+      "form": {
+        "name": "الاسم",
+        "namePlaceholder": "اسمك",
+        "contact": "التواصل",
+        "contactPlaceholder": "البريد الإلكتروني أو الهاتف",
+        "contentType": "نوع المحتوى",
+        "project": "أخبرنا عن مشروعك",
+        "projectPlaceholder": "النوع، المدة، الحالة، الجمهور…",
+        "submit": "تواصل معنا",
+        "types": {
+          "novela": "مسلسل",
+          "reality": "تلفزيون الواقع",
+          "cooking": "طبخ",
+          "education": "تعليم",
+          "animated": "مسلسل رسوم متحركة",
+          "others": "أخرى"
+        }
+      }
     }
   }
 }

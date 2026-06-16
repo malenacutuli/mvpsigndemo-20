@@ -96,6 +96,30 @@
       "contact": "İletişim",
       "tagline": "Tek bir hikaye. Her dil. Her insan.",
       "copyright": "© {{year}} Axessible Technologies."
+    },
+    "creators": {
+      "eyebrow": "İçerik üreticileri için",
+      "title1": "Orijinal içeriğinizden",
+      "title2": "gelir elde etmek ister misiniz?",
+      "body": "Projenizi bize anlatın. Pembe dizi, reality, yemek, eğitim, animasyon dizileri ve daha fazlasının yapımcılarıyla çalışıyoruz.",
+      "form": {
+        "name": "Ad",
+        "namePlaceholder": "Adınız",
+        "contact": "İletişim",
+        "contactPlaceholder": "E-posta veya telefon",
+        "contentType": "İçerik türü",
+        "project": "Projenizden bahsedin",
+        "projectPlaceholder": "Tür, süre, durum, hedef kitle…",
+        "submit": "Bize ulaşın",
+        "types": {
+          "novela": "Pembe Dizi",
+          "reality": "Reality",
+          "cooking": "Yemek",
+          "education": "Eğitim",
+          "animated": "Animasyon Dizisi",
+          "others": "Diğer"
+        }
+      }
     }
   }
 }
