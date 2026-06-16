@@ -5,6 +5,7 @@ import { Navigation } from '@/components/Navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EarlyAccessForm } from '@/components/EarlyAccessForm';
 import { CreatorsForm } from '@/components/CreatorsForm';
+import { TalentForm } from '@/components/TalentForm';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
