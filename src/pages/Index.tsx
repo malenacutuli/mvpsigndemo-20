@@ -238,6 +238,11 @@ const Home: React.FC = () => {
             <p className="mt-8 text-lg text-white/70 font-light leading-relaxed">
               {t('home.talent.body')}
             </p>
+            <div className="mt-8">
+              <Link to="/talent" className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-rose hover:text-white transition-colors">
+                See how it works <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
           <div className="mt-12 rounded-3xl bg-white p-6 sm:p-10 max-w-3xl mx-auto">
             <TalentForm />
