@@ -815,6 +815,91 @@
         "aboutPlaceholder": "Schauspiel, Stimme, Gebärden, Modeling, Moderation…",
         "submit": "Mein Gesicht lizenzieren"
       }
+    },
+    "pipeline": {
+      "eyebrow": "04 · Die Pipeline",
+      "title1": "Menschliche Seele, KI-Maßstab,",
+      "title2": "ein Motor.",
+      "body": "Drei Produktionsebenen laufen als eine einzige Pipeline. Wir sind die ersten, die alle drei kombinieren. Eko hatte nur die gedrehte Ebene. Reine KI-Spieler haben nur die synthetische Ebene. Wir orchestrieren alles dazwischen.",
+      "tiers": {
+        "a": {
+          "tag": "Ebene A · Menschlich",
+          "title": "Gefilmtes Grundgerüst",
+          "body": "Heldenszenen und Nahaufnahmen. Die Seele der Geschichte und die Clips, die auf TikTok, Reels und Shorts viral gehen."
+        },
+        "b": {
+          "tag": "Ebene B · KI von Abbild",
+          "title": "Varianten-Szenen",
+          "body": "POV-Aufnahmen, alternative Enden und Intensitätsveränderungen, generiert aus lizenzierter Talentähnlichkeit. Genehmigt, lizenzrechtlich verfolgt, markengerecht."
+        },
+        "c": {
+          "tag": "Ebene C · Reine KI",
+          "title": "Lokalisierungsschicht",
+          "body": "Synchronisation, Untertitel, Audiobeschreibung, Gebärdensprache, plus die verbindenden Beats, die jeden Schnitt zusammenfügen."
+        }
+      }
+    },
+    "moat": {
+      "eyebrow": "05 · Der Burggraben",
+      "title1": "Vier sich verstärkende Schichten.",
+      "title2": "Keine aufgesetzt.",
+      "items": {
+        "1": {
+          "title": "Verzweigende Handwerkskunst und nahtlose Laufzeit",
+          "body": "Geleitet vom Operator, der Eko's Markteinführung geleitet hat, beraten von seinem Erfinder. Ein Jahrzehnt interaktives Video-Know-how, entschärft."
+        },
+        "2": {
+          "title": "Barrierefreiheit und Lokalisierung zu nahezu null Kosten",
+          "body": "Eine Produktion wird zu jeder Sprache, jeder Barrierefreiheitsebene, jedem Zweig. Bereits erstellt. Bereits live in Produktion."
+        },
+        "3": {
+          "title": "Das emotionale Diagramm",
+          "body": "Ein Präferenzmodell pro Zuschauer, das auf Verhalten und nicht auf Umfragen basiert. Es verbessert sich mit jeder angesehenen Minute und wird für jeden präziser."
+        },
+        "4": {
+          "title": "Rechte und Vertrauen",
+          "body": "Einwilligung in die Nutzung des Abbilds und Tantiemen sind integriert. C2PA-Herkunft für jede Ausgabe. Vom ersten Tag an bereit für den EU AI Act."
+        }
+      }
+    },
+    "dpp": {
+      "eyebrow": "06 · Dynamische Produktplatzierung",
+      "title1": "Dieselbe Szene.",
+      "titleAccent": "Das richtige Produkt, die richtige Darstellung,",
+      "title2": "für jeden Zuschauer.",
+      "body": "Ein gefilmtes Master passt sich der Marke, dem Markt und dem kulturellen Kontext des jeweiligen Zuschauers an. Das Getränk in ihrer Hand ändert sich. Die Kleidung ändert sich. Die Geschichte nicht.",
+      "byMarket": "Nach Markt · ein anderes Produkt",
+      "byAudience": "Nach Zielgruppe · VAE · dasselbe Produkt, die richtige Darstellung",
+      "audience": {
+        "cosmo": "Kosmopolitisch",
+        "modest": "Bescheiden · Abaya",
+        "conservative": "Konservativ · Niqab"
+      },
+      "stat": "Ein virtueller Produktplatzierungsmarkt von 8,6 Mrd. bis 38,4 Mrd. US-Dollar. 51 % Transaktionswert, 18 % Steigerung der Kaufabsicht. Für uns nahezu kostenlos. Für alle anderen ein Zusatzmodul.",
+      "source": "Quelle · Mirriad / Kantar"
+    },
+    "gtm": {
+      "eyebrow": "07 · Markteinführung",
+      "title1": "Globales Produkt, erster Tag.",
+      "title2": "Ausgaben nach Effizienz sequenziert.",
+      "items": {
+        "1": {
+          "tag": "Effizienz",
+          "region": "LatAm + US-Hispanic",
+          "body": "Niedrigste CAC auf dem Planeten. Unser Validierungslabor. Frühere Kampagnen zeigten 0,07 $ Kosten pro Installation."
+        },
+        "2": {
+          "tag": "Premium mehrsprachig",
+          "region": "UK dann EU",
+          "body": "Qualität, Barrierefreiheit und EU AI Act Konformität, partnergeführt mit Sendern und Plattformen umgesetzt."
+        },
+        "3": {
+          "tag": "Format nativ",
+          "region": "MENA, Jahr 1",
+          "body": "Arabisch-zentriertes Storytelling. Hoher CPM-Markt. Produktionsrabatte von Saudi-Arabien und Abu Dhabi."
+        }
+      },
+      "loop": "Die Schleife: Kostenlose Cliffhanger-Schnitte auf TikTok, Reels und Shorts ziehen Zuschauer in die App. Die Engine generiert automatisch günstige, markengerechte User-Acquisition-Creatives für jeden Markt."
     }
   }
 }

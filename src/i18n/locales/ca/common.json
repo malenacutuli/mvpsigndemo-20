@@ -815,6 +815,91 @@
         "aboutPlaceholder": "Actuació, veu, llengua de signes, modelatge, presentació…",
         "submit": "Llicencia la meva cara"
       }
+    },
+    "pipeline": {
+      "eyebrow": "04 · El Pipeline",
+      "title1": "Ànima humana, escala d'IA,",
+      "title2": "un únic motor.",
+      "body": "Tres nivells de producció funcionen com un sol pipeline. Som els primers a combinar els tres. Eko només tenia el nivell filmat. Els jugadors purament d'IA només tenen el nivell sintètic. Nosaltres orquestrem tot el que hi ha al mig.",
+      "tiers": {
+        "a": {
+          "tag": "Nivell A · Humà",
+          "title": "Columna vertebral filmada",
+          "body": "Escenes d'heroi i primers plans. L'ànima de la història i els clips que viatgen a TikTok, Reels i Shorts."
+        },
+        "b": {
+          "tag": "Nivell B · IA a partir de la semblança",
+          "title": "Escenes variants",
+          "body": "POVs, finals alternatius i canvis d'intensitat generats a partir de la semblança de talent amb llicència. Aprovat, amb seguiment de royalties, d'acord amb la marca."
+        },
+        "c": {
+          "tag": "Nivell C · IA Pura",
+          "title": "Capa de localització",
+          "body": "Doblatge, subtítols, descripció d'àudio, llenguatge de signes, a més dels ritmes connectius que cusen cada tall."
+        }
+      }
+    },
+    "moat": {
+      "eyebrow": "05 · El Fossat",
+      "title1": "Quatre capes que es composen.",
+      "title2": "Cap s'afegeix.",
+      "items": {
+        "1": {
+          "title": "Producció ramificada i execució fluida",
+          "body": "Dirigit per l'operador que va gestionar la comercialització d'Eko, assessorat pel seu inventor. Una dècada de coneixements sobre vídeo interactiu, amb risc reduït."
+        },
+        "2": {
+          "title": "Accessibilitat i localització a cost gairebé zero",
+          "body": "Una producció es converteix en cada idioma, cada capa d'accessibilitat, cada branca. Ja construïda. Ja en producció."
+        },
+        "3": {
+          "title": "El gràfic emocional",
+          "body": "Un model de preferència per espectador construït a partir del comportament, no d'enquestes. Es composa amb cada minut vist, fent-se més precís per a tothom."
+        },
+        "4": {
+          "title": "Drets i confiança",
+          "body": "Consentiment de semblança i royalties inclosos. Provenança C2PA en cada sortida. Preparat per a la Llei d'IA de la UE des del primer dia."
+        }
+      }
+    },
+    "dpp": {
+      "eyebrow": "06 · Col·locació Dinàmica de Producte",
+      "title1": "La mateixa escena.",
+      "titleAccent": "El producte adequat, la representació adequada,",
+      "title2": "per a cada espectador.",
+      "body": "Un mestre filmat s'adapta a la marca, al mercat i al context cultural de qui mira. La beguda a la seva mà canvia. L'armari canvia. La història no.",
+      "byMarket": "Per mercat · un producte diferent",
+      "byAudience": "Per públic · EAU · mateix producte, la representació adequada",
+      "audience": {
+        "cosmo": "Cosmopolita",
+        "modest": "Modest · Abaya",
+        "conservative": "Conservador · Niqab"
+      },
+      "stat": "Un mercat de col·locació de producte virtual de 8.600 a 38.400 milions de dòlars. 51% del valor transaccionat, 18% d'augment en la intenció de compra. Gairebé gratuït per a nosaltres. Un complement per a tothom.",
+      "source": "Font · Mirriad / Kantar"
+    },
+    "gtm": {
+      "eyebrow": "07 · Go-to-Market",
+      "title1": "Producte global, des del primer dia.",
+      "title2": "Despesa seqüenciada per eficiència.",
+      "items": {
+        "1": {
+          "tag": "Eficiència",
+          "region": "LatAm + US-Hispanic",
+          "body": "CAC més baix del planeta. El nostre laboratori de validació. Campanyes anteriors van demostrar un cost de 0,07 $ per instal·lació."
+        },
+        "2": {
+          "tag": "Multilingüe premium",
+          "region": "Regne Unit i després UE",
+          "body": "Qualitat, accessibilitat i compliment de la Llei d'IA de la UE, executats amb socis radiodifusors i plataformes."
+        },
+        "3": {
+          "tag": "Format natiu",
+          "region": "MENA, Any 1",
+          "body": "Narrativa primer en àrab. Mercat d'alt CPM. Rebaixes de producció de l'Aràbia Saudita i Abu Dhabi."
+        }
+      },
+      "loop": "El bucle: els talls de cliffhanger gratuïts a TikTok, Reels i Shorts atrauen els espectadors a l'aplicació. El motor genera automàticament creatius d'adquisició d'usuaris barats i coherents amb la marca per a cada mercat."
     }
   }
 }
