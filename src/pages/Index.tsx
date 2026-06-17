@@ -7,12 +7,17 @@ import { EarlyAccessForm } from '@/components/EarlyAccessForm';
 import { CreatorsForm } from '@/components/CreatorsForm';
 import { TalentForm } from '@/components/TalentForm';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat } from 'lucide-react';
+import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat, Camera, Cpu, Wand2, Layers, Brain, ShieldCheck, MapPin } from 'lucide-react';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 import heroPhone from '@/assets/axessplayer-hero-phone.png.asset.json';
 import rewardsScreen from '@/assets/axessplayer-rewards-screen.png.asset.json';
 import postersImage from '@/assets/axessplayer-posters.png.asset.json';
 import appGridImage from '@/assets/axessplayer-app-grid.png.asset.json';
+import dppMx from '@/assets/dpp-mx-topochico.png.asset.json';
+import dppUs from '@/assets/dpp-us-cocacola.png.asset.json';
+import dppAeCosmo from '@/assets/dpp-ae-cosmo.png.asset.json';
+import dppAeModest from '@/assets/dpp-ae-modest.png.asset.json';
+import dppAeNiqab from '@/assets/dpp-ae-niqab.png.asset.json';
 
 const Eyebrow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <p className={`font-mono text-[11px] sm:text-xs uppercase tracking-[0.22em] text-axp-rose ${className}`}>
