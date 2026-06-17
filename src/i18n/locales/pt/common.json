@@ -815,6 +815,91 @@
         "aboutPlaceholder": "Atuação, voz, língua gestual, modelo, apresentação…",
         "submit": "Licenciar o meu rosto"
       }
+    },
+    "pipeline": {
+      "eyebrow": "04 · O Pipeline",
+      "title1": "Alma humana, escala de IA,",
+      "title2": "um motor.",
+      "body": "Três níveis de produção operam como um pipeline único. Somos os primeiros a combinar todos os três. A Eko tinha apenas o nível filmado. Os players de IA pura têm apenas o nível sintético. Nós orquestramos tudo o que está no meio.",
+      "tiers": {
+        "a": {
+          "tag": "Nível A · Humano",
+          "title": "Espinha dorsal filmada",
+          "body": "Cenas heroicas e close-ups. A alma da história e os clipes que viajam no TikTok, Reels e Shorts."
+        },
+        "b": {
+          "tag": "Nível B · IA a partir da semelhança",
+          "title": "Cenas variantes",
+          "body": "POVs, finais alternativos e mudanças de intensidade gerados a partir da semelhança de talentos licenciados. Aprovados, com direitos autorais rastreados, e de acordo com a marca."
+        },
+        "c": {
+          "tag": "Nível C · IA Pura",
+          "title": "Camada de localização",
+          "body": "Dublagem, legendas, audiodescrição, linguagem de sinais, além dos ritmos conectivos que unem cada corte."
+        }
+      }
+    },
+    "moat": {
+      "eyebrow": "05 · O Fosso",
+      "title1": "Quatro camadas que se multiplicam.",
+      "title2": "Nenhuma é adicional.",
+      "items": {
+        "1": {
+          "title": "Criação ramificada e tempo de execução contínuo",
+          "body": "Liderado pelo operador que geriu o go-to-market da Eko, aconselhado pelo seu inventor. Uma década de know-how em vídeo interativo, com riscos reduzidos."
+        },
+        "2": {
+          "title": "Acessibilidade e localização a custo quase zero",
+          "body": "Uma produção se torna cada idioma, cada camada de acessibilidade, cada ramificação. Já construído. Já em produção."
+        },
+        "3": {
+          "title": "O gráfico emocional",
+          "body": "Um modelo de preferência por espectador construído a partir do comportamento, não de pesquisas. Ele se multiplica a cada minuto assistido, ficando mais preciso para todos."
+        },
+        "4": {
+          "title": "Direitos e confiança",
+          "body": "Consentimento de imagem e royalties incorporados. Proveniência C2PA em cada saída. Pronto para a Lei de IA da UE desde o primeiro dia."
+        }
+      }
+    },
+    "dpp": {
+      "eyebrow": "06 · Posicionamento Dinâmico de Produto",
+      "title1": "A mesma cena.",
+      "titleAccent": "O produto certo, a renderização certa,",
+      "title2": "para cada espectador.",
+      "body": "Um master filmado se adapta à marca, ao mercado e ao contexto cultural de quem está assistindo. A bebida na mão dela muda. O guarda-roupa muda. A história não.",
+      "byMarket": "Por mercado · um produto diferente",
+      "byAudience": "Por público · Emirados Árabes Unidos · mesmo produto, a renderização certa",
+      "audience": {
+        "cosmo": "Cosmopolita",
+        "modest": "Modesto · Abaya",
+        "conservative": "Conservador · Niqab"
+      },
+      "stat": "Um mercado de posicionamento de produto virtual de US$ 8,6 bilhões a US$ 38,4 bilhões. 51% do valor da transação, 18% de aumento na intenção de compra. Quase gratuito para nós. Um adicional para todos os outros.",
+      "source": "Fonte · Mirriad / Kantar"
+    },
+    "gtm": {
+      "eyebrow": "07 · Go-to-Market",
+      "title1": "Produto global, dia um.",
+      "title2": "Gasto sequenciado por eficiência.",
+      "items": {
+        "1": {
+          "tag": "Eficiência",
+          "region": "América Latina + US-Hispânico",
+          "body": "Menor CAC do planeta. Nosso laboratório de validação. Campanhas anteriores provaram um custo de US$ 0,07 por instalação."
+        },
+        "2": {
+          "tag": "Multilingue Premium",
+          "region": "Reino Unido, depois UE",
+          "body": "Qualidade, acessibilidade e conformidade com a Lei de IA da UE, executadas em parceria com emissoras e plataformas."
+        },
+        "3": {
+          "tag": "Formato nativo",
+          "region": "MENA, Ano 1",
+          "body": "Narrativa primeiro em árabe. Mercado de alto CPM. Descontos de produção da Arábia Saudita e Abu Dhabi."
+        }
+      },
+      "loop": "O ciclo: cortes de cliffhanger gratuitos no TikTok, Reels e Shorts atraem espectadores para o aplicativo. O motor gera automaticamente criativos de aquisição de usuários baratos e de marca para cada mercado."
     }
   }
 }

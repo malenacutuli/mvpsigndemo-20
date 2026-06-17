@@ -144,6 +144,91 @@
         "aboutPlaceholder": "Oyunculuk, ses, işaret dili, modellik, sunuculuk…",
         "submit": "Yüzümü lisansla"
       }
+    },
+    "pipeline": {
+      "eyebrow": "04 · Süreç",
+      "title1": "İnsan ruhu, yapay zeka ölçeği,",
+      "title2": "tek motor.",
+      "body": "Üç üretim katmanı tek bir süreç olarak çalışır. Üçünü birleştiren ilk biziz. Eko'nun sadece filme alınmış katmanı vardı. Saf yapay zeka oyuncularının sadece sentetik katmanı var. Aradaki her şeyi biz orkestra ediyoruz.",
+      "tiers": {
+        "a": {
+          "tag": "Katman A · İnsan",
+          "title": "Filme alınmış omurga",
+          "body": "Kahraman sahneleri ve yakın çekimler. Hikayenin ruhu ve TikTok, Reels ve Shorts'ta dolaşan klipler."
+        },
+        "b": {
+          "tag": "Katman B · Benzerlikten Yapay Zeka",
+          "title": "Varyant sahneler",
+          "body": "Lisanslı yetenek benzerliğinden türetilmiş bakış açıları, alternatif sonlar ve yoğunluk değişimleri. Onaylı, telif hakkı takip eden, marka ile uyumlu."
+        },
+        "c": {
+          "tag": "Katman C · Saf Yapay Zeka",
+          "title": "Yerelleştirme katmanı",
+          "body": "Dublaj, altyazılar, sesli betimleme, işaret dili ve her kesimi birbirine bağlayan geçiş ritimleri."
+        }
+      }
+    },
+    "moat": {
+      "eyebrow": "05 · Siper",
+      "title1": "Birbirini artıran dört katman.",
+      "title2": "Hiçbiri eklenti değil.",
+      "items": {
+        "1": {
+          "title": "Dallanan zanaat ve kusursuz çalışma süresi",
+          "body": "Eko'nun pazara girişini yöneten operatör liderliğinde, mucidi tarafından danışmanlık alınarak. On yıllık interaktif video bilgisi, riskten arındırılmış."
+        },
+        "2": {
+          "title": "Sıfıra yakın maliyetle erişilebilirlik ve yerelleştirme",
+          "body": "Tek bir yapım her dil, her erişilebilirlik katmanı, her dal haline gelir. Zaten yapılmış. Zaten üretimde canlı yayında."
+        },
+        "3": {
+          "title": "Duygusal grafik",
+          "body": "Anketlerle değil, davranışlardan oluşturulmuş kişi başına düşen tercih modeli. İzlenen her dakika ile birleşir, herkes için daha keskin hale gelir."
+        },
+        "4": {
+          "title": "Haklar ve güven",
+          "body": "Benzerlik onayı ve telif hakları dahil. Her çıktıda C2PA menşei. İlk günden itibaren AB Yapay Zeka Yasası'na hazır."
+        }
+      }
+    },
+    "dpp": {
+      "eyebrow": "06 · Dinamik Ürün Yerleştirme",
+      "title1": "Aynı sahne.",
+      "titleAccent": "Her izleyici için doğru ürün, doğru render,",
+      "title2": "her izleyici için.",
+      "body": "Filme çekilmiş tek bir ana sahne, izleyicinin markasına, pazarına ve kültürel bağlamına uyarlanır. Elindeki içecek değişir. Gardırop değişir. Hikaye değişmez.",
+      "byMarket": "Pazara göre · farklı bir ürün",
+      "byAudience": "Kitleye göre · BAE · aynı ürün, doğru render",
+      "audience": {
+        "cosmo": "Kozmopolit",
+        "modest": "Mütevazı · Abaya",
+        "conservative": "Muhafazakar · Nikap"
+      },
+      "stat": "8.6 milyar dolardan 38.4 milyar dolara kadar sanal ürün yerleştirme pazarı. %51 işlem değeri, %18 satın alma niyetinde artış. Bizim için neredeyse ücretsiz. Diğerleri için eklenti.",
+      "source": "Kaynak · Mirriad / Kantar"
+    },
+    "gtm": {
+      "eyebrow": "07 · Pazara Giriş",
+      "title1": "Küresel ürün, ilk gün.",
+      "title2": "Harcama verimlilikle sıralandı.",
+      "items": {
+        "1": {
+          "tag": "Verimlilik",
+          "region": "LatAm + US-Hispanik",
+          "body": "Gezegendeki en düşük CAC. Doğrulama laboratuvarımız. Önceki kampanyalar kurulum başına 0.07 $ maliyetini kanıtladı."
+        },
+        "2": {
+          "tag": "Premium çok dilli",
+          "region": "Önce Birleşik Krallık, sonra AB",
+          "body": "Kalite, erişilebilirlik ve AB Yapay Zeka Yasası'na uyum, yayıncılar ve platformlarla ortak liderliğinde yürütüldü."
+        },
+        "3": {
+          "tag": "Format yerel",
+          "region": "MENA, 1. Yıl",
+          "body": "Önce Arapça hikaye anlatımı. Yüksek CPM pazarı. Suudi Arabistan ve Abu Dabi'den üretim indirimleri."
+        }
+      },
+      "loop": "Döngü: TikTok, Reels ve Shorts'taki ücretsiz cliffhanger kesintileri izleyicileri uygulamaya çeker. Motor, her pazar için uygun fiyatlı, markaya uygun kullanıcı edinimi reklamları otomatik olarak üretir."
     }
   }
 }
