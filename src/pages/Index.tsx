@@ -160,26 +160,26 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>04 · The Pipeline</Eyebrow>
+            <Eyebrow>{t('home.pipeline.eyebrow')}</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-              Human soul, AI scale, <span className="text-axp-rose">one engine.</span>
+              {t('home.pipeline.title1')} <span className="text-axp-rose">{t('home.pipeline.title2')}</span>
             </h2>
             <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
-              Three production tiers run as a single pipeline. We are the first to combine all three. Eko had only the filmed tier. Pure-AI players have only the synthetic tier. We orchestrate everything in between.
+              {t('home.pipeline.body')}
             </p>
           </div>
 
           <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
             {[
-              { tag: 'Tier A · Human', title: 'Filmed spine', body: 'Hero scenes and close-ups. The soul of the story, and the clips that travel on TikTok, Reels and Shorts.', icon: Camera },
-              { tag: 'Tier B · AI from likeness', title: 'Variant scenes', body: 'POVs, alternate endings and intensity shifts generated from licensed talent likeness. Approved, royalty-tracked, on-brand.', icon: Wand2 },
-              { tag: 'Tier C · Pure AI', title: 'Localization layer', body: 'Dubbing, captions, audio description, sign language, plus the connective beats that knit every cut together.', icon: Cpu },
-            ].map(({ tag, title, body, icon: Icon }) => (
-              <div key={title} className="rounded-3xl p-8 lg:p-10 border border-white/15 bg-white/[0.04]">
+              { key: 'a', icon: Camera },
+              { key: 'b', icon: Wand2 },
+              { key: 'c', icon: Cpu },
+            ].map(({ key, icon: Icon }) => (
+              <div key={key} className="rounded-3xl p-8 lg:p-10 border border-white/15 bg-white/[0.04]">
                 <Icon className="w-7 h-7 text-axp-rose" />
-                <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">{tag}</p>
-                <h3 className="mt-3 font-display text-3xl font-light text-white">{title}</h3>
-                <p className="mt-4 font-body leading-relaxed text-white/70">{body}</p>
+                <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">{t(`home.pipeline.tiers.${key}.tag`)}</p>
+                <h3 className="mt-3 font-display text-3xl font-light text-white">{t(`home.pipeline.tiers.${key}.title`)}</h3>
+                <p className="mt-4 font-body leading-relaxed text-white/70">{t(`home.pipeline.tiers.${key}.body`)}</p>
               </div>
             ))}
           </div>
@@ -190,26 +190,26 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>05 · The Moat</Eyebrow>
+            <Eyebrow>{t('home.moat.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Four layers that compound. <span className="text-axp-ink/55">None bolt on.</span>
+              {t('home.moat.title1')} <span className="text-axp-ink/55">{t('home.moat.title2')}</span>
             </SectionHeading>
           </div>
 
           <div className="mt-16 grid md:grid-cols-2 gap-6 lg:gap-8">
             {[
-              { n: '01', icon: Layers, title: 'Branching craft and seamless runtime', body: 'Led by the operator who ran Eko\'s go-to-market, advised by its inventor. A decade of interactive video know-how, de-risked.' },
-              { n: '02', icon: Globe2, title: 'Accessibility and localization at near-zero cost', body: 'One production becomes every language, every accessibility layer, every branch. Already built. Already live in production.' },
-              { n: '03', icon: Brain, title: 'The emotional graph', body: 'A per-viewer preference model built from behavior, not surveys. It compounds with every minute watched, getting sharper for everyone.' },
-              { n: '04', icon: ShieldCheck, title: 'Rights and trust', body: 'Likeness consent and royalties baked in. C2PA provenance on every output. EU AI Act ready from day one.' },
-            ].map(({ n, icon: Icon, title, body }) => (
+              { n: '01', key: '1', icon: Layers },
+              { n: '02', key: '2', icon: Globe2 },
+              { n: '03', key: '3', icon: Brain },
+              { n: '04', key: '4', icon: ShieldCheck },
+            ].map(({ n, key, icon: Icon }) => (
               <div key={n} className="rounded-3xl p-8 lg:p-10 border border-axp-line bg-white">
                 <div className="flex items-baseline gap-4">
                   <span className="font-mono text-xs text-axp-ink/40">{n}</span>
                   <Icon className="w-6 h-6 text-axp-rose" />
                 </div>
-                <h3 className="mt-6 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{title}</h3>
-                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{body}</p>
+                <h3 className="mt-6 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{t(`home.moat.items.${key}.title`)}</h3>
+                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{t(`home.moat.items.${key}.body`)}</p>
               </div>
             ))}
           </div>
@@ -220,17 +220,17 @@ const Home: React.FC = () => {
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>06 · Dynamic Product Placement</Eyebrow>
+            <Eyebrow>{t('home.dpp.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              The same scene. <span className="text-axp-rose">The right product, the right rendering,</span> for every viewer.
+              {t('home.dpp.title1')} <span className="text-axp-rose">{t('home.dpp.titleAccent')}</span> {t('home.dpp.title2')}
             </SectionHeading>
             <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light max-w-3xl leading-relaxed">
-              One filmed master adapts to the brand, the market and the cultural context of whoever is watching. The drink in her hand changes. The wardrobe changes. The story does not.
+              {t('home.dpp.body')}
             </p>
           </div>
 
           <div className="mt-16">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">By market · a different product</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byMarket')}</p>
             <div className="mt-6 grid md:grid-cols-3 gap-6">
               {[
                 { src: dppMx.url, region: 'MX', brand: 'Topo Chico' },
@@ -249,17 +249,17 @@ const Home: React.FC = () => {
           </div>
 
           <div className="mt-16">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">By audience · UAE · same product, the right rendering</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byAudience')}</p>
             <div className="mt-6 grid md:grid-cols-3 gap-6">
               {[
-                { src: dppAeCosmo.url, label: 'Cosmopolitan' },
-                { src: dppAeModest.url, label: 'Modest · Abaya' },
-                { src: dppAeNiqab.url, label: 'Conservative · Niqab' },
-              ].map(({ src, label }) => (
-                <figure key={label} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
-                  <img src={src} alt={label} className="w-full aspect-video object-cover" loading="lazy" />
+                { src: dppAeCosmo.url, key: 'cosmo' },
+                { src: dppAeModest.url, key: 'modest' },
+                { src: dppAeNiqab.url, key: 'conservative' },
+              ].map(({ src, key }) => (
+                <figure key={key} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
+                  <img src={src} alt={t(`home.dpp.audience.${key}`)} className="w-full aspect-video object-cover" loading="lazy" />
                   <figcaption className="p-5 bg-white">
-                    <p className="font-display text-xl font-light text-axp-ink">{label}</p>
+                    <p className="font-display text-xl font-light text-axp-ink">{t(`home.dpp.audience.${key}`)}</p>
                   </figcaption>
                 </figure>
               ))}
@@ -268,9 +268,9 @@ const Home: React.FC = () => {
 
           <div className="mt-12 rounded-3xl bg-axp-warm-white border border-axp-line p-8 lg:p-10 max-w-4xl">
             <p className="font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">
-              A <span className="text-axp-rose">$8.6B to $38.4B</span> virtual product placement market. 51% transaction value, 18% lift in purchase intent. Nearly free for us. A bolt-on for everyone else.
+              {t('home.dpp.stat')}
             </p>
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">Source · Mirriad / Kantar</p>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.source')}</p>
           </div>
         </div>
       </section>
@@ -279,33 +279,33 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>07 · Go-to-Market</Eyebrow>
+            <Eyebrow>{t('home.gtm.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Global product, day one. <span className="text-axp-ink/55">Spend sequenced by efficiency.</span>
+              {t('home.gtm.title1')} <span className="text-axp-ink/55">{t('home.gtm.title2')}</span>
             </SectionHeading>
           </div>
 
           <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
             {[
-              { n: '01', tag: 'Efficiency', region: 'LatAm + US-Hispanic', body: 'Lowest CAC on the planet. Our validation lab. Prior campaigns proved $0.07 cost per install.' },
-              { n: '02', tag: 'Premium multilingual', region: 'UK then EU', body: 'Quality, accessibility and EU AI Act compliance, executed partner-led with broadcasters and platforms.' },
-              { n: '03', tag: 'Format native', region: 'MENA, Year 1', body: 'Arabic-first storytelling. High-CPM market. Production rebates from Saudi Arabia and Abu Dhabi.' },
-            ].map(({ n, tag, region, body }) => (
+              { n: '01', key: '1' },
+              { n: '02', key: '2' },
+              { n: '03', key: '3' },
+            ].map(({ n, key }) => (
               <div key={n} className="rounded-3xl p-8 lg:p-10 border border-axp-line bg-white">
                 <div className="flex items-baseline gap-4">
                   <span className="font-mono text-xs text-axp-ink/40">{n}</span>
                   <MapPin className="w-5 h-5 text-axp-rose" />
                 </div>
-                <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">{tag}</p>
-                <h3 className="mt-3 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{region}</h3>
-                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{body}</p>
+                <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">{t(`home.gtm.items.${key}.tag`)}</p>
+                <h3 className="mt-3 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{t(`home.gtm.items.${key}.region`)}</h3>
+                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{t(`home.gtm.items.${key}.body`)}</p>
               </div>
             ))}
           </div>
 
           <div className="mt-12 max-w-3xl border-l-2 border-axp-rose pl-6">
             <p className="font-display text-xl lg:text-2xl font-light text-axp-ink leading-snug italic">
-              The loop: free cliffhanger cuts on TikTok, Reels and Shorts pull viewers into the app. The engine auto-generates cheap, on-brand user-acquisition creative for every market.
+              {t('home.gtm.loop')}
             </p>
           </div>
         </div>
