@@ -1307,6 +1307,55 @@
         "aboutPlaceholder": "Acting, voice, signing, modeling, hosting…",
         "submit": "License my face"
       }
+    },
+    "pipeline": {
+      "eyebrow": "04 · The Pipeline",
+      "title1": "Human soul, AI scale,",
+      "title2": "one engine.",
+      "body": "Three production tiers run as a single pipeline. We are the first to combine all three. Eko had only the filmed tier. Pure-AI players have only the synthetic tier. We orchestrate everything in between.",
+      "tiers": {
+        "a": { "tag": "Tier A · Human", "title": "Filmed spine", "body": "Hero scenes and close-ups. The soul of the story, and the clips that travel on TikTok, Reels and Shorts." },
+        "b": { "tag": "Tier B · AI from likeness", "title": "Variant scenes", "body": "POVs, alternate endings and intensity shifts generated from licensed talent likeness. Approved, royalty-tracked, on-brand." },
+        "c": { "tag": "Tier C · Pure AI", "title": "Localization layer", "body": "Dubbing, captions, audio description, sign language, plus the connective beats that knit every cut together." }
+      }
+    },
+    "moat": {
+      "eyebrow": "05 · The Moat",
+      "title1": "Four layers that compound.",
+      "title2": "None bolt on.",
+      "items": {
+        "1": { "title": "Branching craft and seamless runtime", "body": "Led by the operator who ran Eko's go-to-market, advised by its inventor. A decade of interactive video know-how, de-risked." },
+        "2": { "title": "Accessibility and localization at near-zero cost", "body": "One production becomes every language, every accessibility layer, every branch. Already built. Already live in production." },
+        "3": { "title": "The emotional graph", "body": "A per-viewer preference model built from behavior, not surveys. It compounds with every minute watched, getting sharper for everyone." },
+        "4": { "title": "Rights and trust", "body": "Likeness consent and royalties baked in. C2PA provenance on every output. EU AI Act ready from day one." }
+      }
+    },
+    "dpp": {
+      "eyebrow": "06 · Dynamic Product Placement",
+      "title1": "The same scene.",
+      "titleAccent": "The right product, the right rendering,",
+      "title2": "for every viewer.",
+      "body": "One filmed master adapts to the brand, the market and the cultural context of whoever is watching. The drink in her hand changes. The wardrobe changes. The story does not.",
+      "byMarket": "By market · a different product",
+      "byAudience": "By audience · UAE · same product, the right rendering",
+      "audience": {
+        "cosmo": "Cosmopolitan",
+        "modest": "Modest · Abaya",
+        "conservative": "Conservative · Niqab"
+      },
+      "stat": "A $8.6B to $38.4B virtual product placement market. 51% transaction value, 18% lift in purchase intent. Nearly free for us. A bolt-on for everyone else.",
+      "source": "Source · Mirriad / Kantar"
+    },
+    "gtm": {
+      "eyebrow": "07 · Go-to-Market",
+      "title1": "Global product, day one.",
+      "title2": "Spend sequenced by efficiency.",
+      "items": {
+        "1": { "tag": "Efficiency", "region": "LatAm + US-Hispanic", "body": "Lowest CAC on the planet. Our validation lab. Prior campaigns proved $0.07 cost per install." },
+        "2": { "tag": "Premium multilingual", "region": "UK then EU", "body": "Quality, accessibility and EU AI Act compliance, executed partner-led with broadcasters and platforms." },
+        "3": { "tag": "Format native", "region": "MENA, Year 1", "body": "Arabic-first storytelling. High-CPM market. Production rebates from Saudi Arabia and Abu Dhabi." }
+      },
+      "loop": "The loop: free cliffhanger cuts on TikTok, Reels and Shorts pull viewers into the app. The engine auto-generates cheap, on-brand user-acquisition creative for every market."
     }
   }
 }
