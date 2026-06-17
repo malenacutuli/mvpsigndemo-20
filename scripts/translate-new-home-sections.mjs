@@ -41,7 +41,11 @@ async function translate(targetLabel) {
   const data = await res.json();
   let txt = data.choices[0].message.content.trim();
   txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
-  return JSON.parse(txt);
+  txt = txt.replace(/,(\s*[}\]])/g, '$1');
+  try { return JSON.parse(txt); } catch (e) {
+    console.error('parse fail, raw:', txt.slice(0, 2000));
+    throw e;
+  }
 }
 
 for (const [code, label] of Object.entries(LANGS)) {
