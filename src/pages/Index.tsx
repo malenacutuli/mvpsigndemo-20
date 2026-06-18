@@ -156,7 +156,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Three tiers — Human soul, AI scale, one engine (slide 5) */}
+      {/* Three tiers - Human soul, AI scale, one engine (slide 5) */}
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
