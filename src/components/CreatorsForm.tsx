@@ -15,7 +15,7 @@ export const CreatorsForm: React.FC = () => {
     const contentType = String(fd.get('contentType') || '');
     const project = String(fd.get('project') || '');
 
-    const subject = encodeURIComponent(`[Creators] ${name} — ${contentType}`);
+    const subject = encodeURIComponent(`[Creators] ${name} - ${contentType}`);
     const body = encodeURIComponent(
       `Name: ${name}\nContact: ${contact}\nType of Content: ${contentType}\n\nProject:\n${project}\n`
     );

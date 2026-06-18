@@ -138,10 +138,10 @@ const DEFAULT_SILENCE_PROMPT = JSON.stringify(
       "Provide duration in milliseconds.",
       "Process up to 100 silent segments to ensure comprehensive coverage of the full video length.",
       "Limit to ~160 words per minute, leaving 0.3s safety buffer per gap.",
-      "Narration style: cinematic podcast or audiobook storytelling — emotionally engaging, sensory-rich, and narrative-driven.",
+      "Narration style: cinematic podcast or audiobook storytelling - emotionally engaging, sensory-rich, and narrative-driven.",
       "Do NOT describe cameras, angles, or technical details.",
       "Blend dialogue meaning and visual action into the narration when dialogue is present nearby.",
-      "Make the listener 'see with their ears' — describe emotions, atmospheres, and story flow.",
+      "Make the listener 'see with their ears' - describe emotions, atmospheres, and story flow.",
       "If characters are known (e.g., David Beckham, Kevin Hart), name them and tie their actions to the overall story/emotion.",
       "Ensure each narration fits strictly within its silent segment timing.",
       "CRITICAL: Analyze the complete video from beginning to end - do not truncate or stop analysis early.",
@@ -1261,7 +1261,7 @@ export const VideoAnalysisPanel: React.FC<VideoAnalysisPanelProps> = ({
                         </span>
                         {tooLong && (
                           <Badge variant="destructive" className="text-xs">
-                            Too long — trim text
+                            Too long - trim text
                           </Badge>
                         )}
                       </div>

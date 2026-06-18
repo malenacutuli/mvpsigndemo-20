@@ -245,7 +245,7 @@ useEffect(() => {
   // Safely format times that may be null/undefined
   const formatTime = (t: unknown) => {
     const n = Number(t);
-    return Number.isFinite(n) ? n.toFixed(1) : '—';
+    return Number.isFinite(n) ? n.toFixed(1) : '-';
   };
 
   // Hide visual overlay if disabled, but audio still plays

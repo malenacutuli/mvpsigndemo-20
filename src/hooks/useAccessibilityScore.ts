@@ -12,7 +12,7 @@ export interface AccessibilityCheckResults {
 /**
  * Queries the database to determine whether real accessibility assets
  * (transcript segments, audio descriptions, sign-language clips) exist
- * for a given video.  Returns booleans that reflect actual data — not
+ * for a given video.  Returns booleans that reflect actual data - not
  * UI toggle state.
  */
 export function useAccessibilityScore(videoId: string | undefined): AccessibilityCheckResults {

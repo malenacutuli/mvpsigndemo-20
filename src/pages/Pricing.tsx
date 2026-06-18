@@ -158,7 +158,7 @@ export default function Pricing() {
 
   const renderFeatureValue = (value: boolean | string) => {
     if (typeof value === 'boolean') {
-      return value ? <Check className="w-4 h-4 text-green-600" /> : <span className="text-muted-foreground">—</span>;
+      return value ? <Check className="w-4 h-4 text-green-600" /> : <span className="text-muted-foreground">-</span>;
     }
     return <span className="text-base font-light">{value}</span>;
   };

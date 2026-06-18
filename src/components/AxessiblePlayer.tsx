@@ -1054,7 +1054,7 @@ export const AxessiblePlayer: React.FC<AxessiblePlayerProps> = ({
         setKeyboardNavEnabled(true);
         break;
       case 'enableScreenReader':
-        // Platform-level feature — already enabled
+        // Platform-level feature - already enabled
         const videoEl = videoRef.current;
         if (videoEl) {
           videoEl.setAttribute('aria-label', `${title} - Video with captions and audio description available`);

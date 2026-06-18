@@ -35,10 +35,10 @@ const AccessibilityStatement = () => {
               <h3 className="text-xl font-semibold text-foreground mb-3">Non-compliance with the regulations:</h3>
               <ul className="list-disc pl-6 space-y-2">
                 <li>
-                  Some links may not have their purpose or function correctly defined — Requirement 9.2.4.4 "Purpose of Links" of UNE-EN 301549:2020.
+                  Some links may not have their purpose or function correctly defined - Requirement 9.2.4.4 "Purpose of Links" of UNE-EN 301549:2020.
                 </li>
                 <li>
-                  Some elements may lack a correctly defined name, role, or value, or external elements may not provide an adequate functional definition — Requirement 9.4.1.2 "Name, Role, and Value" of UNE-EN 301549:2020.
+                  Some elements may lack a correctly defined name, role, or value, or external elements may not provide an adequate functional definition - Requirement 9.4.1.2 "Name, Role, and Value" of UNE-EN 301549:2020.
                 </li>
               </ul>
 
