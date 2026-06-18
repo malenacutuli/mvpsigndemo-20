@@ -95,7 +95,13 @@
       "about": "من نحن",
       "contact": "تواصل",
       "tagline": "قصة واحدة. كل لغة. كل شخص.",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "الأسعار",
+      "talent": "للمواهب",
+      "legal": "قانوني",
+      "privacy": "سياسة الخصوصية",
+      "terms": "شروط الخدمة",
+      "accessibilityStatement": "بيان إمكانية الوصول"
     },
     "creators": {
       "eyebrow": "للمبدعين",

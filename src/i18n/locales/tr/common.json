@@ -95,7 +95,13 @@
       "about": "Hakkımızda",
       "contact": "İletişim",
       "tagline": "Tek bir hikaye. Her dil. Her insan.",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "Fiyatlandırma",
+      "talent": "Yetenekler için",
+      "legal": "Yasal",
+      "privacy": "Gizlilik politikası",
+      "terms": "Hizmet şartları",
+      "accessibilityStatement": "Erişilebilirlik beyanı"
     },
     "creators": {
       "eyebrow": "İçerik üreticileri için",
