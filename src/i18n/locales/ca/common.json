@@ -766,7 +766,13 @@
       "about": "Sobre nosaltres",
       "contact": "Contacte",
       "tagline": "Una història. Cada llengua. Cada persona.",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "Preus",
+      "talent": "Per a talent",
+      "legal": "Legal",
+      "privacy": "Política de privacitat",
+      "terms": "Termes del servei",
+      "accessibilityStatement": "Declaració d'accessibilitat"
     },
     "creators": {
       "eyebrow": "Per a creadors",

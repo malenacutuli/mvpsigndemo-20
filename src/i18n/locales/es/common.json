@@ -1262,7 +1262,13 @@
       "about": "Quiénes somos",
       "contact": "Contacto",
       "tagline": "Una historia. Todos los idiomas. Cada persona.",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "Precios",
+      "talent": "Para talento",
+      "legal": "Legal",
+      "privacy": "Política de privacidad",
+      "terms": "Términos del servicio",
+      "accessibilityStatement": "Declaración de accesibilidad"
     },
     "creators": {
       "eyebrow": "Para creadores",

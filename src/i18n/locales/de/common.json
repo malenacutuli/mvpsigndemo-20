@@ -766,7 +766,13 @@
       "about": "Über uns",
       "contact": "Kontakt",
       "tagline": "Eine Geschichte. Jede Sprache. Jeder Mensch.",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "Preise",
+      "talent": "Für Talente",
+      "legal": "Rechtliches",
+      "privacy": "Datenschutzerklärung",
+      "terms": "Nutzungsbedingungen",
+      "accessibilityStatement": "Erklärung zur Barrierefreiheit"
     },
     "creators": {
       "eyebrow": "Für Creator",

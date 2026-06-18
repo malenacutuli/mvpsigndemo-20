@@ -892,7 +892,13 @@
       "about": "私たちについて",
       "contact": "お問い合わせ",
       "tagline": "ひとつの物語。あらゆる言語。ひとりひとりに。",
-      "copyright": "© {{year}} Axessible Technologies."
+      "copyright": "© {{year}} Axessible Technologies.",
+      "pricing": "料金",
+      "talent": "タレント向け",
+      "legal": "法的事項",
+      "privacy": "プライバシーポリシー",
+      "terms": "利用規約",
+      "accessibilityStatement": "アクセシビリティ声明"
     },
     "creators": {
       "eyebrow": "クリエイター向け",
