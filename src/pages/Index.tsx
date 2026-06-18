@@ -443,15 +443,16 @@ const Home: React.FC = () => {
 
       <footer className="bg-axp-ink text-white border-t border-white/10">
         <div className="container mx-auto px-6 py-16">
-          <div className="grid md:grid-cols-5 gap-10">
+          <div className="grid md:grid-cols-6 gap-10">
             <div className="md:col-span-2">
               <img src={logoWhite.url} alt="Axessplayer" className="h-8 w-auto" />
               <p className="mt-5 text-white/55 font-body text-sm max-w-xs">{t('home.footer.by')}</p>
             </div>
             {[
-              { h: t('home.footer.platform'), items: [[t('home.footer.howItWorks'), '/'], [t('home.footer.accessibility'), '/enterprise'], [t('home.footer.forBrands'), '/enterprise'], [t('home.footer.demo'), '/explore']] },
-              { h: t('home.footer.enterprise'), items: [[t('home.footer.overview'), '/enterprise'], [t('home.footer.compliance'), '/enterprise'], [t('home.footer.bookDemo'), '/contact']] },
-              { h: t('home.footer.company'), items: [[t('home.footer.about'), '/about'], [t('home.footer.contact'), '/contact']] },
+              { h: t('home.footer.platform'), items: [[t('home.footer.howItWorks'), '/'], [t('home.footer.accessibility'), '/accessibility-statement'], [t('home.footer.forBrands'), '/enterprise'], [t('home.footer.demo'), '/explore']] },
+              { h: t('home.footer.enterprise'), items: [[t('home.footer.overview'), '/enterprise'], [t('home.footer.pricing'), '/pricing'], [t('home.footer.bookDemo'), '/contact']] },
+              { h: t('home.footer.company'), items: [[t('home.footer.talent'), '/talent'], [t('home.footer.contact'), '/contact']] },
+              { h: t('home.footer.legal'), items: [[t('home.footer.privacy'), '/privacy-policy'], [t('home.footer.terms'), '/terms'], [t('home.footer.accessibilityStatement'), '/accessibility-statement']] },
             ].map((col, i) => (
               <div key={i}>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">{col.h}</p>
