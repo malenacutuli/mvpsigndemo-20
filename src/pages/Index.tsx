@@ -8,6 +8,7 @@ import { CreatorsForm } from '@/components/CreatorsForm';
 import { TalentForm } from '@/components/TalentForm';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat, Camera, Cpu, Wand2, Layers, Brain, ShieldCheck, MapPin } from 'lucide-react';
+import { PartnersStripe } from '@/components/PartnersStripe';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 import heroPhone from '@/assets/axessplayer-hero-phone.png.asset.json';
 import rewardsScreen from '@/assets/axessplayer-rewards-screen.png.asset.json';
