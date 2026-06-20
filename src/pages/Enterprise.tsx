@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
@@ -28,78 +29,27 @@ const Wordmark = () => (
   </span>
 );
 
-type Status = 'live' | 'roadmap';
-
-
-const capabilities: Array<{
-  icon: typeof Globe;
-  title: string;
-  status: Status;
-  body: string;
-}> = [
-  {
-    icon: UserCheck,
-    title: 'Accessibility, done best and built in',
-    status: 'live',
-    body:
-      "Captions with Intention that carry tone and character, emotive audio descriptions, sign language, and high-contrast inclusive viewing tools, generated automatically and on by default. Your stories do not just reach more people. They move them. WCAG 2.1 AA, EAA, ADA, and EN 301 549 met as a byproduct, not a burden.",
-  },
-  {
-    icon: Globe,
-    title: 'Every language, every market',
-    status: 'live',
-    body:
-      'Performance-aware dubbing and localized captions in 40+ languages from one source, so a single production opens every market at once.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Trust for the AI era',
-    status: 'live',
-    body:
-      'Every synthetic or adapted asset carries a consent record, C2PA provenance, and a clear AI label, with sovereign EU and Swiss data residency. This is the layer the EU AI Act now requires and that almost no one has. With Axessplayer, the thing that is a legal blocker for everyone else is a feature you already own.',
-  },
-  {
-    icon: Sparkles,
-    title: 'One story, adapted to the viewer',
-    status: 'roadmap',
-    body:
-      'The same production can re-cut itself by pace, point of view, and intensity, so the experience fits the person watching, not the average of everyone. Personalization that lifts completion, measured, never manipulative.',
-  },
-  {
-    icon: Layers,
-    title: 'New revenue, not just new reach',
-    status: 'roadmap',
-    body:
-      "Generation-time brand integration places products inside the story with the scene's real lighting and geometry, not a banner bolted on top. A new revenue line for your content, with brand safety and disclosure built in.",
-  },
-  {
-    icon: Archive,
-    title: 'Turn dead footage into new inventory',
-    status: 'roadmap',
-    body:
-      'Old, horizontal, regional, or shelved footage becomes vertical, localized, accessible, brand-ready episodes, with rights and consent cleared before anything publishes. The archive you already paid for becomes the catalog you monetize next.',
-  },
-];
-
-const deploySteps = [
-  {
-    icon: Upload,
-    title: 'Upload once',
-    body: 'Drop in a master. Generating one from a prompt is on the roadmap.',
-  },
-  {
-    icon: Settings,
-    title: 'Set it once',
-    body: 'Choose your languages, accessibility tracks (on by default), and monetization. We compute the work and the cost before you commit.',
-  },
-  {
-    icon: PlayCircle,
-    title: 'Process and publish',
-    body: 'Watch every track generate live, review what needs a human eye, and publish everywhere, mobile and web, with compliance reporting and real-time analytics.',
-  },
-];
-
 const Enterprise = () => {
+  const { t } = useTranslation();
+  const tk = (k: string) => t(`enterprisePage.${k}`);
+
+  const capabilities = [
+    { icon: UserCheck, title: tk('cap1Title'), body: tk('cap1Body') },
+    { icon: Globe, title: tk('cap2Title'), body: tk('cap2Body') },
+    { icon: ShieldCheck, title: tk('cap3Title'), body: tk('cap3Body') },
+    { icon: Sparkles, title: tk('cap4Title'), body: tk('cap4Body') },
+    { icon: Layers, title: tk('cap5Title'), body: tk('cap5Body') },
+    { icon: Archive, title: tk('cap6Title'), body: tk('cap6Body') },
+  ];
+
+  const deploySteps = [
+    { icon: Upload, title: tk('step1Title'), body: tk('step1Body') },
+    { icon: Settings, title: tk('step2Title'), body: tk('step2Body') },
+    { icon: PlayCircle, title: tk('step3Title'), body: tk('step3Body') },
+  ];
+
+  const industryPoints = [tk('industryPoint1'), tk('industryPoint2'), tk('industryPoint3')];
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -110,30 +60,25 @@ const Enterprise = () => {
         <div className="container mx-auto px-6 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge variant="outline" className="font-normal">
-              <Wordmark /> Enterprise
+              <Wordmark /> {tk('badge')}
             </Badge>
             <h1 className="text-5xl md:text-7xl font-light text-foreground leading-[1.05] tracking-tight">
-              The world's first
+              {tk('heroTitle1')}
               <br />
-              <span className="text-primary">adaptive video platform.</span>
+              <span className="text-primary">{tk('heroTitle2')}</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground font-light leading-relaxed max-w-3xl mx-auto">
-              One story, reshaped for every viewer, every language, every audience, and every screen.
-              From a single master, <Wordmark /> automatically produces vertical cuts, dubbing in 40+
-              languages, full accessibility, and personalized versions, every one signed, consented,
-              and compliant by the time it ships.
+              <Trans i18nKey="enterprisePage.heroBody" components={{ wm: <Wordmark /> }} />
             </p>
-            <p className="text-2xl md:text-3xl font-light text-foreground">
-              Build something better. For everyone. Everywhere.
-            </p>
+            <p className="text-2xl md:text-3xl font-light text-foreground">{tk('heroTagline')}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button asChild size="lg" className="text-base">
                 <Link to="/upload">
-                  Start your upload <ArrowRight className="ml-2 w-4 h-4" />
+                  {tk('ctaUpload')} <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base">
-                <Link to="/contact">Talk to our team</Link>
+                <Link to="/contact">{tk('ctaTalk')}</Link>
               </Button>
             </div>
           </div>
@@ -144,44 +89,31 @@ const Enterprise = () => {
       <section className="py-24 md:py-32 border-t bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h2 className="text-sm font-medium uppercase tracking-widest text-primary">The shift</h2>
-            <p className="text-2xl md:text-3xl font-light text-foreground leading-snug">
-              Most platforms make you choose: reach more people, or move faster, or stay compliant,
-              or open new revenue. You do one, then bolt on the rest.
-            </p>
+            <h2 className="text-sm font-medium uppercase tracking-widest text-primary">{tk('shiftEyebrow')}</h2>
+            <p className="text-2xl md:text-3xl font-light text-foreground leading-snug">{tk('shiftLead')}</p>
             <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
-              <Wordmark /> collapses all of it into a single upload. Accessibility is not a project
-              you run after the fact. Localization is not a vendor you chase. Compliance is not a
-              cost center. They are simply how your video works, from the first frame.
+              <Trans i18nKey="enterprisePage.shiftBody" components={{ wm: <Wordmark /> }} />
             </p>
           </div>
         </div>
       </section>
 
-      {/* What you get from one master */}
+      {/* What you get */}
       <section className="py-24 md:py-32">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-4xl md:text-5xl font-light text-foreground leading-tight">
-              What you get from one master
-            </h2>
-            <p className="text-lg text-muted-foreground font-light">
-              Six capabilities, one pipeline, zero rework.
-            </p>
+            <h2 className="text-4xl md:text-5xl font-light text-foreground leading-tight">{tk('whatTitle')}</h2>
+            <p className="text-lg text-muted-foreground font-light">{tk('whatSub')}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
             {capabilities.map((c) => {
               const Icon = c.icon;
               return (
-                <div
-                  key={c.title}
-                  className="bg-card rounded-2xl border p-8 shadow-soft hover:shadow-elegant transition-shadow space-y-4"
-                >
+                <div key={c.title} className="bg-card rounded-2xl border p-8 shadow-soft hover:shadow-elegant transition-shadow space-y-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <Icon className="w-6 h-6 text-primary" />
                   </div>
-
                   <h3 className="text-2xl font-light text-foreground leading-snug">{c.title}</h3>
                   <p className="text-muted-foreground font-light leading-relaxed">{c.body}</p>
                 </div>
@@ -196,45 +128,31 @@ const Enterprise = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto space-y-12">
             <div className="text-center space-y-6">
-              <h2 className="text-sm font-medium uppercase tracking-widest text-primary">Industry first</h2>
-              <h3 className="text-4xl md:text-5xl font-light text-foreground leading-tight">
-                The adaptive content engine
-              </h3>
+              <h2 className="text-sm font-medium uppercase tracking-widest text-primary">{tk('industryEyebrow')}</h2>
+              <h3 className="text-4xl md:text-5xl font-light text-foreground leading-tight">{tk('industryTitle')}</h3>
               <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed max-w-3xl mx-auto">
-                Where competitors ship point solutions, <Wordmark /> is end-to-end automation on one
-                substrate. Every output, a caption, a dub, an accessible track, an alternate cut, a
-                brand integration, is a variant of the same story, measured the same way, signed the
-                same way, governed the same way. That is the difference between a feature and a
-                platform.
+                <Trans i18nKey="enterprisePage.industryBody" components={{ wm: <Wordmark /> }} />
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                'One automated pipeline from upload to published, accessible, multilingual, monetizable title.',
-                'Consent, provenance, and AI labeling on every asset, by construction.',
-                'Compliance auditing and reporting, a white-label embeddable player, and enterprise SSO and user management.',
-              ].map((line) => (
+              {industryPoints.map((line) => (
                 <div key={line} className="bg-card rounded-2xl border p-6 shadow-soft">
                   <p className="text-foreground font-light leading-relaxed">{line}</p>
                 </div>
               ))}
             </div>
 
-            <p className="text-center text-2xl md:text-3xl font-light text-foreground leading-snug pt-4">
-              We do not just enhance video. We make one production reach, and move, the whole world.
-            </p>
+            <p className="text-center text-2xl md:text-3xl font-light text-foreground leading-snug pt-4">{tk('industryClose')}</p>
           </div>
         </div>
       </section>
 
-      {/* Deploy in minutes */}
+      {/* Deploy */}
       <section className="py-24 md:py-32">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-4xl md:text-5xl font-light text-foreground leading-tight">
-              Deploy in minutes, not months
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-light text-foreground leading-tight">{tk('deployTitle')}</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -242,7 +160,7 @@ const Enterprise = () => {
               const Icon = step.icon;
               return (
                 <div key={step.title} className="relative bg-card rounded-2xl border p-8 shadow-soft space-y-4">
-                  <div className="text-sm font-medium text-primary">Step {i + 1}</div>
+                  <div className="text-sm font-medium text-primary">{`Step ${i + 1}`}</div>
                   <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Icon className="w-7 h-7 text-primary" />
                   </div>
@@ -253,23 +171,16 @@ const Enterprise = () => {
             })}
           </div>
 
-          <p className="text-center text-lg text-muted-foreground font-light mt-12 max-w-3xl mx-auto">
-            Zero-code integration. User-toggleable features. Enterprise-grade infrastructure built to
-            serve millions.
-          </p>
+          <p className="text-center text-lg text-muted-foreground font-light mt-12 max-w-3xl mx-auto">{tk('deployFoot')}</p>
         </div>
       </section>
 
-      {/* Compliance logos */}
+      {/* Compliance */}
       <section className="py-24 bg-muted/20 border-y">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-light text-foreground mb-4 leading-tight">
-              Turn compliance from a cost center into a competitive advantage
-            </h2>
-            <p className="text-lg text-muted-foreground font-light max-w-3xl mx-auto">
-              Meet global accessibility and security standards with confidence.
-            </p>
+            <h2 className="text-3xl md:text-4xl font-light text-foreground mb-4 leading-tight">{tk('complianceTitle')}</h2>
+            <p className="text-lg text-muted-foreground font-light max-w-3xl mx-auto">{tk('complianceSub')}</p>
           </div>
 
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-16 max-w-5xl mx-auto">
@@ -287,32 +198,21 @@ const Enterprise = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto space-y-8">
             <div className="text-center space-y-4">
-              <h2 className="text-sm font-medium uppercase tracking-widest text-primary">Why now</h2>
-              <h3 className="text-4xl md:text-5xl font-light text-foreground leading-tight">
-                The market is rewarding whoever can do all of this at once.
-              </h3>
+              <h2 className="text-sm font-medium uppercase tracking-widest text-primary">{tk('whyEyebrow')}</h2>
+              <h3 className="text-4xl md:text-5xl font-light text-foreground leading-tight">{tk('whyTitle')}</h3>
             </div>
             <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
-              Vertical short drama is the fastest-growing segment in mobile, AI is collapsing
-              production cost by up to ten times, and accessibility is now law, with EAA enforcement
-              live since June 2025 and the EU AI Act tightening through 2026. The market is
-              rewarding whoever can produce more, in more languages, for more audiences, faster and
-              cheaper, while staying compliant and trustworthy. That is precisely, and only, what{' '}
-              <Wordmark /> does end to end.
+              <Trans i18nKey="enterprisePage.whyBody" components={{ wm: <Wordmark /> }} />
             </p>
-            <p className="text-xl md:text-2xl font-light text-foreground leading-snug">
-              Turn compliance from a cost center into a competitive advantage. Reach 100 percent of
-              your audience, in every language, across every standard, and open new revenue while
-              you do it.
-            </p>
+            <p className="text-xl md:text-2xl font-light text-foreground leading-snug">{tk('whyClose')}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button asChild size="lg" className="text-base">
                 <Link to="/upload">
-                  Get started <ArrowRight className="ml-2 w-4 h-4" />
+                  {tk('ctaGet')} <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base">
-                <Link to="/explore">Explore the platform</Link>
+                <Link to="/explore">{tk('ctaExplore')}</Link>
               </Button>
             </div>
           </div>
