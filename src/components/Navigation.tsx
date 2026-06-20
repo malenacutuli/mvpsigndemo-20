@@ -56,6 +56,13 @@ export const Navigation: React.FC = () => {
               {t('nav.enterprise')}
             </Link>
 
+            <Link
+              to={getPath('/creators')}
+              className={`text-base font-light transition-colors hover:text-primary ${isActivePath('/creators') ? 'text-primary font-medium' : 'text-slate-600'}`}
+            >
+              Creators
+            </Link>
+
             {!isDemo && (
               <Link
                 to={getPath('/pricing')}
