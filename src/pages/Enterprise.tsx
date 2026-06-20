@@ -30,16 +30,6 @@ const Wordmark = () => (
 
 type Status = 'live' | 'roadmap';
 
-const StatusBadge = ({ status }: { status: Status }) =>
-  status === 'live' ? (
-    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-normal">
-      Available now
-    </Badge>
-  ) : (
-    <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 border-amber-500/20 font-normal">
-      Platform direction
-    </Badge>
-  );
 
 const capabilities: Array<{
   icon: typeof Globe;
@@ -188,12 +178,10 @@ const Enterprise = () => {
                   key={c.title}
                   className="bg-card rounded-2xl border p-8 shadow-soft hover:shadow-elegant transition-shadow space-y-4"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <StatusBadge status={c.status} />
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-6 h-6 text-primary" />
                   </div>
+
                   <h3 className="text-2xl font-light text-foreground leading-snug">{c.title}</h3>
                   <p className="text-muted-foreground font-light leading-relaxed">{c.body}</p>
                 </div>
