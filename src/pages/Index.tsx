@@ -8,6 +8,7 @@ import { CreatorsForm } from '@/components/CreatorsForm';
 import { TalentForm } from '@/components/TalentForm';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play, Globe2, Sparkles, Film, Languages, Gift, ShoppingBag, Repeat, Camera, Cpu, Wand2, Layers, Brain, ShieldCheck, MapPin } from 'lucide-react';
+import { PartnersStripe } from '@/components/PartnersStripe';
 import logoWhite from '@/assets/axessplayer-logo-white.png.asset.json';
 import heroPhone from '@/assets/axessplayer-hero-phone.png.asset.json';
 import rewardsScreen from '@/assets/axessplayer-rewards-screen.png.asset.json';
@@ -94,6 +95,10 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <PartnersStripe />
+
+
 
       <section className="bg-axp-ink text-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
