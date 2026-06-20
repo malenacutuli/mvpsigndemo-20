@@ -96,6 +96,10 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <PartnersStripe />
+
+
+
       <section className="bg-axp-ink text-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-5xl mx-auto">
