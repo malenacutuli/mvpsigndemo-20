@@ -1399,6 +1399,101 @@
         }
       },
       "loop": "The loop: free cliffhanger cuts on TikTok, Reels and Shorts pull viewers into the app. The engine auto-generates cheap, on-brand user-acquisition creative for every market."
+    },
+    "newSections": {
+      "problem": {
+        "eyebrow": "The problem",
+        "title1": "Great stories",
+        "titleAccent": "don't scale.",
+        "lead": "A creator makes one story. Then comes the expensive part.",
+        "items": [
+          "Localization",
+          "Accessibility",
+          "Distribution",
+          "Regional adaptation",
+          "Brand partnerships",
+          "Audience growth"
+        ],
+        "closing": "Every new audience adds cost. Every new market adds complexity. Most stories never reach their full audience because scaling them is too expensive."
+      },
+      "solution": {
+        "eyebrow": "The solution",
+        "title1": "Turn one story into",
+        "titleAccent": "many experiences.",
+        "lead": "Axessplayer helps creators, studios, and brands expand a single production across languages, accessibility needs, markets, interactive experiences, and brand partnerships, without recreating content from scratch.",
+        "pillars": [
+          "Languages",
+          "Accessibility needs",
+          "Markets",
+          "Interactive experiences",
+          "Brand partnerships"
+        ]
+      },
+      "audiences": {
+        "creators": {
+          "eyebrow": "For creators",
+          "title": "Create once. Reach everywhere.",
+          "body": "Transform one production into multiple languages, accessibility-ready versions, interactive story paths, and global distribution assets.",
+          "kicker": "More audience. More revenue. Less production overhead.",
+          "items": [
+            "Multiple languages",
+            "Accessibility-ready versions",
+            "Interactive story paths",
+            "Global distribution assets"
+          ]
+        },
+        "studios": {
+          "eyebrow": "For studios",
+          "title": "Make every production global.",
+          "body": "One master becomes dubbed, captioned, audio described, sign language enabled, and market localized.",
+          "kicker": "Reduce localization costs. Increase audience reach. Meet accessibility requirements from day one.",
+          "items": [
+            "Dubbed",
+            "Captioned",
+            "Audio described",
+            "Sign language enabled",
+            "Market localized"
+          ]
+        },
+        "brands": {
+          "eyebrow": "For brands",
+          "title": "Product placement becomes measurable.",
+          "body": "The same story can support different products, different regions, and different campaigns, without interrupting the viewer experience.",
+          "kicker": "One production. Multiple markets. Real performance data.",
+          "items": [
+            "Different products",
+            "Different regions",
+            "Different campaigns"
+          ]
+        }
+      },
+      "whyNow2": {
+        "eyebrow": "Why now",
+        "title1": "Streaming optimized discovery.",
+        "titleAccent": "We optimize the story.",
+        "body": "Netflix helped people find stories. TikTok helped stories get discovered. Axessplayer helps stories reach more audiences.",
+        "kicker": "The next generation of entertainment isn't more content. It's content that scales."
+      },
+      "vision": {
+        "eyebrow": "The vision",
+        "title1": "Every story should reach",
+        "titleAccent": "its full audience.",
+        "todayLabel": "Today",
+        "todayLine1": "One story.",
+        "todayLine2": "One version.",
+        "tomorrowLabel": "Tomorrow",
+        "tomorrowLine1": "One story.",
+        "tomorrowLine2": "Many experiences.",
+        "closing": "Axessplayer is building the infrastructure that makes storytelling scalable."
+      },
+      "finalCta": {
+        "eyebrow": "Final",
+        "title1": "Ready to",
+        "titleAccent": "scale your story?",
+        "body": "Whether you're a creator, studio, broadcaster, platform, or brand, Axessplayer helps you reach every audience.",
+        "bookDemo": "Book a demo",
+        "talkEnterprise": "Talk to enterprise"
+      }
     }
   },
   "enterprisePage": {
