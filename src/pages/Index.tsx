@@ -73,11 +73,6 @@ const Home: React.FC = () => {
               <EarlyAccessForm variant="light" source="home-hero" />
             </div>
 
-            <div className="mt-6">
-              <Link to="/explore" className="inline-flex items-center gap-2 font-body text-axp-ink/70 hover:text-axp-ink transition-colors">
-                <Play className="w-4 h-4" /> {t('home.hero.watchDemo')}
-              </Link>
-            </div>
           </div>
 
           <div className="mt-16 grid lg:grid-cols-12 gap-6 max-w-6xl mx-auto">
