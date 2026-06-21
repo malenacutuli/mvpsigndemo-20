@@ -98,20 +98,20 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl mx-auto">
-            <Eyebrow>The problem</Eyebrow>
+            <Eyebrow>{t('home.newSections.problem.eyebrow')}</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-              Great stories <span className="text-axp-rose">don't scale.</span>
+              {t('home.newSections.problem.title1')} <span className="text-axp-rose">{t('home.newSections.problem.titleAccent')}</span>
             </h2>
             <p className="mt-8 text-lg md:text-xl text-white/70 font-light leading-relaxed">
-              A creator makes one story. Then comes the expensive part.
+              {t('home.newSections.problem.lead')}
             </p>
             <ul className="mt-8 grid sm:grid-cols-2 gap-3 text-white/80 font-light">
-              {['Localization', 'Accessibility', 'Distribution', 'Regional adaptation', 'Brand partnerships', 'Audience growth'].map((x) => (
+              {(t('home.newSections.problem.items', { returnObjects: true }) as string[]).map((x) => (
                 <li key={x} className="rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-4">{x}</li>
               ))}
             </ul>
             <p className="mt-10 text-lg md:text-xl text-white/70 font-light leading-relaxed">
-              Every new audience adds cost. Every new market adds complexity. Most stories never reach their full audience because scaling them is too expensive.
+              {t('home.newSections.problem.closing')}
             </p>
           </div>
         </div>
@@ -121,28 +121,25 @@ const Home: React.FC = () => {
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>The solution</Eyebrow>
+            <Eyebrow>{t('home.newSections.solution.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Turn one story into <span className="text-axp-rose">many experiences.</span>
+              {t('home.newSections.solution.title1')} <span className="text-axp-rose">{t('home.newSections.solution.titleAccent')}</span>
             </SectionHeading>
             <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed max-w-3xl">
-              Axessplayer helps creators, studios, and brands expand a single production across languages, accessibility needs, markets, interactive experiences, and brand partnerships, without recreating content from scratch.
+              {t('home.newSections.solution.lead')}
             </p>
           </div>
 
           <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { icon: Globe2, label: 'Languages' },
-              { icon: ShieldCheck, label: 'Accessibility needs' },
-              { icon: MapPin, label: 'Markets' },
-              { icon: Sparkles, label: 'Interactive experiences' },
-              { icon: ShoppingBag, label: 'Brand partnerships' },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="rounded-3xl border border-axp-line bg-white p-6">
-                <Icon className="w-6 h-6 text-axp-rose" />
-                <p className="mt-4 font-display text-lg font-light text-axp-ink">{label}</p>
-              </div>
-            ))}
+            {[Globe2, ShieldCheck, MapPin, Sparkles, ShoppingBag].map((Icon, i) => {
+              const label = (t('home.newSections.solution.pillars', { returnObjects: true }) as string[])[i];
+              return (
+                <div key={label} className="rounded-3xl border border-axp-line bg-white p-6">
+                  <Icon className="w-6 h-6 text-axp-rose" />
+                  <p className="mt-4 font-display text-lg font-light text-axp-ink">{label}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -151,46 +148,27 @@ const Home: React.FC = () => {
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              {
-                eyebrow: 'For creators',
-                title: 'Create once. Reach everywhere.',
-                body: 'Transform one production into multiple languages, accessibility-ready versions, interactive story paths, and global distribution assets.',
-                kicker: 'More audience. More revenue. Less production overhead.',
-                items: ['Multiple languages', 'Accessibility-ready versions', 'Interactive story paths', 'Global distribution assets'],
-              },
-              {
-                eyebrow: 'For studios',
-                title: 'Make every production global.',
-                body: 'One master becomes dubbed, captioned, audio described, sign language enabled, and market localized.',
-                kicker: 'Reduce localization costs. Increase audience reach. Meet accessibility requirements from day one.',
-                items: ['Dubbed', 'Captioned', 'Audio described', 'Sign language enabled', 'Market localized'],
-              },
-              {
-                eyebrow: 'For brands',
-                title: 'Product placement becomes measurable.',
-                body: 'The same story can support different products, different regions, and different campaigns, without interrupting the viewer experience.',
-                kicker: 'One production. Multiple markets. Real performance data.',
-                items: ['Different products', 'Different regions', 'Different campaigns'],
-              },
-            ].map((col) => (
-              <div key={col.eyebrow} className="rounded-3xl border border-axp-line bg-axp-warm-white p-8 lg:p-10">
-                <Eyebrow>{col.eyebrow}</Eyebrow>
-                <h3 className="mt-5 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{col.title}</h3>
-                <p className="mt-4 text-axp-ink/70 font-light leading-relaxed">{col.body}</p>
-                <ul className="mt-6 space-y-2">
-                  {col.items.map((it) => (
-                    <li key={it} className="flex items-start gap-2 text-axp-ink font-light">
-                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-axp-rose shrink-0" />
-                      <span>{it}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-6 font-display text-lg font-light text-axp-ink/80 italic border-t border-axp-line pt-5">
-                  {col.kicker}
-                </p>
-              </div>
-            ))}
+            {(['creators','studios','brands'] as const).map((key) => {
+              const col = t(`home.newSections.audiences.${key}`, { returnObjects: true }) as { eyebrow: string; title: string; body: string; kicker: string; items: string[] };
+              return (
+                <div key={key} className="rounded-3xl border border-axp-line bg-axp-warm-white p-8 lg:p-10">
+                  <Eyebrow>{col.eyebrow}</Eyebrow>
+                  <h3 className="mt-5 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{col.title}</h3>
+                  <p className="mt-4 text-axp-ink/70 font-light leading-relaxed">{col.body}</p>
+                  <ul className="mt-6 space-y-2">
+                    {col.items.map((it) => (
+                      <li key={it} className="flex items-start gap-2 text-axp-ink font-light">
+                        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-axp-rose shrink-0" />
+                        <span>{it}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-6 font-display text-lg font-light text-axp-ink/80 italic border-t border-axp-line pt-5">
+                    {col.kicker}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -303,15 +281,15 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>Why now</Eyebrow>
+            <Eyebrow>{t('home.newSections.whyNow2.eyebrow')}</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-              Streaming optimized discovery. <span className="text-axp-rose">We optimize the story.</span>
+              {t('home.newSections.whyNow2.title1')} <span className="text-axp-rose">{t('home.newSections.whyNow2.titleAccent')}</span>
             </h2>
             <p className="mt-8 text-lg md:text-xl text-white/70 font-light leading-relaxed">
-              Netflix helped people find stories. TikTok helped stories get discovered. Axessplayer helps stories reach more audiences.
+              {t('home.newSections.whyNow2.body')}
             </p>
             <p className="mt-6 text-xl md:text-2xl text-white font-light leading-snug">
-              The next generation of entertainment isn't more content. It's content that scales.
+              {t('home.newSections.whyNow2.kicker')}
             </p>
           </div>
         </div>
@@ -322,30 +300,31 @@ const Home: React.FC = () => {
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl mx-auto text-center">
-            <Eyebrow>The vision</Eyebrow>
+            <Eyebrow>{t('home.newSections.vision.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Every story should reach <span className="text-axp-rose">its full audience.</span>
+              {t('home.newSections.vision.title1')} <span className="text-axp-rose">{t('home.newSections.vision.titleAccent')}</span>
             </SectionHeading>
 
             <div className="mt-14 grid sm:grid-cols-2 gap-6 text-left">
               <div className="rounded-3xl border border-axp-line bg-axp-warm-white p-8">
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">Today</p>
-                <p className="mt-4 font-display text-2xl font-light text-axp-ink">One story.</p>
-                <p className="font-display text-2xl font-light text-axp-ink">One version.</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.newSections.vision.todayLabel')}</p>
+                <p className="mt-4 font-display text-2xl font-light text-axp-ink">{t('home.newSections.vision.todayLine1')}</p>
+                <p className="font-display text-2xl font-light text-axp-ink">{t('home.newSections.vision.todayLine2')}</p>
               </div>
               <div className="rounded-3xl border border-axp-ink bg-axp-ink p-8 text-white">
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">Tomorrow</p>
-                <p className="mt-4 font-display text-2xl font-light">One story.</p>
-                <p className="font-display text-2xl font-light text-axp-rose">Many experiences.</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">{t('home.newSections.vision.tomorrowLabel')}</p>
+                <p className="mt-4 font-display text-2xl font-light">{t('home.newSections.vision.tomorrowLine1')}</p>
+                <p className="font-display text-2xl font-light text-axp-rose">{t('home.newSections.vision.tomorrowLine2')}</p>
               </div>
             </div>
 
             <p className="mt-12 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              Axessplayer is building the infrastructure that makes storytelling scalable.
+              {t('home.newSections.vision.closing')}
             </p>
           </div>
         </div>
       </section>
+
 
 
 
@@ -390,21 +369,22 @@ const Home: React.FC = () => {
 
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36 text-center">
-          <Eyebrow className="!text-axp-rose">Final</Eyebrow>
+          <Eyebrow className="!text-axp-rose">{t('home.newSections.finalCta.eyebrow')}</Eyebrow>
           <SectionHeading className="!text-white max-w-4xl mx-auto mt-6">
-            Ready to <span className="text-axp-rose">scale your story?</span>
+            {t('home.newSections.finalCta.title1')} <span className="text-axp-rose">{t('home.newSections.finalCta.titleAccent')}</span>
           </SectionHeading>
           <p className="mt-6 text-lg text-white/70 font-light max-w-2xl mx-auto">
-            Whether you're a creator, studio, broadcaster, platform, or brand, Axessplayer helps you reach every audience.
+            {t('home.newSections.finalCta.body')}
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="rounded-full px-8 h-12 bg-axp-rose hover:bg-axp-rose/90 text-white">
-              <Link to="/contact">Book a demo <ArrowRight className="ml-2 w-4 h-4" /></Link>
+              <Link to="/contact">{t('home.newSections.finalCta.bookDemo')} <ArrowRight className="ml-2 w-4 h-4" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full px-8 h-12 border-white/30 text-white hover:bg-white/10">
-              <Link to="/contact">Talk to enterprise</Link>
+              <Link to="/contact">{t('home.newSections.finalCta.talkEnterprise')}</Link>
             </Button>
           </div>
+
           <div className="mt-12">
             <EarlyAccessForm variant="dark" source="home-final" microcopy="Join early access. No spam, one email when your access is ready." />
           </div>

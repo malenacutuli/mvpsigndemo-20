@@ -1403,6 +1403,101 @@
         }
       },
       "loop": "El bucle: cortes gratuitos de \"cliffhanger\" en TikTok, Reels y Shorts atraen a los espectadores a la aplicación. El motor genera automáticamente creatividad de adquisición de usuarios barata y acorde a la marca para cada mercado."
+    },
+    "newSections": {
+      "problem": {
+        "eyebrow": "El problema",
+        "title1": "Las grandes historias",
+        "titleAccent": "no escalan.",
+        "lead": "Un creador hace una historia. Luego viene la parte costosa.",
+        "items": [
+          "Localización",
+          "Accesibilidad",
+          "Distribución",
+          "Adaptación regional",
+          "Asociaciones de marca",
+          "Crecimiento de la audiencia"
+        ],
+        "closing": "Cada nueva audiencia añade costo. Cada nuevo mercado añade complejidad. La mayoría de las historias nunca alcanzan a toda su audiencia porque escalarlas es demasiado costoso."
+      },
+      "solution": {
+        "eyebrow": "La solución",
+        "title1": "Convierte una historia en",
+        "titleAccent": "muchas experiencias.",
+        "lead": "Axessplayer ayuda a creadores, estudios y marcas a expandir una única producción a través de idiomas, necesidades de accesibilidad, mercados, experiencias interactivas y asociaciones de marca, sin recrear el contenido desde cero.",
+        "pillars": [
+          "Idiomas",
+          "Necesidades de accesibilidad",
+          "Mercados",
+          "Experiencias interactivas",
+          "Asociaciones de marca"
+        ]
+      },
+      "audiences": {
+        "creators": {
+          "eyebrow": "Para creadores",
+          "title": "Crea una vez. Llega a todas partes.",
+          "body": "Transforma una producción en múltiples idiomas, versiones listas para la accesibilidad, rutas de historia interactivas y activos de distribución global.",
+          "kicker": "Más audiencia. Más ingresos. Menos gastos generales de producción.",
+          "items": [
+            "Múltiples idiomas",
+            "Versiones listas para la accesibilidad",
+            "Rutas de historia interactivas",
+            "Activos de distribución global"
+          ]
+        },
+        "studios": {
+          "eyebrow": "Para estudios",
+          "title": "Haz que cada producción sea global.",
+          "body": "Una producción maestra se dobla, subtitula, audiodescribe, habilita para lenguaje de señas y se localiza en el mercado.",
+          "kicker": "Reduce los costos de localización. Aumenta el alcance de la audiencia. Cumple con los requisitos de accesibilidad desde el primer día.",
+          "items": [
+            "Doblado",
+            "Subtitulado",
+            "Audiodescrito",
+            "Habilitado para lenguaje de señas",
+            "Localizado para el mercado"
+          ]
+        },
+        "brands": {
+          "eyebrow": "Para marcas",
+          "title": "La colocación de productos se vuelve medible.",
+          "body": "La misma historia puede soportar diferentes productos, diferentes regiones y diferentes campañas, sin interrumpir la experiencia del espectador.",
+          "kicker": "Una producción. Múltiples mercados. Datos de rendimiento reales.",
+          "items": [
+            "Diferentes productos",
+            "Diferentes regiones",
+            "Diferentes campañas"
+          ]
+        }
+      },
+      "whyNow2": {
+        "eyebrow": "Por qué ahora",
+        "title1": "Descubrimiento optimizado para streaming.",
+        "titleAccent": "Optimizamos la historia.",
+        "body": "Netflix ayudó a la gente a encontrar historias. TikTok ayudó a que las historias fueran descubiertas. Axessplayer ayuda a que las historias lleguen a más audiencias.",
+        "kicker": "La próxima generación de entretenimiento no es más contenido. Es contenido que escala."
+      },
+      "vision": {
+        "eyebrow": "La visión",
+        "title1": "Cada historia debería alcanzar",
+        "titleAccent": "su audiencia completa.",
+        "todayLabel": "Hoy",
+        "todayLine1": "Una historia.",
+        "todayLine2": "Una versión.",
+        "tomorrowLabel": "Mañana",
+        "tomorrowLine1": "Una historia.",
+        "tomorrowLine2": "Muchas experiencias.",
+        "closing": "Axessplayer está construyendo la infraestructura que hace que la narración sea escalable."
+      },
+      "finalCta": {
+        "eyebrow": "Final",
+        "title1": "¿Listo para",
+        "titleAccent": "escalar tu historia?",
+        "body": "Ya seas un creador, estudio, emisora, plataforma o marca, Axessplayer te ayuda a llegar a todas las audiencias.",
+        "bookDemo": "Reservar una demostración",
+        "talkEnterprise": "Hablar con la empresa"
+      }
     }
   },
   "enterprisePage": {
