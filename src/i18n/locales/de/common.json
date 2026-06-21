@@ -907,6 +907,101 @@
         }
       },
       "loop": "Die Schleife: Kostenlose Cliffhanger-Schnitte auf TikTok, Reels und Shorts ziehen Zuschauer in die App. Die Engine generiert automatisch günstige, markengerechte User-Acquisition-Creatives für jeden Markt."
+    },
+    "newSections": {
+      "problem": {
+        "eyebrow": "Das Problem",
+        "title1": "Großartige Geschichten",
+        "titleAccent": "skalieren nicht.",
+        "lead": "Ein Schöpfer erstellt eine Geschichte. Dann kommt der teure Teil.",
+        "items": [
+          "Lokalisierung",
+          "Barrierefreiheit",
+          "Verbreitung",
+          "Regionale Anpassung",
+          "Markenpartnerschaften",
+          "Zielgruppenwachstum"
+        ],
+        "closing": "Jede neue Zielgruppe verursacht Kosten. Jeder neue Markt erhöht die Komplexität. Die meisten Geschichten erreichen nie ihr volles Publikum, weil ihre Skalierung zu teuer ist."
+      },
+      "solution": {
+        "eyebrow": "Die Lösung",
+        "title1": "Verwandle eine Geschichte in",
+        "titleAccent": "viele Erlebnisse.",
+        "lead": "Axessplayer hilft Kreativen, Studios und Marken, eine einzige Produktion über Sprachen, Barrierefreiheitsanforderungen, Märkte, interaktive Erlebnisse und Markenpartnerschaften hinweg zu erweitern, ohne Inhalte von Grund auf neu erstellen zu müssen.",
+        "pillars": [
+          "Sprachen",
+          "Bedürfnisse der Barrierefreiheit",
+          "Märkte",
+          "Interaktive Erlebnisse",
+          "Markenpartnerschaften"
+        ]
+      },
+      "audiences": {
+        "creators": {
+          "eyebrow": "Für Kreative",
+          "title": "Einmal erstellen. Überall erreichen.",
+          "body": "Verwandeln Sie eine Produktion in mehrere Sprachen, barrierefreie Versionen, interaktive Erzählpfade und globale Vertriebsanlagen.",
+          "kicker": "Mehr Publikum. Mehr Umsatz. Weniger Produktionsaufwand.",
+          "items": [
+            "Mehrere Sprachen",
+            "Barrierefreie Versionen",
+            "Interaktive Erzählpfade",
+            "Globale Vertriebsanlagen"
+          ]
+        },
+        "studios": {
+          "eyebrow": "Für Studios",
+          "title": "Machen Sie jede Produktion global.",
+          "body": "Ein Master wird synchronisiert, untertitelt, mit Audiodeskription versehen, gebärdensprachfähig gemacht und marktseitig lokalisiert.",
+          "kicker": "Reduzieren Sie Lokalisierungskosten. Erhöhen Sie die Reichweite des Publikums. Erfüllen Sie die Barrierefreiheitsanforderungen vom ersten Tag an.",
+          "items": [
+            "Synchronisiert",
+            "Untertitel",
+            "Audiodeskription",
+            "Gebärdensprachfähig",
+            "Markt lokalisiert"
+          ]
+        },
+        "brands": {
+          "eyebrow": "Für Marken",
+          "title": "Produktplatzierung wird messbar.",
+          "body": "Dieselbe Geschichte kann verschiedene Produkte, Regionen und Kampagnen unterstützen, ohne das Zuschauererlebnis zu unterbrechen.",
+          "kicker": "Eine Produktion. Mehrere Märkte. Echte Leistungsdaten.",
+          "items": [
+            "Verschiedene Produkte",
+            "Verschiedene Regionen",
+            "Verschiedene Kampagnen"
+          ]
+        }
+      },
+      "whyNow2": {
+        "eyebrow": "Warum jetzt",
+        "title1": "Streaming-optimierte Entdeckung.",
+        "titleAccent": "Wir optimieren die Geschichte.",
+        "body": "Netflix half Menschen, Geschichten zu finden. TikTok half, Geschichten zu entdecken. Axessplayer hilft Geschichten, mehr Publikum zu erreichen.",
+        "kicker": "Die nächste Generation der Unterhaltung ist nicht mehr Inhalt. Es sind Inhalte, die skalierbar sind."
+      },
+      "vision": {
+        "eyebrow": "Die Vision",
+        "title1": "Jede Geschichte sollte",
+        "titleAccent": "ihr volles Publikum erreichen.",
+        "todayLabel": "Heute",
+        "todayLine1": "Eine Geschichte.",
+        "todayLine2": "Eine Version.",
+        "tomorrowLabel": "Morgen",
+        "tomorrowLine1": "Eine Geschichte.",
+        "tomorrowLine2": "Viele Erlebnisse.",
+        "closing": "Axessplayer baut die Infrastruktur auf, die Storytelling skalierbar macht."
+      },
+      "finalCta": {
+        "eyebrow": "Finale",
+        "title1": "Bereit, Ihre Geschichte zu",
+        "titleAccent": "skalieren?",
+        "body": "Egal, ob Sie ein Kreativer, Studio, Sender, Plattform oder eine Marke sind, Axessplayer hilft Ihnen, jedes Publikum zu erreichen.",
+        "bookDemo": "Demo buchen",
+        "talkEnterprise": "Mit dem Unternehmen sprechen"
+      }
     }
   },
   "enterprisePage": {

@@ -235,6 +235,101 @@
         }
       },
       "loop": "Döngü: TikTok, Reels ve Shorts'taki ücretsiz cliffhanger kesintileri izleyicileri uygulamaya çeker. Motor, her pazar için uygun fiyatlı, markaya uygun kullanıcı edinimi reklamları otomatik olarak üretir."
+    },
+    "newSections": {
+      "problem": {
+        "eyebrow": "Sorun",
+        "title1": "Harika hikayeler",
+        "titleAccent": "ölçeklenemez.",
+        "lead": "Bir içerik oluşturucu bir hikaye yapar. Sonra pahalı kısım gelir.",
+        "items": [
+          "Yerelleştirme",
+          "Erişilebilirlik",
+          "Dağıtım",
+          "Bölgesel uyarlama",
+          "Marka ortaklıkları",
+          "Kitle büyümesi"
+        ],
+        "closing": "Her yeni kitle maliyet ekler. Her yeni pazar karmaşıklık ekler. Çoğu hikaye, ölçeklendirmek çok pahalı olduğu için tam kitlesine asla ulaşamaz."
+      },
+      "solution": {
+        "eyebrow": "Çözüm",
+        "title1": "Bir hikayeyi",
+        "titleAccent": "birçok deneyime dönüştürün.",
+        "lead": "Axessplayer, içerik oluşturucuların, stüdyoların ve markaların, sıfırdan içerik yeniden oluşturmadan, tek bir yapımı diller, erişilebilirlik ihtiyaçları, pazarlar, etkileşimli deneyimler ve marka ortaklıkları arasında genişletmelerine yardımcı olur.",
+        "pillars": [
+          "Diller",
+          "Erişilebilirlik ihtiyaçları",
+          "Pazarlar",
+          "İnteraktif deneyimler",
+          "Marka ortaklıkları"
+        ]
+      },
+      "audiences": {
+        "creators": {
+          "eyebrow": "İçerik oluşturucular için",
+          "title": "Bir kez oluşturun. Her yere ulaşın.",
+          "body": "Bir yapımı birden çok dile, erişilebilirliğe hazır versiyonlara, etkileşimli hikaye yollarına ve küresel dağıtım varlıklarına dönüştürün.",
+          "kicker": "Daha fazla kitle. Daha fazla gelir. Daha az üretim maliyeti.",
+          "items": [
+            "Birden çok dil",
+            "Erişilebilirliğe hazır versiyonlar",
+            "İnteraktif hikaye yolları",
+            "Küresel dağıtım varlıkları"
+          ]
+        },
+        "studios": {
+          "eyebrow": "Stüdyolar için",
+          "title": "Her yapımı küresel yapın.",
+          "body": "Tek bir ana yapım dublajlı, altyazılı, sesli betimlemeli, işaret dili özellikli ve pazar yerelleştirmeli olur.",
+          "kicker": "Yerelleştirme maliyetlerini azaltın. Kitle erişimini artırın. Erişilebilirlik gereksinimlerini ilk günden karşılayın.",
+          "items": [
+            "Dublajlı",
+            "Altyazılı",
+            "Sesli betimlemeli",
+            "İşaret dili özellikli",
+            "Pazar yerelleştirmeli"
+          ]
+        },
+        "brands": {
+          "eyebrow": "Markalar için",
+          "title": "Ürün yerleştirme ölçülebilir hale gelir.",
+          "body": "Aynı hikaye, izleyici deneyimini kesintiye uğratmadan farklı ürünleri, farklı bölgeleri ve farklı kampanyaları destekleyebilir.",
+          "kicker": "Tek yapım. Birden çok pazar. Gerçek performans verileri.",
+          "items": [
+            "Farklı ürünler",
+            "Farklı bölgeler",
+            "Farklı kampanyalar"
+          ]
+        }
+      },
+      "whyNow2": {
+        "eyebrow": "Neden şimdi",
+        "title1": "Akış için optimize edilmiş keşif.",
+        "titleAccent": "Hikayeyi optimize ediyoruz.",
+        "body": "Netflix insanların hikayeleri bulmasına yardımcı oldu. TikTok hikayelerin keşfedilmesine yardımcı oldu. Axessplayer hikayelerin daha fazla kitleye ulaşmasına yardımcı olur.",
+        "kicker": "Yeni nesil eğlence daha fazla içerik değil. Ölçeklenebilir içeriktir."
+      },
+      "vision": {
+        "eyebrow": "Vizyon",
+        "title1": "Her hikaye",
+        "titleAccent": "tam kitlesine ulaşmalı.",
+        "todayLabel": "Bugün",
+        "todayLine1": "Tek hikaye.",
+        "todayLine2": "Tek versiyon.",
+        "tomorrowLabel": "Yarın",
+        "tomorrowLine1": "Tek hikaye.",
+        "tomorrowLine2": "Birçok deneyim.",
+        "closing": "Axessplayer, hikaye anlatımını ölçeklenebilir kılan altyapıyı inşa ediyor."
+      },
+      "finalCta": {
+        "eyebrow": "Son",
+        "title1": "Hikayeni",
+        "titleAccent": "ölçeklendirmeye hazır mısın?",
+        "body": "İster içerik oluşturucu, stüdyo, yayıncı, platform veya marka olun, Axessplayer her kitleye ulaşmanıza yardımcı olur.",
+        "bookDemo": "Demo rezervasyonu yapın",
+        "talkEnterprise": "Kurumsal ile konuşun"
+      }
     }
   },
   "nav": {
