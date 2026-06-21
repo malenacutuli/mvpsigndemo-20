@@ -340,17 +340,27 @@ const Home: React.FC = () => {
 
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36 text-center">
-          <SectionHeading className="!text-white max-w-4xl mx-auto">
-            {t('home.final.title1')} <span className="text-axp-rose">{t('home.final.titleAccent')}</span> {t('home.final.title2')}
+          <Eyebrow className="!text-axp-rose">Final</Eyebrow>
+          <SectionHeading className="!text-white max-w-4xl mx-auto mt-6">
+            Ready to <span className="text-axp-rose">scale your story?</span>
           </SectionHeading>
           <p className="mt-6 text-lg text-white/70 font-light max-w-2xl mx-auto">
-            {t('home.final.body')}
+            Whether you're a creator, studio, broadcaster, platform, or brand, Axessplayer helps you reach every audience.
           </p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="rounded-full px-8 h-12 bg-axp-rose hover:bg-axp-rose/90 text-white">
+              <Link to="/contact">Book a demo <ArrowRight className="ml-2 w-4 h-4" /></Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full px-8 h-12 border-white/30 text-white hover:bg-white/10">
+              <Link to="/contact">Talk to enterprise</Link>
+            </Button>
+          </div>
           <div className="mt-12">
-            <EarlyAccessForm variant="dark" source="home-final" microcopy={t('home.final.microcopy')} />
+            <EarlyAccessForm variant="dark" source="home-final" microcopy="Join early access. No spam, one email when your access is ready." />
           </div>
         </div>
       </section>
+
 
       <footer className="bg-axp-ink text-white border-t border-white/10">
         <div className="container mx-auto px-6 py-16">
