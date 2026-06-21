@@ -195,6 +195,110 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Brand Integration / Dynamic Product Placement */}
+      <section className="bg-white border-y border-axp-line">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>{t('home.dpp.eyebrow')}</Eyebrow>
+            <SectionHeading className="mt-6">
+              {t('home.dpp.title1')} <span className="text-axp-rose">{t('home.dpp.titleAccent')}</span> {t('home.dpp.title2')}
+            </SectionHeading>
+            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light max-w-3xl leading-relaxed">
+              {t('home.dpp.body')}
+            </p>
+          </div>
+
+          <div className="mt-16">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byMarket')}</p>
+            <div className="mt-6 grid md:grid-cols-3 gap-6">
+              {[
+                { src: dppMx.url, region: 'MX', brand: 'Topo Chico' },
+                { src: dppUs.url, region: 'US', brand: 'Coca-Cola' },
+                { src: dppAeCosmo.url, region: 'AE', brand: 'Masafi' },
+              ].map(({ src, region, brand }) => (
+                <figure key={brand} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
+                  <img src={src} alt={`${brand} placement, ${region} market`} className="w-full aspect-video object-cover" loading="lazy" />
+                  <figcaption className="p-5 bg-white">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{region}</p>
+                    <p className="mt-1 font-display text-xl font-light text-axp-ink">{brand}</p>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byAudience')}</p>
+            <div className="mt-6 grid md:grid-cols-3 gap-6">
+              {[
+                { src: dppAeCosmo.url, key: 'cosmo' },
+                { src: dppAeModest.url, key: 'modest' },
+                { src: dppAeNiqab.url, key: 'conservative' },
+              ].map(({ src, key }) => (
+                <figure key={key} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
+                  <img src={src} alt={t(`home.dpp.audience.${key}`)} className="w-full aspect-video object-cover" loading="lazy" />
+                  <figcaption className="p-5 bg-white">
+                    <p className="font-display text-xl font-light text-axp-ink">{t(`home.dpp.audience.${key}`)}</p>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-12 rounded-3xl bg-axp-warm-white border border-axp-line p-8 lg:p-10 max-w-4xl">
+            <p className="font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">
+              {t('home.dpp.stat')}
+            </p>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.source')}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactivity */}
+      <section className="bg-axp-ink text-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>{t('home.pipeline.eyebrow')}</Eyebrow>
+            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
+              {t('home.pipeline.title1')} <span className="text-axp-rose">{t('home.pipeline.title2')}</span>
+            </h2>
+            <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
+              {t('home.pipeline.body')}
+            </p>
+          </div>
+
+          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              { key: 'a', icon: Camera },
+              { key: 'b', icon: Wand2 },
+              { key: 'c', icon: Cpu },
+            ].map(({ key, icon: Icon }) => (
+              <div key={key} className="rounded-3xl p-8 lg:p-10 border border-white/15 bg-white/[0.04]">
+                <Icon className="w-7 h-7 text-axp-rose" />
+                <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">{t(`home.pipeline.tiers.${key}.tag`)}</p>
+                <h3 className="mt-3 font-display text-3xl font-light text-white">{t(`home.pipeline.tiers.${key}.title`)}</h3>
+                <p className="mt-4 font-body leading-relaxed text-white/70">{t(`home.pipeline.tiers.${key}.body`)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Accessibility */}
+      <section className="bg-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>{t('home.eyebrow.accessible')}</Eyebrow>
+            <SectionHeading className="mt-6">
+              {t('home.accessible.title1')} <span className="text-axp-ink/55">{t('home.accessible.title2')}</span>
+            </SectionHeading>
+            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
+              {t('home.accessible.body')}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
