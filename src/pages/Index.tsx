@@ -299,36 +299,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="bg-axp-warm-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>How it works</Eyebrow>
-            <SectionHeading className="mt-6">
-              Human storytelling. <span className="text-axp-rose">AI-powered scale.</span>
-            </SectionHeading>
-          </div>
-
-          <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { n: '01', icon: Camera, title: 'Create', body: 'Film your story once. Human creativity stays at the center.' },
-              { n: '02', icon: Wand2, title: 'Expand', body: 'Generate language versions, accessibility layers, interactive experiences, and market adaptations from a single master production.' },
-              { n: '03', icon: Brain, title: 'Measure', body: 'Understand completion, engagement, audience behavior, accessibility usage, and market performance.' },
-              { n: '04', icon: Cpu, title: 'Improve', body: 'Every interaction helps improve future experiences. More reach. More engagement. More revenue.' },
-            ].map(({ n, icon: Icon, title, body }) => (
-              <div key={n} className="rounded-3xl border border-axp-line bg-white p-8">
-                <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-xs text-axp-ink/40">{n}</span>
-                  <Icon className="w-6 h-6 text-axp-rose" />
-                </div>
-                <h3 className="mt-6 font-display text-2xl font-light text-axp-ink">{title}</h3>
-                <p className="mt-3 text-axp-ink/65 font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Why now */}
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
