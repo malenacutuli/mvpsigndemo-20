@@ -281,15 +281,15 @@ const Home: React.FC = () => {
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>Why now</Eyebrow>
+            <Eyebrow>{t('home.newSections.whyNow2.eyebrow')}</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-              Streaming optimized discovery. <span className="text-axp-rose">We optimize the story.</span>
+              {t('home.newSections.whyNow2.title1')} <span className="text-axp-rose">{t('home.newSections.whyNow2.titleAccent')}</span>
             </h2>
             <p className="mt-8 text-lg md:text-xl text-white/70 font-light leading-relaxed">
-              Netflix helped people find stories. TikTok helped stories get discovered. Axessplayer helps stories reach more audiences.
+              {t('home.newSections.whyNow2.body')}
             </p>
             <p className="mt-6 text-xl md:text-2xl text-white font-light leading-snug">
-              The next generation of entertainment isn't more content. It's content that scales.
+              {t('home.newSections.whyNow2.kicker')}
             </p>
           </div>
         </div>
@@ -300,30 +300,31 @@ const Home: React.FC = () => {
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl mx-auto text-center">
-            <Eyebrow>The vision</Eyebrow>
+            <Eyebrow>{t('home.newSections.vision.eyebrow')}</Eyebrow>
             <SectionHeading className="mt-6">
-              Every story should reach <span className="text-axp-rose">its full audience.</span>
+              {t('home.newSections.vision.title1')} <span className="text-axp-rose">{t('home.newSections.vision.titleAccent')}</span>
             </SectionHeading>
 
             <div className="mt-14 grid sm:grid-cols-2 gap-6 text-left">
               <div className="rounded-3xl border border-axp-line bg-axp-warm-white p-8">
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">Today</p>
-                <p className="mt-4 font-display text-2xl font-light text-axp-ink">One story.</p>
-                <p className="font-display text-2xl font-light text-axp-ink">One version.</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.newSections.vision.todayLabel')}</p>
+                <p className="mt-4 font-display text-2xl font-light text-axp-ink">{t('home.newSections.vision.todayLine1')}</p>
+                <p className="font-display text-2xl font-light text-axp-ink">{t('home.newSections.vision.todayLine2')}</p>
               </div>
               <div className="rounded-3xl border border-axp-ink bg-axp-ink p-8 text-white">
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">Tomorrow</p>
-                <p className="mt-4 font-display text-2xl font-light">One story.</p>
-                <p className="font-display text-2xl font-light text-axp-rose">Many experiences.</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">{t('home.newSections.vision.tomorrowLabel')}</p>
+                <p className="mt-4 font-display text-2xl font-light">{t('home.newSections.vision.tomorrowLine1')}</p>
+                <p className="font-display text-2xl font-light text-axp-rose">{t('home.newSections.vision.tomorrowLine2')}</p>
               </div>
             </div>
 
             <p className="mt-12 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              Axessplayer is building the infrastructure that makes storytelling scalable.
+              {t('home.newSections.vision.closing')}
             </p>
           </div>
         </div>
       </section>
+
 
 
 
