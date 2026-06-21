@@ -94,299 +94,210 @@ const Home: React.FC = () => {
       <PartnersStripe />
 
 
-
-      <section className="bg-axp-ink text-axp-warm-white">
+      {/* The Problem */}
+      <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-5xl mx-auto">
-            <Eyebrow>{t('home.eyebrow.theShift')}</Eyebrow>
-            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white max-w-4xl">
-              {t('home.shift.title1')} <span className="text-axp-rose">{t('home.shift.title2')}</span>
+          <div className="max-w-4xl mx-auto">
+            <Eyebrow>The problem</Eyebrow>
+            <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
+              Great stories <span className="text-axp-rose">don't scale.</span>
             </h2>
-            <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
-              {t('home.shift.body')}
+            <p className="mt-8 text-lg md:text-xl text-white/70 font-light leading-relaxed">
+              A creator makes one story. Then comes the expensive part.
+            </p>
+            <ul className="mt-8 grid sm:grid-cols-2 gap-3 text-white/80 font-light">
+              {['Localization', 'Accessibility', 'Distribution', 'Regional adaptation', 'Brand partnerships', 'Audience growth'].map((x) => (
+                <li key={x} className="rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-4">{x}</li>
+              ))}
+            </ul>
+            <p className="mt-10 text-lg md:text-xl text-white/70 font-light leading-relaxed">
+              Every new audience adds cost. Every new market adds complexity. Most stories never reach their full audience because scaling them is too expensive.
             </p>
           </div>
         </div>
       </section>
 
+      {/* The Solution */}
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-3xl">
-            <Eyebrow>{t('home.eyebrow.whatIs')}</Eyebrow>
-            <SectionHeading className="mt-6">{t('home.what.title')}</SectionHeading>
+          <div className="max-w-4xl">
+            <Eyebrow>The solution</Eyebrow>
+            <SectionHeading className="mt-6">
+              Turn one story into <span className="text-axp-rose">many experiences.</span>
+            </SectionHeading>
+            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed max-w-3xl">
+              Axessplayer helps creators, studios, and brands expand a single production across languages, accessibility needs, markets, interactive experiences, and brand partnerships, without recreating content from scratch.
+            </p>
           </div>
 
-          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { icon: Film, key: 'yourCut', accent: true },
-              { icon: Languages, key: 'yourLanguage', accent: false },
-              { icon: Globe2, key: 'yourWorld', accent: false },
-            ].map(({ icon: Icon, key, accent }) => (
-              <div key={key} className={`rounded-3xl p-8 lg:p-10 border ${accent ? 'bg-axp-ink text-white border-axp-ink' : 'bg-white text-axp-ink border-axp-line'}`}>
-                <Icon className={`w-7 h-7 ${accent ? 'text-axp-rose' : 'text-axp-ink/70'}`} />
-                <h3 className={`mt-8 font-display text-3xl font-light ${accent ? 'text-white' : 'text-axp-ink'}`}>{t(`home.what.${key}.title`)}</h3>
-                <p className={`mt-4 font-body leading-relaxed ${accent ? 'text-white/75' : 'text-axp-ink/65'}`}>{t(`home.what.${key}.body`)}</p>
+              { icon: Globe2, label: 'Languages' },
+              { icon: ShieldCheck, label: 'Accessibility needs' },
+              { icon: MapPin, label: 'Markets' },
+              { icon: Sparkles, label: 'Interactive experiences' },
+              { icon: ShoppingBag, label: 'Brand partnerships' },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="rounded-3xl border border-axp-line bg-white p-6">
+                <Icon className="w-6 h-6 text-axp-rose" />
+                <p className="mt-4 font-display text-lg font-light text-axp-ink">{label}</p>
               </div>
             ))}
           </div>
-
-          <div className="mt-12">
-            <Link to="/enterprise" className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink hover:text-axp-rose transition-colors">
-              {t('home.what.seeHow')} <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
         </div>
       </section>
 
+      {/* Three audiences: Creators, Studios, Brands */}
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="grid lg:grid-cols-12 gap-12 items-start">
-            <div className="lg:col-span-5">
-              <Eyebrow>{t('home.eyebrow.howItWorks')}</Eyebrow>
-              <SectionHeading className="mt-6">{t('home.how.title')}</SectionHeading>
-              <p className="mt-8 text-lg text-axp-ink/70 font-light leading-relaxed">
-                {t('home.how.body')}
-              </p>
-            </div>
-
-            <div className="lg:col-span-7 rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
-              <img src={postersImage.url} alt="Axessplayer original adaptive story posters" className="w-full h-full object-cover" loading="lazy" />
-            </div>
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              {
+                eyebrow: 'For creators',
+                title: 'Create once. Reach everywhere.',
+                body: 'Transform one production into multiple languages, accessibility-ready versions, interactive story paths, and global distribution assets.',
+                kicker: 'More audience. More revenue. Less production overhead.',
+                items: ['Multiple languages', 'Accessibility-ready versions', 'Interactive story paths', 'Global distribution assets'],
+              },
+              {
+                eyebrow: 'For studios',
+                title: 'Make every production global.',
+                body: 'One master becomes dubbed, captioned, audio described, sign language enabled, and market localized.',
+                kicker: 'Reduce localization costs. Increase audience reach. Meet accessibility requirements from day one.',
+                items: ['Dubbed', 'Captioned', 'Audio described', 'Sign language enabled', 'Market localized'],
+              },
+              {
+                eyebrow: 'For brands',
+                title: 'Product placement becomes measurable.',
+                body: 'The same story can support different products, different regions, and different campaigns, without interrupting the viewer experience.',
+                kicker: 'One production. Multiple markets. Real performance data.',
+                items: ['Different products', 'Different regions', 'Different campaigns'],
+              },
+            ].map((col) => (
+              <div key={col.eyebrow} className="rounded-3xl border border-axp-line bg-axp-warm-white p-8 lg:p-10">
+                <Eyebrow>{col.eyebrow}</Eyebrow>
+                <h3 className="mt-5 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{col.title}</h3>
+                <p className="mt-4 text-axp-ink/70 font-light leading-relaxed">{col.body}</p>
+                <ul className="mt-6 space-y-2">
+                  {col.items.map((it) => (
+                    <li key={it} className="flex items-start gap-2 text-axp-ink font-light">
+                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-axp-rose shrink-0" />
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-6 font-display text-lg font-light text-axp-ink/80 italic border-t border-axp-line pt-5">
+                  {col.kicker}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Three tiers - Human soul, AI scale, one engine (slide 5) */}
+      {/* How it works */}
+      <section className="bg-axp-warm-white">
+        <div className="container mx-auto px-6 py-28 lg:py-36">
+          <div className="max-w-4xl">
+            <Eyebrow>How it works</Eyebrow>
+            <SectionHeading className="mt-6">
+              Human storytelling. <span className="text-axp-rose">AI-powered scale.</span>
+            </SectionHeading>
+          </div>
+
+          <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { n: '01', icon: Camera, title: 'Create', body: 'Film your story once. Human creativity stays at the center.' },
+              { n: '02', icon: Wand2, title: 'Expand', body: 'Generate language versions, accessibility layers, interactive experiences, and market adaptations from a single master production.' },
+              { n: '03', icon: Brain, title: 'Measure', body: 'Understand completion, engagement, audience behavior, accessibility usage, and market performance.' },
+              { n: '04', icon: Cpu, title: 'Improve', body: 'Every interaction helps improve future experiences. More reach. More engagement. More revenue.' },
+            ].map(({ n, icon: Icon, title, body }) => (
+              <div key={n} className="rounded-3xl border border-axp-line bg-white p-8">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-mono text-xs text-axp-ink/40">{n}</span>
+                  <Icon className="w-6 h-6 text-axp-rose" />
+                </div>
+                <h3 className="mt-6 font-display text-2xl font-light text-axp-ink">{title}</h3>
+                <p className="mt-3 text-axp-ink/65 font-light leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why now */}
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>{t('home.pipeline.eyebrow')}</Eyebrow>
+            <Eyebrow>Why now</Eyebrow>
             <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-              {t('home.pipeline.title1')} <span className="text-axp-rose">{t('home.pipeline.title2')}</span>
+              Streaming optimized discovery. <span className="text-axp-rose">We optimize the story.</span>
             </h2>
-            <p className="mt-8 text-lg md:text-xl text-white/70 font-light max-w-3xl leading-relaxed">
-              {t('home.pipeline.body')}
+            <p className="mt-8 text-lg md:text-xl text-white/70 font-light leading-relaxed">
+              Netflix helped people find stories. TikTok helped stories get discovered. Axessplayer helps stories reach more audiences.
             </p>
-          </div>
-
-          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              { key: 'a', icon: Camera },
-              { key: 'b', icon: Wand2 },
-              { key: 'c', icon: Cpu },
-            ].map(({ key, icon: Icon }) => (
-              <div key={key} className="rounded-3xl p-8 lg:p-10 border border-white/15 bg-white/[0.04]">
-                <Icon className="w-7 h-7 text-axp-rose" />
-                <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">{t(`home.pipeline.tiers.${key}.tag`)}</p>
-                <h3 className="mt-3 font-display text-3xl font-light text-white">{t(`home.pipeline.tiers.${key}.title`)}</h3>
-                <p className="mt-4 font-body leading-relaxed text-white/70">{t(`home.pipeline.tiers.${key}.body`)}</p>
-              </div>
-            ))}
+            <p className="mt-6 text-xl md:text-2xl text-white font-light leading-snug">
+              The next generation of entertainment isn't more content. It's content that scales.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* The Moat (slide 7) */}
+      {/* What makes us different */}
       <section className="bg-axp-warm-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
           <div className="max-w-4xl">
-            <Eyebrow>{t('home.moat.eyebrow')}</Eyebrow>
-            <SectionHeading className="mt-6">
-              {t('home.moat.title1')} <span className="text-axp-ink/55">{t('home.moat.title2')}</span>
-            </SectionHeading>
+            <Eyebrow>What makes us different</Eyebrow>
+            <SectionHeading className="mt-6">Built for stories that scale.</SectionHeading>
           </div>
 
           <div className="mt-16 grid md:grid-cols-2 gap-6 lg:gap-8">
             {[
-              { n: '01', key: '1', icon: Layers },
-              { n: '02', key: '2', icon: Globe2 },
-              { n: '03', key: '3', icon: Brain },
-              { n: '04', key: '4', icon: ShieldCheck },
-            ].map(({ n, key, icon: Icon }) => (
-              <div key={n} className="rounded-3xl p-8 lg:p-10 border border-axp-line bg-white">
-                <div className="flex items-baseline gap-4">
-                  <span className="font-mono text-xs text-axp-ink/40">{n}</span>
-                  <Icon className="w-6 h-6 text-axp-rose" />
-                </div>
-                <h3 className="mt-6 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{t(`home.moat.items.${key}.title`)}</h3>
-                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{t(`home.moat.items.${key}.body`)}</p>
+              { icon: Sparkles, title: 'Interactive storytelling expertise', body: 'Built by the team that invented interactive entertainment.' },
+              { icon: ShieldCheck, title: 'Accessibility by design', body: 'Accessibility is not an add-on. It is part of the production pipeline.' },
+              { icon: Languages, title: 'AI localization', body: 'One production becomes every language and every market.' },
+              { icon: Brain, title: 'Audience intelligence', body: 'We learn how audiences experience stories, not just what they watch.' },
+            ].map(({ icon: Icon, title, body }) => (
+              <div key={title} className="rounded-3xl border border-axp-line bg-white p-8 lg:p-10">
+                <Icon className="w-7 h-7 text-axp-rose" />
+                <h3 className="mt-6 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{title}</h3>
+                <p className="mt-4 text-axp-ink/65 font-light leading-relaxed">{body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dynamic Product Placement (slide 12) */}
+      {/* The Vision */}
       <section className="bg-white border-y border-axp-line">
         <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>{t('home.dpp.eyebrow')}</Eyebrow>
+          <div className="max-w-4xl mx-auto text-center">
+            <Eyebrow>The vision</Eyebrow>
             <SectionHeading className="mt-6">
-              {t('home.dpp.title1')} <span className="text-axp-rose">{t('home.dpp.titleAccent')}</span> {t('home.dpp.title2')}
+              Every story should reach <span className="text-axp-rose">its full audience.</span>
             </SectionHeading>
-            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light max-w-3xl leading-relaxed">
-              {t('home.dpp.body')}
-            </p>
-          </div>
 
-          <div className="mt-16">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byMarket')}</p>
-            <div className="mt-6 grid md:grid-cols-3 gap-6">
-              {[
-                { src: dppMx.url, region: 'MX', brand: 'Topo Chico' },
-                { src: dppUs.url, region: 'US', brand: 'Coca-Cola' },
-                { src: dppAeCosmo.url, region: 'AE', brand: 'Masafi' },
-              ].map(({ src, region, brand }) => (
-                <figure key={brand} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
-                  <img src={src} alt={`${brand} placement, ${region} market`} className="w-full aspect-video object-cover" loading="lazy" />
-                  <figcaption className="p-5 bg-white">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{region}</p>
-                    <p className="mt-1 font-display text-xl font-light text-axp-ink">{brand}</p>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-16">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.byAudience')}</p>
-            <div className="mt-6 grid md:grid-cols-3 gap-6">
-              {[
-                { src: dppAeCosmo.url, key: 'cosmo' },
-                { src: dppAeModest.url, key: 'modest' },
-                { src: dppAeNiqab.url, key: 'conservative' },
-              ].map(({ src, key }) => (
-                <figure key={key} className="rounded-3xl overflow-hidden border border-axp-line bg-axp-ink">
-                  <img src={src} alt={t(`home.dpp.audience.${key}`)} className="w-full aspect-video object-cover" loading="lazy" />
-                  <figcaption className="p-5 bg-white">
-                    <p className="font-display text-xl font-light text-axp-ink">{t(`home.dpp.audience.${key}`)}</p>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-12 rounded-3xl bg-axp-warm-white border border-axp-line p-8 lg:p-10 max-w-4xl">
-            <p className="font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">
-              {t('home.dpp.stat')}
-            </p>
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">{t('home.dpp.source')}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Go-to-Market (slide 13) */}
-      <section className="bg-axp-warm-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>{t('home.gtm.eyebrow')}</Eyebrow>
-            <SectionHeading className="mt-6">
-              {t('home.gtm.title1')} <span className="text-axp-ink/55">{t('home.gtm.title2')}</span>
-            </SectionHeading>
-          </div>
-
-          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              { n: '01', key: '1' },
-              { n: '02', key: '2' },
-              { n: '03', key: '3' },
-            ].map(({ n, key }) => (
-              <div key={n} className="rounded-3xl p-8 lg:p-10 border border-axp-line bg-white">
-                <div className="flex items-baseline gap-4">
-                  <span className="font-mono text-xs text-axp-ink/40">{n}</span>
-                  <MapPin className="w-5 h-5 text-axp-rose" />
-                </div>
-                <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">{t(`home.gtm.items.${key}.tag`)}</p>
-                <h3 className="mt-3 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{t(`home.gtm.items.${key}.region`)}</h3>
-                <p className="mt-4 font-body leading-relaxed text-axp-ink/65">{t(`home.gtm.items.${key}.body`)}</p>
+            <div className="mt-14 grid sm:grid-cols-2 gap-6 text-left">
+              <div className="rounded-3xl border border-axp-line bg-axp-warm-white p-8">
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-ink/55">Today</p>
+                <p className="mt-4 font-display text-2xl font-light text-axp-ink">One story.</p>
+                <p className="font-display text-2xl font-light text-axp-ink">One version.</p>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-12 max-w-3xl border-l-2 border-axp-rose pl-6">
-            <p className="font-display text-xl lg:text-2xl font-light text-axp-ink leading-snug italic">
-              {t('home.gtm.loop')}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-axp-warm-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>{t('home.eyebrow.accessible')}</Eyebrow>
-            <SectionHeading className="mt-6">
-              {t('home.accessible.title1')} <span className="text-axp-ink/55">{t('home.accessible.title2')}</span>
-            </SectionHeading>
-            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              {t('home.accessible.body')}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-axp-ink text-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <Eyebrow>{t('home.eyebrow.forBrands')}</Eyebrow>
-              <h2 className="mt-6 font-display font-light text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-white">
-                {t('home.brands.title1')} <span className="text-axp-gold">{t('home.brands.title2')}</span> {t('home.brands.title3')}
-              </h2>
-              <p className="mt-8 text-lg text-white/70 font-light leading-relaxed max-w-xl">
-                {t('home.brands.body')}
-              </p>
-              <div className="mt-10">
-                <Link to="/enterprise" className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.22em] text-axp-gold hover:text-white transition-colors">
-                  {t('home.brands.partner')} <ArrowRight className="w-4 h-4" />
-                </Link>
+              <div className="rounded-3xl border border-axp-ink bg-axp-ink p-8 text-white">
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-axp-rose">Tomorrow</p>
+                <p className="mt-4 font-display text-2xl font-light">One story.</p>
+                <p className="font-display text-2xl font-light text-axp-rose">Many experiences.</p>
               </div>
             </div>
 
-            <div className="rounded-3xl overflow-hidden border border-white/20 bg-black">
-              <img src={appGridImage.url} alt="Axessplayer library and trending recommendations" className="w-full h-full object-cover" loading="lazy" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-axp-warm-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>{t('home.eyebrow.whyNow')}</Eyebrow>
-            <SectionHeading className="mt-6">{t('home.whyNow.title')}</SectionHeading>
-            <p className="mt-8 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
-              {t('home.whyNow.body')}
+            <p className="mt-12 text-lg md:text-xl text-axp-ink/70 font-light leading-relaxed">
+              Axessplayer is building the infrastructure that makes storytelling scalable.
             </p>
-            <div className="mt-10 inline-flex items-center px-5 py-3 rounded-full border border-axp-ink/15 bg-white">
-              <p className="font-body text-sm text-axp-ink">{t('home.whyNow.builtBy', { name: 'Eko' })}</p>
-            </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white border-y border-axp-line">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-3xl">
-            <Eyebrow>{t('home.eyebrow.howToWatch')}</Eyebrow>
-            <SectionHeading className="mt-6">{t('home.howToWatch.title')}</SectionHeading>
-          </div>
 
-          <div className="mt-16 grid md:grid-cols-3 gap-6">
-            {[
-              { key: 'earn', icon: Gift },
-              { key: 'buy', icon: ShoppingBag },
-              { key: 'subscribe', icon: Repeat },
-            ].map(({ key, icon: Icon }) => (
-              <div key={key} className="rounded-3xl border border-axp-line p-8 bg-axp-warm-white">
-                <Icon className="w-6 h-6 text-axp-rose" />
-                <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-axp-ink/55">{t(`home.howToWatch.${key}.tag`)}</p>
-                <p className="mt-3 font-display text-2xl font-light text-axp-ink leading-snug">{t(`home.howToWatch.${key}.title`)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <section className="bg-axp-ink text-white">
         <div className="container mx-auto px-6 py-28 lg:py-36">
