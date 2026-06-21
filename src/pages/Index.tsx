@@ -317,30 +317,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* What makes us different */}
-      <section className="bg-axp-warm-white">
-        <div className="container mx-auto px-6 py-28 lg:py-36">
-          <div className="max-w-4xl">
-            <Eyebrow>What makes us different</Eyebrow>
-            <SectionHeading className="mt-6">Built for stories that scale.</SectionHeading>
-          </div>
-
-          <div className="mt-16 grid md:grid-cols-2 gap-6 lg:gap-8">
-            {[
-              { icon: Sparkles, title: 'Interactive storytelling expertise', body: 'Built by the team that invented interactive entertainment.' },
-              { icon: ShieldCheck, title: 'Accessibility by design', body: 'Accessibility is not an add-on. It is part of the production pipeline.' },
-              { icon: Languages, title: 'AI localization', body: 'One production becomes every language and every market.' },
-              { icon: Brain, title: 'Audience intelligence', body: 'We learn how audiences experience stories, not just what they watch.' },
-            ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-3xl border border-axp-line bg-white p-8 lg:p-10">
-                <Icon className="w-7 h-7 text-axp-rose" />
-                <h3 className="mt-6 font-display text-2xl lg:text-3xl font-light text-axp-ink leading-snug">{title}</h3>
-                <p className="mt-4 text-axp-ink/65 font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* The Vision */}
       <section className="bg-white border-y border-axp-line">
